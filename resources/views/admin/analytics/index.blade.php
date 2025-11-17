@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'การวิเคราะห์ระบบ - System Analytics')
 
@@ -6,8 +6,8 @@
 <div class="space-y-6" x-data="analyticsManager()">
     <!-- Header with System Health Status -->
     <div class="bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white opacity-10 rounded-full"></div>
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
+        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
         <div class="relative z-10">
             <div class="flex items-center justify-between">
                 <div>
@@ -35,9 +35,9 @@
     <!-- Real-time Metrics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Active Users -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-6 text-white">
+        <div class="relative overflow-hidden style="background: var(--arrow-x-primary-gradient)" rounded-2xl shadow-xl p-6 text-white">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
-                <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
+                <div class="w-24 h-24 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
             </div>
             <div class="relative z-10">
                 <div class="text-4xl mb-3">👥</div>
@@ -50,9 +50,9 @@
         </div>
 
         <!-- Request Rate -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
+        <div class="relative overflow-hidden style="background: var(--arrow-x-accent-gradient)" rounded-2xl shadow-xl p-6 text-white">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
-                <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
+                <div class="w-24 h-24 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
             </div>
             <div class="relative z-10">
                 <div class="text-4xl mb-3">⚡</div>
@@ -65,9 +65,9 @@
         </div>
 
         <!-- Response Time -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-xl p-6 text-white">
+        <div class="relative overflow-hidden style="background: var(--arrow-x-success-gradient)" rounded-2xl shadow-xl p-6 text-white">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
-                <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
+                <div class="w-24 h-24 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
             </div>
             <div class="relative z-10">
                 <div class="text-4xl mb-3">⏱️</div>
@@ -82,9 +82,9 @@
         </div>
 
         <!-- CPU Usage -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl shadow-xl p-6 text-white">
+        <div class="relative overflow-hidden style="background: var(--arrow-x-warning-gradient)" rounded-2xl shadow-xl p-6 text-white">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
-                <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
+                <div class="w-24 h-24 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
             </div>
             <div class="relative z-10">
                 <div class="text-4xl mb-3">🖥️</div>
@@ -92,8 +92,8 @@
                 <p class="text-4xl font-bold" x-text="(metrics.cpu_usage ?? '{{ $summary['current']->cpu_usage ?? 0 }}') + '%'">
                     {{ number_format($summary['current']->cpu_usage ?? 0, 1) }}%
                 </p>
-                <div class="w-full bg-white bg-opacity-20 rounded-full h-2 mt-3">
-                    <div class="bg-white rounded-full h-2 transition-all duration-500"
+                <div class="w-full glass-fusion bg-opacity-20 rounded-full h-2 mt-3" border border-white/20 dark:border-white/10>
+                    <div class="glass-fusion rounded-full h-2 transition-all duration-500" border border-white/20 dark:border-white/10
                          :style="`width: ${metrics.cpu_usage ?? '{{ $summary['current']->cpu_usage ?? 0 }}'}%`"
                          style="width: {{ $summary['current']->cpu_usage ?? 0 }}%">
                     </div>
@@ -105,15 +105,15 @@
     <!-- Secondary Metrics Row -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- Memory Usage -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5">
+        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-5" border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-2">
                 <span class="text-2xl">💾</span>
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">MEMORY</span>
+                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-400">MEMORY</span>
             </div>
             <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="(metrics.memory_usage ?? '{{ $summary['current']->memory_usage ?? 0 }}') + '%'">
                 {{ number_format($summary['current']->memory_usage ?? 0, 1) }}%
             </p>
-            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-2">
+            <div class="w-full bg-gray-200 dark:bg-gray-700 dark:bg-gray-700 rounded-full h-1.5 mt-2">
                 <div class="bg-blue-500 rounded-full h-1.5 transition-all duration-500"
                      :style="`width: ${metrics.memory_usage ?? '{{ $summary['current']->memory_usage ?? 0 }}'}%`"
                      style="width: {{ $summary['current']->memory_usage ?? 0 }}%">
@@ -122,62 +122,62 @@
         </div>
 
         <!-- Cache Hit Rate -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5">
+        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-5" border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-2">
                 <span class="text-2xl">📦</span>
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">CACHE</span>
+                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-400">CACHE</span>
             </div>
             <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="(metrics.cache_hit_rate ?? '{{ $summary['current']->cache_hit_rate ?? 0 }}') + '%'">
                 {{ number_format($summary['current']->cache_hit_rate ?? 0, 1) }}%
             </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Hit Rate</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Hit Rate</p>
         </div>
 
         <!-- Database Connections -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5">
+        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-5" border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-2">
                 <span class="text-2xl">🗄️</span>
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">DATABASE</span>
+                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-400">DATABASE</span>
             </div>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
                 <span x-text="metrics.db_connections_active ?? '{{ $summary['current']->db_connections_active ?? 0 }}'">{{ $summary['current']->db_connections_active ?? 0 }}</span>
-                <span class="text-sm text-gray-500">/ {{ $summary['current']->db_connections_total ?? 151 }}</span>
+                <span class="text-sm text-gray-500 dark:text-gray-400">/ {{ $summary['current']->db_connections_total ?? 151 }}</span>
             </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Active Connections</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Active Connections</p>
         </div>
 
         <!-- Error Rate -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5">
+        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-5" border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-2">
                 <span class="text-2xl">⚠️</span>
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">ERRORS</span>
+                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-400">ERRORS</span>
             </div>
             <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="(metrics.error_rate ?? '{{ $summary['current']->error_rate ?? 0 }}') + '%'">
                 {{ number_format($summary['current']->error_rate ?? 0, 2) }}%
             </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Error Rate</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Error Rate</p>
         </div>
 
         <!-- Security Events -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-5">
+        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-5" border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-2">
                 <span class="text-2xl">🔒</span>
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">SECURITY</span>
+                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-400">SECURITY</span>
             </div>
             <p class="text-2xl font-bold text-gray-900 dark:text-white" x-text="metrics.blocked_ips ?? '{{ $summary['current']->blocked_ips ?? 0 }}'">
                 {{ $summary['current']->blocked_ips ?? 0 }}
             </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Blocked IPs</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Blocked IPs</p>
         </div>
     </div>
 
     <!-- Charts Section -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Traffic Chart -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">📈 Traffic & Users (24h)</h3>
-                <select x-model="trafficPeriod" @change="loadTrafficData()" class="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1 dark:bg-slate-700 dark:text-white">
+                <select x-model="trafficPeriod" @change="loadTrafficData()" class="text-sm border border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl px-3 py-1 dark:bg-slate-700 dark:text-white">
                     <option value="1">1 Hour</option>
                     <option value="24" selected>24 Hours</option>
                     <option value="168">7 Days</option>
@@ -189,10 +189,10 @@
         </div>
 
         <!-- System Performance Chart -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">🖥️ System Performance (24h)</h3>
-                <select x-model="perfPeriod" @change="loadPerformanceData()" class="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1 dark:bg-slate-700 dark:text-white">
+                <select x-model="perfPeriod" @change="loadPerformanceData()" class="text-sm border border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl px-3 py-1 dark:bg-slate-700 dark:text-white">
                     <option value="1">1 Hour</option>
                     <option value="24" selected>24 Hours</option>
                     <option value="168">7 Days</option>
@@ -204,7 +204,7 @@
         </div>
 
         <!-- Response Time Chart -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">⏱️ Response Time Distribution</h3>
             </div>
@@ -214,7 +214,7 @@
         </div>
 
         <!-- HTTP Status Codes Chart -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">📊 HTTP Status Codes (24h)</h3>
             </div>
@@ -224,7 +224,7 @@
         </div>
 
         <!-- Database Performance -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">🗄️ Database Connections (24h)</h3>
             </div>
@@ -234,7 +234,7 @@
         </div>
 
         <!-- Cache Performance -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">📦 Cache Performance (24h)</h3>
             </div>
@@ -245,44 +245,44 @@
     </div>
 
     <!-- System Capacity Report -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">🎯 ความสามารถในการรองรับผู้ใช้งาน</h3>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-5 border border-blue-200 dark:border-slate-500">
-                <div class="text-sm text-gray-600 dark:text-gray-300 mb-2">การใช้งานปัจจุบัน</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-300 mb-2">การใช้งานปัจจุบัน</div>
                 <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
                     {{ $summary['current']->active_users ?? 0 }} users
                 </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">
+                <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
                     {{ number_format(($summary['current']->active_users ?? 0) / 2000 * 100, 1) }}% ของความจุที่แนะนำ
                 </div>
             </div>
 
             <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-5 border border-green-200 dark:border-slate-500">
-                <div class="text-sm text-gray-600 dark:text-gray-300 mb-2">ความจุที่แนะนำ</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-300 mb-2">ความจุที่แนะนำ</div>
                 <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-1">
                     1,000 - 2,000
                 </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">
+                <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
                     Concurrent users (การตั้งค่าปัจจุบัน)
                 </div>
             </div>
 
             <div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-5 border border-purple-200 dark:border-slate-500">
-                <div class="text-sm text-gray-600 dark:text-gray-300 mb-2">ความจุสูงสุด (หลังปรับปรุง)</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-300 mb-2">ความจุสูงสุด (หลังปรับปรุง)</div>
                 <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-1">
                     5,000 - 10,000
                 </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">
+                <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
                     With Redis + Octane/Swoole
                 </div>
             </div>
         </div>
 
-        <div class="bg-gray-50 dark:bg-slate-700 rounded-xl p-5">
+        <div class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl p-5">
             <h4 class="font-semibold text-gray-900 dark:text-white mb-3">📋 คำแนะนำในการปรับปรุง</h4>
-            <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+            <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-300">
                 <li class="flex items-start">
                     <span class="text-green-500 mr-2">✓</span>
                     <span><strong>Phase 1 (Quick Wins):</strong> เปิดใช้ Redis, เพิ่ม Database Indexes → +50% capacity</span>

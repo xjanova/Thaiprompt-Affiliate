@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ตั้งค่า RGB Animation')
 
@@ -31,7 +31,7 @@
         <div class="relative flex items-center justify-between">
             <div>
                 <div class="flex items-center gap-3 mb-2">
-                    <div class="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl">
+                    <div class="w-14 h-14 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center text-3xl" border border-white/20 dark:border-white/10>
                         🌈
                     </div>
                     <div>
@@ -40,14 +40,14 @@
                     </div>
                 </div>
             </div>
-            <a href="{{ route('admin.windows-ui.index') }}" class="px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-xl transition-all">
+            <a href="{{ route('admin.windows-ui.index') }}" class="px-6 py-3 glass-fusion hover:glass-fusion backdrop-blur-sm text-white rounded-xl transition-all">
                 ← กลับ
             </a>
         </div>
     </div>
 
     @if (session('success'))
-        <div class="mb-6 p-4 bg-green-100 dark:bg-green-900/30 border-l-4 border-green-500 text-green-700 dark:text-green-300 rounded-lg">
+        <div class="mb-6 p-4 bg-green-100 dark:bg-green-900/30 border-l-4 border-green-500 text-green-700 dark:text-green-300 rounded-xl">
             {{ session('success') }}
         </div>
     @endif
@@ -60,73 +60,73 @@
             <!-- Left: RGB Settings -->
             <div class="lg:col-span-2 space-y-6">
                 <!-- General RGB Animation -->
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                     <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                         <span>🌈</span> General RGB Animation
                     </h2>
 
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-xl">
+                        <div class="flex items-center justify-between p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl">
                             <div>
                                 <h3 class="font-semibold text-gray-900 dark:text-white">เปิดใช้ RGB Animation</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">แสดง RGB Effects บนอินเตอร์เฟซทั่วไป</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">แสดง RGB Effects บนอินเตอร์เฟซทั่วไป</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="windows_rgb_enabled" value="1" x-model="settings.windows_rgb_enabled" class="sr-only peer">
-                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:glass-fusion after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600" border border-white/20 dark:border-white/10></div>
                             </label>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความเร็ว Animation (วินาที)</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">ความเร็ว Animation (วินาที)</label>
                             <div class="flex items-center gap-4">
-                                <input type="range" name="windows_rgb_speed" min="1" max="10" x-model="settings.windows_rgb_speed" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                                <input type="range" name="windows_rgb_speed" min="1" max="10" x-model="settings.windows_rgb_speed" class="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-xl appearance-none cursor-pointer dark:bg-gray-700">
                                 <span class="text-2xl font-bold text-purple-600 dark:text-purple-400 min-w-[3rem] text-center" x-text="settings.windows_rgb_speed"></span>
                             </div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ช้า ←→ เร็ว</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">ช้า ←→ เร็ว</p>
                         </div>
 
-                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-xl">
+                        <div class="flex items-center justify-between p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl">
                             <div>
                                 <h3 class="font-semibold text-gray-900 dark:text-white">Glow Effect</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">เพิ่มแสงเรืองรอบ RGB</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">เพิ่มแสงเรืองรอบ RGB</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="windows_rgb_glow" value="1" x-model="settings.windows_rgb_glow" class="sr-only peer">
-                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:glass-fusion after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600" border border-white/20 dark:border-white/10></div>
                             </label>
                         </div>
                     </div>
                 </div>
 
                 <!-- Millennium RGB Border -->
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                     <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                         <span>✨</span> Millennium RGB Border
                     </h2>
 
-                    <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
                         <p class="text-sm text-blue-700 dark:text-blue-300">
                             <strong>💡 Note:</strong> Millennium RGB Border คือแถบสีสันที่วิ่งตามขอบ Taskbar ซึ่งแตกต่างจาก RGB Animation ทั่วไปของระบบ
                         </p>
                     </div>
 
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-xl">
+                        <div class="flex items-center justify-between p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl">
                             <div>
                                 <h3 class="font-semibold text-gray-900 dark:text-white">เปิดใช้ Millennium RGB Border</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">แถบสีวิ่งตาม Taskbar</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">แถบสีวิ่งตาม Taskbar</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="millennium_rgb_enabled" value="1" x-model="settings.millennium_rgb_enabled" class="sr-only peer">
-                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:glass-fusion after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600" border border-white/20 dark:border-white/10></div>
                             </label>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความเร็ว Border (วินาที)</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">ความเร็ว Border (วินาที)</label>
                             <div class="flex items-center gap-4">
-                                <input type="range" name="millennium_rgb_speed" min="1" max="10" x-model="settings.millennium_rgb_speed" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                                <input type="range" name="millennium_rgb_speed" min="1" max="10" x-model="settings.millennium_rgb_speed" class="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-xl appearance-none cursor-pointer dark:bg-gray-700">
                                 <span class="text-2xl font-bold text-purple-600 dark:text-purple-400 min-w-[3rem] text-center" x-text="settings.millennium_rgb_speed"></span>
                             </div>
                         </div>
@@ -134,7 +134,7 @@
                 </div>
 
                 <!-- Color Palette -->
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                     <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                         <span>🎨</span> Color Palette
                     </h2>
@@ -142,9 +142,9 @@
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <template x-for="(color, index) in colors" :key="index">
                             <div class="relative">
-                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2" x-text="'Color ' + (index + 1)"></label>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2" x-text="'Color ' + (index + 1)"></label>
                                 <div class="relative">
-                                    <input type="color" x-model="colors[index]" class="w-full h-16 rounded-lg cursor-pointer border-2 border-gray-300 dark:border-slate-600">
+                                    <input type="color" x-model="colors[index]" class="w-full h-16 rounded-xl cursor-pointer border-2 border-gray-300 dark:border-gray-600 dark:border-slate-600">
                                     <button type="button" @click="removeColor(index)" x-show="colors.length > 1" class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs flex items-center justify-center">
                                         ×
                                     </button>
@@ -153,7 +153,7 @@
                         </template>
                     </div>
 
-                    <button type="button" @click="addColor()" class="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all">
+                    <button type="button" @click="addColor()" class="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all">
                         <i class="fas fa-plus mr-2"></i>เพิ่มสี
                     </button>
 
@@ -164,46 +164,46 @@
 
                     <!-- Preset Palettes -->
                     <div class="mt-6">
-                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Presets</h3>
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-3">Presets</h3>
                         <div class="grid grid-cols-2 gap-3">
-                            <button type="button" @click="applyPreset('neon')" class="px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg text-sm transition-all">
+                            <button type="button" @click="applyPreset('neon')" class="px-4 py-2 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-slate-600 rounded-xl text-sm transition-all">
                                 <div class="flex items-center gap-2">
                                     <div class="flex gap-1">
                                         <div class="w-4 h-4 rounded-full" style="background: #FF0080"></div>
                                         <div class="w-4 h-4 rounded-full" style="background: #00F0FF"></div>
                                         <div class="w-4 h-4 rounded-full" style="background: #7F00FF"></div>
                                     </div>
-                                    <span class="text-gray-700 dark:text-gray-300">Neon</span>
+                                    <span class="text-gray-700 dark:text-gray-300 dark:text-gray-300">Neon</span>
                                 </div>
                             </button>
-                            <button type="button" @click="applyPreset('rainbow')" class="px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg text-sm transition-all">
+                            <button type="button" @click="applyPreset('rainbow')" class="px-4 py-2 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-slate-600 rounded-xl text-sm transition-all">
                                 <div class="flex items-center gap-2">
                                     <div class="flex gap-1">
                                         <div class="w-4 h-4 rounded-full" style="background: #FF0000"></div>
                                         <div class="w-4 h-4 rounded-full" style="background: #00FF00"></div>
                                         <div class="w-4 h-4 rounded-full" style="background: #0000FF"></div>
                                     </div>
-                                    <span class="text-gray-700 dark:text-gray-300">Rainbow</span>
+                                    <span class="text-gray-700 dark:text-gray-300 dark:text-gray-300">Rainbow</span>
                                 </div>
                             </button>
-                            <button type="button" @click="applyPreset('sunset')" class="px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg text-sm transition-all">
+                            <button type="button" @click="applyPreset('sunset')" class="px-4 py-2 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-slate-600 rounded-xl text-sm transition-all">
                                 <div class="flex items-center gap-2">
                                     <div class="flex gap-1">
                                         <div class="w-4 h-4 rounded-full" style="background: #FF6B35"></div>
                                         <div class="w-4 h-4 rounded-full" style="background: #F7931E"></div>
                                         <div class="w-4 h-4 rounded-full" style="background: #FDC830"></div>
                                     </div>
-                                    <span class="text-gray-700 dark:text-gray-300">Sunset</span>
+                                    <span class="text-gray-700 dark:text-gray-300 dark:text-gray-300">Sunset</span>
                                 </div>
                             </button>
-                            <button type="button" @click="applyPreset('ocean')" class="px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg text-sm transition-all">
+                            <button type="button" @click="applyPreset('ocean')" class="px-4 py-2 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-slate-600 rounded-xl text-sm transition-all">
                                 <div class="flex items-center gap-2">
                                     <div class="flex gap-1">
                                         <div class="w-4 h-4 rounded-full" style="background: #00B4DB"></div>
                                         <div class="w-4 h-4 rounded-full" style="background: #0083B0"></div>
                                         <div class="w-4 h-4 rounded-full" style="background: #005C97"></div>
                                     </div>
-                                    <span class="text-gray-700 dark:text-gray-300">Ocean</span>
+                                    <span class="text-gray-700 dark:text-gray-300 dark:text-gray-300">Ocean</span>
                                 </div>
                             </button>
                         </div>
@@ -214,41 +214,41 @@
             <!-- Right: Preview & Tips -->
             <div class="space-y-6">
                 <!-- Live Preview -->
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <span>👁️</span> Live Preview
                     </h3>
 
                     <!-- RGB Animation Preview -->
                     <div class="mb-4">
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">General RGB:</p>
-                        <div class="h-32 rounded-xl relative overflow-hidden" :class="settings.windows_rgb_enabled ? 'rgb-preview' : 'bg-gray-200 dark:bg-gray-700'" :style="'animation-duration: ' + settings.windows_rgb_speed + 's'" :class="{'glow-effect': settings.windows_rgb_glow && settings.windows_rgb_enabled}">
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-2">General RGB:</p>
+                        <div class="h-32 rounded-xl relative overflow-hidden" :class="settings.windows_rgb_enabled ? 'rgb-preview' : 'bg-gray-200 dark:bg-gray-700 dark:bg-gray-700'" :style="'animation-duration: ' + settings.windows_rgb_speed + 's'" :class="{'glow-effect': settings.windows_rgb_glow && settings.windows_rgb_enabled}">
                             <div class="absolute inset-0 flex items-center justify-center">
                                 <span class="text-white font-bold text-xl" x-show="settings.windows_rgb_enabled">🌈 RGB Active</span>
-                                <span class="text-gray-500 dark:text-gray-400" x-show="!settings.windows_rgb_enabled">Disabled</span>
+                                <span class="text-gray-500 dark:text-gray-400 dark:text-gray-400" x-show="!settings.windows_rgb_enabled">Disabled</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Millennium Border Preview -->
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Millennium Border:</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-2">Millennium Border:</p>
                         <div class="h-16 rounded-xl bg-gradient-to-r from-gray-800 to-gray-900 relative overflow-hidden">
                             <div x-show="settings.millennium_rgb_enabled" class="absolute inset-0 p-1 rounded-xl" :style="'animation: rgb-gradient ' + settings.millennium_rgb_speed + 's ease infinite; background: linear-gradient(90deg, ' + colors.join(', ') + '); background-size: 200% 200%;'">
-                                <div class="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
+                                <div class="w-full h-full bg-gray-800 rounded-xl flex items-center justify-center">
                                     <span class="text-white text-sm">Taskbar</span>
                                 </div>
                             </div>
                             <div x-show="!settings.millennium_rgb_enabled" class="absolute inset-0 flex items-center justify-center">
-                                <span class="text-gray-500 text-sm">Border Disabled</span>
+                                <span class="text-gray-500 dark:text-gray-400 text-sm">Border Disabled</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Color Gradient Preview -->
                     <div class="mt-4">
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Color Gradient:</p>
-                        <div class="h-12 rounded-lg" :style="'background: linear-gradient(90deg, ' + colors.join(', ') + ')'"></div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-2">Color Gradient:</p>
+                        <div class="h-12 rounded-xl" :style="'background: linear-gradient(90deg, ' + colors.join(', ') + ')'"></div>
                     </div>
                 </div>
 
@@ -258,11 +258,11 @@
                     <div class="space-y-3 text-sm">
                         <div class="flex justify-between items-center">
                             <span class="text-purple-700 dark:text-purple-300">RGB Animation:</span>
-                            <span class="font-semibold" :class="settings.windows_rgb_enabled ? 'text-green-600' : 'text-gray-500'" x-text="settings.windows_rgb_enabled ? 'ON' : 'OFF'"></span>
+                            <span class="font-semibold" :class="settings.windows_rgb_enabled ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'" x-text="settings.windows_rgb_enabled ? 'ON' : 'OFF'"></span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-purple-700 dark:text-purple-300">Millennium Border:</span>
-                            <span class="font-semibold" :class="settings.millennium_rgb_enabled ? 'text-green-600' : 'text-gray-500'" x-text="settings.millennium_rgb_enabled ? 'ON' : 'OFF'"></span>
+                            <span class="font-semibold" :class="settings.millennium_rgb_enabled ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'" x-text="settings.millennium_rgb_enabled ? 'ON' : 'OFF'"></span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-purple-700 dark:text-purple-300">Colors:</span>
@@ -270,7 +270,7 @@
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-purple-700 dark:text-purple-300">Glow Effect:</span>
-                            <span class="font-semibold" :class="settings.windows_rgb_glow ? 'text-green-600' : 'text-gray-500'" x-text="settings.windows_rgb_glow ? 'ON' : 'OFF'"></span>
+                            <span class="font-semibold" :class="settings.windows_rgb_glow ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'" x-text="settings.windows_rgb_glow ? 'ON' : 'OFF'"></span>
                         </div>
                     </div>
                 </div>

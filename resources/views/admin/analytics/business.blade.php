@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Business Analytics')
 
@@ -8,7 +8,7 @@
     <div class="bg-gradient-to-r from-pink-600 via-rose-600 to-red-600 rounded-xl shadow-2xl p-6 text-white">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <div class="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center backdrop-blur-sm" border border-white/20 dark:border-white/10>
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                     </svg>
@@ -19,12 +19,12 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <select id="daysFilter" class="px-4 py-2 bg-white text-pink-600 rounded-lg font-semibold">
+                <select id="daysFilter" class="px-4 py-2 glass-fusion text-pink-600 rounded-xl font-semibold">
                     <option value="7">Last 7 Days</option>
                     <option value="30" selected>Last 30 Days</option>
                     <option value="90">Last 90 Days</option>
                 </select>
-                <a href="{{ route('admin.dashboard') }}" class="px-4 py-2 bg-white text-pink-600 rounded-lg hover:bg-pink-50 transition font-semibold">
+                <a href="{{ route('admin.dashboard') }}" class="px-4 py-2 glass-fusion text-pink-600 rounded-xl hover:bg-pink-50 transition font-semibold">
                     Back
                 </a>
             </div>
@@ -32,80 +32,80 @@
     </div>
 
     <!-- Loading State -->
-    <div id="loadingState" class="bg-white rounded-lg shadow-lg p-8 text-center">
+    <div id="loadingState" class="glass-fusion rounded-xl shadow-lg p-8 text-center" border border-white/20 dark:border-white/10>
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
-        <p class="mt-4 text-gray-600">Loading business analytics...</p>
+        <p class="mt-4 text-gray-600 dark:text-gray-400">Loading business analytics...</p>
     </div>
 
     <!-- Content -->
     <div id="contentArea" class="hidden space-y-6">
         <!-- KPIs -->
         <div class="grid md:grid-cols-4 gap-4">
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-gray-600 text-sm">Total Revenue</span>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Total Revenue</span>
                     <span class="text-green-600 text-2xl">💰</span>
                 </div>
-                <div class="text-3xl font-bold text-gray-800" id="totalRevenue">-</div>
-                <div class="mt-2 text-xs text-gray-500" id="revenueTrend">-</div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white" id="totalRevenue">-</div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400" id="revenueTrend">-</div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-gray-600 text-sm">Total Users</span>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Total Users</span>
                     <span class="text-blue-600 text-2xl">👥</span>
                 </div>
-                <div class="text-3xl font-bold text-gray-800" id="totalUsers">-</div>
-                <div class="mt-2 text-xs text-gray-500" id="usersTrend">-</div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white" id="totalUsers">-</div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400" id="usersTrend">-</div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-gray-600 text-sm">Total Affiliates</span>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Total Affiliates</span>
                     <span class="text-purple-600 text-2xl">🤝</span>
                 </div>
-                <div class="text-3xl font-bold text-gray-800" id="totalAffiliates">-</div>
-                <div class="mt-2 text-xs text-gray-500" id="affiliatesTrend">-</div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white" id="totalAffiliates">-</div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400" id="affiliatesTrend">-</div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-gray-600 text-sm">Transactions</span>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Transactions</span>
                     <span class="text-orange-600 text-2xl">💳</span>
                 </div>
-                <div class="text-3xl font-bold text-gray-800" id="totalTransactions">-</div>
-                <div class="mt-2 text-xs text-gray-500" id="transactionsTrend">-</div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white" id="totalTransactions">-</div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400" id="transactionsTrend">-</div>
             </div>
         </div>
 
         <!-- Charts -->
         <div class="grid md:grid-cols-2 gap-6">
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Revenue Trend</h3>
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Revenue Trend</h3>
                 <canvas id="revenueChart" height="250"></canvas>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">User Growth</h3>
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">User Growth</h3>
                 <canvas id="userGrowthChart" height="250"></canvas>
             </div>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6">
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Transactions Over Time</h3>
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Transactions Over Time</h3>
                 <canvas id="transactionsChart" height="250"></canvas>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Revenue by Category</h3>
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Revenue by Category</h3>
                 <canvas id="categoryChart" height="250"></canvas>
             </div>
         </div>
 
         <!-- Business Metrics -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Key Business Metrics</h3>
+        <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Key Business Metrics</h3>
             <div class="grid md:grid-cols-3 gap-4" id="businessMetrics">
                 <!-- Will be populated dynamically -->
             </div>
@@ -113,13 +113,13 @@
     </div>
 
     <!-- Error State -->
-    <div id="errorState" class="hidden bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+    <div id="errorState" class="hidden bg-red-50 border border-red-200 rounded-xl p-6 text-center">
         <svg class="w-12 h-12 text-red-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
         <h3 class="text-lg font-bold text-red-800 mb-2">Failed to Load Data</h3>
         <p class="text-red-600 mb-4">Unable to fetch business analytics.</p>
-        <button onclick="loadData()" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Retry</button>
+        <button onclick="loadData()" class="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700">Retry</button>
     </div>
 </div>
 
@@ -264,9 +264,9 @@ function updateMetrics(data) {
     const metrics = data.metrics || {};
 
     container.innerHTML = Object.entries(metrics).map(([key, value]) => `
-        <div class="bg-gray-50 rounded-lg p-4">
-            <div class="text-sm text-gray-600">${key.replace(/_/g, ' ').toUpperCase()}</div>
-            <div class="text-2xl font-bold text-gray-800 mt-1">${value}</div>
+        <div class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 rounded-xl p-4">
+            <div class="text-sm text-gray-600 dark:text-gray-400">${key.replace(/_/g, ' ').toUpperCase()}</div>
+            <div class="text-2xl font-bold text-gray-900 dark:text-white mt-1">${value}</div>
         </div>
     `).join('');
 }

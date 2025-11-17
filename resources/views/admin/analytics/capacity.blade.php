@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Capacity Analytics')
 
@@ -8,7 +8,7 @@
     <div class="bg-gradient-to-r from-cyan-600 via-sky-600 to-blue-600 rounded-xl shadow-2xl p-6 text-white">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <div class="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center backdrop-blur-sm" border border-white/20 dark:border-white/10>
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
                     </svg>
@@ -18,95 +18,95 @@
                     <p class="text-cyan-100 text-sm">Monitor resource utilization and capacity planning</p>
                 </div>
             </div>
-            <a href="{{ route('admin.dashboard') }}" class="px-4 py-2 bg-white text-cyan-600 rounded-lg hover:bg-cyan-50 transition font-semibold">
+            <a href="{{ route('admin.dashboard') }}" class="px-4 py-2 glass-fusion text-cyan-600 rounded-xl hover:bg-cyan-50 transition font-semibold">
                 Back
             </a>
         </div>
     </div>
 
     <!-- Loading State -->
-    <div id="loadingState" class="bg-white rounded-lg shadow-lg p-8 text-center">
+    <div id="loadingState" class="glass-fusion rounded-xl shadow-lg p-8 text-center" border border-white/20 dark:border-white/10>
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600"></div>
-        <p class="mt-4 text-gray-600">Loading capacity analytics...</p>
+        <p class="mt-4 text-gray-600 dark:text-gray-400">Loading capacity analytics...</p>
     </div>
 
     <!-- Content -->
     <div id="contentArea" class="hidden space-y-6">
         <!-- Resource Usage -->
         <div class="grid md:grid-cols-4 gap-4">
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-gray-600 text-sm">CPU Usage</span>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">CPU Usage</span>
                     <span class="text-purple-600 text-2xl">💻</span>
                 </div>
-                <div class="text-3xl font-bold text-gray-800"><span id="cpuUsage">-</span>%</div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white"><span id="cpuUsage">-</span>%</div>
                 <div class="mt-2">
-                    <div class="w-full bg-gray-200 rounded-full h-1.5">
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                         <div id="cpuBar" class="bg-purple-600 h-1.5 rounded-full transition-all" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-gray-600 text-sm">Memory Usage</span>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Memory Usage</span>
                     <span class="text-blue-600 text-2xl">💾</span>
                 </div>
-                <div class="text-3xl font-bold text-gray-800"><span id="memoryUsage">-</span>%</div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white"><span id="memoryUsage">-</span>%</div>
                 <div class="mt-2">
-                    <div class="w-full bg-gray-200 rounded-full h-1.5">
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                         <div id="memoryBar" class="bg-blue-600 h-1.5 rounded-full transition-all" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-gray-600 text-sm">Disk Usage</span>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Disk Usage</span>
                     <span class="text-orange-600 text-2xl">💿</span>
                 </div>
-                <div class="text-3xl font-bold text-gray-800"><span id="diskUsage">-</span>%</div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white"><span id="diskUsage">-</span>%</div>
                 <div class="mt-2">
-                    <div class="w-full bg-gray-200 rounded-full h-1.5">
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                         <div id="diskBar" class="bg-orange-600 h-1.5 rounded-full transition-all" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-gray-600 text-sm">Network Load</span>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Network Load</span>
                     <span class="text-green-600 text-2xl">🌐</span>
                 </div>
-                <div class="text-3xl font-bold text-gray-800" id="networkLoad">-</div>
-                <div class="mt-2 text-xs text-gray-500">Current throughput</div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white" id="networkLoad">-</div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">Current throughput</div>
             </div>
         </div>
 
         <!-- Charts -->
         <div class="grid md:grid-cols-2 gap-6">
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Resource Utilization Trend</h3>
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Resource Utilization Trend</h3>
                 <canvas id="resourceChart" height="250"></canvas>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Peak Load Times</h3>
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Peak Load Times</h3>
                 <canvas id="peakLoadChart" height="250"></canvas>
             </div>
         </div>
 
         <!-- Recommendations -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Capacity Recommendations</h3>
+        <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Capacity Recommendations</h3>
             <div id="recommendations" class="space-y-4">
                 <!-- Will be populated dynamically -->
             </div>
         </div>
 
         <!-- Current Capacity -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Current Capacity Status</h3>
+        <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Current Capacity Status</h3>
             <div class="grid md:grid-cols-3 gap-4" id="capacityStatus">
                 <!-- Will be populated dynamically -->
             </div>
@@ -114,13 +114,13 @@
     </div>
 
     <!-- Error State -->
-    <div id="errorState" class="hidden bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+    <div id="errorState" class="hidden bg-red-50 border border-red-200 rounded-xl p-6 text-center">
         <svg class="w-12 h-12 text-red-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
         <h3 class="text-lg font-bold text-red-800 mb-2">Failed to Load Data</h3>
         <p class="text-red-600 mb-4">Unable to fetch capacity analytics.</p>
-        <button onclick="loadData()" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Retry</button>
+        <button onclick="loadData()" class="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700">Retry</button>
     </div>
 </div>
 
@@ -235,14 +235,14 @@ function updateCharts(data) {
 function updateRecommendations(recommendations) {
     const container = document.getElementById('recommendations');
     if (recommendations.length === 0) {
-        container.innerHTML = '<div class="p-4 bg-green-50 border border-green-200 rounded-lg"><p class="text-green-700">All systems operating within optimal capacity. No recommendations at this time.</p></div>';
+        container.innerHTML = '<div class="p-4 bg-green-50 border border-green-200 rounded-xl"><p class="text-green-700">All systems operating within optimal capacity. No recommendations at this time.</p></div>';
         return;
     }
 
     container.innerHTML = recommendations.map(rec => {
         const colorClass = rec.priority === 'high' ? 'red' : rec.priority === 'medium' ? 'yellow' : 'blue';
         return `
-            <div class="p-4 bg-${colorClass}-50 border border-${colorClass}-200 rounded-lg">
+            <div class="p-4 bg-${colorClass}-50 border border-${colorClass}-200 rounded-xl">
                 <div class="flex items-start">
                     <span class="text-2xl mr-3">${rec.icon || '⚠️'}</span>
                     <div>
@@ -258,9 +258,9 @@ function updateRecommendations(recommendations) {
 function updateCapacityStatus(status) {
     const container = document.getElementById('capacityStatus');
     container.innerHTML = Object.entries(status).map(([key, value]) => `
-        <div class="bg-gray-50 rounded-lg p-4">
-            <div class="text-sm text-gray-600">${key.replace(/_/g, ' ').toUpperCase()}</div>
-            <div class="text-2xl font-bold text-gray-800 mt-1">${value}</div>
+        <div class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 rounded-xl p-4">
+            <div class="text-sm text-gray-600 dark:text-gray-400">${key.replace(/_/g, ' ').toUpperCase()}</div>
+            <div class="text-2xl font-bold text-gray-900 dark:text-white mt-1">${value}</div>
         </div>
     `).join('');
 }

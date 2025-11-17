@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Historical Analytics')
 
@@ -8,7 +8,7 @@
     <div class="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-xl shadow-2xl p-6 text-white">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <div class="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center backdrop-blur-sm" border border-white/20 dark:border-white/10>
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                     </svg>
@@ -19,12 +19,12 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <select id="periodFilter" class="px-4 py-2 bg-white text-purple-600 rounded-lg font-semibold">
+                <select id="periodFilter" class="px-4 py-2 glass-fusion text-purple-600 rounded-xl font-semibold">
                     <option value="24h">Last 24 Hours</option>
                     <option value="7d" selected>Last 7 Days</option>
                     <option value="30d">Last 30 Days</option>
                 </select>
-                <a href="{{ route('admin.dashboard') }}" class="px-4 py-2 bg-white text-purple-600 rounded-lg hover:bg-purple-50 transition font-semibold">
+                <a href="{{ route('admin.dashboard') }}" class="px-4 py-2 glass-fusion text-purple-600 rounded-xl hover:bg-purple-50 transition font-semibold">
                     Back
                 </a>
             </div>
@@ -32,87 +32,87 @@
     </div>
 
     <!-- Loading State -->
-    <div id="loadingState" class="bg-white rounded-lg shadow-lg p-8 text-center">
+    <div id="loadingState" class="glass-fusion rounded-xl shadow-lg p-8 text-center" border border-white/20 dark:border-white/10>
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-        <p class="mt-4 text-gray-600">Loading historical data...</p>
+        <p class="mt-4 text-gray-600 dark:text-gray-400">Loading historical data...</p>
     </div>
 
     <!-- Content (Hidden Initially) -->
     <div id="contentArea" class="hidden space-y-6">
         <!-- Summary Stats -->
         <div class="grid md:grid-cols-4 gap-4">
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-gray-600 text-sm">Total Requests</span>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Total Requests</span>
                     <span class="text-blue-600 text-2xl">📊</span>
                 </div>
-                <div class="text-3xl font-bold text-gray-800" id="totalRequests">-</div>
-                <div class="mt-2 text-xs text-gray-500" id="requestChange">-</div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white" id="totalRequests">-</div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400" id="requestChange">-</div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-gray-600 text-sm">Avg Response Time</span>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Avg Response Time</span>
                     <span class="text-green-600 text-2xl">⚡</span>
                 </div>
-                <div class="text-3xl font-bold text-gray-800"><span id="avgResponseTime">-</span>ms</div>
-                <div class="mt-2 text-xs text-gray-500" id="responseChange">-</div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white"><span id="avgResponseTime">-</span>ms</div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400" id="responseChange">-</div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-gray-600 text-sm">Error Rate</span>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Error Rate</span>
                     <span class="text-red-600 text-2xl">⚠️</span>
                 </div>
-                <div class="text-3xl font-bold text-gray-800"><span id="errorRate">-</span>%</div>
-                <div class="mt-2 text-xs text-gray-500" id="errorChange">-</div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white"><span id="errorRate">-</span>%</div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400" id="errorChange">-</div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-gray-600 text-sm">Active Users</span>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Active Users</span>
                     <span class="text-purple-600 text-2xl">👥</span>
                 </div>
-                <div class="text-3xl font-bold text-gray-800" id="activeUsers">-</div>
-                <div class="mt-2 text-xs text-gray-500" id="userChange">-</div>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white" id="activeUsers">-</div>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400" id="userChange">-</div>
             </div>
         </div>
 
         <!-- Charts Row 1 -->
         <div class="grid md:grid-cols-2 gap-6">
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Request Volume Over Time</h3>
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Request Volume Over Time</h3>
                 <canvas id="requestChart" height="250"></canvas>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Response Time Trend</h3>
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Response Time Trend</h3>
                 <canvas id="responseTimeChart" height="250"></canvas>
             </div>
         </div>
 
         <!-- Charts Row 2 -->
         <div class="grid md:grid-cols-2 gap-6">
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">HTTP Status Distribution</h3>
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">HTTP Status Distribution</h3>
                 <canvas id="statusChart" height="250"></canvas>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">User Activity Trend</h3>
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">User Activity Trend</h3>
                 <canvas id="userChart" height="250"></canvas>
             </div>
         </div>
     </div>
 
     <!-- Error State -->
-    <div id="errorState" class="hidden bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+    <div id="errorState" class="hidden bg-red-50 border border-red-200 rounded-xl p-6 text-center">
         <svg class="w-12 h-12 text-red-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
         <h3 class="text-lg font-bold text-red-800 mb-2">Failed to Load Data</h3>
         <p class="text-red-600 mb-4">Unable to fetch historical analytics data.</p>
-        <button onclick="loadData()" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+        <button onclick="loadData()" class="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700">
             Retry
         </button>
     </div>
