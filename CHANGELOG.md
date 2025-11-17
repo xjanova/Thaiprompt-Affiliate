@@ -2,6 +2,20 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.51.0] - 2025-11-17
+
+### ✨ Features
+- feat: add Trading Bot, Bot Automation, and LINE OA menus to sidebar-v3 (3851c028)
+- feat: migrate LINE OA & LINE Analytics pages (4 pages - complete LINE & BOT section) (b8280fd0)
+- feat: migrate Bot Automation pages (31 pages - platforms, templates, sales, support, analytics, marketplace) (c3cfceee)
+- feat: migrate Trading Bot pages (11 pages - dashboard, analytics, subscriptions, packages, bots) (b70431cd)
+- feat: migrate LINE Bot AI pages Batch 2 (11 pages - ai, avatar, chat-widget) (ab417ac9)
+- feat: add LINE Bot menu and migrate LINE Bot pages Batch 1 (12 pages) (f72513f7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1284 from xjanova/claude/dashboard-color-theme-01WrWZDEhywL1zQkJKkpjgDo (a25c62a2)
+
 ## [v3.50.0] - 2025-11-17
 
 ### ✨ Features
