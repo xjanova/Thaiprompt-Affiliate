@@ -232,6 +232,12 @@ class MlmGlobalSettingController extends Controller
             'auto_placement' => 'required|boolean',
             'binary_enabled' => 'required|boolean',
             'unilevel_enabled' => 'required|boolean',
+            'binary_match_commission' => 'nullable|numeric|min:0|max:100',
+            'unilevel_levels' => 'nullable|integer|min:1|max:10',
+            'unilevel_percentages' => 'nullable|string',
+            'direct_referral_commission' => 'nullable|numeric|min:0|max:100',
+            'min_pv_for_commission' => 'nullable|numeric|min:0',
+            'matching_bonus' => 'nullable|numeric|min:0|max:100',
         ]);
 
         // อัพเดทการตั้งค่าแต่ละค่า
@@ -240,15 +246,30 @@ class MlmGlobalSettingController extends Controller
         MlmGlobalSetting::set('binary_enabled', $validated['binary_enabled']);
         MlmGlobalSetting::set('unilevel_enabled', $validated['unilevel_enabled']);
 
+        // อัพเดทค่าคอมมิชชั่นเพิ่มเติม
+        if (isset($validated['binary_match_commission'])) {
+            MlmGlobalSetting::set('binary_match_commission', $validated['binary_match_commission']);
+        }
+        if (isset($validated['unilevel_levels'])) {
+            MlmGlobalSetting::set('unilevel_levels', $validated['unilevel_levels']);
+        }
+        if (isset($validated['unilevel_percentages'])) {
+            MlmGlobalSetting::set('unilevel_percentages', $validated['unilevel_percentages']);
+        }
+        if (isset($validated['direct_referral_commission'])) {
+            MlmGlobalSetting::set('direct_referral_commission', $validated['direct_referral_commission']);
+        }
+        if (isset($validated['min_pv_for_commission'])) {
+            MlmGlobalSetting::set('min_pv_for_commission', $validated['min_pv_for_commission']);
+        }
+        if (isset($validated['matching_bonus'])) {
+            MlmGlobalSetting::set('matching_bonus', $validated['matching_bonus']);
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'MLM placement settings updated successfully',
-            'settings' => [
-                'auto_placement_type' => $validated['auto_placement_type'],
-                'auto_placement' => $validated['auto_placement'],
-                'binary_enabled' => $validated['binary_enabled'],
-                'unilevel_enabled' => $validated['unilevel_enabled'],
-            ],
+            'message' => 'MLM settings updated successfully',
+            'settings' => $validated,
         ]);
     }
 }
