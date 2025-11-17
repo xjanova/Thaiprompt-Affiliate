@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'TPIX Network Status')
 
@@ -6,8 +6,8 @@
 <div class="space-y-6">
     {{-- Header --}}
     <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white opacity-10 rounded-full"></div>
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
+        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
         <div class="relative z-10">
             <div class="flex items-center justify-between">
                 <div>
@@ -25,7 +25,7 @@
                             <span class="text-2xl font-bold">Online</span>
                         </div>
                     </div>
-                    <a href="{{ route('admin.tpix.dashboard') }}" class="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg text-sm font-semibold transition">
+                    <a href="{{ route('admin.tpix.dashboard') }}" class="px-4 py-2 glass-fusion bg-opacity-20 hover:bg-opacity-30 rounded-xl text-sm font-semibold transition">
                         ← Dashboard
                     </a>
                 </div>
@@ -36,52 +36,52 @@
     {{-- Network Information --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {{-- Network Name --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-2xl">
+                <div class="w-12 h-12 rounded-full style="background: var(--arrow-x-primary-gradient)" flex items-center justify-center text-white text-2xl">
                     🏷️
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">Network Name</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Network Name</div>
                     <div class="text-lg font-bold text-gray-900 dark:text-white">{{ $status['network_name'] }}</div>
                 </div>
             </div>
         </div>
 
         {{-- Chain ID --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-2xl">
+                <div class="w-12 h-12 rounded-full style="background: var(--arrow-x-accent-gradient)" flex items-center justify-center text-white text-2xl">
                     🔗
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">Chain ID</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Chain ID</div>
                     <div class="text-lg font-bold text-gray-900 dark:text-white">{{ $status['chain_id'] }}</div>
                 </div>
             </div>
         </div>
 
         {{-- Current Block --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-2xl">
+                <div class="w-12 h-12 rounded-full style="background: var(--arrow-x-success-gradient)" flex items-center justify-center text-white text-2xl">
                     📦
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">Current Block</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Current Block</div>
                     <div class="text-lg font-bold text-gray-900 dark:text-white">{{ number_format((float)$status['block_number']) }}</div>
                 </div>
             </div>
         </div>
 
         {{-- Block Time --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white text-2xl">
+                <div class="w-12 h-12 rounded-full style="background: var(--arrow-x-warning-gradient)" flex items-center justify-center text-white text-2xl">
                     ⏱️
                 </div>
                 <div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">Block Time</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Block Time</div>
                     <div class="text-lg font-bold text-gray-900 dark:text-white">{{ $status['block_time'] }} วินาที</div>
                 </div>
             </div>
@@ -94,7 +94,7 @@
         <div class="bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 rounded-2xl shadow-xl p-6 text-white">
             <div class="flex items-center justify-between mb-4">
                 <div class="text-5xl">⛽</div>
-                <span class="px-3 py-1 bg-white bg-opacity-20 rounded-lg text-xs font-semibold">
+                <span class="px-3 py-1 glass-fusion bg-opacity-20 rounded-xl text-xs font-semibold">
                     Real-time
                 </span>
             </div>
@@ -117,7 +117,7 @@
         <div class="bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl shadow-xl p-6 text-white">
             <div class="flex items-center justify-between mb-4">
                 <div class="text-5xl">❤️</div>
-                <span class="px-3 py-1 bg-white bg-opacity-20 rounded-lg text-xs font-semibold">
+                <span class="px-3 py-1 glass-fusion bg-opacity-20 rounded-xl text-xs font-semibold">
                     100%
                 </span>
             </div>
@@ -128,7 +128,7 @@
     </div>
 
     {{-- Connection Information --}}
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
             <span>🔌</span>
             <span>ข้อมูลการเชื่อมต่อ</span>
@@ -136,39 +136,39 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             {{-- RPC URL --}}
-            <div class="bg-gray-50 dark:bg-slate-700 rounded-xl p-5">
+            <div class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl p-5">
                 <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xl">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xl">
                         🌍
                     </div>
                     <div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">RPC Endpoint</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">RPC Endpoint</div>
                         <div class="text-sm font-semibold text-gray-900 dark:text-white">Remote Procedure Call</div>
                     </div>
                 </div>
-                <div class="bg-white dark:bg-slate-800 rounded-lg p-3 border border-gray-200 dark:border-slate-600">
-                    <code class="text-sm text-gray-800 dark:text-gray-200 break-all">{{ $status['rpc_url'] }}</code>
+                <div class="glass-fusion dark:bg-slate-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700 dark:border-slate-600" border border-white/20 dark:border-white/10>
+                    <code class="text-sm text-gray-900 dark:text-white dark:text-gray-200 break-all">{{ $status['rpc_url'] }}</code>
                 </div>
-                <button onclick="copyToClipboard('{{ $status['rpc_url'] }}')" class="mt-3 w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition">
+                <button onclick="copyToClipboard('{{ $status['rpc_url'] }}')" class="mt-3 w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition">
                     📋 Copy RPC URL
                 </button>
             </div>
 
             {{-- Explorer URL --}}
-            <div class="bg-gray-50 dark:bg-slate-700 rounded-xl p-5">
+            <div class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl p-5">
                 <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white text-xl">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white text-xl">
                         🔍
                     </div>
                     <div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">Block Explorer</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Block Explorer</div>
                         <div class="text-sm font-semibold text-gray-900 dark:text-white">Blockchain Explorer</div>
                     </div>
                 </div>
-                <div class="bg-white dark:bg-slate-800 rounded-lg p-3 border border-gray-200 dark:border-slate-600">
-                    <code class="text-sm text-gray-800 dark:text-gray-200 break-all">{{ $status['explorer_url'] }}</code>
+                <div class="glass-fusion dark:bg-slate-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700 dark:border-slate-600" border border-white/20 dark:border-white/10>
+                    <code class="text-sm text-gray-900 dark:text-white dark:text-gray-200 break-all">{{ $status['explorer_url'] }}</code>
                 </div>
-                <a href="{{ $status['explorer_url'] }}" target="_blank" class="mt-3 block w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg transition text-center">
+                <a href="{{ $status['explorer_url'] }}" target="_blank" class="mt-3 block w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition text-center">
                     🚀 เปิด Explorer
                 </a>
             </div>
@@ -176,7 +176,7 @@
     </div>
 
     {{-- Network Features --}}
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
             <span>⚙️</span>
             <span>คุณสมบัติเครือข่าย</span>
@@ -223,12 +223,12 @@
             <span>🧪</span>
             <span>ทดสอบการเชื่อมต่อ</span>
         </h2>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-4">
             ทดสอบการเชื่อมต่อกับ TPIX Blockchain เพื่อตรวจสอบสถานะการทำงาน
         </p>
         <button
             onclick="testConnection()"
-            class="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition duration-300"
+            class="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition duration-300"
         >
             <span class="flex items-center gap-2">
                 <span>🔄</span>
@@ -263,7 +263,7 @@ async function testConnection() {
         const data = await response.json();
 
         if (data.success) {
-            resultDiv.className = 'mt-4 p-4 bg-green-100 dark:bg-green-900 dark:bg-opacity-30 border border-green-500 rounded-lg';
+            resultDiv.className = 'mt-4 p-4 bg-green-100 dark:bg-green-900 dark:bg-opacity-30 border border-green-500 rounded-xl';
             resultDiv.innerHTML = `
                 <div class="flex items-center gap-3">
                     <div class="text-3xl">✅</div>
@@ -277,7 +277,7 @@ async function testConnection() {
             throw new Error(data.message);
         }
     } catch (error) {
-        resultDiv.className = 'mt-4 p-4 bg-red-100 dark:bg-red-900 dark:bg-opacity-30 border border-red-500 rounded-lg';
+        resultDiv.className = 'mt-4 p-4 bg-red-100 dark:bg-red-900 dark:bg-opacity-30 border border-red-500 rounded-xl';
         resultDiv.innerHTML = `
             <div class="flex items-center gap-3">
                 <div class="text-3xl">❌</div>
