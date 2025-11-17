@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการเทมเพลตการแจ้งเตือน')
 
@@ -8,16 +8,16 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">📋 จัดการเทมเพลตการแจ้งเตือน</h1>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">สร้างและจัดการเทมเพลตสำหรับการแจ้งเตือน</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">สร้างและจัดการเทมเพลตสำหรับการแจ้งเตือน</p>
         </div>
         <a href="{{ route('admin.notification-templates.create') }}"
-           class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all">
+           class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all">
             + สร้างเทมเพลตใหม่
         </a>
     </div>
 
     @if(session('success'))
-        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 text-green-800 dark:text-green-300 rounded-lg p-4">
+        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 text-green-800 dark:text-green-300 rounded-xl p-4">
             {{ session('success') }}
         </div>
     @endif
@@ -25,7 +25,7 @@
     <!-- Templates Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($templates as $template)
-            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md hover:shadow-lg transition-all overflow-hidden border-2 {{ $template->is_active ? 'border-transparent dark:border-transparent' : 'border-gray-300 dark:border-slate-600' }}">
+            <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-md hover:shadow-lg transition-all overflow-hidden border-2 {{ $template->is_active ? 'border-transparent dark:border-transparent' : 'border-gray-300 dark:border-gray-600 dark:border-slate-600' }}" border border-white/20 dark:border-white/10>
                 <!-- Header -->
                 <div class="p-4 {{ $template->is_active ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'bg-gray-400 dark:bg-slate-700' }} text-white">
                     <div class="flex items-start justify-between">
@@ -38,7 +38,7 @@
                         </div>
                         <div class="flex flex-col items-end gap-1">
                             @if(!$template->is_active)
-                                <span class="px-2 py-1 bg-white/20 rounded text-xs">ปิดใช้งาน</span>
+                                <span class="px-2 py-1 glass-fusion rounded text-xs">ปิดใช้งาน</span>
                             @endif
                             <span class="text-xs opacity-75">ใช้งาน {{ $template->usage_count }} ครั้ง</span>
                         </div>
@@ -48,10 +48,10 @@
                 <!-- Content -->
                 <div class="p-4">
                     <h4 class="font-semibold text-gray-900 dark:text-white mb-2">{{ $template->title }}</h4>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{{ $template->message }}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-3 line-clamp-2">{{ $template->message }}</p>
 
                     @if($template->description)
-                        <p class="text-xs text-gray-500 dark:text-gray-500 italic mb-3">{{ $template->description }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 italic mb-3">{{ $template->description }}</p>
                     @endif
 
                     <div class="flex flex-wrap gap-2 mb-4">
@@ -67,16 +67,16 @@
                     </div>
 
                     <!-- Actions -->
-                    <div class="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-slate-700">
+                    <div class="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700 dark:border-slate-700">
                         <a href="{{ route('admin.notification-templates.edit', $template->id) }}"
-                           class="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-center text-sm">
+                           class="flex-1 px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition text-center text-sm">
                             แก้ไข
                         </a>
 
                         <form action="{{ route('admin.notification-templates.toggle', $template->id) }}" method="POST" class="inline">
                             @csrf
                             <button type="submit"
-                                    class="px-3 py-2 {{ $template->is_active ? 'bg-gray-600 hover:bg-gray-700' : 'bg-green-600 hover:bg-green-700' }} text-white rounded-lg transition text-sm">
+                                    class="px-3 py-2 {{ $template->is_active ? 'bg-gray-600 hover:bg-gray-700' : 'bg-green-600 hover:bg-green-700' }} text-white rounded-xl transition text-sm">
                                 {{ $template->is_active ? '🚫' : '✓' }}
                             </button>
                         </form>
@@ -86,7 +86,7 @@
                             @csrf
                             @method('DELETE')
                             <button type="submit"
-                                    class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm">
+                                    class="px-3 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition text-sm">
                                 🗑️
                             </button>
                         </form>
@@ -95,12 +95,12 @@
             </div>
         @empty
             <div class="col-span-full">
-                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-12 text-center">
+                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-md p-12 text-center" border border-white/20 dark:border-white/10>
                     <div class="text-6xl mb-4">📋</div>
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">ยังไม่มีเทมเพลต</h3>
-                    <p class="text-gray-600 dark:text-gray-400 mb-6">สร้างเทมเพลตเพื่อใช้งานซ้ำได้อย่างสะดวก</p>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white dark:text-white mb-2">ยังไม่มีเทมเพลต</h3>
+                    <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-6">สร้างเทมเพลตเพื่อใช้งานซ้ำได้อย่างสะดวก</p>
                     <a href="{{ route('admin.notification-templates.create') }}"
-                       class="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                       class="inline-block px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
                         + สร้างเทมเพลตแรก
                     </a>
                 </div>
