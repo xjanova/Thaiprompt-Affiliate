@@ -118,6 +118,7 @@
 
     {{-- Navigation Menu --}}
     <nav class="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
+         x-data="{ mlmOpen: {{ request()->routeIs('admin.mlm.*') || request()->routeIs('admin.mlm-prospects.*') ? 'true' : 'false' }} }"
          @click.away="if (!sidebarOpen && hovered && window.innerWidth >= 768) { hovered = false }">
         {{-- Dashboard --}}
         <a href="{{ route('admin.dashboard') }}"
@@ -142,6 +143,110 @@
             <i class="fas fa-network-wired w-5 text-center drop-shadow"></i>
             <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">Affiliate</span>
         </a>
+
+        {{-- MLM System (Collapsible Menu) --}}
+        <div class="space-y-1">
+            {{-- MLM Header Button --}}
+            <button @click="mlmOpen = !mlmOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.mlm.*') || request()->routeIs('admin.mlm-prospects.*') ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-sitemap w-5 text-center drop-shadow"></i>
+                <span x-show="sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">MLM System</span>
+                <i x-show="(sidebarOpen || hovered) && mlmOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="(sidebarOpen || hovered) && !mlmOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- MLM Submenu --}}
+            <div x-show="mlmOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Dashboard MLM --}}
+                <a href="{{ route('admin.mlm.reports.dashboard') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.reports.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
+                </a>
+
+                {{-- สมาชิก MLM --}}
+                <a href="{{ route('admin.mlm.members.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.members.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-users-cog w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">สมาชิก</span>
+                </a>
+
+                {{-- แผน MLM --}}
+                <a href="{{ route('admin.mlm.plans.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.plans.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-layer-group w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">แผน MLM</span>
+                </a>
+
+                {{-- คอมมิชชั่น MLM --}}
+                <a href="{{ route('admin.mlm.commissions.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.commissions.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-money-bill-wave w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
+                </a>
+
+                {{-- Product PV --}}
+                <a href="{{ route('admin.mlm.product-pv.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.product-pv.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tags w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Product PV</span>
+                </a>
+
+                {{-- รายงาน --}}
+                <a href="{{ route('admin.mlm.reports.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.reports.*') && !request()->routeIs('admin.mlm.reports.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">รายงาน</span>
+                </a>
+
+                {{-- Genealogy --}}
+                <a href="{{ route('admin.mlm.genealogy.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.genealogy.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-project-diagram w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Genealogy</span>
+                </a>
+
+                {{-- Prospects --}}
+                <a href="{{ route('admin.mlm-prospects.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm-prospects.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-user-plus w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Prospects</span>
+                </a>
+
+                {{-- เครื่องคิดเลข --}}
+                <a href="{{ route('admin.mlm.calculator') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.calculator') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-calculator w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">เครื่องคิดเลข</span>
+                </a>
+
+                {{-- ตัวอย่าง Placement --}}
+                <a href="{{ route('admin.mlm.placement-examples') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.placement-examples') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-lightbulb w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ตัวอย่าง Placement</span>
+                </a>
+
+                {{-- ตั้งค่า MLM --}}
+                <a href="{{ route('admin.mlm.settings.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.settings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-cogs w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
+                </a>
+            </div>
+        </div>
 
         {{-- Commissions --}}
         <a href="{{ route('admin.commissions.index') }}"
