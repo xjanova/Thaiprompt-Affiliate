@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'LINE OA Analytics Dashboard')
 
@@ -10,7 +10,7 @@
         <div class="relative flex items-center justify-between">
             <div>
                 <div class="flex items-center gap-3 mb-2">
-                    <div class="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <div class="w-14 h-14 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center" border border-white/20 dark:border-white/10>
                         <i class="fas fa-chart-line text-3xl text-white"></i>
                     </div>
                     <div>
@@ -22,18 +22,18 @@
             <div class="flex gap-3">
                 <!-- Period Selector -->
                 <select x-model="period" @change="loadDashboard()"
-                        class="px-4 py-3 bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-xl hover:bg-white/30 transition-all duration-300 shadow-lg focus:ring-2 focus:ring-white/50">
+                        class="px-4 py-3 glass-fusion backdrop-blur-md border border-white/30 text-white rounded-xl hover:glass-fusion transition-all duration-300 shadow-lg focus:ring-2 focus:ring-white/50">
                     <option value="day">วันนี้</option>
                     <option value="week">สัปดาห์นี้</option>
                     <option value="month" selected>เดือนนี้</option>
                     <option value="all">ทั้งหมด</option>
                 </select>
                 <button @click="exportData('csv')"
-                        class="px-6 py-3 bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-xl hover:bg-white/30 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                        class="px-6 py-3 glass-fusion backdrop-blur-md border border-white/30 text-white rounded-xl hover:glass-fusion transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                     <i class="fas fa-download me-2"></i>Export CSV
                 </button>
                 <button @click="clearCache()"
-                        class="px-6 py-3 bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-xl hover:bg-white/30 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                        class="px-6 py-3 glass-fusion backdrop-blur-md border border-white/30 text-white rounded-xl hover:glass-fusion transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                     <i class="fas fa-sync me-2"></i>รีเฟรช
                 </button>
             </div>
@@ -43,7 +43,7 @@
     <!-- Loading State -->
     <div x-show="loading" class="text-center py-12">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <p class="mt-4 text-gray-600">กำลังโหลดข้อมูล...</p>
+        <p class="mt-4 text-gray-600 dark:text-gray-400">กำลังโหลดข้อมูล...</p>
     </div>
 
     <!-- Dashboard Content -->
@@ -51,7 +51,7 @@
         <!-- Overview Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- Total Invitations -->
-            <div class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6">
+            <div class="glass-fusion rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-4">
                     <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
                         <i class="fas fa-envelope text-2xl text-blue-600"></i>
@@ -60,12 +60,12 @@
                         การเชิญ
                     </span>
                 </div>
-                <h3 class="text-3xl font-bold text-gray-800 mb-1" x-text="stats.total_invitations || 0"></h3>
-                <p class="text-sm text-gray-600">คำเชิญทั้งหมด</p>
+                <h3 class="text-3xl font-bold text-gray-900 dark:text-white mb-1" x-text="stats.total_invitations || 0"></h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">คำเชิญทั้งหมด</p>
             </div>
 
             <!-- Clicked Rate -->
-            <div class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6">
+            <div class="glass-fusion rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-4">
                     <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
                         <i class="fas fa-mouse-pointer text-2xl text-green-600"></i>
@@ -74,13 +74,13 @@
                         คลิก
                     </span>
                 </div>
-                <h3 class="text-3xl font-bold text-gray-800 mb-1" x-text="stats.click_rate ? stats.click_rate.toFixed(1) + '%' : '0%'"></h3>
-                <p class="text-sm text-gray-600">อัตราการคลิก</p>
-                <p class="text-xs text-gray-500 mt-1" x-text="(stats.total_clicked || 0) + ' คลิก'"></p>
+                <h3 class="text-3xl font-bold text-gray-900 dark:text-white mb-1" x-text="stats.click_rate ? stats.click_rate.toFixed(1) + '%' : '0%'"></h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">อัตราการคลิก</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="(stats.total_clicked || 0) + ' คลิก'"></p>
             </div>
 
             <!-- Completion Rate -->
-            <div class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6">
+            <div class="glass-fusion rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-4">
                     <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
                         <i class="fas fa-check-circle text-2xl text-purple-600"></i>
@@ -89,13 +89,13 @@
                         สำเร็จ
                     </span>
                 </div>
-                <h3 class="text-3xl font-bold text-gray-800 mb-1" x-text="stats.completion_rate ? stats.completion_rate.toFixed(1) + '%' : '0%'"></h3>
-                <p class="text-sm text-gray-600">อัตราการสมัครสำเร็จ</p>
-                <p class="text-xs text-gray-500 mt-1" x-text="(stats.total_completed || 0) + ' คน'"></p>
+                <h3 class="text-3xl font-bold text-gray-900 dark:text-white mb-1" x-text="stats.completion_rate ? stats.completion_rate.toFixed(1) + '%' : '0%'"></h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">อัตราการสมัครสำเร็จ</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="(stats.total_completed || 0) + ' คน'"></p>
             </div>
 
             <!-- Active Conversations -->
-            <div class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6">
+            <div class="glass-fusion rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-4">
                     <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center">
                         <i class="fas fa-comments text-2xl text-orange-600"></i>
@@ -104,16 +104,16 @@
                         Active
                     </span>
                 </div>
-                <h3 class="text-3xl font-bold text-gray-800 mb-1" x-text="activeConversations.length || 0"></h3>
-                <p class="text-sm text-gray-600">การสนทนาที่กำลังดำเนินการ</p>
+                <h3 class="text-3xl font-bold text-gray-900 dark:text-white mb-1" x-text="activeConversations.length || 0"></h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">การสนทนาที่กำลังดำเนินการ</p>
             </div>
         </div>
 
         <!-- Charts Row -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Conversion Funnel -->
-            <div class="bg-white rounded-2xl shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <div class="glass-fusion rounded-2xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                     <i class="fas fa-filter text-blue-600 mr-2"></i>
                     Conversion Funnel
                 </h3>
@@ -121,10 +121,10 @@
                     <template x-for="step in funnel" :key="step.step">
                         <div>
                             <div class="flex justify-between text-sm mb-1">
-                                <span class="font-medium text-gray-700" x-text="step.step"></span>
-                                <span class="text-gray-600" x-text="step.count + ' คน (' + step.rate.toFixed(1) + '%)'"></span>
+                                <span class="font-medium text-gray-700 dark:text-gray-300" x-text="step.step"></span>
+                                <span class="text-gray-600 dark:text-gray-400" x-text="step.count + ' คน (' + step.rate.toFixed(1) + '%)'"></span>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                                 <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2.5 rounded-full transition-all duration-500"
                                      :style="`width: ${step.rate}%`"></div>
                             </div>
@@ -134,21 +134,21 @@
             </div>
 
             <!-- Dropout Analysis -->
-            <div class="bg-white rounded-2xl shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <div class="glass-fusion rounded-2xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                     <i class="fas fa-user-slash text-red-600 mr-2"></i>
                     จุดที่ผู้ใช้หลุดออกมากที่สุด
                 </h3>
                 <div class="space-y-3">
                     <template x-for="dropout in dropouts.slice(0, 5)" :key="dropout.step">
-                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
+                        <div class="flex items-center justify-between p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50 transition-all">
                             <div class="flex-1">
-                                <p class="font-medium text-gray-800" x-text="dropout.step"></p>
-                                <p class="text-xs text-gray-500" x-text="dropout.reason || 'ไม่ระบุสาเหตุ'"></p>
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="dropout.step"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="dropout.reason || 'ไม่ระบุสาเหตุ'"></p>
                             </div>
                             <div class="text-right">
                                 <p class="text-lg font-bold text-red-600" x-text="dropout.count"></p>
-                                <p class="text-xs text-gray-500">คน</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">คน</p>
                             </div>
                         </div>
                     </template>
@@ -159,32 +159,32 @@
         <!-- Leaderboard & Active Conversations -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Sponsor Leaderboard -->
-            <div class="bg-white rounded-2xl shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <div class="glass-fusion rounded-2xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                     <i class="fas fa-trophy text-yellow-600 mr-2"></i>
                     อันดับ Sponsor ยอดนิยม
                 </h3>
                 <div class="space-y-3">
                     <template x-for="(sponsor, index) in leaderboard.slice(0, 10)" :key="sponsor.sponsor_id">
-                        <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
+                        <div class="flex items-center gap-4 p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50 transition-all">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
                                  :class="{
                                      'bg-yellow-400 text-yellow-900': index === 0,
-                                     'bg-gray-300 text-gray-700': index === 1,
+                                     'bg-gray-300 text-gray-700 dark:text-gray-300': index === 1,
                                      'bg-orange-400 text-orange-900': index === 2,
-                                     'bg-gray-200 text-gray-600': index > 2
+                                     'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400': index > 2
                                  }">
                                 <span x-text="index + 1"></span>
                             </div>
                             <div class="flex-1">
-                                <p class="font-medium text-gray-800" x-text="sponsor.sponsor_name"></p>
-                                <p class="text-xs text-gray-500">
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="sponsor.sponsor_name"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
                                     สำเร็จ <span x-text="sponsor.completed_count"></span> / ทั้งหมด <span x-text="sponsor.total_signups"></span>
                                 </p>
                             </div>
                             <div class="text-right">
                                 <p class="text-sm font-bold text-green-600" x-text="sponsor.success_rate.toFixed(1) + '%'"></p>
-                                <p class="text-xs text-gray-500">Success Rate</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Success Rate</p>
                             </div>
                         </div>
                     </template>
@@ -192,24 +192,24 @@
             </div>
 
             <!-- Active Conversations -->
-            <div class="bg-white rounded-2xl shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <div class="glass-fusion rounded-2xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                     <i class="fas fa-comment-dots text-green-600 mr-2"></i>
                     การสนทนาที่กำลังดำเนินการ
                 </h3>
                 <div class="space-y-3 max-h-96 overflow-y-auto">
                     <template x-for="conv in activeConversations" :key="conv.id">
-                        <div class="p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all">
+                        <div class="p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50 transition-all">
                             <div class="flex justify-between items-start mb-2">
-                                <p class="font-medium text-gray-800" x-text="conv.sponsor_name"></p>
+                                <p class="font-medium text-gray-900 dark:text-white" x-text="conv.sponsor_name"></p>
                                 <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full"
                                       x-text="conv.progress + '%'"></span>
                             </div>
-                            <p class="text-xs text-gray-600 mb-1" x-text="'ขั้นตอน: ' + conv.current_step"></p>
-                            <p class="text-xs text-gray-500" x-text="'เริ่ม: ' + formatTime(conv.started_at)"></p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1" x-text="'ขั้นตอน: ' + conv.current_step"></p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400" x-text="'เริ่ม: ' + formatTime(conv.started_at)"></p>
                         </div>
                     </template>
-                    <div x-show="activeConversations.length === 0" class="text-center py-8 text-gray-500">
+                    <div x-show="activeConversations.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
                         <i class="fas fa-inbox text-4xl mb-2 opacity-50"></i>
                         <p>ไม่มีการสนทนาที่กำลังดำเนินการ</p>
                     </div>
@@ -218,12 +218,12 @@
         </div>
 
         <!-- Trends Chart -->
-        <div class="bg-white rounded-2xl shadow-lg p-6">
-            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+        <div class="glass-fusion rounded-2xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                 <i class="fas fa-chart-area text-blue-600 mr-2"></i>
                 แนวโน้มการสมัคร
             </h3>
-            <div class="h-64 flex items-center justify-center text-gray-500">
+            <div class="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
                 <div class="text-center">
                     <i class="fas fa-chart-line text-6xl mb-4 opacity-50"></i>
                     <p>กราฟแสดงแนวโน้ม (ต้องการ Chart.js หรือ ApexCharts)</p>

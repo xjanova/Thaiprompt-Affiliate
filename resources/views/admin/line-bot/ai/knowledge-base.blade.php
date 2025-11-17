@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Knowledge Base Management')
 
@@ -10,12 +10,12 @@
     <!-- Header -->
     <div class="mb-6">
         <div class="flex items-center gap-3 mb-2">
-            <a href="{{ route('admin.line-bot.ai.index') }}" class="text-gray-600 hover:text-gray-900">
+            <a href="{{ route('admin.line-bot.ai.index') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900">
                 <i class="fas fa-arrow-left"></i>
             </a>
             <div class="flex-1">
                 <h1 class="text-2xl font-bold text-gray-900">Knowledge Base Management</h1>
-                <p class="text-sm text-gray-600">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
                     For: <span class="font-semibold text-indigo-600">{{ $aiSetting->name }}</span>
                 </p>
             </div>
@@ -58,7 +58,7 @@
     <!-- Knowledge Base List -->
     <div class="grid grid-cols-1 gap-4">
         @forelse($knowledgeBases as $kb)
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition">
+            <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition" border border-white/20 dark:border-white/10>
                 <div class="p-6">
                     <div class="flex items-start gap-4">
                         <!-- Icon -->
@@ -92,7 +92,7 @@
                                             @endif">
                                             {{ strtoupper($kb->type) }}
                                         </span>
-                                        <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold">
+                                        <span class="px-3 py-1 bg-gray-100/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 rounded-full text-xs font-bold">
                                             Priority: {{ $kb->priority }}
                                         </span>
                                         @if($kb->is_enabled)
@@ -100,7 +100,7 @@
                                                 <i class="fas fa-check-circle mr-1"></i>Enabled
                                             </span>
                                         @else
-                                            <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold">
+                                            <span class="px-3 py-1 bg-gray-100/50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 rounded-full text-xs font-bold">
                                                 <i class="fas fa-pause-circle mr-1"></i>Disabled
                                             </span>
                                         @endif
@@ -117,10 +117,10 @@
                                     @endif
 
                                     @if($kb->content)
-                                        <p class="text-sm text-gray-600 line-clamp-2">{{ Str::limit($kb->content, 200) }}</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{{ Str::limit($kb->content, 200) }}</p>
                                     @endif
 
-                                    <div class="mt-2 flex items-center gap-4 text-xs text-gray-500">
+                                    <div class="mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                                         <span><i class="fas fa-clock mr-1"></i>{{ $kb->created_at->diffForHumans() }}</span>
                                         @if($kb->last_synced_at)
                                             <span><i class="fas fa-sync-alt mr-1"></i>Synced {{ $kb->last_synced_at->diffForHumans() }}</span>
@@ -133,7 +133,7 @@
                                     @if($kb->type === 'url' || $kb->type === 'internal')
                                         <form method="POST" action="{{ route('admin.line-bot.ai.knowledge.sync', [$aiSetting->id, $kb->id]) }}" class="inline">
                                             @csrf
-                                            <button type="submit" class="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm">
+                                            <button type="submit" class="px-3 py-2 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 transition text-sm">
                                                 <i class="fas fa-sync-alt"></i>
                                             </button>
                                         </form>
@@ -142,7 +142,7 @@
                                           onsubmit="return confirm('Are you sure you want to delete this knowledge base?')" class="inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition text-sm">
+                                        <button type="submit" class="px-3 py-2 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition text-sm">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
@@ -153,12 +153,12 @@
                 </div>
             </div>
         @empty
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-12 text-center">
+            <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 p-12 text-center" border border-white/20 dark:border-white/10>
                 <div class="w-24 h-24 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-6">
                     <i class="fas fa-book text-indigo-500 text-4xl"></i>
                 </div>
                 <h3 class="text-2xl font-bold text-gray-900 mb-2">No Knowledge Bases Yet</h3>
-                <p class="text-gray-600 mb-6">Add your first knowledge base to enhance AI responses</p>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">Add your first knowledge base to enhance AI responses</p>
                 <button @click="showAddModal = true"
                         class="inline-block px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition shadow-lg">
                     <i class="fas fa-plus mr-2"></i>Add Knowledge Base
@@ -173,7 +173,7 @@
      x-cloak
      @click.self="showAddModal = false"
      class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden transform transition-all">
+    <div class="glass-fusion rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden transform transition-all" border border-white/20 dark:border-white/10>
         <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-white flex items-center">
@@ -191,30 +191,30 @@
 
             <!-- Source Type Selection -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                     <i class="fas fa-layer-group text-indigo-500 mr-1"></i> Source Type
                 </label>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <button type="button" @click="sourceType = 'url'"
-                            :class="sourceType === 'url' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'"
+                            :class="sourceType === 'url' ? 'bg-blue-500 text-white' : 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300'"
                             class="p-4 rounded-xl transition hover:shadow-lg">
                         <i class="fas fa-link text-2xl mb-2"></i>
                         <p class="text-sm font-semibold">URL</p>
                     </button>
                     <button type="button" @click="sourceType = 'internal'"
-                            :class="sourceType === 'internal' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700'"
+                            :class="sourceType === 'internal' ? 'bg-green-500 text-white' : 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300'"
                             class="p-4 rounded-xl transition hover:shadow-lg">
                         <i class="fas fa-home text-2xl mb-2"></i>
                         <p class="text-sm font-semibold">Internal</p>
                     </button>
                     <button type="button" @click="sourceType = 'file'"
-                            :class="sourceType === 'file' ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-700'"
+                            :class="sourceType === 'file' ? 'bg-purple-500 text-white' : 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300'"
                             class="p-4 rounded-xl transition hover:shadow-lg">
                         <i class="fas fa-file text-2xl mb-2"></i>
                         <p class="text-sm font-semibold">File</p>
                     </button>
                     <button type="button" @click="sourceType = 'text'"
-                            :class="sourceType === 'text' ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-700'"
+                            :class="sourceType === 'text' ? 'bg-yellow-500 text-white' : 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300'"
                             class="p-4 rounded-xl transition hover:shadow-lg">
                         <i class="fas fa-keyboard text-2xl mb-2"></i>
                         <p class="text-sm font-semibold">Text</p>
@@ -225,62 +225,62 @@
 
             <!-- URL Source -->
             <div x-show="sourceType === 'url'" x-cloak>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     <i class="fas fa-link text-blue-500 mr-1"></i> URL
                 </label>
                 <input type="url" name="url"
-                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     placeholder="https://example.com/documentation">
-                <p class="text-xs text-gray-500 mt-1">The content will be fetched and indexed automatically</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">The content will be fetched and indexed automatically</p>
             </div>
 
             <!-- Internal Source -->
             <div x-show="sourceType === 'internal'" x-cloak>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     <i class="fas fa-home text-green-500 mr-1"></i> Internal Path
                 </label>
                 <input type="text" name="internal"
-                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
                     placeholder="/about-us, /faq, /products">
-                <p class="text-xs text-gray-500 mt-1">Relative path to page on your website</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Relative path to page on your website</p>
             </div>
 
             <!-- File Upload -->
             <div x-show="sourceType === 'file'" x-cloak>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     <i class="fas fa-upload text-purple-500 mr-1"></i> Upload File
                 </label>
                 <input type="file" name="file" accept=".pdf,.txt,.docx,.csv"
-                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all">
-                <p class="text-xs text-gray-500 mt-1">Supported: PDF, TXT, DOCX, CSV (Max: 10MB)</p>
+                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Supported: PDF, TXT, DOCX, CSV (Max: 10MB)</p>
             </div>
 
             <!-- Text Input -->
             <div x-show="sourceType === 'text'" x-cloak>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     <i class="fas fa-keyboard text-yellow-500 mr-1"></i> Text Content
                 </label>
                 <textarea name="text" rows="8"
-                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all"
+                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all"
                     placeholder="Enter your knowledge base content here..."></textarea>
-                <p class="text-xs text-gray-500 mt-1">Manually enter the information you want the AI to know</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Manually enter the information you want the AI to know</p>
             </div>
 
             <!-- Priority -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     <i class="fas fa-sort-amount-up text-indigo-500 mr-1"></i> Priority (1-10)
                 </label>
                 <input type="number" name="priority" value="5" min="1" max="10"
-                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
-                <p class="text-xs text-gray-500 mt-1">Higher priority sources are used first (1 = lowest, 10 = highest)</p>
+                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Higher priority sources are used first (1 = lowest, 10 = highest)</p>
             </div>
 
             <!-- Enable -->
             <div class="flex items-center gap-3">
                 <input type="checkbox" name="is_enabled" value="1" checked id="kb-enabled"
-                    class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                <label for="kb-enabled" class="text-sm font-semibold text-gray-700">
+                    class="w-5 h-5 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500">
+                <label for="kb-enabled" class="text-sm font-semibold text-gray-700 dark:text-gray-300">
                     Enable this knowledge base immediately
                 </label>
             </div>
@@ -288,11 +288,11 @@
             <!-- Submit -->
             <div class="flex gap-3 pt-4">
                 <button type="button" @click="showAddModal = false"
-                        class="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold">
+                        class="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 transition font-semibold">
                     Cancel
                 </button>
                 <button type="submit"
-                        class="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 transition shadow-lg font-semibold">
+                        class="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition shadow-lg font-semibold">
                     <i class="fas fa-plus mr-2"></i>Add Knowledge Base
                 </button>
             </div>

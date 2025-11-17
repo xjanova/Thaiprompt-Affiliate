@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Broadcast Details')
 
@@ -6,19 +6,19 @@
 <div class="container-fluid px-4 py-6">
     <div class="mb-6">
         <div class="flex items-center gap-3">
-            <a href="{{ route('admin.line-bot.broadcast.index') }}" class="text-gray-600 hover:text-gray-900">
+            <a href="{{ route('admin.line-bot.broadcast.index') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900">
                 <i class="fas fa-arrow-left"></i>
             </a>
             <div class="flex-1">
                 <h1 class="text-2xl font-bold text-gray-900">{{ $broadcast->name }}</h1>
-                <p class="text-sm text-gray-600">Broadcast Details</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Broadcast Details</p>
             </div>
             <div>
-                <span class="px-4 py-2 rounded-lg text-sm font-bold
+                <span class="px-4 py-2 rounded-xl text-sm font-bold
                     @if($broadcast->status === 'completed') bg-green-100 text-green-800
                     @elseif($broadcast->status === 'sending') bg-blue-100 text-blue-800 animate-pulse
                     @elseif($broadcast->status === 'scheduled') bg-yellow-100 text-yellow-800
-                    @else bg-gray-100 text-gray-800
+                    @else bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white
                     @endif">
                     {{ strtoupper($broadcast->status) }}
                 </span>
@@ -39,7 +39,7 @@
                     <p class="text-3xl font-bold">{{ number_format($broadcast->total_recipients ?? 0) }}</p>
                 </div>
 
-                <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white">
+                <div class="style="background: var(--arrow-x-success-gradient)" rounded-2xl p-6 text-white">
                     <div class="flex items-center justify-between mb-2">
                         <i class="fas fa-check-circle text-3xl opacity-80"></i>
                     </div>
@@ -57,38 +57,38 @@
             </div>
 
             <!-- Message Content -->
-            <div class="bg-white rounded-2xl shadow-lg p-6">
+            <div class="glass-fusion rounded-2xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 mb-4">Message Content</h3>
-                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <p class="text-gray-800 whitespace-pre-wrap">{{ $broadcast->message }}</p>
+                <div class="p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <p class="text-gray-900 dark:text-white whitespace-pre-wrap">{{ $broadcast->message }}</p>
                 </div>
             </div>
 
             <!-- Details -->
-            <div class="bg-white rounded-2xl shadow-lg p-6">
+            <div class="glass-fusion rounded-2xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 mb-4">Broadcast Details</h3>
                 <div class="space-y-3">
                     <div class="flex items-center justify-between py-2 border-b border-gray-100">
-                        <span class="text-sm text-gray-600">Target Type:</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Target Type:</span>
                         <span class="font-semibold text-gray-900">{{ ucfirst($broadcast->target_type) }}</span>
                     </div>
                     <div class="flex items-center justify-between py-2 border-b border-gray-100">
-                        <span class="text-sm text-gray-600">Message Type:</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Message Type:</span>
                         <span class="font-semibold text-gray-900">{{ ucfirst($broadcast->message_type) }}</span>
                     </div>
                     <div class="flex items-center justify-between py-2 border-b border-gray-100">
-                        <span class="text-sm text-gray-600">Created:</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Created:</span>
                         <span class="font-semibold text-gray-900">{{ $broadcast->created_at->format('M d, Y H:i') }}</span>
                     </div>
                     @if($broadcast->scheduled_at)
                         <div class="flex items-center justify-between py-2 border-b border-gray-100">
-                            <span class="text-sm text-gray-600">Scheduled For:</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Scheduled For:</span>
                             <span class="font-semibold text-gray-900">{{ $broadcast->scheduled_at->format('M d, Y H:i') }}</span>
                         </div>
                     @endif
                     @if($broadcast->sent_at)
                         <div class="flex items-center justify-between py-2">
-                            <span class="text-sm text-gray-600">Sent At:</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Sent At:</span>
                             <span class="font-semibold text-gray-900">{{ $broadcast->sent_at->format('M d, Y H:i') }}</span>
                         </div>
                     @endif
@@ -100,19 +100,19 @@
         <div class="lg:col-span-1">
             <!-- Actions -->
             @if($broadcast->status === 'draft' || $broadcast->status === 'scheduled')
-                <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                <div class="glass-fusion rounded-2xl shadow-lg p-6 mb-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                     <h3 class="text-lg font-bold text-gray-900 mb-4">Actions</h3>
                     <div class="space-y-3">
                         <form method="POST" action="{{ route('admin.line-bot.broadcast.send', $broadcast->id) }}" class="w-full">
                             @csrf
                             <button type="submit" onclick="return confirm('Send this broadcast now?')"
-                                    class="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition shadow-lg font-semibold">
+                                    class="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 transition shadow-lg font-semibold">
                                 <i class="fas fa-paper-plane mr-2"></i>Send Now
                             </button>
                         </form>
 
                         <a href="{{ route('admin.line-bot.broadcast.edit', $broadcast->id) }}"
-                           class="block w-full px-4 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-center font-semibold">
+                           class="block w-full px-4 py-3 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 transition text-center font-semibold">
                             <i class="fas fa-edit mr-2"></i>Edit Broadcast
                         </a>
 
@@ -121,7 +121,7 @@
                             @csrf
                             @method('DELETE')
                             <button type="submit"
-                                    class="w-full px-4 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition font-semibold">
+                                    class="w-full px-4 py-3 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition font-semibold">
                                 <i class="fas fa-trash mr-2"></i>Delete
                             </button>
                         </form>

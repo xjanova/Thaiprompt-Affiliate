@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'แพลตฟอร์มบอท')
 
@@ -9,13 +9,13 @@
         <div class="relative inline-block" x-data="{ open: false }">
             <button
                 @click="open = !open"
-                class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                class="flex items-center gap-2 px-4 py-2 glass-fusion dark:bg-gray-800 border border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl shadow-sm hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition"
             >
-                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
                 </svg>
-                <span x-text="language === 'th' ? 'ไทย' : language === 'en' ? 'English' : language === 'zh' ? '中文' : '日本語'" class="text-sm font-medium text-gray-700 dark:text-gray-300"></span>
-                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span x-text="language === 'th' ? 'ไทย' : language === 'en' ? 'English' : language === 'zh' ? '中文' : '日本語'" class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300"></span>
+                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
             </button>
@@ -29,24 +29,24 @@
                 x-transition:leave="transition ease-in duration-150"
                 x-transition:leave-start="opacity-100 scale-100"
                 x-transition:leave-end="opacity-0 scale-95"
-                class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50"
+                class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 dark:border-gray-700 py-2 z-50" border border-white/20 dark:border-white/10
                 style="display: none;"
             >
-                <button @click="language = 'th'; open = false" class="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
+                <button @click="language = 'th'; open = false" class="w-full px-4 py-2 text-left hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 flex items-center gap-3">
                     <span class="text-xl">🇹🇭</span>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">ไทย (Thai)</span>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300">ไทย (Thai)</span>
                 </button>
-                <button @click="language = 'en'; open = false" class="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
+                <button @click="language = 'en'; open = false" class="w-full px-4 py-2 text-left hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 flex items-center gap-3">
                     <span class="text-xl">🇬🇧</span>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">English</span>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300">English</span>
                 </button>
-                <button @click="language = 'zh'; open = false" class="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
+                <button @click="language = 'zh'; open = false" class="w-full px-4 py-2 text-left hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 flex items-center gap-3">
                     <span class="text-xl">🇨🇳</span>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">中文 (Chinese)</span>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300">中文 (Chinese)</span>
                 </button>
-                <button @click="language = 'ja'; open = false" class="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
+                <button @click="language = 'ja'; open = false" class="w-full px-4 py-2 text-left hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 flex items-center gap-3">
                     <span class="text-xl">🇯🇵</span>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">日本語 (Japanese)</span>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300">日本語 (Japanese)</span>
                 </button>
             </div>
         </div>
@@ -57,7 +57,7 @@
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white" data-translate>แพลตฟอร์มบอท</h1>
             <a href="{{ route('admin.bot-automation.platforms.connect') }}"
-               class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-700 to-slate-700 hover:from-gray-800 hover:to-slate-800 text-white rounded-lg transition shadow-md hover:shadow-lg">
+               class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-700 to-slate-700 hover:from-gray-800 hover:to-slate-800 text-white rounded-xl transition shadow-md hover:shadow-lg">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                 </svg>
@@ -76,7 +76,7 @@
                             <p class="text-sm opacity-90 font-medium mb-1" data-translate>แพลตฟอร์มทั้งหมด</p>
                             <p class="text-3xl font-bold">{{ $totalPlatforms ?? '0' }}</p>
                         </div>
-                        <div class="p-3 bg-white bg-opacity-20 rounded-lg backdrop-blur-sm">
+                        <div class="p-3 glass-fusion bg-opacity-20 rounded-xl backdrop-blur-sm" border border-white/20 dark:border-white/10>
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                             </svg>
@@ -100,7 +100,7 @@
                             <p class="text-sm opacity-90 font-medium mb-1" data-translate>เชื่อมต่อแล้ว</p>
                             <p class="text-3xl font-bold">{{ $connectedPlatforms ?? '0' }}</p>
                         </div>
-                        <div class="p-3 bg-white bg-opacity-20 rounded-lg backdrop-blur-sm">
+                        <div class="p-3 glass-fusion bg-opacity-20 rounded-xl backdrop-blur-sm" border border-white/20 dark:border-white/10>
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -124,7 +124,7 @@
                             <p class="text-sm opacity-90 font-medium mb-1" data-translate>รอดำเนินการ</p>
                             <p class="text-3xl font-bold">{{ $pendingPlatforms ?? '0' }}</p>
                         </div>
-                        <div class="p-3 bg-white bg-opacity-20 rounded-lg backdrop-blur-sm">
+                        <div class="p-3 glass-fusion bg-opacity-20 rounded-xl backdrop-blur-sm" border border-white/20 dark:border-white/10>
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -148,7 +148,7 @@
                             <p class="text-sm opacity-90 font-medium mb-1" data-translate>ข้อความทั้งหมด</p>
                             <p class="text-3xl font-bold">{{ number_format($totalMessages ?? 0) }}</p>
                         </div>
-                        <div class="p-3 bg-white bg-opacity-20 rounded-lg backdrop-blur-sm">
+                        <div class="p-3 glass-fusion bg-opacity-20 rounded-xl backdrop-blur-sm" border border-white/20 dark:border-white/10>
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                             </svg>
@@ -166,14 +166,14 @@
         </div>
 
         <!-- Connected Platforms -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg mb-8">
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg mb-8" border border-white/20 dark:border-white/10>
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white" data-translate>แพลตฟอร์มที่เชื่อมต่อ</h2>
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @forelse($platforms ?? [] as $platform)
-                    <div class="bg-white dark:bg-gray-800 border-l-4 {{ $platform->status == 'connected' ? 'border-green-500' : 'border-gray-400 dark:border-gray-600' }} rounded-lg shadow-md hover:shadow-xl transition">
+                    <div class="glass-fusion dark:bg-gray-800 border-l-4 {{ $platform->status == 'connected' ? 'border-green-500' : 'border-gray-400 dark:border-gray-600' }} rounded-xl shadow-md hover:shadow-xl transition" border border-white/20 dark:border-white/10>
                         <div class="p-6">
                             <div class="flex justify-between items-start mb-4">
                                 <div class="flex-1">
@@ -185,7 +185,7 @@
                                             @elseif(strtolower($platform->name ?? '') === 'slack') text-purple-600
                                             @elseif(strtolower($platform->name ?? '') === 'whatsapp') text-green-600
                                             @elseif(strtolower($platform->name ?? '') === 'discord') text-indigo-600
-                                            @else text-gray-600 dark:text-gray-400
+                                            @else text-gray-600 dark:text-gray-400 dark:text-gray-400
                                             @endif
                                         "></i>
                                         <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $platform->name ?? 'N/A' }}</h3>
@@ -194,7 +194,7 @@
                                         @if($platform->status == 'connected')
                                             bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
                                         @else
-                                            bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300
+                                            bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white dark:bg-gray-700 dark:text-gray-300
                                         @endif
                                     ">
                                         <span data-translate>{{ ucfirst($platform->status ?? 'N/A') }}</span>
@@ -202,34 +202,34 @@
                                 </div>
                                 <div class="relative" x-data="{ dropdownOpen: false }">
                                     <button @click="dropdownOpen = !dropdownOpen"
-                                            class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                                            class="p-2 text-gray-500 dark:text-gray-400 dark:text-gray-400 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 rounded-xl transition">
                                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
                                         </svg>
                                     </button>
                                     <div x-show="dropdownOpen"
                                          @click.away="dropdownOpen = false"
-                                         class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 z-50"
+                                         class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 dark:border-gray-600 py-1 z-50" border border-white/20 dark:border-white/10
                                          style="display: none;">
                                         <a href="#" onclick="editPlatform({{ $platform->id }})"
-                                           class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                           class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-600">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                             </svg>
                                             <span data-translate>แก้ไข</span>
                                         </a>
                                         <a href="#" onclick="viewSettings({{ $platform->id }})"
-                                           class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                           class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-600">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                             </svg>
                                             <span data-translate>ตั้งค่า</span>
                                         </a>
-                                        <div class="border-t border-gray-200 dark:border-gray-600 my-1"></div>
+                                        <div class="border-t border-gray-200 dark:border-gray-700 dark:border-gray-600 my-1"></div>
                                         @if($platform->status == 'connected')
                                         <a href="#" onclick="disconnectPlatform({{ $platform->id }})"
-                                           class="flex items-center gap-2 px-4 py-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                           class="flex items-center gap-2 px-4 py-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-600">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
                                             </svg>
@@ -237,16 +237,16 @@
                                         </a>
                                         @else
                                         <a href="#" onclick="connectPlatform({{ $platform->id }})"
-                                           class="flex items-center gap-2 px-4 py-2 text-sm text-green-600 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                           class="flex items-center gap-2 px-4 py-2 text-sm text-green-600 dark:text-green-400 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-600">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                                             </svg>
                                             <span data-translate>เชื่อมต่อ</span>
                                         </a>
                                         @endif
-                                        <div class="border-t border-gray-200 dark:border-gray-600 my-1"></div>
+                                        <div class="border-t border-gray-200 dark:border-gray-700 dark:border-gray-600 my-1"></div>
                                         <a href="#" onclick="deletePlatform({{ $platform->id }})"
-                                           class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                           class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-600">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                             </svg>
@@ -256,28 +256,28 @@
                                 </div>
                             </div>
 
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                            <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-4 line-clamp-2">
                                 {{ $platform->description ?? 'ไม่มีคำอธิบาย' }}
                             </p>
 
-                            <div class="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <div class="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700 dark:border-gray-700">
                                 <div class="text-center">
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1" data-translate>บอท</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mb-1" data-translate>บอท</p>
                                     <p class="text-lg font-bold text-gray-900 dark:text-white">{{ $platform->bots_count ?? '0' }}</p>
                                 </div>
                                 <div class="text-center">
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1" data-translate>ข้อความ</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mb-1" data-translate>ข้อความ</p>
                                     <p class="text-lg font-bold text-gray-900 dark:text-white">{{ number_format($platform->messages_count ?? 0) }}</p>
                                 </div>
                                 <div class="text-center">
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1" data-translate>ผู้ใช้</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mb-1" data-translate>ผู้ใช้</p>
                                     <p class="text-lg font-bold text-gray-900 dark:text-white">{{ $platform->users_count ?? '0' }}</p>
                                 </div>
                             </div>
 
                             @if(isset($platform->last_sync))
-                            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 dark:border-gray-700">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 flex items-center gap-1">
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                     </svg>
@@ -289,13 +289,13 @@
                     </div>
                     @empty
                     <div class="col-span-full text-center py-12">
-                        <svg class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 dark:text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                         </svg>
-                        <p class="text-gray-600 dark:text-gray-400 mb-4" data-translate>ยังไม่มีแพลตฟอร์มที่เชื่อมต่อ</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-500 mb-6" data-translate>เชื่อมต่อแพลตฟอร์มแรกของคุณเพื่อเริ่มต้นใช้งาน</p>
+                        <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-4" data-translate>ยังไม่มีแพลตฟอร์มที่เชื่อมต่อ</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 mb-6" data-translate>เชื่อมต่อแพลตฟอร์มแรกของคุณเพื่อเริ่มต้นใช้งาน</p>
                         <a href="{{ route('admin.bot-automation.platforms.connect') }}"
-                           class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-700 to-slate-700 hover:from-gray-800 hover:to-slate-800 text-white rounded-lg transition shadow-md hover:shadow-lg">
+                           class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-700 to-slate-700 hover:from-gray-800 hover:to-slate-800 text-white rounded-xl transition shadow-md hover:shadow-lg">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                             </svg>
@@ -308,38 +308,38 @@
         </div>
 
         <!-- Available Platforms -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg" border border-white/20 dark:border-white/10>
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white" data-translate>แพลตฟอร์มที่พร้อมใช้งาน</h2>
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <!-- Facebook Messenger -->
-                    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 text-center hover:shadow-lg transition">
+                    <div class="glass-fusion dark:bg-gray-800 border border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-xl p-6 text-center hover:shadow-lg transition" border border-white/20 dark:border-white/10>
                         <i class="fab fa-facebook-messenger text-5xl text-blue-600 mb-3"></i>
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2" data-translate>Facebook Messenger</h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-400" data-translate>แพลตฟอร์มแชท</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400" data-translate>แพลตฟอร์มแชท</p>
                     </div>
 
                     <!-- LINE -->
-                    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 text-center hover:shadow-lg transition">
+                    <div class="glass-fusion dark:bg-gray-800 border border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-xl p-6 text-center hover:shadow-lg transition" border border-white/20 dark:border-white/10>
                         <i class="fab fa-line text-5xl text-green-600 mb-3"></i>
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2" data-translate>LINE</h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-400" data-translate>แอปส่งข้อความ</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400" data-translate>แอปส่งข้อความ</p>
                     </div>
 
                     <!-- Telegram -->
-                    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 text-center hover:shadow-lg transition">
+                    <div class="glass-fusion dark:bg-gray-800 border border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-xl p-6 text-center hover:shadow-lg transition" border border-white/20 dark:border-white/10>
                         <i class="fab fa-telegram text-5xl text-cyan-600 mb-3"></i>
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2" data-translate>Telegram</h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-400" data-translate>แอปส่งข้อความ</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400" data-translate>แอปส่งข้อความ</p>
                     </div>
 
                     <!-- Slack -->
-                    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 text-center hover:shadow-lg transition">
+                    <div class="glass-fusion dark:bg-gray-800 border border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-xl p-6 text-center hover:shadow-lg transition" border border-white/20 dark:border-white/10>
                         <i class="fab fa-slack text-5xl text-purple-600 mb-3"></i>
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2" data-translate>Slack</h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-400" data-translate>การสื่อสารทีม</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400" data-translate>การสื่อสารทีม</p>
                     </div>
                 </div>
             </div>

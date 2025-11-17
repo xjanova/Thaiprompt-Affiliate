@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'บทสนทนา AI Chatbot')
 
@@ -21,7 +21,7 @@
                 </div>
             </div>
             <a href="{{ route('admin.line-bot.ai.index') }}"
-               class="px-6 py-3 bg-white/15 backdrop-blur-md border border-white/25 text-white rounded-xl hover:bg-white/25 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-1">
+               class="px-6 py-3 glass-fusion backdrop-blur-md border border-white/25 text-white rounded-xl hover:glass-fusion transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-1">
                 <i class="fas fa-arrow-left mr-2"></i>
                 <span class="font-semibold">กลับไปตั้งค่า</span>
             </a>
@@ -30,25 +30,25 @@
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
+        <div class="style="background: var(--arrow-x-accent-gradient)" rounded-2xl p-6 text-white shadow-xl">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-purple-100 text-sm font-medium mb-1">บทสนทนาทั้งหมด</p>
                     <h3 class="text-3xl font-bold">{{ number_format($stats['total_conversations']) }}</h3>
                 </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                     <i class="fas fa-comments text-2xl"></i>
                 </div>
             </div>
         </div>
 
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl">
+        <div class="style="background: var(--arrow-x-primary-gradient)" rounded-2xl p-6 text-white shadow-xl">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-blue-100 text-sm font-medium mb-1">บทสนทนาวันนี้</p>
                     <h3 class="text-3xl font-bold">{{ number_format($stats['today_conversations']) }}</h3>
                 </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                     <i class="fas fa-calendar-day text-2xl"></i>
                 </div>
             </div>
@@ -60,7 +60,7 @@
                     <p class="text-green-100 text-sm font-medium mb-1">กำลังดำเนินการ</p>
                     <h3 class="text-3xl font-bold">{{ number_format($stats['active_conversations']) }}</h3>
                 </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                     <i class="fas fa-spinner text-2xl"></i>
                 </div>
             </div>
@@ -72,7 +72,7 @@
                     <p class="text-orange-100 text-sm font-medium mb-1">ข้อความทั้งหมด</p>
                     <h3 class="text-3xl font-bold">{{ number_format($stats['total_messages']) }}</h3>
                 </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                     <i class="fas fa-envelope text-2xl"></i>
                 </div>
             </div>
@@ -80,14 +80,14 @@
     </div>
 
     <!-- Conversations List -->
-    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+    <div class="glass-fusion rounded-2xl shadow-xl border border-gray-100 overflow-hidden" border border-white/20 dark:border-white/10>
         <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
             <h2 class="text-xl font-bold text-gray-900">รายการบทสนทนา</h2>
         </div>
 
         <div class="divide-y divide-gray-100">
             @forelse($conversations as $conversation)
-                <div class="p-6 hover:bg-gray-50 transition-colors">
+                <div class="p-6 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 transition-colors">
                     <div class="flex items-start justify-between">
                         <div class="flex-1">
                             <div class="flex items-center gap-3 mb-2">
@@ -96,11 +96,11 @@
                                 </div>
                                 <div>
                                     <h3 class="font-bold text-gray-900">{{ $conversation->user->name ?? 'ผู้ใช้ไม่ระบุชื่อ' }}</h3>
-                                    <p class="text-sm text-gray-600">{{ $conversation->user->email ?? 'ไม่มีอีเมล' }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $conversation->user->email ?? 'ไม่มีอีเมล' }}</p>
                                 </div>
                             </div>
 
-                            <div class="flex items-center gap-4 text-sm text-gray-600 mt-3">
+                            <div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mt-3">
                                 <span class="flex items-center gap-1">
                                     <i class="fas fa-robot text-purple-500"></i>
                                     {{ $conversation->aiSetting->name ?? 'ไม่ระบุ AI' }}
@@ -123,13 +123,13 @@
                                     Active
                                 </span>
                             @else
-                                <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold">
+                                <span class="px-3 py-1 bg-gray-100/50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 rounded-full text-xs font-semibold">
                                     Completed
                                 </span>
                             @endif
 
                             <a href="{{ route('admin.line-bot.ai.conversations.detail', $conversation->id) }}"
-                               class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all text-sm font-semibold shadow-md hover:shadow-lg">
+                               class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all text-sm font-semibold shadow-md hover:shadow-lg">
                                 <i class="fas fa-eye mr-1"></i>ดูรายละเอียด
                             </a>
                         </div>
@@ -137,17 +137,17 @@
                 </div>
             @empty
                 <div class="p-12 text-center">
-                    <div class="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
+                    <div class="w-24 h-24 rounded-full bg-gray-100/50 dark:bg-gray-800/50 flex items-center justify-center mx-auto mb-6">
                         <i class="fas fa-inbox text-gray-400 text-4xl"></i>
                     </div>
                     <h3 class="text-2xl font-bold text-gray-900 mb-2">ยังไม่มีบทสนทนา</h3>
-                    <p class="text-gray-600">เมื่อมีผู้ใช้สนทนากับ AI บทสนทนาจะแสดงที่นี่</p>
+                    <p class="text-gray-600 dark:text-gray-400">เมื่อมีผู้ใช้สนทนากับ AI บทสนทนาจะแสดงที่นี่</p>
                 </div>
             @endforelse
         </div>
 
         @if($conversations->hasPages())
-            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50">
+            <div class="px-6 py-4 border-t border-gray-100 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50">
                 {{ $conversations->links() }}
             </div>
         @endif

@@ -164,6 +164,38 @@
             <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">Token Management</span>
         </a>
 
+        {{-- LINE Bot --}}
+        <a href="{{ route('admin.line-bot.ai.index') }}"
+           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.line-bot.*') ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+            <i class="fab fa-line w-5 text-center drop-shadow"></i>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">LINE Bot</span>
+        </a>
+
+        {{-- Trading Bot --}}
+        <a href="{{ route('admin.trading-bot.dashboard') }}"
+           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.trading-bot.*') ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+            <i class="fas fa-chart-line w-5 text-center drop-shadow"></i>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">Trading Bot</span>
+        </a>
+
+        {{-- Bot Automation --}}
+        <a href="{{ route('admin.bot-automation.index') }}"
+           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.bot-automation.*') ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+            <i class="fas fa-robot w-5 text-center drop-shadow"></i>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">Bot Automation</span>
+        </a>
+
+        {{-- LINE OA --}}
+        <a href="{{ route('admin.line-oa.index') }}"
+           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.line-oa.*') || request()->routeIs('admin.line-analytics.*') ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+            <i class="fab fa-line w-5 text-center drop-shadow"></i>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">LINE OA</span>
+        </a>
+
         {{-- Products --}}
         <a href="{{ route('admin.ecommerce.products.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ecommerce.products.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">

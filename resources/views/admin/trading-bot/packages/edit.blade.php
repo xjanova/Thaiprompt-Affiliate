@@ -1,13 +1,13 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+        <h2 class="font-semibold text-xl text-gray-900 dark:text-white dark:text-gray-200 leading-tight">
             Admin: Edit Package - {{ $package->name }}
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-6">
+            <div class="glass-fusion dark:bg-gray-800 shadow-xl rounded-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
 
                 @if($errors->any())
                     <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
@@ -25,34 +25,34 @@
 
                     <div class="grid grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Package Name *</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Package Name *</label>
                             <input type="text" name="name" value="{{ old('name', $package->name) }}" required
-                                   class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white">
+                                   class="w-full px-4 py-2 border rounded-xl dark:bg-gray-700 dark:text-white">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Slug *</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Slug *</label>
                             <input type="text" name="slug" value="{{ old('slug', $package->slug) }}" readonly
-                                   class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white bg-gray-100">
-                            <p class="text-xs text-gray-500 mt-1">Slug cannot be changed</p>
+                                   class="w-full px-4 py-2 border rounded-xl dark:bg-gray-700 dark:text-white bg-gray-100/50 dark:bg-gray-800/50">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Slug cannot be changed</p>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description *</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Description *</label>
                         <textarea name="description" rows="3" required
-                                  class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white">{{ old('description', $package->description) }}</textarea>
+                                  class="w-full px-4 py-2 border rounded-xl dark:bg-gray-700 dark:text-white">{{ old('description', $package->description) }}</textarea>
                     </div>
 
                     <div class="grid grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Price (฿) *</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Price (฿) *</label>
                             <input type="number" name="price" step="0.01" min="0" value="{{ old('price', $package->price) }}" required
-                                   class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white">
+                                   class="w-full px-4 py-2 border rounded-xl dark:bg-gray-700 dark:text-white">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Billing Cycle *</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Billing Cycle *</label>
                             <select name="billing_cycle" required
-                                    class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white">
+                                    class="w-full px-4 py-2 border rounded-xl dark:bg-gray-700 dark:text-white">
                                 <option value="monthly" {{ $package->billing_cycle === 'monthly' ? 'selected' : '' }}>Monthly</option>
                                 <option value="yearly" {{ $package->billing_cycle === 'yearly' ? 'selected' : '' }}>Yearly</option>
                                 <option value="lifetime" {{ $package->billing_cycle === 'lifetime' ? 'selected' : '' }}>Lifetime</option>
@@ -62,49 +62,49 @@
 
                     <div class="grid grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Max Bots *</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Max Bots *</label>
                             <input type="number" name="max_bots" min="1" value="{{ old('max_bots', $package->max_bots) }}" required
-                                   class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white">
+                                   class="w-full px-4 py-2 border rounded-xl dark:bg-gray-700 dark:text-white">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Max Exchanges *</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Max Exchanges *</label>
                             <input type="number" name="max_exchanges" min="1" value="{{ old('max_exchanges', $package->max_exchanges) }}" required
-                                   class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white">
+                                   class="w-full px-4 py-2 border rounded-xl dark:bg-gray-700 dark:text-white">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Max Strategies *</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Max Strategies *</label>
                             <input type="number" name="max_strategies" min="1" value="{{ old('max_strategies', $package->max_strategies) }}" required
-                                   class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white">
+                                   class="w-full px-4 py-2 border rounded-xl dark:bg-gray-700 dark:text-white">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Max Concurrent Trades *</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Max Concurrent Trades *</label>
                             <input type="number" name="max_concurrent_trades" min="1" value="{{ old('max_concurrent_trades', $package->max_concurrent_trades) }}" required
-                                   class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white">
+                                   class="w-full px-4 py-2 border rounded-xl dark:bg-gray-700 dark:text-white">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Features (one per line)</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Features (one per line)</label>
                         <textarea name="features[]" rows="6"
-                                  class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white">{{ old('features', is_array($package->features) ? implode("\n", $package->features) : '') }}</textarea>
-                        <p class="text-sm text-gray-500 mt-1">Enter each feature on a new line</p>
+                                  class="w-full px-4 py-2 border rounded-xl dark:bg-gray-700 dark:text-white">{{ old('features', is_array($package->features) ? implode("\n", $package->features) : '') }}</textarea>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter each feature on a new line</p>
                     </div>
 
                     <div>
                         <label class="flex items-center">
                             <input type="checkbox" name="is_active" value="1" {{ old('is_active', $package->is_active) ? 'checked' : '' }}
                                    class="mr-2">
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Active Package</span>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Active Package</span>
                         </label>
                     </div>
 
                     <div class="flex items-center justify-between pt-4 border-t">
-                        <a href="{{ route('admin.trading-bot.packages.index') }}" class="text-gray-600 hover:underline">← Back</a>
+                        <a href="{{ route('admin.trading-bot.packages.index') }}" class="text-gray-600 dark:text-gray-400 hover:underline">← Back</a>
                         <div class="flex gap-3">
-                            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update Package</button>
+                            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700">Update Package</button>
                         </div>
                     </div>
                 </form>

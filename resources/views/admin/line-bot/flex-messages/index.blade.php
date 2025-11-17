@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Flex Message Templates')
 
@@ -10,7 +10,7 @@
         <div class="relative flex items-center justify-between">
             <div>
                 <div class="flex items-center gap-3 mb-2">
-                    <div class="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <div class="w-14 h-14 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center" border border-white/20 dark:border-white/10>
                         <i class="fas fa-layer-group text-white text-3xl"></i>
                     </div>
                     <div>
@@ -21,7 +21,7 @@
             </div>
             <div>
                 <a href="{{ route('admin.line-bot.flex.create') }}"
-                   class="px-6 py-3 bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-xl hover:bg-white/30 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                   class="px-6 py-3 glass-fusion backdrop-blur-md border border-white/30 text-white rounded-xl hover:glass-fusion transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                     <i class="fas fa-plus mr-2"></i>New Template
                 </a>
             </div>
@@ -45,23 +45,23 @@
     <!-- Category Filter -->
     <div class="mb-6 flex gap-2 flex-wrap">
         <a href="{{ route('admin.line-bot.flex.index') }}"
-           class="px-4 py-2 rounded-lg {{ !request('category') ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50' }} transition">
+           class="px-4 py-2 rounded-xl {{ !request('category') ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50' }} transition">
             All Templates
         </a>
         <a href="{{ route('admin.line-bot.flex.index', ['category' => 'welcome']) }}"
-           class="px-4 py-2 rounded-lg {{ request('category') === 'welcome' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50' }} transition">
+           class="px-4 py-2 rounded-xl {{ request('category') === 'welcome' ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50' }} transition">
             Welcome
         </a>
         <a href="{{ route('admin.line-bot.flex.index', ['category' => 'promotion']) }}"
-           class="px-4 py-2 rounded-lg {{ request('category') === 'promotion' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50' }} transition">
+           class="px-4 py-2 rounded-xl {{ request('category') === 'promotion' ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50' }} transition">
             Promotion
         </a>
         <a href="{{ route('admin.line-bot.flex.index', ['category' => 'product']) }}"
-           class="px-4 py-2 rounded-lg {{ request('category') === 'product' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50' }} transition">
+           class="px-4 py-2 rounded-xl {{ request('category') === 'product' ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50' }} transition">
             Product
         </a>
         <a href="{{ route('admin.line-bot.flex.index', ['category' => 'notification']) }}"
-           class="px-4 py-2 rounded-lg {{ request('category') === 'notification' ? 'bg-pink-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50' }} transition">
+           class="px-4 py-2 rounded-xl {{ request('category') === 'notification' ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50' }} transition">
             Notification
         </a>
     </div>
@@ -69,7 +69,7 @@
     <!-- Templates Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($templates as $template)
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1" border border-white/20 dark:border-white/10>
                 <!-- Header -->
                 <div class="bg-gradient-to-r from-pink-500 to-rose-600 px-6 py-4">
                     <div class="flex items-center justify-between">
@@ -86,17 +86,17 @@
                 <!-- Content -->
                 <div class="p-6">
                     @if($template->description)
-                        <p class="text-sm text-gray-600 mb-4">{{ Str::limit($template->description, 100) }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ Str::limit($template->description, 100) }}</p>
                     @endif
 
                     <!-- Stats -->
                     <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
                         <div class="text-center">
-                            <p class="text-xs text-gray-500">Used</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Used</p>
                             <p class="text-lg font-bold text-gray-900">{{ number_format($template->usage_count) }}</p>
                         </div>
                         <div class="text-center">
-                            <p class="text-xs text-gray-500">Created</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Created</p>
                             <p class="text-sm font-semibold text-gray-900">{{ $template->created_at->format('M d') }}</p>
                         </div>
                     </div>
@@ -104,15 +104,15 @@
                     <!-- Actions -->
                     <div class="flex gap-2">
                         <button onclick="previewTemplate({{ $template->id }})"
-                                class="flex-1 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm font-semibold">
+                                class="flex-1 px-4 py-2 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 transition text-sm font-semibold">
                             <i class="fas fa-eye mr-1"></i>Preview
                         </button>
                         <button onclick="testSend({{ $template->id }})"
-                                class="flex-1 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-sm font-semibold">
+                                class="flex-1 px-4 py-2 bg-green-100 text-green-700 rounded-xl hover:bg-green-200 transition text-sm font-semibold">
                             <i class="fas fa-paper-plane mr-1"></i>Send
                         </button>
                         <a href="{{ route('admin.line-bot.flex.edit', $template->id) }}"
-                           class="flex-1 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition text-sm font-semibold text-center">
+                           class="flex-1 px-4 py-2 bg-purple-100 text-purple-700 rounded-xl hover:bg-purple-200 transition text-sm font-semibold text-center">
                             <i class="fas fa-edit mr-1"></i>Edit
                         </a>
                     </div>
@@ -120,12 +120,12 @@
             </div>
         @empty
             <div class="col-span-3">
-                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-12 text-center">
+                <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 p-12 text-center" border border-white/20 dark:border-white/10>
                     <div class="w-24 h-24 rounded-full bg-pink-100 flex items-center justify-center mx-auto mb-6">
                         <i class="fas fa-layer-group text-pink-500 text-4xl"></i>
                     </div>
                     <h3 class="text-2xl font-bold text-gray-900 mb-2">No Templates Yet</h3>
-                    <p class="text-gray-600 mb-6">Create your first Flex Message template</p>
+                    <p class="text-gray-600 dark:text-gray-400 mb-6">Create your first Flex Message template</p>
                     <a href="{{ route('admin.line-bot.flex.create') }}"
                        class="inline-block px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-xl hover:from-pink-700 hover:to-rose-700 transition shadow-lg">
                         <i class="fas fa-plus mr-2"></i>Create First Template
@@ -145,7 +145,7 @@
 
 <!-- Preview Modal -->
 <div id="previewModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
+    <div class="glass-fusion rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all" border border-white/20 dark:border-white/10>
         <div class="bg-gradient-to-r from-pink-500 to-rose-600 px-6 py-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-white flex items-center">
@@ -157,10 +157,10 @@
             </div>
         </div>
 
-        <div id="preview-content" class="p-6 bg-gray-50" style="max-height: 70vh; overflow-y: auto;">
+        <div id="preview-content" class="p-6 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50" style="max-height: 70vh; overflow-y: auto;">
             <div class="text-center py-8">
                 <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
-                <p class="mt-4 text-gray-600">Loading preview...</p>
+                <p class="mt-4 text-gray-600 dark:text-gray-400">Loading preview...</p>
             </div>
         </div>
     </div>
@@ -168,7 +168,7 @@
 
 <!-- Test Send Modal -->
 <div id="testModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all">
+    <div class="glass-fusion rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all" border border-white/20 dark:border-white/10>
         <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-white flex items-center">
@@ -184,24 +184,24 @@
             <input type="hidden" id="test-template-id">
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     <i class="fas fa-user text-green-500 mr-1"></i> LINE User ID
                 </label>
                 <input type="text" id="test-user-id" required
-                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
                     placeholder="U1234567890abcdef1234567890abcdef">
-                <p class="text-xs text-gray-500 mt-1">The recipient's LINE User ID</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">The recipient's LINE User ID</p>
             </div>
 
             <div id="test-result" class="hidden"></div>
 
             <div class="flex gap-3 pt-4">
                 <button type="button" onclick="closeTest()"
-                        class="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold">
+                        class="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 transition font-semibold">
                     Cancel
                 </button>
                 <button type="submit" id="test-submit-btn"
-                        class="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition shadow-lg font-semibold">
+                        class="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition shadow-lg font-semibold">
                     <i class="fas fa-paper-plane mr-2"></i>Send Test
                 </button>
             </div>
@@ -241,7 +241,7 @@ function previewTemplate(templateId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            document.getElementById('preview-content').innerHTML = data.html || '<p class="text-center text-gray-500">Preview not available</p>';
+            document.getElementById('preview-content').innerHTML = data.html || '<p class="text-center text-gray-500 dark:text-gray-400">Preview not available</p>';
         } else {
             document.getElementById('preview-content').innerHTML = '<p class="text-center text-red-500">Failed to load preview</p>';
         }
@@ -291,17 +291,17 @@ function submitTest(event) {
         document.getElementById('test-submit-btn').disabled = false;
 
         if (data.success) {
-            resultDiv.className = 'p-4 bg-green-50 border border-green-200 rounded-lg';
+            resultDiv.className = 'p-4 bg-green-50 border border-green-200 rounded-xl';
             resultDiv.innerHTML = '<p class="text-sm text-green-800"><i class="fas fa-check-circle mr-2"></i>' + (data.message || 'Message sent successfully!') + '</p>';
         } else {
-            resultDiv.className = 'p-4 bg-red-50 border border-red-200 rounded-lg';
+            resultDiv.className = 'p-4 bg-red-50 border border-red-200 rounded-xl';
             resultDiv.innerHTML = '<p class="text-sm text-red-800"><i class="fas fa-exclamation-circle mr-2"></i>' + (data.message || 'Failed to send message') + '</p>';
         }
         resultDiv.classList.remove('hidden');
     })
     .catch(error => {
         document.getElementById('test-submit-btn').disabled = false;
-        resultDiv.className = 'p-4 bg-red-50 border border-red-200 rounded-lg';
+        resultDiv.className = 'p-4 bg-red-50 border border-red-200 rounded-xl';
         resultDiv.innerHTML = '<p class="text-sm text-red-800"><i class="fas fa-exclamation-circle mr-2"></i>Error: ' + error.message + '</p>';
         resultDiv.classList.remove('hidden');
     });

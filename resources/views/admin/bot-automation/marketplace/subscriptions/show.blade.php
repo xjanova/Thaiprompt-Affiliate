@@ -1,16 +1,16 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายละเอียดการสมัครสมาชิก')
 
 @section('content')
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
     {{-- Gradient Header --}}
     <div class="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 via-amber-600 to-yellow-700 dark:from-orange-900 dark:via-amber-900 dark:to-yellow-950 p-8 shadow-2xl">
         <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
 
         <div class="relative flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30">
+                <div class="w-16 h-16 rounded-2xl glass-fusion backdrop-blur-sm flex items-center justify-center border-2 border-white/30" border border-white/20 dark:border-white/10>
                     <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
@@ -25,7 +25,7 @@
             <div class="flex items-center gap-3">
                 {{-- Language Switcher --}}
                 <div class="relative inline-block" x-data="{ open: false }">
-                    <button @click="open = !open" class="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-200 border border-white/30 flex items-center gap-2">
+                    <button @click="open = !open" class="px-4 py-2 glass-fusion backdrop-blur-sm text-white rounded-xl hover:glass-fusion transition-all duration-200 border border-white/30 flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
                         </svg>
@@ -33,23 +33,23 @@
                     </button>
 
                     <div x-show="open" @click.away="open = false" x-transition
-                         class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden z-50">
-                        <a href="/lang/th" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                         class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 dark:border-slate-700 overflow-hidden z-50" border border-white/20 dark:border-white/10>
+                        <a href="/lang/th" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                             <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
                         </a>
-                        <a href="/lang/en" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        <a href="/lang/en" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                             <span class="mr-2">🇬🇧</span> English
                         </a>
-                        <a href="/lang/zh" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        <a href="/lang/zh" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                             <span class="mr-2">🇨🇳</span> 中文
                         </a>
-                        <a href="/lang/ja" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        <a href="/lang/ja" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                             <span class="mr-2">🇯🇵</span> 日本語
                         </a>
                     </div>
                 </div>
 <a href="{{ route('admin.bot-automation.marketplace.subscriptions.index') }}"
-               class="inline-flex items-center px-6 py-3 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-orange-600 dark:text-orange-400 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+               class="inline-flex items-center px-6 py-3 glass-fusion hover:bg-gray-100/50 dark:bg-gray-800/50 dark:bg-gray-800 dark:hover:bg-gray-700 text-orange-600 dark:text-orange-400 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
@@ -62,7 +62,7 @@
         {{-- Main Content --}}
         <div class="lg:col-span-2 space-y-6">
             {{-- Subscription Information --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700 dark:border-gray-700" border border-white/20 dark:border-white/10>
                 <div class="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-gray-800 dark:to-gray-800 px-6 py-4 border-b border-orange-200 dark:border-gray-700">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
                         <svg class="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,11 +74,11 @@
                 <div class="p-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">รหัสการสมัคร</label>
+                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">รหัสการสมัคร</label>
                             <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white">#{{ $subscription->id ?? 'N/A' }}</p>
                         </div>
                         <div>
-                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">สถานะ</label>
+                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">สถานะ</label>
                             <div class="mt-1">
                                 @if(isset($subscription->status))
                                     @if($subscription->status == 'active')
@@ -86,67 +86,67 @@
                                     @elseif($subscription->status == 'expired')
                                         <span data-translate class="px-4 py-2 inline-flex text-sm font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">หมดอายุ</span>
                                     @elseif($subscription->status == 'cancelled')
-                                        <span data-translate class="px-4 py-2 inline-flex text-sm font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">ยกเลิก</span>
+                                        <span data-translate class="px-4 py-2 inline-flex text-sm font-semibold rounded-full bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white dark:bg-gray-900/30 dark:text-gray-400">ยกเลิก</span>
                                     @else
                                         <span class="px-4 py-2 inline-flex text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">{{ ucfirst($subscription->status) }}</span>
                                     @endif
                                 @else
-                                    <span class="text-gray-500">N/A</span>
+                                    <span class="text-gray-500 dark:text-gray-400">N/A</span>
                                 @endif
                             </div>
                         </div>
                         <div>
-                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">ผู้ใช้</label>
+                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">ผู้ใช้</label>
                             <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">{{ $subscription->user_name ?? 'N/A' }}</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $subscription->user_email ?? 'N/A' }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $subscription->user_email ?? 'N/A' }}</p>
                         </div>
                         <div>
-                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">รายการ</label>
+                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">รายการ</label>
                             <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">{{ $subscription->listing_title ?? 'N/A' }}</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $subscription->listing_category ?? 'N/A' }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $subscription->listing_category ?? 'N/A' }}</p>
                         </div>
                         <div>
-                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">วันเริ่มต้น</label>
+                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">วันเริ่มต้น</label>
                             <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">{{ isset($subscription->start_date) ? date('d F Y', strtotime($subscription->start_date)) : 'N/A' }}</p>
                         </div>
                         <div>
-                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">วันหมดอายุ</label>
+                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">วันหมดอายุ</label>
                             <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">{{ isset($subscription->end_date) ? date('d F Y', strtotime($subscription->end_date)) : 'N/A' }}</p>
                         </div>
                         <div>
-                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">จำนวนเงิน</label>
+                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">จำนวนเงิน</label>
                             <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">${{ number_format($subscription->amount ?? 0, 2) }}</p>
                         </div>
                         <div>
-                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">รอบการเรียกเก็บเงิน</label>
+                            <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">รอบการเรียกเก็บเงิน</label>
                             <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">{{ ucfirst($subscription->billing_cycle ?? 'monthly') }}</p>
                         </div>
                     </div>
 
                     @if(isset($subscription->notes) && $subscription->notes)
-                    <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">หมายเหตุ</label>
-                        <p class="mt-2 text-gray-700 dark:text-gray-300">{{ $subscription->notes }}</p>
+                    <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 dark:border-gray-700">
+                        <label data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">หมายเหตุ</label>
+                        <p class="mt-2 text-gray-700 dark:text-gray-300 dark:text-gray-300">{{ $subscription->notes }}</p>
                     </div>
                     @endif
 
-                    <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 dark:border-gray-700">
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                            <div class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                 <p>สร้างเมื่อ: {{ isset($subscription->created_at) ? $subscription->created_at->format('d M Y H:i') : 'N/A' }}</p>
                                 <p>อัพเดทล่าสุด: {{ isset($subscription->updated_at) ? $subscription->updated_at->format('d M Y H:i') : 'N/A' }}</p>
                             </div>
                             @if(isset($subscription->status) && $subscription->status == 'active')
                             <div class="flex gap-2">
                                 <button onclick="cancelSubscription()"
-                                        class="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 text-white font-medium rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
+                                        class="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 text-white font-medium rounded-xl transition-all duration-300 shadow-md hover:shadow-lg">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
                                     </svg>
                                     ยกเลิก
                                 </button>
                                 <button onclick="renewSubscription()"
-                                        class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white font-medium rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
+                                        class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white font-medium rounded-xl transition-all duration-300 shadow-md hover:shadow-lg">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                                     </svg>
@@ -160,7 +160,7 @@
             </div>
 
             {{-- Payment History --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700 dark:border-gray-700" border border-white/20 dark:border-white/10>
                 <div class="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-gray-800 dark:to-gray-800 px-6 py-4 border-b border-orange-200 dark:border-gray-700">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
                         <svg class="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -171,18 +171,18 @@
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-700">
+                        <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase" data-translate>วันที่</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase" data-translate>จำนวน</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase" data-translate>สถานะ</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">ID</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase" data-translate>วิธีชำระ</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase" data-translate>วันที่</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase" data-translate>จำนวน</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase" data-translate>สถานะ</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase" data-translate>วิธีชำระ</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody class="glass-fusion dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             @forelse($paymentHistory ?? [] as $payment)
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
                                 <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">{{ isset($payment->date) ? date('d M Y', strtotime($payment->date)) : 'N/A' }}</td>
                                 <td class="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">${{ number_format($payment->amount ?? 0, 2) }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -194,12 +194,12 @@
                                         <span class="px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">{{ ucfirst($payment->status) }}</span>
                                     @endif
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 font-mono">{{ $payment->transaction_id ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ ucfirst($payment->method ?? 'N/A') }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 font-mono">{{ $payment->transaction_id ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">{{ ucfirst($payment->method ?? 'N/A') }}</td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">ไม่มีประวัติการชำระเงิน</td>
+                                <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400 dark:text-gray-400">ไม่มีประวัติการชำระเงิน</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -211,61 +211,61 @@
         {{-- Sidebar --}}
         <div class="space-y-6">
             {{-- Quick Actions --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700 dark:border-gray-700" border border-white/20 dark:border-white/10>
                 <div class="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-gray-800 dark:to-gray-800 px-6 py-4 border-b border-orange-200 dark:border-gray-700">
                     <h3 data-translate class="text-lg font-bold text-gray-900 dark:text-white">การดำเนินการเร็ว</h3>
                 </div>
                 <div class="p-4">
                     <div class="space-y-2">
-                        <a href="#" class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors">
-                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <a href="#" class="flex items-center p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-600 rounded-xl transition-colors">
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 dark:text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                             </svg>
-                            <span data-translate class="text-sm font-medium text-gray-700 dark:text-gray-300">ส่งอีเมลถึงผู้ใช้</span>
+                            <span data-translate class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">ส่งอีเมลถึงผู้ใช้</span>
                         </a>
-                        <a href="#" class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors">
-                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <a href="#" class="flex items-center p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-600 rounded-xl transition-colors">
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 dark:text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
-                            <span data-translate class="text-sm font-medium text-gray-700 dark:text-gray-300">ดูใบแจ้งหนี้</span>
+                            <span data-translate class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">ดูใบแจ้งหนี้</span>
                         </a>
-                        <a href="#" class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors">
-                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <a href="#" class="flex items-center p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-600 rounded-xl transition-colors">
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 dark:text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                             </svg>
-                            <span data-translate class="text-sm font-medium text-gray-700 dark:text-gray-300">ดาวน์โหลดใบเสร็จ</span>
+                            <span data-translate class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">ดาวน์โหลดใบเสร็จ</span>
                         </a>
-                        <a href="#" class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors">
-                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <a href="#" class="flex items-center p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-600 rounded-xl transition-colors">
+                            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 dark:text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                             </svg>
-                            <span data-translate class="text-sm font-medium text-gray-700 dark:text-gray-300">แก้ไขการสมัคร</span>
+                            <span data-translate class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">แก้ไขการสมัคร</span>
                         </a>
                     </div>
                 </div>
             </div>
 
             {{-- Usage Statistics --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700 dark:border-gray-700" border border-white/20 dark:border-white/10>
                 <div class="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-gray-800 dark:to-gray-800 px-6 py-4 border-b border-orange-200 dark:border-gray-700">
                     <h3 data-translate class="text-lg font-bold text-gray-900 dark:text-white">สถิติการใช้งาน</h3>
                 </div>
                 <div class="p-6">
                     <div class="space-y-4">
-                        <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
-                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">API Calls ทั้งหมด:</span>
+                        <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
+                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">API Calls ทั้งหมด:</span>
                             <span class="text-lg font-bold text-gray-900 dark:text-white">{{ $subscription->api_calls ?? '0' }}</span>
                         </div>
-                        <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
-                            <span data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">ใช้ครั้งสุดท้าย:</span>
+                        <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
+                            <span data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">ใช้ครั้งสุดท้าย:</span>
                             <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ isset($subscription->last_used) ? date('d M Y', strtotime($subscription->last_used)) : 'ยังไม่เคยใช้' }}</span>
                         </div>
-                        <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
-                            <span data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">บอทที่ใช้งาน:</span>
+                        <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
+                            <span data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">บอทที่ใช้งาน:</span>
                             <span class="text-lg font-bold text-gray-900 dark:text-white">{{ $subscription->active_bots ?? '0' }}</span>
                         </div>
                         <div class="flex justify-between items-center">
-                            <span data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">พื้นที่ใช้งาน:</span>
+                            <span data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">พื้นที่ใช้งาน:</span>
                             <span class="text-lg font-bold text-gray-900 dark:text-white">{{ $subscription->storage_used ?? '0' }} MB</span>
                         </div>
                     </div>

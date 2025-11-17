@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Analytics - AI Chatbot')
 
@@ -21,7 +21,7 @@
                 </div>
             </div>
             <a href="{{ route('admin.line-bot.ai.index') }}"
-               class="px-6 py-3 bg-white/15 backdrop-blur-md border border-white/25 text-white rounded-xl hover:bg-white/25 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-1">
+               class="px-6 py-3 glass-fusion backdrop-blur-md border border-white/25 text-white rounded-xl hover:glass-fusion transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-1">
                 <i class="fas fa-arrow-left mr-2"></i>
                 <span class="font-semibold">กลับไปตั้งค่า</span>
             </a>
@@ -30,27 +30,27 @@
 
     <!-- Main Statistics -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+        <div class="style="background: var(--arrow-x-primary-gradient)" rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-blue-100 text-sm font-medium mb-1">การตั้งค่า AI</p>
                     <h3 class="text-4xl font-bold mb-1">{{ $stats['total_ai_settings'] }}</h3>
                     <p class="text-xs text-blue-200">{{ $stats['active_ai_settings'] }} เปิดใช้งาน</p>
                 </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                     <i class="fas fa-robot text-2xl"></i>
                 </div>
             </div>
         </div>
 
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+        <div class="style="background: var(--arrow-x-accent-gradient)" rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-purple-100 text-sm font-medium mb-1">ฐานความรู้</p>
                     <h3 class="text-4xl font-bold mb-1">{{ $stats['total_knowledge_bases'] }}</h3>
                     <p class="text-xs text-purple-200">แหล่งข้อมูลทั้งหมด</p>
                 </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                     <i class="fas fa-book text-2xl"></i>
                 </div>
             </div>
@@ -63,7 +63,7 @@
                     <h3 class="text-4xl font-bold mb-1">{{ number_format($stats['total_conversations']) }}</h3>
                     <p class="text-xs text-green-200">{{ $stats['today_conversations'] }} วันนี้</p>
                 </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                     <i class="fas fa-comments text-2xl"></i>
                 </div>
             </div>
@@ -76,7 +76,7 @@
                     <h3 class="text-4xl font-bold mb-1">{{ number_format($stats['total_messages']) }}</h3>
                     <p class="text-xs text-orange-200">{{ $stats['today_messages'] }} วันนี้</p>
                 </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                     <i class="fas fa-envelope text-2xl"></i>
                 </div>
             </div>
@@ -86,11 +86,11 @@
     <!-- Charts Row -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <!-- Conversations Chart -->
-        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+        <div class="glass-fusion rounded-2xl shadow-xl border border-gray-100 p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <h3 class="text-xl font-bold text-gray-900">บทสนทนาย้อนหลัง 7 วัน</h3>
-                    <p class="text-sm text-gray-600">จำนวนบทสนทนาแต่ละวัน</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">จำนวนบทสนทนาแต่ละวัน</p>
                 </div>
                 <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
                     <i class="fas fa-chart-line text-white text-xl"></i>
@@ -102,11 +102,11 @@
         </div>
 
         <!-- Provider Distribution -->
-        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+        <div class="glass-fusion rounded-2xl shadow-xl border border-gray-100 p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <h3 class="text-xl font-bold text-gray-900">การกระจายของ AI Provider</h3>
-                    <p class="text-sm text-gray-600">จำนวนข้อความต่อ Provider</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">จำนวนข้อความต่อ Provider</p>
                 </div>
                 <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-600 rounded-xl flex items-center justify-center">
                     <i class="fas fa-chart-pie text-white text-xl"></i>
@@ -119,7 +119,7 @@
     </div>
 
     <!-- AI Settings Performance -->
-    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+    <div class="glass-fusion rounded-2xl shadow-xl border border-gray-100 overflow-hidden" border border-white/20 dark:border-white/10>
         <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
             <h2 class="text-xl font-bold text-gray-900">ประสิทธิภาพของแต่ละ AI Setting</h2>
         </div>
@@ -127,7 +127,7 @@
         <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 @forelse($aiSettings as $setting)
-                    <div class="p-5 rounded-xl border-2 border-gray-200 hover:border-purple-300 transition-all hover:shadow-lg">
+                    <div class="p-5 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-purple-300 transition-all hover:shadow-lg">
                         <div class="flex items-center gap-3 mb-4">
                             <div class="w-12 h-12 rounded-xl bg-gradient-to-br
                                 @if($setting->provider === 'openai') from-green-500 to-emerald-600
@@ -140,19 +140,19 @@
                             </div>
                             <div class="flex-1 min-w-0">
                                 <h4 class="font-bold text-gray-900 truncate">{{ $setting->name }}</h4>
-                                <p class="text-xs text-gray-600 uppercase font-semibold">{{ $setting->provider }}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase font-semibold">{{ $setting->provider }}</p>
                             </div>
                         </div>
 
                         <div class="space-y-2">
-                            <div class="flex items-center justify-between p-2 bg-blue-50 rounded-lg">
+                            <div class="flex items-center justify-between p-2 bg-blue-50 rounded-xl">
                                 <span class="text-xs font-medium text-blue-700">Knowledge Bases</span>
                                 <span class="px-2 py-1 bg-blue-600 text-white rounded-md text-xs font-bold">
                                     {{ $setting->knowledgeBases->count() }}
                                 </span>
                             </div>
 
-                            <div class="flex items-center justify-between p-2 bg-purple-50 rounded-lg">
+                            <div class="flex items-center justify-between p-2 bg-purple-50 rounded-xl">
                                 <span class="text-xs font-medium text-purple-700">Status</span>
                                 @if($setting->is_active)
                                     <span class="px-2 py-1 bg-green-600 text-white rounded-md text-xs font-bold flex items-center gap-1">
@@ -168,7 +168,7 @@
                         </div>
                     </div>
                 @empty
-                    <div class="col-span-3 text-center py-8 text-gray-500">
+                    <div class="col-span-3 text-center py-8 text-gray-500 dark:text-gray-400">
                         <i class="fas fa-inbox text-4xl mb-2"></i>
                         <p>ยังไม่มีการตั้งค่า AI</p>
                     </div>

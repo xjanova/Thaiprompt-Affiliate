@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'แดชบอร์ดวิเคราะห์บอท')
 
@@ -12,7 +12,7 @@
         <div class="relative flex items-center justify-between w-full">
             <div class="flex items-center gap-4">
                 {{-- Icon พร้อม Animation --}}
-                <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30 animate-pulse">
+                <div class="w-16 h-16 rounded-2xl glass-fusion backdrop-blur-sm flex items-center justify-center border-2 border-white/30 animate-pulse" border border-white/20 dark:border-white/10>
                     <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                     </svg>
@@ -25,7 +25,7 @@
 
             {{-- Language Switcher --}}
             <div class="relative inline-block" x-data="{ open: false }">
-                <button @click="open = !open" class="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-200 border border-white/30 flex items-center gap-2">
+                <button @click="open = !open" class="px-4 py-2 glass-fusion backdrop-blur-sm text-white rounded-xl hover:glass-fusion transition-all duration-200 border border-white/30 flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
                     </svg>
@@ -33,17 +33,17 @@
                 </button>
 
                 <div x-show="open" @click.away="open = false" x-transition
-                     class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden z-50">
-                    <a href="/lang/th" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                     class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 dark:border-slate-700 overflow-hidden z-50" border border-white/20 dark:border-white/10>
+                    <a href="/lang/th" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                         <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
                     </a>
-                    <a href="/lang/en" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                    <a href="/lang/en" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                         <span class="mr-2">🇬🇧</span> English
                     </a>
-                    <a href="/lang/zh" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                    <a href="/lang/zh" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                         <span class="mr-2">🇨🇳</span> 中文
                     </a>
-                    <a href="/lang/ja" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                    <a href="/lang/ja" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                         <span class="mr-2">🇯🇵</span> 日本語
                     </a>
                 </div>
@@ -74,7 +74,7 @@
         <div class="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-800/20 rounded-2xl shadow-lg border border-green-200 dark:border-green-800 overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-xl animate-fade-in" style="animation-delay: 0.1s;">
             <div class="p-6">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
+                    <div class="w-14 h-14 rounded-xl style="background: var(--arrow-x-success-gradient)" flex items-center justify-center shadow-lg">
                         <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
@@ -126,7 +126,7 @@
     {{-- Main Content Grid: Chart + Quick Links --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {{-- Analytics Chart (2 columns) --}}
-        <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+        <div class="lg:col-span-2 glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
             <div class="bg-gradient-to-r from-violet-500 to-fuchsia-600 dark:from-violet-900 dark:to-fuchsia-900 px-6 py-4">
                 <h3 class="text-xl font-bold text-white flex items-center">
                     <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,8 +156,8 @@
                 <div class="space-y-3">
                     {{-- Link 1: Executions --}}
                     <a href="{{ route('admin.bot-automation.analytics.executions') }}"
-                       class="flex items-center gap-3 p-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl transition-all duration-200 transform hover:scale-105 border border-white/20">
-                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                       class="flex items-center gap-3 p-4 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl transition-all duration-200 transform hover:scale-105 border border-white/20">
+                        <div class="w-10 h-10 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -174,8 +174,8 @@
 
                     {{-- Link 2: Engagement --}}
                     <a href="{{ route('admin.bot-automation.analytics.engagement') }}"
-                       class="flex items-center gap-3 p-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl transition-all duration-200 transform hover:scale-105 border border-white/20">
-                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                       class="flex items-center gap-3 p-4 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl transition-all duration-200 transform hover:scale-105 border border-white/20">
+                        <div class="w-10 h-10 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                             </svg>
@@ -191,8 +191,8 @@
 
                     {{-- Link 3: Performance --}}
                     <a href="{{ route('admin.bot-automation.analytics.performance') }}"
-                       class="flex items-center gap-3 p-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl transition-all duration-200 transform hover:scale-105 border border-white/20">
-                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                       class="flex items-center gap-3 p-4 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl transition-all duration-200 transform hover:scale-105 border border-white/20">
+                        <div class="w-10 h-10 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                             </svg>
@@ -208,8 +208,8 @@
 
                     {{-- Link 4: Platforms --}}
                     <a href="{{ route('admin.bot-automation.analytics.platforms') }}"
-                       class="flex items-center gap-3 p-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl transition-all duration-200 transform hover:scale-105 border border-white/20">
-                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                       class="flex items-center gap-3 p-4 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl transition-all duration-200 transform hover:scale-105 border border-white/20">
+                        <div class="w-10 h-10 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                             </svg>
