@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.79.1] - 2025-11-17
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1328 from xjanova/claude/fix-auto-hide-menu-01NjaDnDFo1htLVRXaU25mam (9d260490)
+- build: compile assets after sidebar store refactoring (9d022998)
+
 ## [v3.79.0] - 2025-11-17
 
 ### ✨ Features
