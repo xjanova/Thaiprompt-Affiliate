@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.79.4] - 2025-11-17
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1331 from xjanova/claude/fix-line-seeder-error-017FFDQaqzr6hqeEhgb8MXTZ (e9355318)
+- fix: แก้ไขการ query column ใน LineBotAiSeeder (3d76cc64)
+### 🔧 Other Changes
+
+
 ## [v3.79.3] - 2025-11-17
 
 ### ✨ Features
