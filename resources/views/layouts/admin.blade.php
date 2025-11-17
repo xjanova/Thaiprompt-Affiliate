@@ -135,6 +135,29 @@
                     </div>
 
                     <div class="flex items-center space-x-3">
+                        <!-- User Dashboard Link (For Admin) -->
+                        @if(Auth::check() && in_array(Auth::user()->role, ['admin', 'super_admin']))
+                            <a href="{{ route('user.dashboard') }}"
+                               class="group relative flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 dark:from-blue-600 dark:to-indigo-700 dark:hover:from-blue-700 dark:hover:to-indigo-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden"
+                               title="แดชบอร์ดผู้ใช้">
+                                <!-- Animated Background Effect -->
+                                <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
+
+                                <!-- Icon -->
+                                <svg class="w-5 h-5 relative z-10 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
+
+                                <!-- Text (Hidden on mobile) -->
+                                <span class="hidden md:block text-sm font-semibold relative z-10 group-hover:scale-105 transition-transform duration-300">
+                                    แดชบอร์ดผู้ใช้
+                                </span>
+
+                                <!-- Badge/Indicator -->
+                                <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white dark:border-gray-800 animate-pulse"></div>
+                            </a>
+                        @endif
+
                         <!-- Dashboard Switcher -->
                         <x-dashboard-switcher />
 
