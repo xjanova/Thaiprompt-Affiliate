@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.65.0] - 2025-11-17
+
+### ✨ Features
+- feat: เพิ่มระบบ KYC ผ่าน LINE พร้อม OCR แปลงรูปเป็นข้อความ (c98b6f3c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1310 from xjanova/claude/line-registration-system-01T6uV5UQenHhkFnLrCwD66m (aeabd0d4)
+- docs: เพิ่มเอกสารวิเคราะห์ระบบ KYC แบบละเอียด (5bd9d9dc)
+- docs: เพิ่มคู่มือการใช้งาน LINE KYC System แบบครบวงจร (5b117f6c)
+
 ## [v3.64.2] - 2025-11-17
 
 ### ✨ Features
