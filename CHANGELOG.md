@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.64.0] - 2025-11-17
+
+### ✨ Features
+- feat: add Theme Customizer CSS variables support to all MLM pages (c0fc0706)
+### 🐛 Bug Fixes
+- fix: correct route name in calculator page (35749af8)
+- fix: repair MLM Reports page with V3 redesign (e37810ba)
+### 🔧 Other Changes
+- Merge pull request #1307 from xjanova/claude/refactor-affiliate-mlm-01SGSbAt7rwBBW9DPUyQrS28 (cec931fc)
+
 ## [v3.63.0] - 2025-11-17
 
 ### ✨ Features
