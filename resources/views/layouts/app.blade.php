@@ -58,6 +58,9 @@
             @endif
         }
     </style>
+
+    {{-- Laravel Echo Configuration --}}
+    <x-echo-config />
 </head>
 <body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
     <!-- Spaceship Background -->
@@ -127,6 +130,9 @@
 
     {{-- Service Worker for Offline Support --}}
     @vite('resources/js/service-worker-register.js')
+
+    {{-- Laravel Echo for Real-time Notifications --}}
+    @vite('resources/js/echo-setup.js')
 
     @stack('scripts')
 </body>
