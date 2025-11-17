@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ตั้งค่าแชทบอท AI - LINE Official Account')
 
@@ -11,7 +11,7 @@
 
         <!-- Floating Particles Effect -->
         <div class="absolute inset-0">
-            <div class="absolute top-10 left-10 w-2 h-2 bg-white/30 rounded-full animate-ping"></div>
+            <div class="absolute top-10 left-10 w-2 h-2 glass-fusion rounded-full animate-ping" border border-white/20 dark:border-white/10></div>
             <div class="absolute top-20 right-20 w-3 h-3 bg-purple-300/40 rounded-full animate-pulse"></div>
             <div class="absolute bottom-10 left-1/3 w-2 h-2 bg-indigo-300/30 rounded-full animate-bounce"></div>
         </div>
@@ -28,7 +28,7 @@
                         <h1 class="text-4xl font-black text-white mb-2 drop-shadow-lg tracking-tight">🤖 ตั้งค่าแชทบอท AI</h1>
                         <p class="text-purple-100 text-lg font-medium">ควบคุมและปรับแต่ง AI เพื่อตอบคำถามลูกค้าอัตโนมัติ</p>
                         <div class="flex items-center gap-4 mt-2">
-                            <span class="text-xs bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-white font-semibold border border-white/30">
+                            <span class="text-xs glass-fusion backdrop-blur-sm px-3 py-1 rounded-full text-white font-semibold border border-white/30">
                                 OpenAI • DeepSeek • Claude • Gemini
                             </span>
                         </div>
@@ -37,7 +37,7 @@
             </div>
             <div class="flex gap-3">
                 <a href="{{ route('admin.line-bot.ai.conversations') }}"
-                   class="px-6 py-3 bg-white/15 backdrop-blur-md border border-white/25 text-white rounded-xl hover:bg-white/25 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 flex items-center gap-2">
+                   class="px-6 py-3 glass-fusion backdrop-blur-md border border-white/25 text-white rounded-xl hover:glass-fusion transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-1 hover:scale-105 flex items-center gap-2">
                     <i class="fas fa-comments"></i>
                     <span class="font-semibold">บทสนทนา</span>
                 </a>
@@ -80,13 +80,13 @@
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+        <div class="style="background: var(--arrow-x-primary-gradient)" rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-blue-100 text-sm font-medium mb-1">การตั้งค่า AI ทั้งหมด</p>
                     <h3 class="text-3xl font-bold">{{ $aiSettings->count() }}</h3>
                 </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                     <i class="fas fa-robot text-2xl"></i>
                 </div>
             </div>
@@ -98,19 +98,19 @@
                     <p class="text-green-100 text-sm font-medium mb-1">AI ที่เปิดใช้งาน</p>
                     <h3 class="text-3xl font-bold">{{ $aiSettings->where('is_active', true)->count() }}</h3>
                 </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                     <i class="fas fa-check-circle text-2xl"></i>
                 </div>
             </div>
         </div>
 
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+        <div class="style="background: var(--arrow-x-accent-gradient)" rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-purple-100 text-sm font-medium mb-1">ฐานความรู้</p>
                     <h3 class="text-3xl font-bold">{{ $aiSettings->sum(fn($s) => $s->knowledgeBases->count()) }}</h3>
                 </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                     <i class="fas fa-book text-2xl"></i>
                 </div>
             </div>
@@ -122,7 +122,7 @@
                     <p class="text-orange-100 text-sm font-medium mb-1">บทสนทนาวันนี้</p>
                     <h3 class="text-3xl font-bold">0</h3>
                 </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                     <i class="fas fa-comments text-2xl"></i>
                 </div>
             </div>
@@ -132,7 +132,7 @@
     <!-- AI Settings Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($aiSettings as $setting)
-            <div class="group bg-white dark:bg-slate-800 rounded-2xl shadow-xl border-2 border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-2xl hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-500 transform hover:-translate-y-2">
+            <div class="group glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border-2 border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-2xl hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-500 transform hover:-translate-y-2" border border-white/20 dark:border-white/10>
                 <!-- Premium Header with Provider Badge -->
                 <div class="relative bg-gradient-to-br
                     @if($setting->provider === 'openai') from-emerald-500 via-green-600 to-teal-700
@@ -143,12 +143,12 @@
                     @endif px-6 py-5 overflow-hidden">
 
                     <!-- Animated Background -->
-                    <div class="absolute inset-0 bg-white/5 backdrop-blur-sm"></div>
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                    <div class="absolute inset-0 glass-fusion backdrop-blur-sm" border border-white/20 dark:border-white/10></div>
+                    <div class="absolute top-0 right-0 w-32 h-32 glass-fusion rounded-full -mr-16 -mt-16" border border-white/20 dark:border-white/10></div>
 
                     <div class="relative flex items-center justify-between">
                         <div class="flex items-center gap-3 flex-1">
-                            <div class="w-12 h-12 rounded-xl bg-white/25 backdrop-blur-md flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform border border-white/30">
+                            <div class="w-12 h-12 rounded-xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform border border-white/30" border border-white/20 dark:border-white/10>
                                 @if($setting->provider === 'openai')
                                     <i class="fas fa-brain text-white text-xl"></i>
                                 @elseif($setting->provider === 'deepseek')
@@ -167,12 +167,12 @@
                             </div>
                         </div>
                         @if($setting->is_active)
-                            <span class="px-3 py-1.5 bg-white/30 backdrop-blur-md rounded-full text-xs font-bold text-white shadow-lg border border-white/40 flex items-center gap-1">
+                            <span class="px-3 py-1.5 glass-fusion backdrop-blur-md rounded-full text-xs font-bold text-white shadow-lg border border-white/40 flex items-center gap-1">
                                 <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                                 Active
                             </span>
                         @else
-                            <span class="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-xs font-semibold text-white/70">
+                            <span class="px-3 py-1 glass-fusion backdrop-blur-sm rounded-full text-xs font-semibold text-white/70">
                                 Inactive
                             </span>
                         @endif
@@ -183,14 +183,14 @@
                 <div class="p-6 space-y-5">
                     <!-- Model Info with Premium Design -->
                     <div class="space-y-3">
-                        <div class="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-600 rounded-xl border border-gray-200 dark:border-slate-600 group-hover:border-purple-200 dark:group-hover:border-purple-700 transition-colors">
+                        <div class="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-600 rounded-xl border border-gray-200 dark:border-gray-700 dark:border-slate-600 group-hover:border-purple-200 dark:group-hover:border-purple-700 transition-colors">
                             <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                                <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
                                     <i class="fas fa-microchip text-purple-600 dark:text-purple-400 text-sm"></i>
                                 </div>
-                                <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Model</span>
+                                <span class="text-xs font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">Model</span>
                             </div>
-                            <span class="font-bold text-sm text-gray-900 dark:text-gray-100 px-3 py-1 bg-white dark:bg-slate-700 rounded-lg shadow-sm">{{ $setting->model }}</span>
+                            <span class="font-bold text-sm text-gray-900 dark:text-gray-100 px-3 py-1 glass-fusion dark:bg-slate-700 rounded-xl shadow-sm">{{ $setting->model }}</span>
                         </div>
 
                         <div class="grid grid-cols-2 gap-3">
@@ -220,7 +220,7 @@
                                     <i class="fas fa-book text-purple-600 dark:text-purple-400"></i>
                                     <span class="text-xs font-medium text-purple-700 dark:text-purple-400">Knowledge</span>
                                 </div>
-                                <span class="px-2.5 py-1 bg-purple-600 dark:bg-purple-700 text-white rounded-lg text-xs font-bold shadow-md">
+                                <span class="px-2.5 py-1 bg-purple-600 dark:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md">
                                     {{ $setting->knowledgeBases->count() }}
                                 </span>
                             </div>
@@ -232,7 +232,7 @@
                                     <i class="fas fa-history text-orange-600 dark:text-orange-400"></i>
                                     <span class="text-xs font-medium text-orange-700 dark:text-orange-400">Memory</span>
                                 </div>
-                                <span class="px-2.5 py-1 bg-orange-600 dark:bg-orange-700 text-white rounded-lg text-xs font-bold shadow-md">
+                                <span class="px-2.5 py-1 bg-orange-600 dark:bg-orange-700 text-white rounded-xl text-xs font-bold shadow-md">
                                     {{ $setting->conversation_memory_limit ?? 10 }}
                                 </span>
                             </div>
@@ -240,10 +240,10 @@
                     </div>
 
                     <!-- API Key Status -->
-                    <div class="p-3 bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 rounded-xl border border-gray-200 dark:border-slate-600">
+                    <div class="p-3 bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 rounded-xl border border-gray-200 dark:border-gray-700 dark:border-slate-600">
                         <div class="flex items-center gap-2">
-                            <i class="fas fa-key text-gray-500 dark:text-gray-400 text-sm"></i>
-                            <span class="font-mono text-xs text-gray-700 dark:text-gray-300">{{ $setting->getMaskedApiKey() }}</span>
+                            <i class="fas fa-key text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm"></i>
+                            <span class="font-mono text-xs text-gray-700 dark:text-gray-300 dark:text-gray-300">{{ $setting->getMaskedApiKey() }}</span>
                         </div>
                     </div>
 
@@ -271,12 +271,12 @@
             </div>
         @empty
             <div class="col-span-3">
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-12 text-center">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-12 text-center" border border-white/20 dark:border-white/10>
                     <div class="w-24 h-24 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mx-auto mb-6">
                         <i class="fas fa-robot text-purple-500 dark:text-purple-400 text-4xl"></i>
                     </div>
                     <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">No AI Settings Yet</h3>
-                    <p class="text-gray-600 dark:text-gray-400 mb-6">Get started by creating your first AI configuration</p>
+                    <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-6">Get started by creating your first AI configuration</p>
                     <a href="{{ route('admin.line-bot.ai.create') }}"
                        class="inline-block px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition shadow-lg">
                         <i class="fas fa-plus mr-2"></i>Create First AI Setting
@@ -289,7 +289,7 @@
 
 <!-- Test AI Modal -->
 <div id="testModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700" x-data="{ testing: false, result: '', error: '' }">
+    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700" border border-white/20 dark:border-white/10 x-data="{ testing: false, result: '', error: '' }">
         <div class="bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-white flex items-center">
@@ -305,28 +305,28 @@
             <input type="hidden" id="test-ai-id" name="ai_id">
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                     <i class="fas fa-comment text-purple-500 mr-1"></i> Test Message
                 </label>
                 <textarea id="test-message" name="message" rows="3" required
-                    class="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                     placeholder="Hello! Please introduce yourself.">Hello! Please introduce yourself.</textarea>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">The AI will respond to this message</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">The AI will respond to this message</p>
             </div>
 
             <!-- Result Area -->
             <div id="test-result-area" class="hidden">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     <i class="fas fa-robot text-green-500 mr-1"></i> AI Response
                 </label>
-                <div class="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
-                    <p id="test-result" class="text-sm text-gray-800 whitespace-pre-wrap"></p>
+                <div class="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                    <p id="test-result" class="text-sm text-gray-900 dark:text-white whitespace-pre-wrap"></p>
                 </div>
             </div>
 
             <!-- Error Area -->
             <div id="test-error-area" class="hidden">
-                <div class="p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-lg">
+                <div class="p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl">
                     <div class="flex items-start gap-2">
                         <i class="fas fa-exclamation-circle text-red-500 mt-0.5"></i>
                         <p id="test-error" class="text-sm text-red-700"></p>
@@ -337,16 +337,16 @@
             <!-- Loading State -->
             <div id="test-loading" class="hidden text-center py-4">
                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-2"></div>
-                <p class="text-sm text-gray-600">Testing AI connection...</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Testing AI connection...</p>
             </div>
 
             <div class="flex gap-3 pt-4">
                 <button type="button" onclick="closeTestModal()"
-                        class="flex-1 px-4 py-3 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition font-semibold">
+                        class="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition font-semibold">
                     Close
                 </button>
                 <button type="submit" id="test-submit-btn"
-                        class="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition shadow-lg font-semibold">
+                        class="flex-1 px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl hover:from-purple-600 hover:to-indigo-700 transition shadow-lg font-semibold">
                     <i class="fas fa-vial mr-2"></i>Run Test
                 </button>
             </div>
