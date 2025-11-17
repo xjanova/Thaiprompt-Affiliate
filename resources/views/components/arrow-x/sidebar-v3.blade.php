@@ -27,6 +27,15 @@
     'logo' => null,
 ])
 
+@php
+    // ดึงโลโก้จาก ThemeSetting (โลโก้ธีม - แยกจากโลโก้เว็บไซต์)
+    $themeSetting = \App\Models\ThemeSetting::active();
+    $themeLogo = $themeSetting && $themeSetting->logo_path
+        ? asset('storage/' . $themeSetting->logo_path)
+        : $logo;
+    $themeBrandName = $themeSetting->brand_name ?? $title;
+@endphp
+
 {{-- Mobile Overlay (แสดงเมื่อ sidebarOpen = true บนมือถือ) --}}
 <div x-show="sidebarOpen"
      @click="sidebarOpen = false"
@@ -59,21 +68,23 @@
     @mouseenter="if (autoHideMode && !sidebarOpen && window.innerWidth >= 768) hovered = true"
     @mouseleave="if (autoHideMode && window.innerWidth >= 768) hovered = false"
     class="glass-fusion transition-all duration-300 flex flex-col border-r border-white/30 z-40
-           fixed md:relative inset-y-0 left-0 w-64
+           fixed md:relative inset-y-0 left-0
            transform md:transform-none"
     :class="{
         'translate-x-0': sidebarOpen,
         '-translate-x-full': !sidebarOpen,
-        'md:w-64': (autoHideMode && (sidebarOpen || hovered)) || (!autoHideMode && sidebarOpen),
         'md:w-20': autoHideMode && !sidebarOpen && !hovered
     }"
+    :style="((autoHideMode && (sidebarOpen || hovered)) || (!autoHideMode && sidebarOpen))
+        ? 'width: var(--arrow-x-sidebar-width, 260px)'
+        : 'width: 256px'" {{-- Mobile: fixed 256px, Desktop: จาก theme setting --}}
     x-cloak
 >
     {{-- Logo Section --}}
     <div class="h-16 flex items-center justify-between px-4 border-b border-white/30">
         <div class="flex items-center gap-3 transition-all" x-show="sidebarOpen || hovered" x-transition>
-            @if($logo)
-                <img src="{{ $logo }}" alt="{{ $title }}" class="w-10 h-10 rounded-xl object-cover shadow-lg">
+            @if($themeLogo)
+                <img src="{{ $themeLogo }}" alt="{{ $themeBrandName }}" class="w-10 h-10 rounded-xl object-cover shadow-lg">
             @else
                 <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                     <i class="fas fa-rocket text-white text-lg"></i>
@@ -81,7 +92,7 @@
             @endif
 
             <div>
-                <h1 class="font-bold text-white text-sm drop-shadow-lg">{{ $title }}</h1>
+                <h1 class="font-bold text-white text-sm drop-shadow-lg">{{ $themeBrandName }}</h1>
                 <p class="text-xs text-white/90 drop-shadow">V3 Dashboard</p>
             </div>
         </div>

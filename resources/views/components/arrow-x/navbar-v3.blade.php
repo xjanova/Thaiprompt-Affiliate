@@ -25,7 +25,8 @@
     'showSearch' => true,
 ])
 
-<header class="h-16 glass-fusion border-b border-white/30 flex items-center justify-between px-4 md:px-6 relative z-10">
+<header class="glass-fusion border-b border-white/30 flex items-center justify-between px-4 md:px-6 relative z-10"
+         style="height: var(--arrow-x-navbar-height, 64px)">
     {{-- Left Section: Page Title --}}
     <div class="flex items-center gap-4">
         {{-- Mobile Menu Toggle (Burger Menu) - กระพริบทุก 30 วินาที + Tooltip ทุก 15 วัน --}}
