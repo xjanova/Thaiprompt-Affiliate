@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.64.1] - 2025-11-17
+
+### ✨ Features
+- feat(menu): จัดระเบียบเมนู AI & Bots System ครบถ้วนพร้อม submenu (a407eb57)
+- feat(menu): จัดระเบียบเมนู LINE ใหม่แบบ Collapsible พร้อม submenu ครบถ้วน (4ba46232)
+### 🐛 Bug Fixes
+- fix(line-signup): correct admin view paths and add Thai comments (7e2e84ac)
+### 🔧 Other Changes
+- Merge pull request #1308 from xjanova/claude/line-registration-system-01T6uV5UQenHhkFnLrCwD66m (e9ca031e)
+
 ## [v3.64.0] - 2025-11-17
 
 ### ✨ Features
