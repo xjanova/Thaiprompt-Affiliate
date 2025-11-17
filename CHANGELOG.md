@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.71.0] - 2025-11-17
+
+### ✨ Features
+- feat: Add comprehensive Hybrid Bot keyword analytics and API endpoints (c9ea8d30)
+- feat: Add admin panel for Hybrid Bot Keyword management (01781c58)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1316 from xjanova/claude/fix-line-login-integration-01Hc1yUwQA8YAxneyRbcozZY (c28a0e37)
+- docs: Add comprehensive implementation summary for Hybrid Bot system (6c9c0bc7)
+
 ## [v3.70.0] - 2025-11-17
 
 ### ✨ Features
