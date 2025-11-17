@@ -55,7 +55,7 @@ class LineSignupFlowSeeder extends Seeder
 • ยินยอมข้อมูลส่วนบุคคล
 
 กรุณากด "เริ่มต้น" เพื่อสมัครสมาชิก',
-            'input_type' => 'button',
+            'input_type' => 'none',
             'validation_rules' => [],
             'next_step_key' => 'phone',
             'quick_reply_options' => [
@@ -187,7 +187,7 @@ class LineSignupFlowSeeder extends Seeder
 • ส่งข้อมูลข่าวสารและโปรโมชัน
 
 ✅ คุณยินยอมให้เราใช้ข้อมูลของคุณหรือไม่?',
-            'input_type' => 'button',
+            'input_type' => 'confirm',
             'validation_rules' => [],
             'next_step_key' => 'completion',
             'quick_reply_options' => [
@@ -220,7 +220,7 @@ class LineSignupFlowSeeder extends Seeder
 🏠 ที่อยู่: {{address}}
 
 ✅ ข้อมูลถูกต้องหรือไม่?',
-            'input_type' => 'button',
+            'input_type' => 'confirm',
             'validation_rules' => [],
             'next_step_key' => 'success',
             'quick_reply_options' => [
