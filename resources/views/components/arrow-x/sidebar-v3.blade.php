@@ -281,12 +281,24 @@
                     <div class="absolute inset-2 bg-gradient-to-br from-white/20 to-transparent rounded-xl"></div>
 
                     {{-- Footer Logo (จาก Theme Setting) หรือ Rocket Icon (Fallback) --}}
+                    @php
+                        $logoAnimation = $themeSetting->footer_logo_animation ?? 'float';
+                        $animationClass = match($logoAnimation) {
+                            'none' => '',
+                            'float' => 'animate-float',
+                            'spin' => 'animate-spin-slow',
+                            'bounce' => 'animate-bounce',
+                            'pulse' => 'animate-pulse',
+                            'swing' => 'animate-swing',
+                            default => 'animate-float'
+                        };
+                    @endphp
                     @if($themeSetting && $themeSetting->footer_logo_path)
                         <img src="{{ asset('storage/' . $themeSetting->footer_logo_path) }}"
                              alt="Footer Logo"
-                             class="w-10 h-10 object-contain drop-shadow-2xl relative z-10 animate-float">
+                             class="w-10 h-10 object-contain drop-shadow-2xl relative z-10 {{ $animationClass }}">
                     @else
-                        <i class="fas fa-rocket text-white text-2xl drop-shadow-2xl relative z-10 animate-float"></i>
+                        <i class="fas fa-rocket text-white text-2xl drop-shadow-2xl relative z-10 {{ $animationClass }}"></i>
                     @endif
 
                     {{-- Shine Effect --}}
