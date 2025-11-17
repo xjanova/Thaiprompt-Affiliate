@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ตั้งค่า MLM')
 
@@ -11,7 +11,7 @@
                 <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 bg-clip-text text-transparent mb-2 animate-gradient">
                     <i class="fas fa-cog"></i> ตั้งค่า MLM
                 </h1>
-                <p class="text-gray-600 text-lg">Premium Edition - ระบบตั้งค่าแบบมืออาชีพ พร้อมการคำนวณ Real-time</p>
+                <p class="text-gray-600 dark:text-gray-400 text-lg">Premium Edition - ระบบตั้งค่าแบบมืออาชีพ พร้อมการคำนวณ Real-time</p>
             </div>
             <div class="flex gap-3">
                 <a href="{{ route('admin.mlm.calculator') }}"
@@ -27,7 +27,7 @@
 
     <!-- Overpay Warning Alert -->
     @if(isset($currentCommissionPercentage))
-    <div class="mb-6 rounded-lg p-4 border
+    <div class="mb-6 rounded-xl p-4 border
         {{ $currentCommissionPercentage > 50 ? 'bg-red-50 border-red-200' : ($currentCommissionPercentage > 40 ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200') }}">
         <div class="flex items-start">
             <svg class="w-6 h-6 mt-0.5 mr-3
@@ -63,7 +63,7 @@
     @endif
 
     <!-- Info Alert -->
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
         <div class="flex items-start">
             <svg class="w-5 h-5 text-blue-500 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -87,10 +87,10 @@
 
                 @forelse($settings as $group => $groupSettings)
         <!-- Settings Group -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl mb-6 overflow-hidden border border-gray-100 transform transition-all duration-300 hover:shadow-2xl">
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl mb-6 overflow-hidden border border-gray-100 transform transition-all duration-300 hover:shadow-2xl" border border-white/20 dark:border-white/10>
             <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <div class="w-10 h-10 glass-fusion rounded-xl flex items-center justify-center backdrop-blur-sm" border border-white/20 dark:border-white/10>
                         <span class="text-2xl">{{ getGroupIcon($group) }}</span>
                     </div>
                     <div>
@@ -102,14 +102,14 @@
 
             <div class="divide-y divide-gray-200 dark:divide-gray-700">
                 @foreach($groupSettings as $setting)
-                <div class="p-6 hover:bg-gray-50 dark:bg-gray-700 transition-colors">
+                <div class="p-6 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 transition-colors">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <!-- Setting Info -->
                         <div class="lg:col-span-2">
-                            <label class="block text-sm font-medium text-gray-800 mb-1">
+                            <label class="block text-sm font-medium text-gray-900 dark:text-white mb-1">
                                 {{ $setting->key }}
                             </label>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                            <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
                                 {{ app()->getLocale() === 'th' && $setting->description_th
                                     ? $setting->description_th
                                     : $setting->description }}
@@ -167,7 +167,7 @@
                             @if(!$setting->is_editable)
                                 <!-- Read-only display -->
                                 <div class="flex items-center gap-2">
-                                    <div class="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 text-gray-600 rounded-xl border-2 border-gray-200 dark:border-gray-700">
+                                    <div class="flex-1 px-4 py-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-xl border-2 border-gray-200 dark:border-gray-700 dark:border-gray-700">
                                         @if($setting->type === 'boolean')
                                             <span class="font-medium">{{ $setting->getTypedValue() ? '✓ เปิดใช้งาน' : '✗ ปิดใช้งาน' }}</span>
                                         @elseif($setting->type === 'json')
@@ -176,7 +176,7 @@
                                             <span class="font-medium">{{ $setting->value }}</span>
                                         @endif
                                     </div>
-                                    <span class="px-3 py-2 text-xs bg-gray-200 text-gray-600 rounded-full whitespace-nowrap font-medium flex items-center gap-1">
+                                    <span class="px-3 py-2 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full whitespace-nowrap font-medium flex items-center gap-1">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                                         </svg>
@@ -187,8 +187,8 @@
                                 <!-- Editable inputs based on input_type -->
                                 @if(($setting->input_type ?? 'text') === 'toggle')
                                     <!-- Modern Toggle Switch (Line OA Style) -->
-                                    <label class="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-purple-300 cursor-pointer transition-all duration-200 group">
-                                        <span class="text-sm font-semibold text-gray-700 group-hover:text-purple-700 transition-colors">
+                                    <label class="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border-2 border-gray-200 dark:border-gray-700 dark:border-gray-700 hover:border-purple-300 cursor-pointer transition-all duration-200 group">
+                                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-purple-700 transition-colors">
                                             {{ $setting->getTypedValue() ? '✓ เปิดใช้งาน' : 'ปิดใช้งาน' }}
                                         </span>
                                         <div class="relative">
@@ -197,7 +197,7 @@
                                                    value="1"
                                                    {{ $setting->getTypedValue() ? 'checked' : '' }}
                                                    class="sr-only peer">
-                                            <div class="w-16 h-8 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-200 rounded-full peer peer-checked:after:translate-x-8 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white dark:bg-gray-800 after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-pink-600 shadow-inner"></div>
+                                            <div class="w-16 h-8 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-200 rounded-full peer peer-checked:after:translate-x-8 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:glass-fusion dark:bg-gray-800 after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-pink-600 shadow-inner" border border-white/20 dark:border-white/10></div>
                                         </div>
                                     </label>
 
@@ -205,7 +205,7 @@
                                     <!-- Beautiful Dropdown (Line OA Style) -->
                                     <div class="relative">
                                         <select name="settings[{{ $setting->key }}]"
-                                                class="w-full px-4 py-3 pr-10 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 appearance-none cursor-pointer text-base font-medium text-gray-700 hover:border-purple-300 transition-all duration-200"
+                                                class="w-full px-4 py-3 pr-10 glass-fusion dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 appearance-none cursor-pointer text-base font-medium text-gray-700 dark:text-gray-300 hover:border-purple-300 transition-all duration-200"
                                                 @if($setting->key === 'auto_placement_strategy') onchange="showPlacementDemo(this.value)" @endif>
                                             @foreach($setting->getAllowedValuesArray() as $option)
                                                 <option value="{{ $option }}" {{ $setting->value == $option ? 'selected' : '' }}>
@@ -246,10 +246,10 @@
                                                step="{{ $setting->type === 'integer' ? '1' : 'any' }}"
                                                placeholder="{{ $setting->placeholder ?? '' }}"
                                                onchange="updatePreview()"
-                                               class="w-full px-4 py-3 {{ $setting->unit ? 'pr-20' : '' }} bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 text-base font-semibold text-gray-700 placeholder-gray-400 hover:border-purple-300 transition-all duration-200">
+                                               class="w-full px-4 py-3 {{ $setting->unit ? 'pr-20' : '' }} glass-fusion dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 text-base font-semibold text-gray-700 dark:text-gray-300 placeholder-gray-400 hover:border-purple-300 transition-all duration-200">
                                         @if($setting->unit)
                                             <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                                                <span class="text-sm font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-lg">{{ $setting->unit }}</span>
+                                                <span class="text-sm font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-xl">{{ $setting->unit }}</span>
                                             </div>
                                         @endif
                                     </div>
@@ -277,7 +277,7 @@
                                     <textarea name="settings[{{ $setting->key }}]"
                                               rows="4"
                                               placeholder="{{ $setting->placeholder ?? 'กรอกข้อมูล JSON' }}"
-                                              class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 font-mono text-sm text-gray-700 placeholder-gray-400 hover:border-purple-300 transition-all duration-200">{{ $setting->value }}</textarea>
+                                              class="w-full px-4 py-3 glass-fusion dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 font-mono text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 hover:border-purple-300 transition-all duration-200">{{ $setting->value }}</textarea>
 
                                 @else
                                     <!-- Text Input (Line OA Style) -->
@@ -285,7 +285,7 @@
                                            name="settings[{{ $setting->key }}]"
                                            value="{{ $setting->value }}"
                                            placeholder="{{ $setting->placeholder ?? '' }}"
-                                           class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 text-base font-medium text-gray-700 placeholder-gray-400 hover:border-purple-300 transition-all duration-200">
+                                           class="w-full px-4 py-3 glass-fusion dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 text-base font-medium text-gray-700 dark:text-gray-300 placeholder-gray-400 hover:border-purple-300 transition-all duration-200">
                                 @endif
                             @endif
                         </div>
@@ -300,11 +300,11 @@
         @if($settings->count() > 0)
         <div class="flex justify-end gap-3">
             <a href="{{ route('admin.dashboard') }}"
-               class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-medium transition-colors">
+               class="px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 text-gray-900 dark:text-white rounded-xl font-medium transition-colors">
                 ยกเลิก
             </a>
             <button type="submit"
-                    class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium shadow-lg transition-all duration-200 flex items-center gap-2">
+                    class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-medium shadow-lg transition-all duration-200 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
@@ -319,25 +319,25 @@
         <div class="xl:col-span-1">
             <div class="sticky top-4 space-y-6">
                 <!-- Commission Dashboard -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-100">
+                <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-100" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                     <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <span class="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center text-white text-sm"><i class="fas fa-bolt"></i></span>
+                        <span class="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center text-white text-sm"><i class="fas fa-bolt"></i></span>
                         ภาพรวมคอมมิชชั่น
                     </h3>
 
                     <!-- Commission Percentage Gauge -->
                     <div class="mb-6">
                         <div class="flex justify-between items-end mb-2">
-                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">เปอร์เซ็นต์รวม</span>
+                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">เปอร์เซ็นต์รวม</span>
                             <span id="total-percentage-text" class="text-3xl font-bold text-purple-600">{{ number_format($currentCommissionPercentage ?? 0, 2) }}%</span>
                         </div>
-                        <div class="relative w-full h-6 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+                        <div class="relative w-full h-6 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
                             <div id="percentage-bar"
                                  class="absolute top-0 left-0 h-full transition-all duration-500 ease-out rounded-full"
                                  style="width: {{ min($currentCommissionPercentage ?? 0, 100) }}%; background: linear-gradient(90deg, #9333ea, #ec4899);"></div>
                             <div class="absolute top-0 left-1/2 w-0.5 h-full bg-yellow-400 opacity-50"></div>
                         </div>
-                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                        <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                             <span>0%</span>
                             <span class="text-yellow-600 font-semibold">← 50% (Limit)</span>
                             <span>100%</span>
@@ -381,7 +381,7 @@
 
                     <!-- Commission Chart -->
                     <div class="mb-4">
-                        <h4 class="text-sm font-semibold text-gray-700 mb-3">แยกตามประเภท</h4>
+                        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">แยกตามประเภท</h4>
                         <div style="height: 200px;">
                             <canvas id="commission-chart"></canvas>
                         </div>
@@ -393,7 +393,7 @@
                     </div>
 
                     <!-- Recalculate Button -->
-                    <button type="button" onclick="calculatePreview()" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                    <button type="button" onclick="calculatePreview()" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                         </svg>
@@ -432,7 +432,7 @@
     <!-- Visual Learning Section -->
     <div class="mt-8 bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 rounded-3xl shadow-2xl p-8 text-white">
         <div class="flex items-center gap-3 mb-6">
-            <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+            <div class="w-12 h-12 glass-fusion rounded-2xl flex items-center justify-center backdrop-blur-sm" border border-white/20 dark:border-white/10>
                 <span class="text-3xl"><i class="fas fa-film"></i></span>
             </div>
             <div>
@@ -443,10 +443,10 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <!-- Placement Strategies -->
-            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+            <div class="glass-fusion backdrop-blur-lg rounded-2xl p-5 hover:glass-fusion transition-all duration-200 cursor-pointer border border-white/20" border border-white/20 dark:border-white/10
                  onclick="showPlacementDemo('manual')">
                 <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <div class="w-10 h-10 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                         <span class="text-2xl"><i class="fas fa-map-marker-alt"></i></span>
                     </div>
                     <h4 class="font-bold text-lg">Manual Placement</h4>
@@ -454,10 +454,10 @@
                 <p class="text-sm text-white/80">วางตำแหน่งด้วยตนเอง</p>
             </div>
 
-            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+            <div class="glass-fusion backdrop-blur-lg rounded-2xl p-5 hover:glass-fusion transition-all duration-200 cursor-pointer border border-white/20" border border-white/20 dark:border-white/10
                  onclick="showPlacementDemo('fill_left')">
                 <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <div class="w-10 h-10 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                         <span class="text-2xl"><i class="fas fa-arrow-left"></i></span>
                     </div>
                     <h4 class="font-bold text-lg">Fill Left</h4>
@@ -465,10 +465,10 @@
                 <p class="text-sm text-white/80">เติมซ้ายก่อนเสมอ</p>
             </div>
 
-            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+            <div class="glass-fusion backdrop-blur-lg rounded-2xl p-5 hover:glass-fusion transition-all duration-200 cursor-pointer border border-white/20" border border-white/20 dark:border-white/10
                  onclick="showPlacementDemo('fill_right')">
                 <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <div class="w-10 h-10 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                         <span class="text-2xl"><i class="fas fa-arrow-right"></i></span>
                     </div>
                     <h4 class="font-bold text-lg">Fill Right</h4>
@@ -476,10 +476,10 @@
                 <p class="text-sm text-white/80">เติมขวาก่อนเสมอ</p>
             </div>
 
-            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+            <div class="glass-fusion backdrop-blur-lg rounded-2xl p-5 hover:glass-fusion transition-all duration-200 cursor-pointer border border-white/20" border border-white/20 dark:border-white/10
                  onclick="showPlacementDemo('weak_leg')">
                 <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <div class="w-10 h-10 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                         <span class="text-2xl"><i class="fas fa-balance-scale"></i></span>
                     </div>
                     <h4 class="font-bold text-lg">Weak Leg</h4>
@@ -487,10 +487,10 @@
                 <p class="text-sm text-white/80">เติมขาอ่อนเพื่อสมดุล</p>
             </div>
 
-            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+            <div class="glass-fusion backdrop-blur-lg rounded-2xl p-5 hover:glass-fusion transition-all duration-200 cursor-pointer border border-white/20" border border-white/20 dark:border-white/10
                  onclick="showPlacementDemo('strong_leg')">
                 <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <div class="w-10 h-10 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                         <span class="text-2xl"><i class="fas fa-dumbbell"></i></span>
                     </div>
                     <h4 class="font-bold text-lg">Strong Leg</h4>
@@ -498,10 +498,10 @@
                 <p class="text-sm text-white/80">เติมขาแข็งสร้างโมเมนตัม</p>
             </div>
 
-            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+            <div class="glass-fusion backdrop-blur-lg rounded-2xl p-5 hover:glass-fusion transition-all duration-200 cursor-pointer border border-white/20" border border-white/20 dark:border-white/10
                  onclick="showRollupDemo()">
                 <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <div class="w-10 h-10 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                         <span class="text-2xl"><i class="fas fa-arrow-up"></i></span>
                     </div>
                     <h4 class="font-bold text-lg">Roll-up</h4>
@@ -509,10 +509,10 @@
                 <p class="text-sm text-white/80">การยกคอมมิชชั่นข้าม Inactive</p>
             </div>
 
-            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+            <div class="glass-fusion backdrop-blur-lg rounded-2xl p-5 hover:glass-fusion transition-all duration-200 cursor-pointer border border-white/20" border border-white/20 dark:border-white/10
                  onclick="showBinaryDemo()">
                 <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <div class="w-10 h-10 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                         <span class="text-2xl"><i class="fas fa-sync-alt"></i></span>
                     </div>
                     <h4 class="font-bold text-lg">Binary Tree</h4>
@@ -520,10 +520,10 @@
                 <p class="text-sm text-white/80">โครงสร้างแบบ 2 ขา</p>
             </div>
 
-            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+            <div class="glass-fusion backdrop-blur-lg rounded-2xl p-5 hover:glass-fusion transition-all duration-200 cursor-pointer border border-white/20" border border-white/20 dark:border-white/10
                  onclick="showUnilevelDemo()">
                 <div class="flex items-center gap-3 mb-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <div class="w-10 h-10 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                         <span class="text-2xl"><i class="fas fa-chart-bar"></i></span>
                     </div>
                     <h4 class="font-bold text-lg">Unilevel Tree</h4>
@@ -535,22 +535,22 @@
 
     <!-- Common Settings Reference -->
     <div class="mt-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl shadow-lg p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">การตั้งค่าทั่วไป</h3>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">การตั้งค่าทั่วไป</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-                <h4 class="font-medium text-gray-700 mb-2">General Settings</h4>
-                <ul class="space-y-1 text-gray-600 dark:text-gray-400">
-                    <li>• <code class="bg-white dark:bg-gray-800 px-2 py-0.5 rounded">auto_approve_commissions</code> - อนุมัติคอมมิชชั่นอัตโนมัติ</li>
-                    <li>• <code class="bg-white dark:bg-gray-800 px-2 py-0.5 rounded">commission_payout_day</code> - วันจ่ายคอมมิชชั่น</li>
-                    <li>• <code class="bg-white dark:bg-gray-800 px-2 py-0.5 rounded">minimum_payout</code> - ขั้นต่ำในการถอน</li>
+                <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2">General Settings</h4>
+                <ul class="space-y-1 text-gray-600 dark:text-gray-400 dark:text-gray-400">
+                    <li>• <code class="glass-fusion dark:bg-gray-800 px-2 py-0.5 rounded">auto_approve_commissions</code> - อนุมัติคอมมิชชั่นอัตโนมัติ</li>
+                    <li>• <code class="glass-fusion dark:bg-gray-800 px-2 py-0.5 rounded">commission_payout_day</code> - วันจ่ายคอมมิชชั่น</li>
+                    <li>• <code class="glass-fusion dark:bg-gray-800 px-2 py-0.5 rounded">minimum_payout</code> - ขั้นต่ำในการถอน</li>
                 </ul>
             </div>
             <div>
-                <h4 class="font-medium text-gray-700 mb-2">Calculation Settings</h4>
-                <ul class="space-y-1 text-gray-600 dark:text-gray-400">
-                    <li>• <code class="bg-white dark:bg-gray-800 px-2 py-0.5 rounded">global_commission_per_pv</code> - อัตราค่าคอม/PV โกลบอล</li>
-                    <li>• <code class="bg-white dark:bg-gray-800 px-2 py-0.5 rounded">enable_compression</code> - เปิดใช้งาน Compression</li>
-                    <li>• <code class="bg-white dark:bg-gray-800 px-2 py-0.5 rounded">enable_carry_forward</code> - เปิดใช้งาน Carry Forward</li>
+                <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2">Calculation Settings</h4>
+                <ul class="space-y-1 text-gray-600 dark:text-gray-400 dark:text-gray-400">
+                    <li>• <code class="glass-fusion dark:bg-gray-800 px-2 py-0.5 rounded">global_commission_per_pv</code> - อัตราค่าคอม/PV โกลบอล</li>
+                    <li>• <code class="glass-fusion dark:bg-gray-800 px-2 py-0.5 rounded">enable_compression</code> - เปิดใช้งาน Compression</li>
+                    <li>• <code class="glass-fusion dark:bg-gray-800 px-2 py-0.5 rounded">enable_carry_forward</code> - เปิดใช้งาน Carry Forward</li>
                 </ul>
             </div>
         </div>
@@ -560,10 +560,10 @@
 <!-- Animated Visualizations Modal -->
 <div id="visualModal" class="modal-overlay" onclick="closeModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
-        <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-8 py-6 rounded-t-3xl z-10">
+        <div class="sticky top-0 glass-fusion dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700 px-8 py-6 rounded-t-3xl z-10" border border-white/20 dark:border-white/10>
             <div class="flex justify-between items-center">
                 <h2 id="modalTitle" class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"></h2>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 transition-colors">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -615,7 +615,7 @@ function renderUnilevelEditor() {
         levelDiv.className = 'flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 hover:border-purple-400 transition-all duration-200 shadow-sm hover:shadow-md';
         levelDiv.innerHTML = `
             <div class="flex-shrink-0 w-20 text-center">
-                <div class="px-3 py-1 bg-purple-600 text-white rounded-lg font-bold text-sm">
+                <div class="px-3 py-1 bg-purple-600 text-white rounded-xl font-bold text-sm">
                     ชั้น ${level.level}
                 </div>
             </div>
@@ -623,7 +623,7 @@ function renderUnilevelEditor() {
                 <input type="number"
                        value="${level.percentage}"
                        onchange="updateUnilevelLevel(${index}, this.value)"
-                       class="flex-1 px-4 py-3 text-xl font-bold text-center border-2 border-purple-300 rounded-xl focus:ring-4 focus:ring-purple-500 focus:border-purple-500 bg-white"
+                       class="flex-1 px-4 py-3 text-xl font-bold text-center border-2 border-purple-300 rounded-xl focus:ring-4 focus:ring-purple-500 focus:border-purple-500 glass-fusion"
                        step="0.1" min="0" max="100">
                 <span class="text-2xl font-bold text-purple-600">%</span>
             </div>
@@ -816,15 +816,15 @@ function updateDashboard(total, unilevel, binary) {
     if (breakdownDiv) {
         const totalColor = total > 50 ? 'text-red-600' : (total > 40 ? 'text-yellow-600' : 'text-green-600');
         breakdownDiv.innerHTML = `
-            <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Unilevel</span>
+            <div class="flex justify-between items-center p-3 bg-purple-50 rounded-xl">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Unilevel</span>
                 <span class="text-lg font-bold text-purple-600">${unilevel.toFixed(2)}%</span>
             </div>
-            <div class="flex justify-between items-center p-3 bg-pink-50 rounded-lg">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Binary (ประมาณ)</span>
+            <div class="flex justify-between items-center p-3 bg-pink-50 rounded-xl">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Binary (ประมาณ)</span>
                 <span class="text-lg font-bold text-pink-600">${binary.toFixed(2)}%</span>
             </div>
-            <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border-t-2 border-gray-300">
+            <div class="flex justify-between items-center p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl border-t-2 border-gray-300 dark:border-gray-600">
                 <span class="text-sm font-bold text-gray-900">รวม</span>
                 <span class="text-xl font-bold ${totalColor}">${total.toFixed(2)}%</span>
             </div>
@@ -879,7 +879,7 @@ function showPlacementDemo(strategy) {
     modalBody.innerHTML = `
         <div class="space-y-6">
             <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200">
-                <p class="text-gray-700 text-lg">${info.description}</p>
+                <p class="text-gray-700 dark:text-gray-300 text-lg">${info.description}</p>
             </div>
 
             <div class="placement-demo" id="placementDemoContainer">
@@ -995,7 +995,7 @@ function showRollupDemo() {
     modalBody.innerHTML = `
         <div class="space-y-6">
             <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-6 border-2 border-yellow-300">
-                <p class="text-gray-700 text-lg">
+                <p class="text-gray-700 dark:text-gray-300 text-lg">
                     เมื่อสมาชิกในสายไม่มี PV หรือไม่ active คอมมิชชันจะถูก "ยกขึ้น" ไปให้ผู้บริหารคนแรกที่ active
                 </p>
             </div>
@@ -1085,7 +1085,7 @@ function showBinaryDemo() {
     modalBody.innerHTML = `
         <div class="space-y-6">
             <div class="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-6 border-2 border-pink-200">
-                <p class="text-gray-700 text-lg">
+                <p class="text-gray-700 dark:text-gray-300 text-lg">
                     โครงสร้างแบบ Binary แต่ละคนมีได้เพียง 2 ขา (ซ้าย-ขวา) คอมมิชชันคำนวณจากขาที่อ่อนกว่า (Weak Leg)
                 </p>
             </div>
@@ -1161,7 +1161,7 @@ function showUnilevelDemo() {
     modalBody.innerHTML = `
         <div class="space-y-6">
             <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 border-2 border-purple-200">
-                <p class="text-gray-700 text-lg">
+                <p class="text-gray-700 dark:text-gray-300 text-lg">
                     โครงสร้างแบบ Unilevel ไม่จำกัดจำนวนคนต่อชั้น ได้คอมมิชชั่นจากทุกคนในสายโดยตรง ตามเปอร์เซ็นต์แต่ละชั้น
                 </p>
             </div>
@@ -1217,20 +1217,20 @@ function showUnilevelDemo() {
             <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-5">
                 <h4 class="font-bold text-purple-900 mb-3"><i class="fas fa-lightbulb"></i> ตัวอย่างการคำนวณ</h4>
                 <div class="space-y-3">
-                    <div class="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">ชั้น 1: 5 คน × 1,000 PV × 10%</span>
+                    <div class="flex items-center justify-between glass-fusion dark:bg-gray-800 rounded-xl p-3 shadow-sm" border border-white/20 dark:border-white/10>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">ชั้น 1: 5 คน × 1,000 PV × 10%</span>
                         <span class="text-lg font-bold text-purple-600">= 500 บาท</span>
                     </div>
-                    <div class="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">ชั้น 2: 15 คน × 1,000 PV × 6%</span>
+                    <div class="flex items-center justify-between glass-fusion dark:bg-gray-800 rounded-xl p-3 shadow-sm" border border-white/20 dark:border-white/10>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">ชั้น 2: 15 คน × 1,000 PV × 6%</span>
                         <span class="text-lg font-bold text-pink-600">= 900 บาท</span>
                     </div>
-                    <div class="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">ชั้น 3: 45 คน × 1,000 PV × 4%</span>
+                    <div class="flex items-center justify-between glass-fusion dark:bg-gray-800 rounded-xl p-3 shadow-sm" border border-white/20 dark:border-white/10>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">ชั้น 3: 45 คน × 1,000 PV × 4%</span>
                         <span class="text-lg font-bold text-orange-600">= 1,800 บาท</span>
                     </div>
-                    <div class="flex items-center justify-between bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-4 border-2 border-purple-300">
-                        <span class="text-base font-bold text-gray-800 dark:text-white">รวมทั้งหมด</span>
+                    <div class="flex items-center justify-between bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl p-4 border-2 border-purple-300">
+                        <span class="text-base font-bold text-gray-900 dark:text-white dark:text-white">รวมทั้งหมด</span>
                         <span class="text-2xl font-bold text-purple-600">3,200 บาท</span>
                     </div>
                 </div>
