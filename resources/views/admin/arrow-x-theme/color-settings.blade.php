@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ตั้งค่าสี - Arrow X')
 
@@ -26,7 +26,7 @@
                 </div>
                 <div>
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Theme Presets</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">เลือกชุดสีที่มีให้เพื่อใช้ทันที</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">เลือกชุดสีที่มีให้เพื่อใช้ทันที</p>
                 </div>
             </div>
 
@@ -43,9 +43,9 @@
                         @csrf
                         <input type="hidden" name="preset_id" value="{{ $preset->id }}">
 
-                        <button type="submit" class="w-full bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-400">
+                        <button type="submit" class="w-full glass-fusion dark:bg-gray-800 rounded-xl p-4 shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-gray-200 dark:border-gray-700 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-400">
                             {{-- Gradient Preview --}}
-                            <div class="h-16 rounded-lg mb-3" style="background: linear-gradient(to right, {{ $preset->colors['primary_start'] }}, {{ $preset->colors['primary_middle'] }}, {{ $preset->colors['primary_end'] }});"></div>
+                            <div class="h-16 rounded-xl mb-3" style="background: linear-gradient(to right, {{ $preset->colors['primary_start'] }}, {{ $preset->colors['primary_middle'] }}, {{ $preset->colors['primary_end'] }});"></div>
 
                             {{-- Name --}}
                             <h4 class="font-bold text-gray-900 dark:text-white text-sm mb-1">{{ $preset->display_name }}</h4>
@@ -58,7 +58,7 @@
                             @endif
 
                             {{-- Usage Count --}}
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">
                                 ใช้ {{ number_format($preset->usage_count) }} ครั้ง
                             </p>
                         </button>
@@ -66,7 +66,7 @@
                 @endforeach
             </div>
 
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-4 text-center">
                 <i class="fas fa-info-circle mr-1"></i>
                 คลิกที่ preset เพื่อใช้งานทันที หรือปรับแต่งเพิ่มเติมด้านล่าง
             </p>
@@ -75,10 +75,10 @@
         {{-- Divider --}}
         <div class="relative mb-6">
             <div class="absolute inset-0 flex items-center">
-                <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                <div class="w-full border-t border-gray-300 dark:border-gray-600 dark:border-gray-600"></div>
             </div>
             <div class="relative flex justify-center">
-                <span class="px-4 bg-gray-50 dark:bg-gray-900 text-sm text-gray-500 dark:text-gray-400">
+                <span class="px-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-900 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
                     หรือปรับแต่งเอง
                 </span>
             </div>
@@ -89,43 +89,43 @@
             @method('PUT')
 
             {{-- Primary Gradient --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Primary Gradient</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Color</label>
-                        <input type="color" name="primary_start" value="{{ $color->primary_start ?? '#9333EA' }}" class="w-full h-12 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Start Color</label>
+                        <input type="color" name="primary_start" value="{{ $color->primary_start ?? '#9333EA' }}" class="w-full h-12 rounded-xl">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Middle Color</label>
-                        <input type="color" name="primary_middle" value="{{ $color->primary_middle ?? '#EC4899' }}" class="w-full h-12 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Middle Color</label>
+                        <input type="color" name="primary_middle" value="{{ $color->primary_middle ?? '#EC4899' }}" class="w-full h-12 rounded-xl">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Color</label>
-                        <input type="color" name="primary_end" value="{{ $color->primary_end ?? '#F97316' }}" class="w-full h-12 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">End Color</label>
+                        <input type="color" name="primary_end" value="{{ $color->primary_end ?? '#F97316' }}" class="w-full h-12 rounded-xl">
                     </div>
                 </div>
             </div>
 
             {{-- Status Colors --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Status Colors</h3>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Success</label>
-                        <input type="color" name="success_color" value="{{ $color->success_color ?? '#10B981' }}" class="w-full h-12 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Success</label>
+                        <input type="color" name="success_color" value="{{ $color->success_color ?? '#10B981' }}" class="w-full h-12 rounded-xl">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Warning</label>
-                        <input type="color" name="warning_color" value="{{ $color->warning_color ?? '#F59E0B' }}" class="w-full h-12 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Warning</label>
+                        <input type="color" name="warning_color" value="{{ $color->warning_color ?? '#F59E0B' }}" class="w-full h-12 rounded-xl">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Error</label>
-                        <input type="color" name="error_color" value="{{ $color->error_color ?? '#EF4444' }}" class="w-full h-12 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Error</label>
+                        <input type="color" name="error_color" value="{{ $color->error_color ?? '#EF4444' }}" class="w-full h-12 rounded-xl">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Info</label>
-                        <input type="color" name="info_color" value="{{ $color->info_color ?? '#3B82F6' }}" class="w-full h-12 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Info</label>
+                        <input type="color" name="info_color" value="{{ $color->info_color ?? '#3B82F6' }}" class="w-full h-12 rounded-xl">
                     </div>
                 </div>
             </div>
@@ -138,7 +138,7 @@
             <input type="hidden" name="gradient_direction" value="to-right">
 
             <div class="flex justify-end gap-3">
-                <a href="{{ route('admin.arrow-x-theme.index') }}" class="px-6 py-3 bg-gray-200 dark:bg-gray-700 rounded-xl">ยกเลิก</a>
+                <a href="{{ route('admin.arrow-x-theme.index') }}" class="px-6 py-3 bg-gray-200 dark:bg-gray-700 dark:bg-gray-700 rounded-xl">ยกเลิก</a>
                 <button type="submit" class="px-6 py-3 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white rounded-xl">บันทึก</button>
             </div>
         </form>

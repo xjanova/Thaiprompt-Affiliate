@@ -10,7 +10,7 @@
 @php
     // ใช้ ThemeCompilerService สำหรับ compile และ cache
     $compilerService = app(\App\Services\ThemeCompilerService::class);
-    $compiled = $compilerService->getCompiled();
+    $compiled = $compilerService->compile();
     $compiledCss = $compiled['css'];
     $compiledJs = $compiled['js'];
 @endphp
