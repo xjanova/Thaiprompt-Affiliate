@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.74.0] - 2025-11-17
+
+### ✨ Features
+- feat: เพิ่ม Echo Config ทุก Layout + Broadcasting Events + Documentation (942ccfd6)
+- feat: Phase 2 - Offline Support + Service Worker + WebSocket Real-time Notifications (1787f84f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1321 from xjanova/claude/integrate-notification-bell-01EeY8Gv8vYrK9CH4moGNEzr (5b640877)
+
 ## [v3.73.1] - 2025-11-17
 
 ### ✨ Features
