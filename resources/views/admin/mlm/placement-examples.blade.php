@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ตัวอย่างการจัดวางสมาชิก MLM')
 
@@ -6,8 +6,8 @@
 <div class="container mx-auto px-4 py-6">
     <!-- Header -->
     <div class="mb-6">
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">ตัวอย่างการจัดวางสมาชิก MLM</h1>
-        <p class="text-gray-600 dark:text-gray-400">ดูแบบอนิเมชั่นแสดงวิธีการจัดวางสมาชิกใหม่แบบต่างๆ</p>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white mb-2">ตัวอย่างการจัดวางสมาชิก MLM</h1>
+        <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400">ดูแบบอนิเมชั่นแสดงวิธีการจัดวางสมาชิกใหม่แบบต่างๆ</p>
     </div>
 
     <!-- Info Alert -->
@@ -84,7 +84,7 @@
     <!-- Back Button -->
     <div class="mt-8 flex justify-center">
         <a href="{{ route('admin.mlm.settings.index') }}"
-           class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 rounded-lg font-medium shadow-lg transition-all duration-200 flex items-center gap-2">
+           class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 rounded-xl font-medium shadow-lg transition-all duration-200 flex items-center gap-2">
             <i class="fas fa-arrow-left"></i>
             กลับไปที่ตั้งค่า MLM
         </a>
