@@ -39,8 +39,8 @@
         </div>
 
         {{-- Circulating Supply --}}
-        <div class="relative overflow-hidden style="background: var(--arrow-x-accent-gradient)" rounded-xl shadow-lg p-5 text-white">
-            <div class="absolute top-0 right-0 -mt-2 -mr-2 w-20 h-20 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
+        <div class="relative overflow-hidden rounded-xl shadow-lg p-5 text-white border border-white/20 dark:border-white/10" style="background: var(--arrow-x-accent-gradient)">
+            <div class="absolute top-0 right-0 -mt-2 -mr-2 w-20 h-20 glass-fusion opacity-10 rounded-full"></div>
             <div class="relative z-10">
                 <div class="text-3xl mb-2">🔄</div>
                 <p class="text-xs text-purple-100 mb-1">Circulating</p>
@@ -50,8 +50,8 @@
         </div>
 
         {{-- Total Wallets --}}
-        <div class="relative overflow-hidden bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="absolute top-0 right-0 -mt-2 -mr-2 w-20 h-20 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
+        <div class="relative overflow-hidden bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl shadow-lg p-5 text-white border border-white/20 dark:border-white/10">
+            <div class="absolute top-0 right-0 -mt-2 -mr-2 w-20 h-20 glass-fusion opacity-10 rounded-full"></div>
             <div class="relative z-10">
                 <div class="text-3xl mb-2">👛</div>
                 <p class="text-xs text-cyan-100 mb-1">Total Wallets</p>
@@ -61,8 +61,8 @@
         </div>
 
         {{-- 24h Transactions --}}
-        <div class="relative overflow-hidden style="background: var(--arrow-x-success-gradient)" rounded-xl shadow-lg p-5 text-white">
-            <div class="absolute top-0 right-0 -mt-2 -mr-2 w-20 h-20 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
+        <div class="relative overflow-hidden rounded-xl shadow-lg p-5 text-white border border-white/20 dark:border-white/10" style="background: var(--arrow-x-success-gradient)">
+            <div class="absolute top-0 right-0 -mt-2 -mr-2 w-20 h-20 glass-fusion opacity-10 rounded-full"></div>
             <div class="relative z-10">
                 <div class="text-3xl mb-2">📊</div>
                 <p class="text-xs text-green-100 mb-1">24h Transactions</p>
@@ -72,8 +72,8 @@
         </div>
 
         {{-- 24h Volume --}}
-        <div class="relative overflow-hidden bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl shadow-lg p-5 text-white">
-            <div class="absolute top-0 right-0 -mt-2 -mr-2 w-20 h-20 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
+        <div class="relative overflow-hidden bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl shadow-lg p-5 text-white border border-white/20 dark:border-white/10">
+            <div class="absolute top-0 right-0 -mt-2 -mr-2 w-20 h-20 glass-fusion opacity-10 rounded-full"></div>
             <div class="relative z-10">
                 <div class="text-3xl mb-2">💰</div>
                 <p class="text-xs text-yellow-100 mb-1">24h Volume</p>
@@ -86,9 +86,9 @@
     {{-- Main Stats Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {{-- Total Balance --}}
-        <a href="{{ route('admin.tpix.wallets') }}" class="relative overflow-hidden bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
+        <a href="{{ route('admin.tpix.wallets') }}" class="relative overflow-hidden bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer border border-white/20 dark:border-white/10">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
-                <div class="w-24 h-24 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
+                <div class="w-24 h-24 glass-fusion opacity-10 rounded-full"></div>
             </div>
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-4">
@@ -101,9 +101,9 @@
         </a>
 
         {{-- Pending Deposits --}}
-        <a href="{{ route('admin.tpix.transactions', ['type' => 'deposit', 'status' => 'pending']) }}" class="relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
+        <a href="{{ route('admin.tpix.transactions', ['type' => 'deposit', 'status' => 'pending']) }}" class="relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer border border-white/20 dark:border-white/10">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
-                <div class="w-24 h-24 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
+                <div class="w-24 h-24 glass-fusion opacity-10 rounded-full"></div>
             </div>
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-4">
@@ -121,9 +121,9 @@
         </a>
 
         {{-- Pending Withdrawals --}}
-        <a href="{{ route('admin.tpix.transactions', ['type' => 'withdrawal', 'status' => 'pending']) }}" class="relative overflow-hidden style="background: var(--arrow-x-warning-gradient)" rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
+        <a href="{{ route('admin.tpix.transactions', ['type' => 'withdrawal', 'status' => 'pending']) }}" class="relative overflow-hidden rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer border border-white/20 dark:border-white/10" style="background: var(--arrow-x-warning-gradient)">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
-                <div class="w-24 h-24 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
+                <div class="w-24 h-24 glass-fusion opacity-10 rounded-full"></div>
             </div>
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-4">
@@ -141,9 +141,9 @@
         </a>
 
         {{-- Network Status --}}
-        <a href="{{ route('admin.tpix.network-status') }}" class="relative overflow-hidden bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
+        <a href="{{ route('admin.tpix.network-status') }}" class="relative overflow-hidden bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer border border-white/20 dark:border-white/10">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
-                <div class="w-24 h-24 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
+                <div class="w-24 h-24 glass-fusion opacity-10 rounded-full"></div>
             </div>
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-4">
@@ -162,16 +162,18 @@
     {{-- Charts and Lists --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {{-- Volume Chart --}}
-        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6 hover:scale-105 transition-transform border border-white/20 dark:border-white/10">
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                 <span>📈</span>
                 <span>ปริมาณการทำธุรกรรม (30 วันล่าสุด)</span>
             </h2>
-            <canvas id="volumeChart" class="w-full" height="80"></canvas>
+            <div class="relative h-80">
+                <canvas id="volumeChart" class="w-full h-full"></canvas>
+            </div>
         </div>
 
         {{-- Top Wallets --}}
-        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6 hover:scale-105 transition-transform border border-white/20 dark:border-white/10">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <span>🏆</span>
@@ -184,7 +186,7 @@
 
             <div class="space-y-3">
                 @forelse($topWallets as $index => $wallet)
-                <div class="flex items-center justify-between p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-600 transition">
+                <div class="flex items-center justify-between p-3 bg-gray-100/50 dark:bg-slate-700 rounded-xl hover:bg-gray-200/50 dark:hover:bg-slate-600 transition">
                     <div class="flex items-center gap-3">
                         <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
                             #{{ $index + 1 }}
@@ -193,7 +195,7 @@
                             <div class="text-sm font-semibold text-gray-900 dark:text-white">
                                 {{ $wallet->user->name ?? 'Unknown' }}
                             </div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-mono">
+                            <div class="text-xs text-gray-500 dark:text-gray-400 font-mono">
                                 {{ Str::limit($wallet->address, 20) }}
                             </div>
                         </div>
@@ -202,13 +204,13 @@
                         <div class="text-sm font-bold text-gray-900 dark:text-white">
                             {{ number_format($wallet->balance, 2) }}
                         </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                        <div class="text-xs text-gray-500 dark:text-gray-400">
                             TPIX
                         </div>
                     </div>
                 </div>
                 @empty
-                <div class="text-center py-8 text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
                     ไม่มีข้อมูล Wallets
                 </div>
                 @endforelse
@@ -217,7 +219,7 @@
     </div>
 
     {{-- Recent Transactions --}}
-    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6 hover:scale-105 transition-transform border border-white/20 dark:border-white/10">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <span>⚡</span>
@@ -230,28 +232,28 @@
 
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
-                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700">
+                <thead class="bg-gray-100/50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             ประเภท
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             ผู้ใช้
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             จำนวน
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             สถานะ
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             เวลา
                         </th>
                     </tr>
                 </thead>
                 <tbody class="glass-fusion dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                     @forelse($recentTransactions as $tx)
-                    <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition">
+                    <tr class="hover:bg-gray-100/50 dark:hover:bg-slate-700 transition">
                         <td class="px-6 py-4 whitespace-nowrap">
                             @php
                                 $typeIcons = [
@@ -278,7 +280,7 @@
                             <div class="text-sm font-medium text-gray-900 dark:text-white">
                                 {{ $tx->user->name ?? 'Unknown' }}
                             </div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                            <div class="text-xs text-gray-500 dark:text-gray-400">
                                 {{ $tx->user->email ?? '-' }}
                             </div>
                         </td>
@@ -299,13 +301,13 @@
                                 {{ ucfirst($tx->status) }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                             {{ $tx->created_at->diffForHumans() }}
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                        <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                             ไม่มีธุรกรรมล่าสุด
                         </td>
                     </tr>
