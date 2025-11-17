@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Edit Page - ' . $page->name)
 
@@ -22,37 +22,37 @@
 @endpush
 
 @section('content')
-<div class="h-screen flex flex-col bg-gray-50 dark:bg-gray-900" x-data="pageBuilder()" x-init="init()">
+<div class="h-screen flex flex-col bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-900" x-data="pageBuilder()" x-init="init()">
     <!-- Top Bar -->
-    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+    <div class="glass-fusion dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700 px-6 py-4 flex items-center justify-between" border border-white/20 dark:border-white/10>
         <div class="flex items-center space-x-4">
-            <a href="{{ route('admin.page-builder.index') }}" class="text-gray-500 hover:text-gray-700">
+            <a href="{{ route('admin.page-builder.index') }}" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
             </a>
             <div>
-                <h1 class="text-xl font-bold text-gray-800 dark:text-white">{{ $page->name }}</h1>
-                <p class="text-sm text-gray-500">{{ ucfirst($page->page_type) }} - /{{ $page->slug }}</p>
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white dark:text-white">{{ $page->name }}</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ ucfirst($page->page_type) }} - /{{ $page->slug }}</p>
             </div>
         </div>
 
         <div class="flex items-center space-x-3">
             <!-- Device Preview Toggle -->
-            <div class="flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                <button @click="previewDevice = 'desktop'" :class="previewDevice === 'desktop' ? 'bg-white dark:bg-gray-600 shadow' : ''"
+            <div class="flex items-center space-x-1 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl p-1">
+                <button @click="previewDevice = 'desktop'" :class="previewDevice === 'desktop' ? 'glass-fusion dark:bg-gray-600 shadow' : ''"
                         class="px-3 py-1.5 rounded text-sm font-medium transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                     </svg>
                 </button>
-                <button @click="previewDevice = 'tablet'" :class="previewDevice === 'tablet' ? 'bg-white dark:bg-gray-600 shadow' : ''"
+                <button @click="previewDevice = 'tablet'" :class="previewDevice === 'tablet' ? 'glass-fusion dark:bg-gray-600 shadow' : ''"
                         class="px-3 py-1.5 rounded text-sm font-medium transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                     </svg>
                 </button>
-                <button @click="previewDevice = 'mobile'" :class="previewDevice === 'mobile' ? 'bg-white dark:bg-gray-600 shadow' : ''"
+                <button @click="previewDevice = 'mobile'" :class="previewDevice === 'mobile' ? 'glass-fusion dark:bg-gray-600 shadow' : ''"
                         class="px-3 py-1.5 rounded text-sm font-medium transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
@@ -61,7 +61,7 @@
             </div>
 
             <a href="{{ route('admin.page-builder.preview', $page) }}" target="_blank"
-               class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+               class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 transition-colors">
                 <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -70,7 +70,7 @@
             </a>
 
             <button @click="savePage()"
-                    class="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all">
+                    class="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all">
                 <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
                 </svg>
@@ -82,19 +82,19 @@
     <!-- Main Content -->
     <div class="flex-1 flex overflow-hidden">
         <!-- Left Sidebar - Sections Manager -->
-        <div class="w-96 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+        <div class="w-96 glass-fusion dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 dark:border-gray-700 flex flex-col overflow-hidden" border border-white/20 dark:border-white/10>
             <!-- Tabs -->
-            <div class="border-b border-gray-200 dark:border-gray-700">
+            <div class="border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
                 <nav class="flex -mb-px">
-                    <button @click="activeTab = 'sections'" :class="activeTab === 'sections' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'"
+                    <button @click="activeTab = 'sections'" :class="activeTab === 'sections' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 dark:text-gray-400'"
                             class="flex-1 py-4 px-1 text-center border-b-2 font-medium text-sm">
                         Sections
                     </button>
-                    <button @click="activeTab = 'templates'" :class="activeTab === 'templates' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'"
+                    <button @click="activeTab = 'templates'" :class="activeTab === 'templates' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 dark:text-gray-400'"
                             class="flex-1 py-4 px-1 text-center border-b-2 font-medium text-sm">
                         Templates
                     </button>
-                    <button @click="activeTab = 'settings'" :class="activeTab === 'settings' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'"
+                    <button @click="activeTab = 'settings'" :class="activeTab === 'settings' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 dark:text-gray-400'"
                             class="flex-1 py-4 px-1 text-center border-b-2 font-medium text-sm">
                         Settings
                     </button>
@@ -106,7 +106,7 @@
                 <!-- Sections Tab -->
                 <div x-show="activeTab === 'sections'" class="space-y-4">
                     <button @click="showTemplateGallery = true"
-                            class="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center justify-center">
+                            class="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all flex items-center justify-center">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                         </svg>
@@ -115,18 +115,18 @@
 
                     <div id="sections-list" class="space-y-3">
                         @foreach($page->sections->sortBy('order') as $section)
-                        <div class="section-card bg-gray-50 dark:bg-gray-700 rounded-lg p-4 cursor-move" data-id="{{ $section->id }}">
+                        <div class="section-card bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl p-4 cursor-move" data-id="{{ $section->id }}">
                             <div class="flex items-start justify-between mb-2">
                                 <div class="flex-1">
                                     <div class="flex items-center space-x-2">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                                         </svg>
-                                        <h3 class="font-semibold text-gray-800 dark:text-white text-sm">
+                                        <h3 class="font-semibold text-gray-900 dark:text-white dark:text-white text-sm">
                                             {{ $section->name ?? ucfirst(str_replace('_', ' ', $section->section_type)) }}
                                         </h3>
                                     </div>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">
                                         {{ $sectionTypes[$section->section_type] ?? $section->section_type }}
                                     </p>
                                 </div>
@@ -139,7 +139,7 @@
                                         </svg>
                                     </button>
                                     @else
-                                    <button onclick="toggleVisibility({{ $section->id }})" class="text-gray-400 hover:text-gray-600" title="Hidden">
+                                    <button onclick="toggleVisibility({{ $section->id }})" class="text-gray-400 hover:text-gray-600 dark:text-gray-400" title="Hidden">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
                                         </svg>
@@ -148,12 +148,12 @@
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 dark:border-gray-600">
                                 <button onclick="editSection({{ $section->id }})" class="text-blue-600 hover:text-blue-800 text-xs font-medium">
                                     Edit
                                 </button>
                                 <div class="flex items-center space-x-2">
-                                    <button onclick="duplicateSection({{ $section->id }})" class="text-gray-600 hover:text-gray-800" title="Duplicate">
+                                    <button onclick="duplicateSection({{ $section->id }})" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white" title="Duplicate">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                                         </svg>
@@ -172,15 +172,15 @@
 
                 <!-- Templates Tab -->
                 <div x-show="activeTab === 'templates'" class="space-y-3">
-                    <div class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    <div class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mb-4">
                         Click on a template to add it to your page
                     </div>
 
                     @foreach($sectionTypes as $type => $label)
                     <button onclick="addSectionFromType('{{ $type }}')"
-                            class="w-full text-left p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                        <div class="font-medium text-gray-800 dark:text-white">{{ $label }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $type }}</div>
+                            class="w-full text-left p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-600 transition-colors">
+                        <div class="font-medium text-gray-900 dark:text-white dark:text-white">{{ $label }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">{{ $type }}</div>
                     </button>
                     @endforeach
                 </div>
@@ -189,20 +189,20 @@
                 <div x-show="activeTab === 'settings'" class="space-y-4">
                     <form id="page-settings-form" class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Page Name</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Page Name</label>
                             <input type="text" name="name" value="{{ $page->name }}"
-                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white">
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">URL Slug</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">URL Slug</label>
                             <input type="text" name="slug" value="{{ $page->slug }}"
-                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white">
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Page Type</label>
-                            <select name="page_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Page Type</label>
+                            <select name="page_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white">
                                 @foreach($pageTypes as $value => $label)
                                 <option value="{{ $value }}" {{ $page->page_type === $value ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
@@ -212,8 +212,8 @@
                         <div>
                             <label class="flex items-center cursor-pointer">
                                 <input type="checkbox" name="is_active" value="1" {{ $page->is_active ? 'checked' : '' }}
-                                       class="w-5 h-5 text-blue-600 border-gray-300 rounded">
-                                <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
+                                       class="w-5 h-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded">
+                                <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Active</span>
                             </label>
                         </div>
                     </form>
@@ -222,13 +222,13 @@
         </div>
 
         <!-- Right Panel - Preview -->
-        <div class="flex-1 bg-gray-100 dark:bg-gray-900 overflow-auto">
+        <div class="flex-1 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-gray-900 overflow-auto">
             <div class="h-full flex items-center justify-center">
                 <div :class="{
                     'w-full': previewDevice === 'desktop',
                     'max-w-2xl': previewDevice === 'tablet',
                     'max-w-sm': previewDevice === 'mobile'
-                }" class="bg-white dark:bg-gray-800 shadow-2xl mx-auto transition-all duration-300" style="min-height: 100%;">
+                }" class="glass-fusion dark:bg-gray-800 shadow-2xl mx-auto transition-all duration-300" border border-white/20 dark:border-white/10 style="min-height: 100%;">
                     <iframe id="preview-iframe" src="{{ route('admin.page-builder.preview', $page) }}"
                             class="w-full h-full border-0" style="min-height: 100vh;"></iframe>
                 </div>
@@ -261,19 +261,19 @@
                  x-transition:leave="ease-in duration-200"
                  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 class="inline-block w-full max-w-6xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 rounded-2xl shadow-xl">
+                 class="inline-block w-full max-w-6xl my-8 overflow-hidden text-left align-middle transition-all transform glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl" border border-white/20 dark:border-white/10>
 
                 <!-- Modal Header -->
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
                     <div>
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white">
                             Section Templates
                         </h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">
                             Choose a section template to add to your page
                         </p>
                     </div>
-                    <button @click="showTemplateGallery = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <button @click="showTemplateGallery = false" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
@@ -285,7 +285,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         @foreach($sectionTypes as $type => $label)
                         <button onclick="addSectionFromType('{{ $type }}')"
-                                class="group relative bg-gray-50 dark:bg-gray-700 rounded-xl p-6 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-600 dark:hover:to-gray-600 transition-all hover:shadow-lg border-2 border-transparent hover:border-blue-500">
+                                class="group relative bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl p-6 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-600 dark:hover:to-gray-600 transition-all hover:shadow-lg border-2 border-transparent hover:border-blue-500">
                             <!-- Icon -->
                             <div class="w-12 h-12 mb-4 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white">
                                 @if(str_starts_with($type, 'hero'))
@@ -337,7 +337,7 @@
                             </h4>
 
                             <!-- Type -->
-                            <p class="text-center text-xs text-gray-500 dark:text-gray-400 font-mono">
+                            <p class="text-center text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 font-mono">
                                 {{ $type }}
                             </p>
 
@@ -358,8 +358,8 @@
                 </div>
 
                 <!-- Modal Footer -->
-                <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-900">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
                         💡 Tip: Click on any template to add it to your page. You can customize it later using the Edit button.
                     </p>
                 </div>
@@ -392,14 +392,14 @@
                  x-transition:leave="ease-in duration-200"
                  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 class="inline-block w-full max-w-4xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 rounded-2xl shadow-xl">
+                 class="inline-block w-full max-w-4xl my-8 overflow-hidden text-left align-middle transition-all transform glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl" border border-white/20 dark:border-white/10>
 
                 <!-- Modal Header -->
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white">
                         Edit Section
                     </h3>
-                    <button @click="closeEditModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <button @click="closeEditModal()" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
@@ -411,49 +411,49 @@
                     <form id="edit-section-form" class="space-y-6">
                         <!-- Section Name -->
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                                 Section Name
                             </label>
                             <input type="text"
                                    x-model="editingSectionData.name"
-                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500">
                         </div>
 
                         <!-- Section Type (Read-only) -->
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                                 Section Type
                             </label>
                             <input type="text"
                                    x-model="editingSectionData.section_type"
                                    readonly
-                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 dark:text-white">
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl bg-gray-100/50 dark:bg-gray-800/50 dark:bg-gray-700 dark:text-white">
                         </div>
 
                         <!-- Content JSON Editor -->
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                                 Content (JSON)
                             </label>
                             <textarea x-model="editingSectionContent"
                                       rows="12"
-                                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white font-mono text-sm focus:ring-2 focus:ring-blue-500"
+                                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white font-mono text-sm focus:ring-2 focus:ring-blue-500"
                                       placeholder='{"title": "Your title", "subtitle": "Your subtitle"}'></textarea>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">
                                 Enter valid JSON format. Example: {"title": "Hello", "subtitle": "World"}
                             </p>
                         </div>
 
                         <!-- Settings JSON Editor -->
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                                 Settings (JSON)
                             </label>
                             <textarea x-model="editingSectionSettings"
                                       rows="8"
-                                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white font-mono text-sm focus:ring-2 focus:ring-blue-500"
+                                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white font-mono text-sm focus:ring-2 focus:ring-blue-500"
                                       placeholder='{"padding_y": "py-20", "bg_color": "#ffffff"}'></textarea>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">
                                 Enter valid JSON format for section settings.
                             </p>
                         </div>
@@ -464,16 +464,16 @@
                                 <label class="flex items-center cursor-pointer">
                                     <input type="checkbox"
                                            x-model="editingSectionData.is_active"
-                                           class="w-5 h-5 text-blue-600 border-gray-300 rounded">
-                                    <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
+                                           class="w-5 h-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded">
+                                    <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Active</span>
                                 </label>
                             </div>
                             <div>
                                 <label class="flex items-center cursor-pointer">
                                     <input type="checkbox"
                                            x-model="editingSectionData.is_visible"
-                                           class="w-5 h-5 text-blue-600 border-gray-300 rounded">
-                                    <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Visible</span>
+                                           class="w-5 h-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded">
+                                    <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Visible</span>
                                 </label>
                             </div>
                         </div>
@@ -481,13 +481,13 @@
                 </div>
 
                 <!-- Modal Footer -->
-                <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 dark:border-gray-700">
                     <button @click="closeEditModal()"
-                            class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            class="px-6 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-colors">
                         Cancel
                     </button>
                     <button @click="saveEditSection()"
-                            class="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all">
+                            class="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all">
                         Save Changes
                     </button>
                 </div>
@@ -683,7 +683,7 @@ function pageBuilder() {
             // Create notification element
             const notification = document.createElement('div');
             notification.textContent = message;
-            notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50 transition-opacity duration-300';
+            notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-xl shadow-lg text-sm z-50 transition-opacity duration-300';
             document.body.appendChild(notification);
 
             // Remove after 2 seconds

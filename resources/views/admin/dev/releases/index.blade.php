@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('content')
 <div class="container mx-auto px-4 py-8" x-data="devReleaseManager()">
@@ -6,10 +6,10 @@
     <div class="mb-8">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">🛠️ Developer Release Manager</h1>
-                <p class="text-gray-600">จัดการ Release และอนุมัติการปล่อยแพท (Developer Only)</p>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">🛠️ Developer Release Manager</h1>
+                <p class="text-gray-600 dark:text-gray-400">จัดการ Release และอนุมัติการปล่อยแพท (Developer Only)</p>
             </div>
-            <div class="bg-red-100 text-red-800 px-4 py-2 rounded-lg font-semibold">
+            <div class="bg-red-100 text-red-800 px-4 py-2 rounded-xl font-semibold">
                 🔒 Dev Mode: {{ $currentIp }}
             </div>
         </div>
@@ -18,9 +18,9 @@
     <!-- Current Status -->
     <div class="grid md:grid-cols-3 gap-6 mb-8">
         <!-- Current Version -->
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="glass-fusion rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-4">
-                <h3 class="font-bold text-gray-800">เวอร์ชันปัจจุบัน</h3>
+                <h3 class="font-bold text-gray-900 dark:text-white">เวอร์ชันปัจจุบัน</h3>
                 <span class="text-2xl">📦</span>
             </div>
             <p class="text-3xl font-bold text-indigo-600">{{ $currentVersion }}</p>
@@ -28,13 +28,13 @@
 
         <!-- Git Status -->
         @if($gitStatus)
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="glass-fusion rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-4">
-                <h3 class="font-bold text-gray-800">Git Status</h3>
+                <h3 class="font-bold text-gray-900 dark:text-white">Git Status</h3>
                 <span class="text-2xl">🌿</span>
             </div>
             <div class="space-y-2 text-sm">
-                <p><span class="font-medium">Branch:</span> <code class="bg-gray-100 px-2 py-1 rounded">{{ $gitStatus['branch'] }}</code></p>
+                <p><span class="font-medium">Branch:</span> <code class="bg-gray-100/50 dark:bg-gray-800/50 px-2 py-1 rounded">{{ $gitStatus['branch'] }}</code></p>
                 <p>
                     <span class="font-medium">Status:</span>
                     @if($gitStatus['has_changes'])
@@ -48,9 +48,9 @@
         @endif
 
         <!-- Release Stats -->
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="glass-fusion rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-4">
-                <h3 class="font-bold text-gray-800">Release Stats</h3>
+                <h3 class="font-bold text-gray-900 dark:text-white">Release Stats</h3>
                 <span class="text-2xl">📊</span>
             </div>
             <div class="space-y-2 text-sm">
@@ -63,10 +63,10 @@
 
     <!-- Recent Commits (Real-time view) -->
     @if(!empty($recentCommits))
-    <div class="bg-white rounded-lg shadow mb-8">
-        <div class="p-6 border-b border-gray-200">
+    <div class="glass-fusion rounded-xl shadow mb-8" border border-white/20 dark:border-white/10>
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-bold text-gray-800">🔄 Recent Commits (Real-time)</h2>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">🔄 Recent Commits (Real-time)</h2>
                 <button @click="refreshInfo" class="text-sm text-blue-600 hover:text-blue-700">
                     <span x-show="!refreshing">🔄 Refresh</span>
                     <span x-show="refreshing">⏳ Refreshing...</span>
@@ -75,12 +75,12 @@
         </div>
         <div class="divide-y divide-gray-200">
             @foreach($recentCommits as $commit)
-            <div class="p-4 hover:bg-gray-50 transition">
+            <div class="p-4 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 transition">
                 <div class="flex items-start gap-4">
-                    <code class="bg-gray-100 px-2 py-1 rounded text-sm font-mono">{{ $commit['hash'] }}</code>
+                    <code class="bg-gray-100/50 dark:bg-gray-800/50 px-2 py-1 rounded text-sm font-mono">{{ $commit['hash'] }}</code>
                     <div class="flex-1">
-                        <p class="text-gray-800">{{ $commit['message'] }}</p>
-                        <p class="text-xs text-gray-500 mt-1">{{ $commit['author'] }} • {{ $commit['time'] }}</p>
+                        <p class="text-gray-900 dark:text-white">{{ $commit['message'] }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $commit['author'] }} • {{ $commit['time'] }}</p>
                     </div>
                 </div>
             </div>
@@ -90,7 +90,7 @@
     @endif
 
     <!-- Create New Release -->
-    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg shadow-lg p-6 mb-8 text-white">
+    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 mb-8 text-white">
         <h2 class="text-2xl font-bold mb-4">✨ Create New Release</h2>
 
         <form @submit.prevent="createRelease" class="space-y-4">
@@ -101,13 +101,13 @@
                         type="text"
                         x-model="newRelease.version"
                         placeholder="v1.2.0"
-                        class="w-full px-4 py-2 rounded-lg text-gray-800"
+                        class="w-full px-4 py-2 rounded-xl text-gray-900 dark:text-white"
                         required
                     >
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-2">Type</label>
-                    <select x-model="newRelease.type" class="w-full px-4 py-2 rounded-lg text-gray-800" required>
+                    <select x-model="newRelease.type" class="w-full px-4 py-2 rounded-xl text-gray-900 dark:text-white" required>
                         <option value="patch">Patch (แก้บัค/ปรับปรุง)</option>
                         <option value="minor">Minor (ฟีเจอร์ใหม่)</option>
                         <option value="major">Major (เปลี่ยนแปลงใหญ่)</option>
@@ -126,7 +126,7 @@
                 <textarea
                     x-model="newRelease.changelog"
                     rows="3"
-                    class="w-full px-4 py-2 rounded-lg text-gray-800"
+                    class="w-full px-4 py-2 rounded-xl text-gray-900 dark:text-white"
                     placeholder="เช่น: เพิ่มระบบติดตามผลแบบเรียลไทม์ พร้อมกราฟสถิติแบบโต้ตอบและรองรับหลายสกุลเงิน"
                     required
                 ></textarea>
@@ -137,7 +137,7 @@
                 <button
                     type="submit"
                     :disabled="creating"
-                    class="bg-white text-indigo-600 px-6 py-3 rounded-lg font-bold hover:bg-indigo-50 transition disabled:opacity-50"
+                    class="glass-fusion text-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition disabled:opacity-50"
                 >
                     <span x-show="!creating">🚀 Create Release</span>
                     <span x-show="creating">⏳ Creating...</span>
@@ -145,36 +145,36 @@
             </div>
         </form>
 
-        <div x-show="createMessage" class="mt-4 p-4 rounded-lg" :class="createSuccess ? 'bg-green-500' : 'bg-red-500'" x-text="createMessage"></div>
+        <div x-show="createMessage" class="mt-4 p-4 rounded-xl" :class="createSuccess ? 'bg-green-500' : 'bg-red-500'" x-text="createMessage"></div>
     </div>
 
     <!-- Tabs for different release types -->
     <div class="mb-6">
-        <div class="flex space-x-2 border-b border-gray-200">
+        <div class="flex space-x-2 border-b border-gray-200 dark:border-gray-700">
             <button
                 @click="activeTab = 'official'"
-                :class="activeTab === 'official' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-600'"
+                :class="activeTab === 'official' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-600 dark:text-gray-400'"
                 class="px-4 py-2 font-medium"
             >
                 ✅ Official Releases ({{ $officialReleases->count() }})
             </button>
             <button
                 @click="activeTab = 'draft'"
-                :class="activeTab === 'draft' ? 'border-b-2 border-yellow-600 text-yellow-600' : 'text-gray-600'"
+                :class="activeTab === 'draft' ? 'border-b-2 border-yellow-600 text-yellow-600' : 'text-gray-600 dark:text-gray-400'"
                 class="px-4 py-2 font-medium"
             >
                 📝 Drafts ({{ $draftReleases->count() }})
             </button>
             <button
                 @click="activeTab = 'prerelease'"
-                :class="activeTab === 'prerelease' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'"
+                :class="activeTab === 'prerelease' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 dark:text-gray-400'"
                 class="px-4 py-2 font-medium"
             >
                 ⚠️ Pre-releases ({{ $preReleases->count() }})
             </button>
             <button
                 @click="activeTab = 'all'"
-                :class="activeTab === 'all' ? 'border-b-2 border-gray-600 text-gray-600' : 'text-gray-500'"
+                :class="activeTab === 'all' ? 'border-b-2 border-gray-600 text-gray-600 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'"
                 class="px-4 py-2 font-medium"
             >
                 🗂️ All ({{ $allReleases->count() }})
@@ -193,8 +193,8 @@
         @forelse($officialReleases as $release)
             @include('admin.dev.releases.partials.release-card', ['release' => $release, 'type' => 'official'])
         @empty
-            <div class="bg-white rounded-lg shadow p-12 text-center">
-                <p class="text-gray-500">ยังไม่มี Official Release</p>
+            <div class="glass-fusion rounded-xl shadow p-12 text-center" border border-white/20 dark:border-white/10>
+                <p class="text-gray-500 dark:text-gray-400">ยังไม่มี Official Release</p>
             </div>
         @endforelse
     </div>
@@ -210,8 +210,8 @@
         @forelse($draftReleases as $release)
             @include('admin.dev.releases.partials.release-card', ['release' => $release, 'type' => 'draft'])
         @empty
-            <div class="bg-white rounded-lg shadow p-12 text-center">
-                <p class="text-gray-500">ไม่มี Draft Release</p>
+            <div class="glass-fusion rounded-xl shadow p-12 text-center" border border-white/20 dark:border-white/10>
+                <p class="text-gray-500 dark:text-gray-400">ไม่มี Draft Release</p>
             </div>
         @endforelse
     </div>
@@ -227,8 +227,8 @@
         @forelse($preReleases as $release)
             @include('admin.dev.releases.partials.release-card', ['release' => $release, 'type' => 'prerelease'])
         @empty
-            <div class="bg-white rounded-lg shadow p-12 text-center">
-                <p class="text-gray-500">ไม่มี Pre-release</p>
+            <div class="glass-fusion rounded-xl shadow p-12 text-center" border border-white/20 dark:border-white/10>
+                <p class="text-gray-500 dark:text-gray-400">ไม่มี Pre-release</p>
             </div>
         @endforelse
     </div>
@@ -238,8 +238,8 @@
         @forelse($allReleases as $release)
             @include('admin.dev.releases.partials.release-card', ['release' => $release, 'type' => 'all'])
         @empty
-            <div class="bg-white rounded-lg shadow p-12 text-center">
-                <p class="text-gray-500">ไม่มี Release</p>
+            <div class="glass-fusion rounded-xl shadow p-12 text-center" border border-white/20 dark:border-white/10>
+                <p class="text-gray-500 dark:text-gray-400">ไม่มี Release</p>
             </div>
         @endforelse
     </div>

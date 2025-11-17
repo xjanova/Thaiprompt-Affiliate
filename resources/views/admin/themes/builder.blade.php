@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', isset($theme) ? __('Edit Theme') : __('Create Theme'))
 
@@ -12,7 +12,7 @@
                     <h1 class="text-3xl font-bold text-gray-900">
                         {{ isset($theme) ? __('Edit Theme') : __('Create New Theme') }}
                     </h1>
-                    <p class="text-gray-600 mt-1">{{ __('Customize your application appearance') }}</p>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1">{{ __('Customize your application appearance') }}</p>
                 </div>
                 <div class="flex gap-3">
                     <a href="{{ route('admin.themes.index') }}" class="btn btn-outline">
@@ -39,33 +39,33 @@
             <!-- Editor Panel -->
             <div class="lg:col-span-2 space-y-6">
                 <!-- Basic Information -->
-                <div class="bg-white rounded-lg shadow p-6">
+                <div class="glass-fusion rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                     <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('Basic Information') }}</h2>
 
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ __('Theme Name') }}</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Theme Name') }}</label>
                             <input type="text" x-model="formData.display_name" required
-                                   class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                   class="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ __('Slug') }}</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Slug') }}</label>
                             <input type="text" x-model="formData.name" required
-                                   class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                   class="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                    pattern="[a-z0-9-]+" title="{{ __('Only lowercase letters, numbers, and hyphens') }}">
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ __('Description') }}</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Description') }}</label>
                             <textarea x-model="formData.description" rows="3"
-                                      class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                                      class="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
                         </div>
                     </div>
                 </div>
 
                 <!-- Color Settings -->
-                <div class="bg-white rounded-lg shadow p-6">
+                <div class="glass-fusion rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-semibold text-gray-900">{{ __('Colors') }}</h2>
                         <div class="flex gap-2">
@@ -85,14 +85,14 @@
                     <div class="grid grid-cols-2 gap-4">
                         <template x-for="(colorKey, index) in colorKeys" :key="colorKey">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="colorKey.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())"></label>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" x-text="colorKey.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())"></label>
                                 <div class="flex gap-2">
                                     <input type="color"
                                            x-model="formData.colors[colorMode === 'light' ? 'colors' : 'dark_colors'][colorKey]"
-                                           class="w-16 h-10 rounded border border-gray-300 cursor-pointer">
+                                           class="w-16 h-10 rounded border border-gray-300 dark:border-gray-600 cursor-pointer">
                                     <input type="text"
                                            x-model="formData.colors[colorMode === 'light' ? 'colors' : 'dark_colors'][colorKey]"
-                                           class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                           class="flex-1 rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                            pattern="#[0-9A-Fa-f]{6}">
                                 </div>
                             </div>
@@ -100,10 +100,10 @@
                     </div>
 
                     <!-- Preset Color Palettes -->
-                    <div class="mt-6 pt-6 border-t border-gray-200">
-                        <label class="block text-sm font-medium text-gray-700 mb-3">{{ __('Quick Color Palettes') }}</label>
+                    <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{{ __('Quick Color Palettes') }}</label>
                         <div class="grid grid-cols-3 gap-3">
-                            <button type="button" @click="applyPalette('line')" class="p-3 border rounded-lg hover:border-green-500 transition-colors">
+                            <button type="button" @click="applyPalette('line')" class="p-3 border rounded-xl hover:border-green-500 transition-colors">
                                 <div class="flex gap-1 mb-2">
                                     <div class="w-4 h-4 rounded" style="background: #06C755"></div>
                                     <div class="w-4 h-4 rounded" style="background: #00B900"></div>
@@ -112,7 +112,7 @@
                                 <div class="text-xs font-medium">Line OA</div>
                             </button>
 
-                            <button type="button" @click="applyPalette('ocean')" class="p-3 border rounded-lg hover:border-blue-500 transition-colors">
+                            <button type="button" @click="applyPalette('ocean')" class="p-3 border rounded-xl hover:border-blue-500 transition-colors">
                                 <div class="flex gap-1 mb-2">
                                     <div class="w-4 h-4 rounded" style="background: #0891b2"></div>
                                     <div class="w-4 h-4 rounded" style="background: #0e7490"></div>
@@ -121,7 +121,7 @@
                                 <div class="text-xs font-medium">Ocean Blue</div>
                             </button>
 
-                            <button type="button" @click="applyPalette('sunset')" class="p-3 border rounded-lg hover:border-orange-500 transition-colors">
+                            <button type="button" @click="applyPalette('sunset')" class="p-3 border rounded-xl hover:border-orange-500 transition-colors">
                                 <div class="flex gap-1 mb-2">
                                     <div class="w-4 h-4 rounded" style="background: #f97316"></div>
                                     <div class="w-4 h-4 rounded" style="background: #ea580c"></div>
@@ -130,7 +130,7 @@
                                 <div class="text-xs font-medium">Sunset</div>
                             </button>
 
-                            <button type="button" @click="applyPalette('purple')" class="p-3 border rounded-lg hover:border-purple-500 transition-colors">
+                            <button type="button" @click="applyPalette('purple')" class="p-3 border rounded-xl hover:border-purple-500 transition-colors">
                                 <div class="flex gap-1 mb-2">
                                     <div class="w-4 h-4 rounded" style="background: #9333ea"></div>
                                     <div class="w-4 h-4 rounded" style="background: #7e22ce"></div>
@@ -139,7 +139,7 @@
                                 <div class="text-xs font-medium">Purple Dream</div>
                             </button>
 
-                            <button type="button" @click="applyPalette('forest')" class="p-3 border rounded-lg hover:border-green-500 transition-colors">
+                            <button type="button" @click="applyPalette('forest')" class="p-3 border rounded-xl hover:border-green-500 transition-colors">
                                 <div class="flex gap-1 mb-2">
                                     <div class="w-4 h-4 rounded" style="background: #16a34a"></div>
                                     <div class="w-4 h-4 rounded" style="background: #15803d"></div>
@@ -148,7 +148,7 @@
                                 <div class="text-xs font-medium">Forest</div>
                             </button>
 
-                            <button type="button" @click="applyPalette('minimal')" class="p-3 border rounded-lg hover:border-gray-500 transition-colors">
+                            <button type="button" @click="applyPalette('minimal')" class="p-3 border rounded-xl hover:border-gray-500 transition-colors">
                                 <div class="flex gap-1 mb-2">
                                     <div class="w-4 h-4 rounded" style="background: #334155"></div>
                                     <div class="w-4 h-4 rounded" style="background: #1e293b"></div>
@@ -161,13 +161,13 @@
                 </div>
 
                 <!-- Typography Settings -->
-                <div class="bg-white rounded-lg shadow p-6">
+                <div class="glass-fusion rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                     <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('Typography') }}</h2>
 
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ __('Font Family') }}</label>
-                            <select x-model="formData.colors.typography['font-family']" class="w-full rounded-md border-gray-300 shadow-sm">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Font Family') }}</label>
+                            <select x-model="formData.colors.typography['font-family']" class="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm">
                                 <option value="'Inter', system-ui, sans-serif">Inter</option>
                                 <option value="'Roboto', system-ui, sans-serif">Roboto</option>
                                 <option value="'Poppins', system-ui, sans-serif">Poppins</option>
@@ -180,18 +180,18 @@
 
                         <div class="grid grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">{{ __('Base Size') }}</label>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Base Size') }}</label>
                                 <input type="text" x-model="formData.colors.typography['font-size-base']"
-                                       class="w-full rounded-md border-gray-300 shadow-sm">
+                                       class="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">{{ __('Line Height') }}</label>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Line Height') }}</label>
                                 <input type="text" x-model="formData.colors.typography['line-height']"
-                                       class="w-full rounded-md border-gray-300 shadow-sm">
+                                       class="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">{{ __('Font Weight') }}</label>
-                                <select x-model="formData.colors.typography['font-weight-normal']" class="w-full rounded-md border-gray-300 shadow-sm">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Font Weight') }}</label>
+                                <select x-model="formData.colors.typography['font-weight-normal']" class="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm">
                                     <option value="400">400 - Normal</option>
                                     <option value="500">500 - Medium</option>
                                     <option value="600">600 - Semi-bold</option>
@@ -202,29 +202,29 @@
                 </div>
 
                 <!-- Layout Settings -->
-                <div class="bg-white rounded-lg shadow p-6">
+                <div class="glass-fusion rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                     <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('Layout & Spacing') }}</h2>
 
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ __('Border Radius') }}</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Border Radius') }}</label>
                             <input type="range" x-model="formData.colors.borders.radius" min="0" max="20" step="1"
                                    class="w-full">
-                            <div class="text-sm text-gray-600 mt-1" x-text="`${formData.colors.borders.radius}px`"></div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1" x-text="`${formData.colors.borders.radius}px`"></div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ __('Border Width') }}</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Border Width') }}</label>
                             <input type="range" x-model="formData.colors.borders.width" min="1" max="4" step="1"
                                    class="w-full">
-                            <div class="text-sm text-gray-600 mt-1" x-text="`${formData.colors.borders.width}px`"></div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1" x-text="`${formData.colors.borders.width}px`"></div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ __('Sidebar Width') }}</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ __('Sidebar Width') }}</label>
                             <input type="range" x-model="formData.colors.layout['sidebar-width']" min="200" max="320" step="10"
                                    class="w-full">
-                            <div class="text-sm text-gray-600 mt-1" x-text="`${formData.colors.layout['sidebar-width']}px`"></div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1" x-text="`${formData.colors.layout['sidebar-width']}px`"></div>
                         </div>
                     </div>
                 </div>
@@ -232,11 +232,11 @@
 
             <!-- Preview Panel -->
             <div class="lg:col-span-1">
-                <div class="bg-white rounded-lg shadow p-6 sticky top-6">
+                <div class="glass-fusion rounded-xl shadow p-6 sticky top-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                     <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('Live Preview') }}</h2>
 
                     <!-- Preview Container -->
-                    <div class="border rounded-lg overflow-hidden" :style="getPreviewStyles()">
+                    <div class="border rounded-xl overflow-hidden" :style="getPreviewStyles()">
                         <!-- Header -->
                         <div class="p-4" :style="`background-color: ${getCurrentColor('primary')}; color: white;`">
                             <div class="font-semibold">{{ __('Header') }}</div>
@@ -274,10 +274,10 @@
                         <div class="grid grid-cols-4 gap-2">
                             <template x-for="(colorKey, index) in ['primary', 'secondary', 'accent', 'success', 'warning', 'error']" :key="colorKey">
                                 <div class="text-center">
-                                    <div class="w-full h-10 rounded border border-gray-200 mb-1"
+                                    <div class="w-full h-10 rounded border border-gray-200 dark:border-gray-700 mb-1"
                                          :style="`background-color: ${getCurrentColor(colorKey)};`">
                                     </div>
-                                    <div class="text-xs text-gray-600" x-text="colorKey"></div>
+                                    <div class="text-xs text-gray-600 dark:text-gray-400" x-text="colorKey"></div>
                                 </div>
                             </template>
                         </div>
