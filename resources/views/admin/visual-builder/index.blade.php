@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Visual Page Builder')
 
@@ -106,7 +106,7 @@
             <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 🎨 Visual Page Builder
             </h1>
-            <select x-model="currentPage" @change="loadSections()" class="px-4 py-2 border border-gray-300 rounded-lg">
+            <select x-model="currentPage" @change="loadSections()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl">
                 <option value="home">หน้าแรก</option>
                 <option value="about">เกี่ยวกับเรา</option>
                 <option value="contact">ติดต่อเรา</option>
@@ -115,26 +115,26 @@
 
         <div class="flex items-center gap-2">
             <!-- Preview Modes -->
-            <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                <button @click="previewMode = 'desktop'" :class="previewMode === 'desktop' ? 'bg-white shadow' : ''" class="px-3 py-2 rounded text-sm transition">
+            <div class="flex items-center gap-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl p-1">
+                <button @click="previewMode = 'desktop'" :class="previewMode === 'desktop' ? 'glass-fusion shadow' : ''" class="px-3 py-2 rounded text-sm transition">
                     🖥️ Desktop
                 </button>
-                <button @click="previewMode = 'tablet'" :class="previewMode === 'tablet' ? 'bg-white shadow' : ''" class="px-3 py-2 rounded text-sm transition">
+                <button @click="previewMode = 'tablet'" :class="previewMode === 'tablet' ? 'glass-fusion shadow' : ''" class="px-3 py-2 rounded text-sm transition">
                     📱 Tablet
                 </button>
-                <button @click="previewMode = 'mobile'" :class="previewMode === 'mobile' ? 'bg-white shadow' : ''" class="px-3 py-2 rounded text-sm transition">
+                <button @click="previewMode = 'mobile'" :class="previewMode === 'mobile' ? 'glass-fusion shadow' : ''" class="px-3 py-2 rounded text-sm transition">
                     📱 Mobile
                 </button>
             </div>
 
             <!-- Actions -->
-            <button @click="exportTemplate()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+            <button @click="exportTemplate()" class="px-4 py-2 bg-gray-100/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:bg-gray-700 transition">
                 📥 Export
             </button>
-            <button @click="showImportModal = true" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+            <button @click="showImportModal = true" class="px-4 py-2 bg-gray-100/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:bg-gray-700 transition">
                 📤 Import
             </button>
-            <button @click="saveAllSections()" :disabled="saving" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-lg disabled:opacity-50">
+            <button @click="saveAllSections()" :disabled="saving" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition shadow-lg disabled:opacity-50">
                 <span x-show="!saving">💾 บันทึก</span>
                 <span x-show="saving">⏳ กำลังบันทึก...</span>
             </button>
@@ -145,7 +145,7 @@
     <div class="builder-layout">
 
         <!-- LEFT: Component Library -->
-        <div class="bg-white rounded-lg shadow-md p-4 overflow-y-auto">
+        <div class="glass-fusion rounded-xl shadow-md p-4 overflow-y-auto" border border-white/20 dark:border-white/10>
             <h3 class="font-semibold mb-4 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
@@ -155,19 +155,19 @@
 
             <div class="space-y-3">
                 <template x-for="(component, key) in componentLibrary" :key="key">
-                    <div class="component-item bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200">
+                    <div class="component-item bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3 border border-blue-200">
                         <div class="flex items-center justify-between mb-2">
                             <div class="flex items-center gap-2">
                                 <span x-text="component.icon" class="text-2xl"></span>
                                 <div>
                                     <div class="font-medium text-sm" x-text="component.name"></div>
-                                    <div class="text-xs text-gray-600" x-text="component.category"></div>
+                                    <div class="text-xs text-gray-600 dark:text-gray-400" x-text="component.category"></div>
                                 </div>
                             </div>
                         </div>
                         <div class="flex gap-1 flex-wrap">
                             <template x-for="(template, templateKey) in component.templates" :key="templateKey">
-                                <button @click="addSection(key, templateKey)" class="px-3 py-1 bg-white text-xs rounded border border-indigo-300 hover:bg-indigo-50 transition">
+                                <button @click="addSection(key, templateKey)" class="px-3 py-1 glass-fusion text-xs rounded border border-indigo-300 hover:bg-indigo-50 transition">
                                     + <span x-text="template.name"></span>
                                 </button>
                             </template>
@@ -178,19 +178,19 @@
         </div>
 
         <!-- CENTER: Canvas -->
-        <div class="bg-gray-50 rounded-lg shadow-md p-6 overflow-y-auto">
+        <div class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 rounded-xl shadow-md p-6 overflow-y-auto">
             <h3 class="font-semibold mb-4 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
                 </svg>
                 Canvas
-                <span class="text-xs text-gray-500">(<span x-text="sections.length"></span> sections)</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">(<span x-text="sections.length"></span> sections)</span>
             </h3>
 
             <!-- Empty State -->
             <div x-show="sections.length === 0" class="canvas-empty">
                 <div class="text-4xl mb-4">📄</div>
-                <h4 class="text-lg font-semibold text-gray-700 mb-2">Canvas ว่างเปล่า</h4>
+                <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Canvas ว่างเปล่า</h4>
                 <p class="text-sm">เลือก Component จากซ้ายเพื่อเริ่มสร้างหน้าเว็บ</p>
             </div>
 
@@ -201,17 +201,17 @@
                         <!-- Section Header -->
                         <div class="flex items-center justify-between mb-3">
                             <div class="flex items-center gap-3">
-                                <div class="cursor-move text-gray-400 hover:text-gray-600">
+                                <div class="cursor-move text-gray-400 hover:text-gray-600 dark:text-gray-400">
                                     ⋮⋮
                                 </div>
                                 <span class="text-2xl" x-text="getComponentIcon(section.component_type)"></span>
                                 <div>
                                     <div class="font-semibold" x-text="section.name || getComponentName(section.component_type)"></div>
-                                    <div class="text-xs text-gray-500" x-text="section.component_type"></div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400" x-text="section.component_type"></div>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
-                                <button @click="toggleSection(section)" :class="section.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'" class="px-3 py-1 rounded text-xs transition">
+                                <button @click="toggleSection(section)" :class="section.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400'" class="px-3 py-1 rounded text-xs transition">
                                     <span x-show="section.is_active">👁️ Visible</span>
                                     <span x-show="!section.is_active">🙈 Hidden</span>
                                 </button>
@@ -228,10 +228,10 @@
                         </div>
 
                         <!-- Section Preview -->
-                        <div class="bg-white rounded p-4 border border-gray-200">
-                            <div class="text-sm text-gray-700">
+                        <div class="glass-fusion rounded p-4 border border-gray-200 dark:border-gray-700" border border-white/20 dark:border-white/10>
+                            <div class="text-sm text-gray-700 dark:text-gray-300">
                                 <div x-show="section.content?.title" class="font-bold text-lg mb-2" x-text="section.content?.title"></div>
-                                <div x-show="section.content?.subtitle" class="text-gray-600 mb-2" x-text="section.content?.subtitle"></div>
+                                <div x-show="section.content?.subtitle" class="text-gray-600 dark:text-gray-400 mb-2" x-text="section.content?.subtitle"></div>
                                 <div x-show="section.content?.description" class="text-sm" x-text="truncate(section.content?.description, 100)"></div>
                             </div>
                         </div>
@@ -241,7 +241,7 @@
         </div>
 
         <!-- RIGHT: Properties Panel -->
-        <div class="properties-panel bg-white rounded-lg shadow-md p-4">
+        <div class="properties-panel glass-fusion rounded-xl shadow-md p-4" border border-white/20 dark:border-white/10>
             <h3 class="font-semibold mb-4 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
@@ -259,24 +259,24 @@
             <div x-show="selectedSection" class="space-y-4">
                 <!-- Name -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Section Name</label>
-                    <input type="text" x-model="selectedSection.name" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Section Name</label>
+                    <input type="text" x-model="selectedSection.name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl">
                 </div>
 
                 <!-- Content Fields -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                    <input type="text" x-model="selectedSection.content.title" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title</label>
+                    <input type="text" x-model="selectedSection.content.title" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Subtitle</label>
-                    <input type="text" x-model="selectedSection.content.subtitle" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subtitle</label>
+                    <input type="text" x-model="selectedSection.content.subtitle" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                    <textarea x-model="selectedSection.content.description" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                    <textarea x-model="selectedSection.content.description" rows="4" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl"></textarea>
                 </div>
 
                 <!-- Styles -->
@@ -285,21 +285,21 @@
 
                     <div class="space-y-3">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Background Color</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Background Color</label>
                             <div class="flex gap-2">
                                 <input type="color" x-model="selectedSection.styles.bg_color" class="w-12 h-10 rounded cursor-pointer">
-                                <input type="text" x-model="selectedSection.styles.bg_color" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg">
+                                <input type="text" x-model="selectedSection.styles.bg_color" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl">
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Padding Y: <span x-text="selectedSection.styles.padding_y || 80"></span>px</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Padding Y: <span x-text="selectedSection.styles.padding_y || 80"></span>px</label>
                             <input type="range" x-model="selectedSection.styles.padding_y" min="0" max="200" class="w-full">
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Text Align</label>
-                            <select x-model="selectedSection.styles.text_align" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Text Align</label>
+                            <select x-model="selectedSection.styles.text_align" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl">
                                 <option value="left">Left</option>
                                 <option value="center">Center</option>
                                 <option value="right">Right</option>
@@ -310,10 +310,10 @@
 
                 <!-- Actions -->
                 <div class="border-t pt-4 flex gap-2">
-                    <button @click="updateSection(selectedSection)" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                    <button @click="updateSection(selectedSection)" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
                         💾 Save
                     </button>
-                    <button @click="selectedSection = null" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                    <button @click="selectedSection = null" class="px-4 py-2 bg-gray-100/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:bg-gray-700 transition">
                         ✕
                     </button>
                 </div>
@@ -324,18 +324,18 @@
 
     <!-- Import Modal -->
     <div x-show="showImportModal" @click.away="showImportModal = false" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
-        <div class="bg-white rounded-lg p-6 max-w-lg w-full" @click.stop>
+        <div class="glass-fusion rounded-xl p-6 max-w-lg w-full" border border-white/20 dark:border-white/10 @click.stop>
             <h3 class="text-lg font-bold mb-4">Import Template</h3>
-            <textarea x-model="importData" rows="10" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4" placeholder="Paste JSON template here..."></textarea>
+            <textarea x-model="importData" rows="10" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl mb-4" placeholder="Paste JSON template here..."></textarea>
             <div class="flex items-center gap-2 mb-4">
                 <input type="checkbox" x-model="replaceExisting" id="replace-existing" class="w-4 h-4">
                 <label for="replace-existing" class="text-sm">Replace existing sections</label>
             </div>
             <div class="flex gap-2">
-                <button @click="importTemplate()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                <button @click="importTemplate()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700">
                     Import
                 </button>
-                <button @click="showImportModal = false" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                <button @click="showImportModal = false" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300">
                     Cancel
                 </button>
             </div>

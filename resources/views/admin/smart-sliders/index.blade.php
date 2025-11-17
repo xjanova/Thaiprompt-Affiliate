@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Smart Slider Pro')
 
@@ -13,7 +13,7 @@
                     <h1 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
                         🎨 Smart Slider Pro
                     </h1>
-                    <p class="mt-2 text-gray-600 dark:text-gray-400">ระบบจัดการ Slider ที่ทรงพลังที่สุด - เหนือกว่า Smart Slider 3</p>
+                    <p class="mt-2 text-gray-600 dark:text-gray-400 dark:text-gray-400">ระบบจัดการ Slider ที่ทรงพลังที่สุด - เหนือกว่า Smart Slider 3</p>
                 </div>
                 <div class="flex gap-3">
                     <a href="{{ route('admin.smart-sliders.create') }}"
@@ -24,7 +24,7 @@
                         สร้าง Slider ใหม่
                     </a>
                     <button onclick="document.getElementById('import-modal').classList.remove('hidden')"
-                            class="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 hover:border-blue-500 dark:hover:border-blue-500 text-gray-700 dark:text-gray-300 font-semibold rounded-xl shadow hover:shadow-lg transition-all duration-300">
+                            class="inline-flex items-center gap-2 px-6 py-3 glass-fusion dark:bg-slate-800 border-2 border-gray-300 dark:border-gray-600 dark:border-slate-600 hover:border-blue-500 dark:hover:border-blue-500 text-gray-700 dark:text-gray-300 dark:text-gray-300 font-semibold rounded-xl shadow hover:shadow-lg transition-all duration-300">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                         </svg>
@@ -36,10 +36,10 @@
 
         {{-- Stats Cards --}}
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-blue-500">
+            <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-blue-500" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Sliders</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 font-medium">Total Sliders</p>
                         <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ $sliders->total() }}</p>
                     </div>
                     <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
@@ -50,10 +50,10 @@
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-green-500">
+            <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-green-500" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Published</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 font-medium">Published</p>
                         <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ $sliders->where('is_published', true)->count() }}</p>
                     </div>
                     <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
@@ -64,10 +64,10 @@
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-purple-500">
+            <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-purple-500" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Views</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 font-medium">Total Views</p>
                         <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ number_format($sliders->sum(fn($s) => $s->analytics_count ?? 0)) }}</p>
                     </div>
                     <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
@@ -79,10 +79,10 @@
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-orange-500">
+            <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-orange-500" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Slides</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 font-medium">Total Slides</p>
                         <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ $sliders->sum('slides_count') }}</p>
                     </div>
                     <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
@@ -98,7 +98,7 @@
         @if($sliders->count() > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach($sliders as $slider)
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group">
+            <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group" border border-white/20 dark:border-white/10>
                 {{-- Thumbnail/Preview --}}
                 <div class="relative h-48 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 overflow-hidden">
                     @if($slider->slides->first())
@@ -134,7 +134,7 @@
                     {{-- Quick Preview Button --}}
                     <button onclick="previewSlider({{ $slider->id }})"
                             class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40">
-                        <span class="px-6 py-3 bg-white/20 backdrop-blur-sm border border-white/30 text-white font-semibold rounded-xl">
+                        <span class="px-6 py-3 glass-fusion backdrop-blur-sm border border-white/30 text-white font-semibold rounded-xl">
                             <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
                             </svg>
@@ -146,21 +146,21 @@
                 <div class="p-6">
                     <div class="mb-4">
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1 truncate">{{ $slider->name }}</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ $slider->alias }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $slider->alias }}</p>
                     </div>
 
                     {{-- Stats --}}
                     <div class="grid grid-cols-3 gap-3 mb-4">
-                        <div class="text-center p-2 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                            <p class="text-xs text-gray-600 dark:text-gray-400">Slides</p>
+                        <div class="text-center p-2 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl">
+                            <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">Slides</p>
                             <p class="text-lg font-bold text-gray-900 dark:text-white">{{ $slider->slides_count }}</p>
                         </div>
-                        <div class="text-center p-2 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                            <p class="text-xs text-gray-600 dark:text-gray-400">Views</p>
+                        <div class="text-center p-2 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl">
+                            <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">Views</p>
                             <p class="text-lg font-bold text-gray-900 dark:text-white">{{ number_format($slider->analytics_count ?? 0) }}</p>
                         </div>
-                        <div class="text-center p-2 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                            <p class="text-xs text-gray-600 dark:text-gray-400">Type</p>
+                        <div class="text-center p-2 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl">
+                            <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">Type</p>
                             <p class="text-lg font-bold text-gray-900 dark:text-white capitalize">{{ $slider->type }}</p>
                         </div>
                     </div>
@@ -168,7 +168,7 @@
                     {{-- Actions --}}
                     <div class="flex gap-2">
                         <a href="{{ route('admin.smart-sliders.edit', $slider) }}"
-                           class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
+                           class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                             </svg>
@@ -177,7 +177,7 @@
 
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open"
-                                    class="px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">
+                                    class="px-4 py-2 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-xl transition-colors">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
                                 </svg>
@@ -185,27 +185,27 @@
 
                             <div x-show="open"
                                  @click.away="open = false"
-                                 class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-200 dark:border-slate-700 py-1 z-10"
+                                 class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-slate-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 dark:border-slate-700 py-1 z-10" border border-white/20 dark:border-white/10
                                  style="display: none;">
-                                <a href="{{ route('admin.smart-sliders.analytics', $slider) }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
+                                <a href="{{ route('admin.smart-sliders.analytics', $slider) }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700">
                                     📊 Analytics
                                 </a>
                                 <form action="{{ route('admin.smart-sliders.duplicate', $slider) }}" method="POST" class="block">
                                     @csrf
-                                    <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
+                                    <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700">
                                         📋 Duplicate
                                     </button>
                                 </form>
-                                <a href="{{ route('admin.smart-sliders.export', $slider) }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
+                                <a href="{{ route('admin.smart-sliders.export', $slider) }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700">
                                     💾 Export
                                 </a>
                                 <form action="{{ route('admin.smart-sliders.toggle-publish', $slider) }}" method="POST" class="block">
                                     @csrf
-                                    <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
+                                    <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700">
                                         {{ $slider->is_published ? '👁️ Hide' : '✅ Publish' }}
                                     </button>
                                 </form>
-                                <hr class="my-1 border-gray-200 dark:border-slate-700">
+                                <hr class="my-1 border-gray-200 dark:border-gray-700 dark:border-slate-700">
                                 <form action="{{ route('admin.smart-sliders.destroy', $slider) }}" method="POST" class="block" onsubmit="return confirm('แน่ใจหรือไม่ที่จะลบ Slider นี้?')">
                                     @csrf
                                     @method('DELETE')
@@ -234,7 +234,7 @@
                 </svg>
             </div>
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">ยังไม่มี Slider</h3>
-            <p class="text-gray-600 dark:text-gray-400 mb-6">เริ่มต้นสร้าง Slider แรกของคุณได้เลย!</p>
+            <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-6">เริ่มต้นสร้าง Slider แรกของคุณได้เลย!</p>
             <a href="{{ route('admin.smart-sliders.create') }}"
                class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -249,21 +249,21 @@
 
 {{-- Import Modal --}}
 <div id="import-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">นำเข้า Slider</h3>
         <form action="{{ route('admin.smart-sliders.import') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เลือกไฟล์ JSON</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">เลือกไฟล์ JSON</label>
                 <input type="file" name="file" accept=".json" required
-                       class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white">
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white">
             </div>
             <div class="flex gap-3">
-                <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
+                <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
                     นำเข้า
                 </button>
                 <button type="button" onclick="document.getElementById('import-modal').classList.add('hidden')"
-                        class="px-4 py-2 bg-gray-300 dark:bg-slate-600 hover:bg-gray-400 dark:hover:bg-slate-500 text-gray-700 dark:text-gray-300 font-semibold rounded-lg transition-colors">
+                        class="px-4 py-2 bg-gray-300 dark:bg-slate-600 hover:bg-gray-400 dark:hover:bg-slate-500 text-gray-700 dark:text-gray-300 dark:text-gray-300 font-semibold rounded-xl transition-colors">
                     ยกเลิก
                 </button>
             </div>

@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', __('Theme Management'))
 
@@ -9,7 +9,7 @@
         <div class="flex justify-between items-center mb-4">
             <div>
                 <h1 class="text-3xl font-bold text-gray-900">{{ __('Theme Management') }}</h1>
-                <p class="text-gray-600 mt-1">{{ __('Manage themes for your application') }}</p>
+                <p class="text-gray-600 dark:text-gray-400 mt-1">{{ __('Manage themes for your application') }}</p>
             </div>
             <div class="flex gap-3">
                 <button @click="$refs.importFile.click()" class="btn btn-outline">
@@ -30,7 +30,7 @@
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="glass-fusion rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-indigo-100 text-indigo-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,13 +38,13 @@
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <p class="text-gray-600 text-sm">{{ __('Total Themes') }}</p>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">{{ __('Total Themes') }}</p>
                     <p class="text-2xl font-bold text-gray-900">{{ $themes->count() }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="glass-fusion rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-green-100 text-green-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,13 +52,13 @@
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <p class="text-gray-600 text-sm">{{ __('Active Theme') }}</p>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">{{ __('Active Theme') }}</p>
                     <p class="text-lg font-bold text-gray-900">{{ $defaultTheme->display_name ?? 'N/A' }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="glass-fusion rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-purple-100 text-purple-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,13 +66,13 @@
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <p class="text-gray-600 text-sm">{{ __('Theme Presets') }}</p>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">{{ __('Theme Presets') }}</p>
                     <p class="text-2xl font-bold text-gray-900">{{ \App\Models\ThemePreset::count() }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="glass-fusion rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-blue-100 text-blue-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +80,7 @@
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <p class="text-gray-600 text-sm">{{ __('Active Users') }}</p>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">{{ __('Active Users') }}</p>
                     <p class="text-2xl font-bold text-gray-900">{{ \App\Models\UserTheme::distinct('user_id')->count() }}</p>
                 </div>
             </div>
@@ -88,8 +88,8 @@
     </div>
 
     <!-- Themes Grid -->
-    <div class="bg-white rounded-lg shadow">
-        <div class="p-6 border-b border-gray-200">
+    <div class="glass-fusion rounded-xl shadow" border border-white/20 dark:border-white/10>
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 class="text-xl font-semibold text-gray-900">{{ __('Installed Themes') }}</h2>
         </div>
 
@@ -99,7 +99,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
                 </svg>
                 <h3 class="mt-2 text-sm font-medium text-gray-900">{{ __('No themes') }}</h3>
-                <p class="mt-1 text-sm text-gray-500">{{ __('Get started by creating a new theme.') }}</p>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('Get started by creating a new theme.') }}</p>
                 <div class="mt-6">
                     <a href="{{ route('admin.themes.builder') }}" class="btn btn-primary">
                         {{ __('Create Theme') }}
@@ -109,7 +109,7 @@
         @else
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
                 @foreach($themes as $theme)
-                    <div class="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow" x-data="{ showActions: false }">
+                    <div class="border rounded-xl overflow-hidden hover:shadow-lg transition-shadow" x-data="{ showActions: false }">
                         <!-- Theme Preview -->
                         <div class="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 p-4"
                              style="background: linear-gradient(135deg, {{ $theme->colors['primary'] ?? '#06C755' }} 0%, {{ $theme->colors['primary-dark'] ?? '#00B900' }} 100%)">
@@ -135,13 +135,13 @@
                         <!-- Theme Info -->
                         <div class="p-4">
                             <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ $theme->display_name }}</h3>
-                            <p class="text-sm text-gray-600 mb-3">{{ Str::limit($theme->description ?? __('No description'), 60) }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ Str::limit($theme->description ?? __('No description'), 60) }}</p>
 
                             <!-- Color Palette Preview -->
                             <div class="flex gap-2 mb-4">
                                 @foreach(['primary', 'secondary', 'accent', 'success', 'warning', 'error'] as $colorKey)
                                     @if(isset($theme->colors[$colorKey]))
-                                        <div class="w-6 h-6 rounded-full border-2 border-gray-200"
+                                        <div class="w-6 h-6 rounded-full border-2 border-gray-200 dark:border-gray-700"
                                              style="background-color: {{ $theme->colors[$colorKey] }}"
                                              title="{{ ucfirst($colorKey) }}: {{ $theme->colors[$colorKey] }}">
                                         </div>
@@ -165,14 +165,14 @@
                                     </button>
 
                                     <div x-show="open" @click.away="open = false"
-                                         class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                                        <a href="{{ route('admin.themes.builder', ['id' => $theme->id]) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                         class="absolute right-0 mt-2 w-48 glass-fusion rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700" border border-white/20 dark:border-white/10>
+                                        <a href="{{ route('admin.themes.builder', ['id' => $theme->id]) }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50">
                                             {{ __('Edit') }}
                                         </a>
-                                        <button @click="duplicate({{ $theme->id }})" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <button @click="duplicate({{ $theme->id }})" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50">
                                             {{ __('Duplicate') }}
                                         </button>
-                                        <button @click="exportTheme({{ $theme->id }})" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <button @click="exportTheme({{ $theme->id }})" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50">
                                             {{ __('Export') }}
                                         </button>
                                         @if(!$theme->is_default)
@@ -192,15 +192,15 @@
     </div>
 
     <!-- Theme Presets Section -->
-    <div class="bg-white rounded-lg shadow mt-6">
-        <div class="p-6 border-b border-gray-200">
+    <div class="glass-fusion rounded-xl shadow mt-6" border border-white/20 dark:border-white/10>
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 class="text-xl font-semibold text-gray-900">{{ __('Theme Presets') }}</h2>
-            <p class="text-gray-600 text-sm mt-1">{{ __('Quick start with pre-designed themes') }}</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">{{ __('Quick start with pre-designed themes') }}</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
             @foreach(\App\Models\ThemePreset::all() as $preset)
-                <div class="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                <div class="border rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
                     <!-- Preset Preview -->
                     <div class="relative h-32 bg-gradient-to-br p-4"
                          style="background: linear-gradient(135deg, {{ $preset->colors['primary'] ?? '#06C755' }} 0%, {{ $preset->colors['primary-dark'] ?? '#00B900' }} 100%)">
@@ -214,7 +214,7 @@
                     <!-- Preset Info -->
                     <div class="p-4">
                         <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ $preset->name }}</h3>
-                        <p class="text-sm text-gray-600 mb-3">{{ Str::limit($preset->description ?? '', 60) }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ Str::limit($preset->description ?? '', 60) }}</p>
 
                         <button @click="createFromPreset({{ $preset->id }})" class="w-full btn btn-sm btn-outline">
                             {{ __('Use This Preset') }}

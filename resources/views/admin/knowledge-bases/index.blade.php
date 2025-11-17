@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Knowledge Base - ' . $bot->name)
 
@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">📚 Knowledge Base</h4>
-            <p class="text-gray-600 mb-0">จัดการฐานความรู้สำหรับ: <strong>{{ $bot->name }}</strong></p>
+            <p class="text-gray-600 dark:text-gray-400 mb-0">จัดการฐานความรู้สำหรับ: <strong>{{ $bot->name }}</strong></p>
         </div>
         <div>
             <a href="{{ route('admin.ai-bots.show', $bot->id) }}" class="btn btn-secondary me-2">
@@ -78,15 +78,15 @@
 
     <!-- Knowledge Bases List -->
     <div class="card shadow-sm">
-        <div class="card-header bg-white">
+        <div class="card-header glass-fusion" border border-white/20 dark:border-white/10>
             <h5 class="mb-0">รายการ Knowledge Bases</h5>
         </div>
         <div class="card-body">
             @if($knowledgeBases->isEmpty())
                 <div class="text-center py-5">
                     <div style="font-size: 4rem;" class="mb-3">📚</div>
-                    <h5 class="text-gray-600">ยังไม่มี Knowledge Base</h5>
-                    <p class="text-gray-500 mb-4">เริ่มต้นโดยการเพิ่มเอกสาร, PDF, หรือ URL</p>
+                    <h5 class="text-gray-600 dark:text-gray-400">ยังไม่มี Knowledge Base</h5>
+                    <p class="text-gray-500 dark:text-gray-400 mb-4">เริ่มต้นโดยการเพิ่มเอกสาร, PDF, หรือ URL</p>
                     <a href="{{ route('admin.knowledge-bases.create', $bot->id) }}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> เพิ่ม Knowledge Base แรก
                     </a>
