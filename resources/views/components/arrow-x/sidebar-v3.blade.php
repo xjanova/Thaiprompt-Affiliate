@@ -385,6 +385,95 @@
             <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">KYC Verification</span>
         </a>
 
+        {{-- Support Tickets (Collapsible Menu) 🆕 --}}
+        <div class="space-y-1"
+             x-data="{ ticketsOpen: {{ request()->routeIs('admin.tickets.*') ? 'true' : 'false' }} }">
+            {{-- Tickets Header Button --}}
+            <button @click="ticketsOpen = !ticketsOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tickets.*') ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-headset w-5 text-center drop-shadow"></i>
+                <span x-show="sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Support Tickets</span>
+                <i x-show="(sidebarOpen || hovered) && ticketsOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="(sidebarOpen || hovered) && !ticketsOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Tickets Submenu --}}
+            <div x-show="ticketsOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- All Tickets --}}
+                <a href="{{ route('admin.tickets.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.index') || request()->routeIs('admin.tickets.show') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-ticket w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Tickets ทั้งหมด</span>
+                </a>
+
+                {{-- Analytics --}}
+                <a href="{{ route('admin.tickets.analytics') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.analytics') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Analytics</span>
+                </a>
+
+                {{-- Ratings --}}
+                <a href="{{ route('admin.tickets.ratings') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.ratings') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-star w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ความพึงพอใจ</span>
+                </a>
+
+                {{-- Categories --}}
+                <a href="{{ route('admin.tickets.categories.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.categories.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-folder w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">หมวดหมู่</span>
+                </a>
+
+                {{-- Canned Responses --}}
+                <a href="{{ route('admin.tickets.canned-responses.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.canned-responses.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-comment-dots w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ข้อความสำเร็จรูป</span>
+                </a>
+
+                {{-- SLA Policies --}}
+                <a href="{{ route('admin.tickets.sla-policies.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.sla-policies.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-clock w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">SLA Policies</span>
+                </a>
+
+                {{-- Assignment Rules --}}
+                <a href="{{ route('admin.tickets.assignment-rules.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.assignment-rules.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-user-check w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">กฎการมอบหมาย</span>
+                </a>
+
+                {{-- KB Articles --}}
+                <a href="{{ route('admin.tickets.kb-articles.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.kb-articles.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-book w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Knowledge Base</span>
+                </a>
+
+                {{-- Settings --}}
+                <a href="{{ route('admin.tickets.settings') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.settings') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-cog w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
+                </a>
+            </div>
+        </div>
+
         {{-- ⚠️ TODO: AI & Bots Automation Menu - ยังไม่มี routes และ controllers
              Routes ที่ต้องสร้าง:
              - admin.trading-bot.dashboard (TradingBotController)
