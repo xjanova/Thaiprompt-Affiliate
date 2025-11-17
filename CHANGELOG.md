@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.43.0] - 2025-11-17
+
+### ✨ Features
+- feat: migrate AI Bot & LINE pages to V3 theme (batch 8) (c7501a4f)
+- feat: migrate e-commerce & product pages to V3 theme (batch 7) (f1bfce87)
+- feat: migrate MLM/wallet/commission pages to V3 theme (batch 6) (26d52bf3)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1275 from xjanova/claude/dashboard-color-theme-01WrWZDEhywL1zQkJKkpjgDo (a86570de)
+
 ## [v3.42.0] - 2025-11-17
 
 ### ✨ Features
