@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.71.1] - 2025-11-17
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1317 from xjanova/claude/integrate-notification-bell-01EeY8Gv8vYrK9CH4moGNEzr (ae5c0fc5)
+- fix: แก้ไขปัญหา Auto Hide ของ Sidebar ไม่ทำงานเมื่อกดปลดล็อก (2f879726)
+### 🔧 Other Changes
+
+
 ## [v3.71.0] - 2025-11-17
 
 ### ✨ Features
