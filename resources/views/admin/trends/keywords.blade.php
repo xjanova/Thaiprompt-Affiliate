@@ -1,11 +1,11 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Trending Keywords')
 
 @section('content')
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Trending Keywords</h1>
+        <h1 class="h3 mb-0 text-gray-900 dark:text-white">Trending Keywords</h1>
     </div>
 
     <div class="card shadow mb-4">

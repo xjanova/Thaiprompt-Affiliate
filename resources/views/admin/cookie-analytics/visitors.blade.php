@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายการผู้เข้าชม - Cookie Analytics')
 
@@ -18,7 +18,7 @@
                     </p>
                 </div>
                 <a href="{{ route('admin.cookie-analytics.index') }}"
-                   class="inline-flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 text-slate-700 dark:text-slate-200 hover:scale-105">
+                   class="inline-flex items-center px-4 py-2 glass-fusion dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 text-slate-700 dark:text-slate-200 hover:scale-105">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                     </svg>
@@ -28,7 +28,7 @@
         </div>
 
         <!-- Filters Section -->
-        <div class="mb-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 border border-slate-200 dark:border-slate-700 animate-slide-up transition-all duration-300">
+        <div class="mb-6 glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6 border border-slate-200 dark:border-slate-700 animate-slide-up transition-all duration-300" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <form method="GET" action="{{ route('admin.cookie-analytics.visitors') }}" class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <!-- Device Type Filter -->
@@ -39,7 +39,7 @@
                             </svg>
                             ประเภทอุปกรณ์
                         </label>
-                        <select name="device_type" class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200">
+                        <select name="device_type" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200">
                             <option value="">ทั้งหมด</option>
                             <option value="desktop" {{ request('device_type') == 'desktop' ? 'selected' : '' }}>Desktop</option>
                             <option value="mobile" {{ request('device_type') == 'mobile' ? 'selected' : '' }}>Mobile</option>
@@ -57,7 +57,7 @@
                         </label>
                         <input type="text" name="country" value="{{ request('country') }}"
                                placeholder="เช่น Thailand, US"
-                               class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200">
+                               class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200">
                     </div>
 
                     <!-- Referrer Filter -->
@@ -70,13 +70,13 @@
                         </label>
                         <input type="text" name="referrer" value="{{ request('referrer') }}"
                                placeholder="เช่น google.com"
-                               class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200">
+                               class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200">
                     </div>
 
                     <!-- Submit Button -->
                     <div class="flex items-end">
                         <button type="submit"
-                                class="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 font-medium hover:scale-105">
+                                class="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 font-medium hover:scale-105">
                             <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                             </svg>
@@ -89,13 +89,13 @@
 
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div class="bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-300 animate-fade-in">
+            <div class="style="background: var(--arrow-x-primary-gradient)" dark:from-blue-600 dark:to-blue-700 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-300 animate-fade-in">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-blue-100 text-sm font-medium">ผู้เข้าชมทั้งหมด</p>
                         <p class="text-3xl font-bold mt-2">{{ number_format($visitors->total()) }}</p>
                     </div>
-                    <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <div class="w-12 h-12 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                         </svg>
@@ -109,7 +109,7 @@
                         <p class="text-cyan-100 text-sm font-medium">หน้านี้</p>
                         <p class="text-3xl font-bold mt-2">{{ number_format($visitors->count()) }}</p>
                     </div>
-                    <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <div class="w-12 h-12 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
@@ -123,7 +123,7 @@
                         <p class="text-indigo-100 text-sm font-medium">กำลังกรอง</p>
                         <p class="text-3xl font-bold mt-2">{{ request()->hasAny(['device_type', 'country', 'referrer']) ? 'ใช่' : 'ไม่' }}</p>
                     </div>
-                    <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <div class="w-12 h-12 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                         </svg>
@@ -133,7 +133,7 @@
         </div>
 
         <!-- Visitors Table -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700 transition-all duration-300 animate-slide-up">
+        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700 transition-all duration-300 animate-slide-up" border border-white/20 dark:border-white/10>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
                     <thead class="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800">
@@ -164,7 +164,7 @@
                             <!-- Visitor Info -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
-                                    <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">
+                                    <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center text-white font-bold shadow-lg">
                                         {{ substr($visitor->session_id ?? 'U', 0, 1) }}
                                     </div>
                                     <div class="ml-4">
@@ -258,7 +258,7 @@
                             <!-- Actions -->
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 <a href="{{ route('admin.cookie-analytics.visitor-detail', $visitor->id) }}"
-                                   class="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
+                                   class="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>

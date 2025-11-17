@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'วิเคราะห์คุกกี้')
 
@@ -16,7 +16,7 @@
             </div>
             <select x-model="dateRange"
                     @change="window.location.href = '?range=' + dateRange"
-                    class="bg-white text-indigo-600 px-4 py-2 rounded-lg font-semibold focus:ring-2 focus:ring-white">
+                    class="glass-fusion text-indigo-600 px-4 py-2 rounded-xl font-semibold focus:ring-2 focus:ring-white">
                 <option value="today">วันนี้</option>
                 <option value="7days">7 วันที่แล้ว</option>
                 <option value="30days">30 วันที่แล้ว</option>
@@ -27,7 +27,7 @@
 
     <!-- Main Stats -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+        <div class="style="background: var(--arrow-x-primary-gradient)" rounded-xl shadow-lg p-6 text-white">
             <div class="flex items-center justify-between mb-2">
                 <i class="fas fa-users text-4xl opacity-75"></i>
                 <div class="text-right">
@@ -37,7 +37,7 @@
             </div>
         </div>
 
-        <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white">
+        <div class="style="background: var(--arrow-x-success-gradient)" rounded-xl shadow-lg p-6 text-white">
             <div class="flex items-center justify-between mb-2">
                 <i class="fas fa-desktop text-4xl opacity-75"></i>
                 <div class="text-right">
@@ -47,7 +47,7 @@
             </div>
         </div>
 
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+        <div class="style="background: var(--arrow-x-accent-gradient)" rounded-xl shadow-lg p-6 text-white">
             <div class="flex items-center justify-between mb-2">
                 <i class="fas fa-eye text-4xl opacity-75"></i>
                 <div class="text-right">
@@ -81,7 +81,7 @@
 
     <!-- Charts Row -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <i class="fas fa-mobile-alt text-blue-600 mr-2"></i>
                 อุปกรณ์ที่ใช้เข้าชม
@@ -89,7 +89,7 @@
             <canvas id="deviceChart"></canvas>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <i class="fas fa-globe text-green-600 mr-2"></i>
                 เบราว์เซอร์
@@ -107,7 +107,7 @@
             </div>
             <div class="flex gap-3">
                 <a href="{{ route('admin.cookie-analytics.export', ['format' => 'csv', 'range' => $dateRange]) }}"
-                   class="bg-white text-cyan-600 px-6 py-3 rounded-lg hover:bg-cyan-50 transition-all font-semibold">
+                   class="glass-fusion text-cyan-600 px-6 py-3 rounded-xl hover:bg-cyan-50 transition-all font-semibold">
                     <i class="fas fa-file-csv mr-2"></i>CSV
                 </a>
             </div>
