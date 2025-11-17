@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // ✅ CRITICAL: ตรวจสอบตารางก่อนแก้ไข
+        // ✅ เช็คว่าตารางมีอยู่ก่อนแก้ไข (ถ้าไม่มี ไม่ต้องทำอะไร)
         if (!Schema::hasTable('theme_settings')) {
             return;
         }
