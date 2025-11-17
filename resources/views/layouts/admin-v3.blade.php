@@ -58,30 +58,33 @@
              : 'background: var(--arrow-x-primary-gradient, linear-gradient(to right, #9333EA, #EC4899, #F97316))'">
     </div>
 
-    {{-- Animated Background Circles วงกลมเคลื่อนไหวพื้นหลัง --}}
-    {{-- Light mode: opacity น้อย | Dark mode: opacity สูง (95%) --}}
-    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        {{-- Circle 1: Cyan-Blue --}}
-        <div class="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
-             :style="$store.theme.isDark
-                 ? 'background: linear-gradient(to bottom right, #22d3ee, #2563eb); opacity: 0.15'
-                 : 'background: linear-gradient(to bottom right, var(--arrow-x-info, #3B82F6), var(--arrow-x-primary-middle, #EC4899)); opacity: 0.10'">
+    {{-- Animated Background Circles วงกลมเคลื่อนไหวพื้นหลัง (ควบคุมจาก Theme Settings) --}}
+    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none"
+         :style="'display: ' + (window.getComputedStyle(document.documentElement).getPropertyValue('--bg-effects-enabled').trim() === '1' ? 'block' : 'none')">
+        {{-- Circle 1 --}}
+        <div class="absolute top-1/4 left-1/4 rounded-full animate-pulse transition-all duration-500"
+             :style="'width: var(--bg-circle-size); height: var(--bg-circle-size); filter: blur(var(--bg-circle-blur)); animation-duration: var(--bg-animation-duration); ' +
+                 ($store.theme.isDark
+                     ? 'background: linear-gradient(to bottom right, var(--bg-circle1-color1), var(--bg-circle1-color2)); opacity: ' + Math.min(parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue('--bg-circle-opacity')) * 1.5, 0.3)
+                     : 'background: linear-gradient(to bottom right, var(--bg-circle1-color1), var(--bg-circle1-color2)); opacity: var(--bg-circle-opacity)')">
         </div>
 
-        {{-- Circle 2: Pink-Purple --}}
-        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
+        {{-- Circle 2 --}}
+        <div class="absolute bottom-1/4 right-1/4 rounded-full animate-pulse transition-all duration-500"
              style="animation-delay: 1s;"
-             :style="$store.theme.isDark
-                 ? 'background: linear-gradient(to bottom right, #f472b6, #9333ea); opacity: 0.15'
-                 : 'background: linear-gradient(to bottom right, var(--arrow-x-primary-middle, #EC4899), var(--arrow-x-primary-start, #9333EA)); opacity: 0.10'">
+             :style="'width: var(--bg-circle-size); height: var(--bg-circle-size); filter: blur(var(--bg-circle-blur)); animation-duration: var(--bg-animation-duration); ' +
+                 ($store.theme.isDark
+                     ? 'background: linear-gradient(to bottom right, var(--bg-circle2-color1), var(--bg-circle2-color2)); opacity: ' + Math.min(parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue('--bg-circle-opacity')) * 1.5, 0.3)
+                     : 'background: linear-gradient(to bottom right, var(--bg-circle2-color1), var(--bg-circle2-color2)); opacity: var(--bg-circle-opacity)')">
         </div>
 
-        {{-- Circle 3: Yellow-Orange --}}
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
+        {{-- Circle 3 --}}
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full animate-pulse transition-all duration-500"
              style="animation-delay: 2s;"
-             :style="$store.theme.isDark
-                 ? 'background: linear-gradient(to bottom right, #fbbf24, #f97316); opacity: 0.15'
-                 : 'background: linear-gradient(to bottom right, var(--arrow-x-warning, #F59E0B), var(--arrow-x-primary-end, #F97316)); opacity: 0.10'">
+             :style="'width: var(--bg-circle-size); height: var(--bg-circle-size); filter: blur(var(--bg-circle-blur)); animation-duration: var(--bg-animation-duration); ' +
+                 ($store.theme.isDark
+                     ? 'background: linear-gradient(to bottom right, var(--bg-circle3-color1), var(--bg-circle3-color2)); opacity: ' + Math.min(parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue('--bg-circle-opacity')) * 1.5, 0.3)
+                     : 'background: linear-gradient(to bottom right, var(--bg-circle3-color1), var(--bg-circle3-color2)); opacity: var(--bg-circle-opacity)')">
         </div>
     </div>
 

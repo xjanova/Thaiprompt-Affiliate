@@ -280,8 +280,14 @@
                     {{-- Inner Glow --}}
                     <div class="absolute inset-2 bg-gradient-to-br from-white/20 to-transparent rounded-xl"></div>
 
-                    {{-- Rocket Icon with Pulse --}}
-                    <i class="fas fa-rocket text-white text-2xl drop-shadow-2xl relative z-10 animate-float"></i>
+                    {{-- Footer Logo (จาก Theme Setting) หรือ Rocket Icon (Fallback) --}}
+                    @if($themeSetting && $themeSetting->footer_logo_path)
+                        <img src="{{ asset('storage/' . $themeSetting->footer_logo_path) }}"
+                             alt="Footer Logo"
+                             class="w-10 h-10 object-contain drop-shadow-2xl relative z-10 animate-float">
+                    @else
+                        <i class="fas fa-rocket text-white text-2xl drop-shadow-2xl relative z-10 animate-float"></i>
+                    @endif
 
                     {{-- Shine Effect --}}
                     <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shine-effect"></div>

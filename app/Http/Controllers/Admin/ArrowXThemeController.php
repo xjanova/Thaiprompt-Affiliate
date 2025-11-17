@@ -87,10 +87,23 @@ class ArrowXThemeController extends Controller
             'card_border_width' => 'required|integer|min:0|max:10',
             'card_border_radius' => 'required|integer|min:0|max:50',
             'card_shadow_intensity' => 'required|in:none,sm,md,lg,xl,2xl',
-            'default_language' => 'required|string|max:5',
-            'rtl_enabled' => 'boolean',
+
+            // Background Effects
+            'bg_effects_enabled' => 'boolean',
+            'bg_circle1_color1' => 'nullable|string|max:7',
+            'bg_circle1_color2' => 'nullable|string|max:7',
+            'bg_circle2_color1' => 'nullable|string|max:7',
+            'bg_circle2_color2' => 'nullable|string|max:7',
+            'bg_circle3_color1' => 'nullable|string|max:7',
+            'bg_circle3_color2' => 'nullable|string|max:7',
+            'bg_animation_speed' => 'nullable|in:slow,normal,fast',
+            'bg_circle_opacity' => 'nullable|integer|min:0|max:100',
+            'bg_circle_blur' => 'nullable|integer|min:0|max:200',
+            'bg_circle_size' => 'nullable|integer|min:200|max:800',
+
             // Logo & Favicon (แยกจาก SiteSetting logo)
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048', // 2MB
+            'footer_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048', // 2MB
             'favicon' => 'nullable|image|mimes:jpeg,png,gif,webp,ico|max:1024', // 1MB
         ]);
 
@@ -113,6 +126,23 @@ class ArrowXThemeController extends Controller
             );
         }
 
+        // Handle Footer Logo Upload (โลโก้มุมล่างซ้าย Sidebar)
+        if ($request->hasFile('footer_logo')) {
+            // ลบโลโก้ footer เก่า (ถ้ามี)
+            if ($themeSetting->footer_logo_path) {
+                $imageUploadService->deleteImage($themeSetting->footer_logo_path);
+            }
+
+            // อัพโหลดโลโก้ footer ใหม่ (max 150x150, quality 90)
+            $validated['footer_logo_path'] = $imageUploadService->uploadImage(
+                $request->file('footer_logo'),
+                'theme-logos',
+                150,
+                150,
+                90
+            );
+        }
+
         // Handle Theme Favicon Upload
         if ($request->hasFile('favicon')) {
             // ลบ favicon ธีมเก่า (ถ้ามี)
@@ -129,6 +159,9 @@ class ArrowXThemeController extends Controller
                 90
             );
         }
+
+        // แปลง boolean checkbox values
+        $validated['bg_effects_enabled'] = $request->has('bg_effects_enabled');
 
         $themeSetting->update($validated);
 
