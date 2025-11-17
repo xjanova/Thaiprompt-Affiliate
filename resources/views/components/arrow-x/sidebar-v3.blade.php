@@ -181,7 +181,7 @@
         </a>
 
         {{-- Bot Automation --}}
-        <a href="{{ route('admin.bot-automation.index') }}"
+        <a href="{{ route('admin.bot-automation.dashboard') }}"
            @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.bot-automation.*') ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-robot w-5 text-center drop-shadow"></i>
