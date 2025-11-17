@@ -1,0 +1,69 @@
+##############################################################################
+# 🚨 แก้ไขทันที - วิธีที่เร็วที่สุด (Copy & Paste)
+##############################################################################
+
+=== วิธีที่ 1: รัน Command เดียว (แนะนำ) ===
+
+cd /path/to/Thaiprompt-Affiliate && php artisan migrate --force
+
+
+=== วิธีที่ 2: ใช้ Bash Script (อัตโนมัติ 100%) ===
+
+cd /path/to/Thaiprompt-Affiliate
+chmod +x URGENT_FIX_PRODUCTION.sh
+./URGENT_FIX_PRODUCTION.sh
+
+
+=== วิธีที่ 3: SQL โดยตรง (ถ้า artisan ไม่ทำงาน) ===
+
+# Login MySQL
+mysql -u root -p
+
+# แล้วรัน:
+USE your_database_name;
+
+ALTER TABLE theme_settings ADD COLUMN footer_logo_animation ENUM('none', 'float', 'spin', 'bounce', 'pulse', 'swing') DEFAULT 'float' COMMENT 'Footer Logo Animation Style';
+
+# ตรวจสอบ:
+SHOW COLUMNS FROM theme_settings LIKE 'footer_logo_animation';
+
+
+=== วิธีที่ 4: ใช้ SQL Script สำเร็จรูป ===
+
+cd /path/to/Thaiprompt-Affiliate
+mysql -u root -p < FIX_THEME_SETTINGS_COLUMNS.sql
+
+
+##############################################################################
+# ⚠️ IMPORTANT: แก้ชื่อ path ก่อนรัน!
+##############################################################################
+
+เปลี่ยน:
+- /path/to/Thaiprompt-Affiliate → เป็น path จริงบน server
+- your_database_name → เป็นชื่อ database จริง (ดูใน .env)
+
+
+##############################################################################
+# ✅ ตรวจสอบว่าแก้สำเร็จ
+##############################################################################
+
+# ทดสอบผ่าน UI:
+1. เข้า Admin → Theme Settings
+2. เลือก Footer Logo Animation = "bounce"
+3. กด Save
+4. ถ้าไม่ error แสดงว่าแก้สำเร็จ! ✅
+
+
+# ทดสอบผ่าน Command:
+php artisan tinker --execute="echo Schema::hasColumn('theme_settings', 'footer_logo_animation') ? 'YES' : 'NO';"
+
+
+##############################################################################
+# 📞 ถ้ายังไม่สำเร็จ
+##############################################################################
+
+ลอง deploy script ที่จะทำทุกอย่างอัตโนมัติ:
+
+cd /path/to/Thaiprompt-Affiliate
+./deploy.sh
+

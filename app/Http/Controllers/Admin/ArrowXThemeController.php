@@ -11,6 +11,7 @@ use App\Models\ThemeComponent;
 use App\Models\ThemePreset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
@@ -164,7 +165,21 @@ class ArrowXThemeController extends Controller
         // แปลง boolean checkbox values
         $validated['bg_effects_enabled'] = $request->has('bg_effects_enabled');
 
-        $themeSetting->update($validated);
+        // 🛡️ SAFETY: กรอง columns ที่ไม่มีในตาราง (กรณี migration ยังไม่ทัน run)
+        // ป้องกัน error "Column not found" ถ้า migration ยังไม่ถูกรัน
+        $existingColumns = Schema::getColumnListing('theme_settings');
+        $safeData = array_intersect_key($validated, array_flip($existingColumns));
+
+        // Log columns ที่ถูกข้าม (ถ้ามี)
+        $skippedColumns = array_diff_key($validated, $safeData);
+        if (!empty($skippedColumns)) {
+            \Log::warning('Theme Settings: บางคอลัมน์ถูกข้ามเพราะยังไม่มีในตาราง (รัน migration ก่อน)', [
+                'skipped_columns' => array_keys($skippedColumns),
+                'hint' => 'รัน: php artisan migrate --force',
+            ]);
+        }
+
+        $themeSetting->update($safeData);
 
         // ล้าง theme cache และ recompile เพื่อให้การเปลี่ยนแปลงมีผลทันที
         try {
