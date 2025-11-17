@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.80.0] - 2025-11-17
+
+### ✨ Features
+- Merge pull request #1332 from xjanova/claude/fix-line-login-integration-01Hc1yUwQA8YAxneyRbcozZY (7188497e)
+- feat: Complete Phases 2.5 & 3 - Advanced NLP and Analytics (f31192d6)
+### 🐛 Bug Fixes
+- fix: Resolve routes conflict - merge Phase 2.4 NLP with Phase 2.5 & 3 routes (5cc598fc)
+### 🔧 Other Changes
+
+
 ## [v3.79.5] - 2025-11-17
 
 ### ✨ Features
