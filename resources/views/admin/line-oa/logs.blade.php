@@ -1,36 +1,36 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ประวัติการใช้งาน LINE')
 
 @section('content')
 <div class="space-y-6">
     <!-- Header -->
-    <div class="bg-white rounded-lg shadow-md p-6">
+    <div class="glass-fusion rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">ประวัติการใช้งาน LINE</h1>
-                <p class="mt-1 text-sm text-gray-600">ประวัติการ login, register และการเชื่อมต่อบัญชี LINE</p>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">ประวัติการ login, register และการเชื่อมต่อบัญชี LINE</p>
             </div>
-            <a href="{{ route('admin.line-oa.index') }}" class="px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition">
+            <a href="{{ route('admin.line-oa.index') }}" class="px-4 py-2 bg-gray-600 text-white font-semibold rounded-xl hover:bg-gray-700 transition">
                 ← กลับไปการตั้งค่า
             </a>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-lg shadow-md p-6">
+    <div class="glass-fusion rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <form method="GET" action="{{ route('admin.line-oa.logs') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-                <label for="search" class="block text-sm font-medium text-gray-700 mb-2">ค้นหา</label>
+                <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ค้นหา</label>
                 <input type="text" name="search" id="search" value="{{ request('search') }}"
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                        placeholder="ชื่อ, อีเมล, LINE User ID">
             </div>
 
             <div>
-                <label for="action" class="block text-sm font-medium text-gray-700 mb-2">ประเภทการกระทำ</label>
+                <label for="action" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ประเภทการกระทำ</label>
                 <select name="action" id="action"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     <option value="">ทั้งหมด</option>
                     <option value="login" {{ request('action') === 'login' ? 'selected' : '' }}>Login</option>
                     <option value="register" {{ request('action') === 'register' ? 'selected' : '' }}>Register</option>
@@ -41,10 +41,10 @@
             </div>
 
             <div class="flex items-end">
-                <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
+                <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition">
                     กรอง
                 </button>
-                <a href="{{ route('admin.line-oa.logs') }}" class="ml-2 px-6 py-2 bg-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-400 transition">
+                <a href="{{ route('admin.line-oa.logs') }}" class="ml-2 px-6 py-2 bg-gray-300 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-400 transition">
                     ล้าง
                 </a>
             </div>
@@ -52,47 +52,47 @@
     </div>
 
     <!-- Logs Table -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <div class="glass-fusion rounded-xl shadow-md overflow-hidden" border border-white/20 dark:border-white/10>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50">
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             เวลา
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             ผู้ใช้
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             LINE User ID
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             การกระทำ
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             IP Address
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             รายละเอียด
                         </th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="glass-fusion divide-y divide-gray-200">
                     @forelse($logs as $log)
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50">
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {{ $log->created_at->format('d/m/Y H:i:s') }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($log->user)
                                     <div class="text-sm font-medium text-gray-900">{{ $log->user->name }}</div>
-                                    <div class="text-sm text-gray-500">{{ $log->user->email }}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ $log->user->email }}</div>
                                 @else
                                     <span class="text-sm text-gray-400">-</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-900">
-                                <code class="bg-gray-100 px-2 py-1 rounded text-xs">{{ $log->line_user_id }}</code>
+                                <code class="bg-gray-100/50 dark:bg-gray-800/50 px-2 py-1 rounded text-xs">{{ $log->line_user_id }}</code>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @php
@@ -110,17 +110,17 @@
                                         'link' => 'Link Account',
                                         'unlink' => 'Unlink Account',
                                     ];
-                                    $badgeColor = $badgeColors[$log->action] ?? 'bg-gray-100 text-gray-800';
+                                    $badgeColor = $badgeColors[$log->action] ?? 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white';
                                     $actionLabel = $actionLabels[$log->action] ?? $log->action;
                                 @endphp
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $badgeColor }}">
                                     {{ $actionLabel }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                 {{ $log->ip_address ?? '-' }}
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-500">
+                            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                                 @if($log->metadata)
                                     <button type="button"
                                             onclick="showMetadata(@js($log->metadata))"
@@ -134,7 +134,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                            <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                 <div class="text-lg">ไม่พบข้อมูล</div>
                                 <p class="text-sm mt-2">ยังไม่มีประวัติการใช้งาน LINE</p>
                             </td>
@@ -145,7 +145,7 @@
         </div>
 
         @if($logs->hasPages())
-            <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+            <div class="glass-fusion px-4 py-3 border-t border-gray-200 dark:border-gray-700 sm:px-6" border border-white/20 dark:border-white/10>
                 {{ $logs->links() }}
             </div>
         @endif
@@ -153,7 +153,7 @@
 
     <!-- Statistics -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="glass-fusion rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center">
                 <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
                     <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -161,7 +161,7 @@
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-500">Total Logins</p>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Logins</p>
                     <p class="text-2xl font-semibold text-gray-900">
                         {{ \App\Models\LineLoginLog::where('action', 'login')->count() }}
                     </p>
@@ -169,7 +169,7 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="glass-fusion rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center">
                 <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
                     <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -177,7 +177,7 @@
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-500">Total Registers</p>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Registers</p>
                     <p class="text-2xl font-semibold text-gray-900">
                         {{ \App\Models\LineLoginLog::where('action', 'register')->count() }}
                     </p>
@@ -185,7 +185,7 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="glass-fusion rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center">
                 <div class="flex-shrink-0 bg-purple-500 rounded-md p-3">
                     <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -193,7 +193,7 @@
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-500">Linked Accounts</p>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Linked Accounts</p>
                     <p class="text-2xl font-semibold text-gray-900">
                         {{ \App\Models\User::whereNotNull('line_user_id')->count() }}
                     </p>
@@ -201,7 +201,7 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="glass-fusion rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center">
                 <div class="flex-shrink-0 bg-yellow-500 rounded-md p-3">
                     <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -209,7 +209,7 @@
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-500">Today</p>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Today</p>
                     <p class="text-2xl font-semibold text-gray-900">
                         {{ \App\Models\LineLoginLog::whereDate('created_at', today())->count() }}
                     </p>
@@ -226,20 +226,20 @@
         <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onclick="closeMetadataModal()"></div>
 
         <!-- Modal panel -->
-        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+        <div class="inline-block align-bottom glass-fusion rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" border border-white/20 dark:border-white/10>
+            <div class="glass-fusion px-4 pt-5 pb-4 sm:p-6 sm:pb-4" border border-white/20 dark:border-white/10>
                 <div class="sm:flex sm:items-start">
                     <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">รายละเอียด Metadata</h3>
                         <div class="mt-2">
-                            <pre id="metadataContent" class="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-96 text-left"></pre>
+                            <pre id="metadataContent" class="bg-gray-100/50 dark:bg-gray-800/50 p-4 rounded text-sm overflow-auto max-h-96 text-left"></pre>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <div class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button type="button" onclick="closeMetadataModal()"
-                        class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">
+                        class="w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 glass-fusion text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">
                     ปิด
                 </button>
             </div>
