@@ -664,6 +664,22 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
             Route::get('/{test}/chart-data', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'chartData'])->name('chart-data');
             Route::get('/{test}/timeline-data', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'timelineData'])->name('timeline-data');
         });
+
+        // Sentiment Analysis System
+        Route::prefix('sentiment-analysis')->name('sentiment-analysis.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\SentimentAnalysisController::class, 'index'])->name('index');
+            Route::get('/{sentiment}', [\App\Http\Controllers\Admin\SentimentAnalysisController::class, 'show'])->name('show');
+            Route::delete('/{sentiment}', [\App\Http\Controllers\Admin\SentimentAnalysisController::class, 'destroy'])->name('destroy');
+            Route::get('/api/list', [\App\Http\Controllers\Admin\SentimentAnalysisController::class, 'listJson'])->name('list-json');
+            Route::get('/api/statistics', [\App\Http\Controllers\Admin\SentimentAnalysisController::class, 'statistics'])->name('statistics');
+            Route::get('/api/trend-data', [\App\Http\Controllers\Admin\SentimentAnalysisController::class, 'trendData'])->name('trend-data');
+            Route::get('/api/pain-points', [\App\Http\Controllers\Admin\SentimentAnalysisController::class, 'painPointsData'])->name('pain-points');
+            Route::get('/api/emotions', [\App\Http\Controllers\Admin\SentimentAnalysisController::class, 'emotionData'])->name('emotions');
+            Route::get('/api/recommendations', [\App\Http\Controllers\Admin\SentimentAnalysisController::class, 'recommendations'])->name('recommendations');
+            Route::get('/api/top-complaints', [\App\Http\Controllers\Admin\SentimentAnalysisController::class, 'topComplaints'])->name('top-complaints');
+            Route::get('/api/urgent-issues', [\App\Http\Controllers\Admin\SentimentAnalysisController::class, 'urgentIssues'])->name('urgent-issues');
+            Route::get('/api/export-report', [\App\Http\Controllers\Admin\SentimentAnalysisController::class, 'exportReport'])->name('export-report');
+        });
     });
 });
 
