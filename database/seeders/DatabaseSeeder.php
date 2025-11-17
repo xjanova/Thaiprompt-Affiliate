@@ -34,6 +34,8 @@ class DatabaseSeeder extends Seeder
             TestUsersSeeder::class,             // สร้างผู้ใช้ทดสอบเพิ่มเติม (backward compatibility)
             DemoAffiliatesSeeder::class,        // สร้าง affiliates
             DemoCommissionsSeeder::class,       // สร้าง commissions
+            KycVerificationSeeder::class,       // 🆕 KYC Demo Verification (pending, approved, rejected)
+            LineSignupSessionSeeder::class,     // 🆕 LINE Demo Signup Sessions (new, in_progress, completed)
 
             // 3. Content & Pages
             DemoPagesSeeder::class,             // สร้างหน้าเพจต่างๆ
@@ -46,6 +48,9 @@ class DatabaseSeeder extends Seeder
             LineOaSettingSeeder::class,         // LINE OA Settings Configuration
             LineFlexMessageTemplateSeeder::class, // LINE Flex Message Templates
             LineSignupTemplateSeeder::class,    // LINE Signup Templates (AI-Powered Membership Signup)
+            LineSignupFlowSeeder::class,        // 🆕 LINE Signup Flow Steps (Complete signup conversation flow)
+            LineBotAiSeeder::class,             // 🆕 LINE Bot AI Profiles (Demo bots: Affiliate, Support, Sales)
+            LineBotKeywordSeeder::class,        // 🆕 LINE Hybrid Bot Keywords (Keyword-based responses + AI fallback)
 
             // 5. AI & Integrations
             AiProvidersSeeder::class,           // AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini)
