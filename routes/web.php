@@ -276,6 +276,11 @@ Route::prefix('marketplace')->name('marketplace.')->group(function () {
     Route::get('/', [\App\Http\Controllers\MarketplaceController::class, 'index'])->name('index');
     Route::get('/{id}', [\App\Http\Controllers\MarketplaceController::class, 'show'])->name('show');
 
+    // Bot marketplace routes (alias to chatbot.marketplace)
+    Route::prefix('bots')->name('bots.')->group(function () {
+        Route::get('/{id}', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'show'])->name('show');
+    });
+
     // Authenticated routes
     Route::middleware('auth')->group(function () {
         Route::post('/{id}/rent', [\App\Http\Controllers\MarketplaceController::class, 'rent'])->name('rent');
