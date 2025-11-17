@@ -125,6 +125,9 @@
     <x-emergency-alert-popup position="global" />
     <x-emergency-alert-marquee position="global" />
 
+    {{-- Service Worker for Offline Support --}}
+    @vite('resources/js/service-worker-register.js')
+
     @stack('scripts')
 </body>
 </html>

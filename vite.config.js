@@ -9,6 +9,8 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/js/crypto/app.js',
                 'resources/js/wealth-guide-pro.js',
+                'resources/js/service-worker-register.js', // Service Worker
+                'resources/js/echo-setup.js', // Laravel Echo
             ],
             refresh: true,
         }),

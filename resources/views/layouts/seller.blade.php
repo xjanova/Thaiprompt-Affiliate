@@ -401,6 +401,9 @@
         <x-immediate-notification-popup />
     @endauth
 
+    {{-- Service Worker for Offline Support --}}
+    @vite('resources/js/service-worker-register.js')
+
     @stack('scripts')
 </body>
 </html>
