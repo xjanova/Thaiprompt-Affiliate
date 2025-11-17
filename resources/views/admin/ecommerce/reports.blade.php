@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายงานยอดขาย')
 
@@ -17,17 +17,17 @@
             </button>
 
             <div x-show="open" @click.away="open = false" x-transition
-                 class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden z-50">
-                <a href="#" @click.prevent="language = 'th'" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                 class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 dark:border-slate-700 overflow-hidden z-50" border border-white/20 dark:border-white/10>
+                <a href="#" @click.prevent="language = 'th'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                     <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
                 </a>
-                <a href="#" @click.prevent="language = 'en'" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                <a href="#" @click.prevent="language = 'en'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                     <span class="mr-2">🇬🇧</span> English
                 </a>
-                <a href="#" @click.prevent="language = 'zh'" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                <a href="#" @click.prevent="language = 'zh'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                     <span class="mr-2">🇨🇳</span> 中文
                 </a>
-                <a href="#" @click.prevent="language = 'ja'" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                <a href="#" @click.prevent="language = 'ja'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                     <span class="mr-2">🇯🇵</span> 日本語
                 </a>
             </div>
@@ -35,18 +35,18 @@
     </div>
 
     <!-- Date Filter -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-translate>จากวันที่</label>
-                <input type="date" name="date_from" value="{{ $dateFrom ?? '' }}" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1" data-translate>จากวันที่</label>
+                <input type="date" name="date_from" value="{{ $dateFrom ?? '' }}" class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-translate>ถึงวันที่</label>
-                <input type="date" name="date_to" value="{{ $dateTo ?? '' }}" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1" data-translate>ถึงวันที่</label>
+                <input type="date" name="date_to" value="{{ $dateTo ?? '' }}" class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
             </div>
             <div class="flex items-end">
-                <button type="submit" class="w-full bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700">
+                <button type="submit" class="w-full bg-orange-600 text-white px-6 py-2 rounded-xl hover:bg-orange-700">
                     <span data-translate>ค้นหา</span>
                 </button>
             </div>
@@ -55,20 +55,20 @@
 
     <!-- Sales Summary -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-            <p class="text-sm text-gray-500 dark:text-gray-400" data-translate>ยอดขายรวม</p>
+        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+            <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400" data-translate>ยอดขายรวม</p>
             <p class="text-3xl font-bold text-gray-900 dark:text-white">
                 ฿{{ number_format($salesReport->sum('revenue') ?? 0) }}
             </p>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-            <p class="text-sm text-gray-500 dark:text-gray-400" data-translate>จำนวนคำสั่งซื้อ</p>
+        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+            <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400" data-translate>จำนวนคำสั่งซื้อ</p>
             <p class="text-3xl font-bold text-gray-900 dark:text-white">
                 {{ number_format($salesReport->sum('orders') ?? 0) }}
             </p>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-            <p class="text-sm text-gray-500 dark:text-gray-400" data-translate>ยอดเฉลี่ยต่อคำสั่งซื้อ</p>
+        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+            <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400" data-translate>ยอดเฉลี่ยต่อคำสั่งซื้อ</p>
             <p class="text-3xl font-bold text-gray-900 dark:text-white">
                 ฿{{ $salesReport->sum('orders') > 0 ? number_format($salesReport->sum('revenue') / $salesReport->sum('orders')) : 0 }}
             </p>
@@ -76,24 +76,24 @@
     </div>
 
     <!-- Top Products -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4" data-translate>สินค้าขายดี</h2>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-slate-700">
+                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>อันดับ</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>สินค้า</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>ยอดขาย</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>อันดับ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>สินค้า</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>ยอดขาย</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody class="glass-fusion dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($topProducts ?? [] as $index => $product)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700">
-                            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $index + 1 }}</td>
+                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700">
+                            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $index + 1 }}</td>
                             <td class="px-6 py-4">
                                 <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $product->name }}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">SKU: {{ $product->sku }}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">SKU: {{ $product->sku }}</div>
                             </td>
                             <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
                                 {{ $product->total_sales ?? 0 }} <span data-translate>ชิ้น</span>
@@ -101,7 +101,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="3" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400" data-translate>
+                            <td colspan="3" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400 dark:text-gray-400" data-translate>
                                 ไม่มีข้อมูล
                             </td>
                         </tr>

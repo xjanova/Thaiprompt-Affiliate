@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายงานค่าคอมมิชชั่น MLM')
 
@@ -26,7 +26,7 @@
                     <p class="text-3xl font-bold">{{ number_format($commissionStats['pending_count'] ?? 0) }}</p>
                     <p class="text-xl mt-2">฿{{ number_format($commissionStats['pending_amount'] ?? 0, 2) }}</p>
                 </div>
-                <div class="bg-white/20 p-4 rounded-full">
+                <div class="glass-fusion p-4 rounded-full" border border-white/20 dark:border-white/10>
                     <i class="fas fa-hourglass-half text-3xl"></i>
                 </div>
             </div>
@@ -39,20 +39,20 @@
                     <p class="text-3xl font-bold">{{ number_format($commissionStats['approved_count'] ?? 0) }}</p>
                     <p class="text-xl mt-2">฿{{ number_format($commissionStats['approved_amount'] ?? 0, 2) }}</p>
                 </div>
-                <div class="bg-white/20 p-4 rounded-full">
+                <div class="glass-fusion p-4 rounded-full" border border-white/20 dark:border-white/10>
                     <i class="fas fa-check-circle text-3xl"></i>
                 </div>
             </div>
         </div>
 
-        <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white">
+        <div class="style="background: var(--arrow-x-success-gradient)" rounded-xl shadow-lg p-6 text-white">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm opacity-90 mb-1">จ่ายแล้ว</p>
                     <p class="text-3xl font-bold">{{ number_format($commissionStats['paid_count'] ?? 0) }}</p>
                     <p class="text-xl mt-2">฿{{ number_format($commissionStats['paid_amount'] ?? 0, 2) }}</p>
                 </div>
-                <div class="bg-white/20 p-4 rounded-full">
+                <div class="glass-fusion p-4 rounded-full" border border-white/20 dark:border-white/10>
                     <i class="fas fa-money-bill-wave text-3xl"></i>
                 </div>
             </div>
@@ -65,7 +65,7 @@
                     <p class="text-3xl font-bold">฿{{ number_format($commissionStats['paid_this_month'] ?? 0, 2) }}</p>
                     <p class="text-sm mt-2 opacity-75">{{ now()->format('F Y') }}</p>
                 </div>
-                <div class="bg-white/20 p-4 rounded-full">
+                <div class="glass-fusion p-4 rounded-full" border border-white/20 dark:border-white/10>
                     <i class="fas fa-calendar-check text-3xl"></i>
                 </div>
             </div>
@@ -75,7 +75,7 @@
     <!-- Charts -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Commission Trends -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <i class="fas fa-chart-line text-green-600 mr-2"></i>
                 แนวโน้มค่าคอมมิชชั่น (30 วัน)
@@ -84,7 +84,7 @@
         </div>
 
         <!-- Commission by Type -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <i class="fas fa-chart-pie text-purple-600 mr-2"></i>
                 ค่าคอมมิชชั่นตามประเภท
@@ -94,7 +94,7 @@
     </div>
 
     <!-- Top Earners -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
             <i class="fas fa-trophy text-yellow-500 mr-2"></i>
             สมาชิกที่ได้รับค่าคอมมิชชั่นสูงสุด (Top 10)
@@ -102,14 +102,14 @@
 
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead class="bg-gray-50 dark:bg-gray-700">
+                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">อันดับ</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">สมาชิก</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">รหัสสมาชิก</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">ค่าคอมมิชชั่นรวม</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">จำนวนครั้ง</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">ระดับ</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase">อันดับ</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase">สมาชิก</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase">รหัสสมาชิก</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase">ค่าคอมมิชชั่นรวม</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase">จำนวนครั้ง</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase">ระดับ</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -125,7 +125,7 @@
                     @endphp
 
                     @forelse($topEarners as $earner)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-colors">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="text-2xl">
                                     @if($earner['rank'] == 1)
@@ -135,7 +135,7 @@
                                     @elseif($earner['rank'] == 3)
                                         <i class="fas fa-award text-orange-500"></i>
                                     @else
-                                        <span class="text-gray-500 dark:text-gray-400 font-semibold">#{{ $earner['rank'] }}</span>
+                                        <span class="text-gray-500 dark:text-gray-400 dark:text-gray-400 font-semibold">#{{ $earner['rank'] }}</span>
                                     @endif
                                 </span>
                             </td>
@@ -150,7 +150,7 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="font-mono text-sm text-gray-700 dark:text-gray-300">{{ $earner['code'] }}</span>
+                                <span class="font-mono text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300">{{ $earner['code'] }}</span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="text-lg font-bold text-green-600 dark:text-green-400">
@@ -165,16 +165,16 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-3 py-1 rounded-full text-sm font-semibold
                                     {{ $earner['level'] === 'Diamond' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' : '' }}
-                                    {{ $earner['level'] === 'Platinum' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : '' }}
+                                    {{ $earner['level'] === 'Platinum' ? 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white dark:bg-gray-700 dark:text-gray-300' : '' }}
                                     {{ $earner['level'] === 'Gold' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : '' }}
-                                    {{ $earner['level'] === 'Silver' ? 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200' : '' }}">
+                                    {{ $earner['level'] === 'Silver' ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 dark:bg-gray-600 dark:text-gray-200' : '' }}">
                                     {{ $earner['level'] }}
                                 </span>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                 ไม่มีข้อมูล
                             </td>
                         </tr>
@@ -185,7 +185,7 @@
     </div>
 
     <!-- Level Analysis -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
             <i class="fas fa-layer-group text-indigo-600 mr-2"></i>
             วิเคราะห์ค่าคอมมิชชั่นตามระดับ
@@ -229,17 +229,17 @@
             </div>
             <div class="flex gap-3">
                 <button onclick="exportReport('csv')"
-                        class="bg-white text-emerald-600 px-6 py-3 rounded-lg hover:bg-emerald-50 transition-all font-semibold">
+                        class="glass-fusion text-emerald-600 px-6 py-3 rounded-xl hover:bg-emerald-50 transition-all font-semibold">
                     <i class="fas fa-file-csv mr-2"></i>
                     CSV
                 </button>
                 <button onclick="exportReport('excel')"
-                        class="bg-white text-teal-600 px-6 py-3 rounded-lg hover:bg-teal-50 transition-all font-semibold">
+                        class="glass-fusion text-teal-600 px-6 py-3 rounded-xl hover:bg-teal-50 transition-all font-semibold">
                     <i class="fas fa-file-excel mr-2"></i>
                     Excel
                 </button>
                 <button onclick="exportReport('pdf')"
-                        class="bg-white text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 transition-all font-semibold">
+                        class="glass-fusion text-green-600 px-6 py-3 rounded-xl hover:bg-green-50 transition-all font-semibold">
                     <i class="fas fa-file-pdf mr-2"></i>
                     PDF
                 </button>
