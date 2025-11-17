@@ -35,15 +35,18 @@ Alpine.store('sidebar', {
     /** @type {boolean} กำลัง hover อยู่หรือไม่ (desktop auto-hide mode) */
     hovered: false,
 
+    /** @type {boolean} อยู่บน desktop หรือไม่ (>= 768px) - reactive state */
+    _isDesktop: true,
+
     // ========================================
-    // Computed Properties
+    // Computed Properties (ใช้ function แทน getter เพื่อ reactivity)
     // ========================================
 
     /**
      * ตรวจสอบว่าอยู่บน desktop หรือไม่
      */
     get isDesktop() {
-        return window.innerWidth >= 768;
+        return this._isDesktop;
     },
 
     /**
@@ -51,7 +54,7 @@ Alpine.store('sidebar', {
      */
     get shouldShow() {
         // Mobile: แสดงตาม isOpen
-        if (!this.isDesktop) {
+        if (!this._isDesktop) {
             return this.isOpen;
         }
 
@@ -64,7 +67,7 @@ Alpine.store('sidebar', {
      */
     get shouldExpand() {
         // Mobile: ไม่มี auto-hide
-        if (!this.isDesktop) {
+        if (!this._isDesktop) {
             return this.isOpen;
         }
 
@@ -82,7 +85,7 @@ Alpine.store('sidebar', {
      */
     get sidebarWidth() {
         // Mobile: Fixed 256px
-        if (!this.isDesktop) {
+        if (!this._isDesktop) {
             return 256;
         }
 
@@ -105,6 +108,9 @@ Alpine.store('sidebar', {
      * เริ่มต้น sidebar store
      */
     init() {
+        // ตั้งค่า initial desktop state
+        this._isDesktop = window.innerWidth >= 768;
+
         // โหลดค่า autoHideMode จาก localStorage
         const savedAutoHide = localStorage.getItem('sidebarAutoHide');
         this.autoHideMode = savedAutoHide === 'true';
@@ -114,7 +120,13 @@ Alpine.store('sidebar', {
 
         // Listen to resize events
         window.addEventListener('resize', () => {
-            this.updateBasedOnScreenSize();
+            const wasDesktop = this._isDesktop;
+            this._isDesktop = window.innerWidth >= 768;
+
+            // เรียก update เฉพาะเมื่อเปลี่ยนจาก mobile <-> desktop
+            if (wasDesktop !== this._isDesktop) {
+                this.updateBasedOnScreenSize();
+            }
         });
 
         // Expose to window for backward compatibility
@@ -159,7 +171,7 @@ Alpine.store('sidebar', {
         localStorage.setItem('sidebarAutoHide', this.autoHideMode.toString());
 
         // ปรับ isOpen ตาม mode (desktop เท่านั้น)
-        if (this.isDesktop) {
+        if (this._isDesktop) {
             if (this.autoHideMode) {
                 // เปิด auto-hide: ย่อ sidebar
                 this.isOpen = false;
@@ -177,7 +189,7 @@ Alpine.store('sidebar', {
      */
     setHovered(value) {
         // ใช้ได้เฉพาะ desktop + auto-hide mode
-        if (this.isDesktop && this.autoHideMode) {
+        if (this._isDesktop && this.autoHideMode) {
             this.hovered = value;
         }
     },
@@ -187,7 +199,7 @@ Alpine.store('sidebar', {
      */
     closeOnMenuClick() {
         // ใช้ได้เฉพาะ desktop + auto-hide mode + hovered
-        if (this.isDesktop && this.autoHideMode && this.hovered) {
+        if (this._isDesktop && this.autoHideMode && this.hovered) {
             this.hovered = false;
         }
     },
@@ -200,7 +212,7 @@ Alpine.store('sidebar', {
      * ปรับ sidebar state ตาม screen size
      */
     updateBasedOnScreenSize() {
-        if (this.isDesktop) {
+        if (this._isDesktop) {
             // Desktop: เปิด sidebar (เว้นแต่อยู่ใน auto-hide mode)
             if (!this.autoHideMode) {
                 this.isOpen = true;
