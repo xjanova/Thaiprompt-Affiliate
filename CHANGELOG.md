@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.60.1] - 2025-11-17
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: clean up MLM Settings UI with V3 standards (dee9d760)
+- fix: prevent chart height overflow in MLM Reports (a90a1abc)
+### 🔧 Other Changes
+- Merge pull request #1301 from xjanova/claude/refactor-affiliate-mlm-01SGSbAt7rwBBW9DPUyQrS28 (741a259b)
+
 ## [v3.60.0] - 2025-11-17
 
 ### ✨ Features
