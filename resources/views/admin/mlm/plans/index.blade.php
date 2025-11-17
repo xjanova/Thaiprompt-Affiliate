@@ -249,4 +249,56 @@
         </div>
     </div>
 </div>
+
+<style>
+/* Theme Customizer CSS Variables Integration */
+.glass-fusion {
+    background: rgba(255, 255, 255, var(--glass-opacity, 0.15)) !important;
+    backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--backdrop-saturate, 100%)) !important;
+    border-radius: var(--card-roundness, 16px) !important;
+}
+
+.dark .glass-fusion {
+    background: rgba(31, 41, 55, var(--glass-opacity, 0.15)) !important;
+}
+
+/* Card roundness */
+.rounded-2xl {
+    border-radius: var(--card-roundness, 16px) !important;
+}
+
+.rounded-xl {
+    border-radius: calc(var(--button-roundness, 12px) * 1.33) !important;
+}
+
+.rounded-lg {
+    border-radius: var(--button-roundness, 12px) !important;
+}
+
+/* Hover scale effect */
+.hover\:scale-105:hover {
+    transform: scale(var(--hover-scale, 1.05)) !important;
+}
+
+/* Animation speed */
+.transition-all,
+.transition {
+    transition-duration: var(--animation-speed, 500ms) !important;
+}
+
+/* Shadow intensity */
+.shadow-2xl {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, calc(var(--shadow-intensity, 0.5) * 0.5)) !important;
+}
+
+.shadow-xl {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, calc(var(--shadow-intensity, 0.5) * 0.2)),
+                0 10px 10px -5px rgba(0, 0, 0, calc(var(--shadow-intensity, 0.5) * 0.08)) !important;
+}
+
+.shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, calc(var(--shadow-intensity, 0.5) * 0.2)),
+                0 4px 6px -2px rgba(0, 0, 0, calc(var(--shadow-intensity, 0.5) * 0.1)) !important;
+}
+</style>
 @endsection
