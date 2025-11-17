@@ -608,6 +608,16 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
         Route::post('/{keyword}/clone', [\App\Http\Controllers\Admin\LineBotKeywordAnalyticsController::class, 'clone'])->name('clone');
         Route::post('/analytics/bulk-update-status', [\App\Http\Controllers\Admin\LineBotKeywordAnalyticsController::class, 'bulkUpdateStatus'])->name('bulk-update-status');
         Route::post('/analytics/bulk-delete', [\App\Http\Controllers\Admin\LineBotKeywordAnalyticsController::class, 'bulkDelete'])->name('bulk-delete');
+
+        // Activity Logs & Monitoring
+        Route::prefix('activity')->name('activity.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\KeywordActivityLogController::class, 'index'])->name('index');
+            Route::get('/export', [\App\Http\Controllers\Admin\KeywordActivityLogController::class, 'export'])->name('export');
+            Route::get('/daily-chart', [\App\Http\Controllers\Admin\KeywordActivityLogController::class, 'getDailyActivityChart'])->name('daily-chart');
+            Route::get('/keyword-stats', [\App\Http\Controllers\Admin\KeywordActivityLogController::class, 'getKeywordStats'])->name('keyword-stats');
+            Route::get('/user-history', [\App\Http\Controllers\Admin\KeywordActivityLogController::class, 'getUserHistory'])->name('user-history');
+            Route::post('/clear-old-logs', [\App\Http\Controllers\Admin\KeywordActivityLogController::class, 'clearOldLogs'])->name('clear-old-logs');
+        });
     });
 });
 
