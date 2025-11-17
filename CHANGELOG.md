@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.53.0] - 2025-11-17
+
+### ✨ Features
+- Merge pull request #1287 from xjanova/claude/fix-commissions-route-01Fm5v6kTmGGRnvvvyrdm5Le (f91cd788)
+- feat: add missing AiService class for bot automation (3e022e53)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.52.0] - 2025-11-17
 
 ### ✨ Features
