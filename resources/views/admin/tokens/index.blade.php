@@ -1,66 +1,51 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'TPIX Token Management')
 
 @section('content')
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">
-            <i class="fas fa-coins text-primary"></i> TPIX Token Management
+<div class="space-y-6">
+    {{-- Header --}}
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <i class="fas fa-coins" style="color: var(--arrow-x-warning)"></i>
+            TPIX Token Management
         </h1>
-        <div>
-            <a href="{{ route('admin.tokens.import-cmc') }}" class="btn btn-info">
-                <i class="fas fa-download"></i> Import from CMC
-            </a>
-        </div>
+        <a href="{{ route('admin.tokens.import-cmc') }}"
+           class="px-6 py-3 text-white rounded-xl shadow-lg hover:shadow-xl transition-all"
+           style="background: linear-gradient(to right, var(--arrow-x-info), var(--arrow-x-primary-end))">
+            <i class="fas fa-download"></i> Import from CMC
+        </a>
     </div>
 
     {{-- Statistics Cards --}}
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <h6 class="card-title">Total Tokens</h6>
-                    <h2>{{ $stats['total'] ?? 0 }}</h2>
-                </div>
-            </div>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="rounded-xl shadow-lg p-6 text-white" style="background: var(--arrow-x-primary-gradient)">
+            <h6 class="text-sm opacity-80 mb-2">Total Tokens</h6>
+            <h2 class="text-3xl font-bold">{{ $stats['total'] ?? 0 }}</h2>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h6 class="card-title">Active Tokens</h6>
-                    <h2>{{ $stats['active'] ?? 0 }}</h2>
-                </div>
-            </div>
+        <div class="rounded-xl shadow-lg p-6 text-white" style="background: linear-gradient(to bottom right, var(--arrow-x-success), var(--arrow-x-info))">
+            <h6 class="text-sm opacity-80 mb-2">Active Tokens</h6>
+            <h2 class="text-3xl font-bold">{{ $stats['active'] ?? 0 }}</h2>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <h6 class="card-title">Pending Approval</h6>
-                    <h2>{{ $stats['pending'] ?? 0 }}</h2>
-                </div>
-            </div>
+        <div class="rounded-xl shadow-lg p-6 text-white" style="background: linear-gradient(to bottom right, var(--arrow-x-warning), var(--arrow-x-accent))">
+            <h6 class="text-sm opacity-80 mb-2">Pending Approval</h6>
+            <h2 class="text-3xl font-bold">{{ $stats['pending'] ?? 0 }}</h2>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h6 class="card-title">Total Market Cap</h6>
-                    <h2>{{ number_format($stats['total_market_cap'] ?? 0, 2) }} TPIX</h2>
-                </div>
-            </div>
+        <div class="rounded-xl shadow-lg p-6 text-white" style="background: linear-gradient(to bottom right, var(--arrow-x-info), var(--arrow-x-primary-end))">
+            <h6 class="text-sm opacity-80 mb-2">Total Market Cap</h6>
+            <h2 class="text-3xl font-bold">{{ number_format($stats['total_market_cap'] ?? 0, 2) }} TPIX</h2>
         </div>
     </div>
 
     {{-- Filters --}}
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="GET" class="row g-3">
-                <div class="col-md-3">
-                    <input type="text" name="search" class="form-control" placeholder="Search tokens..." value="{{ request('search') }}">
-                </div>
-                <div class="col-md-2">
-                    <select name="status" class="form-select">
-                        <option value="">All Status</option>
+    <div class="glass-fusion rounded-xl shadow-lg p-6">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <input type="text" name="search" class="glass-input w-full px-4 py-2 rounded-lg" placeholder="Search tokens..." value="{{ request('search') }}">
+            </div>
+            <div>
+                <select name="status" class="glass-input w-full px-4 py-2 rounded-lg">
+                    <option value="">All Status</option>
                         <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
