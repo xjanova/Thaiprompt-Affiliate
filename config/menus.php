@@ -244,6 +244,7 @@ return [
                 ['label' => '📊 Activity Logs', 'route' => 'admin.line-bot.keywords.activity.index'],
                 ['label' => '⭐ Performance Dashboard', 'route' => 'admin.line-bot.keywords.performance.index'],
                 ['label' => '💡 Keyword Suggestions', 'route' => 'admin.line-bot.keywords.suggestions.index'],
+                ['label' => '🧪 A/B Testing', 'route' => 'admin.line-bot.keywords.ab-tests.index'],
                 ['label' => 'Broadcast', 'route' => 'admin.line-bot.broadcast.index'],
                 ['label' => 'Avatar', 'route' => 'admin.line-bot.avatars.index'],
                 ['label' => 'Chat Widget', 'route' => 'admin.line-bot.chat-widget.index'],

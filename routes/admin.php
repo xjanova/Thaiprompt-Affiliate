@@ -644,6 +644,26 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
             Route::get('/refresh', [\App\Http\Controllers\Admin\KeywordSuggestionController::class, 'refresh'])->name('refresh');
             Route::get('/export', [\App\Http\Controllers\Admin\KeywordSuggestionController::class, 'export'])->name('export');
         });
+
+        // A/B Testing System
+        Route::prefix('ab-tests')->name('ab-tests.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'store'])->name('store');
+            Route::get('/{test}', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'show'])->name('show');
+            Route::get('/{test}/edit', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'edit'])->name('edit');
+            Route::put('/{test}', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'update'])->name('update');
+            Route::post('/{test}/start', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'start'])->name('start');
+            Route::post('/{test}/pause', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'pause'])->name('pause');
+            Route::post('/{test}/complete', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'complete'])->name('complete');
+            Route::post('/{test}/apply-winner', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'applyWinner'])->name('apply-winner');
+            Route::delete('/{test}', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'destroy'])->name('destroy');
+            Route::get('/api/list', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'listJson'])->name('list-json');
+            Route::get('/api/statistics', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'statistics'])->name('statistics');
+            Route::get('/api/recommendations', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'recommendations'])->name('recommendations');
+            Route::get('/{test}/chart-data', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'chartData'])->name('chart-data');
+            Route::get('/{test}/timeline-data', [\App\Http\Controllers\Admin\KeywordABTestController::class, 'timelineData'])->name('timeline-data');
+        });
     });
 });
 
