@@ -280,13 +280,78 @@
             <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">Token Management</span>
         </a>
 
-        {{-- LINE Bot --}}
-        <a href="{{ route('admin.line-bot.ai.index') }}"
-           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.line-bot.*') ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-            <i class="fab fa-line w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">LINE Bot</span>
-        </a>
+        {{-- LINE System (Collapsible Menu) 🆕 --}}
+        <div class="space-y-1"
+             x-data="{ lineOpen: {{ request()->routeIs('admin.line-*') ? 'true' : 'false' }} }">
+            {{-- LINE Header Button --}}
+            <button @click="lineOpen = !lineOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.line-*') ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fab fa-line w-5 text-center drop-shadow"></i>
+                <span x-show="sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">LINE System</span>
+                <i x-show="(sidebarOpen || hovered) && lineOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="(sidebarOpen || hovered) && !lineOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- LINE Submenu --}}
+            <div x-show="lineOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- LINE OA Management --}}
+                <a href="{{ route('admin.line-oa.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-oa.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-bullhorn w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">LINE OA</span>
+                </a>
+
+                {{-- LINE Bot AI --}}
+                <a href="{{ route('admin.line-bot.ai.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.ai.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-robot w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Bot AI</span>
+                </a>
+
+                {{-- Rich Menu --}}
+                <a href="{{ route('admin.line-bot.rich-menu.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.rich-menu.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-th-large w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Rich Menu</span>
+                </a>
+
+                {{-- Flex Messages --}}
+                <a href="{{ route('admin.line-bot.flex-messages.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.flex-messages.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-layer-group w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Flex Messages</span>
+                </a>
+
+                {{-- LINE Membership Signup 🆕 --}}
+                <a href="{{ route('admin.line-membership-signup.index') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-user-plus w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">สมัครสมาชิก</span>
+                </a>
+
+                {{-- Conversations --}}
+                <a href="{{ route('admin.line-bot.ai.conversations') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.ai.conversations*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-comments w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">การสนทนา</span>
+                </a>
+
+                {{-- Analytics --}}
+                <a href="{{ route('admin.line-bot.ai.analytics') }}"
+                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.ai.analytics') || request()->routeIs('admin.line-analytics.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
+                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Analytics</span>
+                </a>
+            </div>
+        </div>
 
         {{-- Trading Bot --}}
         <a href="{{ route('admin.trading-bot.dashboard') }}"
@@ -302,14 +367,6 @@
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.bot-automation.*') ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-robot w-5 text-center drop-shadow"></i>
             <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">Bot Automation</span>
-        </a>
-
-        {{-- LINE OA --}}
-        <a href="{{ route('admin.line-oa.index') }}"
-           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.line-oa.*') || request()->routeIs('admin.line-analytics.*') ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-            <i class="fab fa-line w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">LINE OA</span>
         </a>
 
         {{-- Products --}}
