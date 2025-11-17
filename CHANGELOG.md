@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.79.3] - 2025-11-17
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1330 from xjanova/claude/fix-line-seeder-error-017FFDQaqzr6hqeEhgb8MXTZ (0a38e2c9)
+- fix: แก้ไข input_type ใน LineSignupFlowSeeder ให้ตรงกับ ENUM (01f8b25a)
+### 🔧 Other Changes
+
+
 ## [v3.79.2] - 2025-11-17
 
 ### ✨ Features
