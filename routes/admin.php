@@ -629,6 +629,21 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
             Route::get('/{keyword}/details', [\App\Http\Controllers\Admin\KeywordPerformanceDashboardController::class, 'getKeywordDetails'])->name('details');
             Route::get('/export', [\App\Http\Controllers\Admin\KeywordPerformanceDashboardController::class, 'exportReport'])->name('export');
         });
+
+        // Keyword Suggestions Engine
+        Route::prefix('suggestions')->name('suggestions.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\KeywordSuggestionController::class, 'index'])->name('index');
+            Route::get('/json', [\App\Http\Controllers\Admin\KeywordSuggestionController::class, 'getSuggestionsJson'])->name('json');
+            Route::get('/stats', [\App\Http\Controllers\Admin\KeywordSuggestionController::class, 'getStatistics'])->name('stats');
+            Route::get('/recommendations', [\App\Http\Controllers\Admin\KeywordSuggestionController::class, 'getRecommendations'])->name('recommendations');
+            Route::post('/preview', [\App\Http\Controllers\Admin\KeywordSuggestionController::class, 'preview'])->name('preview');
+            Route::post('/approve', [\App\Http\Controllers\Admin\KeywordSuggestionController::class, 'approve'])->name('approve');
+            Route::post('/approve-batch', [\App\Http\Controllers\Admin\KeywordSuggestionController::class, 'approveBatch'])->name('approve-batch');
+            Route::post('/reject', [\App\Http\Controllers\Admin\KeywordSuggestionController::class, 'reject'])->name('reject');
+            Route::get('/detail', [\App\Http\Controllers\Admin\KeywordSuggestionController::class, 'getDetail'])->name('detail');
+            Route::get('/refresh', [\App\Http\Controllers\Admin\KeywordSuggestionController::class, 'refresh'])->name('refresh');
+            Route::get('/export', [\App\Http\Controllers\Admin\KeywordSuggestionController::class, 'export'])->name('export');
+        });
     });
 });
 
