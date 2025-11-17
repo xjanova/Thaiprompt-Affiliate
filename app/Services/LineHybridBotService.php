@@ -24,11 +24,13 @@ class LineHybridBotService
 
     private LineService $lineService;
     private LineBotKeyword $keywordModel;
+    private KeywordActivityLogService $activityLogService;
 
-    public function __construct(LineService $lineService)
+    public function __construct(LineService $lineService, KeywordActivityLogService $activityLogService)
     {
         $this->lineService = $lineService;
         $this->keywordModel = new LineBotKeyword();
+        $this->activityLogService = $activityLogService;
     }
 
     /**
@@ -57,7 +59,7 @@ class LineHybridBotService
                 'response_type' => 'basic_bot',
             ]);
 
-            return $this->handleKeywordResponse($lineUserId, $keywordMatch, $user);
+            return $this->handleKeywordResponse($lineUserId, $keywordMatch, $user, $messageText);
         }
 
         // Step 2: ไม่พบ keyword → ส่งให้ AI
@@ -65,6 +67,9 @@ class LineHybridBotService
             'line_user_id' => $lineUserId,
             'ai_bot_id' => $aiBot?->id,
         ]);
+
+        // บันทึก no match event
+        $this->activityLogService->logNoMatch($messageText, $lineUserId);
 
         return $this->handleAiResponse($lineUserId, $messageText, $user, $aiBot);
     }
@@ -124,6 +129,7 @@ class LineHybridBotService
                 'type' => $customKeywords->response_type,
                 'response' => $customKeywords->response_text,
                 'is_custom' => true,
+                'model' => $customKeywords, // ใช้สำหรับ logging
             ];
         }
 
@@ -136,9 +142,10 @@ class LineHybridBotService
      * @param string $lineUserId
      * @param array $keyword
      * @param object|null $user
+     * @param string|null $messageText ข้อความต้นฉบับสำหรับ logging
      * @return array
      */
-    private function handleKeywordResponse(string $lineUserId, array $keyword, ?object $user): array
+    private function handleKeywordResponse(string $lineUserId, array $keyword, ?object $user, ?string $messageText = null): array
     {
         $type = $keyword['type'];
 
@@ -156,7 +163,10 @@ class LineHybridBotService
                 return $this->handleHelpCommand($lineUserId);
 
             case 'custom':
-                return $this->handleCustomKeyword($lineUserId, $keyword);
+            case 'text':
+            case 'flex_message':
+            case 'quick_reply':
+                return $this->handleCustomKeyword($lineUserId, $keyword, $messageText);
 
             default:
                 return [
@@ -267,12 +277,26 @@ HELP;
 
     /**
      * Handle custom keyword
+     *
+     * @param string $lineUserId
+     * @param array $keyword
+     * @param string|null $messageText ข้อความต้นฉบับจากผู้ใช้
+     * @return array
      */
-    private function handleCustomKeyword(string $lineUserId, array $keyword): array
+    private function handleCustomKeyword(string $lineUserId, array $keyword, ?string $messageText = null): array
     {
         $response = $keyword['response'] ?? 'ขอโทษค่ะ ไม่มีคำตอบสำหรับคำสั่งนี้';
 
         $this->lineService->sendPushMessage($lineUserId, $response);
+
+        // บันทึก custom keyword match
+        if (isset($keyword['model']) && $keyword['model'] instanceof LineBotKeyword) {
+            $this->activityLogService->logKeywordMatch(
+                $keyword['model'],
+                $messageText ?? '',
+                $lineUserId
+            );
+        }
 
         return [
             'success' => true,

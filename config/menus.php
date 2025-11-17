@@ -241,6 +241,8 @@ return [
                 ['label' => '📊 LINE Analytics', 'route' => 'admin.line-oa.analytics'],
                 ['label' => 'AI Chat Bot', 'route' => 'admin.line-bot.ai.index'],
                 ['label' => '🤖 Hybrid Bot Keywords', 'route' => 'admin.line-bot.keywords.index', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500'],
+                ['label' => '📊 Activity Logs', 'route' => 'admin.line-bot.keywords.activity.index'],
+                ['label' => '⭐ Performance Dashboard', 'route' => 'admin.line-bot.keywords.performance.index'],
                 ['label' => 'Broadcast', 'route' => 'admin.line-bot.broadcast.index'],
                 ['label' => 'Avatar', 'route' => 'admin.line-bot.avatars.index'],
                 ['label' => 'Chat Widget', 'route' => 'admin.line-bot.chat-widget.index'],
