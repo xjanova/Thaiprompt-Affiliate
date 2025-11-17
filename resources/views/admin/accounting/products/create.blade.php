@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'เพิ่มสินค้าและบริการ')
 
@@ -8,12 +8,12 @@
     <div class="flex justify-end mb-6" x-data="{ open: false }">
         <div class="relative">
             <button @click="open = !open"
-                    class="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border-2 border-emerald-200 dark:border-emerald-700 hover:border-emerald-400 dark:hover:border-emerald-500 transition-all shadow-lg">
+                    class="flex items-center gap-2 px-4 py-2 glass-fusion dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border-2 border-emerald-200 dark:border-emerald-700 hover:border-emerald-400 dark:hover:border-emerald-500 transition-all shadow-lg">
                 <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
                 </svg>
-                <span class="font-medium text-gray-700 dark:text-gray-300" data-translate>ภาษา</span>
-                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span class="font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300" data-translate>ภาษา</span>
+                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400 dark:text-gray-400" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
             </button>
@@ -26,22 +26,22 @@
                  x-transition:leave="transition ease-in duration-150"
                  x-transition:leave-start="opacity-100 scale-100"
                  x-transition:leave-end="opacity-0 scale-95"
-                 class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border-2 border-emerald-100 dark:border-emerald-900 overflow-hidden z-50">
+                 class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-gray-800 rounded-xl shadow-2xl border-2 border-emerald-100 dark:border-emerald-900 overflow-hidden z-50" border border-white/20 dark:border-white/10>
                 <button onclick="switchLanguage('th')" class="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 flex items-center gap-3 transition-colors border-b border-gray-100 dark:border-gray-700">
                     <span class="text-2xl">🇹🇭</span>
-                    <span class="font-medium text-gray-700 dark:text-gray-300">ไทย</span>
+                    <span class="font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">ไทย</span>
                 </button>
                 <button onclick="switchLanguage('en')" class="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 flex items-center gap-3 transition-colors border-b border-gray-100 dark:border-gray-700">
                     <span class="text-2xl">🇬🇧</span>
-                    <span class="font-medium text-gray-700 dark:text-gray-300">English</span>
+                    <span class="font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">English</span>
                 </button>
                 <button onclick="switchLanguage('zh')" class="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 flex items-center gap-3 transition-colors border-b border-gray-100 dark:border-gray-700">
                     <span class="text-2xl">🇨🇳</span>
-                    <span class="font-medium text-gray-700 dark:text-gray-300">中文</span>
+                    <span class="font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">中文</span>
                 </button>
                 <button onclick="switchLanguage('ja')" class="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 flex items-center gap-3 transition-colors">
                     <span class="text-2xl">🇯🇵</span>
-                    <span class="font-medium text-gray-700 dark:text-gray-300">日本語</span>
+                    <span class="font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">日本語</span>
                 </button>
             </div>
         </div>
@@ -49,13 +49,13 @@
 
     <!-- Header -->
     <div class="mb-8 relative overflow-hidden bg-gradient-to-r from-emerald-500 via-teal-600 to-cyan-600 rounded-3xl shadow-2xl p-8">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 glass-fusion rounded-full blur-3xl" border border-white/20 dark:border-white/10></div>
         <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-40 h-40 bg-teal-400/10 rounded-full blur-3xl"></div>
 
         <div class="relative flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <a href="{{ route('admin.accounting.products.index') }}"
-                   class="p-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl transition-all group">
+                   class="p-3 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl transition-all group">
                     <svg class="w-6 h-6 text-white group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
@@ -77,7 +77,7 @@
     <form action="{{ route('admin.accounting.products.store') }}" method="POST" class="max-w-5xl mx-auto">
         @csrf
 
-        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl p-8 space-y-8 border-2 border-emerald-100 dark:border-emerald-900">
+        <div class="glass-fusion dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-2xl p-8 space-y-8 border-2 border-emerald-100 dark:border-emerald-900" border border-white/20 dark:border-white/10>
             <!-- Type Selection -->
             <div>
                 <label class="block text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -88,7 +88,7 @@
                     <span class="text-red-500">*</span>
                 </label>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label class="relative flex items-center p-6 border-3 rounded-2xl cursor-pointer transition-all hover:shadow-xl {{ old('type', 'goods') === 'goods' ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/40 dark:to-blue-800/40 shadow-lg' : 'border-gray-300 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700' }}">
+                    <label class="relative flex items-center p-6 border-3 rounded-2xl cursor-pointer transition-all hover:shadow-xl {{ old('type', 'goods') === 'goods' ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/40 dark:to-blue-800/40 shadow-lg' : 'border-gray-300 dark:border-gray-600 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700' }}">
                         <input type="radio" name="type" value="goods" {{ old('type', 'goods') === 'goods' ? 'checked' : '' }}
                                class="w-5 h-5 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
                         <div class="ml-4 flex items-center gap-3">
@@ -108,7 +108,7 @@
                         @endif
                     </label>
 
-                    <label class="relative flex items-center p-6 border-3 rounded-2xl cursor-pointer transition-all hover:shadow-xl {{ old('type') === 'service' ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/40 dark:to-purple-800/40 shadow-lg' : 'border-gray-300 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-700' }}">
+                    <label class="relative flex items-center p-6 border-3 rounded-2xl cursor-pointer transition-all hover:shadow-xl {{ old('type') === 'service' ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/40 dark:to-purple-800/40 shadow-lg' : 'border-gray-300 dark:border-gray-600 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-700' }}">
                         <input type="radio" name="type" value="service" {{ old('type') === 'service' ? 'checked' : '' }}
                                class="w-5 h-5 text-purple-600 focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:border-gray-600">
                         <div class="ml-4 flex items-center gap-3">
@@ -156,7 +156,7 @@
                             </svg>
                         </div>
                         <input type="text" name="code" value="{{ old('code') }}" required
-                               class="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white transition-all text-lg"
+                               class="w-full pl-12 pr-4 py-3.5 glass-fusion dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white transition-all text-lg"
                                placeholder="PRD-001">
                     </div>
                     @error('code')
@@ -185,7 +185,7 @@
                             </svg>
                         </div>
                         <input type="text" name="name" value="{{ old('name') }}" required
-                               class="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white transition-all text-lg"
+                               class="w-full pl-12 pr-4 py-3.5 glass-fusion dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white transition-all text-lg"
                                placeholder="ชื่อสินค้า/บริการ">
                     </div>
                     @error('name')
@@ -214,7 +214,7 @@
                         </svg>
                     </div>
                     <textarea name="description" rows="4"
-                              class="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white transition-all text-base resize-none"
+                              class="w-full pl-12 pr-4 py-3.5 glass-fusion dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white transition-all text-base resize-none"
                               placeholder="รายละเอียดสินค้า/บริการ">{{ old('description') }}</textarea>
                 </div>
                 @error('description')
@@ -240,10 +240,10 @@
                     </label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <span class="text-gray-500 dark:text-gray-400 font-bold text-lg">฿</span>
+                            <span class="text-gray-500 dark:text-gray-400 dark:text-gray-400 font-bold text-lg">฿</span>
                         </div>
                         <input type="number" name="sale_price" value="{{ old('sale_price') }}" step="0.01" min="0" required
-                               class="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white transition-all text-lg font-semibold"
+                               class="w-full pl-12 pr-4 py-3.5 glass-fusion dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white transition-all text-lg font-semibold"
                                placeholder="0.00">
                     </div>
                     @error('sale_price')
@@ -266,10 +266,10 @@
                     </label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <span class="text-gray-500 dark:text-gray-400 font-bold text-lg">฿</span>
+                            <span class="text-gray-500 dark:text-gray-400 dark:text-gray-400 font-bold text-lg">฿</span>
                         </div>
                         <input type="number" name="cost_price" value="{{ old('cost_price') }}" step="0.01" min="0"
-                               class="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white transition-all text-lg font-semibold"
+                               class="w-full pl-12 pr-4 py-3.5 glass-fusion dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:text-white transition-all text-lg font-semibold"
                                placeholder="0.00">
                     </div>
                     @error('cost_price')
@@ -287,7 +287,7 @@
             <div class="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl p-6 border-2 border-emerald-200 dark:border-emerald-800">
                 <label class="flex items-center cursor-pointer group">
                     <input type="checkbox" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}
-                           class="w-6 h-6 rounded-lg border-2 border-gray-300 text-emerald-600 focus:ring-2 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 transition-all">
+                           class="w-6 h-6 rounded-xl border-2 border-gray-300 dark:border-gray-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 transition-all">
                     <div class="ml-4">
                         <span class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -295,15 +295,15 @@
                             </svg>
                             <span data-translate>เปิดใช้งานสินค้า/บริการนี้</span>
                         </span>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" data-translate>สินค้า/บริการจะปรากฏในระบบและสามารถใช้งานได้</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1" data-translate>สินค้า/บริการจะปรากฏในระบบและสามารถใช้งานได้</p>
                     </div>
                 </label>
             </div>
 
             <!-- Action Buttons -->
-            <div class="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t-2 border-gray-200 dark:border-gray-700">
+            <div class="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t-2 border-gray-200 dark:border-gray-700 dark:border-gray-700">
                 <a href="{{ route('admin.accounting.products.index') }}"
-                   class="px-8 py-4 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-all font-medium text-lg flex items-center justify-center gap-2 group">
+                   class="px-8 py-4 glass-fusion dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-600 transition-all font-medium text-lg flex items-center justify-center gap-2 group">
                     <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>

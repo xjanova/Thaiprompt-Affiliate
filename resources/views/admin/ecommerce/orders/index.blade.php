@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการคำสั่งซื้อ')
 
@@ -17,17 +17,17 @@
             </button>
 
             <div x-show="open" @click.away="open = false" x-transition
-                 class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden z-50">
-                <a href="#" @click.prevent="language = 'th'" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                 class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 dark:border-slate-700 overflow-hidden z-50" border border-white/20 dark:border-white/10>
+                <a href="#" @click.prevent="language = 'th'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                     <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
                 </a>
-                <a href="#" @click.prevent="language = 'en'" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                <a href="#" @click.prevent="language = 'en'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                     <span class="mr-2">🇬🇧</span> English
                 </a>
-                <a href="#" @click.prevent="language = 'zh'" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                <a href="#" @click.prevent="language = 'zh'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                     <span class="mr-2">🇨🇳</span> 中文
                 </a>
-                <a href="#" @click.prevent="language = 'ja'" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                <a href="#" @click.prevent="language = 'ja'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                     <span class="mr-2">🇯🇵</span> 日本語
                 </a>
             </div>
@@ -35,10 +35,10 @@
     </div>
 
     <!-- Filters -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="ค้นหาเลขที่คำสั่งซื้อ..." data-translate-placeholder="ค้นหาเลขที่คำสั่งซื้อ..." class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
-            <select name="status" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="ค้นหาเลขที่คำสั่งซื้อ..." data-translate-placeholder="ค้นหาเลขที่คำสั่งซื้อ..." class="rounded-xl border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+            <select name="status" class="rounded-xl border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
                 <option value="" data-translate>ทุกสถานะ</option>
                 <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }} data-translate>รอดำเนินการ</option>
                 <option value="processing" {{ request('status') == 'processing' ? 'selected' : '' }} data-translate>กำลังจัดเตรียม</option>
@@ -46,37 +46,37 @@
                 <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }} data-translate>เสร็จสิ้น</option>
                 <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }} data-translate>ยกเลิก</option>
             </select>
-            <select name="payment_status" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+            <select name="payment_status" class="rounded-xl border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
                 <option value="" data-translate>ทุกสถานะการชำระเงิน</option>
                 <option value="pending" {{ request('payment_status') == 'pending' ? 'selected' : '' }} data-translate>รอชำระเงิน</option>
                 <option value="paid" {{ request('payment_status') == 'paid' ? 'selected' : '' }} data-translate>ชำระแล้ว</option>
                 <option value="failed" {{ request('payment_status') == 'failed' ? 'selected' : '' }} data-translate>ชำระไม่สำเร็จ</option>
             </select>
-            <button type="submit" class="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700">
+            <button type="submit" class="bg-orange-600 text-white px-6 py-2 rounded-xl hover:bg-orange-700">
                 <span data-translate>ค้นหา</span>
             </button>
         </form>
     </div>
 
     <!-- Orders Table -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden">
+    <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden" border border-white/20 dark:border-white/10>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-slate-700">
+                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>เลขที่คำสั่งซื้อ</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>ลูกค้า</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>จำนวน</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>ยอดรวม</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>สถานะ</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>ชำระเงิน</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>วันที่</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>การกระทำ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>เลขที่คำสั่งซื้อ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>ลูกค้า</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>จำนวน</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>ยอดรวม</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>สถานะ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>ชำระเงิน</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>วันที่</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>การกระทำ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody class="glass-fusion dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($orders as $order)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700">
+                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="text-sm font-medium text-gray-900 dark:text-white">#{{ $order->order_number }}</span>
                             </td>
@@ -88,9 +88,9 @@
                                         <span data-translate>ไม่ระบุ</span>
                                     @endif
                                 </div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $order->user->email ?? '' }}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $order->user->email ?? '' }}</div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                 {{ $order->items->sum('quantity') }} <span data-translate>รายการ</span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
@@ -113,7 +113,7 @@
                                         'cancelled' => 'ยกเลิก',
                                     ];
                                 @endphp
-                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusColors[$order->status] ?? 'bg-gray-100 text-gray-800' }}" data-translate="{{ $statusLabels[$order->status] ?? $order->status }}">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusColors[$order->status] ?? 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white' }}" data-translate="{{ $statusLabels[$order->status] ?? $order->status }}">
                                     {{ $statusLabels[$order->status] ?? $order->status }}
                                 </span>
                             </td>
@@ -123,7 +123,7 @@
                                         'pending' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
                                         'paid' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
                                         'failed' => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-                                        'refunded' => 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
+                                        'refunded' => 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white dark:bg-gray-900 dark:text-gray-200',
                                     ];
                                     $paymentLabels = [
                                         'pending' => 'รอชำระเงิน',
@@ -132,11 +132,11 @@
                                         'refunded' => 'คืนเงินแล้ว',
                                     ];
                                 @endphp
-                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $paymentColors[$order->payment_status] ?? 'bg-gray-100 text-gray-800' }}" data-translate="{{ $paymentLabels[$order->payment_status] ?? $order->payment_status }}">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $paymentColors[$order->payment_status] ?? 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white' }}" data-translate="{{ $paymentLabels[$order->payment_status] ?? $order->payment_status }}">
                                     {{ $paymentLabels[$order->payment_status] ?? $order->payment_status }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                 {{ $order->created_at->format('d/m/Y H:i') }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -147,7 +147,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="8" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                 <span data-translate>ไม่พบคำสั่งซื้อ</span>
                             </td>
                         </tr>
@@ -157,7 +157,7 @@
         </div>
 
         <!-- Pagination -->
-        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 dark:border-gray-700">
             {{ $orders->links() }}
         </div>
     </div>

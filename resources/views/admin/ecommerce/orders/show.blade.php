@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายละเอียดคำสั่งซื้อ')
 
@@ -18,17 +18,17 @@
                 </button>
 
                 <div x-show="open" @click.away="open = false" x-transition
-                     class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden z-50">
-                    <a href="#" @click.prevent="language = 'th'" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                     class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 dark:border-slate-700 overflow-hidden z-50" border border-white/20 dark:border-white/10>
+                    <a href="#" @click.prevent="language = 'th'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                         <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
                     </a>
-                    <a href="#" @click.prevent="language = 'en'" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                    <a href="#" @click.prevent="language = 'en'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                         <span class="mr-2">🇬🇧</span> English
                     </a>
-                    <a href="#" @click.prevent="language = 'zh'" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                    <a href="#" @click.prevent="language = 'zh'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                         <span class="mr-2">🇨🇳</span> 中文
                     </a>
-                    <a href="#" @click.prevent="language = 'ja'" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                    <a href="#" @click.prevent="language = 'ja'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                         <span class="mr-2">🇯🇵</span> 日本語
                     </a>
                 </div>
@@ -42,7 +42,7 @@
 
     <!-- Order Info -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <h3 class="font-semibold text-gray-900 dark:text-white mb-4" data-translate>ข้อมูลลูกค้า</h3>
             <div class="space-y-2 text-sm">
                 <p><span class="font-semibold" data-translate>ชื่อ:</span> {!! $order->user->name ?? '<span data-translate>ไม่ระบุ</span>' !!}</p>
@@ -51,7 +51,7 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <h3 class="font-semibold text-gray-900 dark:text-white mb-4" data-translate>สถานะ</h3>
             <div class="space-y-2 text-sm">
                 <p><span class="font-semibold" data-translate>สถานะคำสั่งซื้อ:</span> {{ $order->status }}</p>
@@ -60,7 +60,7 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <h3 class="font-semibold text-gray-900 dark:text-white mb-4" data-translate>วันที่</h3>
             <div class="space-y-2 text-sm">
                 <p><span class="font-semibold" data-translate>สั่งซื้อเมื่อ:</span> {{ $order->created_at->format('d/m/Y H:i') }}</p>
@@ -75,29 +75,29 @@
     </div>
 
     <!-- Order Items -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <h3 class="font-semibold text-gray-900 dark:text-white mb-4" data-translate>รายการสินค้า</h3>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-slate-700">
+                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>สินค้า</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>ราคา</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>จำนวน</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" data-translate>รวม</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>สินค้า</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>ราคา</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>จำนวน</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>รวม</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody class="glass-fusion dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
                     @foreach($order->items as $item)
                         <tr>
                             <td class="px-6 py-4">
                                 <div class="text-sm font-medium text-gray-900 dark:text-white">{!! $item->product->name ?? '<span data-translate>ไม่ระบุ</span>' !!}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">SKU: {{ $item->product->sku ?? 'N/A' }}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">SKU: {{ $item->product->sku ?? 'N/A' }}</div>
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                 ฿{{ number_format($item->price, 2) }}
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                 {{ $item->quantity }}
                             </td>
                             <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
@@ -106,7 +106,7 @@
                         </tr>
                     @endforeach
                 </tbody>
-                <tfoot class="bg-gray-50 dark:bg-slate-700">
+                <tfoot class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700">
                     <tr>
                         <td colspan="3" class="px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-white" data-translate>ยอดรวม:</td>
                         <td class="px-6 py-4 text-sm font-bold text-gray-900 dark:text-white">฿{{ number_format($order->total_amount, 2) }}</td>
