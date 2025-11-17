@@ -7,8 +7,8 @@
     "file": "assets/charts-BR_H7_9u.js",
     "name": "charts"
   },
-  "_crypto-ug04Ifqu.js": {
-    "file": "assets/crypto-ug04Ifqu.js",
+  "_crypto-Cy2q59CV.js": {
+    "file": "assets/crypto-Cy2q59CV.js",
     "name": "crypto"
   },
   "_threejs-CuOWkSyT.js": {
@@ -16,7 +16,7 @@
     "name": "threejs"
   },
   "resources/css/app.css": {
-    "file": "assets/app-C8Kmm3qF.css",
+    "file": "assets/app-B3JdbOrx.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -27,15 +27,30 @@
     "isEntry": true
   },
   "resources/js/crypto/app.js": {
-    "file": "assets/app-2KVKZrG1.js",
+    "file": "assets/app-CkfBqTdi.js",
     "name": "app",
     "src": "resources/js/crypto/app.js",
     "isEntry": true,
     "imports": [
-      "_crypto-ug04Ifqu.js",
+      "_crypto-Cy2q59CV.js",
       "_charts-BR_H7_9u.js",
       "_animations-CH_iu5NA.js"
     ]
+  },
+  "resources/js/echo-setup.js": {
+    "file": "assets/echo-setup-D0pZTY9c.js",
+    "name": "echo-setup",
+    "src": "resources/js/echo-setup.js",
+    "isEntry": true,
+    "imports": [
+      "_crypto-Cy2q59CV.js"
+    ]
+  },
+  "resources/js/service-worker-register.js": {
+    "file": "assets/service-worker-register-D9vu4f_3.js",
+    "name": "service-worker-register",
+    "src": "resources/js/service-worker-register.js",
+    "isEntry": true
   },
   "resources/js/wealth-guide-pro.js": {
     "file": "assets/wealth-guide-pro-CUCQCyQO.js",
