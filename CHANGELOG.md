@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.57.0] - 2025-11-17
+
+### ✨ Features
+- feat: make background effects & footer logo fully functional (6d8fab0d)
+- feat: add background effects controls and footer logo to theme settings (91d863b6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1295 from xjanova/claude/dashboard-color-theme-01WrWZDEhywL1zQkJKkpjgDo (426e6ae8)
+
 ## [v3.56.2] - 2025-11-17
 
 ### ✨ Features
