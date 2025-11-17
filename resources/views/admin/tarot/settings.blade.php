@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ตั้งค่าระบบทาโร่ต์')
 
@@ -12,7 +12,7 @@
     </div>
     @endif
 
-    <form action="{{ route('admin.tarot.settings.update') }}" method="POST" class="bg-white rounded-lg shadow p-6">
+    <form action="{{ route('admin.tarot.settings.update') }}" method="POST" class="glass-fusion rounded-xl shadow p-6">
         @csrf
         @method('PUT')
 
@@ -40,11 +40,11 @@
             <h3 class="text-lg font-bold mb-4">การตั้งค่าทั่วไป</h3>
             <div class="mb-4">
                 <label class="block text-sm font-medium mb-2">จำนวนวันที่เก็บบันทึก</label>
-                <input type="number" name="save_readings_days" value="{{ $settings['save_readings_days'] ?? 90 }}" class="w-full rounded-lg border-gray-300">
+                <input type="number" name="save_readings_days" value="{{ $settings['save_readings_days'] ?? 90 }}" class="w-full rounded-xl border-gray-300 dark:border-gray-600">
             </div>
             <div class="mb-4">
                 <label class="block text-sm font-medium mb-2">ความเร็วอนิเมชั่น</label>
-                <select name="animation_speed" class="w-full rounded-lg border-gray-300">
+                <select name="animation_speed" class="w-full rounded-xl border-gray-300 dark:border-gray-600">
                     <option value="slow" {{ ($settings['animation_speed'] ?? 'medium') == 'slow' ? 'selected' : '' }}>ช้า</option>
                     <option value="medium" {{ ($settings['animation_speed'] ?? 'medium') == 'medium' ? 'selected' : '' }}>ปานกลาง</option>
                     <option value="fast" {{ ($settings['animation_speed'] ?? 'medium') == 'fast' ? 'selected' : '' }}>เร็ว</option>
@@ -52,7 +52,7 @@
             </div>
         </div>
 
-        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold">
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold">
             บันทึกการตั้งค่า
         </button>
     </form>
