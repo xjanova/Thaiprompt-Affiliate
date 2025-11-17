@@ -246,6 +246,7 @@ return [
                 ['label' => '💡 Keyword Suggestions', 'route' => 'admin.line-bot.keywords.suggestions.index'],
                 ['label' => '🧪 A/B Testing', 'route' => 'admin.line-bot.keywords.ab-tests.index'],
                 ['label' => '😊 Sentiment Analysis', 'route' => 'admin.line-bot.keywords.sentiment-analysis.index'],
+                ['label' => '🧠 NLP Analysis', 'route' => 'admin.line-bot.keywords.nlp-analysis.index', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-cyan-500 to-blue-500'],
                 ['label' => 'Broadcast', 'route' => 'admin.line-bot.broadcast.index'],
                 ['label' => 'Avatar', 'route' => 'admin.line-bot.avatars.index'],
                 ['label' => 'Chat Widget', 'route' => 'admin.line-bot.chat-widget.index'],
