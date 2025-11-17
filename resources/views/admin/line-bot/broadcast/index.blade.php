@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Broadcast Messages')
 
@@ -11,7 +11,7 @@
                 <p class="text-emerald-100">Send messages to multiple users at once</p>
             </div>
             <a href="{{ route('admin.line-bot.broadcast.create') }}"
-               class="px-6 py-3 bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-xl hover:bg-white/30 transition">
+               class="px-6 py-3 glass-fusion backdrop-blur-md border border-white/30 text-white rounded-xl hover:glass-fusion transition">
                 <i class="fas fa-bullhorn mr-2"></i>New Broadcast
             </a>
         </div>
@@ -25,7 +25,7 @@
 
     <div class="space-y-4">
         @forelse($broadcasts as $broadcast)
-            <div class="bg-white rounded-2xl shadow-lg border p-6">
+            <div class="glass-fusion rounded-2xl shadow-lg border p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-start justify-between">
                     <div class="flex-1">
                         <div class="flex items-center gap-3 mb-2">
@@ -34,15 +34,15 @@
                                 @if($broadcast->status === 'completed') bg-green-100 text-green-800
                                 @elseif($broadcast->status === 'sending') bg-blue-100 text-blue-800
                                 @elseif($broadcast->status === 'scheduled') bg-yellow-100 text-yellow-800
-                                @else bg-gray-100 text-gray-800
+                                @else bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white
                                 @endif">
                                 {{ strtoupper($broadcast->status) }}
                             </span>
                         </div>
 
-                        <p class="text-sm text-gray-600 mb-3">{{ Str::limit($broadcast->message, 150) }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ Str::limit($broadcast->message, 150) }}</p>
 
-                        <div class="flex items-center gap-4 text-sm text-gray-500">
+                        <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                             <span><i class="fas fa-users mr-1"></i>Target: {{ ucfirst($broadcast->target_type) }}</span>
                             @if($broadcast->scheduled_at)
                                 <span><i class="fas fa-clock mr-1"></i>{{ $broadcast->scheduled_at->format('M d, Y H:i') }}</span>
@@ -58,25 +58,25 @@
                             <form method="POST" action="{{ route('admin.line-bot.broadcast.send', $broadcast->id) }}" class="inline">
                                 @csrf
                                 <button type="submit" onclick="return confirm('Send this broadcast now?')"
-                                        class="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-sm font-semibold">
+                                        class="px-4 py-2 bg-green-100 text-green-700 rounded-xl hover:bg-green-200 transition text-sm font-semibold">
                                     <i class="fas fa-paper-plane mr-1"></i>Send
                                 </button>
                             </form>
                         @endif
                         <a href="{{ route('admin.line-bot.broadcast.show', $broadcast->id) }}"
-                           class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm font-semibold">
+                           class="px-4 py-2 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 transition text-sm font-semibold">
                             <i class="fas fa-eye mr-1"></i>View
                         </a>
                     </div>
                 </div>
             </div>
         @empty
-            <div class="bg-white rounded-2xl shadow-lg p-12 text-center">
+            <div class="glass-fusion rounded-2xl shadow-lg p-12 text-center" border border-white/20 dark:border-white/10>
                 <div class="w-24 h-24 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
                     <i class="fas fa-bullhorn text-emerald-500 text-4xl"></i>
                 </div>
                 <h3 class="text-2xl font-bold text-gray-900 mb-2">No Broadcasts Yet</h3>
-                <p class="text-gray-600 mb-6">Create your first broadcast message</p>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">Create your first broadcast message</p>
                 <a href="{{ route('admin.line-bot.broadcast.create') }}"
                    class="inline-block px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl">
                     <i class="fas fa-bullhorn mr-2"></i>Create Broadcast
