@@ -6,8 +6,8 @@
 <div class="space-y-6">
     <!-- Hero Header with Gradient -->
     <div class="bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 dark:from-emerald-800 dark:via-green-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-64 h-64 glass-fusion opacity-5 rounded-full -mr-32 -mt-32" border border-white/20 dark:border-white/10></div>
-        <div class="absolute bottom-0 left-0 w-96 h-96 glass-fusion opacity-5 rounded-full -ml-48 -mb-48" border border-white/20 dark:border-white/10></div>
+        <div class="absolute top-0 right-0 w-64 h-64 glass-fusion opacity-5 rounded-full -mr-32 -mt-32"</div>
+        <div class="absolute bottom-0 left-0 w-96 h-96 glass-fusion opacity-5 rounded-full -ml-48 -mb-48"</div>
         <div class="relative z-10">
             <div class="flex items-center justify-between flex-wrap gap-4">
                 <div>
@@ -43,7 +43,7 @@
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-2">
                     <p class="text-sm font-medium opacity-90">เครือข่ายทั้งหมด</p>
-                    <div class="glass-fusion p-2 rounded-xl" border border-white/20 dark:border-white/10>
+                    <div class="glass-fusion p-2 rounded-xl"
                         <i class="fas fa-network-wired text-xl"></i>
                     </div>
                 </div>
@@ -63,7 +63,7 @@
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-2">
                     <p class="text-sm font-medium opacity-90">สมาชิก Active</p>
-                    <div class="glass-fusion p-2 rounded-xl" border border-white/20 dark:border-white/10>
+                    <div class="glass-fusion p-2 rounded-xl"
                         <i class="fas fa-check-circle text-xl"></i>
                     </div>
                 </div>
@@ -83,7 +83,7 @@
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-2">
                     <p class="text-sm font-medium opacity-90">Point Value รวม</p>
-                    <div class="glass-fusion p-2 rounded-xl" border border-white/20 dark:border-white/10>
+                    <div class="glass-fusion p-2 rounded-xl"
                         <i class="fas fa-gem text-xl"></i>
                     </div>
                 </div>
@@ -103,7 +103,7 @@
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-2">
                     <p class="text-sm font-medium opacity-90">รายได้รวม</p>
-                    <div class="glass-fusion p-2 rounded-xl" border border-white/20 dark:border-white/10>
+                    <div class="glass-fusion p-2 rounded-xl"
                         <i class="fas fa-money-bill-wave text-xl"></i>
                     </div>
                 </div>
@@ -118,10 +118,10 @@
 
     <!-- Commission Status Overview -->
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-l-4 border-yellow-500 transform hover:shadow-2xl transition-all duration-300" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-l-4 border-yellow-500 transform hover:shadow-2xl transition-all duration-300">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-1">รออนุมัติ</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">รออนุมัติ</p>
                     <h3 class="text-3xl font-bold text-gray-900 dark:text-white" id="pendingCount">0</h3>
                     <p class="text-lg font-semibold text-yellow-600 dark:text-yellow-400 mt-2" id="pendingAmount">฿0</p>
                 </div>
@@ -131,10 +131,10 @@
             </div>
         </div>
 
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-l-4 border-green-500 transform hover:shadow-2xl transition-all duration-300" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-l-4 border-green-500 transform hover:shadow-2xl transition-all duration-300">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-1">อนุมัติแล้ว</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">อนุมัติแล้ว</p>
                     <h3 class="text-3xl font-bold text-gray-900 dark:text-white" id="approvedCount">0</h3>
                     <p class="text-lg font-semibold text-green-600 dark:text-green-400 mt-2" id="approvedAmount">฿0</p>
                 </div>
@@ -144,10 +144,10 @@
             </div>
         </div>
 
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-l-4 border-blue-500 transform hover:shadow-2xl transition-all duration-300" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-l-4 border-blue-500 transform hover:shadow-2xl transition-all duration-300">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-1">จ่ายแล้ว</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">จ่ายแล้ว</p>
                     <h3 class="text-3xl font-bold text-gray-900 dark:text-white" id="paidCount">0</h3>
                     <p class="text-lg font-semibold text-blue-600 dark:text-blue-400 mt-2" id="paidAmount">฿0</p>
                 </div>
@@ -157,10 +157,10 @@
             </div>
         </div>
 
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-l-4 border-purple-500 transform hover:shadow-2xl transition-all duration-300" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-l-4 border-purple-500 transform hover:shadow-2xl transition-all duration-300">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-1">จ่ายเดือนนี้</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">จ่ายเดือนนี้</p>
                     <h3 class="text-3xl font-bold text-gray-900 dark:text-white" id="monthlyPaid">฿0</h3>
                     <p class="text-sm text-purple-600 dark:text-purple-400 mt-2">{{ now()->format('F Y') }}</p>
                 </div>
@@ -174,7 +174,7 @@
     <!-- Analytics Charts -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Member Growth Chart -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
                     <div class="bg-gradient-to-r from-blue-500 to-purple-600 p-2 rounded-xl mr-3">
@@ -194,7 +194,7 @@
         </div>
 
         <!-- Commission Trends -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
                     <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-2 rounded-xl mr-3">
@@ -217,7 +217,7 @@
     <!-- Network Analysis -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Commission by Type -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <div class="bg-gradient-to-r from-purple-500 to-pink-600 p-2 rounded-xl mr-3">
                     <i class="fas fa-chart-pie text-white"></i>
@@ -230,7 +230,7 @@
         </div>
 
         <!-- Level Distribution -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <div class="bg-gradient-to-r from-yellow-500 to-orange-600 p-2 rounded-xl mr-3">
                     <i class="fas fa-layer-group text-white"></i>
@@ -243,7 +243,7 @@
         </div>
 
         <!-- Binary Balance -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <div class="bg-gradient-to-r from-teal-500 to-cyan-600 p-2 rounded-xl mr-3">
                     <i class="fas fa-balance-scale text-white"></i>
@@ -257,7 +257,7 @@
     </div>
 
     <!-- Top Performers -->
-    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700 dark:border-gray-700">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
                 <div class="bg-gradient-to-r from-yellow-500 to-orange-600 p-2 rounded-xl mr-3">
@@ -296,7 +296,7 @@
                         <i class="fas fa-tasks text-2xl text-yellow-600 dark:text-yellow-400"></i>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">รออนุมัติ</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">รออนุมัติ</p>
                         <p class="text-xl font-bold text-gray-900 dark:text-white" id="quickPending">0</p>
                     </div>
                 </div>
@@ -309,7 +309,7 @@
                         <i class="fas fa-users text-2xl text-blue-600 dark:text-blue-400"></i>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">สมาชิก</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">สมาชิก</p>
                         <p class="text-xl font-bold text-gray-900 dark:text-white" id="quickMembers">0</p>
                     </div>
                 </div>
@@ -322,7 +322,7 @@
                         <i class="fas fa-project-diagram text-2xl text-purple-600 dark:text-purple-400"></i>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">เครือข่าย</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">เครือข่าย</p>
                         <p class="text-xl font-bold text-gray-900 dark:text-white">ดูทรี</p>
                     </div>
                 </div>
@@ -335,7 +335,7 @@
                         <i class="fas fa-cog text-2xl text-green-600 dark:text-green-400"></i>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">ตั้งค่า</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">ตั้งค่า</p>
                         <p class="text-xl font-bold text-gray-900 dark:text-white">MLM</p>
                     </div>
                 </div>
@@ -517,7 +517,7 @@ function loadTopPerformers(metric) {
             <div class="text-4xl mb-2"><i class="fas fa-${p.rank === 1 ? 'trophy' : p.rank === 2 ? 'medal' : p.rank === 3 ? 'award' : 'star'} ${p.rank <= 3 ? 'text-white' : 'text-yellow-500 dark:text-yellow-400'}"></i></div>
             <p class="font-bold ${p.rank <= 3 ? 'text-white' : 'text-gray-900 dark:text-white'}">${p.name}</p>
             <p class="text-2xl font-bold ${p.rank <= 3 ? 'text-white' : 'text-gray-900 dark:text-white'} mt-2">${p.value}</p>
-            <p class="text-xs ${p.rank <= 3 ? 'text-white opacity-75' : 'text-gray-600 dark:text-gray-400 dark:text-gray-400'} mt-1">#${p.rank}</p>
+            <p class="text-xs ${p.rank <= 3 ? 'text-white opacity-75' : 'text-gray-600 dark:text-gray-400'} mt-1">#${p.rank}</p>
         </div>
     `).join('');
 }
