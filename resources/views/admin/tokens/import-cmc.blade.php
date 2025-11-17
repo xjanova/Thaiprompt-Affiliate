@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Import Token จาก CoinMarketCap')
 
@@ -6,8 +6,8 @@
 <div class="space-y-6">
     {{-- Header --}}
     <div class="bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white opacity-10 rounded-full"></div>
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
+        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 glass-fusion opacity-10 rounded-full" border border-white/20 dark:border-white/10></div>
         <div class="relative z-10">
             <div class="flex items-center gap-4 mb-2">
                 <div class="text-5xl">🔗</div>
@@ -20,7 +20,7 @@
     </div>
 
     {{-- Import Form --}}
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
             <span>📥</span>
             <span>Import Token ใหม่</span>
@@ -31,7 +31,7 @@
 
             {{-- CMC ID Input --}}
             <div>
-                <label for="cmc_id" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label for="cmc_id" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                     CoinMarketCap ID
                 </label>
                 <div class="relative">
@@ -41,14 +41,14 @@
                         name="cmc_id"
                         value="{{ old('cmc_id') }}"
                         placeholder="เช่น: 1027 (สำหรับ Ethereum)"
-                        class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
                         required
                     >
                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                         <span class="text-gray-400 text-sm">CMC</span>
                     </div>
                 </div>
-                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
                     💡 <strong>วิธีหา CMC ID:</strong> ไปที่ CoinMarketCap → เลือก Token → ดูใน URL (เช่น /currencies/bitcoin/ → ID = 1)
                 </p>
                 @error('cmc_id')
@@ -60,7 +60,7 @@
             <div class="flex items-center gap-4">
                 <button
                     type="submit"
-                    class="px-8 py-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition duration-300"
+                    class="px-8 py-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition duration-300"
                 >
                     <span class="flex items-center gap-2">
                         <span>🚀</span>
@@ -69,7 +69,7 @@
                 </button>
                 <a
                     href="{{ route('admin.tokens.index') }}"
-                    class="px-6 py-3 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg transition"
+                    class="px-6 py-3 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 dark:text-gray-300 font-semibold rounded-xl transition"
                 >
                     ยกเลิก
                 </a>
@@ -109,7 +109,7 @@
 
     {{-- Recently Imported Tokens --}}
     @if($importedTokens && $importedTokens->count() > 0)
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
             <span>📜</span>
             <span>Tokens ที่ Import ล่าสุด</span>
@@ -117,31 +117,31 @@
 
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
-                <thead class="bg-gray-50 dark:bg-slate-700">
+                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
                             Token
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
                             CMC ID
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
                             สถานะ
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
                             Import โดย
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
                             วันที่
                         </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
                             จัดการ
                         </th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                <tbody class="glass-fusion dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                     @foreach($importedTokens as $token)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+                    <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center gap-3">
                                 @if($token->logo)
@@ -155,7 +155,7 @@
                                     <div class="text-sm font-semibold text-gray-900 dark:text-white">
                                         {{ $token->name }}
                                     </div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                         {{ $token->symbol }}
                                     </div>
                                 </div>
@@ -169,7 +169,7 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             @php
                                 $statusColors = [
-                                    'draft' => 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300',
+                                    'draft' => 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-gray-700 text-gray-900 dark:text-white dark:text-gray-300',
                                     'deploying' => 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200',
                                     'deployed' => 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
                                     'verified' => 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200',
@@ -182,10 +182,10 @@
                                 {{ ucfirst($token->status) }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
                             {{ $token->creator->name ?? 'System' }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
                             {{ $token->created_at->format('d/m/Y H:i') }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
