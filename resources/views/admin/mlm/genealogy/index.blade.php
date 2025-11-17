@@ -1,49 +1,72 @@
 @extends('layouts.admin-v3')
 
-@section('title', 'ผังสายงาน MLM - Admin')
+@section('title', 'ผังสายงาน MLM')
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('js/mlm-genealogy-premium.js') }}">
 @endpush
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8">
-    <div class="max-w-7xl mx-auto px-4">
-        <!-- Page Header -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8" border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-4xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-3">
-                        <i class="fas fa-project-diagram text-purple-600 dark:text-purple-400"></i>
-                        ผังสายงาน MLM
-                    </h1>
-                    <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-2 text-lg">
-                        แสดงโครงสร้างสายงาน MLM แบบ Interactive Google Style
-                    </p>
+<div class="space-y-6">
+    {{-- Premium Hero Header with Gradient & Animations --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-800 dark:via-teal-800 dark:to-cyan-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse delay-500"></div>
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-project-diagram text-4xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-4xl font-bold text-white drop-shadow-lg">ผังสายงาน MLM</h1>
+                        <p class="text-teal-100 text-lg mt-1">แสดงโครงสร้างสายงาน MLM แบบ Interactive</p>
+                    </div>
                 </div>
 
-                <div class="flex gap-3">
+                {{-- Quick Actions --}}
+                <div class="flex flex-wrap gap-3">
                     <a href="{{ route('admin.mlm.members.index') }}"
-                       class="px-6 py-3 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xl font-semibold transition-all flex items-center gap-2">
+                       class="glass-fusion hover:bg-white/20 text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg">
                         <i class="fas fa-users"></i>
                         รายชื่อสมาชิก
                     </a>
                     <a href="{{ route('admin.mlm.plans.index') }}"
-                       class="px-6 py-3 bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 text-white rounded-xl font-semibold transition-all flex items-center gap-2">
+                       class="glass-fusion hover:bg-white/20 text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg">
                         <i class="fas fa-chart-bar"></i>
                         จัดการแผน
                     </a>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Member Selector -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 mb-8" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center gap-4">
-                <label class="text-lg font-bold text-gray-900 dark:text-white dark:text-white">
-                    เลือกดูสายงานของ:
+    {{-- Member Selector Card --}}
+    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
+                <i class="fas fa-user-circle text-white text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">เลือกสมาชิกเพื่อดูผังสายงาน</h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400">เลือกสมาชิกที่ต้องการดูโครงสร้างสายงาน</p>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-search mr-1"></i>
+                    สมาชิก
                 </label>
-                <select id="member-selector" class="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                <select id="member-selector"
+                        class="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm">
                     <option value="">-- เลือกสมาชิก --</option>
                     @foreach($members as $member)
                         <option value="{{ $member->member_code }}">
@@ -51,83 +74,160 @@
                         </option>
                     @endforeach
                 </select>
-                <button id="btn-view-genealogy" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold shadow-lg transition-all">
-                    แสดงผัง
+            </div>
+            <div class="flex items-end">
+                <button id="btn-view-genealogy"
+                        class="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-500 dark:to-teal-500 dark:hover:from-emerald-600 dark:hover:to-teal-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex items-center gap-2">
+                    <i class="fas fa-eye"></i>
+                    แสดงผังสายงาน
                 </button>
             </div>
         </div>
+    </div>
 
-        <!-- Genealogy Viewer -->
-        <div id="genealogy-container"></div>
-
-        <!-- Help Section -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-8 mt-8" border border-white/20 dark:border-white/10>
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white dark:text-white mb-6 flex items-center gap-2">
-                <i class="fas fa-lightbulb text-yellow-500"></i>
-                วิธีใช้งาน
-            </h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="p-6 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
-                    <div class="text-4xl mb-3 text-purple-600 dark:text-purple-400">
-                        <i class="fas fa-mouse-pointer"></i>
-                    </div>
-                    <h3 class="font-bold text-gray-900 dark:text-white dark:text-white mb-2">เลื่อนดูผัง</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
-                        คลิกค้างและลากเมาส์เพื่อเลื่อนดูผังสายงาน
-                    </p>
-                </div>
-
-                <div class="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                    <div class="text-4xl mb-3 text-blue-600 dark:text-blue-400">
-                        <i class="fas fa-search-plus"></i>
-                    </div>
-                    <h3 class="font-bold text-gray-900 dark:text-white dark:text-white mb-2">ซูมเข้า-ออก</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
-                        ใช้ scroll wheel หรือปุ่ม +/- ด้านขวาบนเพื่อซูม
-                    </p>
-                </div>
-
-                <div class="p-6 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                    <div class="text-4xl mb-3 text-green-600 dark:text-green-400">
-                        <i class="fas fa-hand-pointer"></i>
-                    </div>
-                    <h3 class="font-bold text-gray-900 dark:text-white dark:text-white mb-2">คลิกดูรายละเอียด</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
-                        คลิกที่การ์ดสมาชิกเพื่อดูข้อมูลเพิ่มเติม
-                    </p>
-                </div>
-
-                <div class="p-6 bg-pink-50 dark:bg-pink-900/20 rounded-xl border border-pink-200 dark:border-pink-800">
-                    <div class="text-4xl mb-3 text-pink-600 dark:text-pink-400">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <h3 class="font-bold text-gray-900 dark:text-white dark:text-white mb-2">ค้นหาสมาชิก</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
-                        ใช้ช่องค้นหาด้านบนเพื่อค้นหาสมาชิกในผัง
-                    </p>
-                </div>
-
-                <div class="p-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800">
-                    <div class="text-4xl mb-3 text-yellow-600 dark:text-yellow-400">
-                        <i class="fas fa-sync-alt"></i>
-                    </div>
-                    <h3 class="font-bold text-gray-900 dark:text-white dark:text-white mb-2">สลับประเภท</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
-                        สลับระหว่างผัง Binary และ Unilevel ได้ตลอดเวลา
-                    </p>
-                </div>
-
-                <div class="p-6 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
-                    <div class="text-4xl mb-3 text-indigo-600 dark:text-indigo-400">
-                        <i class="fas fa-chart-bar"></i>
-                    </div>
-                    <h3 class="font-bold text-gray-900 dark:text-white dark:text-white mb-2">ดูสถิติ</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
-                        สถิติแสดงอยู่ที่มุมล่างซ้าย พร้อม mini-map มุมล่างขวา
-                    </p>
-                </div>
+    {{-- Genealogy Viewer Container --}}
+    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+        <div class="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-sitemap text-emerald-600 dark:text-emerald-400"></i>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">โครงสร้างสายงาน</h3>
             </div>
+        </div>
+        <div id="genealogy-container" class="min-h-[600px] bg-gray-50 dark:bg-gray-900/50"></div>
+    </div>
+
+    {{-- Help Section --}}
+    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
+                <i class="fas fa-lightbulb text-white text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">วิธีใช้งานผังสายงาน</h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400">คู่มือการใช้งานฟีเจอร์ต่างๆ</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {{-- Instruction Card 1 --}}
+            <div class="group bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-6 border-2 border-purple-200 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-500 transition-all transform hover:scale-105 hover:shadow-lg">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <i class="fas fa-mouse-pointer text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">เลื่อนดูผัง</h3>
+                </div>
+                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                    คลิกค้างและลากเมาส์เพื่อเลื่อนดูผังสายงานในทิศทางต่างๆ
+                </p>
+            </div>
+
+            {{-- Instruction Card 2 --}}
+            <div class="group bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-6 border-2 border-blue-200 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all transform hover:scale-105 hover:shadow-lg">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <i class="fas fa-search-plus text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">ซูมเข้า-ออก</h3>
+                </div>
+                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                    ใช้ scroll wheel หรือปุ่ม +/- ด้านขวาบนเพื่อซูมดูรายละเอียด
+                </p>
+            </div>
+
+            {{-- Instruction Card 3 --}}
+            <div class="group bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-6 border-2 border-green-200 dark:border-green-700 hover:border-green-400 dark:hover:border-green-500 transition-all transform hover:scale-105 hover:shadow-lg">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <i class="fas fa-hand-pointer text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">คลิกดูรายละเอียด</h3>
+                </div>
+                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                    คลิกที่การ์ดสมาชิกเพื่อดูข้อมูลเพิ่มเติมและสถิติ
+                </p>
+            </div>
+
+            {{-- Instruction Card 4 --}}
+            <div class="group bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 rounded-xl p-6 border-2 border-pink-200 dark:border-pink-700 hover:border-pink-400 dark:hover:border-pink-500 transition-all transform hover:scale-105 hover:shadow-lg">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <i class="fas fa-search text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">ค้นหาสมาชิก</h3>
+                </div>
+                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                    ใช้ช่องค้นหาด้านบนเพื่อค้นหาสมาชิกในผังได้อย่างรวดเร็ว
+                </p>
+            </div>
+
+            {{-- Instruction Card 5 --}}
+            <div class="group bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 rounded-xl p-6 border-2 border-yellow-200 dark:border-yellow-700 hover:border-yellow-400 dark:hover:border-yellow-500 transition-all transform hover:scale-105 hover:shadow-lg">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <i class="fas fa-sync-alt text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">สลับประเภท</h3>
+                </div>
+                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                    สลับระหว่างผัง Binary และ Unilevel ได้ตลอดเวลา
+                </p>
+            </div>
+
+            {{-- Instruction Card 6 --}}
+            <div class="group bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 rounded-xl p-6 border-2 border-indigo-200 dark:border-indigo-700 hover:border-indigo-400 dark:hover:border-indigo-500 transition-all transform hover:scale-105 hover:shadow-lg">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <i class="fas fa-chart-bar text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">ดูสถิติ</h3>
+                </div>
+                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                    สถิติแสดงอยู่ที่มุมล่างซ้าย พร้อม mini-map มุมล่างขวา
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {{-- Feature Highlights --}}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {{-- Binary System --}}
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-emerald-500 dark:border-emerald-400 transform hover:scale-105 transition-all">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <i class="fas fa-code-branch text-white text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Binary System</h3>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                โครงสร้าง 2 ขา (Left/Right) สำหรับการคำนวณคอมมิชชั่นแบบ Binary
+            </p>
+        </div>
+
+        {{-- Unilevel System --}}
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-teal-500 dark:border-teal-400 transform hover:scale-105 transition-all">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <i class="fas fa-layer-group text-white text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Unilevel System</h3>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                รองรับสูงสุด 10 ระดับสำหรับการคำนวณคอมมิชชั่นแบบ Unilevel
+            </p>
+        </div>
+
+        {{-- Real-time Data --}}
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-cyan-500 dark:border-cyan-400 transform hover:scale-105 transition-all">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <i class="fas fa-bolt text-white text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Real-time Data</h3>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                ข้อมูลอัพเดทแบบเรียลไทม์ แสดงสถานะล่าสุดของสายงาน
+            </p>
         </div>
     </div>
 </div>
