@@ -82,10 +82,8 @@ class LineBotAiSeeder extends Seeder
             'owner_id' => $adminUser->id,
             'provider_id' => $provider->id,
             'model_id' => $model->id,
-            'name' => 'Thaiprompt Affiliate Bot',
+            'name' => '💰 Thaiprompt Affiliate Bot',
             'description' => 'บอทช่วยตอบคำถามเกี่ยวกับระบบ Affiliate Marketing และวิธีการสร้างรายได้',
-            'display_name' => '💰 Affiliate Assistant',
-            'avatar_url' => 'https://via.placeholder.com/200/1DB446/FFFFFF?text=Affiliate+Bot',
             'system_prompt' => <<<'PROMPT'
 คุณเป็น AI Assistant ของระบบ Affiliate Marketing ชื่อ "Affiliate Assistant"
 
@@ -120,10 +118,7 @@ PROMPT,
             ],
             'enable_knowledge_base' => true,
             'enable_web_search' => false,
-            'enable_code_interpreter' => false,
-            'line_oa_channel_id' => env('LINE_MESSAGING_CHANNEL_ID', ''),
-            'line_oa_channel_secret' => env('LINE_CHANNEL_SECRET', ''),
-            'line_oa_access_token' => env('LINE_CHANNEL_ACCESS_TOKEN', ''),
+            'enable_function_calling' => false,
             'is_public' => true,
             'is_rentable' => false,
             'is_active' => true,
@@ -137,10 +132,8 @@ PROMPT,
             'owner_id' => $adminUser->id,
             'provider_id' => $provider->id,
             'model_id' => $model->id,
-            'name' => 'Customer Support Bot',
+            'name' => '💬 Customer Support Bot',
             'description' => 'บอทให้คำแนะนำและช่วยเหลือลูกค้า ตอบคำถามทั่วไป',
-            'display_name' => '💬 Support Helper',
-            'avatar_url' => 'https://via.placeholder.com/200/0066FF/FFFFFF?text=Support+Bot',
             'system_prompt' => <<<'PROMPT'
 คุณเป็น AI Customer Support Assistant ชื่อ "Support Helper"
 
@@ -171,10 +164,7 @@ PROMPT,
             ],
             'enable_knowledge_base' => true,
             'enable_web_search' => false,
-            'enable_code_interpreter' => false,
-            'line_oa_channel_id' => '',
-            'line_oa_channel_secret' => '',
-            'line_oa_access_token' => '',
+            'enable_function_calling' => false,
             'is_public' => true,
             'is_rentable' => true,
             'is_active' => false,
@@ -188,10 +178,8 @@ PROMPT,
             'owner_id' => $adminUser->id,
             'provider_id' => $provider->id,
             'model_id' => $model->id,
-            'name' => 'Sales Assistant Bot',
+            'name' => '🛍️ Sales Assistant Bot',
             'description' => 'บอทช่วยแนะนำสินค้าและตอบคำถามเกี่ยวกับสินค้า',
-            'display_name' => '🛍️ Sales Advisor',
-            'avatar_url' => 'https://via.placeholder.com/200/FF6B35/FFFFFF?text=Sales+Bot',
             'system_prompt' => <<<'PROMPT'
 คุณเป็น AI Sales Assistant ชื่อ "Sales Advisor"
 
@@ -222,10 +210,7 @@ PROMPT,
             ],
             'enable_knowledge_base' => true,
             'enable_web_search' => false,
-            'enable_code_interpreter' => false,
-            'line_oa_channel_id' => '',
-            'line_oa_channel_secret' => '',
-            'line_oa_access_token' => '',
+            'enable_function_calling' => false,
             'is_public' => true,
             'is_rentable' => true,
             'is_active' => false,
@@ -237,14 +222,11 @@ PROMPT,
         $this->command->info('✅ AI Bot Profiles สร้างสำเร็จ! (3 บอท)');
         $this->command->line('');
         $this->command->info('🤖 Bot ที่สร้าง:');
-        $this->command->line('  1. 💰 Affiliate Assistant - ตอบคำถาม Affiliate');
-        $this->command->line('  2. 💬 Support Helper - ช่วยเหลือลูกค้า (พร้อมให้เช่า)');
-        $this->command->line('  3. 🛍️ Sales Advisor - แนะนำสินค้า (พร้อมให้เช่า)');
+        $this->command->line('  1. 💰 Thaiprompt Affiliate Bot - ตอบคำถาม Affiliate (เปิดใช้งาน)');
+        $this->command->line('  2. 💬 Customer Support Bot - ช่วยเหลือลูกค้า (พร้อมให้เช่า)');
+        $this->command->line('  3. 🛍️ Sales Assistant Bot - แนะนำสินค้า (พร้อมให้เช่า)');
         $this->command->line('');
         $this->command->warn('⚠️  หมายเหตุ: บอท 1 เปิดใช้งาน บอท 2-3 อยู่ในสถานะปิด');
-        $this->command->info('   คุณสามารถเปิดใช้งานที่ /admin/line-bot/ai/');
-        $this->command->line('');
-        $this->command->warn('⚠️  สำคัญ: กรุณาตั้งค่า LINE Messaging API credentials:');
-        $this->command->info('   ปรับแต่ง line_oa_channel_id, line_oa_channel_secret, line_oa_access_token');
+        $this->command->info('   คุณสามารถจัดการบอทได้ที่ /admin/ai-bots/');
     }
 }
