@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.56.1] - 2025-11-17
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1293 from xjanova/claude/refactor-affiliate-mlm-01SGSbAt7rwBBW9DPUyQrS28 (2b18e6c7)
+- docs: add comprehensive Affiliate and MLM system analysis report (6d203255)
+
 ## [v3.56.0] - 2025-11-17
 
 ### ✨ Features
