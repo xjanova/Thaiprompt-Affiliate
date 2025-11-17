@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'เพิ่ม Knowledge Base - ' . $bot->name)
 
@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">📚 เพิ่ม Knowledge Base</h4>
-            <p class="text-gray-600 mb-0">สำหรับ Bot: <strong>{{ $bot->name }}</strong></p>
+            <p class="text-gray-600 dark:text-gray-400 mb-0">สำหรับ Bot: <strong>{{ $bot->name }}</strong></p>
         </div>
         <a href="{{ route('admin.knowledge-bases.index', $bot->id) }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> กลับ
@@ -19,7 +19,7 @@
     <div class="row">
         <div class="col-lg-8 mx-auto">
             <div class="card shadow-sm">
-                <div class="card-header bg-white">
+                <div class="card-header glass-fusion" border border-white/20 dark:border-white/10>
                     <h5 class="mb-0">ข้อมูล Knowledge Base</h5>
                 </div>
                 <div class="card-body">

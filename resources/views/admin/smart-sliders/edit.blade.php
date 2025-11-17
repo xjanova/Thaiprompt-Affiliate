@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'แก้ไข: ' . $smartSlider->name)
 
@@ -35,8 +35,8 @@
             <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center gap-4">
                     <a href="{{ route('admin.smart-sliders.show', $smartSlider) }}"
-                       class="p-2 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors">
-                        <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       class="p-2 hover:glass-fusion dark:hover:bg-slate-800 rounded-xl transition-colors">
+                        <svg class="w-6 h-6 text-gray-600 dark:text-gray-400 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
                     </a>
@@ -51,7 +51,7 @@
                                 แก้ไข Slider
                             </h1>
                         </div>
-                        <p class="text-gray-600 dark:text-gray-400 ml-16">{{ $smartSlider->name }}</p>
+                        <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 ml-16">{{ $smartSlider->name }}</p>
                     </div>
                 </div>
                 <div class="flex gap-3">
@@ -76,7 +76,7 @@
                 {{-- Main Editor Area --}}
                 <div class="lg:col-span-2 space-y-6">
                     {{-- Basic Settings --}}
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-8">
+                    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-8" border border-white/20 dark:border-white/10>
                         <div class="flex items-center gap-3 mb-6">
                             <div class="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,32 +89,32 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                                     ชื่อ Slider <span class="text-red-500">*</span>
                                 </label>
                                 <input type="text"
                                        name="name"
                                        value="{{ old('name', $smartSlider->name) }}"
                                        required
-                                       class="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-slate-700 dark:text-white">
+                                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-slate-700 dark:text-white">
                             </div>
 
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                                     คำอธิบาย
                                 </label>
                                 <textarea name="description"
                                           rows="2"
-                                          class="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-slate-700 dark:text-white">{{ old('description', $smartSlider->description) }}</textarea>
+                                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-slate-700 dark:text-white">{{ old('description', $smartSlider->description) }}</textarea>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                                     ประเภท <span class="text-red-500">*</span>
                                 </label>
                                 <select name="type"
                                         required
-                                        class="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-slate-700 dark:text-white">
+                                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-slate-700 dark:text-white">
                                     <option value="simple" {{ old('type', $smartSlider->type) == 'simple' ? 'selected' : '' }}>Simple</option>
                                     <option value="block" {{ old('type', $smartSlider->type) == 'block' ? 'selected' : '' }}>Block</option>
                                     <option value="carousel" {{ old('type', $smartSlider->type) == 'carousel' ? 'selected' : '' }}>Carousel</option>
@@ -123,12 +123,12 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                                     โหมด Responsive <span class="text-red-500">*</span>
                                 </label>
                                 <select name="responsive_mode"
                                         required
-                                        class="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-slate-700 dark:text-white">
+                                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-slate-700 dark:text-white">
                                     <option value="auto" {{ old('responsive_mode', $smartSlider->responsive_mode) == 'auto' ? 'selected' : '' }}>Auto</option>
                                     <option value="fullwidth" {{ old('responsive_mode', $smartSlider->responsive_mode) == 'fullwidth' ? 'selected' : '' }}>Full Width</option>
                                     <option value="boxed" {{ old('responsive_mode', $smartSlider->responsive_mode) == 'boxed' ? 'selected' : '' }}>Boxed</option>
@@ -137,7 +137,7 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                                     ความกว้าง (px) <span class="text-red-500">*</span>
                                 </label>
                                 <input type="number"
@@ -145,11 +145,11 @@
                                        value="{{ old('width', $smartSlider->width) }}"
                                        required
                                        min="100"
-                                       class="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-slate-700 dark:text-white">
+                                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-slate-700 dark:text-white">
                             </div>
 
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                                     ความสูง (px) <span class="text-red-500">*</span>
                                 </label>
                                 <input type="number"
@@ -157,13 +157,13 @@
                                        value="{{ old('height', $smartSlider->height) }}"
                                        required
                                        min="100"
-                                       class="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-slate-700 dark:text-white">
+                                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-purple-500 dark:bg-slate-700 dark:text-white">
                             </div>
                         </div>
                     </div>
 
                     {{-- Slides Management --}}
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-8">
+                    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-8" border border-white/20 dark:border-white/10>
                         <div class="flex items-center justify-between mb-6">
                             <div class="flex items-center gap-3">
                                 <div class="p-2 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl">
@@ -196,7 +196,7 @@
                                         </div>
 
                                         {{-- Thumbnail --}}
-                                        <div class="flex-shrink-0 w-40 h-24 bg-gray-200 dark:bg-slate-700 rounded-lg overflow-hidden">
+                                        <div class="flex-shrink-0 w-40 h-24 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 rounded-xl overflow-hidden">
                                             @if(!empty($slide->background['image']))
                                                 <img src="{{ asset('storage/' . $slide->background['image']) }}"
                                                      alt="{{ $slide->title }}"
@@ -214,7 +214,7 @@
                                                 {{ $slide->title ?? 'สลายด์ที่ ' . ($index + 1) }}
                                             </h3>
                                             @if($slide->description)
-                                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{{ $slide->description }}</p>
+                                                <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-3 line-clamp-2">{{ $slide->description }}</p>
                                             @endif
 
                                             <div class="flex flex-wrap gap-2">
@@ -236,10 +236,10 @@
                                             {{-- Layer Preview --}}
                                             @if($slide->layers->count() > 0)
                                                 <div class="mt-4">
-                                                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Layers:</p>
+                                                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mb-2">Layers:</p>
                                                     <div class="flex flex-wrap gap-2">
                                                         @foreach($slide->layers->sortBy('order') as $layer)
-                                                            <span class="px-2 py-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 text-xs rounded">
+                                                            <span class="px-2 py-1 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 text-gray-600 dark:text-gray-400 dark:text-gray-300 text-xs rounded">
                                                                 @if($layer->type === 'text')
                                                                     📝 {{ Str::limit($layer->content, 20) }}
                                                                 @elseif($layer->type === 'image')
@@ -259,21 +259,21 @@
                                         {{-- Actions --}}
                                         <div class="flex-shrink-0 flex flex-col gap-2">
                                             <button type="button"
-                                                    class="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                                                    class="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors"
                                                     title="แก้ไข">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                                 </svg>
                                             </button>
                                             <button type="button"
-                                                    class="p-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg transition-colors"
+                                                    class="p-2 bg-pink-600 hover:bg-pink-700 text-white rounded-xl transition-colors"
                                                     title="ทำสำเนา">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                                                 </svg>
                                             </button>
                                             <button type="button"
-                                                    class="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                                                    class="p-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors"
                                                     title="ลบ">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -289,7 +289,7 @@
                                 <svg class="w-16 h-16 mx-auto text-purple-300 dark:text-purple-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                                 </svg>
-                                <p class="text-gray-500 dark:text-gray-400">ยังไม่มีสลายด์</p>
+                                <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400">ยังไม่มีสลายด์</p>
                             </div>
                         @endif
 
@@ -304,7 +304,7 @@
                     </div>
 
                     {{-- Animation & Effects --}}
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-8">
+                    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-8" border border-white/20 dark:border-white/10>
                         <div class="flex items-center gap-3 mb-6">
                             <div class="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -319,42 +319,42 @@
                                     class="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl hover:shadow-lg transition-all text-left">
                                 <div class="text-3xl mb-2">⬅️</div>
                                 <div class="font-semibold text-gray-900 dark:text-white">Slide Left</div>
-                                <div class="text-xs text-gray-600 dark:text-gray-400">เลื่อนจากซ้าย</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">เลื่อนจากซ้าย</div>
                             </button>
 
                             <button type="button"
                                     class="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl hover:shadow-lg transition-all text-left">
                                 <div class="text-3xl mb-2">➡️</div>
                                 <div class="font-semibold text-gray-900 dark:text-white">Slide Right</div>
-                                <div class="text-xs text-gray-600 dark:text-gray-400">เลื่อนจากขวา</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">เลื่อนจากขวา</div>
                             </button>
 
                             <button type="button"
                                     class="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl hover:shadow-lg transition-all text-left">
                                 <div class="text-3xl mb-2">⬆️</div>
                                 <div class="font-semibold text-gray-900 dark:text-white">Slide Up</div>
-                                <div class="text-xs text-gray-600 dark:text-gray-400">เลื่อนขึ้น</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">เลื่อนขึ้น</div>
                             </button>
 
                             <button type="button"
                                     class="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl hover:shadow-lg transition-all text-left">
                                 <div class="text-3xl mb-2">🌀</div>
                                 <div class="font-semibold text-gray-900 dark:text-white">Fade</div>
-                                <div class="text-xs text-gray-600 dark:text-gray-400">จางหาย</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">จางหาย</div>
                             </button>
 
                             <button type="button"
                                     class="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl hover:shadow-lg transition-all text-left">
                                 <div class="text-3xl mb-2">🔄</div>
                                 <div class="font-semibold text-gray-900 dark:text-white">Zoom</div>
-                                <div class="text-xs text-gray-600 dark:text-gray-400">ซูมเข้า/ออก</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">ซูมเข้า/ออก</div>
                             </button>
 
                             <button type="button"
                                     class="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl hover:shadow-lg transition-all text-left">
                                 <div class="text-3xl mb-2">💫</div>
                                 <div class="font-semibold text-gray-900 dark:text-white">Ken Burns</div>
-                                <div class="text-xs text-gray-600 dark:text-gray-400">เคลื่อนไหว</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">เคลื่อนไหว</div>
                             </button>
                         </div>
                     </div>
@@ -363,11 +363,11 @@
                 {{-- Sidebar --}}
                 <div class="space-y-6">
                     {{-- Quick Actions --}}
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6">
+                    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">ตัวเลือก</h3>
                         <label class="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl cursor-pointer hover:shadow transition-all">
                             <input type="checkbox" name="is_published" value="1" {{ old('is_published', $smartSlider->is_published) ? 'checked' : '' }} class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
-                            <span class="text-gray-700 dark:text-gray-300 font-medium">เผยแพร่ Slider</span>
+                            <span class="text-gray-700 dark:text-gray-300 dark:text-gray-300 font-medium">เผยแพร่ Slider</span>
                         </label>
                     </div>
 
@@ -375,15 +375,15 @@
                     <div class="bg-gradient-to-br from-purple-500 via-pink-500 to-rose-500 rounded-2xl shadow-2xl p-8 text-white">
                         <h3 class="text-2xl font-bold mb-6">ตัวอย่างการตั้งค่า</h3>
                         <div class="space-y-4">
-                            <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                            <div class="p-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                                 <p class="text-sm text-purple-100 mb-1">ประเภท</p>
                                 <p class="font-semibold capitalize">{{ $smartSlider->type }}</p>
                             </div>
-                            <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                            <div class="p-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                                 <p class="text-sm text-purple-100 mb-1">ขนาด</p>
                                 <p class="font-semibold">{{ $smartSlider->width }} × {{ $smartSlider->height }}px</p>
                             </div>
-                            <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                            <div class="p-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                                 <p class="text-sm text-purple-100 mb-1">จำนวนสลายด์</p>
                                 <p class="font-semibold">{{ $smartSlider->slides->count() }} สลายด์</p>
                             </div>
@@ -432,7 +432,7 @@
                     บันทึกการเปลี่ยนแปลง
                 </button>
                 <a href="{{ route('admin.smart-sliders.show', $smartSlider) }}"
-                   class="px-8 py-4 bg-gray-300 dark:bg-slate-700 hover:bg-gray-400 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 font-bold rounded-xl transition-colors">
+                   class="px-8 py-4 bg-gray-300 dark:bg-slate-700 hover:bg-gray-400 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 dark:text-gray-300 font-bold rounded-xl transition-colors">
                     ยกเลิก
                 </a>
             </div>

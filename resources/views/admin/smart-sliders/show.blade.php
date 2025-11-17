@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $smartSlider->name)
 
@@ -11,8 +11,8 @@
             <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center gap-4">
                     <a href="{{ route('admin.smart-sliders.index') }}"
-                       class="p-2 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors">
-                        <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       class="p-2 hover:glass-fusion dark:hover:bg-slate-800 rounded-xl transition-colors">
+                        <svg class="w-6 h-6 text-gray-600 dark:text-gray-400 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
                     </a>
@@ -28,7 +28,7 @@
                             </h1>
                         </div>
                         @if($smartSlider->description)
-                        <p class="text-gray-600 dark:text-gray-400 ml-16">{{ $smartSlider->description }}</p>
+                        <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 ml-16">{{ $smartSlider->description }}</p>
                         @endif
                     </div>
                 </div>
@@ -64,7 +64,7 @@
                     เผยแพร่แล้ว
                 </span>
                 @else
-                <span class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400 rounded-xl font-semibold">
+                <span class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 dark:text-gray-400 rounded-xl font-semibold">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"></path>
                     </svg>
@@ -82,10 +82,10 @@
 
         {{-- Stats Cards --}}
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-purple-500 transform hover:scale-105 transition-transform">
+            <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-purple-500 transform hover:scale-105 transition-transform" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">สลายด์ทั้งหมด</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 font-medium">สลายด์ทั้งหมด</p>
                         <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ $smartSlider->slides->count() }}</p>
                     </div>
                     <div class="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl flex items-center justify-center">
@@ -96,10 +96,10 @@
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-pink-500 transform hover:scale-105 transition-transform">
+            <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-pink-500 transform hover:scale-105 transition-transform" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Layers</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 font-medium">Layers</p>
                         <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">
                             {{ $smartSlider->slides->sum(function($slide) { return $slide->layers->count(); }) }}
                         </p>
@@ -112,10 +112,10 @@
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-blue-500 transform hover:scale-105 transition-transform">
+            <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-blue-500 transform hover:scale-105 transition-transform" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">การดู</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 font-medium">การดู</p>
                         <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">0</p>
                     </div>
                     <div class="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl flex items-center justify-center">
@@ -127,10 +127,10 @@
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-orange-500 transform hover:scale-105 transition-transform">
+            <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-orange-500 transform hover:scale-105 transition-transform" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">คลิก</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 font-medium">คลิก</p>
                         <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">0</p>
                     </div>
                     <div class="w-12 h-12 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-xl flex items-center justify-center">
@@ -146,13 +146,13 @@
             {{-- Main Content --}}
             <div class="lg:col-span-2 space-y-6">
                 {{-- Slider Preview --}}
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden" border border-white/20 dark:border-white/10>
                     <div class="p-6 bg-gradient-to-r from-purple-500 to-pink-500">
                         <h2 class="text-2xl font-bold text-white">ตัวอย่าง Slider</h2>
                         <p class="text-purple-100 mt-1">{{ $smartSlider->width }}px × {{ $smartSlider->height }}px</p>
                     </div>
-                    <div class="p-8 bg-gray-50 dark:bg-slate-900">
-                        <div class="relative mx-auto bg-white dark:bg-slate-800 rounded-xl shadow-2xl overflow-hidden"
+                    <div class="p-8 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-900">
+                        <div class="relative mx-auto glass-fusion dark:bg-slate-800 rounded-xl shadow-2xl overflow-hidden" border border-white/20 dark:border-white/10
                              style="max-width: {{ $smartSlider->width }}px; aspect-ratio: {{ $smartSlider->width }}/{{ $smartSlider->height }};">
                             @if($smartSlider->slides->count() > 0)
                                 @php $firstSlide = $smartSlider->slides->first(); @endphp
@@ -195,7 +195,7 @@
                                         <svg class="w-24 h-24 mx-auto text-purple-300 dark:text-purple-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                         </svg>
-                                        <p class="text-gray-500 dark:text-gray-400">ยังไม่มีสลายด์</p>
+                                        <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400">ยังไม่มีสลายด์</p>
                                     </div>
                                 </div>
                             @endif
@@ -204,7 +204,7 @@
                 </div>
 
                 {{-- Slides List --}}
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-8">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-8" border border-white/20 dark:border-white/10>
                     <div class="flex items-center justify-between mb-6">
                         <div class="flex items-center gap-3">
                             <div class="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl">
@@ -230,7 +230,7 @@
                                     </div>
 
                                     {{-- Thumbnail --}}
-                                    <div class="flex-shrink-0 w-32 h-20 bg-gray-200 dark:bg-slate-700 rounded-lg overflow-hidden">
+                                    <div class="flex-shrink-0 w-32 h-20 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 rounded-xl overflow-hidden">
                                         @if(!empty($slide->background['image']))
                                             <img src="{{ asset('storage/' . $slide->background['image']) }}"
                                                  alt="{{ $slide->title }}"
@@ -248,14 +248,14 @@
                                             {{ $slide->title ?? 'สลายด์ที่ ' . ($index + 1) }}
                                         </h3>
                                         @if($slide->description)
-                                            <p class="text-sm text-gray-600 dark:text-gray-400 truncate">{{ $slide->description }}</p>
+                                            <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 truncate">{{ $slide->description }}</p>
                                         @endif
                                         <div class="flex items-center gap-3 mt-2">
-                                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                                            <span class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                                 {{ $slide->layers->count() }} layers
                                             </span>
                                             @if($slide->duration)
-                                                <span class="text-xs text-gray-500 dark:text-gray-400">
+                                                <span class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                                     {{ $slide->duration }}ms
                                                 </span>
                                             @endif
@@ -264,7 +264,7 @@
 
                                     {{-- Actions --}}
                                     <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button class="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                                        <button class="p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -280,7 +280,7 @@
                             <svg class="w-16 h-16 mx-auto text-purple-300 dark:text-purple-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                             </svg>
-                            <p class="text-gray-500 dark:text-gray-400 mb-4">ยังไม่มีสลายด์</p>
+                            <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 mb-4">ยังไม่มีสลายด์</p>
                             <a href="{{ route('admin.smart-sliders.edit', $smartSlider) }}"
                                class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-colors">
                                 เริ่มสร้างสลายด์
@@ -296,21 +296,21 @@
                 <div class="bg-gradient-to-br from-purple-500 via-pink-500 to-rose-500 rounded-2xl shadow-2xl p-8 text-white">
                     <h3 class="text-2xl font-bold mb-6">การตั้งค่า</h3>
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                        <div class="flex items-center justify-between p-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                             <span class="font-medium">ประเภท</span>
-                            <span class="px-3 py-1 bg-white/30 rounded-lg font-semibold capitalize">
+                            <span class="px-3 py-1 glass-fusion rounded-xl font-semibold capitalize">
                                 {{ $smartSlider->type }}
                             </span>
                         </div>
-                        <div class="flex items-center justify-between p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                        <div class="flex items-center justify-between p-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                             <span class="font-medium">ขนาด</span>
-                            <span class="px-3 py-1 bg-white/30 rounded-lg font-semibold">
+                            <span class="px-3 py-1 glass-fusion rounded-xl font-semibold">
                                 {{ $smartSlider->width }} × {{ $smartSlider->height }}
                             </span>
                         </div>
-                        <div class="flex items-center justify-between p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                        <div class="flex items-center justify-between p-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                             <span class="font-medium">Responsive</span>
-                            <span class="px-3 py-1 bg-white/30 rounded-lg font-semibold capitalize">
+                            <span class="px-3 py-1 glass-fusion rounded-xl font-semibold capitalize">
                                 {{ $smartSlider->responsive_mode }}
                             </span>
                         </div>
@@ -318,24 +318,24 @@
 
                     <div class="mt-6 space-y-3">
                         <a href="{{ route('admin.smart-sliders.edit', $smartSlider) }}"
-                           class="block w-full px-6 py-3 bg-white text-purple-600 font-semibold rounded-xl text-center hover:bg-purple-50 transition-colors">
+                           class="block w-full px-6 py-3 glass-fusion text-purple-600 font-semibold rounded-xl text-center hover:bg-purple-50 transition-colors">
                             แก้ไข Slider
                         </a>
                         <a href="{{ route('admin.smart-sliders.export', $smartSlider) }}"
-                           class="block w-full px-6 py-3 bg-white/20 backdrop-blur-sm text-white font-semibold rounded-xl text-center hover:bg-white/30 transition-colors">
+                           class="block w-full px-6 py-3 glass-fusion backdrop-blur-sm text-white font-semibold rounded-xl text-center hover:glass-fusion transition-colors">
                             ส่งออก JSON
                         </a>
                     </div>
                 </div>
 
                 {{-- Quick Actions --}}
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">การดำเนินการ</h3>
                     <div class="space-y-2">
                         <form action="{{ route('admin.smart-sliders.toggle-publish', $smartSlider) }}" method="POST">
                             @csrf
                             <button type="submit"
-                                    class="w-full px-4 py-3 {{ $smartSlider->is_published ? 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' }} rounded-xl font-semibold hover:shadow transition-all text-left">
+                                    class="w-full px-4 py-3 {{ $smartSlider->is_published ? 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' }} rounded-xl font-semibold hover:shadow transition-all text-left">
                                 {{ $smartSlider->is_published ? '🔒 ซ่อน Slider' : '✅ เผยแพร่ Slider' }}
                             </button>
                         </form>
@@ -356,16 +356,16 @@
                 </div>
 
                 {{-- Meta Info --}}
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">ข้อมูล</h3>
                     <div class="space-y-3 text-sm">
-                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400 dark:text-gray-400">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                             </svg>
                             <span>สร้าง: {{ $smartSlider->created_at->format('d/m/Y H:i') }}</span>
                         </div>
-                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400 dark:text-gray-400">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                             </svg>
