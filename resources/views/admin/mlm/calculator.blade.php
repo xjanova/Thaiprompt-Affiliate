@@ -440,7 +440,7 @@ function displayDetailedBreakdown(data) {
 // Load settings on page load
 async function loadSettings() {
     try {
-        const response = await fetch('{{ route("admin.mlm.settings.get-settings") }}');
+        const response = await fetch('{{ route("admin.mlm.settings.get") }}');
         const data = await response.json();
         const settings = data.settings || data;
 
