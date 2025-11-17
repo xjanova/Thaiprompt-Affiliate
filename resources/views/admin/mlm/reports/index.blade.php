@@ -174,7 +174,7 @@
     <!-- Analytics Charts -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Member Growth Chart -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
                     <div class="bg-gradient-to-r from-blue-500 to-purple-600 p-2 rounded-xl mr-3">
@@ -182,17 +182,19 @@
                     </div>
                     การเติบโตของเครือข่าย
                 </h2>
-                <select id="growthPeriod" class="border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-sm">
+                <select id="growthPeriod" class="border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-sm">
                     <option value="7">7 วัน</option>
                     <option value="30" selected>30 วัน</option>
                     <option value="90">90 วัน</option>
                 </select>
             </div>
-            <canvas id="memberGrowthChart" height="300"></canvas>
+            <div style="height: 300px; max-height: 300px; position: relative;">
+                <canvas id="memberGrowthChart"></canvas>
+            </div>
         </div>
 
         <!-- Commission Trends -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
                     <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-2 rounded-xl mr-3">
@@ -200,49 +202,57 @@
                     </div>
                     แนวโน้มค่าคอมมิชชั่น
                 </h2>
-                <select id="commissionPeriod" class="border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-sm">
+                <select id="commissionPeriod" class="border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-sm">
                     <option value="7">7 วัน</option>
                     <option value="30" selected>30 วัน</option>
                     <option value="90">90 วัน</option>
                 </select>
             </div>
-            <canvas id="commissionTrendsChart" height="300"></canvas>
+            <div style="height: 300px; max-height: 300px; position: relative;">
+                <canvas id="commissionTrendsChart"></canvas>
+            </div>
         </div>
     </div>
 
     <!-- Network Analysis -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Commission by Type -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <div class="bg-gradient-to-r from-purple-500 to-pink-600 p-2 rounded-xl mr-3">
                     <i class="fas fa-chart-pie text-white"></i>
                 </div>
                 คอมมิชชั่นตามประเภท
             </h2>
-            <canvas id="commissionTypeChart" height="250"></canvas>
+            <div style="height: 250px; max-height: 250px; position: relative;">
+                <canvas id="commissionTypeChart"></canvas>
+            </div>
         </div>
 
         <!-- Level Distribution -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <div class="bg-gradient-to-r from-yellow-500 to-orange-600 p-2 rounded-xl mr-3">
                     <i class="fas fa-layer-group text-white"></i>
                 </div>
                 การกระจายตามระดับ
             </h2>
-            <canvas id="levelDistributionChart" height="250"></canvas>
+            <div style="height: 250px; max-height: 250px; position: relative;">
+                <canvas id="levelDistributionChart"></canvas>
+            </div>
         </div>
 
         <!-- Binary Balance -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <div class="bg-gradient-to-r from-teal-500 to-cyan-600 p-2 rounded-xl mr-3">
                     <i class="fas fa-balance-scale text-white"></i>
                 </div>
                 สมดุล Binary
             </h2>
-            <canvas id="binaryBalanceChart" height="250"></canvas>
+            <div style="height: 250px; max-height: 250px; position: relative;">
+                <canvas id="binaryBalanceChart"></canvas>
+            </div>
         </div>
     </div>
 
