@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการบอทอัตโนมัติ')
 
@@ -39,7 +39,7 @@
             <div class="absolute top-0 right-0 z-10">
                 <div class="relative inline-block" x-data="{ open: false }">
                     <button @click="open = !open"
-                            class="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-200 border border-white/30 flex items-center gap-2">
+                            class="px-4 py-2 glass-fusion backdrop-blur-sm text-white rounded-xl hover:glass-fusion transition-all duration-200 border border-white/30 flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
                         </svg>
@@ -57,27 +57,27 @@
                          x-transition:leave="transition ease-in duration-150"
                          x-transition:leave-start="opacity-100 scale-100"
                          x-transition:leave-end="opacity-0 scale-95"
-                         class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border-2 border-white/20 dark:border-slate-700 overflow-hidden z-50">
+                         class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-slate-800 rounded-xl shadow-2xl border-2 border-white/20 dark:border-slate-700 overflow-hidden z-50" border border-white/20 dark:border-white/10>
                         <button @click="language = 'th'; open = false"
-                                class="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-200 flex items-center gap-3"
+                                class="w-full px-4 py-3 text-left hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors duration-200 flex items-center gap-3"
                                 :class="{ 'bg-cyan-50 dark:bg-cyan-900/20': language === 'th' }">
                             <span class="text-2xl">🇹🇭</span>
                             <span class="font-semibold text-gray-900 dark:text-white">ไทย</span>
                         </button>
                         <button @click="language = 'en'; open = false"
-                                class="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-200 flex items-center gap-3"
+                                class="w-full px-4 py-3 text-left hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors duration-200 flex items-center gap-3"
                                 :class="{ 'bg-cyan-50 dark:bg-cyan-900/20': language === 'en' }">
                             <span class="text-2xl">🇬🇧</span>
                             <span class="font-semibold text-gray-900 dark:text-white">English</span>
                         </button>
                         <button @click="language = 'zh'; open = false"
-                                class="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-200 flex items-center gap-3"
+                                class="w-full px-4 py-3 text-left hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors duration-200 flex items-center gap-3"
                                 :class="{ 'bg-cyan-50 dark:bg-cyan-900/20': language === 'zh' }">
                             <span class="text-2xl">🇨🇳</span>
                             <span class="font-semibold text-gray-900 dark:text-white">中文</span>
                         </button>
                         <button @click="language = 'ja'; open = false"
-                                class="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-200 flex items-center gap-3"
+                                class="w-full px-4 py-3 text-left hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors duration-200 flex items-center gap-3"
                                 :class="{ 'bg-cyan-50 dark:bg-cyan-900/20': language === 'ja' }">
                             <span class="text-2xl">🇯🇵</span>
                             <span class="font-semibold text-gray-900 dark:text-white">日本語</span>
@@ -103,17 +103,17 @@
                 <div>
                     <h2 class="text-4xl font-bold text-white flex items-center gap-3">
                         <span data-translate>บอทอัตโนมัติ</span>
-                        <span class="inline-flex items-center px-4 py-1.5 bg-white/20 backdrop-blur-sm text-sm font-semibold rounded-full border border-white/30">
+                        <span class="inline-flex items-center px-4 py-1.5 glass-fusion backdrop-blur-sm text-sm font-semibold rounded-full border border-white/30">
                             AI Powered
                         </span>
                     </h2>
                     <p class="text-cyan-100 mt-2 text-lg" data-translate>ระบบบอทอัจฉริยะที่ทำงานอัตโนมัติตลอด 24/7</p>
                     <div class="flex items-center gap-4 mt-4">
-                        <div class="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-xl">
+                        <div class="flex items-center gap-2 px-4 py-2 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                             <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
                             <span class="text-white text-sm font-medium">{{ $automations->where('is_active', true)->count() }} <span data-translate>บอทกำลังทำงาน</span></span>
                         </div>
-                        <div class="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-xl">
+                        <div class="flex items-center gap-2 px-4 py-2 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                             <div class="w-3 h-3 bg-gray-400 rounded-full"></div>
                             <span class="text-white text-sm font-medium">{{ $automations->where('is_active', false)->count() }} <span data-translate>บอทหยุดทำงาน</span></span>
                         </div>
@@ -122,7 +122,7 @@
             </div>
 
             <a href="{{ route('admin.bot-automation.create') }}"
-               class="inline-flex items-center px-8 py-4 bg-white dark:bg-gray-800 text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-purple-600 font-bold rounded-2xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-white/50">
+               class="inline-flex items-center px-8 py-4 glass-fusion dark:bg-gray-800 text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-purple-600 font-bold rounded-2xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-white/50">
                 <svg class="w-6 h-6 mr-3 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
                 </svg>
@@ -132,17 +132,17 @@
     </div>
 
     <!-- Filter Section -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <form method="GET" action="{{ route('admin.bot-automation.index') }}" class="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2" data-translate>ค้นหา</label>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2" data-translate>ค้นหา</label>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="ชื่อบอทหรือคำอธิบาย"
-                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-200">
+                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-200">
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2" data-translate>ประเภทบอท</label>
-                <select name="automation_type" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-200">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2" data-translate>ประเภทบอท</label>
+                <select name="automation_type" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-200">
                     <option value="" data-translate>ทั้งหมด</option>
                     <option value="scheduled_post" {{ request('automation_type') == 'scheduled_post' ? 'selected' : '' }} data-translate>โพสต์ตามกำหนดเวลา</option>
                     <option value="customer_support" {{ request('automation_type') == 'customer_support' ? 'selected' : '' }} data-translate>ซัพพอร์ตลูกค้า</option>
@@ -159,7 +159,7 @@
                     </svg>
                     <span data-translate>ค้นหา</span>
                 </button>
-                <a href="{{ route('admin.bot-automation.index') }}" class="px-5 py-3 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-200 shadow-md hover:shadow-lg" data-translate>
+                <a href="{{ route('admin.bot-automation.index') }}" class="px-5 py-3 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-200 shadow-md hover:shadow-lg" data-translate>
                     ล้าง
                 </a>
             </div>
@@ -180,7 +180,7 @@
                     <div class="relative flex items-start justify-between">
                         <div class="flex items-center gap-4">
                             <!-- Animated Bot Avatar -->
-                            <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border-2 border-white/30 group-hover:scale-110 transition-all duration-300">
+                            <div class="w-16 h-16 glass-fusion backdrop-blur-sm rounded-xl flex items-center justify-center border-2 border-white/30 group-hover:scale-110 transition-all duration-300" border border-white/20 dark:border-white/10>
                                 @if($automation->automation_type === 'scheduled_post')
                                     <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -223,7 +223,7 @@
                         </div>
 
                         <!-- Bot Type Badge -->
-                        <span class="px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-bold rounded-lg border border-white/30">
+                        <span class="px-3 py-1 glass-fusion backdrop-blur-sm text-white text-xs font-bold rounded-xl border border-white/30">
                             @if($automation->automation_type === 'scheduled_post')
                                 <span data-translate>โพสต์</span>
                             @elseif($automation->automation_type === 'customer_support')
@@ -242,7 +242,7 @@
                 <!-- Card Body -->
                 <div class="p-6">
                     <!-- Description -->
-                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2 min-h-[40px]">
+                    <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 text-sm mb-4 line-clamp-2 min-h-[40px]">
                         {{ $automation->description ?? 'ไม่มีคำอธิบาย' }}
                     </p>
 
@@ -277,11 +277,11 @@
                     </div>
 
                     <!-- Trigger Type -->
-                    <div class="flex items-center gap-2 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-xl mb-4">
-                        <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center gap-2 p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700/50 rounded-xl mb-4">
+                        <svg class="w-5 h-5 text-gray-500 dark:text-gray-400 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                         </svg>
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">
                             <span data-translate>ทริกเกอร์:</span>
                             @if($automation->trigger_type === 'schedule')
                                 <span data-translate>ตามกำหนดเวลา</span>
@@ -329,13 +329,13 @@
                 </div>
 
                 <!-- Card Footer -->
-                <div class="px-6 py-4 bg-gray-50 dark:bg-slate-900/50 border-t border-gray-100 dark:border-slate-700">
+                <div class="px-6 py-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-900/50 border-t border-gray-100 dark:border-slate-700">
                     <div class="flex items-center justify-between text-xs">
-                        <span class="text-gray-500 dark:text-gray-400">
+                        <span class="text-gray-500 dark:text-gray-400 dark:text-gray-400">
                             <span data-translate>สร้างเมื่อ</span> {{ $automation->created_at->format('d/m/Y') }}
                         </span>
                         @if($automation->user)
-                            <span class="text-gray-500 dark:text-gray-400">
+                            <span class="text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                 <span data-translate>โดย</span> {{ $automation->user->name }}
                             </span>
                         @endif
@@ -353,8 +353,8 @@
                             </svg>
                         </div>
                     </div>
-                    <h3 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-3" data-translate>ยังไม่มีบอทอัตโนมัติ</h3>
-                    <p class="text-gray-600 dark:text-gray-400 mb-8 text-lg" data-translate>เริ่มสร้างบอทอัจฉริยะเพื่อทำงานอัตโนมัติตลอด 24/7</p>
+                    <h3 class="text-3xl font-bold text-gray-900 dark:text-white dark:text-gray-200 mb-3" data-translate>ยังไม่มีบอทอัตโนมัติ</h3>
+                    <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-8 text-lg" data-translate>เริ่มสร้างบอทอัจฉริยะเพื่อทำงานอัตโนมัติตลอด 24/7</p>
                     <a href="{{ route('admin.bot-automation.create') }}"
                        class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-cyan-600 to-purple-600 text-white font-bold rounded-2xl hover:from-cyan-700 hover:to-purple-700 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105">
                         <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -369,9 +369,9 @@
 
     <!-- Pagination -->
     @if($automations->hasPages())
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-6">
+        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
-                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <div class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">
                     <span data-translate>แสดง</span> <span class="font-bold text-cyan-600 dark:text-cyan-400">{{ $automations->firstItem() ?? 0 }}</span>
                     <span data-translate>ถึง</span> <span class="font-bold text-cyan-600 dark:text-cyan-400">{{ $automations->lastItem() ?? 0 }}</span>
                     <span data-translate>จากทั้งหมด</span> <span class="font-bold text-cyan-600 dark:text-cyan-400">{{ $automations->total() }}</span> <span data-translate>รายการ</span>

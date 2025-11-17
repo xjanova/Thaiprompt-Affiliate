@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'การวิเคราะห์ประสิทธิภาพบอท')
 
@@ -35,7 +35,7 @@
 
         <div class="relative flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30 animate-pulse">
+                <div class="w-16 h-16 rounded-2xl glass-fusion backdrop-blur-sm flex items-center justify-center border-2 border-white/30 animate-pulse" border border-white/20 dark:border-white/10>
                     <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
@@ -49,7 +49,7 @@
             <div class="flex items-center gap-3">
                 {{-- Language Switcher --}}
                 <div class="relative inline-block" x-data="{ open: false }">
-                    <button @click="open = !open" class="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-200 border border-white/30 flex items-center gap-2">
+                    <button @click="open = !open" class="px-4 py-2 glass-fusion backdrop-blur-sm text-white rounded-xl hover:glass-fusion transition-all duration-200 border border-white/30 flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
                         </svg>
@@ -57,24 +57,24 @@
                     </button>
 
                     <div x-show="open" @click.away="open = false" x-transition
-                         class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden z-50">
-                        <a href="/lang/th" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                         class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 dark:border-slate-700 overflow-hidden z-50" border border-white/20 dark:border-white/10>
+                        <a href="/lang/th" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                             <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
                         </a>
-                        <a href="/lang/en" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        <a href="/lang/en" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                             <span class="mr-2">🇬🇧</span> English
                         </a>
-                        <a href="/lang/zh" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        <a href="/lang/zh" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                             <span class="mr-2">🇨🇳</span> 中文
                         </a>
-                        <a href="/lang/ja" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        <a href="/lang/ja" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                             <span class="mr-2">🇯🇵</span> 日本語
                         </a>
                     </div>
                 </div>
 
                 <a href="{{ route('admin.bot-automation.analytics.index') }}"
-                   class="px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 border-2 border-white/30 flex items-center gap-2 shadow-lg hover:shadow-xl">
+                   class="px-6 py-3 glass-fusion backdrop-blur-sm text-white rounded-xl font-semibold hover:glass-fusion transition-all duration-300 border-2 border-white/30 flex items-center gap-2 shadow-lg hover:shadow-xl">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                     </svg>
@@ -142,9 +142,9 @@
     {{-- Charts Row --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {{-- Performance Trends Chart --}}
-        <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
-            <div class="border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 px-6 py-4">
-                <h2 data-translate class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+        <div class="lg:col-span-2 glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
+            <div class="border-b border-gray-200 dark:border-gray-700 dark:border-slate-700 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 px-6 py-4">
+                <h2 data-translate class="text-xl font-bold text-gray-900 dark:text-white dark:text-white flex items-center gap-2">
                     <svg class="w-6 h-6 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                     </svg>
@@ -159,9 +159,9 @@
         </div>
 
         {{-- Top Performing Bots --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
-            <div class="border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 px-6 py-4">
-                <h2 data-translate class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
+            <div class="border-b border-gray-200 dark:border-gray-700 dark:border-slate-700 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 px-6 py-4">
+                <h2 data-translate class="text-xl font-bold text-gray-900 dark:text-white dark:text-white flex items-center gap-2">
                     <svg class="w-6 h-6 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
                     </svg>
@@ -174,18 +174,18 @@
                     <div class="p-4 rounded-xl bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/10 dark:to-purple-900/10 border border-violet-200 dark:border-violet-800 hover:shadow-md transition-all duration-200">
                         <div class="flex items-center justify-between mb-2">
                             <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                                <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
                                     {{ $index + 1 }}
                                 </div>
                                 <h3 class="font-semibold text-gray-900 dark:text-white">{{ $bot->name }}</h3>
                             </div>
                             <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">{{ $bot->success_rate ?? '0' }}%</span>
                         </div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 ml-11">{{ $bot->executions ?? '0' }} <span data-translate>การทำงาน</span></p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 ml-11">{{ $bot->executions ?? '0' }} <span data-translate>การทำงาน</span></p>
                     </div>
                     @empty
-                    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                        <svg class="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="text-center py-8 text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                        <svg class="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
                         </svg>
                         <p data-translate class="font-medium">ไม่มีข้อมูลประสิทธิภาพ</p>
@@ -197,9 +197,9 @@
     </div>
 
     {{-- Bot Performance Breakdown Table --}}
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
-        <div class="border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 px-6 py-4">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
+        <div class="border-b border-gray-200 dark:border-gray-700 dark:border-slate-700 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 px-6 py-4">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white dark:text-white flex items-center gap-2">
                 <svg class="w-6 h-6 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
@@ -208,31 +208,31 @@
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
-                <thead class="bg-gray-50 dark:bg-slate-900">
+                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-900">
                     <tr>
-                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ชื่อบอท</th>
-                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">การทำงาน</th>
-                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">อัตราสำเร็จ</th>
-                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">เวลาตอบกลับเฉลี่ย</th>
-                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">จำนวนข้อผิดพลาด</th>
-                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ทำงานล่าสุด</th>
+                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">ชื่อบอท</th>
+                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">การทำงาน</th>
+                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">อัตราสำเร็จ</th>
+                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">เวลาตอบกลับเฉลี่ย</th>
+                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">จำนวนข้อผิดพลาด</th>
+                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">ทำงานล่าสุด</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                <tbody class="glass-fusion dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                     @forelse($performanceData ?? [] as $data)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors duration-200">
+                    <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700/50 transition-colors duration-200">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ $data->bot_name ?? 'N/A' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ $data->executions ?? '0' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ $data->success_rate ?? '0' }}%</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ $data->avg_response_time ?? '0' }} ms</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ $data->error_count ?? '0' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ $data->last_execution ?? 'N/A' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300">{{ $data->executions ?? '0' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300">{{ $data->success_rate ?? '0' }}%</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300">{{ $data->avg_response_time ?? '0' }} ms</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300">{{ $data->error_count ?? '0' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300">{{ $data->last_execution ?? 'N/A' }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400 dark:text-gray-400">
                             <div class="flex flex-col items-center justify-center">
-                                <svg class="w-16 h-16 text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-16 h-16 text-gray-400 dark:text-gray-600 dark:text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
                                 </svg>
                                 <p data-translate class="text-lg font-medium">ไม่มีข้อมูลประสิทธิภาพ</p>
