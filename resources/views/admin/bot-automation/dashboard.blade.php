@@ -186,7 +186,7 @@
                                     </p>
                                 </div>
                                 <div class="ml-4 flex-shrink-0">
-                                    @if($execution->status === 'success')
+                                    @if($execution->status === 'completed')
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
                                             Success
                                         </span>
