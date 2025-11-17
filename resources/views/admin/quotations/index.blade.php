@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 @section('title', 'Quotations')
 @section('content')
 <div class="container mx-auto px-4 py-8">

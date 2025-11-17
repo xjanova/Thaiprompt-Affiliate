@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายละเอียดการจอง #' . $booking->booking_number)
 
