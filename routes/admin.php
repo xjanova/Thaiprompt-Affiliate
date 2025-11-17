@@ -618,6 +618,17 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
             Route::get('/user-history', [\App\Http\Controllers\Admin\KeywordActivityLogController::class, 'getUserHistory'])->name('user-history');
             Route::post('/clear-old-logs', [\App\Http\Controllers\Admin\KeywordActivityLogController::class, 'clearOldLogs'])->name('clear-old-logs');
         });
+
+        // Performance Dashboard & Analytics
+        Route::prefix('performance')->name('performance.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\KeywordPerformanceDashboardController::class, 'index'])->name('index');
+            Route::get('/chart-data', [\App\Http\Controllers\Admin\KeywordPerformanceDashboardController::class, 'getChartData'])->name('chart-data');
+            Route::get('/comparison-data', [\App\Http\Controllers\Admin\KeywordPerformanceDashboardController::class, 'getComparisonData'])->name('comparison-data');
+            Route::get('/response-time-data', [\App\Http\Controllers\Admin\KeywordPerformanceDashboardController::class, 'getResponseTimeData'])->name('response-time-data');
+            Route::get('/trend-data', [\App\Http\Controllers\Admin\KeywordPerformanceDashboardController::class, 'getTrendData'])->name('trend-data');
+            Route::get('/{keyword}/details', [\App\Http\Controllers\Admin\KeywordPerformanceDashboardController::class, 'getKeywordDetails'])->name('details');
+            Route::get('/export', [\App\Http\Controllers\Admin\KeywordPerformanceDashboardController::class, 'exportReport'])->name('export');
+        });
     });
 });
 
