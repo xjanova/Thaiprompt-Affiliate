@@ -53,11 +53,11 @@ class LineMembershipSignupAdminController extends Controller
             ->join('line_signup_sessions', 'line_signup_step_logs.session_id', '=', 'line_signup_sessions.id')
             ->where('line_signup_sessions.created_at', '>=', $startDate)
             ->select(
-                'step_name',
-                DB::raw('COUNT(DISTINCT session_id) as visitors'),
-                DB::raw('SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completions')
+                'line_signup_step_logs.step_name',
+                DB::raw('COUNT(DISTINCT line_signup_step_logs.session_id) as visitors'),
+                DB::raw('SUM(CASE WHEN line_signup_step_logs.status = "completed" THEN 1 ELSE 0 END) as completions')
             )
-            ->groupBy('step_name')
+            ->groupBy('line_signup_step_logs.step_name')
             ->get();
 
         // Get recent sessions
@@ -68,10 +68,11 @@ class LineMembershipSignupAdminController extends Controller
 
         // Get top performers (affiliates with most completed signups)
         $topPerformers = DB::table('line_signup_sessions')
-            ->join('users', 'line_signup_sessions.user_id', '=', 'users.id')
-            ->join('affiliates', 'line_signup_sessions.affiliate_id', '=', 'affiliates.id')
+            ->leftJoin('users', 'line_signup_sessions.user_id', '=', 'users.id')
+            ->leftJoin('affiliates', 'line_signup_sessions.affiliate_id', '=', 'affiliates.id')
             ->where('line_signup_sessions.status', LineSignupSession::STATUS_COMPLETED)
             ->where('line_signup_sessions.created_at', '>=', $startDate)
+            ->whereNotNull('line_signup_sessions.affiliate_id')
             ->select(
                 'affiliates.referral_code',
                 'users.name',
@@ -317,12 +318,12 @@ class LineMembershipSignupAdminController extends Controller
             ->join('line_signup_sessions', 'line_signup_step_logs.session_id', '=', 'line_signup_sessions.id')
             ->where('line_signup_sessions.created_at', '>=', $startDate)
             ->select(
-                'step_name',
-                DB::raw('COUNT(DISTINCT session_id) as visitors'),
+                'line_signup_step_logs.step_name',
+                DB::raw('COUNT(DISTINCT line_signup_step_logs.session_id) as visitors'),
                 DB::raw('SUM(CASE WHEN line_signup_step_logs.status = "completed" THEN 1 ELSE 0 END) as completions'),
-                DB::raw('AVG(TIMESTAMPDIFF(SECOND, started_at, completed_at)) as avg_duration')
+                DB::raw('AVG(TIMESTAMPDIFF(SECOND, line_signup_step_logs.started_at, line_signup_step_logs.completed_at)) as avg_duration')
             )
-            ->groupBy('step_name')
+            ->groupBy('line_signup_step_logs.step_name')
             ->get()
             ->keyBy('step_name');
 
