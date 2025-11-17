@@ -590,6 +590,17 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
         Route::delete('/{id}', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'destroy'])->name('destroy');
         Route::post('/reorder', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'reorder'])->name('reorder');
     });
+
+    // Hybrid Bot Keywords Management
+    Route::prefix('keywords')->name('keywords.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\LineBotKeywordController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\LineBotKeywordController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\LineBotKeywordController::class, 'store'])->name('store');
+        Route::get('/{keyword}/edit', [\App\Http\Controllers\Admin\LineBotKeywordController::class, 'edit'])->name('edit');
+        Route::put('/{keyword}', [\App\Http\Controllers\Admin\LineBotKeywordController::class, 'update'])->name('update');
+        Route::delete('/{keyword}', [\App\Http\Controllers\Admin\LineBotKeywordController::class, 'destroy'])->name('destroy');
+        Route::post('/test', [\App\Http\Controllers\Admin\LineBotKeywordController::class, 'test'])->name('test');
+    });
 });
 
 // LINE Membership Signup Management (AI-Powered Signup System)
