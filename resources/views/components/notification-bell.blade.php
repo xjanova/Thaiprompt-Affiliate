@@ -12,7 +12,7 @@
     }
 @endphp
 
-{{-- Notification Bell Dropdown (แบบง่ายๆ เหมือนเมนูอื่นๆ) พร้อม Keyboard Navigation + Accessibility --}}
+{{-- Notification Bell Dropdown (แบบง่ายๆ เหมือนเมนูอื่นๆ) พร้อม Keyboard Navigation + Accessibility + Offline Support --}}
 <div x-data="{
     open: false,
     loading: false,
@@ -21,8 +21,26 @@
     routePrefix: '{{ $routePrefix }}',
     selectedIndex: -1,
 
+    // 📡 Offline Support
+    isOnline: navigator.onLine,
+    cacheKey: 'notifications_cache_{{ $routePrefix }}',
+    cacheExpiry: 5 * 60 * 1000, // 5 นาที
+
+    // 🔔 WebSocket Support
+    echoChannel: null,
+    useWebSocket: false,
+
     async loadNotifications() {
         this.loading = true;
+
+        // ตรวจสอบสถานะ offline
+        if (!this.isOnline) {
+            console.info('📴 Offline mode: Loading notifications from cache');
+            this.loadFromCache();
+            this.loading = false;
+            return;
+        }
+
         try {
             const response = await fetch(`/${this.routePrefix}/notifications/unread`, {
                 headers: {
@@ -34,11 +52,60 @@
                 const data = await response.json();
                 this.notifications = data.notifications || [];
                 this.unreadCount = data.unread_count || 0;
+
+                // 💾 บันทึกลง cache
+                this.saveToCache(data);
+            } else {
+                // หาก API ล้มเหลว ใช้ cache
+                this.loadFromCache();
             }
         } catch (error) {
             console.error('Error loading notifications:', error);
+            // หาก fetch ล้มเหลว ใช้ cache
+            this.loadFromCache();
         }
         this.loading = false;
+    },
+
+    // 💾 บันทึกข้อมูลลง localStorage
+    saveToCache(data) {
+        try {
+            const cache = {
+                data: data,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(this.cacheKey, JSON.stringify(cache));
+            console.debug('✅ Notifications cached successfully');
+        } catch (error) {
+            console.error('Failed to cache notifications:', error);
+        }
+    },
+
+    // 📂 โหลดข้อมูลจาก localStorage
+    loadFromCache() {
+        try {
+            const cached = localStorage.getItem(this.cacheKey);
+            if (!cached) {
+                console.info('No cached notifications found');
+                return;
+            }
+
+            const cache = JSON.parse(cached);
+
+            // ตรวจสอบว่า cache หมดอายุหรือยัง
+            if (Date.now() - cache.timestamp > this.cacheExpiry) {
+                console.info('⏰ Cache expired, removing...');
+                localStorage.removeItem(this.cacheKey);
+                return;
+            }
+
+            // โหลดข้อมูลจาก cache
+            this.notifications = cache.data.notifications || [];
+            this.unreadCount = cache.data.unread_count || 0;
+            console.info('✅ Loaded notifications from cache');
+        } catch (error) {
+            console.error('Failed to load from cache:', error);
+        }
     },
 
     async markAsRead(notificationId) {
@@ -120,9 +187,137 @@
     closeDropdown() {
         this.open = false;
         this.selectedIndex = -1;
+    },
+
+    // 🔔 WebSocket Methods
+    subscribeToWebSocket() {
+        // ตรวจสอบว่ามี Echo และ user ID หรือไม่
+        if (!window.Echo || !window.currentUser) {
+            console.info('⚠️ Laravel Echo หรือ user ไม่พร้อม ใช้ HTTP polling');
+            return false;
+        }
+
+        try {
+            console.log('📡 Subscribing to WebSocket notifications...');
+
+            // Subscribe to private channel
+            this.echoChannel = window.Echo.private(`notifications.${'{{' }} window.currentUser.id }}`);
+
+            // Listen for notification events
+            this.echoChannel.listen('NotificationSent', (event) => {
+                console.log('📩 Real-time notification received:', event);
+                this.handleWebSocketNotification(event.notification);
+            });
+
+            this.useWebSocket = true;
+            console.log('✅ WebSocket notifications enabled');
+            return true;
+
+        } catch (error) {
+            console.error('❌ WebSocket subscription failed:', error);
+            console.info('↩️  Falling back to HTTP polling');
+            return false;
+        }
+    },
+
+    unsubscribeFromWebSocket() {
+        if (this.echoChannel && window.Echo) {
+            try {
+                window.Echo.leave(`notifications.${'{{' }} window.currentUser?.id }}`);
+                this.echoChannel = null;
+                this.useWebSocket = false;
+                console.log('📭 Unsubscribed from WebSocket');
+            } catch (error) {
+                console.error('❌ Unsubscribe failed:', error);
+            }
+        }
+    },
+
+    handleWebSocketNotification(notification) {
+        // เพิ่ม notification ใหม่ลงใน array
+        this.notifications.unshift(notification);
+
+        // เพิ่ม unread count
+        if (!notification.is_read) {
+            this.unreadCount++;
+        }
+
+        // บันทึกลง cache
+        this.saveToCache({
+            notifications: this.notifications,
+            unread_count: this.unreadCount
+        });
+
+        // แสดง browser notification (ถ้า permission granted)
+        this.showBrowserNotification(notification);
+    },
+
+    showBrowserNotification(notification) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+                const notif = new Notification(notification.title || 'การแจ้งเตือน', {
+                    body: notification.message,
+                    icon: '/icons/notification-icon.png',
+                    badge: '/icons/badge-icon.png',
+                    tag: notification.id,
+                    requireInteraction: notification.is_important || false,
+                });
+
+                // Click to open
+                notif.onclick = () => {
+                    window.focus();
+                    if (notification.action_url) {
+                        window.location.href = notification.action_url;
+                    }
+                    notif.close();
+                };
+            } catch (error) {
+                console.debug('Browser notification not available:', error);
+            }
+        }
     }
 }"
-x-init="loadNotifications(); setInterval(() => loadNotifications(), 30000)"
+x-init="
+    // โหลดข้อมูลครั้งแรก
+    loadNotifications();
+
+    // 🔔 พยายาม subscribe WebSocket
+    setTimeout(() => {
+        const wsEnabled = subscribeToWebSocket();
+
+        // ถ้า WebSocket ล้มเหลว หรือไม่พร้อม ใช้ HTTP polling
+        if (!wsEnabled) {
+            console.info('↩️  Using HTTP polling (every 30s)');
+            setInterval(() => loadNotifications(), 30000);
+        } else {
+            console.info('✅ Using WebSocket real-time notifications');
+            // Fallback: HTTP polling ทุก 5 นาที เพื่อ sync
+            setInterval(() => loadNotifications(), 5 * 60 * 1000);
+        }
+    }, 1000); // รอ Echo initialize 1 วินาที
+
+    // 📡 ฟัง online/offline events
+    window.addEventListener('online', () => {
+        console.info('🌐 Connection restored');
+        this.isOnline = true;
+        this.loadNotifications(); // Sync เมื่อกลับมา online
+
+        // Re-subscribe WebSocket ถ้าไม่ได้ใช้อยู่
+        if (!this.useWebSocket) {
+            setTimeout(() => this.subscribeToWebSocket(), 1000);
+        }
+    });
+
+    window.addEventListener('offline', () => {
+        console.info('📴 Connection lost');
+        this.isOnline = false;
+    });
+
+    // Cleanup เมื่อ component ถูก destroy
+    window.addEventListener('beforeunload', () => {
+        this.unsubscribeFromWebSocket();
+    });
+"
 @keydown.escape.window="if (open) closeDropdown()"
 @keydown.arrow-down.prevent="if (open) selectNext()"
 @keydown.arrow-up.prevent="if (open) selectPrevious()"
@@ -152,6 +347,14 @@ class="relative">
             :aria-label="`${unreadCount} รายการที่ยังไม่ได้อ่าน`"
             class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full"
         ></span>
+
+        <!-- Offline Indicator -->
+        <span
+            x-show="!isOnline"
+            title="ออフไลน์ - แสดงข้อมูลแคช"
+            aria-label="ออฟไลน์"
+            class="absolute -bottom-1 -right-1 w-3 h-3 bg-gray-400 border-2 border-white dark:border-gray-800 rounded-full"
+        ></span>
     </button>
 
     <!-- Dropdown พร้อม Accessibility -->
@@ -171,14 +374,33 @@ class="relative">
         style="display: none;">
 
         <!-- Header -->
-        <div class="flex items-center justify-between px-4 py-3 border-b dark:border-gray-700">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">การแจ้งเตือน</h3>
-            <button
-                @click="markAllAsRead()"
-                x-show="unreadCount > 0"
-                class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                อ่านทั้งหมด
-            </button>
+        <div class="px-4 py-3 border-b dark:border-gray-700">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">การแจ้งเตือน</h3>
+                <button
+                    @click="markAllAsRead()"
+                    x-show="unreadCount > 0"
+                    class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                    อ่านทั้งหมด
+                </button>
+            </div>
+
+            <!-- Offline Warning -->
+            <div x-show="!isOnline" class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs text-gray-600 dark:text-gray-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path>
+                </svg>
+                <span>📴 ออฟไลน์ - แสดงข้อมูลจากแคช</span>
+            </div>
+
+            <!-- WebSocket Status -->
+            <div x-show="isOnline && useWebSocket" class="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 rounded-lg text-xs text-green-700 dark:text-green-400">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                <span>🔔 Real-time WebSocket</span>
+            </div>
         </div>
 
         <!-- Notifications List พร้อม Keyboard Navigation Support -->
