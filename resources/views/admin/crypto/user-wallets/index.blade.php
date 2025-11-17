@@ -15,10 +15,10 @@
     </div>
 
     <!-- User Profile Header -->
-    <div class="bg-gradient-to-r from-purple-500 via-pink-600 to-red-500 rounded-3xl shadow-2xl p-8 text-white relative overflow-hidden">
+    <div class="rounded-3xl shadow-2xl p-8 text-white relative overflow-hidden" style="background: var(--arrow-x-primary-gradient)">
         <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 glass-fusion rounded-full -mr-48 -mt-48" border border-white/20 dark:border-white/10></div>
-            <div class="absolute bottom-0 left-0 w-64 h-64 glass-fusion rounded-full -ml-32 -mb-32" border border-white/20 dark:border-white/10></div>
+            <div class="absolute top-0 right-0 w-96 h-96 glass-fusion rounded-full -mr-48 -mt-48"></div>
+            <div class="absolute bottom-0 left-0 w-64 h-64 glass-fusion rounded-full -ml-32 -mb-32"></div>
         </div>
         <div class="relative">
             <a href="{{ route('admin.users.show', $user->id) }}" class="inline-flex items-center space-x-2 px-4 py-2 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl mb-6 transition-all">
@@ -28,13 +28,13 @@
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-6">
                     <!-- User Avatar -->
-                    <div class="w-24 h-24 glass-fusion backdrop-blur-sm rounded-full flex items-center justify-center border-4 border-white/30" border border-white/20 dark:border-white/10>
+                    <div class="w-24 h-24 glass-fusion backdrop-blur-sm rounded-full flex items-center justify-center border-4 border-white/30">
                         <span class="text-5xl font-bold">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
                     </div>
                     <!-- User Info -->
                     <div>
                         <h1 class="text-4xl font-bold mb-2">{{ $user->name }}</h1>
-                        <p class="text-purple-100 text-lg mb-3">{{ $user->email }}</p>
+                        <p class="opacity-80 text-lg mb-3">{{ $user->email }}</p>
                         <div class="flex items-center space-x-4">
                             <span class="px-4 py-2 glass-fusion backdrop-blur-sm rounded-xl text-sm font-semibold">
                                 <i class="fas fa-calendar-alt mr-2"></i>
@@ -49,8 +49,8 @@
                 </div>
                 <!-- User ID Badge -->
                 <div class="hidden lg:block text-center">
-                    <div class="w-24 h-24 glass-fusion backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center border-2 border-white/30" border border-white/20 dark:border-white/10>
-                        <p class="text-purple-100 text-xs mb-1">User ID</p>
+                    <div class="w-24 h-24 glass-fusion backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center border-2 border-white/30">
+                        <p class="opacity-70 text-xs mb-1">User ID</p>
                         <p class="text-3xl font-bold">{{ $user->id }}</p>
                     </div>
                 </div>
@@ -61,44 +61,44 @@
     <!-- Wallet Statistics -->
     @if($statistics)
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl shadow-xl p-6 text-white">
+        <div class="rounded-2xl shadow-xl p-6 text-white" style="background: linear-gradient(to bottom right, var(--arrow-x-warning), var(--arrow-x-accent))">
             <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 glass-fusion rounded-xl flex items-center justify-center backdrop-blur-sm" border border-white/20 dark:border-white/10>
+                <div class="w-12 h-12 glass-fusion rounded-xl flex items-center justify-center backdrop-blur-sm">
                     <i class="fas fa-crown text-2xl"></i>
                 </div>
             </div>
             <p class="text-3xl font-bold mb-1">{{ $masterWallet ? 1 : 0 }}</p>
-            <p class="text-yellow-100 text-sm">Master Wallet</p>
+            <p class="opacity-80 text-sm">Master Wallet</p>
         </div>
 
-        <div class="bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl shadow-xl p-6 text-white">
+        <div class="rounded-2xl shadow-xl p-6 text-white" style="background: linear-gradient(to bottom right, var(--arrow-x-success), var(--arrow-x-info))">
             <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 glass-fusion rounded-xl flex items-center justify-center backdrop-blur-sm" border border-white/20 dark:border-white/10>
+                <div class="w-12 h-12 glass-fusion rounded-xl flex items-center justify-center backdrop-blur-sm">
                     <i class="fas fa-layer-group text-2xl"></i>
                 </div>
             </div>
             <p class="text-3xl font-bold mb-1">{{ $statistics['child_wallets'] ?? $childWallets->count() }}</p>
-            <p class="text-emerald-100 text-sm">Child Wallets</p>
+            <p class="opacity-80 text-sm">Child Wallets</p>
         </div>
 
-        <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-xl p-6 text-white">
+        <div class="rounded-2xl shadow-xl p-6 text-white" style="background: var(--arrow-x-primary-gradient)">
             <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 glass-fusion rounded-xl flex items-center justify-center backdrop-blur-sm" border border-white/20 dark:border-white/10>
+                <div class="w-12 h-12 glass-fusion rounded-xl flex items-center justify-center backdrop-blur-sm">
                     <i class="fas fa-coins text-2xl"></i>
                 </div>
             </div>
             <p class="text-3xl font-bold mb-1">฿{{ number_format($statistics['balance_thb'] ?? 0, 2) }}</p>
-            <p class="text-blue-100 text-sm">Total Balance</p>
+            <p class="opacity-80 text-sm">Total Balance</p>
         </div>
 
-        <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-xl p-6 text-white">
+        <div class="rounded-2xl shadow-xl p-6 text-white" style="background: linear-gradient(to bottom right, var(--arrow-x-accent), var(--arrow-x-primary-end))">
             <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 glass-fusion rounded-xl flex items-center justify-center backdrop-blur-sm" border border-white/20 dark:border-white/10>
+                <div class="w-12 h-12 glass-fusion rounded-xl flex items-center justify-center backdrop-blur-sm">
                     <i class="fas fa-exchange-alt text-2xl"></i>
                 </div>
             </div>
             <p class="text-3xl font-bold mb-1">{{ number_format($statistics['total_transactions'] ?? 0) }}</p>
-            <p class="text-purple-100 text-sm">Transactions</p>
+            <p class="opacity-80 text-sm">Transactions</p>
         </div>
     </div>
     @endif
