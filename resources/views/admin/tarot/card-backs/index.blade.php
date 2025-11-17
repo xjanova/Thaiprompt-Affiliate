@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รูปหลังไพ่')
 
@@ -6,17 +6,17 @@
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">จัดการรูปหลังไพ่</h1>
-        <button onclick="document.getElementById('upload-form').classList.toggle('hidden')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+        <button onclick="document.getElementById('upload-form').classList.toggle('hidden')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl">
             <i class="fas fa-upload mr-2"></i> อัพโหลดรูปใหม่
         </button>
     </div>
 
-    <div id="upload-form" class="hidden bg-white rounded-lg shadow p-6 mb-6">
+    <div id="upload-form" class="hidden glass-fusion rounded-xl shadow p-6 mb-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <form action="{{ route('admin.tarot.card-backs.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="mb-4">
                 <label class="block text-sm font-medium mb-2">ชื่อ *</label>
-                <input type="text" name="name" required class="w-full rounded-lg border-gray-300">
+                <input type="text" name="name" required class="w-full rounded-xl border-gray-300 dark:border-gray-600">
             </div>
             <div class="mb-4">
                 <label class="block text-sm font-medium mb-2">รูปภาพ *</label>
@@ -28,13 +28,13 @@
                     <span class="ml-2 text-sm">ตั้งเป็นรูปเริ่มต้น</span>
                 </label>
             </div>
-            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg">อัพโหลด</button>
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl">อัพโหลด</button>
         </form>
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
         @foreach($cardBacks as $cardBack)
-        <div class="bg-white rounded-lg shadow p-4">
+        <div class="glass-fusion rounded-xl shadow p-4" border border-white/20 dark:border-white/10>
             <img src="{{ $cardBack->image_url }}" alt="{{ $cardBack->name }}" class="w-full h-48 object-cover rounded mb-3">
             <h3 class="font-semibold text-sm mb-2">{{ $cardBack->name }}</h3>
             @if($cardBack->is_default)

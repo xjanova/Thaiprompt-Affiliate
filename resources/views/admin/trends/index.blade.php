@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Viral Trend Detection - การตรวจจับเทรนด์ไวรัล')
 
@@ -13,11 +13,11 @@
                 <p class="text-pink-200 dark:text-pink-300 text-sm mt-1">อัปเดตล่าสุด: {{ now()->format('d/m/Y H:i') }} น.</p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('admin.trends.keywords') }}" class="px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl transition-all flex items-center gap-2 font-semibold">
+                <a href="{{ route('admin.trends.keywords') }}" class="px-6 py-3 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl transition-all flex items-center gap-2 font-semibold">
                     <i class="fa-solid fa-hashtag"></i>
                     Keywords
                 </a>
-                <a href="{{ route('admin.trends.sources.index') }}" class="px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl transition-all flex items-center gap-2 font-semibold">
+                <a href="{{ route('admin.trends.sources.index') }}" class="px-6 py-3 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl transition-all flex items-center gap-2 font-semibold">
                     <i class="fa-solid fa-globe"></i>
                     Sources
                 </a>
@@ -28,7 +28,7 @@
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Active Trends -->
-        <div class="group relative bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 overflow-hidden">
+        <div class="group relative glass-fusion dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 overflow-hidden" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400 to-indigo-600 dark:from-blue-600 dark:to-indigo-800 rounded-full opacity-10 group-hover:opacity-20 transition-opacity -mr-16 -mt-16"></div>
             <div class="relative">
                 <div class="flex items-center justify-between mb-4">
@@ -39,13 +39,13 @@
                         ทั้งหมด
                     </span>
                 </div>
-                <p class="text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">เทรนด์ที่ใช้งาน</p>
+                <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">เทรนด์ที่ใช้งาน</p>
                 <p class="text-4xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['active_trends']) }}</p>
             </div>
         </div>
 
         <!-- Rising Trends -->
-        <div class="group relative bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 overflow-hidden">
+        <div class="group relative glass-fusion dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 overflow-hidden" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-400 to-emerald-600 dark:from-green-600 dark:to-emerald-800 rounded-full opacity-10 group-hover:opacity-20 transition-opacity -mr-16 -mt-16"></div>
             <div class="relative">
                 <div class="flex items-center justify-between mb-4">
@@ -56,13 +56,13 @@
                         กำลังโด่งดัง
                     </span>
                 </div>
-                <p class="text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">Rising Trends</p>
+                <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Rising Trends</p>
                 <p class="text-4xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['rising_trends']) }}</p>
             </div>
         </div>
 
         <!-- Trending Keywords -->
-        <div class="group relative bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 overflow-hidden">
+        <div class="group relative glass-fusion dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 overflow-hidden" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-yellow-400 to-orange-600 dark:from-yellow-600 dark:to-orange-800 rounded-full opacity-10 group-hover:opacity-20 transition-opacity -mr-16 -mt-16"></div>
             <div class="relative">
                 <div class="flex items-center justify-between mb-4">
@@ -73,13 +73,13 @@
                         HOT
                     </span>
                 </div>
-                <p class="text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">Trending Keywords</p>
+                <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Trending Keywords</p>
                 <p class="text-4xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['trending_keywords']) }}</p>
             </div>
         </div>
 
         <!-- New Trends (24h) -->
-        <div class="group relative bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 overflow-hidden">
+        <div class="group relative glass-fusion dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 overflow-hidden" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-400 to-pink-600 dark:from-purple-600 dark:to-pink-800 rounded-full opacity-10 group-hover:opacity-20 transition-opacity -mr-16 -mt-16"></div>
             <div class="relative">
                 <div class="flex items-center justify-between mb-4">
@@ -90,14 +90,14 @@
                         24 ชม.
                     </span>
                 </div>
-                <p class="text-gray-600 dark:text-gray-400 text-sm font-medium mb-1">เทรนด์ใหม่</p>
+                <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">เทรนด์ใหม่</p>
                 <p class="text-4xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['new_trends_24h']) }}</p>
             </div>
         </div>
     </div>
 
     <!-- Rising Trends Table -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-gradient-to-br from-rose-500 to-red-600 dark:from-rose-600 dark:to-red-700 rounded-xl flex items-center justify-center text-white">
@@ -114,20 +114,20 @@
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
-                    <tr class="border-b-2 border-gray-200 dark:border-gray-700">
-                        <th class="text-left py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">หัวข้อ</th>
-                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Keyword</th>
-                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Viral Score</th>
-                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Mentions</th>
-                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Velocity</th>
-                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">สถานะ</th>
-                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">อายุ</th>
-                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">การกระทำ</th>
+                    <tr class="border-b-2 border-gray-200 dark:border-gray-700 dark:border-gray-700">
+                        <th class="text-left py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">หัวข้อ</th>
+                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">Keyword</th>
+                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">Viral Score</th>
+                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">Mentions</th>
+                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">Velocity</th>
+                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">สถานะ</th>
+                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">อายุ</th>
+                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">การกระทำ</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @foreach($rising_trends as $trend)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                    <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                         <td class="py-4 px-4">
                             <div class="font-semibold text-gray-900 dark:text-white">{{ Str::limit($trend['title'], 50) }}</div>
                         </td>
@@ -162,7 +162,7 @@
                             <span class="font-semibold text-gray-900 dark:text-white">{{ $trend['age_hours'] }}h</span>
                         </td>
                         <td class="py-4 px-4 text-center">
-                            <a href="{{ route('admin.trends.show', $trend['id']) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg text-xs font-bold transition-all transform hover:scale-105">
+                            <a href="{{ route('admin.trends.show', $trend['id']) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl text-xs font-bold transition-all transform hover:scale-105">
                                 <i class="fa-solid fa-eye"></i>
                                 ดูรายละเอียด
                             </a>
@@ -176,13 +176,13 @@
         <div class="text-center py-12">
             <div class="text-8xl mb-4">📊</div>
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ไม่พบ Rising Trends</h3>
-            <p class="text-gray-600 dark:text-gray-400">ยังไม่มีเทรนด์ที่กำลังโด่งดังในขณะนี้</p>
+            <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400">ยังไม่มีเทรนด์ที่กำลังโด่งดังในขณะนี้</p>
         </div>
         @endif
     </div>
 
     <!-- Top Keywords Grid -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 dark:from-yellow-600 dark:to-orange-700 rounded-xl flex items-center justify-center text-white">
@@ -198,7 +198,7 @@
         @if(count($top_keywords) > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach($top_keywords as $keyword)
-            <div class="group bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-600 rounded-xl p-5 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-200 dark:border-gray-600">
+            <div class="group bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-600 rounded-xl p-5 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-200 dark:border-gray-700 dark:border-gray-600">
                 <div class="flex items-start justify-between mb-3">
                     <h4 class="text-lg font-bold text-gray-900 dark:text-white">#{{ $keyword['keyword'] }}</h4>
                     <span class="px-2 py-1 bg-yellow-500 text-white rounded-full text-xs font-bold">
@@ -207,11 +207,11 @@
                 </div>
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between items-center">
-                        <span class="text-gray-600 dark:text-gray-400">ความถี่:</span>
+                        <span class="text-gray-600 dark:text-gray-400 dark:text-gray-400">ความถี่:</span>
                         <span class="font-bold text-gray-900 dark:text-white">{{ number_format($keyword['frequency']) }}</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-gray-600 dark:text-gray-400">การเติบโต:</span>
+                        <span class="text-gray-600 dark:text-gray-400 dark:text-gray-400">การเติบโต:</span>
                         <span class="font-bold {{ $keyword['growth_rate'] >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
                             {{ $keyword['growth_rate'] >= 0 ? '↑' : '↓' }} {{ number_format(abs($keyword['growth_rate']), 2) }}%
                         </span>
@@ -224,13 +224,13 @@
         <div class="text-center py-12">
             <div class="text-8xl mb-4">#️⃣</div>
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ไม่พบ Keywords</h3>
-            <p class="text-gray-600 dark:text-gray-400">ยังไม่มี Keywords ที่กำลังเป็นที่นิยม</p>
+            <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400">ยังไม่มี Keywords ที่กำลังเป็นที่นิยม</p>
         </div>
         @endif
     </div>
 
     <!-- Trending Now -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <div class="flex items-center gap-3 mb-6">
             <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-600 dark:from-pink-600 dark:to-rose-700 rounded-xl flex items-center justify-center text-white">
                 <i class="fa-solid fa-chart-line text-lg"></i>
@@ -244,7 +244,7 @@
         @if(count($trending_now) > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             @foreach($trending_now as $trend)
-            <div class="group bg-gradient-to-br from-white to-gray-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-200 dark:border-gray-600">
+            <div class="group bg-gradient-to-br from-white to-gray-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-200 dark:border-gray-700 dark:border-gray-600">
                 <div class="flex items-start justify-between mb-3">
                     <h4 class="text-base font-bold text-gray-900 dark:text-white flex-1 pr-3">
                         {{ Str::limit($trend['title'], 60) }}
@@ -264,10 +264,10 @@
                 </div>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <span class="text-sm text-gray-600 dark:text-gray-400">Score:</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">Score:</span>
                         <span class="text-lg font-bold text-gray-900 dark:text-white">{{ number_format($trend['viral_score'], 2) }}</span>
                     </div>
-                    <a href="{{ route('admin.trends.show', $trend['id']) }}" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg text-xs font-bold transition-all transform hover:scale-105">
+                    <a href="{{ route('admin.trends.show', $trend['id']) }}" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl text-xs font-bold transition-all transform hover:scale-105">
                         Details →
                     </a>
                 </div>
@@ -278,13 +278,13 @@
         <div class="text-center py-12">
             <div class="text-8xl mb-4">📈</div>
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ไม่มีเทรนด์ในขณะนี้</h3>
-            <p class="text-gray-600 dark:text-gray-400">ยังไม่พบเทรนด์ที่กำลังมาแรงในตอนนี้</p>
+            <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400">ยังไม่พบเทรนด์ที่กำลังมาแรงในตอนนี้</p>
         </div>
         @endif
     </div>
 
     <!-- Trend Chart -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+    <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">📊 Trend Analytics (7 วันล่าสุด)</h3>
         <div style="height: 350px;">
             <canvas id="trendChart"></canvas>

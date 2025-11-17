@@ -1,15 +1,15 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการไพ่ทาโร่ต์')
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
             <i class="fas fa-cards text-purple-600 mr-2"></i>
             จัดการไพ่ทาโร่ต์
         </h1>
-        <a href="{{ route('admin.tarot.cards.create') }}" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
+        <a href="{{ route('admin.tarot.cards.create') }}" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl">
             <i class="fas fa-plus mr-2"></i> เพิ่มไพ่ใหม่
         </a>
     </div>
@@ -20,19 +20,19 @@
     </div>
     @endif
 
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="glass-fusion rounded-xl shadow overflow-hidden" border border-white/20 dark:border-white/10>
         <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+            <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">รูป</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ชื่อ</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ประเภท</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">หมู่</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">สถานะ</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">จัดการ</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">รูป</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">ชื่อ</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">ประเภท</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">หมู่</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">สถานะ</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">จัดการ</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="glass-fusion divide-y divide-gray-200">
                 @foreach($cards as $card)
                 <tr>
                     <td class="px-6 py-4">
@@ -40,7 +40,7 @@
                     </td>
                     <td class="px-6 py-4">
                         <div class="text-sm font-medium text-gray-900">{{ $card->name_th }}</div>
-                        <div class="text-sm text-gray-500">{{ $card->name_en }}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">{{ $card->name_en }}</div>
                     </td>
                     <td class="px-6 py-4 text-sm">
                         {{ $card->type == 'major_arcana' ? 'Major Arcana' : 'Minor Arcana' }}
@@ -52,7 +52,7 @@
                         @if($card->is_active)
                             <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Active</span>
                         @else
-                            <span class="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full">Inactive</span>
+                            <span class="px-2 py-1 text-xs bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white rounded-full">Inactive</span>
                         @endif
                     </td>
                     <td class="px-6 py-4 text-sm space-x-2">

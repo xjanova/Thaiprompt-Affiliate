@@ -1,11 +1,11 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'LINE Analytics')
 
 @section('content')
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">LINE Analytics</h1>
+        <h1 class="h3 mb-0 text-gray-900 dark:text-white">LINE Analytics</h1>
     </div>
 
     <div class="row">
@@ -15,7 +15,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Friends</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalFriends ?? '0' }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white">{{ $totalFriends ?? '0' }}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fab fa-line fa-2x text-gray-300"></i>
@@ -31,7 +31,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Messages Sent</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $messagesSent ?? '0' }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white">{{ $messagesSent ?? '0' }}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-paper-plane fa-2x text-gray-300"></i>
@@ -47,7 +47,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Messages Received</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $messagesReceived ?? '0' }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white">{{ $messagesReceived ?? '0' }}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-inbox fa-2x text-gray-300"></i>
@@ -63,7 +63,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Response Rate</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $responseRate ?? '0' }}%</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white">{{ $responseRate ?? '0' }}%</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-reply fa-2x text-gray-300"></i>
