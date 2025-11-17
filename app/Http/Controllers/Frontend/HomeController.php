@@ -50,7 +50,7 @@ class HomeController extends Controller
             'description' => Setting::get('site_description', 'ระบบครบวงจรสำหรับการขายสินค้าออนไลน์และสร้างรายได้ผ่านระบบแอฟฟิลิเอท'),
         ];
 
-        return view('frontend.home-featured', compact(
+        return view('frontend.home-v3', compact(
             'featuredStores',
             'newProducts',
             'siteLogo',
