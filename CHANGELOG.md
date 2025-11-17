@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.64.2] - 2025-11-17
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1309 from xjanova/claude/line-registration-system-01T6uV5UQenHhkFnLrCwD66m (0ea03d17)
+- fix: แก้ไข routes ที่ขาดหายและชื่อไม่ตรงกันในเมนู sidebar (b275bf7a)
+### 🔧 Other Changes
+
+
 ## [v3.64.1] - 2025-11-17
 
 ### ✨ Features
