@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการคอมมิชชั่น MLM')
 
@@ -12,13 +12,13 @@
                     <i class="fas fa-hand-holding-usd text-purple-600 dark:text-purple-400"></i>
                     จัดการคอมมิชชั่น MLM
                 </h1>
-                <p class="text-gray-600 dark:text-gray-400 mt-1">ดูและจัดการคอมมิชชั่น MLM ทั้งหมด</p>
+                <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">ดูและจัดการคอมมิชชั่น MLM ทั้งหมด</p>
             </div>
             <div class="flex gap-2">
                 <form action="{{ route('admin.mlm.commissions.approve-all') }}" method="POST" class="inline-block">
                     @csrf
                     <button type="submit" onclick="return confirm('อนุมัติคอมมิชชั่นที่รออนุมัติทั้งหมด?')"
-                            class="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2">
+                            class="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-6 py-2.5 rounded-xl shadow-lg transition-all duration-200 flex items-center gap-2">
                         <i class="fas fa-check"></i>
                         อนุมัติทั้งหมด
                     </button>
@@ -26,7 +26,7 @@
                 <form action="{{ route('admin.mlm.commissions.pay-all') }}" method="POST" class="inline-block">
                     @csrf
                     <button type="submit" onclick="return confirm('จ่ายคอมมิชชั่นที่อนุมัติแล้วทั้งหมด?')"
-                            class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2">
+                            class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-2.5 rounded-xl shadow-lg transition-all duration-200 flex items-center gap-2">
                         <i class="fas fa-dollar-sign"></i>
                         จ่ายทั้งหมด
                     </button>
@@ -44,7 +44,7 @@
                     <h3 class="text-3xl font-bold mt-2">{{ number_format($stats['pending_count']) }}</h3>
                     <p class="text-sm mt-1 opacity-90">฿{{ number_format($stats['pending_amount'], 2) }}</p>
                 </div>
-                <div class="bg-white bg-opacity-20 rounded-full p-4">
+                <div class="glass-fusion bg-opacity-20 rounded-full p-4" border border-white/20 dark:border-white/10>
                     <i class="fas fa-clock text-2xl"></i>
                 </div>
             </div>
@@ -57,7 +57,7 @@
                     <h3 class="text-3xl font-bold mt-2">{{ number_format($stats['approved_count']) }}</h3>
                     <p class="text-sm mt-1 opacity-90">฿{{ number_format($stats['approved_amount'], 2) }}</p>
                 </div>
-                <div class="bg-white bg-opacity-20 rounded-full p-4">
+                <div class="glass-fusion bg-opacity-20 rounded-full p-4" border border-white/20 dark:border-white/10>
                     <i class="fas fa-check-circle text-2xl"></i>
                 </div>
             </div>
@@ -70,7 +70,7 @@
                     <h3 class="text-3xl font-bold mt-2">{{ number_format($stats['paid_count']) }}</h3>
                     <p class="text-sm mt-1 opacity-90">฿{{ number_format($stats['paid_amount'], 2) }}</p>
                 </div>
-                <div class="bg-white bg-opacity-20 rounded-full p-4">
+                <div class="glass-fusion bg-opacity-20 rounded-full p-4" border border-white/20 dark:border-white/10>
                     <i class="fas fa-check text-2xl"></i>
                 </div>
             </div>
@@ -78,11 +78,11 @@
     </div>
 
     <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <form method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">แผน MLM</label>
-                <select name="plan_id" class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">แผน MLM</label>
+                <select name="plan_id" class="w-full border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500">
                     <option value="">ทั้งหมด</option>
                     @foreach($plans as $plan)
                         <option value="{{ $plan->id }}" {{ request('plan_id') == $plan->id ? 'selected' : '' }}>
@@ -93,8 +93,8 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สถานะ</label>
-                <select name="status" class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">สถานะ</label>
+                <select name="status" class="w-full border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500">
                     <option value="">ทั้งหมด</option>
                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>รออนุมัติ</option>
                     <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>อนุมัติแล้ว</option>
@@ -104,8 +104,8 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ประเภท</label>
-                <select name="type" class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">ประเภท</label>
+                <select name="type" class="w-full border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500">
                     <option value="">ทั้งหมด</option>
                     <option value="unilevel" {{ request('type') == 'unilevel' ? 'selected' : '' }}>Unilevel</option>
                     <option value="binary" {{ request('type') == 'binary' ? 'selected' : '' }}>Binary</option>
@@ -115,17 +115,17 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">วันที่เริ่มต้น</label>
-                <input type="date" name="date_from" value="{{ request('date_from') }}" class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">วันที่เริ่มต้น</label>
+                <input type="date" name="date_from" value="{{ request('date_from') }}" class="w-full border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">วันที่สิ้นสุด</label>
-                <input type="date" name="date_to" value="{{ request('date_to') }}" class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">วันที่สิ้นสุด</label>
+                <input type="date" name="date_to" value="{{ request('date_to') }}" class="w-full border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500">
             </div>
 
             <div class="flex items-end">
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-xl transition-all duration-200 flex items-center justify-center gap-2">
                     <i class="fas fa-search"></i>
                     ค้นหา
                 </button>
@@ -134,23 +134,23 @@
     </div>
 
     <!-- Commissions Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden" border border-white/20 dark:border-white/10>
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div class="flex items-center gap-4">
-                    <input type="checkbox" id="select-all" class="rounded border-gray-300 dark:border-gray-600">
-                    <label for="select-all" class="text-sm text-gray-700 dark:text-gray-300">เลือกทั้งหมด</label>
+                    <input type="checkbox" id="select-all" class="rounded border-gray-300 dark:border-gray-600 dark:border-gray-600">
+                    <label for="select-all" class="text-sm text-gray-700 dark:text-gray-300 dark:text-gray-300">เลือกทั้งหมด</label>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <button onclick="bulkAction('approve')" class="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-2">
+                    <button onclick="bulkAction('approve')" class="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 rounded-xl text-sm transition-all duration-200 flex items-center gap-2">
                         <i class="fas fa-check"></i>
                         อนุมัติที่เลือก
                     </button>
-                    <button onclick="bulkAction('pay')" class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-2">
+                    <button onclick="bulkAction('pay')" class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm transition-all duration-200 flex items-center gap-2">
                         <i class="fas fa-dollar-sign"></i>
                         จ่ายที่เลือก
                     </button>
-                    <button onclick="bulkAction('reject')" class="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-all duration-200 flex items-center gap-2">
+                    <button onclick="bulkAction('reject')" class="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm transition-all duration-200 flex items-center gap-2">
                         <i class="fas fa-times"></i>
                         ปฏิเสธที่เลือก
                     </button>
@@ -174,17 +174,17 @@
                         <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody class="glass-fusion dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($commissions as $commission)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <input type="checkbox" name="commission_ids[]" value="{{ $commission->id }}" class="commission-checkbox rounded border-gray-300 dark:border-gray-600">
+                            <input type="checkbox" name="commission_ids[]" value="{{ $commission->id }}" class="commission-checkbox rounded border-gray-300 dark:border-gray-600 dark:border-gray-600">
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div>
                                     <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $commission->member->user->name }}</div>
-                                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ $commission->member->member_code }}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $commission->member->member_code }}</div>
                                 </div>
                             </div>
                         </td>
@@ -197,21 +197,21 @@
                                 {{ ucfirst($commission->type) }}
                             </span>
                             @if($commission->level)
-                                <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">Lv.{{ $commission->level }}</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 ml-1">Lv.{{ $commission->level }}</span>
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             @if($commission->fromMember)
                                 <div class="text-sm">{{ $commission->fromMember->user->name }}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $commission->fromMember->member_code }}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $commission->fromMember->member_code }}</div>
                             @else
-                                <span class="text-gray-400 dark:text-gray-500">-</span>
+                                <span class="text-gray-400 dark:text-gray-500 dark:text-gray-400">-</span>
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-semibold text-green-600 dark:text-green-400">฿{{ number_format($commission->commission_amount, 2) }}</div>
                             @if($commission->pv_amount)
-                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ number_format($commission->pv_amount, 2) }} PV</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ number_format($commission->pv_amount, 2) }} PV</div>
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -223,7 +223,7 @@
                                 {{ ucfirst($commission->status) }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
                             {{ $commission->created_at->format('d/m/Y H:i') }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -239,8 +239,8 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                            <i class="fas fa-inbox text-4xl mb-2 text-gray-400 dark:text-gray-500"></i>
+                        <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                            <i class="fas fa-inbox text-4xl mb-2 text-gray-400 dark:text-gray-500 dark:text-gray-400"></i>
                             <p>ไม่พบข้อมูลคอมมิชชั่น</p>
                         </td>
                     </tr>

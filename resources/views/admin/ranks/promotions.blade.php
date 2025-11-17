@@ -1,22 +1,22 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'การเลื่อนระดับ Rank')
 
 @section('content')
 <div class="max-w-7xl mx-auto">
     <!-- Header Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white dark:text-gray-200">
                     ⬆️ การเลื่อนระดับ Rank
                 </h2>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">
                     ตรวจสอบและอนุมัติการเลื่อนระดับของผู้ใช้
                 </p>
             </div>
             <a href="{{ route('admin.ranks.index') }}"
-               class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200">
+               class="px-4 py-2 bg-gray-200 dark:bg-gray-700 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-xl transition-all duration-200">
                 ← กลับ
             </a>
         </div>
@@ -24,55 +24,55 @@
 
     <!-- Stats -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">ทั้งหมด</p>
-                    <p class="text-2xl font-bold text-gray-800 dark:text-gray-200 mt-1">{{ $promotions->total() }}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">ทั้งหมด</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white dark:text-gray-200 mt-1">{{ $promotions->total() }}</p>
                 </div>
-                <div class="w-12 h-12 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 rounded-lg flex items-center justify-center">
+                <div class="w-12 h-12 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 rounded-xl flex items-center justify-center">
                     <span class="text-2xl">📊</span>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">รออนุมัติ</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">รออนุมัติ</p>
                     <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
                         {{ $promotions->where('status', 'pending')->count() }}
                     </p>
                 </div>
-                <div class="w-12 h-12 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900 dark:to-orange-900 rounded-lg flex items-center justify-center">
+                <div class="w-12 h-12 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900 dark:to-orange-900 rounded-xl flex items-center justify-center">
                     <span class="text-2xl">⏳</span>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">อนุมัติแล้ว</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">อนุมัติแล้ว</p>
                     <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
                         {{ $promotions->where('status', 'approved')->count() }}
                     </p>
                 </div>
-                <div class="w-12 h-12 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900 rounded-lg flex items-center justify-center">
+                <div class="w-12 h-12 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900 rounded-xl flex items-center justify-center">
                     <span class="text-2xl">✅</span>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">ปฏิเสธ</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">ปฏิเสธ</p>
                     <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
                         {{ $promotions->where('status', 'rejected')->count() }}
                     </p>
                 </div>
-                <div class="w-12 h-12 bg-gradient-to-r from-red-100 to-pink-100 dark:from-red-900 dark:to-pink-900 rounded-lg flex items-center justify-center">
+                <div class="w-12 h-12 bg-gradient-to-r from-red-100 to-pink-100 dark:from-red-900 dark:to-pink-900 rounded-xl flex items-center justify-center">
                     <span class="text-2xl">❌</span>
                 </div>
             </div>
@@ -80,39 +80,39 @@
     </div>
 
     <!-- Promotions List -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-md overflow-hidden" border border-white/20 dark:border-white/10>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-900">
+                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-900">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">
                             วันที่
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">
                             ผู้ใช้
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">
                             การเปลี่ยนแปลง
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">
                             สถานะ
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">
                             ผู้อนุมัติ
                         </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-400 uppercase tracking-wider">
                             จัดการ
                         </th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody class="glass-fusion dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($promotions as $promotion)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-900 dark:text-gray-100">
                                 {{ $promotion->created_at->format('d/m/Y') }}
                             </div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                            <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                 {{ $promotion->created_at->format('H:i') }} น.
                             </div>
                         </td>
@@ -125,7 +125,7 @@
                                     <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
                                         {{ $promotion->user->name ?? 'Unknown' }}
                                     </div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                         {{ $promotion->user->email ?? 'N/A' }}
                                     </div>
                                 </div>
@@ -135,14 +135,14 @@
                             <div class="flex items-center gap-2">
                                 @if($promotion->fromRank)
                                 <div class="flex items-center">
-                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+                                    <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold"
                                          style="background: {{ $promotion->fromRank->color }};">
                                         {{ $promotion->fromRank->level }}
                                     </div>
-                                    <span class="ml-1 text-xs text-gray-600 dark:text-gray-400">{{ $promotion->fromRank->name }}</span>
+                                    <span class="ml-1 text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">{{ $promotion->fromRank->name }}</span>
                                 </div>
                                 @else
-                                <span class="text-xs text-gray-500 dark:text-gray-400">ไม่มี Rank</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">ไม่มี Rank</span>
                                 @endif
 
                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,11 +151,11 @@
 
                                 @if($promotion->toRank)
                                 <div class="flex items-center">
-                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+                                    <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold"
                                          style="background: {{ $promotion->toRank->color }};">
                                         {{ $promotion->toRank->level }}
                                     </div>
-                                    <span class="ml-1 text-xs text-gray-600 dark:text-gray-400">{{ $promotion->toRank->name }}</span>
+                                    <span class="ml-1 text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">{{ $promotion->toRank->name }}</span>
                                 </div>
                                 @endif
                             </div>
@@ -180,11 +180,11 @@
                             <div class="text-sm text-gray-900 dark:text-gray-100">
                                 {{ $promotion->approver->name ?? 'N/A' }}
                             </div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                            <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                 {{ $promotion->approved_at?->format('d/m/Y H:i') }}
                             </div>
                             @else
-                            <span class="text-sm text-gray-400 dark:text-gray-500">-</span>
+                            <span class="text-sm text-gray-400 dark:text-gray-500 dark:text-gray-400">-</span>
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -194,18 +194,18 @@
                                       onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการอนุมัติการเลื่อนระดับนี้?');">
                                     @csrf
                                     <button type="submit"
-                                            class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg transition-all duration-200">
+                                            class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-xl transition-all duration-200">
                                         อนุมัติ
                                     </button>
                                 </form>
 
                                 <button onclick="showRejectModal({{ $promotion->id }})"
-                                        class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-all duration-200">
+                                        class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-xl transition-all duration-200">
                                     ปฏิเสธ
                                 </button>
                             </div>
                             @else
-                            <span class="text-gray-400 dark:text-gray-500">-</span>
+                            <span class="text-gray-400 dark:text-gray-500 dark:text-gray-400">-</span>
                             @endif
                         </td>
                     </tr>
@@ -214,7 +214,7 @@
                         <td colspan="6" class="px-6 py-12 text-center">
                             <div class="flex flex-col items-center justify-center">
                                 <span class="text-6xl mb-4">⬆️</span>
-                                <p class="text-gray-500 dark:text-gray-400 text-lg">ยังไม่มีการเลื่อนระดับ</p>
+                                <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-lg">ยังไม่มีการเลื่อนระดับ</p>
                             </div>
                         </td>
                     </tr>
@@ -225,7 +225,7 @@
 
         <!-- Pagination -->
         @if($promotions->hasPages())
-        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 dark:border-gray-700">
             {{ $promotions->links() }}
         </div>
         @endif
@@ -234,7 +234,7 @@
 
 <!-- Reject Modal -->
 <div id="rejectModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md glass-fusion dark:bg-gray-800" border border-white/20 dark:border-white/10>
         <div class="mt-3">
             <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-4">
                 ปฏิเสธการเลื่อนระดับ
@@ -242,20 +242,20 @@
             <form id="rejectForm" method="POST">
                 @csrf
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                         เหตุผลในการปฏิเสธ
                     </label>
                     <textarea name="reason" rows="4"
-                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-gray-200"
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-gray-200"
                               placeholder="กรุณาระบุเหตุผล..."></textarea>
                 </div>
                 <div class="flex items-center justify-end gap-3">
                     <button type="button" onclick="closeRejectModal()"
-                            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200">
+                            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-xl transition-all duration-200">
                         ยกเลิก
                     </button>
                     <button type="submit"
-                            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-200">
+                            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200">
                         ยืนยันการปฏิเสธ
                     </button>
                 </div>
