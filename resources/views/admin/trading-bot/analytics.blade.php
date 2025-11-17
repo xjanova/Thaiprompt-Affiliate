@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+        <h2 class="font-semibold text-xl text-gray-900 dark:text-white dark:text-gray-200 leading-tight">
             Admin: Analytics & Reports
         </h2>
     </x-slot>
@@ -29,11 +29,11 @@
             </div>
 
             <!-- Revenue by Package -->
-            <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-6">
+            <div class="glass-fusion dark:bg-gray-800 shadow-xl rounded-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Revenue by Package</h3>
                 <div class="space-y-4">
                     @foreach($revenueByPackage as $revenue)
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div class="flex items-center justify-between p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl">
                         <span class="font-medium">{{ $revenue->name }}</span>
                         <span class="text-xl font-bold text-green-600">฿{{ number_format($revenue->total_revenue, 0) }}</span>
                     </div>
@@ -42,12 +42,12 @@
             </div>
 
             <!-- Monthly Growth -->
-            <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-6">
+            <div class="glass-fusion dark:bg-gray-800 shadow-xl rounded-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Monthly Subscription Growth ({{ now()->year }})</h3>
                 <div class="grid grid-cols-6 gap-4">
                     @foreach($monthlyGrowth as $month)
-                    <div class="text-center p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Month {{ $month->month }}</p>
+                    <div class="text-center p-4 bg-blue-50 dark:bg-blue-900 rounded-xl">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-1">Month {{ $month->month }}</p>
                         <p class="text-2xl font-bold">{{ $month->count }}</p>
                     </div>
                     @endforeach
@@ -55,16 +55,16 @@
             </div>
 
             <!-- Export Options -->
-            <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-6">
+            <div class="glass-fusion dark:bg-gray-800 shadow-xl rounded-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Export Reports</h3>
                 <div class="flex gap-3">
-                    <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold">
+                    <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold">
                         📥 Export to Excel
                     </button>
-                    <button class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold">
+                    <button class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold">
                         📄 Export to PDF
                     </button>
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold">
                         📊 Generate Custom Report
                     </button>
                 </div>

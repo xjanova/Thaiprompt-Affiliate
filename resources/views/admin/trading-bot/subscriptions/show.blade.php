@@ -1,10 +1,10 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+            <h2 class="font-semibold text-xl text-gray-900 dark:text-white dark:text-gray-200 leading-tight">
                 Admin: Subscription Details
             </h2>
-            <a href="{{ route('admin.trading-bot.subscriptions.index') }}" class="text-gray-600 hover:underline">← Back</a>
+            <a href="{{ route('admin.trading-bot.subscriptions.index') }}" class="text-gray-600 dark:text-gray-400 hover:underline">← Back</a>
         </div>
     </x-slot>
 
@@ -18,10 +18,10 @@
             @endif
 
             <!-- Subscription Info -->
-            <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-6">
+            <div class="glass-fusion dark:bg-gray-800 shadow-xl rounded-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                        <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">User Information</h3>
+                        <h3 class="font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-3">User Information</h3>
                         <div class="space-y-2 text-sm">
                             <p><span class="font-medium">Name:</span> {{ $subscription->user->name }}</p>
                             <p><span class="font-medium">Email:</span> {{ $subscription->user->email }}</p>
@@ -30,7 +30,7 @@
                         </div>
                     </div>
                     <div>
-                        <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">Package Details</h3>
+                        <h3 class="font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-3">Package Details</h3>
                         <div class="space-y-2 text-sm">
                             <p><span class="font-medium">Package:</span> {{ $subscription->package->name }}</p>
                             <p><span class="font-medium">Price:</span> ฿{{ number_format($subscription->package->price, 0) }}</p>
@@ -39,10 +39,10 @@
                         </div>
                     </div>
                     <div>
-                        <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">Subscription Status</h3>
+                        <h3 class="font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-3">Subscription Status</h3>
                         <div class="space-y-2 text-sm">
                             <p><span class="font-medium">Status:</span>
-                                <span class="px-2 py-1 text-xs rounded-full {{ $subscription->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                <span class="px-2 py-1 text-xs rounded-full {{ $subscription->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white' }}">
                                     {{ strtoupper($subscription->status) }}
                                 </span>
                             </p>
@@ -60,7 +60,7 @@
                     <form action="{{ route('admin.trading-bot.subscriptions.cancel', $subscription) }}" method="POST"
                           onsubmit="return confirm('Are you sure you want to cancel this subscription? This will stop all associated bots.')">
                         @csrf
-                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg">
+                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl">
                             Cancel Subscription
                         </button>
                     </form>
@@ -69,19 +69,19 @@
             </div>
 
             <!-- Associated Bots -->
-            <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-6">
+            <div class="glass-fusion dark:bg-gray-800 shadow-xl rounded-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Associated Bots ({{ $subscription->bots->count() }})</h3>
                 @if($subscription->bots->count() > 0)
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead>
                             <tr>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Bot Name</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Trading Pair</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Strategy</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">P&L</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Bot Name</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Trading Pair</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Strategy</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">P&L</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -97,7 +97,7 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     <span class="px-2 py-1 text-xs rounded-full
-                                        {{ $bot->status === 'running' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                        {{ $bot->status === 'running' ? 'bg-green-100 text-green-800' : 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white' }}">
                                         {{ strtoupper($bot->status) }}
                                     </span>
                                 </td>
@@ -110,7 +110,7 @@
                     </table>
                 </div>
                 @else
-                <p class="text-gray-500 text-center py-8">No bots created yet</p>
+                <p class="text-gray-500 dark:text-gray-400 text-center py-8">No bots created yet</p>
                 @endif
             </div>
 

@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+        <h2 class="font-semibold text-xl text-gray-900 dark:text-white dark:text-gray-200 leading-tight">
             Admin: Arbitrage Opportunities Monitor
         </h2>
     </x-slot>
@@ -16,25 +16,25 @@
 
             <!-- Active Opportunities -->
             @if(count($opportunities) > 0)
-            <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg overflow-hidden">
+            <div class="glass-fusion dark:bg-gray-800 shadow-xl rounded-xl overflow-hidden" border border-white/20 dark:border-white/10>
                 <div class="p-6">
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">⚡ Active Opportunities</h3>
                 </div>
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-gray-900">
+                    <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-900">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Symbol</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Buy From</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sell To</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Buy Price</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sell Price</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Profit %</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Net Profit</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Symbol</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Buy From</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Sell To</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Buy Price</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Sell Price</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Profit %</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Net Profit</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                         @foreach($opportunities as $opp)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-700">
                             <td class="px-6 py-4 font-bold">{{ $opp['symbol'] ?? 'N/A' }}</td>
                             <td class="px-6 py-4 text-sm">{{ $opp['buy_exchange'] ?? 'N/A' }}</td>
                             <td class="px-6 py-4 text-sm">{{ $opp['sell_exchange'] ?? 'N/A' }}</td>
@@ -54,23 +54,23 @@
                 </table>
             </div>
             @else
-            <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-12 text-center">
+            <div class="glass-fusion dark:bg-gray-800 shadow-xl rounded-xl p-12 text-center" border border-white/20 dark:border-white/10>
                 <div class="text-6xl mb-4">🔍</div>
                 <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">No Opportunities Found</h3>
-                <p class="text-gray-600 dark:text-gray-400">
+                <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400">
                     Currently monitoring markets. Profitable opportunities will appear here.
                 </p>
             </div>
             @endif
 
             <!-- Exchange Status -->
-            <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-6">
+            <div class="glass-fusion dark:bg-gray-800 shadow-xl rounded-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">📊 Exchange Status</h3>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     @foreach($exchanges as $exchange)
-                    <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg text-center">
+                    <div class="p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl text-center">
                         <div class="font-bold text-lg">{{ $exchange->name }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">
                             <span class="inline-block w-2 h-2 rounded-full {{ $exchange->is_active ? 'bg-green-500' : 'bg-gray-500' }} mr-1"></span>
                             {{ $exchange->is_active ? 'Online' : 'Offline' }}
                         </div>
