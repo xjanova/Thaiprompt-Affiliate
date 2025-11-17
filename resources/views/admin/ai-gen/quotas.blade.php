@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'AI Gen Free Quotas')
 
@@ -53,7 +53,7 @@
                                     <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                         Today's Free Usage
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-today">-</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-today">-</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-calendar-day fa-2x text-primary"></i>
@@ -71,7 +71,7 @@
                                     <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                         This Month
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-month">-</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-month">-</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-calendar-alt fa-2x text-success"></i>
@@ -89,7 +89,7 @@
                                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                         Active Users
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-users">-</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-users">-</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-users fa-2x text-info"></i>
@@ -107,7 +107,7 @@
                                     <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                         Total Free Gens
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-total">-</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-total">-</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-gift fa-2x text-warning"></i>
@@ -403,7 +403,7 @@ function renderQuotas() {
                         </div>
                     </div>
                 </div>
-                <div class="card-footer bg-white">
+                <div class="card-footer glass-fusion" border border-white/20 dark:border-white/10>
                     <div class="d-flex justify-content-between">
                         <button class="btn btn-sm btn-primary" onclick="editQuota(${quota.id})">
                             <i class="fas fa-edit"></i> Edit

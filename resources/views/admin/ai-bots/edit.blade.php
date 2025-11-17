@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 @section('title', 'แก้ไข ' . $bot->display_name)
 
 @push('styles')
@@ -189,10 +189,10 @@
                 @endif
             </div>
             <div class="flex gap-2">
-                <a href="{{ route('admin.ai-bots.show', $bot->id) }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all">
+                <a href="{{ route('admin.ai-bots.show', $bot->id) }}" class="glass-fusion bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-xl transition-all">
                     <i class="fas fa-eye mr-2"></i>ดูรายละเอียด
                 </a>
-                <a href="{{ route('admin.ai-bots.index') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all">
+                <a href="{{ route('admin.ai-bots.index') }}" class="glass-fusion bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-xl transition-all">
                     <i class="fas fa-arrow-left mr-2"></i>กลับ
                 </a>
             </div>
@@ -411,11 +411,11 @@
                 </div>
 
                 @if($bot->line_oa_channel_id)
-                <div class="mt-4 p-4 bg-green-50 rounded-lg">
+                <div class="mt-4 p-4 bg-green-50 rounded-xl">
                     <p class="text-sm text-green-800">
                         <i class="fas fa-check-circle mr-2"></i>
                         <strong>เชื่อมต่อกับ LINE OA แล้ว</strong><br>
-                        <span class="text-xs">Webhook URL: <code class="bg-white px-2 py-1 rounded">{{ url('/webhook/line/' . $bot->id) }}</code></span>
+                        <span class="text-xs">Webhook URL: <code class="glass-fusion px-2 py-1 rounded">{{ url('/webhook/line/' . $bot->id) }}</code></span>
                     </p>
                 </div>
                 @endif

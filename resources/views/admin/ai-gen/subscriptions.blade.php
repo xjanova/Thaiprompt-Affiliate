@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'AI Gen Subscriptions')
 
@@ -29,7 +29,7 @@
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                 Active Subscriptions
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-active">-</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-active">-</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-check-circle fa-2x text-primary"></i>
@@ -47,7 +47,7 @@
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                 Expiring Soon
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-expiring">-</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-expiring">-</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
@@ -65,7 +65,7 @@
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 Total Revenue
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-revenue">-</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-revenue">-</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-dollar-sign fa-2x text-success"></i>
@@ -83,7 +83,7 @@
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                 This Month
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-month">-</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-month">-</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-calendar fa-2x text-info"></i>

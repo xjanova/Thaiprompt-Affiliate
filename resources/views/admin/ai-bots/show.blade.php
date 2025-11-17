@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 @section('title', $bot->display_name)
 
 @push('styles')
@@ -230,13 +230,13 @@
     <div class="detail-header">
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-4">
-                <div class="w-20 h-20 rounded-xl flex items-center justify-center text-4xl bg-white bg-opacity-20">
+                <div class="w-20 h-20 rounded-xl flex items-center justify-center text-4xl glass-fusion bg-opacity-20" border border-white/20 dark:border-white/10>
                     <i class="fas fa-robot"></i>
                 </div>
                 <div>
                     <h2 class="text-3xl font-bold mb-2">{{ $bot->display_name }}</h2>
                     <p class="opacity-90">
-                        <span class="font-mono bg-white bg-opacity-20 px-3 py-1 rounded">{{ $bot->name }}</span>
+                        <span class="font-mono glass-fusion bg-opacity-20 px-3 py-1 rounded">{{ $bot->name }}</span>
                     </p>
                 </div>
             </div>
@@ -246,7 +246,7 @@
                     <i class="fas fa-edit"></i> แก้ไข
                 </a>
                 @endif
-                <a href="{{ route('admin.ai-bots.index') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all">
+                <a href="{{ route('admin.ai-bots.index') }}" class="glass-fusion bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-xl transition-all">
                     <i class="fas fa-arrow-left mr-2"></i>กลับ
                 </a>
             </div>
@@ -419,7 +419,7 @@
 
                         <div class="flex gap-2">
                             <textarea id="test-message" x-model="testMessage"
-                                      class="flex-1 p-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg resize-none focus:outline-none focus:border-purple-500"
+                                      class="flex-1 p-3 border-2 border-gray-300 dark:border-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-xl resize-none focus:outline-none focus:border-purple-500"
                                       rows="3" placeholder="พิมพ์ข้อความที่ต้องการทดสอบ..."
                                       @keydown.ctrl.enter="testBot()"></textarea>
                             <button @click="testBot()" :disabled="testing || !testMessage"
@@ -430,7 +430,7 @@
                                 <span x-show="testing" class="loading-spinner"></span>
                             </button>
                         </div>
-                        <p class="text-xs text-gray-500 mt-2">กด Ctrl + Enter เพื่อส่งข้อความ</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">กด Ctrl + Enter เพื่อส่งข้อความ</p>
                     </div>
                 </div>
             </div>
@@ -496,7 +496,7 @@
                 </div>
 
                 <div class="px-6 pb-6">
-                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="bg-green-50 border border-green-200 rounded-xl p-4">
                         <p class="text-sm text-green-800 mb-2">
                             <i class="fas fa-check-circle mr-2"></i>
                             <strong>เชื่อมต่อกับ LINE OA แล้ว</strong>
@@ -504,11 +504,11 @@
                         <div class="text-xs text-green-700 space-y-2">
                             <div>
                                 <strong>Channel ID:</strong>
-                                <code class="bg-white px-2 py-1 rounded">{{ $bot->line_oa_channel_id }}</code>
+                                <code class="glass-fusion px-2 py-1 rounded">{{ $bot->line_oa_channel_id }}</code>
                             </div>
                             <div>
                                 <strong>Webhook URL:</strong>
-                                <code class="bg-white px-2 py-1 rounded block mt-1">{{ url('/webhook/line/' . $bot->id) }}</code>
+                                <code class="glass-fusion px-2 py-1 rounded block mt-1">{{ url('/webhook/line/' . $bot->id) }}</code>
                             </div>
                         </div>
                     </div>
