@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.77.1] - 2025-11-17
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1325 from xjanova/claude/fix-auto-hide-menu-01NjaDnDFo1htLVRXaU25mam (719e55e1)
+- fix: แก้ไข Alpine Store ให้ใช้ reactive properties แทน getters (90fd28d6)
+### 🔧 Other Changes
+
+
 ## [v3.77.0] - 2025-11-17
 
 ### ✨ Features
