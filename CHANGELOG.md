@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.70.0] - 2025-11-17
+
+### ✨ Features
+- feat: Add Hybrid Bot mode with keyword matching + AI fallback (ea82fbdf)
+- feat: Create complete LINE bot integration setup (2539d614)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1315 from xjanova/claude/fix-line-login-integration-01Hc1yUwQA8YAxneyRbcozZY (4a1df2f1)
+- docs: Add Hybrid Bot Mode complete guide and documentation (7a1d7bcc)
+- docs: Add quick start guide for LINE bot setup (6de30af1)
+
 ## [v3.69.0] - 2025-11-17
 
 ### ✨ Features
