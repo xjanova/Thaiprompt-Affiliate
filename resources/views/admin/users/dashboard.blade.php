@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'แดชบอร์ดของ ' . $user->name)
 
@@ -7,12 +7,12 @@
     <!-- Header with Back Button -->
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
-            <a href="{{ route('admin.users.index') }}" class="text-gray-600 hover:text-gray-900">
+            <a href="{{ route('admin.users.index') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900">
                 ← กลับ
             </a>
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">แดชบอร์ดของ {{ $user->name }}</h1>
-                <p class="text-sm text-gray-500">{{ $user->email }} • {{ ucfirst($user->role) }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $user->email }} • {{ ucfirst($user->role) }}</p>
             </div>
         </div>
     </div>
@@ -20,10 +20,10 @@
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Total Commissions -->
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="glass-fusion rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">คอมมิชชั่นทั้งหมด</p>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">คอมมิชชั่นทั้งหมด</p>
                     <p class="text-3xl font-bold text-gray-900 mt-2">{{ $stats['total_commissions'] }}</p>
                 </div>
                 <div class="text-4xl">📊</div>
@@ -31,10 +31,10 @@
         </div>
 
         <!-- Pending Commissions -->
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="glass-fusion rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">รอดำเนินการ</p>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">รอดำเนินการ</p>
                     <p class="text-3xl font-bold text-yellow-600 mt-2">{{ $stats['pending_commissions'] }}</p>
                 </div>
                 <div class="text-4xl">⏳</div>
@@ -42,10 +42,10 @@
         </div>
 
         <!-- Approved Commissions -->
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="glass-fusion rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">อนุมัติแล้ว</p>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">อนุมัติแล้ว</p>
                     <p class="text-3xl font-bold text-green-600 mt-2">{{ $stats['approved_commissions'] }}</p>
                 </div>
                 <div class="text-4xl">✅</div>
@@ -53,10 +53,10 @@
         </div>
 
         <!-- Total Earnings -->
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="glass-fusion rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">รายได้ทั้งหมด</p>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">รายได้ทั้งหมด</p>
                     <p class="text-3xl font-bold text-blue-600 mt-2">฿{{ number_format($stats['total_earnings'], 2) }}</p>
                 </div>
                 <div class="text-4xl">💰</div>
@@ -67,13 +67,13 @@
     <!-- Charts Section -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Commission Timeline Chart -->
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="glass-fusion rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <h2 class="text-lg font-semibold text-gray-900 mb-4">คอมมิชชั่นรายเดือน (6 เดือนล่าสุด)</h2>
             <div class="h-64">
                 @if($chartData->count() > 0)
                     <canvas id="commissionChart"></canvas>
                 @else
-                    <div class="flex items-center justify-center h-full text-gray-500">
+                    <div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
                         <div class="text-center">
                             <p class="text-4xl mb-2">📭</p>
                             <p>ยังไม่มีข้อมูลคอมมิชชั่น</p>
@@ -84,37 +84,37 @@
         </div>
 
         <!-- Status Breakdown -->
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="glass-fusion rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <h2 class="text-lg font-semibold text-gray-900 mb-4">สถานะคอมมิชชั่น</h2>
             <div class="space-y-4">
-                <div class="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
+                <div class="flex items-center justify-between p-4 bg-yellow-50 rounded-xl">
                     <div class="flex items-center gap-3">
                         <div class="text-2xl">⏳</div>
                         <div>
                             <p class="font-medium text-gray-900">รอดำเนินการ</p>
-                            <p class="text-sm text-gray-500">฿{{ number_format($stats['pending_earnings'], 2) }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">฿{{ number_format($stats['pending_earnings'], 2) }}</p>
                         </div>
                     </div>
                     <p class="text-2xl font-bold text-yellow-600">{{ $stats['pending_commissions'] }}</p>
                 </div>
 
-                <div class="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                <div class="flex items-center justify-between p-4 bg-green-50 rounded-xl">
                     <div class="flex items-center gap-3">
                         <div class="text-2xl">✅</div>
                         <div>
                             <p class="font-medium text-gray-900">อนุมัติแล้ว</p>
-                            <p class="text-sm text-gray-500">{{ $stats['approved_commissions'] }} รายการ</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $stats['approved_commissions'] }} รายการ</p>
                         </div>
                     </div>
                     <p class="text-2xl font-bold text-green-600">{{ $stats['approved_commissions'] }}</p>
                 </div>
 
-                <div class="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                <div class="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
                     <div class="flex items-center gap-3">
                         <div class="text-2xl">💰</div>
                         <div>
                             <p class="font-medium text-gray-900">จ่ายแล้ว</p>
-                            <p class="text-sm text-gray-500">฿{{ number_format($stats['total_earnings'], 2) }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">฿{{ number_format($stats['total_earnings'], 2) }}</p>
                         </div>
                     </div>
                     <p class="text-2xl font-bold text-blue-600">{{ $stats['paid_commissions'] }}</p>
@@ -124,31 +124,31 @@
     </div>
 
     <!-- Recent Commissions -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200">
+    <div class="glass-fusion rounded-xl shadow-md overflow-hidden" border border-white/20 dark:border-white/10>
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h2 class="text-lg font-semibold text-gray-900">คอมมิชชั่นล่าสุด</h2>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ประเภท</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวน</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">วันที่</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Order ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ประเภท</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">จำนวน</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">สถานะ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="glass-fusion divide-y divide-gray-200">
                     @forelse($recentCommissions as $commission)
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50">
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {{ $commission->created_at->format('d/m/Y H:i') }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                 {{ $commission->order_id }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                 {{ ucfirst($commission->type) }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -165,7 +165,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                            <td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                                 <div class="flex flex-col items-center justify-center">
                                     <span class="text-4xl mb-2">📭</span>
                                     <span>ยังไม่มีข้อมูลคอมมิชชั่น</span>
