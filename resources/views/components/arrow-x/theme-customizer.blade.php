@@ -161,6 +161,12 @@
                 <i class="fas fa-cog mr-2"></i>
                 ขั้นสูง
             </button>
+            <button @click="activeTab = 'mlm'"
+                    class="flex-1 px-4 py-3 text-sm font-medium transition"
+                    :class="activeTab === 'mlm' ? 'text-white bg-white/20 border-b-2 border-purple-400' : 'text-white/70 hover:text-white hover:bg-white/10'">
+                <i class="fas fa-sitemap mr-2"></i>
+                MLM
+            </button>
         </div>
 
         {{-- Preset Themes --}}
@@ -379,6 +385,9 @@
                            class="w-full">
                 </div>
             </div>
+
+            {{-- MLM Tab --}}
+            <x-arrow-x.mlm-settings-tab />
         </div>
 
         {{-- Footer Actions --}}
