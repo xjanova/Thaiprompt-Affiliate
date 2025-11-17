@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string $theme_version
  * @property bool $is_active
  * @property string|null $logo_path
+ * @property string|null $footer_logo_path
+ * @property string $footer_logo_animation
  * @property string|null $favicon_path
  * @property string $brand_name
  * @property string|null $brand_tagline
@@ -35,6 +37,17 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string $default_language
  * @property array $available_languages
  * @property bool $rtl_enabled
+ * @property bool $bg_effects_enabled
+ * @property string $bg_circle1_color1
+ * @property string $bg_circle1_color2
+ * @property string $bg_circle2_color1
+ * @property string $bg_circle2_color2
+ * @property string $bg_circle3_color1
+ * @property string $bg_circle3_color2
+ * @property string $bg_animation_speed
+ * @property int $bg_circle_opacity
+ * @property int $bg_circle_blur
+ * @property int $bg_circle_size
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -57,6 +70,8 @@ class ThemeSetting extends Model
         'theme_version',
         'is_active',
         'logo_path',
+        'footer_logo_path',
+        'footer_logo_animation',
         'favicon_path',
         'brand_name',
         'brand_tagline',
@@ -76,6 +91,18 @@ class ThemeSetting extends Model
         'default_language',
         'available_languages',
         'rtl_enabled',
+        // Background Effects
+        'bg_effects_enabled',
+        'bg_circle1_color1',
+        'bg_circle1_color2',
+        'bg_circle2_color1',
+        'bg_circle2_color2',
+        'bg_circle3_color1',
+        'bg_circle3_color2',
+        'bg_animation_speed',
+        'bg_circle_opacity',
+        'bg_circle_blur',
+        'bg_circle_size',
     ];
 
     /**
@@ -98,6 +125,11 @@ class ThemeSetting extends Model
         'card_border_radius' => 'integer',
         'available_languages' => 'array',
         'rtl_enabled' => 'boolean',
+        // Background Effects
+        'bg_effects_enabled' => 'boolean',
+        'bg_circle_opacity' => 'integer',
+        'bg_circle_blur' => 'integer',
+        'bg_circle_size' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

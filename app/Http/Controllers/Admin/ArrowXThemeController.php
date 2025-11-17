@@ -166,18 +166,21 @@ class ArrowXThemeController extends Controller
 
         $themeSetting->update($validated);
 
-        // ล้าง theme cache เพื่อให้การเปลี่ยนแปลงมีผลทันที
+        // ล้าง theme cache และ recompile เพื่อให้การเปลี่ยนแปลงมีผลทันที
         try {
             $compilerService = app(\App\Services\ThemeCompilerService::class);
             $compilerService->clearCache();
+
+            // Recompile theme ด้วย settings ใหม่
+            $compilerService->compile($themeSetting);
         } catch (\Exception $e) {
             // Log error but don't fail the update
-            \Log::warning('Failed to clear theme cache: ' . $e->getMessage());
+            \Log::warning('Failed to clear/recompile theme cache: ' . $e->getMessage());
         }
 
         return redirect()
             ->back()
-            ->with('success', 'บันทึกการตั้งค่าทั่วไปสำเร็จ');
+            ->with('success', 'บันทึกการตั้งค่าทั่วไปสำเร็จ - Theme ถูก compile ใหม่แล้ว');
     }
 
     /**
