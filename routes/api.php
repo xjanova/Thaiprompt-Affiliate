@@ -300,6 +300,18 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [\App\Http\Controllers\Api\TaskbarShortcutController::class, 'destroy']);
             Route::post('/reorder', [\App\Http\Controllers\Api\TaskbarShortcutController::class, 'reorder']);
         });
+
+        // LINE Bot Keywords API
+        Route::prefix('line-bot/keywords')->name('api.line-bot.keywords.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\LineBotKeywordController::class, 'index'])->name('index');
+            Route::get('/active', [\App\Http\Controllers\Api\V1\LineBotKeywordController::class, 'activeKeywords'])->name('active');
+            Route::get('/statistics', [\App\Http\Controllers\Api\V1\LineBotKeywordController::class, 'statistics'])->name('statistics');
+            Route::post('/test', [\App\Http\Controllers\Api\V1\LineBotKeywordController::class, 'test'])->name('test');
+            Route::post('/', [\App\Http\Controllers\Api\V1\LineBotKeywordController::class, 'store'])->name('store');
+            Route::get('/{keyword}', [\App\Http\Controllers\Api\V1\LineBotKeywordController::class, 'show'])->name('show');
+            Route::put('/{keyword}', [\App\Http\Controllers\Api\V1\LineBotKeywordController::class, 'update'])->name('update');
+            Route::delete('/{keyword}', [\App\Http\Controllers\Api\V1\LineBotKeywordController::class, 'destroy'])->name('destroy');
+        });
     });
 });
 

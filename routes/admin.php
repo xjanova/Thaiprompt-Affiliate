@@ -600,6 +600,14 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
         Route::put('/{keyword}', [\App\Http\Controllers\Admin\LineBotKeywordController::class, 'update'])->name('update');
         Route::delete('/{keyword}', [\App\Http\Controllers\Admin\LineBotKeywordController::class, 'destroy'])->name('destroy');
         Route::post('/test', [\App\Http\Controllers\Admin\LineBotKeywordController::class, 'test'])->name('test');
+
+        // Analytics & Advanced Features
+        Route::get('/analytics/dashboard', [\App\Http\Controllers\Admin\LineBotKeywordAnalyticsController::class, 'index'])->name('analytics');
+        Route::get('/analytics/export', [\App\Http\Controllers\Admin\LineBotKeywordAnalyticsController::class, 'export'])->name('export');
+        Route::post('/analytics/import', [\App\Http\Controllers\Admin\LineBotKeywordAnalyticsController::class, 'import'])->name('import');
+        Route::post('/{keyword}/clone', [\App\Http\Controllers\Admin\LineBotKeywordAnalyticsController::class, 'clone'])->name('clone');
+        Route::post('/analytics/bulk-update-status', [\App\Http\Controllers\Admin\LineBotKeywordAnalyticsController::class, 'bulkUpdateStatus'])->name('bulk-update-status');
+        Route::post('/analytics/bulk-delete', [\App\Http\Controllers\Admin\LineBotKeywordAnalyticsController::class, 'bulkDelete'])->name('bulk-delete');
     });
 });
 
