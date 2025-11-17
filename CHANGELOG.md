@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.55.2] - 2025-11-17
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1291 from xjanova/claude/dashboard-color-theme-01WrWZDEhywL1zQkJKkpjgDo (d094f048)
+- fix: complete general-settings form with all required fields (b51b443f)
+### 🔧 Other Changes
+
+
 ## [v3.55.1] - 2025-11-17
 
 ### ✨ Features
