@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.77.0] - 2025-11-17
+
+### ✨ Features
+- Merge pull request #1324 from xjanova/claude/create-line-sessions-table-01FwbUbvRUPApkZv5DMzEiMo (8502d712)
+- feat: Create line_signup_sessions table migration and fix seeder (b52af35c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.76.0] - 2025-11-17
 
 ### ✨ Features
