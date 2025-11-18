@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'วิเคราะห์คอร์ส - ' . $course->title)
 

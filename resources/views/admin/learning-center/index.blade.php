@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Academy - ศูนย์เรียนรู้ออนไลน์')
 

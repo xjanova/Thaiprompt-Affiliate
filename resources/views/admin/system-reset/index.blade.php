@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ระบบรีเซ็ต/ล้างข้อมูล')
 

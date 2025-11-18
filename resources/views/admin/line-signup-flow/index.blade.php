@@ -16,7 +16,7 @@
     📚 คู่มือ: LINE_CHATBOT_MLM_SIGNUP.md
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 @section('title', 'จัดการ Signup Flow')
 
 @push('styles')
