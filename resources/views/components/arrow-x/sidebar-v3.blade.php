@@ -110,13 +110,38 @@
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">แดชบอร์ด</span>
         </a>
 
-        {{-- Users --}}
-        <a href="{{ route('admin.users.index') }}"
-           @click="$store.sidebar.closeOnMenuClick()"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.users.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-            <i class="fas fa-users w-5 text-center drop-shadow"></i>
-            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">ผู้ใช้งาน</span>
-        </a>
+        {{-- Users & Roles (Collapsible Menu) 👥 --}}
+        <div class="space-y-1"
+             x-data="{ usersOpen: {{ request()->routeIs('admin.users.*') || request()->routeIs('admin.roles.*') ? 'true' : 'false' }} }">
+            {{-- Users Header Button --}}
+            <button @click="usersOpen = !usersOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.users.*') || request()->routeIs('admin.roles.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-users w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">ผู้ใช้งาน</span>
+                <i x-show="$store.sidebar.shouldExpand && usersOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !usersOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Users Submenu --}}
+            <div x-show="usersOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Users List --}}
+                <a href="{{ route('admin.users.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.users.index') || request()->routeIs('admin.users.show') || request()->routeIs('admin.users.edit') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-list w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">รายชื่อผู้ใช้</span>
+                </a>
+
+                {{-- Roles & Permissions ⭐ สำคัญ! --}}
+                <a href="{{ route('admin.roles.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.roles.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-user-shield w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">บทบาทและสิทธิ์</span>
+                </a>
+            </div>
+        </div>
 
         {{-- MLM System (Collapsible Menu) --}}
         <div class="space-y-1">
@@ -188,6 +213,14 @@
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Genealogy</span>
                 </a>
 
+                {{-- Ranks ⭐ สำคัญ! --}}
+                <a href="{{ route('admin.ranks.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ranks.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-medal w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ระดับสมาชิก</span>
+                </a>
+
                 {{-- Prospects --}}
                 <a href="{{ route('admin.mlm-prospects.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
@@ -222,13 +255,109 @@
             </div>
         </div>
 
-        {{-- Wallet --}}
-        <a href="{{ route('admin.wallet.index') }}"
-           @click="$store.sidebar.closeOnMenuClick()"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.wallet.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-            <i class="fas fa-wallet w-5 text-center drop-shadow"></i>
-            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">กระเป๋าเงิน</span>
-        </a>
+        {{-- Wallet & Finance (Collapsible Menu) 💰 --}}
+        <div class="space-y-1"
+             x-data="{ walletOpen: {{ request()->routeIs('admin.wallet.*') || request()->routeIs('admin.withdrawals.*') || request()->routeIs('admin.wallet-settings.*') || request()->routeIs('admin.payment-gateways.*') || request()->routeIs('admin.cashback.*') || request()->routeIs('admin.investments.*') || request()->routeIs('admin.nfc-*') ? 'true' : 'false' }} }">
+            {{-- Wallet Header Button --}}
+            <button @click="walletOpen = !walletOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.wallet.*') || request()->routeIs('admin.withdrawals.*') || request()->routeIs('admin.wallet-settings.*') || request()->routeIs('admin.payment-gateways.*') || request()->routeIs('admin.cashback.*') || request()->routeIs('admin.investments.*') || request()->routeIs('admin.nfc-*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-wallet w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">กระเป๋าเงิน</span>
+                <i x-show="$store.sidebar.shouldExpand && walletOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !walletOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Wallet Submenu --}}
+            <div x-show="walletOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Wallet Dashboard --}}
+                <a href="{{ route('admin.wallet.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.wallet.index') || request()->routeIs('admin.wallet.transactions') || request()->routeIs('admin.wallet.logs') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
+                </a>
+
+                {{-- Withdrawals ⭐ สำคัญมาก! --}}
+                <a href="{{ route('admin.withdrawals.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.withdrawals.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-money-bill-transfer w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">การถอนเงิน</span>
+                    @if(isset($pendingWithdrawals) && $pendingWithdrawals > 0)
+                        <span class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ $pendingWithdrawals }}</span>
+                    @endif
+                </a>
+
+                {{-- Wallet Settings --}}
+                <a href="{{ route('admin.wallet-settings.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.wallet-settings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-cog w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า Wallet</span>
+                </a>
+
+                {{-- Payment Gateways --}}
+                <a href="{{ route('admin.payment-gateways.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.payment-gateways.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-credit-card w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Payment Gateways</span>
+                </a>
+
+                {{-- Cashback --}}
+                <a href="{{ route('admin.cashback.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.cashback.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-gift w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Cashback</span>
+                </a>
+
+                {{-- Investments --}}
+                <a href="{{ route('admin.investments.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.investments.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ลงทุน (Staking)</span>
+                </a>
+
+                {{-- NFC System (Nested Collapsible) --}}
+                <div class="space-y-1" x-data="{ nfcOpen: {{ request()->routeIs('admin.nfc-*') ? 'true' : 'false' }} }">
+                    <button @click="nfcOpen = !nfcOpen"
+                            type="button"
+                            class="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.nfc-*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                        <i class="fas fa-nfc-symbol w-4 text-center drop-shadow"></i>
+                        <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left drop-shadow whitespace-nowrap">NFC System</span>
+                        <i x-show="$store.sidebar.shouldExpand && nfcOpen" x-transition class="fas fa-chevron-down text-xs"></i>
+                        <i x-show="$store.sidebar.shouldExpand && !nfcOpen" x-transition class="fas fa-chevron-right text-xs"></i>
+                    </button>
+
+                    {{-- NFC Submenu --}}
+                    <div x-show="nfcOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                        <a href="{{ route('admin.nfc-cards.index') }}"
+                           @click="$store.sidebar.closeOnMenuClick()"
+                           class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-xs {{ request()->routeIs('admin.nfc-cards.*') ? 'bg-white/20 text-white font-bold' : 'text-white/70 hover:bg-white/10 hover:text-white' }}">
+                            <i class="fas fa-id-card w-4 text-center"></i>
+                            <span x-show="$store.sidebar.shouldExpand" x-transition class="whitespace-nowrap">บัตร NFC</span>
+                        </a>
+
+                        <a href="{{ route('admin.nfc-readers.index') }}"
+                           @click="$store.sidebar.closeOnMenuClick()"
+                           class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-xs {{ request()->routeIs('admin.nfc-readers.*') ? 'bg-white/20 text-white font-bold' : 'text-white/70 hover:bg-white/10 hover:text-white' }}">
+                            <i class="fas fa-barcode w-4 text-center"></i>
+                            <span x-show="$store.sidebar.shouldExpand" x-transition class="whitespace-nowrap">เครื่องอ่าน</span>
+                        </a>
+
+                        <a href="{{ route('admin.nfc-transactions.index') }}"
+                           @click="$store.sidebar.closeOnMenuClick()"
+                           class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-xs {{ request()->routeIs('admin.nfc-transactions.*') ? 'bg-white/20 text-white font-bold' : 'text-white/70 hover:bg-white/10 hover:text-white' }}">
+                            <i class="fas fa-exchange-alt w-4 text-center"></i>
+                            <span x-show="$store.sidebar.shouldExpand" x-transition class="whitespace-nowrap">ธุรกรรม</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         {{-- TPIX Blockchain --}}
         <a href="{{ route('admin.tpix.dashboard') }}"
@@ -412,6 +541,352 @@
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-core.analytics.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-bar w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Analytics</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- Security & Monitoring 🔒 --}}
+        <div class="space-y-1"
+             x-data="{ securityOpen: {{ request()->routeIs('admin.security.*') || request()->routeIs('admin.analytics.*') || request()->routeIs('admin.advanced-analytics.*') ? 'true' : 'false' }} }">
+            {{-- Security Header Button --}}
+            <button @click="securityOpen = !securityOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.security.*') || request()->routeIs('admin.analytics.*') || request()->routeIs('admin.advanced-analytics.*') ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-shield-halved w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Security</span>
+                <i x-show="$store.sidebar.shouldExpand && securityOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !securityOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Security Submenu --}}
+            <div x-show="securityOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Security Dashboard --}}
+                <a href="{{ route('admin.security.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.security.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
+                </a>
+
+                {{-- IP Blocking & Rate Limiting --}}
+                <a href="{{ route('admin.security.analytics') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.security.analytics') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-ban w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">IP & Rate Limit</span>
+                </a>
+
+                {{-- Threat Intelligence --}}
+                <a href="{{ route('admin.security.threat-intelligence') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.security.threat-intelligence') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-brain w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Threat Intelligence</span>
+                </a>
+
+                {{-- System Analytics --}}
+                <a href="{{ route('admin.analytics.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">System Analytics</span>
+                </a>
+
+                {{-- Advanced Analytics --}}
+                <a href="{{ route('admin.advanced-analytics.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.advanced-analytics.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Advanced Analytics</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- Communication (Email & Notifications) 📧 --}}
+        <div class="space-y-1"
+             x-data="{ commOpen: {{ request()->routeIs('admin.email.*') || request()->routeIs('admin.notifications.*') || request()->routeIs('admin.notification-templates.*') ? 'true' : 'false' }} }">
+            {{-- Communication Header Button --}}
+            <button @click="commOpen = !commOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.email.*') || request()->routeIs('admin.notifications.*') || request()->routeIs('admin.notification-templates.*') ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-envelope w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Communication</span>
+                <i x-show="$store.sidebar.shouldExpand && commOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !commOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Communication Submenu --}}
+            <div x-show="commOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Email Dashboard --}}
+                <a href="{{ route('admin.email.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.email.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Email Dashboard</span>
+                </a>
+
+                {{-- Email Providers --}}
+                <a href="{{ route('admin.email.providers') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.email.providers') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-server w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Providers</span>
+                </a>
+
+                {{-- Email Templates --}}
+                <a href="{{ route('admin.email.templates') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.email.templates') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-file-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Templates</span>
+                </a>
+
+                {{-- Email Logs --}}
+                <a href="{{ route('admin.email.logs') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.email.logs') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-history w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Logs</span>
+                </a>
+
+                {{-- Notification Management --}}
+                <a href="{{ route('admin.notifications.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.notifications.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-bell w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Notifications</span>
+                </a>
+
+                {{-- Notification Templates --}}
+                <a href="{{ route('admin.notification-templates.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.notification-templates.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-clipboard-list w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Notification Templates</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- AI & Automation (Extended) 🤖 --}}
+        <div class="space-y-1"
+             x-data="{ aiAutoOpen: {{ request()->routeIs('admin.ai-providers.*') || request()->routeIs('admin.ai-installation.*') || request()->routeIs('admin.ai-monitoring.*') ? 'true' : 'false' }} }">
+            {{-- AI Automation Header Button --}}
+            <button @click="aiAutoOpen = !aiAutoOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ai-providers.*') || request()->routeIs('admin.ai-installation.*') || request()->routeIs('admin.ai-monitoring.*') ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-robot w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">AI Automation</span>
+                <i x-show="$store.sidebar.shouldExpand && aiAutoOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !aiAutoOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- AI Automation Submenu --}}
+            <div x-show="aiAutoOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- AI Providers (API Keys) ⭐ สำคัญ! --}}
+                <a href="{{ route('admin.ai-providers.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-providers.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-key w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">API Providers</span>
+                </a>
+
+                {{-- AI Installation --}}
+                <a href="{{ route('admin.ai-installation.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-installation.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-download w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Installations</span>
+                </a>
+
+                {{-- AI Monitoring --}}
+                <a href="{{ route('admin.ai-monitoring.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-monitoring.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-area w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Monitoring</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- HRM (Human Resource Management) 👔 --}}
+        <div class="space-y-1"
+             x-data="{ hrmOpen: {{ request()->routeIs('admin.hrm.*') ? 'true' : 'false' }} }">
+            {{-- HRM Header Button --}}
+            <button @click="hrmOpen = !hrmOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.hrm.*') ? 'bg-gradient-to-r from-teal-500 to-green-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-user-tie w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">HRM</span>
+                <i x-show="$store.sidebar.shouldExpand && hrmOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !hrmOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- HRM Submenu --}}
+            <div x-show="hrmOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                <a href="{{ route('admin.hrm.dashboard') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.hrm.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
+                </a>
+
+                <a href="{{ route('admin.hrm.employees.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.hrm.employees.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-users w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">พนักงาน</span>
+                </a>
+
+                <a href="{{ route('admin.hrm.attendance.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.hrm.attendance.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-calendar-check w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">เช็คชื่อ</span>
+                </a>
+
+                <a href="{{ route('admin.hrm.payroll.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.hrm.payroll.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-money-check-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">เงินเดือน</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- Accounting 💼 --}}
+        <div class="space-y-1"
+             x-data="{ accountingOpen: {{ request()->routeIs('admin.accounting.*') ? 'true' : 'false' }} }">
+            {{-- Accounting Header Button --}}
+            <button @click="accountingOpen = !accountingOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.accounting.*') ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-calculator w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Accounting</span>
+                <i x-show="$store.sidebar.shouldExpand && accountingOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !accountingOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Accounting Submenu --}}
+            <div x-show="accountingOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                <a href="{{ route('admin.accounting.dashboard') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.accounting.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
+                </a>
+
+                <a href="{{ route('admin.accounting.invoices.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.accounting.invoices.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-file-invoice w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ใบแจ้งหนี้</span>
+                </a>
+
+                <a href="{{ route('admin.accounting.reports.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.accounting.reports.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">รายงาน</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- POS (Point of Sale) 🛍️ --}}
+        <div class="space-y-1"
+             x-data="{ posOpen: {{ request()->routeIs('admin.pos.*') ? 'true' : 'false' }} }">
+            {{-- POS Header Button --}}
+            <button @click="posOpen = !posOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.pos.*') ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-cash-register w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">POS</span>
+                <i x-show="$store.sidebar.shouldExpand && posOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !posOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- POS Submenu --}}
+            <div x-show="posOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                <a href="{{ route('admin.pos.dashboard') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.pos.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
+                </a>
+
+                <a href="{{ route('admin.pos.devices.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.pos.devices.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tablet-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">เครื่อง POS</span>
+                </a>
+
+                <a href="{{ route('admin.pos.transactions.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.pos.transactions.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-receipt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ธุรกรรม</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- Hotels 🏨 --}}
+        <div class="space-y-1"
+             x-data="{ hotelsOpen: {{ request()->routeIs('admin.hotels.*') || request()->routeIs('admin.hotel-owners.*') ? 'true' : 'false' }} }">
+            {{-- Hotels Header Button --}}
+            <button @click="hotelsOpen = !hotelsOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.hotels.*') || request()->routeIs('admin.hotel-owners.*') ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-hotel w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Hotels</span>
+                <i x-show="$store.sidebar.shouldExpand && hotelsOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !hotelsOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Hotels Submenu --}}
+            <div x-show="hotelsOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                <a href="{{ route('admin.hotels.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.hotels.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-building w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">โรงแรม</span>
+                </a>
+
+                <a href="{{ route('admin.hotel-owners.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.hotel-owners.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-user-circle w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">เจ้าของโรงแรม</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- Content Management 📄 --}}
+        <div class="space-y-1"
+             x-data="{ contentOpen: {{ request()->routeIs('admin.pages.*') || request()->routeIs('admin.articles.*') ? 'true' : 'false' }} }">
+            {{-- Content Header Button --}}
+            <button @click="contentOpen = !contentOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.pages.*') || request()->routeIs('admin.articles.*') ? 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-file-lines w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Content</span>
+                <i x-show="$store.sidebar.shouldExpand && contentOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !contentOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Content Submenu --}}
+            <div x-show="contentOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                <a href="{{ route('admin.pages.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.pages.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-pager w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Pages (CMS)</span>
+                </a>
+
+                <a href="{{ route('admin.articles.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.articles.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-newspaper w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">บทความ</span>
                 </a>
             </div>
         </div>
