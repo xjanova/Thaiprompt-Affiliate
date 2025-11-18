@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Affiliate;
+use App\Models\MlmMember;
 use App\Models\LineSignupConversation;
 use App\Models\LineSignupInvitation;
 use App\Models\LineSignupReward;
@@ -455,28 +455,37 @@ class LineMembershipSignupService
                 'phone_verified_at' => now(),
             ]);
 
-            // Create affiliate account
-            $parentAffiliate = null;
+            // Create MLM member account
+            $parentMember = null;
             if (!empty($data['referral_code'])) {
-                $parentAffiliate = Affiliate::where('referral_code', $data['referral_code'])->first();
+                $parentMember = MlmMember::where('member_code', $data['referral_code'])->first();
             }
 
-            if (!$parentAffiliate) {
-                // Use default sponsor
-                $parentAffiliate = Affiliate::where('user_id', 1)->first();
+            if (!$parentMember) {
+                // Use default sponsor (admin)
+                $parentMember = MlmMember::where('user_id', 1)->first();
             }
 
-            $affiliate = Affiliate::create([
+            // Get default MLM plan
+            $defaultPlan = \App\Models\MlmPlan::where('is_default', true)->first();
+            if (!$defaultPlan) {
+                $defaultPlan = \App\Models\MlmPlan::first();
+            }
+
+            $mlmMember = MlmMember::create([
                 'user_id' => $user->id,
-                'parent_id' => $parentAffiliate?->id,
-                'referral_code' => $this->generateUniqueReferralCode(),
-                'level' => ($parentAffiliate?->level ?? 0) + 1,
+                'mlm_plan_id' => $defaultPlan?->id,
+                'unilevel_sponsor_id' => $parentMember?->id,
+                'unilevel_level' => $parentMember ? $parentMember->unilevel_level + 1 : 1,
+                'unilevel_path' => $parentMember ? $parentMember->unilevel_path . '/' . $parentMember->id : '/' . $user->id,
+                'member_code' => $this->generateUniqueReferralCode(),
                 'status' => 'active',
+                'is_qualified' => true,
+                'joined_at' => now(),
             ]);
 
             // Update session
             $session->user_id = $user->id;
-            $session->affiliate_id = $affiliate->id;
             $session->save();
 
             return $user;
@@ -532,11 +541,11 @@ class LineMembershipSignupService
      */
     protected function processReferralCode(LineSignupSession $session, string $referralCode): array
     {
-        $affiliate = Affiliate::where('referral_code', $referralCode)
-            ->where('status', 'active')
+        $mlmMember = MlmMember::where('member_code', $referralCode)
+            ->where('is_qualified', true)
             ->first();
 
-        if (!$affiliate) {
+        if (!$mlmMember) {
             return [
                 'valid' => false,
                 'message' => '❌ ไม่พบรหัสผู้แนะนำนี้ กรุณาตรวจสอบอีกครั้ง หรือพิมพ์ "ข้าม" เพื่อข้ามขั้นตอนนี้',
@@ -544,11 +553,11 @@ class LineMembershipSignupService
         }
 
         $session->updateCollectedData('referral_code', $referralCode);
-        $session->updateCollectedData('parent_affiliate_id', $affiliate->id);
+        $session->updateCollectedData('parent_member_id', $mlmMember->id);
 
         return [
             'valid' => true,
-            'affiliate' => $affiliate,
+            'mlmMember' => $mlmMember,
         ];
     }
 
@@ -604,7 +613,7 @@ class LineMembershipSignupService
     {
         do {
             $code = strtoupper(Str::random(8));
-        } while (Affiliate::where('referral_code', $code)->exists());
+        } while (MlmMember::where('member_code', $code)->exists());
 
         return $code;
     }

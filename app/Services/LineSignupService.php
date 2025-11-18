@@ -6,7 +6,6 @@ use App\Models\LineSignupFlow;
 use App\Models\MlmProspect;
 use App\Models\MlmMember;
 use App\Models\User;
-use App\Models\Affiliate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
