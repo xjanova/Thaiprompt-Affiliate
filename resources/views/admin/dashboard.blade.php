@@ -422,7 +422,7 @@
                 </h3>
             </div>
             <div class="p-4 space-y-2">
-                @forelse($topAffiliates->take(5) as $index => $affiliate)
+                @forelse($topAffiliates->take(5) as $index => $mlmMember)
                     <div class="flex items-center gap-3 p-3 bg-white/10 dark:bg-white/5 backdrop-blur-sm rounded-lg border border-white/20 hover:bg-white/20 dark:hover:bg-white/10 transition-all cursor-pointer">
                         <div class="flex-shrink-0">
                             @if($index === 0)
@@ -444,11 +444,11 @@
                             @endif
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $affiliate->user->name }}</p>
-                            <p class="text-xs text-gray-600 dark:text-white/80 truncate">{{ $affiliate->total_referrals }} refs</p>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $mlmMember->user->name }}</p>
+                            <p class="text-xs text-gray-600 dark:text-white/80 truncate">{{ $mlmMember->total_direct_referrals }} refs</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-sm font-bold" style="color: var(--arrow-x-success)">฿{{ number_format($affiliate->total_earnings, 0) }}</p>
+                            <p class="text-sm font-bold" style="color: var(--arrow-x-success)">฿{{ number_format($mlmMember->total_earnings ?? 0, 0) }}</p>
                         </div>
                     </div>
                 @empty

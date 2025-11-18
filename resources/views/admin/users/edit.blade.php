@@ -185,9 +185,9 @@
                         <p class="mt-1 text-sm text-red-700 dark:text-red-400">
                             การลบผู้ใช้จะไม่สามารถกู้คืนได้ โปรดใช้ความระมัดระวัง
                         </p>
-                        @if($user->affiliate)
+                        @if($user->mlmMembers()->exists())
                             <p class="mt-2 text-sm text-red-700 dark:text-red-400 font-medium">
-                                ⚠️ ผู้ใช้นี้เป็น Affiliate - การลบจะส่งผลต่อ downline
+                                ⚠️ ผู้ใช้นี้เป็น MLM Member - การลบจะส่งผลต่อ downline
                             </p>
                         @endif
                     </div>
