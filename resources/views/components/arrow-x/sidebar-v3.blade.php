@@ -601,7 +601,7 @@
                 </a>
 
                 {{-- Advanced Analytics --}}
-                <a href="{{ route('admin.advanced-analytics.index') }}"
+                <a href="{{ route('admin.advanced-analytics.dashboard') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.advanced-analytics.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
