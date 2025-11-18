@@ -178,28 +178,28 @@ class UserController extends Controller
     public function viewDashboard(User $user)
     {
         // Load user relationships for dashboard
-        $user->load(['affiliate', 'commissions']);
+        $user->load(['mlmMembers', 'mlmCommissions']);
 
-        // Get user statistics
+        // Get user statistics (MLM Commissions)
         $stats = [
-            'total_commissions' => $user->commissions()->count(),
-            'pending_commissions' => $user->commissions()->where('status', 'pending')->count(),
-            'approved_commissions' => $user->commissions()->where('status', 'approved')->count(),
-            'paid_commissions' => $user->commissions()->where('status', 'paid')->count(),
-            'total_earnings' => $user->commissions()->where('status', 'paid')->sum('amount'),
-            'pending_earnings' => $user->commissions()->whereIn('status', ['pending', 'approved'])->sum('amount'),
+            'total_commissions' => $user->mlmCommissions()->count(),
+            'pending_commissions' => $user->mlmCommissions()->where('status', 'pending')->count(),
+            'approved_commissions' => $user->mlmCommissions()->where('status', 'approved')->count(),
+            'paid_commissions' => $user->mlmCommissions()->where('status', 'paid')->count(),
+            'total_earnings' => $user->mlmCommissions()->where('status', 'paid')->sum('commission_amount'),
+            'pending_earnings' => $user->mlmCommissions()->whereIn('status', ['pending', 'approved'])->sum('commission_amount'),
         ];
 
         // Get recent commissions
-        $recentCommissions = $user->commissions()
-            ->with('affiliate')
+        $recentCommissions = $user->mlmCommissions()
+            ->with('mlmMember')
             ->latest()
             ->limit(10)
             ->get();
 
         // Get commission chart data (last 6 months)
-        $chartData = $user->commissions()
-            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, COUNT(*) as count, SUM(amount) as total')
+        $chartData = $user->mlmCommissions()
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, COUNT(*) as count, SUM(commission_amount) as total')
             ->where('created_at', '>=', now()->subMonths(6))
             ->groupBy('month')
             ->orderBy('month')
