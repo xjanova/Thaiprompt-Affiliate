@@ -3,8 +3,6 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Models\Commission;
-use App\Observers\CommissionObserver;
 
 class MembershipRetentionServiceProvider extends ServiceProvider
 {
@@ -18,10 +16,12 @@ class MembershipRetentionServiceProvider extends ServiceProvider
 
     /**
      * Bootstrap services.
+     *
+     * หมายเหตุ: CommissionObserver ถูกลบออกแล้วเนื่องจากระบบ Affiliate ถูกแทนที่ด้วย MLM
      */
     public function boot(): void
     {
-        // Register Commission Observer
-        Commission::observe(CommissionObserver::class);
+        // Previously registered Commission Observer
+        // Removed as Affiliate system has been replaced by MLM system
     }
 }
