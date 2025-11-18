@@ -179,6 +179,13 @@ Route::prefix('site-settings')->name('site-settings.')->group(function () {
     Route::delete('/logo', [SiteSettingsController::class, 'deleteLogo'])->name('logo.delete');
 });
 
+// Demo Data Management (จัดการข้อมูลทดสอบ)
+Route::prefix('demo-data')->name('demo-data.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\DemoDataController::class, 'index'])->name('index');
+    Route::post('/clean', [\App\Http\Controllers\Admin\DemoDataController::class, 'clean'])->name('clean');
+    Route::get('/stats', [\App\Http\Controllers\Admin\DemoDataController::class, 'stats'])->name('stats');
+});
+
 // Header Settings
 Route::prefix('header-settings')->name('header-settings.')->group(function () {
     Route::get('/', [HeaderSettingsController::class, 'index'])->name('index');

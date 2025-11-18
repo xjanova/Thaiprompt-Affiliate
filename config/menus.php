@@ -486,6 +486,7 @@ return [
                 ['label' => 'ตั้งค่า OCR', 'route' => 'admin.settings.ocr'],
                 ['label' => 'จัดการ API', 'route' => 'admin.api-management.endpoints.index'],
                 ['label' => 'API Keys', 'route' => 'admin.api-management.keys.index'],
+                ['label' => '🧹 จัดการข้อมูลทดสอบ', 'route' => 'admin.demo-data.index'],
                 ['label' => 'รีเซ็ตระบบ', 'route' => 'admin.system-reset.index'],
             ],
         ],
