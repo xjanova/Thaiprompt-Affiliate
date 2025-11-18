@@ -347,9 +347,35 @@ else
     error_exit "Database migration failed"
 fi
 
+# Ask about demo data
+echo ""
+print_info "ข้อมูลทดสอบ (Demo Data):"
+echo ""
+echo "ระบบสามารถติดตั้งข้อมูลทดสอบเพื่อให้คุณทดลองใช้งานได้ทันที"
+echo "ข้อมูลทดสอบประกอบด้วย:"
+echo "  • ผู้ใช้ทดสอบ (demo users, affiliates)"
+echo "  • หน้าเพจตัวอย่าง (About, FAQ, Contact, Terms, Privacy)"
+echo "  • ข้อมูล KYC ตัวอย่าง"
+echo "  • LINE sessions ตัวอย่าง"
+echo "  • ข้อมูลบัญชีตัวอย่าง"
+echo ""
+echo "หมายเหตุ: คุณสามารถลบข้อมูลทดสอบได้ภายหลังด้วยคำสั่ง: php artisan demo:reset"
+echo ""
+read -p "ต้องการติดตั้งข้อมูลทดสอบหรือไม่? (y/n) [y]: " -n 1 -r INSTALL_DEMO
+echo ""
+INSTALL_DEMO=${INSTALL_DEMO:-y}
+
 print_info "Running database seeders..."
 if php artisan db:seed --force; then
     print_success "Database seeders completed"
+
+    # ถ้าไม่ต้องการ demo data ให้ลบทิ้ง
+    if [[ ! $INSTALL_DEMO =~ ^[Yy]$ ]]; then
+        echo ""
+        print_info "กำลังลบข้อมูลทดสอบ..."
+        php artisan demo:reset --all --force >/dev/null 2>&1 || true
+        print_success "ลบข้อมูลทดสอบสำเร็จ - ติดตั้งเฉพาะข้อมูลจำเป็น"
+    fi
 else
     print_warning "Database seeders failed (continuing anyway)"
 fi
