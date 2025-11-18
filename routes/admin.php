@@ -774,6 +774,90 @@ Route::prefix('two-factor')->name('two-factor.')->group(function () {
     Route::post('/settings', [TwoFactorSettingsController::class, 'update'])->name('settings.update');
 });
 
+// =============================================================================
+// AI CORE - CENTRALIZED AI MANAGEMENT SYSTEM
+// =============================================================================
+// ระบบควบคุม AI ทั้งหมดแบบรวมศูนย์
+// จัดการ Features, Tenants, Quotas, Schedules, Alerts
+Route::prefix('ai-core')->name('ai-core.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\AICoreController::class, 'dashboard'])->name('dashboard');
+
+    // Features Management
+    Route::prefix('features')->name('features.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AICoreFeatureController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\AICoreFeatureController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\AICoreFeatureController::class, 'store'])->name('store');
+        Route::get('/{feature}', [\App\Http\Controllers\Admin\AICoreFeatureController::class, 'show'])->name('show');
+        Route::get('/{feature}/edit', [\App\Http\Controllers\Admin\AICoreFeatureController::class, 'edit'])->name('edit');
+        Route::put('/{feature}', [\App\Http\Controllers\Admin\AICoreFeatureController::class, 'update'])->name('update');
+        Route::delete('/{feature}', [\App\Http\Controllers\Admin\AICoreFeatureController::class, 'destroy'])->name('destroy');
+        Route::post('/{feature}/toggle', [\App\Http\Controllers\Admin\AICoreFeatureController::class, 'toggle'])->name('toggle');
+    });
+
+    // Tenants Management
+    Route::prefix('tenants')->name('tenants.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AICoreTenantController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\AICoreTenantController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\AICoreTenantController::class, 'store'])->name('store');
+        Route::get('/{tenant}', [\App\Http\Controllers\Admin\AICoreTenantController::class, 'show'])->name('show');
+        Route::get('/{tenant}/edit', [\App\Http\Controllers\Admin\AICoreTenantController::class, 'edit'])->name('edit');
+        Route::put('/{tenant}', [\App\Http\Controllers\Admin\AICoreTenantController::class, 'update'])->name('update');
+        Route::delete('/{tenant}', [\App\Http\Controllers\Admin\AICoreTenantController::class, 'destroy'])->name('destroy');
+        Route::post('/{tenant}/toggle', [\App\Http\Controllers\Admin\AICoreTenantController::class, 'toggle'])->name('toggle');
+
+        // Feature Access for Tenant
+        Route::get('/{tenant}/features', [\App\Http\Controllers\Admin\AICoreTenantController::class, 'features'])->name('features');
+        Route::post('/{tenant}/features/{feature}/enable', [\App\Http\Controllers\Admin\AICoreTenantController::class, 'enableFeature'])->name('features.enable');
+        Route::post('/{tenant}/features/{feature}/disable', [\App\Http\Controllers\Admin\AICoreTenantController::class, 'disableFeature'])->name('features.disable');
+    });
+
+    // Quotas Management
+    Route::prefix('quotas')->name('quotas.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AICoreQuotaController::class, 'index'])->name('index');
+        Route::get('/{tenant}/{feature}', [\App\Http\Controllers\Admin\AICoreQuotaController::class, 'manage'])->name('manage');
+        Route::post('/{tenant}/{feature}/add-bonus', [\App\Http\Controllers\Admin\AICoreQuotaController::class, 'addBonus'])->name('add-bonus');
+        Route::post('/{tenant}/{feature}/reset', [\App\Http\Controllers\Admin\AICoreQuotaController::class, 'reset'])->name('reset');
+        Route::post('/reset-all-expired', [\App\Http\Controllers\Admin\AICoreQuotaController::class, 'resetAllExpired'])->name('reset-all-expired');
+    });
+
+    // Schedules Management
+    Route::prefix('schedules')->name('schedules.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AICoreScheduleController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\AICoreScheduleController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\AICoreScheduleController::class, 'store'])->name('store');
+        Route::get('/{schedule}', [\App\Http\Controllers\Admin\AICoreScheduleController::class, 'show'])->name('show');
+        Route::get('/{schedule}/edit', [\App\Http\Controllers\Admin\AICoreScheduleController::class, 'edit'])->name('edit');
+        Route::put('/{schedule}', [\App\Http\Controllers\Admin\AICoreScheduleController::class, 'update'])->name('update');
+        Route::delete('/{schedule}', [\App\Http\Controllers\Admin\AICoreScheduleController::class, 'destroy'])->name('destroy');
+        Route::post('/{schedule}/toggle', [\App\Http\Controllers\Admin\AICoreScheduleController::class, 'toggle'])->name('toggle');
+        Route::post('/{schedule}/execute', [\App\Http\Controllers\Admin\AICoreScheduleController::class, 'execute'])->name('execute');
+    });
+
+    // Alerts Management
+    Route::prefix('alerts')->name('alerts.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AICoreAlertController::class, 'index'])->name('index');
+        Route::get('/{alert}', [\App\Http\Controllers\Admin\AICoreAlertController::class, 'show'])->name('show');
+        Route::post('/{alert}/read', [\App\Http\Controllers\Admin\AICoreAlertController::class, 'markAsRead'])->name('read');
+        Route::post('/{alert}/acknowledge', [\App\Http\Controllers\Admin\AICoreAlertController::class, 'acknowledge'])->name('acknowledge');
+        Route::post('/{alert}/resolve', [\App\Http\Controllers\Admin\AICoreAlertController::class, 'resolve'])->name('resolve');
+        Route::post('/{alert}/dismiss', [\App\Http\Controllers\Admin\AICoreAlertController::class, 'dismiss'])->name('dismiss');
+        Route::post('/mark-all-read', [\App\Http\Controllers\Admin\AICoreAlertController::class, 'markAllAsRead'])->name('mark-all-read');
+    });
+
+    // Usage Analytics
+    Route::prefix('analytics')->name('analytics.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AICoreAnalyticsController::class, 'index'])->name('index');
+        Route::get('/feature/{feature}', [\App\Http\Controllers\Admin\AICoreAnalyticsController::class, 'featureUsage'])->name('feature');
+        Route::get('/tenant/{tenant}', [\App\Http\Controllers\Admin\AICoreAnalyticsController::class, 'tenantUsage'])->name('tenant');
+        Route::get('/export', [\App\Http\Controllers\Admin\AICoreAnalyticsController::class, 'export'])->name('export');
+    });
+
+    // Global Settings
+    Route::get('/settings', [\App\Http\Controllers\Admin\AICoreController::class, 'settings'])->name('settings.index');
+    Route::post('/settings', [\App\Http\Controllers\Admin\AICoreController::class, 'updateSettings'])->name('settings.update');
+});
+
 // AI Installation & Management
 Route::prefix('ai-installation')->name('ai-installation.')->group(function () {
     // Installation Wizard
