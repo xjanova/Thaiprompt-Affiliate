@@ -135,10 +135,11 @@ class RankPromotion extends Model
             $this->user->rank_updated_at = now();
             $this->user->save();
 
-            // Update affiliate's rank
-            if ($this->user->affiliate) {
-                $this->user->affiliate->rank_id = $this->to_rank_id;
-                $this->user->affiliate->save();
+            // Update MLM member's rank (if exists)
+            $mlmMember = $this->user->mlmMembers()->first();
+            if ($mlmMember) {
+                $mlmMember->rank_id = $this->to_rank_id;
+                $mlmMember->save();
             }
 
             return true;
@@ -173,10 +174,11 @@ class RankPromotion extends Model
             $this->user->rank_updated_at = now();
             $this->user->save();
 
-            // Update affiliate's rank
-            if ($this->user->affiliate) {
-                $this->user->affiliate->rank_id = $this->to_rank_id;
-                $this->user->affiliate->save();
+            // Update MLM member's rank (if exists)
+            $mlmMember = $this->user->mlmMembers()->first();
+            if ($mlmMember) {
+                $mlmMember->rank_id = $this->to_rank_id;
+                $mlmMember->save();
             }
 
             return true;

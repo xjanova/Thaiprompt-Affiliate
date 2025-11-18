@@ -84,11 +84,13 @@ class Rank extends Model
     }
 
     /**
-     * Get affiliates with this rank
+     * Get MLM members with this rank
+     *
+     * Note: Rank is primarily tracked on User model, but MLM members can have separate ranks
      */
-    public function affiliates(): HasMany
+    public function mlmMembers(): HasMany
     {
-        return $this->hasMany(Affiliate::class, 'rank_id');
+        return $this->hasMany(MlmMember::class, 'rank_id');
     }
 
     /**

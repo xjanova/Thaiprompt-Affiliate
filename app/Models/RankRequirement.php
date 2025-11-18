@@ -63,18 +63,23 @@ class RankRequirement extends Model
      */
     public function getUserCurrentValue(User $user): float
     {
-        $affiliate = $user->affiliate;
-        if (!$affiliate) {
+        $mlmMember = $user->mlmMembers()->first();
+        if (!$mlmMember) {
             return 0;
         }
 
+        // Calculate sales from MLM commissions
+        $totalSales = $user->mlmCommissions()
+            ->whereIn('status', ['approved', 'paid'])
+            ->sum('commission_amount');
+
         return match($this->requirement_type) {
             'points' => $user->rank_points ?? 0,
-            'referrals' => $affiliate->total_referrals ?? 0,
-            'sales' => $affiliate->total_earnings ?? 0,
-            'active_referrals' => $this->getActiveReferralsCount($affiliate),
-            'team_sales' => $affiliate->team_sales ?? 0,
-            'consecutive_months' => $this->getConsecutiveMonths($affiliate),
+            'referrals' => $mlmMember->total_direct_referrals ?? 0,
+            'sales' => $totalSales,
+            'active_referrals' => $this->getActiveReferralsCount($mlmMember),
+            'team_sales' => $mlmMember->total_team_pv ?? 0,
+            'consecutive_months' => $this->getConsecutiveMonths($mlmMember),
             default => 0,
         };
     }
@@ -100,21 +105,21 @@ class RankRequirement extends Model
     /**
      * Get active referrals count
      */
-    private function getActiveReferralsCount(Affiliate $affiliate): int
+    private function getActiveReferralsCount(\App\Models\MlmMember $mlmMember): int
     {
-        return Affiliate::where('parent_id', $affiliate->id)
-            ->where('status', 'active')
+        return \App\Models\MlmMember::where('unilevel_sponsor_id', $mlmMember->id)
+            ->where('is_qualified', true)
             ->count();
     }
 
     /**
      * Get consecutive months count
      */
-    private function getConsecutiveMonths(Affiliate $affiliate): int
+    private function getConsecutiveMonths(\App\Models\MlmMember $mlmMember): int
     {
         // This would need more complex logic based on your business rules
         // For now, returning a simple calculation
-        $monthsSinceCreation = now()->diffInMonths($affiliate->created_at);
+        $monthsSinceCreation = now()->diffInMonths($mlmMember->joined_at ?? $mlmMember->created_at);
         return $monthsSinceCreation;
     }
 

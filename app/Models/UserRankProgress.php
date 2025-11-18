@@ -70,19 +70,24 @@ class UserRankProgress extends Model
             return;
         }
 
-        $affiliate = $user->affiliate;
-        if (!$affiliate) {
+        $mlmMember = $user->mlmMembers()->first();
+        if (!$mlmMember) {
             return;
         }
 
+        // Calculate sales from MLM commissions
+        $totalSales = $user->mlmCommissions()
+            ->whereIn('status', ['approved', 'paid'])
+            ->sum('commission_amount');
+
         // Update current metrics
         $this->current_points = $user->rank_points ?? 0;
-        $this->current_referrals = $affiliate->total_referrals ?? 0;
-        $this->current_sales = $affiliate->total_earnings ?? 0;
-        $this->active_referrals = Affiliate::where('parent_id', $affiliate->id)
-            ->where('status', 'active')
+        $this->current_referrals = $mlmMember->total_direct_referrals ?? 0;
+        $this->current_sales = $totalSales;
+        $this->active_referrals = \App\Models\MlmMember::where('unilevel_sponsor_id', $mlmMember->id)
+            ->where('is_qualified', true)
             ->count();
-        $this->team_sales = $affiliate->team_sales ?? 0;
+        $this->team_sales = $mlmMember->total_team_pv ?? 0;
 
         // Calculate requirements status
         $requirements = $rank->activeRequirements;
