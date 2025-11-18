@@ -24,10 +24,9 @@ class OrderObserver
      */
     public function updated(Order $order): void
     {
-        // Process MLM and Affiliate commissions when order is marked as paid
+        // Process MLM commissions when order is marked as paid
         if ($order->wasChanged('payment_status') && $order->payment_status === 'paid') {
             $this->processMlmCommissions($order);
-            $this->processAffiliateCommissions($order);
             $this->processCashback($order);
         }
 
@@ -47,52 +46,6 @@ class OrderObserver
             Log::info('MLM commissions processed for order', ['order_id' => $order->id]);
         } catch (\Exception $e) {
             Log::error('Failed to process MLM commissions', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
-     * Process Affiliate commissions for an order
-     */
-    protected function processAffiliateCommissions(Order $order): void
-    {
-        try {
-            $user = $order->user;
-
-            if (!$user || !$user->affiliate) {
-                return;
-            }
-
-            $affiliate = $user->affiliate;
-
-            // คำนวณคอมมิชชั่น affiliate (ถ้ามี parent)
-            if ($affiliate->parent_id) {
-                $parent = $affiliate->parent;
-                $commissionAmount = $order->total * ($parent->commission_rate ?? 0.1);
-
-                // สร้าง commission record
-                \App\Models\Commission::create([
-                    'affiliate_id' => $parent->id,
-                    'user_id' => $parent->user_id,
-                    'order_id' => $order->id,
-                    'amount' => $commissionAmount,
-                    'type' => 'pending',
-                    'level' => 1,
-                ]);
-
-                // อัพเดท total_earnings ของ parent
-                $parent->increment('total_earnings', $commissionAmount);
-
-                Log::info('Affiliate commission created', [
-                    'order_id' => $order->id,
-                    'affiliate_id' => $parent->id,
-                    'amount' => $commissionAmount,
-                ]);
-            }
-        } catch (\Exception $e) {
-            Log::error('Failed to process affiliate commissions', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);

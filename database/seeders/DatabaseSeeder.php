@@ -32,8 +32,6 @@ class DatabaseSeeder extends Seeder
             // 2. User & Demo Data
             DemoUsersSeeder::class,             // สร้างผู้ใช้ทดสอบ
             TestUsersSeeder::class,             // สร้างผู้ใช้ทดสอบเพิ่มเติม (backward compatibility)
-            DemoAffiliatesSeeder::class,        // สร้าง affiliates
-            DemoCommissionsSeeder::class,       // สร้าง commissions
             KycVerificationSeeder::class,       // 🆕 KYC Demo Verification (pending, approved, rejected)
             LineSignupSessionSeeder::class,     // 🆕 LINE Demo Signup Sessions (new, in_progress, completed)
 
@@ -63,13 +61,12 @@ class DatabaseSeeder extends Seeder
             TPIXCurrencySeeder::class,          // TPIX Native Token (TPIX Network Blockchain)
             TPIXStakingPoolSeeder::class,       // TPIX Staking Pools (Flexible, 30d, 90d, 180d, 365d)
 
-            // 7. MLM & Affiliate System
+            // 7. MLM System
             MlmGlobalSettingsSeeder::class,     // การตั้งค่า MLM ทั่วไป (สร้างข้อมูลเริ่มต้น)
             MlmGlobalSettingSeeder::class,      // อัปเดต MLM Global Settings สำหรับระบบผู้มุ่งหวัง
             MlmPlanSeeder::class,               // แผนคอมมิชชัน MLM หลัก (แผนเดียวบังคับทั้งระบบ)
             MlmPackageSeeder::class,            // แพคเกจสมาชิก MLM (Bronze, Silver, Gold, Diamond, Premier)
             RankSeeder::class,                  // ระบบยศ/ระดับ (Bronze, Silver, Gold, Platinum, Diamond)
-            CommissionDepthSeeder::class,       // ความลึกของการคำนวณคอมมิชชัน
 
             // 8. E-commerce & Products
             ProductCategorySeeder::class,       // หมวดหมู่สินค้า (ต้องมาก่อน ProductSeeder)
