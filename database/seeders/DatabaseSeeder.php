@@ -51,6 +51,7 @@ class DatabaseSeeder extends Seeder
             LineBotKeywordSeeder::class,        // 🆕 LINE Hybrid Bot Keywords (Keyword-based responses + AI fallback)
 
             // 5. AI & Integrations
+            AICoreFeatureSeeder::class,         // 🆕 AI Core Feature Registry (8 AI feature groups)
             AiProvidersSeeder::class,           // AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini)
             AiGenSeeder::class,                 // AI Generation System (Image & Video Generation)
 

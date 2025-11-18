@@ -68,11 +68,41 @@ return [
         ],
 
         [
+            'id' => 'ai-core',
+            'label' => 'AI Core',
+            'icon' => '🧠',
+            'route' => null,
+            'order' => 4,
+            'permissions' => [],
+            'badge' => 'CORE',
+            'badge_color' => 'bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600',
+            'submenu' => [
+                ['label' => '🎯 AI Core Dashboard', 'route' => 'admin.ai-core.dashboard', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-green-500 to-emerald-500'],
+                ['label' => '⚡ Features Management', 'route' => 'admin.ai-core.features.index', 'description' => 'จัดการ AI Features ทั้ง 8 กลุ่ม'],
+                ['label' => '👥 Tenants & Access', 'route' => 'admin.ai-core.tenants.index', 'description' => 'จัดการ Multi-tenancy'],
+                ['label' => '📊 Quota Management', 'route' => 'admin.ai-core.quotas.index', 'description' => 'ควบคุมโควต้าการใช้งาน'],
+                ['label' => '⏰ Schedules', 'route' => 'admin.ai-core.schedules.index', 'description' => 'ตั้งเวลาเปิด/ปิด Features'],
+                ['label' => '🔔 Alerts & Notifications', 'route' => 'admin.ai-core.alerts.index', 'description' => 'แจ้งเตือนและการแจ้งเตือน'],
+                ['label' => '📈 Usage Analytics', 'route' => 'admin.ai-core.analytics.index', 'description' => 'วิเคราะห์การใช้งาน AI'],
+                ['label' => '⚙️ Global Settings', 'route' => 'admin.ai-core.settings.index', 'description' => 'ตั้งค่าทั่วไป'],
+                ['label' => '---', 'route' => null], // Divider
+                ['label' => '🤖 AI Bot Marketplace', 'route' => 'admin.ai-bots.index', 'description' => 'ตลาด AI Bots'],
+                ['label' => '🎨 AI Generation', 'route' => 'admin.ai-gen.dashboard', 'description' => 'สร้างภาพและวิดีโอ'],
+                ['label' => '💬 LINE Bot AI', 'route' => 'admin.line-bot.ai.index', 'description' => 'LINE OA Integration'],
+                ['label' => '🔄 Bot Automation', 'route' => 'admin.bot-automation.index', 'description' => 'ระบบอัตโนมัติ'],
+                ['label' => '🔌 AI Providers', 'route' => 'admin.ai-providers.index', 'description' => 'จัดการผู้ให้บริการ AI'],
+                ['label' => '📊 AI Analytics', 'route' => 'admin.ai-analytics.index', 'description' => 'วิเคราะห์การใช้งาน'],
+                ['label' => '📈 Trading Bot', 'route' => 'admin.trading-bot.index', 'description' => 'Bot เทรดด้วย AI'],
+                ['label' => '💭 Chatbot Platform', 'route' => 'admin.chatbot-platform.index', 'description' => 'แพลตฟอร์ม Chatbot'],
+            ],
+        ],
+
+        [
             'id' => 'ai-bots',
             'label' => 'AI Bots & ผู้ช่วย',
             'icon' => '🤖',
             'route' => null,
-            'order' => 4,
+            'order' => 4.1,
             'permissions' => [],
             'submenu' => [
                 ['label' => 'จัดการ AI Bots', 'route' => 'admin.ai-bots.index'],
