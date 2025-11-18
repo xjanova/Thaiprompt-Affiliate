@@ -307,25 +307,31 @@ function settingsManager() {
 
             try {
                 const response = await fetch('{{ route('admin.settings.update') }}', {
-                    method: 'POST',
+                    method: 'PUT',  // แก้จาก POST เป็น PUT
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify(this.form)
                 });
 
                 const data = await response.json();
 
-                if (response.ok) {
+                if (response.ok && data.success) {
                     // Show success message
-                    alert('✅ บันทึกการตั้งค่าสำเร็จ!');
+                    alert('✅ ' + (data.message || 'บันทึกการตั้งค่าสำเร็จ!'));
+
+                    // Reload หน้าเพื่อโหลดค่าใหม่
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                 } else {
                     alert('❌ เกิดข้อผิดพลาด: ' + (data.message || 'Unknown error'));
                 }
             } catch (error) {
                 console.error('Error saving settings:', error);
-                alert('❌ เกิดข้อผิดพลาดในการบันทึก');
+                alert('❌ เกิดข้อผิดพลาดในการบันทึก: ' + error.message);
             } finally {
                 this.saving = false;
             }

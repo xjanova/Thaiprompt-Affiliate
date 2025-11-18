@@ -84,6 +84,8 @@ class SettingsController extends Controller
 
     /**
      * Update settings
+     *
+     * รองรับทั้ง form data และ JSON request
      */
     public function update(Request $request)
     {
@@ -129,22 +131,47 @@ class SettingsController extends Controller
             ]);
         }
 
+        // ตรวจสอบว่าเป็น JSON request หรือ form request
+        $isJsonRequest = $request->isJson() || $request->header('Content-Type') === 'application/json';
+
         // Handle checkbox values
-        $validated['google_translate_enabled'] = $request->has('google_translate_enabled');
-        $validated['translate_cache_enabled'] = $request->has('translate_cache_enabled');
+        // สำหรับ JSON request ใช้ค่า boolean โดยตรง
+        // สำหรับ form request ใช้ $request->has()
+        if ($isJsonRequest) {
+            // JSON: ใช้ค่าที่ส่งมาโดยตรง (true/false)
+            $validated['google_translate_enabled'] = (bool) ($validated['google_translate_enabled'] ?? false);
+            $validated['translate_cache_enabled'] = (bool) ($validated['translate_cache_enabled'] ?? false);
 
-        // Handle Turnstile checkbox values
-        $validated['turnstile_enabled'] = $request->has('turnstile_enabled');
-        $validated['turnstile_bypass_admin'] = $request->has('turnstile_bypass_admin');
-        $validated['turnstile_login'] = $request->has('turnstile_login');
-        $validated['turnstile_register'] = $request->has('turnstile_register');
-        $validated['turnstile_password_change'] = $request->has('turnstile_password_change');
-        $validated['turnstile_profile_update'] = $request->has('turnstile_profile_update');
-        $validated['turnstile_withdrawal'] = $request->has('turnstile_withdrawal');
-        $validated['turnstile_affiliate_app'] = $request->has('turnstile_affiliate_app');
+            // Turnstile checkboxes
+            $validated['turnstile_enabled'] = (bool) ($validated['turnstile_enabled'] ?? false);
+            $validated['turnstile_bypass_admin'] = (bool) ($validated['turnstile_bypass_admin'] ?? false);
+            $validated['turnstile_login'] = (bool) ($validated['turnstile_login'] ?? false);
+            $validated['turnstile_register'] = (bool) ($validated['turnstile_register'] ?? false);
+            $validated['turnstile_password_change'] = (bool) ($validated['turnstile_password_change'] ?? false);
+            $validated['turnstile_profile_update'] = (bool) ($validated['turnstile_profile_update'] ?? false);
+            $validated['turnstile_withdrawal'] = (bool) ($validated['turnstile_withdrawal'] ?? false);
+            $validated['turnstile_affiliate_app'] = (bool) ($validated['turnstile_affiliate_app'] ?? false);
 
-        // Handle Page Loader checkbox
-        $validated['page_loader_enabled'] = $request->has('page_loader_enabled');
+            // Page Loader
+            $validated['page_loader_enabled'] = (bool) ($validated['page_loader_enabled'] ?? false);
+        } else {
+            // Form Data: ใช้ $request->has()
+            $validated['google_translate_enabled'] = $request->has('google_translate_enabled');
+            $validated['translate_cache_enabled'] = $request->has('translate_cache_enabled');
+
+            // Handle Turnstile checkbox values
+            $validated['turnstile_enabled'] = $request->has('turnstile_enabled');
+            $validated['turnstile_bypass_admin'] = $request->has('turnstile_bypass_admin');
+            $validated['turnstile_login'] = $request->has('turnstile_login');
+            $validated['turnstile_register'] = $request->has('turnstile_register');
+            $validated['turnstile_password_change'] = $request->has('turnstile_password_change');
+            $validated['turnstile_profile_update'] = $request->has('turnstile_profile_update');
+            $validated['turnstile_withdrawal'] = $request->has('turnstile_withdrawal');
+            $validated['turnstile_affiliate_app'] = $request->has('turnstile_affiliate_app');
+
+            // Handle Page Loader checkbox
+            $validated['page_loader_enabled'] = $request->has('page_loader_enabled');
+        }
 
         // Handle GIF upload for page loader
         if ($request->hasFile('page_loader_gif')) {
@@ -194,11 +221,23 @@ class SettingsController extends Controller
         }
 
         // Update config cache if Turnstile settings changed
-        if ($request->hasAny(['turnstile_enabled', 'turnstile_site_key', 'turnstile_secret_key', 'turnstile_bypass_admin',
-                              'turnstile_theme', 'turnstile_size', 'turnstile_login', 'turnstile_register',
-                              'turnstile_password_change', 'turnstile_profile_update', 'turnstile_withdrawal', 'turnstile_affiliate_app'])) {
+        $turnstileKeys = ['turnstile_enabled', 'turnstile_site_key', 'turnstile_secret_key', 'turnstile_bypass_admin',
+                          'turnstile_theme', 'turnstile_size', 'turnstile_login', 'turnstile_register',
+                          'turnstile_password_change', 'turnstile_profile_update', 'turnstile_withdrawal', 'turnstile_affiliate_app'];
+
+        $hasTurnstileChanges = !empty(array_intersect_key($validated, array_flip($turnstileKeys)));
+
+        if ($hasTurnstileChanges) {
             // Update .env file
-            $this->updateEnvFile($request);
+            $this->updateEnvFile($validated);
+        }
+
+        // ส่ง JSON response ถ้าเป็น JSON request
+        if ($isJsonRequest) {
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกการตั้งค่าเรียบร้อยแล้ว',
+            ]);
         }
 
         return back()->with('success', 'บันทึกการตั้งค่าเรียบร้อยแล้ว');
@@ -206,8 +245,10 @@ class SettingsController extends Controller
 
     /**
      * Update .env file with Turnstile settings
+     *
+     * @param array $validated ข้อมูลที่ validated แล้ว
      */
-    protected function updateEnvFile(Request $request)
+    protected function updateEnvFile(array $validated)
     {
         $envPath = base_path('.env');
 
@@ -219,18 +260,18 @@ class SettingsController extends Controller
 
         // Turnstile settings to update
         $envSettings = [
-            'CLOUDFLARE_TURNSTILE_ENABLED' => $request->has('turnstile_enabled') ? 'true' : 'false',
-            'CLOUDFLARE_TURNSTILE_SITE_KEY' => $request->input('turnstile_site_key', ''),
-            'CLOUDFLARE_TURNSTILE_SECRET_KEY' => $request->input('turnstile_secret_key', ''),
-            'CLOUDFLARE_TURNSTILE_BYPASS_ADMIN' => $request->has('turnstile_bypass_admin') ? 'true' : 'false',
-            'CLOUDFLARE_TURNSTILE_THEME' => $request->input('turnstile_theme', 'auto'),
-            'CLOUDFLARE_TURNSTILE_SIZE' => $request->input('turnstile_size', 'normal'),
-            'CLOUDFLARE_TURNSTILE_LOGIN' => $request->has('turnstile_login') ? 'true' : 'false',
-            'CLOUDFLARE_TURNSTILE_REGISTER' => $request->has('turnstile_register') ? 'true' : 'false',
-            'CLOUDFLARE_TURNSTILE_PASSWORD_CHANGE' => $request->has('turnstile_password_change') ? 'true' : 'false',
-            'CLOUDFLARE_TURNSTILE_PROFILE_UPDATE' => $request->has('turnstile_profile_update') ? 'true' : 'false',
-            'CLOUDFLARE_TURNSTILE_WITHDRAWAL' => $request->has('turnstile_withdrawal') ? 'true' : 'false',
-            'CLOUDFLARE_TURNSTILE_AFFILIATE_APP' => $request->has('turnstile_affiliate_app') ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_ENABLED' => ($validated['turnstile_enabled'] ?? false) ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_SITE_KEY' => $validated['turnstile_site_key'] ?? '',
+            'CLOUDFLARE_TURNSTILE_SECRET_KEY' => $validated['turnstile_secret_key'] ?? '',
+            'CLOUDFLARE_TURNSTILE_BYPASS_ADMIN' => ($validated['turnstile_bypass_admin'] ?? false) ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_THEME' => $validated['turnstile_theme'] ?? 'auto',
+            'CLOUDFLARE_TURNSTILE_SIZE' => $validated['turnstile_size'] ?? 'normal',
+            'CLOUDFLARE_TURNSTILE_LOGIN' => ($validated['turnstile_login'] ?? false) ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_REGISTER' => ($validated['turnstile_register'] ?? false) ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_PASSWORD_CHANGE' => ($validated['turnstile_password_change'] ?? false) ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_PROFILE_UPDATE' => ($validated['turnstile_profile_update'] ?? false) ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_WITHDRAWAL' => ($validated['turnstile_withdrawal'] ?? false) ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_AFFILIATE_APP' => ($validated['turnstile_affiliate_app'] ?? false) ? 'true' : 'false',
         ];
 
         foreach ($envSettings as $key => $value) {
