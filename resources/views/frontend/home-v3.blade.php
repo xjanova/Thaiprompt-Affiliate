@@ -24,7 +24,7 @@
  */
 --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.guest')
 
 @section('title', 'หน้าแรก - Ecosystem แห่งรายได้ไม่จำกัด')
 
@@ -32,6 +32,82 @@
 
 {{-- Main Container with Alpine.js --}}
 <div x-data="homepageManager()" x-init="init()" class="min-h-screen">
+
+    {{-- ================================================================
+        FLOATING NAVIGATION BAR
+        ================================================================ --}}
+    <nav x-data="{ scrolled: false }"
+         @scroll.window="scrolled = window.pageYOffset > 50"
+         :class="scrolled ? 'bg-white/95 dark:bg-gray-900/95 shadow-lg' : 'bg-transparent'"
+         class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 backdrop-blur-md">
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 md:h-20">
+
+                {{-- Logo --}}
+                <div class="flex items-center gap-3">
+                    @if(\App\Models\Setting::get('logo'))
+                        <img src="{{ asset(\App\Models\Setting::get('logo')) }}"
+                             alt="Logo"
+                             class="h-10 w-auto"
+                             loading="lazy">
+                    @else
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-rocket text-white text-xl"></i>
+                        </div>
+                    @endif
+                    <span class="text-xl font-bold text-gray-900 dark:text-white">
+                        {{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}
+                    </span>
+                </div>
+
+                {{-- Navigation Links (Desktop) --}}
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                        คุณสมบัติ
+                    </a>
+                    <a href="#stats" class="text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                        สถิติ
+                    </a>
+                    <a href="{{ route('about') }}" class="text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                        เกี่ยวกับเรา
+                    </a>
+                </div>
+
+                {{-- Auth Buttons --}}
+                <div class="flex items-center gap-3">
+                    {{-- Dark Mode Toggle --}}
+                    <button @click="darkMode = !darkMode"
+                            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <i class="fas fa-moon text-gray-600 dark:text-gray-400" x-show="!darkMode"></i>
+                        <i class="fas fa-sun text-yellow-400" x-show="darkMode" style="display: none;"></i>
+                    </button>
+
+                    @auth
+                        {{-- Dashboard Link --}}
+                        <a href="{{ route('user.dashboard') }}"
+                           class="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-dashboard"></i>
+                            <span>แดชบอร์ด</span>
+                        </a>
+                    @else
+                        {{-- Login --}}
+                        <a href="{{ route('login') }}"
+                           class="hidden sm:inline-block px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                            เข้าสู่ระบบ
+                        </a>
+
+                        {{-- Register --}}
+                        <a href="{{ route('register') }}"
+                           class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-all">
+                            ลงทะเบียนฟรี
+                        </a>
+                    @endauth
+                </div>
+
+            </div>
+        </div>
+    </nav>
 
     {{-- ================================================================
         SECTION 1: HERO SECTION - Glassmorphism + 3D Effects
