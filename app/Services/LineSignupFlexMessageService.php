@@ -996,7 +996,7 @@ class LineSignupFlexMessageService
      */
     public function buildWelcomeSequenceMessage(User $user): array
     {
-        $affiliate = $user->affiliate;
+        $mlmMember = $user->mlmMembers()->first();
 
         return [
             'type' => 'flex',
@@ -1107,7 +1107,7 @@ class LineSignupFlexMessageService
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => $affiliate?->referral_code ?? 'N/A',
+                                    'text' => $mlmMember?->member_code ?? 'N/A',
                                     'size' => 'xl',
                                     'weight' => 'bold',
                                     'margin' => 'sm',
