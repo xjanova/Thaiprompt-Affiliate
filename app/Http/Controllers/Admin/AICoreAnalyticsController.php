@@ -78,18 +78,22 @@ class AICoreAnalyticsController extends Controller
         $endDate = $request->input('end_date', now()->format('Y-m-d'));
 
         // สถิติสำหรับ Feature นี้
+        $totalUsage = AICoreUsageLog::where('feature_id', $feature->id)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->count();
+        $successCount = AICoreUsageLog::where('feature_id', $feature->id)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->success()
+            ->count();
+
         $stats = [
-            'total_usage' => AICoreUsageLog::where('feature_id', $feature->id)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->count(),
-            'success_count' => AICoreUsageLog::where('feature_id', $feature->id)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->success()
-                ->count(),
+            'total_usage' => $totalUsage,
+            'success_count' => $successCount,
             'failed_count' => AICoreUsageLog::where('feature_id', $feature->id)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->failed()
                 ->count(),
+            'success_rate' => $totalUsage > 0 ? round(($successCount / $totalUsage) * 100, 2) : 0,
             'unique_users' => AICoreUsageLog::where('feature_id', $feature->id)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->distinct('user_id')
@@ -151,18 +155,22 @@ class AICoreAnalyticsController extends Controller
         $endDate = $request->input('end_date', now()->format('Y-m-d'));
 
         // สถิติสำหรับ Tenant นี้
+        $totalUsage = AICoreUsageLog::where('tenant_id', $tenant->id)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->count();
+        $successCount = AICoreUsageLog::where('tenant_id', $tenant->id)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->success()
+            ->count();
+
         $stats = [
-            'total_usage' => AICoreUsageLog::where('tenant_id', $tenant->id)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->count(),
-            'success_count' => AICoreUsageLog::where('tenant_id', $tenant->id)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->success()
-                ->count(),
+            'total_usage' => $totalUsage,
+            'success_count' => $successCount,
             'failed_count' => AICoreUsageLog::where('tenant_id', $tenant->id)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->failed()
                 ->count(),
+            'success_rate' => $totalUsage > 0 ? round(($successCount / $totalUsage) * 100, 2) : 0,
             'features_used' => AICoreUsageLog::where('tenant_id', $tenant->id)
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->distinct('feature_id')
@@ -251,12 +259,16 @@ class AICoreAnalyticsController extends Controller
      */
     private function getOverallStats(string $startDate, string $endDate): array
     {
+        $totalUsage = AICoreUsageLog::whereBetween('created_at', [$startDate, $endDate])->count();
+        $successCount = AICoreUsageLog::whereBetween('created_at', [$startDate, $endDate])
+            ->success()->count();
+
         return [
-            'total_usage' => AICoreUsageLog::whereBetween('created_at', [$startDate, $endDate])->count(),
-            'success_count' => AICoreUsageLog::whereBetween('created_at', [$startDate, $endDate])
-                ->success()->count(),
+            'total_usage' => $totalUsage,
+            'success_count' => $successCount,
             'failed_count' => AICoreUsageLog::whereBetween('created_at', [$startDate, $endDate])
                 ->failed()->count(),
+            'success_rate' => $totalUsage > 0 ? round(($successCount / $totalUsage) * 100, 2) : 0,
             'unique_users' => AICoreUsageLog::whereBetween('created_at', [$startDate, $endDate])
                 ->distinct('user_id')->count('user_id'),
             'unique_tenants' => AICoreUsageLog::whereBetween('created_at', [$startDate, $endDate])
