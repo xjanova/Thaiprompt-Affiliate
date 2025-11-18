@@ -1057,19 +1057,22 @@
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">AI Bot Profiles</span>
                 </a>
 
-                <a href="{{ route('admin.ai-installations.index') }}"
+                <a href="{{ route('admin.ai-installation.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-installations.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-installation.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-download w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">AI Installations</span>
                 </a>
 
+                {{-- AI Rentals (Route Not Defined) --}}
+                {{--
                 <a href="{{ route('admin.ai-rentals.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rentals.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-calendar-check w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">AI Rentals</span>
                 </a>
+                --}}
             </div>
         </div> --}}
 
