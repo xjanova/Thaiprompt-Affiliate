@@ -215,9 +215,10 @@ class LineService
             return false;
         }
 
+        $mlmMember = $user->mlmMembers()->first();
         $message = str_replace(
             ['{name}', '{email}', '{referral_code}'],
-            [$user->name, $user->email, $user->affiliate->referral_code ?? 'N/A'],
+            [$user->name, $user->email, $mlmMember?->member_code ?? 'N/A'],
             $this->settings->registration_success_message
         );
 
@@ -319,7 +320,7 @@ class LineService
                                         ],
                                         [
                                             'type' => 'text',
-                                            'text' => $user->affiliate->referral_code ?? 'N/A',
+                                            'text' => $user->mlmMembers()->first()?->member_code ?? 'N/A',
                                             'wrap' => true,
                                             'color' => '#666666',
                                             'size' => 'sm',

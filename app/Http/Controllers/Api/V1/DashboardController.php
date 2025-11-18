@@ -13,19 +13,19 @@ class DashboardController extends Controller
     public function statistics(Request $request)
     {
         $user = $request->user();
-        $affiliate = $user->affiliate;
+        $mlmMember = $user->mlmMembers()->first();
 
-        $totalEarnings = $user->commissions()
+        $totalEarnings = $user->mlmCommissions()
             ->where('status', 'approved')
-            ->sum('amount');
+            ->sum('commission_amount');
 
-        $pendingEarnings = $user->commissions()
+        $pendingEarnings = $user->mlmCommissions()
             ->where('status', 'pending')
-            ->sum('amount');
+            ->sum('commission_amount');
 
-        $totalReferrals = $affiliate ? $affiliate->children()->count() : 0;
+        $totalReferrals = $mlmMember ? $mlmMember->total_direct_referrals : 0;
 
-        $recentCommissions = $user->commissions()
+        $recentCommissions = $user->mlmCommissions()
             ->latest()
             ->limit(10)
             ->get();
@@ -47,7 +47,7 @@ class DashboardController extends Controller
     public function commissions(Request $request)
     {
         $user = $request->user();
-        $commissions = $user->commissions()
+        $commissions = $user->mlmCommissions()
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
@@ -63,9 +63,9 @@ class DashboardController extends Controller
     public function referrals(Request $request)
     {
         $user = $request->user();
-        $affiliate = $user->affiliate;
+        $mlmMember = $user->mlmMembers()->first();
 
-        if (!$affiliate) {
+        if (!$mlmMember) {
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -75,8 +75,8 @@ class DashboardController extends Controller
             ]);
         }
 
-        $referrals = $affiliate->children()->with('user')->get();
-        $referralLink = url('/register?ref=' . $affiliate->referral_code);
+        $referrals = $mlmMember->directReferrals()->with('user')->get();
+        $referralLink = url('/register?ref=' . $mlmMember->member_code);
 
         return response()->json([
             'success' => true,

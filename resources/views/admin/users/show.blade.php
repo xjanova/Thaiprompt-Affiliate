@@ -23,11 +23,14 @@
             </div>
         </div>
         <div class="flex gap-3">
-            @if($user->affiliate)
-                <a href="{{ route('admin.affiliates.show', $user->affiliate) }}"
+            @php
+                $mlmMember = $user->mlmMembers()->first();
+            @endphp
+            @if($mlmMember)
+                <a href="{{ route('admin.mlm.members.show', $mlmMember) }}"
                    class="px-5 py-2.5 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
                    style="background: var(--arrow-x-primary-gradient)">
-                    ดู Affiliate
+                    ดู MLM Member
                 </a>
             @endif
             <a href="{{ route('admin.users.edit', $user) }}"
@@ -135,34 +138,37 @@
         </dl>
     </div>
 
-    <!-- Affiliate Information -->
-    @if($user->affiliate)
+    <!-- MLM Member Information -->
+    @php
+        $mlmMember = $user->mlmMembers()->first();
+    @endphp
+    @if($mlmMember)
         <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ข้อมูล Affiliate</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ข้อมูล MLM Member</h3>
             <dl class="space-y-3">
                 <div>
-                    <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">รหัสแนะนำ</dt>
+                    <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">รหัสสมาชิก</dt>
                     <dd class="mt-1">
                         <code class="px-2 py-1 bg-white/60 dark:bg-white/10 border border-gray-200 dark:border-white/20 rounded text-sm font-mono text-gray-900 dark:text-white">
-                            {{ $user->affiliate->referral_code }}
+                            {{ $mlmMember->member_code }}
                         </code>
                     </dd>
                 </div>
 
                 <div>
-                    <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">ระดับ</dt>
-                    <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ $user->affiliate->level }}</dd>
+                    <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Unilevel Level</dt>
+                    <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ $mlmMember->unilevel_level }}</dd>
                 </div>
 
                 <div>
-                    <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Referrals</dt>
-                    <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ $user->affiliate->total_referrals }}</dd>
+                    <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Total PV</dt>
+                    <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ number_format($mlmMember->total_pv, 2) }}</dd>
                 </div>
 
                 <div>
-                    <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Earnings</dt>
+                    <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Team PV</dt>
                     <dd class="mt-1 text-lg font-bold" style="color: var(--arrow-x-success)">
-                        {{ number_format($user->affiliate->total_earnings, 2) }}฿
+                        {{ number_format($mlmMember->total_team_pv, 2) }}
                     </dd>
                 </div>
 
@@ -170,33 +176,33 @@
                     <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">สถานะ</dt>
                     <dd class="mt-1">
                         <span class="px-2 py-1 text-xs font-semibold rounded-full"
-                              style="@if($user->affiliate->status === 'active')background-color: color-mix(in srgb, var(--arrow-x-success) 15%, transparent); color: var(--arrow-x-success)@elseif($user->affiliate->status === 'inactive')background-color: color-mix(in srgb, var(--arrow-x-surface) 15%, transparent); color: var(--arrow-x-text-secondary)@elsebackground-color: color-mix(in srgb, var(--arrow-x-error) 15%, transparent); color: var(--arrow-x-error)@endif">
-                            {{ ucfirst($user->affiliate->status) }}
+                              style="@if($mlmMember->is_qualified)background-color: color-mix(in srgb, var(--arrow-x-success) 15%, transparent); color: var(--arrow-x-success)@elsebackground-color: color-mix(in srgb, var(--arrow-x-surface) 15%, transparent); color: var(--arrow-x-text-secondary)@endif">
+                            {{ $mlmMember->is_qualified ? 'Qualified' : 'Not Qualified' }}
                         </span>
                     </dd>
                 </div>
 
                 <div class="pt-4 border-t border-gray-200 dark:border-white/10">
-                    <a href="{{ route('admin.affiliates.show', $user->affiliate) }}"
+                    <a href="{{ route('admin.mlm.members.show', $mlmMember) }}"
                        class="text-sm font-medium hover:opacity-80 transition-opacity"
                        style="color: var(--arrow-x-primary)">
-                        ดูรายละเอียด Affiliate →
+                        ดูรายละเอียด MLM Member →
                     </a>
                 </div>
             </dl>
         </div>
     @else
         <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ข้อมูล Affiliate</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ข้อมูล MLM Member</h3>
             <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                <p>ผู้ใช้นี้ยังไม่ได้เป็น Affiliate</p>
+                <p>ผู้ใช้นี้ยังไม่ได้เป็น MLM Member</p>
             </div>
         </div>
     @endif
 </div>
 
-<!-- Commission History -->
-@if($user->commissions && $user->commissions->count() > 0)
+<!-- MLM Commission History -->
+@if($user->mlmCommissions && $user->mlmCommissions->count() > 0)
 <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6 mb-6">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ประวัติคอมมิชชั่น</h3>
 
@@ -212,19 +218,19 @@
                 </tr>
             </thead>
             <tbody class="bg-white/50 dark:bg-transparent divide-y divide-gray-200 dark:divide-white/10">
-                @foreach($user->commissions->take(10) as $commission)
+                @foreach($user->mlmCommissions->take(10) as $commission)
                     <tr class="hover:bg-white/60 dark:hover:bg-white/5 transition-all duration-200">
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {{ $commission->created_at->format('d/m/Y') }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {{ number_format($commission->sale_amount ?? 0, 2) }}฿
+                            {{ number_format($commission->sales_amount ?? 0, 2) }}฿
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {{ $commission->commission_rate ?? 0 }}%
+                            {{ $commission->type }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold" style="color: var(--arrow-x-success)">
-                            {{ number_format($commission->amount, 2) }}฿
+                            {{ number_format($commission->commission_amount, 2) }}฿
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 py-1 text-xs font-semibold rounded-full"
@@ -238,9 +244,9 @@
         </table>
     </div>
 
-    @if($user->commissions->count() > 10)
+    @if($user->mlmCommissions->count() > 10)
         <p class="mt-4 text-sm text-gray-600 dark:text-gray-400 text-center">
-            แสดง 10 รายการล่าสุด จากทั้งหมด {{ $user->commissions->count() }} รายการ
+            แสดง 10 รายการล่าสุด จากทั้งหมด {{ $user->mlmCommissions->count() }} รายการ
         </p>
     @endif
 </div>
@@ -255,21 +261,24 @@
         </p>
     </div>
 
-    @if($user->affiliate)
+    @php
+        $mlmMemberSummary = $user->mlmMembers()->first();
+    @endphp
+    @if($mlmMemberSummary)
     <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
-        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Total Referrals</h3>
-        <p class="text-2xl font-bold" style="color: var(--arrow-x-primary)">{{ $user->affiliate->total_referrals }}</p>
+        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Total PV</h3>
+        <p class="text-2xl font-bold" style="color: var(--arrow-x-primary)">{{ number_format($mlmMemberSummary->total_pv, 2) }}</p>
     </div>
 
     <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
-        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Total Earnings</h3>
-        <p class="text-2xl font-bold" style="color: var(--arrow-x-success)">{{ number_format($user->affiliate->total_earnings, 2) }}฿</p>
+        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Team PV</h3>
+        <p class="text-2xl font-bold" style="color: var(--arrow-x-success)">{{ number_format($mlmMemberSummary->total_team_pv, 2) }}</p>
     </div>
     @endif
 
     <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
-        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Commissions</h3>
-        <p class="text-2xl font-bold" style="color: var(--arrow-x-warning)">{{ $user->commissions->count() ?? 0 }}</p>
+        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">MLM Commissions</h3>
+        <p class="text-2xl font-bold" style="color: var(--arrow-x-warning)">{{ $user->mlmCommissions->count() ?? 0 }}</p>
     </div>
 </div>
 @endsection

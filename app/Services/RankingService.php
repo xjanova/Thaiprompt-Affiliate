@@ -111,7 +111,7 @@ class RankingService
     /**
      * Calculate and update rank points for a user
      *
-     * ใช้ข้อมูลรวมจากทั้ง Affiliate และ MLM systems
+     * ใช้ข้อมูลจาก MLM system
      */
     public function calculateRankPoints(User $user): int
     {
@@ -120,14 +120,14 @@ class RankingService
 
         $points = 0;
 
-        // ใช้ unified earnings และ referrals จากทั้ง 2 ระบบ
+        // ใช้ unified earnings และ referrals จาก MLM system
         $totalReferrals = $earningService->getTotalReferrals($user);
         $totalEarnings = $earningService->getTotalEarnings($user);
 
-        // Points from referrals (Affiliate + MLM)
+        // Points from referrals (MLM)
         $points += $totalReferrals * $settings->points_per_referral;
 
-        // Points from sales (Affiliate + MLM)
+        // Points from sales (MLM)
         $points += floor($totalEarnings * $settings->points_per_sale);
 
         // Points from active months
@@ -306,19 +306,24 @@ class RankingService
      */
     public function getLeaderboard(int $limit = 100): array
     {
-        return User::with(['currentRank', 'affiliate'])
+        return User::with(['currentRank', 'mlmMembers'])
             ->whereNotNull('current_rank_id')
             ->orderByDesc('rank_points')
             ->orderBy('rank_updated_at')
             ->limit($limit)
             ->get()
             ->map(function($user, $index) {
+                // คำนวณรายได้จาก MLM commissions
+                $totalEarnings = $user->mlmCommissions()
+                    ->whereIn('status', ['approved', 'paid'])
+                    ->sum('commission_amount');
+
                 return [
                     'rank_position' => $index + 1,
                     'user' => $user,
                     'rank' => $user->currentRank,
                     'points' => $user->rank_points,
-                    'earnings' => $user->affiliate->total_earnings ?? 0,
+                    'earnings' => $totalEarnings ?? 0,
                 ];
             })
             ->toArray();

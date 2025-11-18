@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Affiliate;
+use App\Models\MlmMember;
 use App\Models\LineLoginLog;
 use App\Models\LineOaSetting;
 use App\Models\Setting;
@@ -25,12 +25,12 @@ class RegisterController extends Controller
     {
         $referralCode = $request->query('ref');
 
-        // Get default sponsor info
+        // Get default sponsor info (MLM)
         $defaultSponsorName = null;
         if (empty($referralCode)) {
-            $defaultSponsorCode = Setting::get('default_sponsor_referral_code');
+            $defaultSponsorCode = Setting::get('default_sponsor_member_code');
             if (!empty($defaultSponsorCode)) {
-                $defaultSponsor = Affiliate::where('referral_code', $defaultSponsorCode)->with('user')->first();
+                $defaultSponsor = MlmMember::where('member_code', $defaultSponsorCode)->with('user')->first();
                 if ($defaultSponsor && $defaultSponsor->user) {
                     $defaultSponsorName = $defaultSponsor->user->name;
                 }
@@ -62,7 +62,7 @@ class RegisterController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Password::defaults()],
-            'referral_code' => ['nullable', 'string', 'exists:affiliates,referral_code'],
+            'referral_code' => ['nullable', 'string', 'exists:mlm_members,member_code'],
         ];
 
         $validated = $request->validate($rules);
@@ -107,33 +107,40 @@ class RegisterController extends Controller
             $tokenService->storeAccessToken($user, $lineProfile['line_access_token']);
         }
 
-        // Create affiliate account
-        $parentAffiliate = null;
+        // Create MLM member account
+        $parentMember = null;
         $referralCode = $validated['referral_code'] ?? null;
 
         // If no referral code provided, use default sponsor from settings
         if (empty($referralCode)) {
-            $referralCode = Setting::get('default_sponsor_referral_code');
+            $referralCode = Setting::get('default_sponsor_member_code');
         }
 
         if (!empty($referralCode)) {
-            $parentAffiliate = Affiliate::where('referral_code', $referralCode)->first();
+            $parentMember = MlmMember::where('member_code', $referralCode)->first();
         }
 
-        $affiliate = Affiliate::create([
+        // Get default MLM plan
+        $defaultPlan = \App\Models\MlmPlan::where('is_default', true)->first();
+        if (!$defaultPlan) {
+            $defaultPlan = \App\Models\MlmPlan::first(); // Fallback to any plan
+        }
+
+        $mlmMember = MlmMember::create([
             'user_id' => $user->id,
-            'parent_id' => $parentAffiliate?->id,
-            'referral_code' => Affiliate::generateReferralCode(),
-            'level' => $parentAffiliate ? $parentAffiliate->level + 1 : 1,
+            'mlm_plan_id' => $defaultPlan?->id,
+            'unilevel_sponsor_id' => $parentMember?->id,
+            'unilevel_level' => $parentMember ? $parentMember->unilevel_level + 1 : 1,
+            'unilevel_path' => $parentMember ? $parentMember->unilevel_path . '/' . $parentMember->id : '/' . $user->id,
+            'member_code' => MlmMember::generateMemberCode(),
             'status' => 'active',
+            'is_qualified' => true,
+            'joined_at' => now(),
         ]);
 
-        // Update user with affiliate_id
-        $user->update(['affiliate_id' => $affiliate->id]);
-
         // Update parent's referral count
-        if ($parentAffiliate) {
-            $parentAffiliate->increment('total_referrals');
+        if ($parentMember) {
+            $parentMember->increment('total_direct_referrals');
         }
 
         // Log LINE registration if applicable
@@ -144,8 +151,8 @@ class RegisterController extends Controller
                 $user->id,
                 [
                     'display_name' => $lineProfile['line_display_name'],
-                    'referral_code' => $affiliate->referral_code,
-                    'parent_id' => $parentAffiliate?->id,
+                    'member_code' => $mlmMember->member_code,
+                    'sponsor_id' => $parentMember?->id,
                 ]
             );
 
@@ -169,6 +176,6 @@ class RegisterController extends Controller
         Auth::login($user);
 
         return redirect()->route('user.dashboard')
-            ->with('success', 'ลงทะเบียนสำเร็จ! ยินดีต้อนรับสู่ระบบ Affiliate');
+            ->with('success', 'ลงทะเบียนสำเร็จ! ยินดีต้อนรับสู่ระบบ MLM');
     }
 }

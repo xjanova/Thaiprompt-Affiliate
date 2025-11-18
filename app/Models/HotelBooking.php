@@ -122,9 +122,14 @@ class HotelBooking extends Model
         return $this->belongsTo(PaymentTransaction::class);
     }
 
-    public function affiliate()
+    /**
+     * Get the MLM member associated with this booking
+     *
+     * Note: affiliate_id field now stores mlm_member_id for backwards compatibility
+     */
+    public function mlmMember()
     {
-        return $this->belongsTo(User::class, 'affiliate_id');
+        return $this->belongsTo(\App\Models\MlmMember::class, 'affiliate_id');
     }
 
     public function review()

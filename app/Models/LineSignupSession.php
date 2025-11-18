@@ -22,7 +22,7 @@ class LineSignupSession extends Model
         'status',
         'language',
         'user_id',
-        'affiliate_id',
+        // Note: affiliate_id field removed - no longer used after migrating to MLM system
         'started_at',
         'completed_at',
         'last_activity_at',
@@ -68,11 +68,13 @@ class LineSignupSession extends Model
     }
 
     /**
-     * Get the affiliate associated with this session
+     * Get the MLM member associated with this session's user
+     *
+     * Note: This is a helper method that returns the user's MLM member
      */
-    public function affiliate(): BelongsTo
+    public function mlmMember()
     {
-        return $this->belongsTo(Affiliate::class);
+        return $this->user?->mlmMembers()->first();
     }
 
     /**

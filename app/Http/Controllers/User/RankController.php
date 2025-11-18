@@ -18,10 +18,11 @@ class RankController extends Controller
 
     public function dashboard()
     {
-        $user = auth()->user()->load(['currentRank', 'affiliate']);
+        $user = auth()->user()->load(['currentRank', 'mlmMembers']);
 
-        // Calculate and update points
-        if ($user->affiliate) {
+        // Calculate and update points (MLM Member)
+        $mlmMember = $user->mlmMembers()->first();
+        if ($mlmMember) {
             $this->rankingService->calculateRankPoints($user);
             $this->rankingService->updateUserProgress($user);
         }
@@ -72,10 +73,11 @@ class RankController extends Controller
 
     public function widgetData()
     {
-        $user = auth()->user()->load(['currentRank', 'affiliate']);
+        $user = auth()->user()->load(['currentRank', 'mlmMembers']);
 
-        // Calculate and update points
-        if ($user->affiliate) {
+        // Calculate and update points (MLM Member)
+        $mlmMember = $user->mlmMembers()->first();
+        if ($mlmMember) {
             $this->rankingService->calculateRankPoints($user);
             $this->rankingService->updateUserProgress($user);
         }

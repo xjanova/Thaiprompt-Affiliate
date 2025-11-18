@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\Commission;
+use App\Models\MlmCommission;
 use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -26,7 +26,8 @@ class DashboardController extends Controller
         // 1. ข้อมูลพื้นฐาน
         // ===============================================
 
-        $affiliate = $user->affiliate;
+        // ดึงข้อมูล MLM member ของ user
+        $mlmMember = $user->mlmMembers()->first();
 
         // ===============================================
         // 2. สถิติ Wallet
@@ -35,36 +36,36 @@ class DashboardController extends Controller
         $walletBalance = $user->wallet_balance ?? 0;
 
         // ===============================================
-        // 3. สถิติ Commission
+        // 3. สถิติ Commission (MLM)
         // ===============================================
 
-        $pendingCommission = $user->commissions()
+        $pendingCommission = $user->mlmCommissions()
             ->where('status', 'pending')
-            ->sum('amount') ?? 0;
+            ->sum('commission_amount') ?? 0;
 
-        $approvedCommission = $user->commissions()
+        $approvedCommission = $user->mlmCommissions()
             ->where('status', 'approved')
-            ->sum('amount') ?? 0;
+            ->sum('commission_amount') ?? 0;
 
-        $paidCommission = $user->commissions()
+        $paidCommission = $user->mlmCommissions()
             ->where('status', 'paid')
-            ->sum('amount') ?? 0;
+            ->sum('commission_amount') ?? 0;
 
         $totalEarnings = $approvedCommission + $paidCommission;
 
         // คอมมิชชั่นเดือนนี้
-        $thisMonthCommission = $user->commissions()
+        $thisMonthCommission = $user->mlmCommissions()
             ->whereYear('created_at', now()->year)
             ->whereMonth('created_at', now()->month)
             ->whereIn('status', ['approved', 'paid'])
-            ->sum('amount') ?? 0;
+            ->sum('commission_amount') ?? 0;
 
         // คอมมิชชั่นเดือนที่แล้ว
-        $lastMonthCommission = $user->commissions()
+        $lastMonthCommission = $user->mlmCommissions()
             ->whereYear('created_at', now()->subMonth()->year)
             ->whereMonth('created_at', now()->subMonth()->month)
             ->whereIn('status', ['approved', 'paid'])
-            ->sum('amount') ?? 0;
+            ->sum('commission_amount') ?? 0;
 
         // คำนวณอัตราการเติบโต
         $commissionGrowth = 0;
@@ -81,10 +82,10 @@ class DashboardController extends Controller
         $totalReferrals = 0;
         $activeReferrals = 0;
 
-        if ($affiliate) {
-            $totalReferrals = $affiliate->children()->count();
-            $activeReferrals = $affiliate->children()
-                ->where('status', 'active')
+        if ($mlmMember) {
+            $totalReferrals = $mlmMember->total_direct_referrals ?? 0;
+            $activeReferrals = $mlmMember->directReferrals()
+                ->where('is_qualified', true)
                 ->count();
         }
 
@@ -92,13 +93,13 @@ class DashboardController extends Controller
         $thisMonthReferrals = 0;
         $lastMonthReferrals = 0;
 
-        if ($affiliate) {
-            $thisMonthReferrals = $affiliate->children()
+        if ($mlmMember) {
+            $thisMonthReferrals = $mlmMember->directReferrals()
                 ->whereYear('created_at', now()->year)
                 ->whereMonth('created_at', now()->month)
                 ->count();
 
-            $lastMonthReferrals = $affiliate->children()
+            $lastMonthReferrals = $mlmMember->directReferrals()
                 ->whereYear('created_at', now()->subMonth()->year)
                 ->whereMonth('created_at', now()->subMonth()->month)
                 ->count();
@@ -164,8 +165,8 @@ class DashboardController extends Controller
         // 6. กิจกรรมล่าสุด (Recent Activity)
         // ===============================================
 
-        $recentActivities = $user->commissions()
-            ->with('affiliate.user')
+        $recentActivities = $user->mlmCommissions()
+            ->with('mlmMember.user')
             ->latest()
             ->limit(10)
             ->get()
@@ -173,7 +174,7 @@ class DashboardController extends Controller
                 return [
                     'type' => 'commission',
                     'status' => $commission->status,
-                    'amount' => $commission->amount,
+                    'amount' => $commission->commission_amount,
                     'commission_type' => $commission->type ?? 'general',
                     'created_at' => $commission->created_at,
                 ];
@@ -190,11 +191,11 @@ class DashboardController extends Controller
             $date = now()->subMonths($i);
             $monthName = $date->locale('th')->translatedFormat('M Y');
 
-            $monthTotal = $user->commissions()
+            $monthTotal = $user->mlmCommissions()
                 ->whereYear('created_at', $date->year)
                 ->whereMonth('created_at', $date->month)
                 ->whereIn('status', ['approved', 'paid'])
-                ->sum('amount') ?? 0;
+                ->sum('commission_amount') ?? 0;
 
             $chartLabels[] = $monthName;
             $chartValues[] = (float) $monthTotal;
@@ -234,8 +235,8 @@ class DashboardController extends Controller
         // 10. Commission ล่าสุดสำหรับแสดงในตาราง
         // ===============================================
 
-        $recentCommissions = $user->commissions()
-            ->with('affiliate.user')
+        $recentCommissions = $user->mlmCommissions()
+            ->with('mlmMember.user')
             ->latest()
             ->limit(5)
             ->get();
@@ -252,9 +253,9 @@ class DashboardController extends Controller
         // ===============================================
 
         return view('user.dashboard', compact(
-            // User & Affiliate
+            // User & MLM Member
             'user',
-            'affiliate',
+            'mlmMember',
 
             // Wallet
             'walletBalance',
@@ -409,7 +410,7 @@ class DashboardController extends Controller
     public function commissions()
     {
         $user = Auth::user();
-        $commissions = $user->commissions()->paginate(20);
+        $commissions = $user->mlmCommissions()->paginate(20);
 
         return view('user.commissions', compact('commissions'));
     }

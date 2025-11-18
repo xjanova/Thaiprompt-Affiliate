@@ -1,7 +1,7 @@
 @php
 use App\Models\User;
-use App\Models\Affiliate;
-use App\Models\Commission;
+use App\Models\MlmMember;
+use App\Models\MlmCommission;
 
 $settings = $section['settings'] ?? [];
 $content = $section['content'] ?? [];
@@ -11,10 +11,10 @@ $stats = $content['stats'] ?? [];
 if ($settings['use_realtime_data'] ?? false) {
     $realtimeStats = [
         'total_users' => User::count(),
-        'total_affiliates' => Affiliate::count(),
-        'total_commissions' => Commission::sum('amount'),
-        'success_rate' => Commission::where('status', 'paid')->count() > 0
-            ? round((Commission::where('status', 'paid')->count() / Commission::count()) * 100, 1)
+        'total_affiliates' => MlmMember::count(),
+        'total_commissions' => MlmCommission::sum('commission_amount'),
+        'success_rate' => MlmCommission::where('status', 'paid')->count() > 0
+            ? round((MlmCommission::where('status', 'paid')->count() / MlmCommission::count()) * 100, 1)
             : 95,
     ];
 }

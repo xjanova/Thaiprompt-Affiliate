@@ -50,11 +50,12 @@ class InvestmentService
                 ];
             }
 
-            // Get referrer (from affiliate system)
+            // Get referrer (from MLM system)
             $referrerId = null;
-            if ($user->affiliate && $user->affiliate->parent_id) {
-                $parentAffiliate = $user->affiliate->parent;
-                $referrerId = $parentAffiliate->user_id ?? null;
+            $mlmMember = $user->mlmMembers()->first();
+            if ($mlmMember && $mlmMember->unilevel_sponsor_id) {
+                $sponsorMember = $mlmMember->sponsor;
+                $referrerId = $sponsorMember->user_id ?? null;
             }
 
             // Calculate expected ROI

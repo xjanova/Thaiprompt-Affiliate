@@ -599,15 +599,15 @@ class LineMembershipSignupController extends Controller
         ]);
 
         $user = $request->user();
-        $affiliate = $user->affiliate;
+        $mlmMember = $user->mlmMembers()->first();
 
-        if (!$affiliate) {
-            return response()->json(['error' => 'No affiliate account found'], 400);
+        if (!$mlmMember) {
+            return response()->json(['error' => 'No MLM member account found'], 400);
         }
 
         $invitation = LineSignupInvitation::create([
             'inviter_user_id' => $user->id,
-            'referral_code' => $request->input('referral_code', $affiliate->referral_code),
+            'referral_code' => $request->input('referral_code', $mlmMember->member_code),
             'max_uses' => $request->input('max_uses', 1),
             'expires_at' => $request->input('expires_at'),
             'status' => LineSignupInvitation::STATUS_ACTIVE,

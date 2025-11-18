@@ -117,8 +117,8 @@
             </div>
         </a>
 
-        {{-- Total Affiliates --}}
-        <a href="{{ route('admin.affiliates.index') }}" class="block group" style="perspective: 1000px;">
+        {{-- Total MLM Members --}}
+        <a href="{{ route('admin.mlm.members.index') }}" class="block group" style="perspective: 1000px;">
             <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
                 {{-- Blur Glow Effect (Dynamic Theme Colors) --}}
                 <div class="absolute inset-0 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity" style="background: var(--arrow-x-primary-gradient)"></div>
@@ -134,13 +134,13 @@
                         </span>
                     </div>
                     <h3 class="text-3xl font-bold text-gray-900 dark:text-white mb-1 drop-shadow">{{ number_format($stats['total_affiliates']) }}</h3>
-                    <p class="text-sm text-gray-700 dark:text-white/90">Affiliates</p>
+                    <p class="text-sm text-gray-700 dark:text-white/90">MLM Members</p>
                 </div>
             </div>
         </a>
 
         {{-- Total Revenue --}}
-        <a href="{{ route('admin.commissions.index', ['status' => 'paid']) }}" class="block group" style="perspective: 1000px;">
+        <a href="{{ route('admin.mlm.commissions.index', ['status' => 'paid']) }}" class="block group" style="perspective: 1000px;">
             <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
                 {{-- Blur Glow Effect (Dynamic Theme Colors) --}}
                 <div class="absolute inset-0 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity" style="background-color: var(--arrow-x-success)"></div>
@@ -164,7 +164,7 @@
         </a>
 
         {{-- Pending Commissions --}}
-        <a href="{{ route('admin.commissions.index', ['status' => 'pending']) }}" class="block group" style="perspective: 1000px;">
+        <a href="{{ route('admin.mlm.commissions.index', ['status' => 'pending']) }}" class="block group" style="perspective: 1000px;">
             <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
                 {{-- Blur Glow Effect (Dynamic Theme Colors) --}}
                 <div class="absolute inset-0 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity" style="background-color: var(--arrow-x-warning)"></div>
