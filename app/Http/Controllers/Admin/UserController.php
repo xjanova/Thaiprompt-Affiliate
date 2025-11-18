@@ -16,7 +16,7 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::with(['affiliate', 'roleModel']);
+        $query = User::with(['mlmMembers', 'roleModel']);
 
         // Search filter
         if ($request->filled('search')) {
@@ -84,7 +84,7 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
-        $user->load(['affiliate', 'commissions']);
+        $user->load(['mlmMembers', 'mlmCommissions']);
         return view('admin.users.show', compact('user'));
     }
 

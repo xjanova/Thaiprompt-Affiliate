@@ -61,24 +61,24 @@ class LineMembershipSignupAdminController extends Controller
             ->get();
 
         // Get recent sessions
-        $recentSessions = LineSignupSession::with(['user', 'affiliate'])
+        $recentSessions = LineSignupSession::with(['user'])
             ->latest()
             ->limit(10)
             ->get();
 
-        // Get top performers (affiliates with most completed signups)
+        // Get top performers (MLM members with most completed signups)
         $topPerformers = DB::table('line_signup_sessions')
             ->leftJoin('users', 'line_signup_sessions.user_id', '=', 'users.id')
-            ->leftJoin('affiliates', 'line_signup_sessions.affiliate_id', '=', 'affiliates.id')
+            ->leftJoin('mlm_members', 'line_signup_sessions.user_id', '=', 'mlm_members.user_id')
             ->where('line_signup_sessions.status', LineSignupSession::STATUS_COMPLETED)
             ->where('line_signup_sessions.created_at', '>=', $startDate)
-            ->whereNotNull('line_signup_sessions.affiliate_id')
+            ->whereNotNull('line_signup_sessions.user_id')
             ->select(
-                'affiliates.referral_code',
+                'mlm_members.member_code as referral_code',
                 'users.name',
                 DB::raw('COUNT(*) as signup_count')
             )
-            ->groupBy('affiliates.id', 'affiliates.referral_code', 'users.name')
+            ->groupBy('mlm_members.id', 'mlm_members.member_code', 'users.name')
             ->orderByDesc('signup_count')
             ->limit(10)
             ->get();
@@ -98,7 +98,7 @@ class LineMembershipSignupAdminController extends Controller
      */
     public function sessions(Request $request)
     {
-        $query = LineSignupSession::with(['user', 'affiliate'])->latest();
+        $query = LineSignupSession::with(['user'])->latest();
 
         // Filter by status
         if ($request->filled('status')) {
@@ -130,7 +130,6 @@ class LineMembershipSignupAdminController extends Controller
     {
         $session->load([
             'user',
-            'affiliate',
             'stepLogs' => function ($query) {
                 $query->orderBy('created_at');
             },
@@ -384,7 +383,7 @@ class LineMembershipSignupAdminController extends Controller
      */
     public function exportSessions(Request $request)
     {
-        $query = LineSignupSession::with(['user', 'affiliate']);
+        $query = LineSignupSession::with(['user']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
