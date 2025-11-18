@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Models\User;
-use App\Models\Affiliate;
-use App\Models\Commission;
+use App\Models\MlmMember;
+use App\Models\MlmCommission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 
@@ -102,8 +102,8 @@ class WikiController extends Controller
             'version' => $version,
             'last_updated' => date('Y-m-d'),
             'total_users' => User::count(),
-            'total_affiliates' => Affiliate::count(),
-            'total_commissions' => Commission::count(),
+            'total_affiliates' => MlmMember::count(),
+            'total_commissions' => MlmCommission::count(),
             'database_tables' => $migrationsCount,
             'database_models' => $modelsCount,
             'http_controllers' => $controllersCount,

@@ -40,13 +40,13 @@
             href="{{ route('admin.users.index') }}"
         />
 
-        {{-- Total Affiliates --}}
+        {{-- Total MLM Members --}}
         <x-arrow-x.stats.card-3d
             :value="number_format($stats['active_affiliates'])"
-            label="Affiliate ที่ใช้งาน"
+            label="MLM Members ที่ใช้งาน"
             icon="fas fa-network-wired"
             gradient="from-green-500 to-emerald-600"
-            href="{{ route('admin.affiliates.index') }}"
+            href="{{ route('admin.mlm.members.index') }}"
         />
 
         {{-- Total Commissions --}}
@@ -56,7 +56,7 @@
             icon="fas fa-coins"
             gradient="from-purple-500 to-pink-600"
             :change="$revenueGrowth"
-            href="{{ route('admin.commissions.index') }}"
+            href="{{ route('admin.mlm.commissions.index') }}"
         />
 
         {{-- Paid Commissions --}}
@@ -65,7 +65,7 @@
             label="จ่ายแล้ว"
             icon="fas fa-check-circle"
             gradient="from-orange-500 to-red-600"
-            href="{{ route('admin.commissions.index', ['status' => 'paid']) }}"
+            href="{{ route('admin.mlm.commissions.index', ['status' => 'paid']) }}"
         />
     </div>
 
@@ -89,10 +89,10 @@
                     <x-arrow-x.activity.item
                         icon="fas fa-coins"
                         iconBg="{{ $commission->status === 'paid' ? 'bg-green-500' : ($commission->status === 'pending' ? 'bg-yellow-500' : 'bg-blue-500') }}"
-                        title="คอมมิชชั่น ฿{{ number_format($commission->amount, 2) }}"
-                        description="{{ $commission->affiliate->user->name ?? 'N/A' }}"
+                        title="คอมมิชชั่น ฿{{ number_format($commission->commission_amount, 2) }}"
+                        description="{{ $commission->mlmMember->user->name ?? 'N/A' }}"
                         time="{{ $commission->created_at->diffForHumans() }}"
-                        href="{{ route('admin.commissions.show', $commission) }}"
+                        href="{{ route('admin.mlm.commissions.show', $commission) }}"
                     />
                 @empty
                     <div class="text-center py-8">

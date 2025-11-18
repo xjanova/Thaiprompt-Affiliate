@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Models\SystemAnalytic;
 use App\Models\User;
-use App\Models\Affiliate;
-use App\Models\Commission;
+use App\Models\MlmMember;
+use App\Models\MlmCommission;
 use App\Models\PaymentTransaction;
 use App\Models\BlockedIp;
 use App\Models\SecurityLog;
@@ -274,8 +274,8 @@ class AnalyticsService
                 ->where('status', 'completed')
                 ->count(),
 
-            // Active affiliates
-            'active_affiliates' => Affiliate::where('status', 'active')->count(),
+            // Active MLM members
+            'active_affiliates' => MlmMember::where('is_qualified', true)->count(),
         ];
     }
 
@@ -447,9 +447,9 @@ class AnalyticsService
      */
     protected function getTodayRevenue(): float
     {
-        $commissions = Commission::whereDate('created_at', today())
+        $commissions = MlmCommission::whereDate('created_at', today())
             ->where('status', 'paid')
-            ->sum('amount');
+            ->sum('commission_amount');
 
         $transactions = PaymentTransaction::whereDate('created_at', today())
             ->where('status', 'completed')

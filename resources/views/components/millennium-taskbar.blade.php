@@ -134,7 +134,7 @@
             ['icon' => '🎮', 'label' => 'เกม & เอนเตอร์เทนเมนต์', 'url' => route('admin.games.index'), 'color' => 'from-cyan-500 to-blue-500', 'highlight' => true],
             ['icon' => '🐍', 'label' => 'Snake.io Monitor', 'url' => route('admin.games.snake-io.monitor'), 'color' => 'from-lime-500 to-green-500', 'highlight' => true],
             ['icon' => '⚙️', 'label' => 'ตั้งค่าเกม (IP/Port)', 'url' => route('admin.games.game-settings.index'), 'color' => 'from-violet-500 to-purple-500', 'highlight' => true],
-            ['icon' => '📊', 'label' => 'ระบบการตลาด', 'url' => route('admin.affiliates.index'), 'color' => 'from-pink-600 to-rose-600'],
+            ['icon' => '📊', 'label' => 'ระบบการตลาด', 'url' => route('admin.mlm.reports.index'), 'color' => 'from-pink-600 to-rose-600'],
             ['icon' => '⚙️', 'label' => 'ตั้งค่าระบบ', 'url' => route('admin.settings.index'), 'color' => 'from-gray-600 to-slate-600'],
         ];
 
