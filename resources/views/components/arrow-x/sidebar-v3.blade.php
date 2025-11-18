@@ -118,14 +118,6 @@
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">ผู้ใช้งาน</span>
         </a>
 
-        {{-- Affiliates --}}
-        <a href="{{ route('admin.affiliates.index') }}"
-           @click="$store.sidebar.closeOnMenuClick()"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.affiliates.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-            <i class="fas fa-network-wired w-5 text-center drop-shadow"></i>
-            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">Affiliate</span>
-        </a>
-
         {{-- MLM System (Collapsible Menu) --}}
         <div class="space-y-1">
             {{-- MLM Header Button --}}
@@ -229,14 +221,6 @@
                 </a>
             </div>
         </div>
-
-        {{-- Commissions --}}
-        <a href="{{ route('admin.commissions.index') }}"
-           @click="$store.sidebar.closeOnMenuClick()"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.commissions.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-            <i class="fas fa-coins w-5 text-center drop-shadow"></i>
-            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
-        </a>
 
         {{-- Wallet --}}
         <a href="{{ route('admin.wallet.index') }}"

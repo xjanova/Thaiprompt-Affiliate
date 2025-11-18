@@ -204,15 +204,11 @@ return [
 
         [
             'id' => 'commissions',
-            'label' => 'คอมมิชชั่น',
+            'label' => 'คอมมิชชั่น MLM',
             'icon' => '💵',
-            'route' => null,
+            'route' => 'admin.mlm.commissions.index',
             'order' => 10,
             'permissions' => [],
-            'submenu' => [
-                ['label' => 'รายการทั้งหมด', 'route' => 'admin.commissions.index'],
-                ['label' => 'รายงานคอมมิชชั่น', 'route' => 'admin.mlm.commissions.index'],
-            ],
         ],
 
         [
@@ -311,8 +307,6 @@ return [
             'order' => 16,
             'permissions' => [],
             'submenu' => [
-                ['label' => 'Affiliates', 'route' => 'admin.affiliates.index'],
-                ['label' => 'โครงสร้างทีม', 'route' => 'admin.affiliates.tree'],
                 ['label' => 'ระบบรักษายอด', 'route' => 'admin.retention.index'],
                 ['label' => 'จัดการระดับ Rank', 'route' => 'admin.ranks.index'],
                 ['label' => 'การเลื่อนระดับ', 'route' => 'admin.ranks.promotions.index'],

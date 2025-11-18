@@ -28,7 +28,6 @@ class User extends Authenticatable
         'is_hotel_admin',
         'managed_hotel_id',
         'blocked_at',
-        'affiliate_id',
         'current_rank_id',
         'rank_points',
         'rank_updated_at',
@@ -183,22 +182,6 @@ class User extends Authenticatable
     public function isHotelAdmin(): bool
     {
         return $this->is_hotel_admin === true && $this->managed_hotel_id !== null;
-    }
-
-    /**
-     * Get the affiliate associated with the user
-     */
-    public function affiliate()
-    {
-        return $this->belongsTo(Affiliate::class);
-    }
-
-    /**
-     * Get the commissions earned by the user
-     */
-    public function commissions()
-    {
-        return $this->hasMany(Commission::class);
     }
 
     /**
@@ -640,8 +623,6 @@ class User extends Authenticatable
         return [
             'view_dashboard',
             'manage_users',
-            'manage_affiliates',
-            'manage_commissions',
             'view_reports',
             'manage_settings',
             'manage_branding',

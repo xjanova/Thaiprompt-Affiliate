@@ -4,8 +4,6 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RoleController;
-use App\Http\Controllers\Admin\AffiliateController;
-use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\InvestmentController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SiteSettingsController;
@@ -123,22 +121,6 @@ Route::post('users/{user}/generate-member-number', [UserController::class, 'gene
 Route::resource('roles', RoleController::class);
 Route::get('roles/{role}/permissions', [RoleController::class, 'permissions'])->name('roles.permissions');
 Route::put('roles/{role}/permissions', [RoleController::class, 'updatePermissions'])->name('roles.permissions.update');
-
-// Affiliate Management
-// Note: Specific routes must be defined BEFORE Route::resource to avoid conflicts
-Route::get('affiliates/tree-view', [AffiliateController::class, 'treeView'])->name('affiliates.tree');
-Route::get('affiliates/tree-interactive', [AffiliateController::class, 'treeViewInteractive'])->name('affiliates.tree.interactive');
-Route::get('affiliates/{affiliate}/tree', [AffiliateController::class, 'tree'])->name('affiliates.tree.single');
-Route::post('affiliates/{affiliate}/move', [AffiliateController::class, 'move'])->name('affiliates.move');
-Route::resource('affiliates', AffiliateController::class);
-
-// Commission Management
-Route::resource('commissions', CommissionController::class);
-Route::post('commissions/{commission}/approve', [CommissionController::class, 'approve'])->name('commissions.approve');
-Route::post('commissions/{commission}/reject', [CommissionController::class, 'reject'])->name('commissions.reject');
-Route::post('commissions/{commission}/pay', [CommissionController::class, 'pay'])->name('commissions.pay');
-Route::post('commissions/bulk-approve', [CommissionController::class, 'bulkApprove'])->name('commissions.bulk-approve');
-Route::post('commissions/bulk-reject', [CommissionController::class, 'bulkReject'])->name('commissions.bulk-reject');
 
 // Investment & Staking Management
 Route::prefix('investments')->name('investments.')->group(function () {
