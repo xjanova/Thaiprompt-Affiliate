@@ -251,12 +251,16 @@ class AICoreAnalyticsController extends Controller
      */
     private function getOverallStats(string $startDate, string $endDate): array
     {
+        $totalUsage = AICoreUsageLog::whereBetween('created_at', [$startDate, $endDate])->count();
+        $successCount = AICoreUsageLog::whereBetween('created_at', [$startDate, $endDate])
+            ->success()->count();
+
         return [
-            'total_usage' => AICoreUsageLog::whereBetween('created_at', [$startDate, $endDate])->count(),
-            'success_count' => AICoreUsageLog::whereBetween('created_at', [$startDate, $endDate])
-                ->success()->count(),
+            'total_usage' => $totalUsage,
+            'success_count' => $successCount,
             'failed_count' => AICoreUsageLog::whereBetween('created_at', [$startDate, $endDate])
                 ->failed()->count(),
+            'success_rate' => $totalUsage > 0 ? round(($successCount / $totalUsage) * 100, 2) : 0,
             'unique_users' => AICoreUsageLog::whereBetween('created_at', [$startDate, $endDate])
                 ->distinct('user_id')->count('user_id'),
             'unique_tenants' => AICoreUsageLog::whereBetween('created_at', [$startDate, $endDate])
