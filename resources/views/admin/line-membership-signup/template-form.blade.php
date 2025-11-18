@@ -195,7 +195,7 @@
                         </li>
                         <li class="flex items-start gap-2">
                             <i class="fas fa-check-circle text-purple-500 mt-0.5"></i>
-                            <span>ระบุตัวแปรด้วย <code class="px-1 py-0.5 bg-purple-200 dark:bg-purple-800 rounded">{'{{variable}}'}</code> ใน JSON</span>
+                            <span>ระบุตัวแปรด้วย <code class="px-1 py-0.5 bg-purple-200 dark:bg-purple-800 rounded">@{{variable}}</code> ใน JSON</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <i class="fas fa-check-circle text-purple-500 mt-0.5"></i>
