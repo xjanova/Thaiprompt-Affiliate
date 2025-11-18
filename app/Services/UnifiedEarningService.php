@@ -8,55 +8,43 @@ use App\Models\MlmMember;
 /**
  * Unified Earning Service
  *
- * รวม earnings และ referrals จากทั้ง Affiliate และ MLM systems
+ * รวม earnings และ referrals จาก MLM system
  * เพื่อใช้ในการคำนวณ rank points
  */
 class UnifiedEarningService
 {
     /**
-     * คำนวณ total earnings จากทั้ง Affiliate และ MLM
+     * คำนวณ total earnings จาก MLM system
      *
      * @param User $user
      * @return float
      */
     public function getTotalEarnings(User $user): float
     {
-        // Earnings จาก Affiliate system
-        $affiliateEarnings = $user->affiliate->total_earnings ?? 0;
+        // Earnings จาก MLM commissions
+        $mlmEarnings = $user->mlmCommissions()
+            ->whereIn('status', ['approved', 'paid'])
+            ->sum('commission_amount');
 
-        // Earnings จาก MLM system (รวมทุก active memberships)
-        $mlmEarnings = MlmMember::where('user_id', $user->id)
-            ->where('status', 'active')
-            ->sum('total_earnings');
-
-        return $affiliateEarnings + $mlmEarnings;
+        return $mlmEarnings;
     }
 
     /**
-     * คำนวณ total referrals จากทั้ง Affiliate และ MLM
+     * คำนวณ total referrals จาก MLM system
      *
      * @param User $user
      * @return int
      */
     public function getTotalReferrals(User $user): int
     {
-        // Referrals จาก Affiliate system
-        $affiliateReferrals = $user->affiliate->total_referrals ?? 0;
+        // Referrals จาก MLM system (นับ direct referrals)
+        $mlmMember = $user->mlmMembers()->first();
 
-        // Referrals จาก MLM system (นับ unique children จาก unilevel tree)
-        $mlmReferrals = MlmMember::where('user_id', $user->id)
-            ->where('status', 'active')
-            ->get()
-            ->map(function ($member) {
-                // นับ direct children (level 1)
-                return MlmMember::where('unilevel_sponsor_id', $member->id)
-                    ->where('status', 'active')
-                    ->distinct('user_id')
-                    ->count('user_id');
-            })
-            ->sum();
+        if (!$mlmMember) {
+            return 0;
+        }
 
-        return $affiliateReferrals + $mlmReferrals;
+        return $mlmMember->total_direct_referrals ?? 0;
     }
 
     /**
@@ -67,38 +55,24 @@ class UnifiedEarningService
      */
     public function getEarningsBreakdown(User $user): array
     {
-        $affiliateEarnings = $user->affiliate->total_earnings ?? 0;
-        $affiliateReferrals = $user->affiliate->total_referrals ?? 0;
+        $mlmMember = $user->mlmMembers()->first();
 
-        $mlmEarnings = MlmMember::where('user_id', $user->id)
-            ->where('status', 'active')
-            ->sum('total_earnings');
+        $mlmEarnings = $user->mlmCommissions()
+            ->whereIn('status', ['approved', 'paid'])
+            ->sum('commission_amount');
 
-        $mlmMembers = MlmMember::where('user_id', $user->id)
-            ->where('status', 'active')
-            ->get();
-
-        $mlmReferrals = 0;
-        foreach ($mlmMembers as $member) {
-            $mlmReferrals += MlmMember::where('unilevel_sponsor_id', $member->id)
-                ->where('status', 'active')
-                ->distinct('user_id')
-                ->count('user_id');
-        }
+        $mlmReferrals = $mlmMember?->total_direct_referrals ?? 0;
 
         return [
-            'affiliate' => [
-                'earnings' => $affiliateEarnings,
-                'referrals' => $affiliateReferrals,
-            ],
             'mlm' => [
                 'earnings' => $mlmEarnings,
                 'referrals' => $mlmReferrals,
-                'memberships_count' => $mlmMembers->count(),
+                'member_code' => $mlmMember?->member_code,
+                'total_team_pv' => $mlmMember?->total_team_pv ?? 0,
             ],
             'total' => [
-                'earnings' => $affiliateEarnings + $mlmEarnings,
-                'referrals' => $affiliateReferrals + $mlmReferrals,
+                'earnings' => $mlmEarnings,
+                'referrals' => $mlmReferrals,
             ],
         ];
     }
@@ -117,17 +91,6 @@ class UnifiedEarningService
     }
 
     /**
-     * ตรวจสอบว่า user มี Affiliate membership หรือไม่
-     *
-     * @param User $user
-     * @return bool
-     */
-    public function hasAffiliate(User $user): bool
-    {
-        return $user->affiliate !== null;
-    }
-
-    /**
      * ตรวจสอบว่า user มี MLM membership หรือไม่
      *
      * @param User $user
@@ -135,9 +98,7 @@ class UnifiedEarningService
      */
     public function hasMlm(User $user): bool
     {
-        return MlmMember::where('user_id', $user->id)
-            ->where('status', 'active')
-            ->exists();
+        return $user->mlmMembers()->exists();
     }
 
     /**
@@ -152,7 +113,6 @@ class UnifiedEarningService
             'total_earnings' => $this->getTotalEarnings($user),
             'total_referrals' => $this->getTotalReferrals($user),
             'total_pv' => $this->getTotalPv($user),
-            'has_affiliate' => $this->hasAffiliate($user),
             'has_mlm' => $this->hasMlm($user),
         ];
     }

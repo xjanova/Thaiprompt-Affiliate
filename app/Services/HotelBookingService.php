@@ -51,10 +51,11 @@ class HotelBookingService
                 $data['promo_code'] ?? null
             );
 
-            // Get affiliate if exists
-            $affiliateId = $user->affiliate_id ?? null;
+            // Get MLM member if exists
+            $mlmMember = $user->mlmMembers()->first();
+            $mlmMemberId = $mlmMember?->id;
             $commissionAmount = 0;
-            if ($affiliateId && $hotel->commission_rate > 0) {
+            if ($mlmMemberId && $hotel->commission_rate > 0) {
                 $commissionAmount = $pricing['subtotal'] * ($hotel->commission_rate / 100);
             }
 
@@ -82,7 +83,7 @@ class HotelBookingService
                 'special_requests' => $data['special_requests'] ?? null,
                 'status' => 'pending',
                 'payment_status' => 'pending',
-                'affiliate_id' => $affiliateId,
+                'affiliate_id' => $mlmMemberId, // Storing MLM member_id (field name kept for backwards compatibility)
                 'commission_amount' => $commissionAmount,
                 'booking_source' => $data['booking_source'] ?? 'website',
             ]);
