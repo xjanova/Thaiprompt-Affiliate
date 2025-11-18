@@ -32,11 +32,19 @@
                 </div>
             </div>
 
-            <a href="{{ route('admin.line-membership-signup.index') }}"
-               class="px-6 py-3 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl text-white font-medium hover:bg-white/30 transition-all duration-300 flex items-center gap-2">
-                <i class="fas fa-arrow-left"></i>
-                <span>กลับ Dashboard</span>
-            </a>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('admin.line-membership-signup.templates.create') }}"
+                   class="px-6 py-3 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 rounded-xl text-white font-bold transition-all duration-300 hover:shadow-xl transform hover:scale-105 flex items-center gap-2">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>สร้าง Template ใหม่</span>
+                </a>
+
+                <a href="{{ route('admin.line-membership-signup.index') }}"
+                   class="px-6 py-3 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl text-white font-medium hover:bg-white/30 transition-all duration-300 flex items-center gap-2">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>กลับ Dashboard</span>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -97,14 +105,82 @@
             </div>
 
             {{-- Template Actions --}}
-            <div class="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex gap-2">
-                <button
-                    @click="viewTemplate({{ json_encode($template) }})"
-                    class="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg font-medium transition-all duration-300 hover:shadow-lg text-sm flex items-center justify-center gap-2"
-                >
-                    <i class="fas fa-eye"></i>
-                    <span>ดูรายละเอียด</span>
-                </button>
+            <div class="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    {{-- View Button --}}
+                    <button
+                        @click="viewTemplate({{ json_encode($template) }})"
+                        class="px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg font-medium transition-all duration-300 text-xs flex items-center justify-center gap-1.5"
+                    >
+                        <i class="fas fa-eye"></i>
+                        <span>ดู</span>
+                    </button>
+
+                    {{-- Edit Button --}}
+                    <a
+                        href="{{ route('admin.line-membership-signup.templates.edit', $template) }}"
+                        class="px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-medium transition-all duration-300 text-xs flex items-center justify-center gap-1.5"
+                    >
+                        <i class="fas fa-edit"></i>
+                        <span>แก้ไข</span>
+                    </a>
+
+                    {{-- Duplicate Button --}}
+                    <button
+                        @click="duplicateTemplate({{ $template->id }})"
+                        class="px-3 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white rounded-lg font-medium transition-all duration-300 text-xs flex items-center justify-center gap-1.5"
+                    >
+                        <i class="fas fa-copy"></i>
+                        <span>คัดลอก</span>
+                    </button>
+
+                    {{-- Reset Button (สำหรับ default templates เท่านั้น) --}}
+                    @if($template->is_default)
+                    <button
+                        @click="resetTemplate({{ $template->id }})"
+                        class="px-3 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg font-medium transition-all duration-300 text-xs flex items-center justify-center gap-1.5"
+                    >
+                        <i class="fas fa-undo"></i>
+                        <span>Reset</span>
+                    </button>
+                    @else
+                    {{-- Delete Button (สำหรับ non-default templates) --}}
+                    <button
+                        @click="deleteTemplate({{ $template->id }})"
+                        class="px-3 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg font-medium transition-all duration-300 text-xs flex items-center justify-center gap-1.5"
+                    >
+                        <i class="fas fa-trash"></i>
+                        <span>ลบ</span>
+                    </button>
+                    @endif
+                </div>
+
+                {{-- Template Status Badges --}}
+                <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    @if($template->is_default)
+                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded text-xs font-medium">
+                        <i class="fas fa-star"></i>
+                        Default
+                    </span>
+                    @endif
+
+                    @if($template->is_active)
+                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded text-xs font-medium">
+                        <i class="fas fa-check-circle"></i>
+                        ใช้งาน
+                    </span>
+                    @else
+                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded text-xs font-medium">
+                        <i class="fas fa-times-circle"></i>
+                        ปิด
+                    </span>
+                    @endif
+
+                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded text-xs font-medium ml-auto">
+                        <i class="fas fa-chart-line"></i>
+                        {{ number_format($template->usage_count) }}
+                    </span>
+                </div>
             </div>
         </div>
         @empty
@@ -212,7 +288,7 @@
 /**
  * Templates Manager - Alpine.js Component
  *
- * จัดการ state สำหรับ templates management
+ * จัดการ state และ actions สำหรับ templates management
  */
 function templatesManager() {
     return {
@@ -242,6 +318,102 @@ function templatesManager() {
             setTimeout(() => {
                 this.currentTemplate = null;
             }, 300);
+        },
+
+        /**
+         * Reset template กลับไปค่าเริ่มต้น
+         */
+        async resetTemplate(templateId) {
+            if (!confirm('คุณแน่ใจหรือไม่ที่จะ Reset template นี้กลับไปค่าเริ่มต้น?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/line-membership-signup/templates/${templateId}/reset`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    location.reload();
+                } else {
+                    alert('❌ ' + data.message);
+                }
+            } catch (error) {
+                console.error('Reset error:', error);
+                alert('❌ เกิดข้อผิดพลาดในการ reset template');
+            }
+        },
+
+        /**
+         * Duplicate template
+         */
+        async duplicateTemplate(templateId) {
+            if (!confirm('คุณต้องการคัดลอก template นี้หรือไม่?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/line-membership-signup/templates/${templateId}/duplicate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    location.reload();
+                } else {
+                    alert('❌ ' + data.message);
+                }
+            } catch (error) {
+                console.error('Duplicate error:', error);
+                alert('❌ เกิดข้อผิดพลาดในการคัดลอก template');
+            }
+        },
+
+        /**
+         * Delete template
+         */
+        async deleteTemplate(templateId) {
+            if (!confirm('คุณแน่ใจหรือไม่ที่จะลบ template นี้? การลบไม่สามารถยกเลิกได้!')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/line-membership-signup/templates/${templateId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    location.reload();
+                } else {
+                    alert('❌ ' + data.message);
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                alert('❌ เกิดข้อผิดพลาดในการลบ template');
+            }
         }
     };
 }

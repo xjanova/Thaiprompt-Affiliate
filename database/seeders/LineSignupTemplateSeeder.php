@@ -20,6 +20,8 @@ class LineSignupTemplateSeeder extends Seeder
                 'flex_message_json' => $this->getWelcomeHeroTemplate(),
                 'variables' => ['user_name'],
                 'is_active' => true,
+                'is_default' => true,  // ⭐ Template ต้นฉบับ - สามารถ reset ได้
+                'category' => 'welcome',  // หมวดหมู่: ต้อนรับ
             ],
             [
                 'template_key' => 'earning_calculator',
@@ -28,6 +30,8 @@ class LineSignupTemplateSeeder extends Seeder
                 'flex_message_json' => $this->getEarningCalculatorTemplate(),
                 'variables' => ['referrals', 'monthly_earning', 'yearly_earning'],
                 'is_active' => true,
+                'is_default' => true,  // ⭐ Template ต้นฉบับ - สามารถ reset ได้
+                'category' => 'earning',  // หมวดหมู่: รายได้
             ],
             [
                 'template_key' => 'success_story',
@@ -36,6 +40,8 @@ class LineSignupTemplateSeeder extends Seeder
                 'flex_message_json' => $this->getSuccessStoryTemplate(),
                 'variables' => ['member_name', 'before_income', 'after_income', 'duration', 'quote'],
                 'is_active' => true,
+                'is_default' => true,  // ⭐ Template ต้นฉบับ - สามารถ reset ได้
+                'category' => 'success_story',  // หมวดหมู่: เรื่องราวความสำเร็จ
             ],
             [
                 'template_key' => 'training_course',
@@ -44,6 +50,8 @@ class LineSignupTemplateSeeder extends Seeder
                 'flex_message_json' => $this->getTrainingCourseTemplate(),
                 'variables' => ['course_count', 'total_hours'],
                 'is_active' => true,
+                'is_default' => true,  // ⭐ Template ต้นฉบับ - สามารถ reset ได้
+                'category' => 'training',  // หมวดหมู่: อบรม
             ],
             [
                 'template_key' => 'quick_start_guide',
@@ -52,6 +60,8 @@ class LineSignupTemplateSeeder extends Seeder
                 'flex_message_json' => $this->getQuickStartGuideTemplate(),
                 'variables' => ['member_code', 'referral_code'],
                 'is_active' => true,
+                'is_default' => true,  // ⭐ Template ต้นฉบับ - สามารถ reset ได้
+                'category' => 'guide',  // หมวดหมู่: คู่มือ
             ],
         ];
 

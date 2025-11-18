@@ -195,13 +195,174 @@ class LineMembershipSignupAdminController extends Controller
     }
 
     /**
+     * แสดงหน้าสร้าง template ใหม่
+     */
+    public function create(Request $request)
+    {
+        return view('admin.line-membership-signup.template-form', [
+            'template' => null,
+            'mode' => 'create',
+        ]);
+    }
+
+    /**
+     * แสดงหน้าแก้ไข template
+     */
+    public function edit(LineSignupTemplate $template)
+    {
+        return view('admin.line-membership-signup.template-form', [
+            'template' => $template,
+            'mode' => 'edit',
+        ]);
+    }
+
+    /**
+     * บันทึก template ใหม่ (ปรับปรุงจาก createTemplate)
+     */
+    public function store(Request $request)
+    {
+        // ตรวจสอบข้อมูล
+        $validated = $request->validate([
+            'template_key' => 'required|string|unique:line_signup_templates,template_key',
+            'template_name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'flex_message_json' => 'required|json',
+            'variables' => 'nullable|string',
+            'category' => 'nullable|string|max:50',
+            'is_active' => 'boolean',
+        ]);
+
+        // แปลง JSON string เป็น array
+        $validated['flex_message_json'] = json_decode($validated['flex_message_json'], true);
+
+        // แปลง variables string เป็น array
+        if (!empty($validated['variables'])) {
+            $validated['variables'] = array_map('trim', explode(',', $validated['variables']));
+        } else {
+            $validated['variables'] = [];
+        }
+
+        // สร้าง template
+        $template = LineSignupTemplate::create($validated);
+
+        return redirect()
+            ->route('admin.line-membership-signup.templates')
+            ->with('success', 'สร้าง Template สำเร็จ!');
+    }
+
+    /**
+     * อัพเดท template (ปรับปรุงจาก updateTemplate)
+     */
+    public function update(Request $request, LineSignupTemplate $template)
+    {
+        // ตรวจสอบข้อมูล
+        $validated = $request->validate([
+            'template_name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'flex_message_json' => 'required|json',
+            'variables' => 'nullable|string',
+            'category' => 'nullable|string|max:50',
+            'is_active' => 'boolean',
+        ]);
+
+        // แปลง JSON string เป็น array
+        $validated['flex_message_json'] = json_decode($validated['flex_message_json'], true);
+
+        // แปลง variables string เป็น array
+        if (!empty($validated['variables'])) {
+            $validated['variables'] = array_map('trim', explode(',', $validated['variables']));
+        } else {
+            $validated['variables'] = [];
+        }
+
+        // อัพเดท template
+        $template->update($validated);
+
+        return redirect()
+            ->route('admin.line-membership-signup.templates')
+            ->with('success', 'อัพเดท Template สำเร็จ!');
+    }
+
+    /**
+     * Reset template กลับไปค่าเริ่มต้น
+     */
+    public function resetTemplate(LineSignupTemplate $template)
+    {
+        // ตรวจสอบว่าสามารถ reset ได้หรือไม่
+        if (!$template->canReset()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Template นี้ไม่สามารถ reset ได้ (ไม่ใช่ default template)',
+            ], 400);
+        }
+
+        // ดึงข้อมูล default
+        $defaultData = $template->getDefaultData();
+
+        if (!$defaultData) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบข้อมูล default template',
+            ], 404);
+        }
+
+        // Reset กลับไปค่าเริ่มต้น
+        $template->update([
+            'flex_message_json' => $defaultData['flex_message_json'],
+            'variables' => $defaultData['variables'],
+            'description' => $defaultData['description'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Reset Template สำเร็จ!',
+            'template' => $template->fresh(),
+        ]);
+    }
+
+    /**
+     * Duplicate template
+     */
+    public function duplicateTemplate(LineSignupTemplate $template)
+    {
+        // สร้าง template key ใหม่
+        $newKey = $template->template_key . '_copy_' . time();
+
+        // Duplicate template
+        $newTemplate = $template->replicate();
+        $newTemplate->template_key = $newKey;
+        $newTemplate->template_name = $template->template_name . ' (Copy)';
+        $newTemplate->is_default = false; // Template ที่ duplicate มาไม่ใช่ default
+        $newTemplate->original_template_key = $template->template_key; // เก็บ key ต้นฉบับ
+        $newTemplate->usage_count = 0; // Reset usage count
+        $newTemplate->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Duplicate Template สำเร็จ!',
+            'template' => $newTemplate,
+        ]);
+    }
+
+    /**
      * Delete template
      */
     public function deleteTemplate(LineSignupTemplate $template)
     {
+        // ป้องกันการลบ default template
+        if ($template->is_default) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถลบ default template ได้',
+            ], 403);
+        }
+
         $template->delete();
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'message' => 'ลบ Template สำเร็จ!',
+        ]);
     }
 
     /**
