@@ -235,22 +235,25 @@
                 @endif
             </div>
 
-            {{-- Affiliate Information --}}
+            {{-- MLM Member Information --}}
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                 <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <i class="fas fa-link text-purple-500"></i>
-                    Affiliate
+                    MLM Member
                 </h2>
 
-                @if($session->affiliate)
+                @php
+                    $mlmMember = $session->mlmMember();
+                @endphp
+                @if($mlmMember)
                 <div class="space-y-2">
                     <div class="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Referral Code</span>
-                        <span class="text-sm font-bold text-purple-600 dark:text-purple-400">{{ $session->affiliate->referral_code }}</span>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Member Code</span>
+                        <span class="text-sm font-bold text-purple-600 dark:text-purple-400">{{ $mlmMember->member_code }}</span>
                     </div>
                 </div>
                 @else
-                <p class="text-sm text-gray-500 dark:text-gray-400">ไม่มี affiliate</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">ไม่มี MLM member</p>
                 @endif
             </div>
 

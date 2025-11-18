@@ -151,9 +151,12 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            @if($session->affiliate)
+                            @php
+                                $mlmMember = $session->mlmMember();
+                            @endphp
+                            @if($mlmMember)
                                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
-                                    {{ $session->affiliate->referral_code }}
+                                    {{ $mlmMember->member_code }}
                                 </span>
                             @else
                                 <span class="text-sm text-gray-400 dark:text-gray-500">-</span>
