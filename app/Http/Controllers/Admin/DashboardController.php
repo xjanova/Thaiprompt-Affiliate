@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Affiliate;
-use App\Models\Commission;
+use App\Models\MlmMember;
+use App\Models\MlmCommission;
 use App\Models\CryptoExchangeRate;
 use App\Models\CryptoWithdrawalRequest;
 use App\Models\CryptoTransaction;
@@ -24,18 +24,18 @@ class DashboardController extends Controller
     {
         $stats = [
             'total_users' => User::count(),
-            'total_affiliates' => Affiliate::count(),
-            'total_commissions' => Commission::sum('amount'),
-            'pending_commissions' => Commission::where('status', 'pending')->count(),
-            'approved_commissions' => Commission::where('status', 'approved')->count(),
-            'active_affiliates' => Affiliate::where('status', 'active')->count(),
-            'paid_commissions' => Commission::where('status', 'paid')->sum('amount'),
-            'rejected_commissions' => Commission::where('status', 'rejected')->count(),
+            'total_affiliates' => MlmMember::count(), // เปลี่ยนจาก Affiliate เป็น MLM Member
+            'total_commissions' => MlmCommission::sum('commission_amount'), // เปลี่ยนจาก Commission เป็น MlmCommission
+            'pending_commissions' => MlmCommission::where('status', 'pending')->count(),
+            'approved_commissions' => MlmCommission::where('status', 'approved')->count(),
+            'active_affiliates' => MlmMember::where('is_qualified', true)->count(), // MLM Member ที่มีคุณสมบัติ
+            'paid_commissions' => MlmCommission::where('status', 'paid')->sum('commission_amount'),
+            'rejected_commissions' => MlmCommission::where('status', 'rejected')->count(),
         ];
 
         // Get monthly revenue data for chart (last 12 months)
-        $monthlyRevenue = Commission::where('status', 'paid')
-            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, SUM(amount) as total')
+        $monthlyRevenue = MlmCommission::where('status', 'paid')
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, SUM(commission_amount) as total')
             ->groupBy('month')
             ->orderBy('month', 'desc')
             ->limit(12)
@@ -43,34 +43,34 @@ class DashboardController extends Controller
             ->reverse();
 
         // Commission types breakdown
-        $commissionTypes = Commission::selectRaw('type, SUM(amount) as total')
+        $commissionTypes = MlmCommission::selectRaw('type, SUM(commission_amount) as total')
             ->groupBy('type')
             ->get();
 
         // Commission status breakdown for pie chart
         $commissionStatus = [
-            'pending' => Commission::where('status', 'pending')->count(),
-            'approved' => Commission::where('status', 'approved')->count(),
-            'paid' => Commission::where('status', 'paid')->count(),
-            'rejected' => Commission::where('status', 'rejected')->count(),
+            'pending' => MlmCommission::where('status', 'pending')->count(),
+            'approved' => MlmCommission::where('status', 'approved')->count(),
+            'paid' => MlmCommission::where('status', 'paid')->count(),
+            'rejected' => MlmCommission::where('status', 'rejected')->count(),
         ];
 
         // Daily commissions for the last 30 days
-        $dailyCommissions = Commission::selectRaw('DATE(created_at) as date, COUNT(*) as count, SUM(amount) as total')
+        $dailyCommissions = MlmCommission::selectRaw('DATE(created_at) as date, COUNT(*) as count, SUM(commission_amount) as total')
             ->where('created_at', '>=', now()->subDays(30))
             ->groupBy('date')
             ->orderBy('date', 'asc')
             ->get();
 
         // Get recent commissions
-        $recentCommissions = Commission::with(['affiliate.user', 'user'])
+        $recentCommissions = MlmCommission::with(['mlmMember.user'])
             ->latest()
             ->limit(10)
             ->get();
 
-        // Get top affiliates
-        $topAffiliates = Affiliate::with('user')
-            ->orderBy('total_earnings', 'desc')
+        // Get top MLM members (เปลี่ยนจาก affiliates)
+        $topAffiliates = MlmMember::with('user')
+            ->orderBy('total_pv', 'desc') // เรียงตาม PV แทน earnings
             ->limit(5)
             ->get();
 
@@ -79,10 +79,10 @@ class DashboardController extends Controller
         $lastMonthUsers = User::whereMonth('created_at', now()->subMonth()->month)->count();
         $userGrowth = $lastMonthUsers > 0 ? (($thisMonthUsers - $lastMonthUsers) / $lastMonthUsers) * 100 : 0;
 
-        $thisMonthRevenue = Commission::where('status', 'paid')
-            ->whereMonth('created_at', now()->month)->sum('amount');
-        $lastMonthRevenue = Commission::where('status', 'paid')
-            ->whereMonth('created_at', now()->subMonth()->month)->sum('amount');
+        $thisMonthRevenue = MlmCommission::where('status', 'paid')
+            ->whereMonth('created_at', now()->month)->sum('commission_amount');
+        $lastMonthRevenue = MlmCommission::where('status', 'paid')
+            ->whereMonth('created_at', now()->subMonth()->month)->sum('commission_amount');
         $revenueGrowth = $lastMonthRevenue > 0 ? (($thisMonthRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100 : 0;
 
         // Crypto data
