@@ -644,9 +644,9 @@
                 </a>
 
                 {{-- Email Templates --}}
-                <a href="{{ route('admin.email.templates') }}"
+                <a href="{{ route('admin.email.templates.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.email.templates') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.email.templates.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-file-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Templates</span>
                 </a>
@@ -1020,26 +1020,35 @@
             </button>
 
             <div x-show="aiBotsOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Trading Bot (Controller Not Implemented) --}}
+                {{--
                 <a href="{{ route('admin.trading-bot.dashboard') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.trading-bot.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Trading Bot</span>
                 </a>
+                --}}
 
+                {{-- Bot Automation (Controller Not Implemented) --}}
+                {{--
                 <a href="{{ route('admin.bot-automation.dashboard') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.bot-automation.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-robot w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Bot Automation</span>
                 </a>
+                --}}
 
+                {{-- AI Marketplace (Route Not Defined) --}}
+                {{--
                 <a href="{{ route('admin.ai-bots.marketplace') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-bots.marketplace*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-store w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">AI Marketplace</span>
                 </a>
+                --}}
 
                 <a href="{{ route('admin.ai-bots.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
