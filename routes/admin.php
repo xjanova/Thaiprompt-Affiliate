@@ -732,8 +732,12 @@ Route::prefix('line-membership-signup')->name('line-membership-signup.')->group(
 
     // Templates Management
     Route::get('/templates', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'templates'])->name('templates');
-    Route::post('/templates', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'createTemplate'])->name('templates.create');
-    Route::put('/templates/{template}', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'updateTemplate'])->name('templates.update');
+    Route::get('/templates/create', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'create'])->name('templates.create');
+    Route::post('/templates', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'store'])->name('templates.store');
+    Route::get('/templates/{template}/edit', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'edit'])->name('templates.edit');
+    Route::put('/templates/{template}', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'update'])->name('templates.update');
+    Route::post('/templates/{template}/reset', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'resetTemplate'])->name('templates.reset');
+    Route::post('/templates/{template}/duplicate', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'duplicateTemplate'])->name('templates.duplicate');
     Route::delete('/templates/{template}', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'deleteTemplate'])->name('templates.delete');
 
     // Invitations Management
