@@ -317,8 +317,8 @@ class AppConfigController extends Controller
             return 'seller';
         }
 
-        // Check if user has affiliate
-        if ($user->affiliate_id) {
+        // Check if user has MLM member
+        if ($user->mlmMembers()->exists()) {
             return 'member';
         }
 
