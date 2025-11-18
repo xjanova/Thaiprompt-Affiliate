@@ -138,17 +138,17 @@
 
             {{-- 3D Logo with Glassmorphism --}}
             <div class="mb-12 animate-fade-in perspective-1000" x-show="isVisible" x-transition>
-                <div class="inline-block p-8 backdrop-blur-xl bg-white/10 dark:bg-gray-900/10 border-2 border-white/20 dark:border-gray-700/30 rounded-3xl shadow-2xl transform hover:scale-105 hover:rotate-y-6 transition-all duration-500">
+                <div class="inline-block p-6 md:p-8 backdrop-blur-xl bg-white/10 dark:bg-gray-900/10 border-2 border-white/20 dark:border-gray-700/30 rounded-3xl shadow-2xl transform hover:scale-105 hover:rotate-y-6 transition-all duration-500">
                     {{-- Logo (ถ้ามี) --}}
                     @if(\App\Models\Setting::get('logo'))
                         <img src="{{ asset(\App\Models\Setting::get('logo')) }}"
                              alt="Logo"
-                             class="w-32 h-32 mx-auto drop-shadow-2xl"
+                             class="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 mx-auto object-contain drop-shadow-2xl"
                              loading="lazy">
                     @else
                         {{-- Fallback Icon --}}
-                        <div class="w-32 h-32 mx-auto bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
-                            <i class="fas fa-rocket text-white text-6xl"></i>
+                        <div class="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 mx-auto bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+                            <i class="fas fa-rocket text-white text-4xl md:text-5xl lg:text-6xl"></i>
                         </div>
                     @endif
                 </div>
