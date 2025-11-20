@@ -571,16 +571,110 @@ update_env "DB_PASSWORD" "$DB_PASSWORD"
 
 print_success ".env file configured"
 
-# Generate APP_KEY
-print_info "Generating application key..."
+# ========================================
+# STEP 6: Install Dependencies (ย้ายมาก่อน!)
+# ========================================
+print_header "Step 6: Installing Dependencies"
+
+print_info "Creating required directories..."
+mkdir -p storage/{app,framework,logs}
+mkdir -p storage/framework/{cache,sessions,views}
+mkdir -p storage/app/{public,private}
 mkdir -p bootstrap/cache
-php artisan key:generate --force
-print_success "Application key generated"
+chmod -R 775 storage bootstrap/cache
+print_success "Directories created"
+
+print_info "Installing Composer dependencies..."
+echo "This may take a few minutes..."
+
+# ลองติดตั้งหลายครั้งถ้าล้มเหลว
+MAX_COMPOSER_ATTEMPTS=3
+COMPOSER_ATTEMPT=1
+
+while [ $COMPOSER_ATTEMPT -le $MAX_COMPOSER_ATTEMPTS ]; do
+    if [ $COMPOSER_ATTEMPT -gt 1 ]; then
+        print_warning "Retry attempt $COMPOSER_ATTEMPT of $MAX_COMPOSER_ATTEMPTS..."
+        sleep 2
+    fi
+
+    if composer install --no-dev --optimize-autoloader --no-interaction; then
+        print_success "Composer dependencies installed"
+
+        # ตรวจสอบว่า vendor/autoload.php มีจริง
+        if [ -f "vendor/autoload.php" ]; then
+            print_success "✓ Verified: vendor/autoload.php exists"
+            break
+        else
+            print_error "vendor/autoload.php not found after composer install!"
+            COMPOSER_ATTEMPT=$((COMPOSER_ATTEMPT + 1))
+            continue
+        fi
+    else
+        COMPOSER_ATTEMPT=$((COMPOSER_ATTEMPT + 1))
+    fi
+done
+
+if [ $COMPOSER_ATTEMPT -gt $MAX_COMPOSER_ATTEMPTS ]; then
+    echo ""
+    print_error "Failed to install Composer dependencies after $MAX_COMPOSER_ATTEMPTS attempts"
+    echo ""
+    print_info "Possible solutions:"
+    echo "  1. Check internet connection"
+    echo "  2. Run manually: ${YELLOW}composer install${NC}"
+    echo "  3. Check Composer version: ${YELLOW}composer --version${NC}"
+    echo "  4. Clear Composer cache: ${YELLOW}composer clear-cache${NC}"
+    echo ""
+    error_exit "Composer installation failed. Your configuration has been saved."
+fi
+
+# ตรวจสอบและติดตั้ง Node.js dependencies
+print_info "Checking for Node.js and npm..."
+if command -v node &> /dev/null && command -v npm &> /dev/null; then
+    NODE_VERSION=$(node --version)
+    NPM_VERSION=$(npm --version)
+    print_success "Node.js: $NODE_VERSION, npm: $NPM_VERSION"
+
+    # ตรวจสอบว่ามี package.json หรือไม่
+    if [ -f "package.json" ]; then
+        print_info "Installing Node.js dependencies..."
+        echo "This may take a few minutes..."
+        if npm install --no-audit --no-fund; then
+            print_success "Node.js dependencies installed"
+
+            # Build assets
+            print_info "Building frontend assets with Vite..."
+            if npm run build; then
+                print_success "Frontend assets built successfully"
+            else
+                print_warning "Failed to build assets (continuing anyway)"
+            fi
+        else
+            print_warning "Failed to install Node.js dependencies (continuing anyway)"
+        fi
+    else
+        print_warning "No package.json found, skipping Node.js dependencies"
+    fi
+else
+    print_warning "Node.js or npm not found. Frontend assets will need to be built manually."
+    print_info "To install Node.js: https://nodejs.org/"
+fi
 
 # ========================================
-# STEP 6: Verify Critical Files
+# STEP 7: Generate Application Key
 # ========================================
-print_header "Step 6: Verifying Critical Files"
+print_header "Step 7: Generate Application Key"
+
+print_info "Generating application key..."
+if php artisan key:generate --force; then
+    print_success "Application key generated"
+else
+    error_exit "Failed to generate application key"
+fi
+
+# ========================================
+# STEP 8: Verify Critical Files
+# ========================================
+print_header "Step 8: Verifying Critical Files"
 
 print_info "Checking and fixing missing critical files..."
 
@@ -685,97 +779,9 @@ else
 fi
 
 # ========================================
-# STEP 7: Install Dependencies
+# STEP 9: Database Setup
 # ========================================
-print_header "Step 7: Installing Dependencies"
-
-print_info "Creating required directories..."
-mkdir -p storage/{app,framework,logs}
-mkdir -p storage/framework/{cache,sessions,views}
-mkdir -p storage/app/{public,private}
-mkdir -p bootstrap/cache
-chmod -R 775 storage bootstrap/cache
-print_success "Directories created"
-
-print_info "Installing Composer dependencies..."
-echo "This may take a few minutes..."
-
-# ลองติดตั้งหลายครั้งถ้าล้มเหลว
-MAX_COMPOSER_ATTEMPTS=3
-COMPOSER_ATTEMPT=1
-
-while [ $COMPOSER_ATTEMPT -le $MAX_COMPOSER_ATTEMPTS ]; do
-    if [ $COMPOSER_ATTEMPT -gt 1 ]; then
-        print_warning "Retry attempt $COMPOSER_ATTEMPT of $MAX_COMPOSER_ATTEMPTS..."
-        sleep 2
-    fi
-
-    if composer install --no-dev --optimize-autoloader --no-interaction; then
-        print_success "Composer dependencies installed"
-
-        # ตรวจสอบว่า vendor/autoload.php มีจริง
-        if [ -f "vendor/autoload.php" ]; then
-            print_success "✓ Verified: vendor/autoload.php exists"
-            break
-        else
-            print_error "vendor/autoload.php not found after composer install!"
-            COMPOSER_ATTEMPT=$((COMPOSER_ATTEMPT + 1))
-            continue
-        fi
-    else
-        COMPOSER_ATTEMPT=$((COMPOSER_ATTEMPT + 1))
-    fi
-done
-
-if [ $COMPOSER_ATTEMPT -gt $MAX_COMPOSER_ATTEMPTS ]; then
-    echo ""
-    print_error "Failed to install Composer dependencies after $MAX_COMPOSER_ATTEMPTS attempts"
-    echo ""
-    print_info "Possible solutions:"
-    echo "  1. Check internet connection"
-    echo "  2. Run manually: ${YELLOW}composer install${NC}"
-    echo "  3. Check Composer version: ${YELLOW}composer --version${NC}"
-    echo "  4. Clear Composer cache: ${YELLOW}composer clear-cache${NC}"
-    echo ""
-    error_exit "Composer installation failed. Your configuration has been saved."
-fi
-
-# ตรวจสอบและติดตั้ง Node.js dependencies
-print_info "Checking for Node.js and npm..."
-if command -v node &> /dev/null && command -v npm &> /dev/null; then
-    NODE_VERSION=$(node --version)
-    NPM_VERSION=$(npm --version)
-    print_success "Node.js: $NODE_VERSION, npm: $NPM_VERSION"
-
-    # ตรวจสอบว่ามี package.json หรือไม่
-    if [ -f "package.json" ]; then
-        print_info "Installing Node.js dependencies..."
-        echo "This may take a few minutes..."
-        if npm install --no-audit --no-fund; then
-            print_success "Node.js dependencies installed"
-
-            # Build assets
-            print_info "Building frontend assets with Vite..."
-            if npm run build; then
-                print_success "Frontend assets built successfully"
-            else
-                print_warning "Failed to build assets (continuing anyway)"
-            fi
-        else
-            print_warning "Failed to install Node.js dependencies (continuing anyway)"
-        fi
-    else
-        print_warning "No package.json found, skipping Node.js dependencies"
-    fi
-else
-    print_warning "Node.js or npm not found. Frontend assets will need to be built manually."
-    print_info "To install Node.js: https://nodejs.org/"
-fi
-
-# ========================================
-# STEP 8: Database Setup
-# ========================================
-print_header "Step 8: Database Setup"
+print_header "Step 9: Database Setup"
 
 # Clear config cache
 print_info "Clearing configuration cache..."
@@ -822,9 +828,9 @@ else
 fi
 
 # ========================================
-# STEP 9: Create Super Admin
+# STEP 10: Create Super Admin
 # ========================================
-print_header "Step 9: Creating Super Admin Account"
+print_header "Step 10: Creating Super Admin Account"
 
 print_info "Creating super admin user..."
 
@@ -891,9 +897,9 @@ else
 fi
 
 # ========================================
-# STEP 10: Finalization & Optimization
+# STEP 11: Finalization & Optimization
 # ========================================
-print_header "Step 10: Finalization & Optimization"
+print_header "Step 11: Finalization & Optimization"
 
 # Create storage link
 print_info "Creating storage symlink..."
