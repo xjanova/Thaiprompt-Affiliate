@@ -129,7 +129,7 @@ CRITICAL_FILES=(
     "config/database.php"
     "config/auth.php"
     "config/cache.php"
-    "config/mail.php"
+    "config/email.php"
 
     # Routes (สำคัญมาก!)
     "routes/web.php"
