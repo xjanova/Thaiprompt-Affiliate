@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.87.1] - 2025-11-20
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1384 from xjanova/claude/fix-missing-route-01TePSEhb1r4VphtM1L4o3Bo (de9d04c7)
+- fix: แก้ไข route ที่ไม่มีอยู่ในหน้า welcome (f294855c)
+### 🔧 Other Changes
+
+
 ## [v3.87.0] - 2025-11-20
 
 ### ✨ Features
