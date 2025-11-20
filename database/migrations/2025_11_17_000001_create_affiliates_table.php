@@ -7,13 +7,24 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * สร้างตาราง affiliates
+     * ⚠️ ต้องมีตาราง users ก่อน!
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง users มีอยู่แล้วหรือยัง
+        if (!Schema::hasTable('users')) {
+            throw new \Exception('Table "users" must exist before creating "affiliates" table. Please run users migration first.');
+        }
+
+        // ตรวจสอบว่าตารางมีอยู่แล้วหรือยัง (safety check)
+        if (Schema::hasTable('affiliates')) {
+            return;
+        }
+
         Schema::create('affiliates', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('parent_id')->nullable()->constrained('affiliates')->onDelete('set null');
             $table->string('referral_code')->unique();
             $table->integer('level')->default(1);
