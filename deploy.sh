@@ -52,6 +52,21 @@ else
     fi
 fi
 
+# GitHub Token Configuration (Optional)
+# ใช้ GitHub token จาก environment variable (ถ้ามี)
+# ประโยชน์: เพิ่ม rate limit จาก 60 → 5,000 requests/hour
+if [ -n "$GITHUB_TOKEN" ]; then
+    # ตั้งค่า git credential helper ให้ใช้ token
+    export GIT_ASKPASS_TOKEN="$GITHUB_TOKEN"
+    git config --local credential.helper '!f() { echo "username=token"; echo "password=$GITHUB_TOKEN"; }; f'
+    print_info "Using GitHub token for authentication (rate limit: 5,000/hour)"
+else
+    # ไม่มี token - ใช้ public access (60 requests/hour)
+    print_info "No GitHub token provided - using public access (rate limit: 60/hour)"
+    echo "  💡 Tip: Set GITHUB_TOKEN env variable to increase rate limit"
+    echo "     Example: export GITHUB_TOKEN=your_github_token"
+fi
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
