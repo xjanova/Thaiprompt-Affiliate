@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.84.0] - 2025-11-20
+
+### ✨ Features
+- feat: เพิ่ม Quick Installation Script สำหรับ One-Command Install (c72c7c79)
+- feat: เพิ่มการตรวจสอบไฟล์สำคัญทั้งหมดใน install.sh STEP 0 (25d063b8)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1378 from xjanova/claude/fix-admin-layout-view-01MZjFRCgmK2C2X4tQEz671S (9a76a05e)
+
 ## [v3.83.3] - 2025-11-20
 
 ### ✨ Features
