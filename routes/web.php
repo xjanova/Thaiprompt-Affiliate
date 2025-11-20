@@ -248,7 +248,13 @@ Route::prefix('otp')->name('otp.')->group(function () {
 });
 
 // Frontend Routes
-Route::get('/', [HomeController::class, 'index'])->name('home');
+// Landing Page with System Links (Public Access)
+Route::get('/', function () {
+    return view('welcome');
+})->name('home');
+
+// Original Home Page
+Route::get('/home', [HomeController::class, 'index'])->name('home.original');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/about-us', [HomeController::class, 'aboutProfessional'])->name('about.professional');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');

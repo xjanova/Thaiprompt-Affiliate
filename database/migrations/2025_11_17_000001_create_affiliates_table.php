@@ -9,6 +9,9 @@ return new class extends Migration
     /**
      * สร้างตาราง affiliates
      * ⚠️ ต้องมีตาราง users ก่อน!
+     *
+     * หมายเหตุ: ถ้าตารางมีอยู่แล้ว จะลบแล้วสร้างใหม่
+     * เพื่อป้องกันปัญหา foreign key และ structure ไม่ตรงกัน
      */
     public function up(): void
     {
@@ -17,11 +20,11 @@ return new class extends Migration
             throw new \Exception('Table "users" must exist before creating "affiliates" table. Please run users migration first.');
         }
 
-        // ตรวจสอบว่าตารางมีอยู่แล้วหรือยัง (safety check)
-        if (Schema::hasTable('affiliates')) {
-            return;
-        }
+        // ลบตารางเก่าถ้ามี (เพื่อสร้างใหม่ให้ถูกต้อง)
+        // ⚠️ ข้อมูลจะหายไป! ใช้เฉพาะตอน fresh install หรือ development
+        Schema::dropIfExists('affiliates');
 
+        // สร้างตารางใหม่
         Schema::create('affiliates', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
