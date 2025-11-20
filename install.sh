@@ -61,6 +61,130 @@ echo -e "${BLUE}This script will guide you through the initial setup of TP-Affil
 echo -e "${BLUE}Estimated time: 5-10 minutes${NC}"
 echo ""
 
+# ========================================
+# STEP 0: Verify Repository Files
+# ========================================
+print_header "Step 0: Verifying Repository Files"
+
+# ตรวจสอบไฟล์สำคัญที่จำเป็นต้องมี
+print_info "Checking for required files..."
+
+CRITICAL_FILES=(
+    ".env.example"
+    "composer.json"
+    "package.json"
+    "artisan"
+    "public/index.php"
+)
+
+MISSING_CRITICAL=false
+MISSING_FILES_LIST=()
+
+for file in "${CRITICAL_FILES[@]}"; do
+    if [ ! -f "$file" ]; then
+        MISSING_CRITICAL=true
+        MISSING_FILES_LIST+=("$file")
+        print_error "Missing critical file: $file"
+    else
+        print_success "✓ Found: $file"
+    fi
+done
+
+# ถ้าขาดไฟล์สำคัญ
+if [ "$MISSING_CRITICAL" = true ]; then
+    echo ""
+    print_warning "Critical files are missing from the installation directory!"
+    echo ""
+    echo "Missing files:"
+    for file in "${MISSING_FILES_LIST[@]}"; do
+        echo "  ✗ $file"
+    done
+    echo ""
+
+    # ตรวจสอบว่าเป็น git repository หรือไม่
+    if [ -d ".git" ]; then
+        print_info "Git repository detected. Attempting to restore files..."
+        echo ""
+
+        # ถามผู้ใช้ว่าต้องการ pull files จาก git หรือไม่
+        read -p "Do you want to restore files from git repository? (y/n) [y]: " -n 1 -r RESTORE_FILES
+        echo ""
+        RESTORE_FILES=${RESTORE_FILES:-y}
+
+        if [[ $RESTORE_FILES =~ ^[Yy]$ ]]; then
+            # ดึงไฟล์จาก git
+            print_info "Fetching latest files from repository..."
+
+            # Stash local changes ถ้ามี
+            git stash push -m "Auto-stash before install.sh" 2>/dev/null || true
+
+            # Fetch and checkout files
+            if git fetch origin; then
+                print_success "Fetched from remote successfully"
+
+                # ถามว่าต้องการ checkout จาก branch ไหน
+                CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
+                echo ""
+                print_info "Available branches:"
+                git branch -a | grep -E "(main|master|claude/Main)" | head -5
+                echo ""
+                read -p "Enter branch to restore from [$CURRENT_BRANCH]: " TARGET_BRANCH
+                TARGET_BRANCH=${TARGET_BRANCH:-$CURRENT_BRANCH}
+
+                # Checkout missing files from target branch
+                print_info "Restoring files from branch: $TARGET_BRANCH..."
+                for file in "${MISSING_FILES_LIST[@]}"; do
+                    if git checkout "origin/$TARGET_BRANCH" -- "$file" 2>/dev/null; then
+                        print_success "✓ Restored: $file"
+                    else
+                        print_warning "⚠ Could not restore: $file"
+                    fi
+                done
+
+                # ตรวจสอบอีกครั้งว่าไฟล์ครบแล้วหรือยัง
+                echo ""
+                print_info "Re-checking files..."
+                ALL_RESTORED=true
+                for file in "${CRITICAL_FILES[@]}"; do
+                    if [ ! -f "$file" ]; then
+                        ALL_RESTORED=false
+                        print_error "Still missing: $file"
+                    fi
+                done
+
+                if [ "$ALL_RESTORED" = true ]; then
+                    echo ""
+                    print_success "All critical files restored successfully!"
+                    echo ""
+                else
+                    echo ""
+                    error_exit "Some files could not be restored. Please clone the repository again or restore from backup."
+                fi
+            else
+                error_exit "Failed to fetch from git repository."
+            fi
+        else
+            error_exit "Installation cancelled. Please restore missing files manually."
+        fi
+    else
+        # ไม่ใช่ git repository
+        echo ""
+        print_error "This is not a git repository!"
+        echo ""
+        echo "Solutions:"
+        echo "  1. Clone the full repository:"
+        echo "     ${YELLOW}git clone https://github.com/xjanova/Thaiprompt-Affiliate.git${NC}"
+        echo ""
+        echo "  2. Or restore missing files from backup"
+        echo ""
+        error_exit "Cannot proceed without required files."
+    fi
+fi
+
+echo ""
+print_success "All required files present!"
+echo ""
+
 # Check if already installed
 if [ -f "storage/app/.setup_completed" ]; then
     print_warning "TP-Affiliate is already installed!"
