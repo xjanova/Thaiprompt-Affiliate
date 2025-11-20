@@ -116,15 +116,47 @@ print_header "Step 0: Verifying Repository Files"
 print_info "Checking for required files..."
 
 CRITICAL_FILES=(
+    # Core Laravel files
     ".env.example"
     "composer.json"
     "package.json"
     "artisan"
     "public/index.php"
     "bootstrap/app.php"
+
+    # Configuration files
+    "config/app.php"
+    "config/database.php"
+    "config/auth.php"
+    "config/cache.php"
+    "config/mail.php"
+
+    # Routes (สำคัญมาก!)
+    "routes/web.php"
+    "routes/api.php"
+    "routes/console.php"
+    "routes/admin.php"
+    "routes/user.php"
+    "routes/channels.php"
+
+    # Service Providers
+    "app/Providers/AppServiceProvider.php"
+    "app/Providers/AuthServiceProvider.php"
+    "app/Providers/EventServiceProvider.php"
+
+    # Helpers (required by composer.json autoload)
     "app/Helpers/SeoHelper.php"
     "app/Helpers/IconHelper.php"
     "app/Helpers/CryptoHelper.php"
+
+    # Database
+    "database/seeders/DatabaseSeeder.php"
+
+    # Views layouts
+    "resources/views/layouts/app.blade.php"
+    "resources/views/layouts/admin-v3.blade.php"
+    "resources/views/layouts/guest.blade.php"
+    "resources/views/layouts/user.blade.php"
 )
 
 MISSING_CRITICAL=false
