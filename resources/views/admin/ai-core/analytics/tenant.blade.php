@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 @section('title', 'Tenant Analytics: ' . $tenant->tenant_name)
 @section('content')
 <div class="container-fluid px-4 py-6">

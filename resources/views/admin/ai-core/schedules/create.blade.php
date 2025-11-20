@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 @section('title', 'เพิ่ม Schedule ใหม่')
 @section('content')
 <div class="container-fluid px-4 py-6" x-data="scheduleCreate()">
