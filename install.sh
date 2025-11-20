@@ -38,14 +38,16 @@ print_header() {
     echo ""
 }
 
-# Cache file สำหรับเก็บข้อมูล configuration
+# Cache และ Progress files
 CACHE_FILE=".install_cache"
+PROGRESS_FILE=".install_progress"
 
 error_exit() {
     print_error "$1"
     echo ""
     if [ -f "$CACHE_FILE" ]; then
         print_info "💾 Your input has been saved to $CACHE_FILE"
+        print_info "💾 Installation progress saved to $PROGRESS_FILE"
         print_info "Run ./install.sh again to resume installation"
     fi
     exit 1
@@ -89,6 +91,46 @@ clear_cache() {
     fi
 }
 
+# ====================================
+# Checkpoint Functions
+# ====================================
+
+# บันทึก checkpoint ว่า step นี้ทำสำเร็จแล้ว
+save_checkpoint() {
+    local step_name=$1
+    echo "$step_name" >> "$PROGRESS_FILE"
+    print_info "✓ Checkpoint saved: $step_name"
+}
+
+# เช็คว่า step นี้ทำแล้วหรือยัง
+is_step_completed() {
+    local step_name=$1
+    if [ -f "$PROGRESS_FILE" ]; then
+        grep -q "^${step_name}$" "$PROGRESS_FILE" && return 0
+    fi
+    return 1
+}
+
+# ลบ checkpoint files
+clear_checkpoints() {
+    if [ -f "$PROGRESS_FILE" ]; then
+        rm -f "$PROGRESS_FILE"
+        print_success "Installation progress cleared"
+    fi
+}
+
+# แสดงรายการ checkpoints
+list_checkpoints() {
+    if [ -f "$PROGRESS_FILE" ]; then
+        echo ""
+        print_info "Completed steps:"
+        cat "$PROGRESS_FILE" | while read step; do
+            echo "  ✓ $step"
+        done
+        echo ""
+    fi
+}
+
 # Header
 echo ""
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
@@ -108,9 +150,32 @@ echo -e "${BLUE}Estimated time: 5-10 minutes${NC}"
 echo ""
 
 # ========================================
+# ตรวจสอบการติดตั้งที่ค้างอยู่
+# ========================================
+if [ -f "$PROGRESS_FILE" ]; then
+    print_warning "Found previous installation attempt!"
+    list_checkpoints
+
+    read -p "Do you want to RESUME from last checkpoint? (y/n) [y]: " RESUME
+    RESUME=${RESUME:-y}
+
+    if [[ ! $RESUME =~ ^[Yy]$ ]]; then
+        print_info "Starting fresh installation..."
+        clear_checkpoints
+        clear_cache
+    else
+        print_success "Resuming installation from last checkpoint..."
+        echo ""
+    fi
+fi
+
+# ========================================
 # STEP 0: Verify Repository Files
 # ========================================
-print_header "Step 0: Verifying Repository Files"
+if is_step_completed "STEP_0_VERIFY_FILES"; then
+    print_info "⏭️  Skipping Step 0 (already completed)"
+else
+    print_header "Step 0: Verifying Repository Files"
 
 # ตรวจสอบไฟล์สำคัญที่จำเป็นต้องมี
 print_info "Checking for required files..."
@@ -814,20 +879,44 @@ else
     print_info "Skipping Git Hooks (not a git repository or script not found)"
 fi
 
+save_checkpoint "STEP_0_VERIFY_FILES"
+fi # ปิด STEP 0
+
 # ========================================
-# STEP 9: Database Setup
+# STEP 1: System Requirements Check
 # ========================================
+if is_step_completed "STEP_1_REQUIREMENTS"; then
+    print_info "⏭️  Skipping Step 1 (already completed)"
+else
 print_header "Step 9: Database Setup"
 
 # Clear config cache
 print_info "Clearing configuration cache..."
 php artisan config:clear
 
-print_info "Running database migrations..."
-if php artisan migrate --force; then
-    print_success "Database migrations completed"
+print_info "Running database migrations using deploy.sh (smart migration)..."
+echo ""
+print_info "💡 deploy.sh มีระบบจัดการ migration ที่ดีกว่า:"
+print_info "   • ตรวจสอบ foreign key dependencies"
+print_info "   • Auto-retry หาก migration ล้มเหลว"
+print_info "   • Rollback อัตโนมัติถ้าเกิด error"
+echo ""
+
+# ใช้ deploy.sh สำหรับ migrate (ฉลาดกว่า!)
+if [ -f "./deploy.sh" ]; then
+    if bash ./deploy.sh; then
+        print_success "Database migrations completed (via deploy.sh)"
+    else
+        error_exit "Database migration failed"
+    fi
 else
-    error_exit "Database migration failed"
+    # Fallback: ถ้าไม่มี deploy.sh ใช้ artisan migrate
+    print_warning "deploy.sh not found, using fallback method..."
+    if php artisan migrate --force; then
+        print_success "Database migrations completed"
+    else
+        error_exit "Database migration failed"
+    fi
 fi
 
 # Ask about demo data
