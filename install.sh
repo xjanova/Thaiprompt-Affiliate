@@ -121,6 +121,7 @@ CRITICAL_FILES=(
     "package.json"
     "artisan"
     "public/index.php"
+    "bootstrap/app.php"
     "app/Helpers/SeoHelper.php"
     "app/Helpers/IconHelper.php"
     "app/Helpers/CryptoHelper.php"
@@ -751,7 +752,7 @@ CORE_FILES=(
     "composer.json"
     "package.json"
     "public/index.php"
-    "app/Http/Kernel.php"
+    "bootstrap/app.php"
 )
 
 CORE_MISSING=false
