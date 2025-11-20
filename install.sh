@@ -38,9 +38,55 @@ print_header() {
     echo ""
 }
 
+# Cache file สำหรับเก็บข้อมูล configuration
+CACHE_FILE=".install_cache"
+
 error_exit() {
     print_error "$1"
+    echo ""
+    if [ -f "$CACHE_FILE" ]; then
+        print_info "💾 Your input has been saved to $CACHE_FILE"
+        print_info "Run ./install.sh again to resume installation"
+    fi
     exit 1
+}
+
+# บันทึกข้อมูลลง cache
+save_to_cache() {
+    local key=$1
+    local value=$2
+
+    # สร้าง cache file ถ้ายังไม่มี
+    touch "$CACHE_FILE"
+
+    # ลบ key เดิมออก (ถ้ามี) แล้วเพิ่ม key ใหม่
+    grep -v "^${key}=" "$CACHE_FILE" > "${CACHE_FILE}.tmp" 2>/dev/null || touch "${CACHE_FILE}.tmp"
+    echo "${key}=${value}" >> "${CACHE_FILE}.tmp"
+    mv "${CACHE_FILE}.tmp" "$CACHE_FILE"
+}
+
+# โหลดข้อมูลจาก cache
+load_from_cache() {
+    local key=$1
+    local default=$2
+
+    if [ -f "$CACHE_FILE" ]; then
+        local value=$(grep "^${key}=" "$CACHE_FILE" | cut -d'=' -f2-)
+        if [ -n "$value" ]; then
+            echo "$value"
+            return
+        fi
+    fi
+
+    echo "$default"
+}
+
+# ลบ cache file
+clear_cache() {
+    if [ -f "$CACHE_FILE" ]; then
+        rm -f "$CACHE_FILE"
+        print_success "Installation cache cleared"
+    fi
 }
 
 # Header
@@ -279,27 +325,60 @@ echo ""
 # ========================================
 print_header "Step 2: Application Configuration"
 
+# ตรวจสอบว่ามี cache หรือไม่
+if [ -f "$CACHE_FILE" ]; then
+    echo ""
+    print_info "💾 Found saved configuration from previous installation"
+    read -p "Do you want to use saved values? (y/n) [y]: " -n 1 -r USE_CACHE
+    echo ""
+    USE_CACHE=${USE_CACHE:-y}
+
+    if [[ $USE_CACHE =~ ^[Yy]$ ]]; then
+        print_success "Loading saved configuration..."
+        echo ""
+    else
+        rm -f "$CACHE_FILE"
+        print_info "Starting fresh installation..."
+    fi
+fi
+
 echo "Please provide the following information:"
 echo ""
 
 # Application Name
-read -p "Application Name [TP-Affiliate]: " APP_NAME
-APP_NAME=${APP_NAME:-TP-Affiliate}
+CACHED_APP_NAME=$(load_from_cache "APP_NAME" "TP-Affiliate")
+read -p "Application Name [$CACHED_APP_NAME]: " APP_NAME
+APP_NAME=${APP_NAME:-$CACHED_APP_NAME}
+save_to_cache "APP_NAME" "$APP_NAME"
 
 # Application URL
-read -p "Application URL (e.g., https://example.com): " APP_URL
+CACHED_APP_URL=$(load_from_cache "APP_URL" "")
+if [ -n "$CACHED_APP_URL" ]; then
+    read -p "Application URL [$CACHED_APP_URL]: " APP_URL
+    APP_URL=${APP_URL:-$CACHED_APP_URL}
+else
+    read -p "Application URL (e.g., https://example.com): " APP_URL
+fi
+
 while [ -z "$APP_URL" ]; do
     print_error "Application URL is required!"
     read -p "Application URL: " APP_URL
 done
+save_to_cache "APP_URL" "$APP_URL"
 
 # Application Environment
 echo ""
 echo "Select environment:"
 echo "  1) Production (recommended)"
 echo "  2) Local/Development"
-read -p "Environment [1]: " ENV_CHOICE
-ENV_CHOICE=${ENV_CHOICE:-1}
+CACHED_ENV=$(load_from_cache "APP_ENV" "production")
+if [ "$CACHED_ENV" == "local" ]; then
+    DEFAULT_ENV_CHOICE="2"
+else
+    DEFAULT_ENV_CHOICE="1"
+fi
+read -p "Environment [$DEFAULT_ENV_CHOICE]: " ENV_CHOICE
+ENV_CHOICE=${ENV_CHOICE:-$DEFAULT_ENV_CHOICE}
 
 if [ "$ENV_CHOICE" == "2" ]; then
     APP_ENV="local"
@@ -309,6 +388,8 @@ else
     APP_DEBUG="false"
 fi
 
+save_to_cache "APP_ENV" "$APP_ENV"
+save_to_cache "APP_DEBUG" "$APP_DEBUG"
 print_success "Environment: $APP_ENV"
 
 # ========================================
@@ -316,23 +397,53 @@ print_success "Environment: $APP_ENV"
 # ========================================
 print_header "Step 3: Database Configuration"
 
-read -p "Database Host [127.0.0.1]: " DB_HOST
-DB_HOST=${DB_HOST:-127.0.0.1}
+CACHED_DB_HOST=$(load_from_cache "DB_HOST" "127.0.0.1")
+read -p "Database Host [$CACHED_DB_HOST]: " DB_HOST
+DB_HOST=${DB_HOST:-$CACHED_DB_HOST}
+save_to_cache "DB_HOST" "$DB_HOST"
 
-read -p "Database Port [3306]: " DB_PORT
-DB_PORT=${DB_PORT:-3306}
+CACHED_DB_PORT=$(load_from_cache "DB_PORT" "3306")
+read -p "Database Port [$CACHED_DB_PORT]: " DB_PORT
+DB_PORT=${DB_PORT:-$CACHED_DB_PORT}
+save_to_cache "DB_PORT" "$DB_PORT"
 
-read -p "Database Name: " DB_DATABASE
+CACHED_DB_DATABASE=$(load_from_cache "DB_DATABASE" "")
+if [ -n "$CACHED_DB_DATABASE" ]; then
+    read -p "Database Name [$CACHED_DB_DATABASE]: " DB_DATABASE
+    DB_DATABASE=${DB_DATABASE:-$CACHED_DB_DATABASE}
+else
+    read -p "Database Name: " DB_DATABASE
+fi
+
 while [ -z "$DB_DATABASE" ]; do
     print_error "Database name is required!"
     read -p "Database Name: " DB_DATABASE
 done
+save_to_cache "DB_DATABASE" "$DB_DATABASE"
 
-read -p "Database Username [root]: " DB_USERNAME
-DB_USERNAME=${DB_USERNAME:-root}
+CACHED_DB_USERNAME=$(load_from_cache "DB_USERNAME" "root")
+read -p "Database Username [$CACHED_DB_USERNAME]: " DB_USERNAME
+DB_USERNAME=${DB_USERNAME:-$CACHED_DB_USERNAME}
+save_to_cache "DB_USERNAME" "$DB_USERNAME"
 
-read -sp "Database Password: " DB_PASSWORD
-echo ""
+# Password - ไม่ cache เพื่อความปลอดภัย แต่แจ้งว่ามีหรือไม่
+CACHED_DB_PASSWORD=$(load_from_cache "DB_PASSWORD" "")
+if [ -n "$CACHED_DB_PASSWORD" ]; then
+    print_info "Database password is saved in cache"
+    read -p "Use saved password? (y/n) [y]: " -n 1 -r USE_SAVED_PASS
+    echo ""
+    if [[ $USE_SAVED_PASS =~ ^[Yy]$ ]]; then
+        DB_PASSWORD="$CACHED_DB_PASSWORD"
+    else
+        read -sp "Database Password: " DB_PASSWORD
+        echo ""
+        save_to_cache "DB_PASSWORD" "$DB_PASSWORD"
+    fi
+else
+    read -sp "Database Password: " DB_PASSWORD
+    echo ""
+    save_to_cache "DB_PASSWORD" "$DB_PASSWORD"
+fi
 
 # Test database connection
 print_info "Testing database connection..."
@@ -356,13 +467,28 @@ print_header "Step 4: Super Admin Account"
 echo "Create your Super Admin account:"
 echo ""
 
-read -p "Admin Name: " ADMIN_NAME
+CACHED_ADMIN_NAME=$(load_from_cache "ADMIN_NAME" "")
+if [ -n "$CACHED_ADMIN_NAME" ]; then
+    read -p "Admin Name [$CACHED_ADMIN_NAME]: " ADMIN_NAME
+    ADMIN_NAME=${ADMIN_NAME:-$CACHED_ADMIN_NAME}
+else
+    read -p "Admin Name: " ADMIN_NAME
+fi
+
 while [ -z "$ADMIN_NAME" ]; do
     print_error "Admin name is required!"
     read -p "Admin Name: " ADMIN_NAME
 done
+save_to_cache "ADMIN_NAME" "$ADMIN_NAME"
 
-read -p "Admin Email: " ADMIN_EMAIL
+CACHED_ADMIN_EMAIL=$(load_from_cache "ADMIN_EMAIL" "")
+if [ -n "$CACHED_ADMIN_EMAIL" ]; then
+    read -p "Admin Email [$CACHED_ADMIN_EMAIL]: " ADMIN_EMAIL
+    ADMIN_EMAIL=${ADMIN_EMAIL:-$CACHED_ADMIN_EMAIL}
+else
+    read -p "Admin Email: " ADMIN_EMAIL
+fi
+
 while [ -z "$ADMIN_EMAIL" ]; do
     print_error "Admin email is required!"
     read -p "Admin Email: " ADMIN_EMAIL
@@ -372,7 +498,9 @@ done
 if [[ ! "$ADMIN_EMAIL" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
     error_exit "Invalid email format!"
 fi
+save_to_cache "ADMIN_EMAIL" "$ADMIN_EMAIL"
 
+# Password - ไม่ควร cache แต่ให้ตัวเลือก
 read -sp "Admin Password (min 8 characters): " ADMIN_PASSWORD
 echo ""
 while [ ${#ADMIN_PASSWORD} -lt 8 ]; do
@@ -571,10 +699,45 @@ print_success "Directories created"
 
 print_info "Installing Composer dependencies..."
 echo "This may take a few minutes..."
-if composer install --no-dev --optimize-autoloader --no-interaction; then
-    print_success "Composer dependencies installed"
-else
-    error_exit "Failed to install Composer dependencies"
+
+# ลองติดตั้งหลายครั้งถ้าล้มเหลว
+MAX_COMPOSER_ATTEMPTS=3
+COMPOSER_ATTEMPT=1
+
+while [ $COMPOSER_ATTEMPT -le $MAX_COMPOSER_ATTEMPTS ]; do
+    if [ $COMPOSER_ATTEMPT -gt 1 ]; then
+        print_warning "Retry attempt $COMPOSER_ATTEMPT of $MAX_COMPOSER_ATTEMPTS..."
+        sleep 2
+    fi
+
+    if composer install --no-dev --optimize-autoloader --no-interaction; then
+        print_success "Composer dependencies installed"
+
+        # ตรวจสอบว่า vendor/autoload.php มีจริง
+        if [ -f "vendor/autoload.php" ]; then
+            print_success "✓ Verified: vendor/autoload.php exists"
+            break
+        else
+            print_error "vendor/autoload.php not found after composer install!"
+            COMPOSER_ATTEMPT=$((COMPOSER_ATTEMPT + 1))
+            continue
+        fi
+    else
+        COMPOSER_ATTEMPT=$((COMPOSER_ATTEMPT + 1))
+    fi
+done
+
+if [ $COMPOSER_ATTEMPT -gt $MAX_COMPOSER_ATTEMPTS ]; then
+    echo ""
+    print_error "Failed to install Composer dependencies after $MAX_COMPOSER_ATTEMPTS attempts"
+    echo ""
+    print_info "Possible solutions:"
+    echo "  1. Check internet connection"
+    echo "  2. Run manually: ${YELLOW}composer install${NC}"
+    echo "  3. Check Composer version: ${YELLOW}composer --version${NC}"
+    echo "  4. Clear Composer cache: ${YELLOW}composer clear-cache${NC}"
+    echo ""
+    error_exit "Composer installation failed. Your configuration has been saved."
 fi
 
 # ตรวจสอบและติดตั้ง Node.js dependencies
@@ -793,6 +956,9 @@ print_info "Marking installation as completed..."
 mkdir -p storage/app
 echo "$(date)" > storage/app/.setup_completed
 print_success "Installation marked as completed"
+
+# ลบ cache file เมื่อติดตั้งสำเร็จ
+clear_cache
 
 # ========================================
 # Post-Installation Verification
