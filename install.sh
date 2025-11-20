@@ -106,6 +106,22 @@ if [ "$MISSING_CRITICAL" = true ]; then
         print_info "Git repository detected. Attempting to restore files..."
         echo ""
 
+        # กำหนด repository และ branch ที่ถูกต้อง
+        REPO_URL="https://github.com/xjanova/Thaiprompt-Affiliate.git"
+        DEFAULT_BRANCH="claude/Main"
+
+        # ตรวจสอบ remote origin
+        CURRENT_REMOTE=$(git remote get-url origin 2>/dev/null || echo "")
+        if [ -z "$CURRENT_REMOTE" ]; then
+            print_info "Setting up git remote origin..."
+            git remote add origin "$REPO_URL"
+            print_success "Git remote configured: $REPO_URL"
+        elif [ "$CURRENT_REMOTE" != "$REPO_URL" ] && [ "$CURRENT_REMOTE" != "git@github.com:xjanova/Thaiprompt-Affiliate.git" ]; then
+            print_warning "Current remote: $CURRENT_REMOTE"
+            print_info "Updating remote to: $REPO_URL"
+            git remote set-url origin "$REPO_URL"
+        fi
+
         # ถามผู้ใช้ว่าต้องการ pull files จาก git หรือไม่
         read -p "Do you want to restore files from git repository? (y/n) [y]: " -n 1 -r RESTORE_FILES
         echo ""
@@ -113,28 +129,20 @@ if [ "$MISSING_CRITICAL" = true ]; then
 
         if [[ $RESTORE_FILES =~ ^[Yy]$ ]]; then
             # ดึงไฟล์จาก git
-            print_info "Fetching latest files from repository..."
+            print_info "Fetching from: $REPO_URL"
+            print_info "Branch: $DEFAULT_BRANCH"
 
             # Stash local changes ถ้ามี
             git stash push -m "Auto-stash before install.sh" 2>/dev/null || true
 
             # Fetch and checkout files
-            if git fetch origin; then
+            if git fetch origin "$DEFAULT_BRANCH"; then
                 print_success "Fetched from remote successfully"
 
-                # ถามว่าต้องการ checkout จาก branch ไหน
-                CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
-                echo ""
-                print_info "Available branches:"
-                git branch -a | grep -E "(main|master|claude/Main)" | head -5
-                echo ""
-                read -p "Enter branch to restore from [$CURRENT_BRANCH]: " TARGET_BRANCH
-                TARGET_BRANCH=${TARGET_BRANCH:-$CURRENT_BRANCH}
-
-                # Checkout missing files from target branch
-                print_info "Restoring files from branch: $TARGET_BRANCH..."
+                # Checkout missing files from default branch
+                print_info "Restoring missing files from $DEFAULT_BRANCH..."
                 for file in "${MISSING_FILES_LIST[@]}"; do
-                    if git checkout "origin/$TARGET_BRANCH" -- "$file" 2>/dev/null; then
+                    if git checkout "origin/$DEFAULT_BRANCH" -- "$file" 2>/dev/null; then
                         print_success "✓ Restored: $file"
                     else
                         print_warning "⚠ Could not restore: $file"
@@ -171,11 +179,18 @@ if [ "$MISSING_CRITICAL" = true ]; then
         echo ""
         print_error "This is not a git repository!"
         echo ""
-        echo "Solutions:"
-        echo "  1. Clone the full repository:"
-        echo "     ${YELLOW}git clone https://github.com/xjanova/Thaiprompt-Affiliate.git${NC}"
+        echo "📋 Solution: Clone the full repository first"
         echo ""
-        echo "  2. Or restore missing files from backup"
+        echo "Run this command:"
+        echo "  ${GREEN}git clone https://github.com/xjanova/Thaiprompt-Affiliate.git${NC}"
+        echo "  ${GREEN}cd Thaiprompt-Affiliate${NC}"
+        echo "  ${GREEN}./install.sh${NC}"
+        echo ""
+        echo "Or if you want to restore to current directory:"
+        echo "  ${GREEN}git clone https://github.com/xjanova/Thaiprompt-Affiliate.git temp-repo${NC}"
+        echo "  ${GREEN}cp -r temp-repo/* .${NC}"
+        echo "  ${GREEN}rm -rf temp-repo${NC}"
+        echo "  ${GREEN}./install.sh${NC}"
         echo ""
         error_exit "Cannot proceed without required files."
     fi
