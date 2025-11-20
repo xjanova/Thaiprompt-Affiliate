@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.82.0] - 2025-11-20
+
+### ✨ Features
+- feat: เพิ่ม optional GitHub token support ใน deploy.sh (9eb9ce8e)
+- feat: เพิ่ม STEP 0 ใน install.sh เพื่อตรวจสอบและดึงไฟล์สำคัญจาก git (6991c53f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1372 from xjanova/claude/fix-admin-layout-view-01MZjFRCgmK2C2X4tQEz671S (badb4087)
+- docs: เพิ่มคู่มือการสร้างและใช้งาน GitHub Token (3c470b8b)
+
 ## [v3.81.0] - 2025-11-20
 
 ### ✨ Features
