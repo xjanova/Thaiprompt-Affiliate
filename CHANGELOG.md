@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.86.0] - 2025-11-20
+
+### ✨ Features
+- Merge pull request #1382 from xjanova/claude/fix-admin-layout-view-01MZjFRCgmK2C2X4tQEz671S (4c989b44)
+- feat: เพิ่ม fix-affiliates-migration.sh script แก้ปัญหาตาราง affiliates (1cae6900)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.85.1] - 2025-11-20
 
 ### ✨ Features
