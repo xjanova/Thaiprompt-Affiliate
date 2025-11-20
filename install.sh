@@ -121,6 +121,9 @@ CRITICAL_FILES=(
     "package.json"
     "artisan"
     "public/index.php"
+    "app/Helpers/SeoHelper.php"
+    "app/Helpers/IconHelper.php"
+    "app/Helpers/CryptoHelper.php"
 )
 
 MISSING_CRITICAL=false
