@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.87.0] - 2025-11-20
+
+### ✨ Features
+- feat: เพิ่มหน้า Landing Page พร้อมลิงค์ระบบทั้งหมด (Public Access) (b515753a)
+### 🐛 Bug Fixes
+- fix: แก้ไข affiliates migration ให้ dropIfExists ก่อนสร้างใหม่ (296193cc)
+### 🔧 Other Changes
+- Merge pull request #1383 from xjanova/claude/fix-admin-layout-view-01MZjFRCgmK2C2X4tQEz671S (c22f4c39)
+
 ## [v3.86.0] - 2025-11-20
 
 ### ✨ Features
