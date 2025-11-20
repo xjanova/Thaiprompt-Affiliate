@@ -311,9 +311,116 @@ php artisan key:generate --force
 print_success "Application key generated"
 
 # ========================================
-# STEP 6: Install Dependencies
+# STEP 6: Verify Critical Files
 # ========================================
-print_header "Step 6: Installing Dependencies"
+print_header "Step 6: Verifying Critical Files"
+
+print_info "Checking and fixing missing critical files..."
+
+MISSING_FILES=()
+FIXED_FILES=()
+
+# ตรวจสอบและซ่อมแซม layouts
+print_info "Checking layouts files..."
+
+# ถ้าไม่มี admin.blade.php แต่มี admin-v3.blade.php ให้สร้าง symlink
+if [ ! -f "resources/views/layouts/admin.blade.php" ]; then
+    if [ -f "resources/views/layouts/admin-v3.blade.php" ]; then
+        print_info "Creating symlink: admin.blade.php → admin-v3.blade.php"
+        ln -sf admin-v3.blade.php resources/views/layouts/admin.blade.php
+        FIXED_FILES+=("resources/views/layouts/admin.blade.php → admin-v3.blade.php")
+        print_success "Created admin.blade.php symlink"
+    else
+        MISSING_FILES+=("resources/views/layouts/admin-v3.blade.php (required)")
+        print_error "Missing admin-v3.blade.php layout!"
+    fi
+fi
+
+# ตรวจสอบ layouts หลักอื่นๆ
+REQUIRED_LAYOUTS=(
+    "resources/views/layouts/app.blade.php"
+    "resources/views/layouts/guest.blade.php"
+    "resources/views/layouts/user.blade.php"
+)
+
+for layout in "${REQUIRED_LAYOUTS[@]}"; do
+    if [ ! -f "$layout" ]; then
+        MISSING_FILES+=("$layout")
+        print_warning "Missing: $layout"
+    else
+        print_success "✓ Found: $layout"
+    fi
+done
+
+# แสดงสรุป
+echo ""
+if [ ${#MISSING_FILES[@]} -ne 0 ]; then
+    print_warning "Found ${#MISSING_FILES[@]} missing files:"
+    for file in "${MISSING_FILES[@]}"; do
+        echo "  ✗ $file"
+    done
+    echo ""
+    print_warning "Some files are missing. Installation will continue, but you may need to restore them from backup or repository."
+    echo ""
+    read -p "Continue installation anyway? (y/n) [y]: " -n 1 -r CONTINUE_INSTALL
+    echo ""
+    CONTINUE_INSTALL=${CONTINUE_INSTALL:-y}
+    if [[ ! $CONTINUE_INSTALL =~ ^[Yy]$ ]]; then
+        error_exit "Installation cancelled by user."
+    fi
+fi
+
+if [ ${#FIXED_FILES[@]} -ne 0 ]; then
+    print_success "Fixed ${#FIXED_FILES[@]} files automatically:"
+    for file in "${FIXED_FILES[@]}"; do
+        echo "  ✓ $file"
+    done
+    echo ""
+fi
+
+print_success "Critical files verification completed"
+
+# ตรวจสอบไฟล์ Core ของ Laravel
+print_info "Verifying Laravel core files..."
+CORE_FILES=(
+    "artisan"
+    "composer.json"
+    "package.json"
+    "public/index.php"
+    "app/Http/Kernel.php"
+)
+
+CORE_MISSING=false
+for file in "${CORE_FILES[@]}"; do
+    if [ ! -f "$file" ]; then
+        print_error "Critical file missing: $file"
+        CORE_MISSING=true
+    fi
+done
+
+if [ "$CORE_MISSING" = true ]; then
+    echo ""
+    error_exit "Critical Laravel core files are missing! Please restore from backup or clone the repository again."
+fi
+print_success "All core files present"
+
+# ติดตั้ง Git Hooks (ถ้ามี)
+if [ -d ".git" ] && [ -f "scripts/git-hooks/install.sh" ]; then
+    echo ""
+    print_info "Git repository detected. Installing Git Hooks..."
+    if bash scripts/git-hooks/install.sh; then
+        print_success "Git Hooks installed successfully"
+    else
+        print_warning "Git Hooks installation failed (continuing anyway)"
+    fi
+else
+    print_info "Skipping Git Hooks (not a git repository or script not found)"
+fi
+
+# ========================================
+# STEP 7: Install Dependencies
+# ========================================
+print_header "Step 7: Installing Dependencies"
 
 print_info "Creating required directories..."
 mkdir -p storage/{app,framework,logs}
@@ -326,15 +433,47 @@ print_success "Directories created"
 print_info "Installing Composer dependencies..."
 echo "This may take a few minutes..."
 if composer install --no-dev --optimize-autoloader --no-interaction; then
-    print_success "Dependencies installed"
+    print_success "Composer dependencies installed"
 else
-    error_exit "Failed to install dependencies"
+    error_exit "Failed to install Composer dependencies"
+fi
+
+# ตรวจสอบและติดตั้ง Node.js dependencies
+print_info "Checking for Node.js and npm..."
+if command -v node &> /dev/null && command -v npm &> /dev/null; then
+    NODE_VERSION=$(node --version)
+    NPM_VERSION=$(npm --version)
+    print_success "Node.js: $NODE_VERSION, npm: $NPM_VERSION"
+
+    # ตรวจสอบว่ามี package.json หรือไม่
+    if [ -f "package.json" ]; then
+        print_info "Installing Node.js dependencies..."
+        echo "This may take a few minutes..."
+        if npm install --no-audit --no-fund; then
+            print_success "Node.js dependencies installed"
+
+            # Build assets
+            print_info "Building frontend assets with Vite..."
+            if npm run build; then
+                print_success "Frontend assets built successfully"
+            else
+                print_warning "Failed to build assets (continuing anyway)"
+            fi
+        else
+            print_warning "Failed to install Node.js dependencies (continuing anyway)"
+        fi
+    else
+        print_warning "No package.json found, skipping Node.js dependencies"
+    fi
+else
+    print_warning "Node.js or npm not found. Frontend assets will need to be built manually."
+    print_info "To install Node.js: https://nodejs.org/"
 fi
 
 # ========================================
-# STEP 7: Database Setup
+# STEP 8: Database Setup
 # ========================================
-print_header "Step 7: Database Setup"
+print_header "Step 8: Database Setup"
 
 # Clear config cache
 print_info "Clearing configuration cache..."
@@ -381,9 +520,9 @@ else
 fi
 
 # ========================================
-# STEP 8: Create Super Admin
+# STEP 9: Create Super Admin
 # ========================================
-print_header "Step 8: Creating Super Admin Account"
+print_header "Step 9: Creating Super Admin Account"
 
 print_info "Creating super admin user..."
 
@@ -450,9 +589,9 @@ else
 fi
 
 # ========================================
-# STEP 9: Finalization & Optimization
+# STEP 10: Finalization & Optimization
 # ========================================
-print_header "Step 9: Finalization & Optimization"
+print_header "Step 10: Finalization & Optimization"
 
 # Create storage link
 print_info "Creating storage symlink..."
@@ -593,17 +732,57 @@ echo "  Database:       ${BLUE}$DB_DATABASE@$DB_HOST${NC}"
 echo "  Admin Email:    ${BLUE}$ADMIN_EMAIL${NC}"
 echo ""
 echo "✨ ${GREEN}What was installed and optimized:${NC}"
-echo "  ✅ System requirements verified"
-echo "  ✅ Environment configured (.env)"
-echo "  ✅ Composer dependencies installed"
-echo "  ✅ Database created and migrated"
-echo "  ✅ Database seeded with initial data"
-echo "  ✅ Super Admin account created"
-echo "  ✅ File permissions configured"
-echo "  ✅ Composer autoloader optimized"
-echo "  ✅ All caches built (config, routes, views)"
-echo "  ✅ Storage symlink created"
-echo "  ✅ System ready for production use!"
+echo ""
+echo "  ${BLUE}System & Requirements:${NC}"
+echo "    ✅ PHP $(php -r 'echo PHP_VERSION;') with all required extensions"
+echo "    ✅ Composer $(composer --version --no-ansi 2>/dev/null | grep -oP '\d+\.\d+\.\d+' | head -1) installed"
+if command -v node &> /dev/null; then
+    echo "    ✅ Node.js $(node --version) & npm $(npm --version) installed"
+fi
+if [ -d ".git" ]; then
+    echo "    ✅ Git repository initialized"
+    if [ -x ".git/hooks/pre-commit" ]; then
+        echo "    ✅ Git Hooks installed and active"
+    fi
+fi
+echo ""
+echo "  ${BLUE}Application Setup:${NC}"
+echo "    ✅ Environment configured (.env created)"
+echo "    ✅ Application key generated"
+echo "    ✅ Critical files verified and fixed"
+echo ""
+echo "  ${BLUE}Dependencies:${NC}"
+echo "    ✅ Composer dependencies installed & optimized"
+if command -v node &> /dev/null && [ -d "node_modules" ]; then
+    echo "    ✅ Node.js dependencies installed"
+    if [ -d "public/build" ]; then
+        echo "    ✅ Frontend assets built (Vite)"
+    fi
+fi
+echo ""
+echo "  ${BLUE}Database:${NC}"
+echo "    ✅ Database connection verified"
+echo "    ✅ Migrations executed ($(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "?") tables)"
+echo "    ✅ Database seeded with initial data"
+if [[ $INSTALL_DEMO =~ ^[Yy]$ ]]; then
+    echo "    ✅ Demo data installed (can be removed with: php artisan demo:reset)"
+else
+    echo "    ✅ Production-ready (no demo data)"
+fi
+echo ""
+echo "  ${BLUE}Security & Accounts:${NC}"
+echo "    ✅ Super Admin account created"
+echo "    ✅ File permissions configured (775)"
+if [ -n "$WEB_USER" ]; then
+    echo "    ✅ Ownership set for web server ($WEB_USER)"
+fi
+echo ""
+echo "  ${BLUE}Performance:${NC}"
+echo "    ✅ Composer autoloader optimized"
+echo "    ✅ Config, routes, views cached"
+echo "    ✅ Storage symlink created"
+echo ""
+echo "  ${GREEN}✅ System fully installed and production-ready!${NC}"
 echo ""
 echo "🎉 ${GREEN}Congratulations!${NC} TP-Affiliate is fully installed and optimized."
 echo ""
