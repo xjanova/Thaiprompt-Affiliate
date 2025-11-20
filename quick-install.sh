@@ -128,49 +128,131 @@ print_success "All system requirements met!"
 echo ""
 
 # ========================================
-# STEP 2: Choose Installation Directory
+# STEP 2: Choose Installation Method
 # ========================================
-print_header "Step 2: Choose Installation Directory"
+print_header "Step 2: Choose Installation Method"
 
-echo "Where do you want to install TP-Affiliate?"
+echo "How do you want to install TP-Affiliate?"
 echo ""
-read -p "Installation directory [$DEFAULT_DIR]: " INSTALL_DIR
-INSTALL_DIR=${INSTALL_DIR:-$DEFAULT_DIR}
+echo "  1) Install in CURRENT directory ($(pwd))"
+echo "  2) Install in NEW directory (create subdirectory)"
+echo ""
+read -p "Choose option (1 or 2) [1]: " INSTALL_METHOD
+INSTALL_METHOD=${INSTALL_METHOD:-1}
 
-# Check if directory exists
-if [ -d "$INSTALL_DIR" ]; then
-    print_warning "Directory '$INSTALL_DIR' already exists!"
-    read -p "Do you want to remove it and continue? (y/n) [n]: " -n 1 -r REMOVE_DIR
+if [ "$INSTALL_METHOD" = "1" ]; then
+    # ========================================
+    # Option 1: Install in Current Directory
+    # ========================================
+    print_info "Installing in current directory: $(pwd)"
     echo ""
 
-    if [[ $REMOVE_DIR =~ ^[Yy]$ ]]; then
-        print_info "Removing existing directory..."
-        rm -rf "$INSTALL_DIR"
-        print_success "Directory removed"
-    else
-        error_exit "Installation cancelled. Please choose a different directory."
+    # Check if directory is empty or has important files
+    FILE_COUNT=$(ls -A | wc -l)
+
+    if [ "$FILE_COUNT" -gt 0 ]; then
+        print_warning "Current directory is not empty!"
+        echo ""
+        echo "Contents:"
+        ls -la | head -10
+        echo ""
+
+        # Check if it's already a Laravel project
+        if [ -f "artisan" ] && [ -f "composer.json" ]; then
+            print_info "This appears to be a Laravel project already."
+            read -p "Do you want to OVERWRITE it with fresh clone? (y/n) [n]: " -n 1 -r OVERWRITE
+            echo ""
+
+            if [[ ! $OVERWRITE =~ ^[Yy]$ ]]; then
+                error_exit "Installation cancelled. Directory not empty."
+            fi
+        else
+            read -p "Continue installation in this directory? (y/n) [n]: " -n 1 -r CONTINUE
+            echo ""
+
+            if [[ ! $CONTINUE =~ ^[Yy]$ ]]; then
+                error_exit "Installation cancelled."
+            fi
+        fi
     fi
-fi
 
-# ========================================
-# STEP 3: Clone Repository
-# ========================================
-print_header "Step 3: Cloning Repository"
+    # Clone to temporary directory then move files
+    print_header "Step 3: Cloning Repository"
+    print_info "Cloning from: $REPO_URL"
+    print_info "Branch: $BRANCH"
+    echo ""
 
-print_info "Cloning from: $REPO_URL"
-print_info "Branch: $BRANCH"
-echo ""
+    TEMP_DIR="/tmp/thaiprompt-install-$$"
 
-if git clone -b "$BRANCH" "$REPO_URL" "$INSTALL_DIR"; then
-    print_success "Repository cloned successfully!"
+    if git clone -b "$BRANCH" "$REPO_URL" "$TEMP_DIR"; then
+        print_success "Repository cloned successfully!"
+    else
+        error_exit "Failed to clone repository. Please check your internet connection."
+    fi
+
+    # Move files to current directory
+    print_info "Moving files to current directory..."
+
+    # Remove .git if exists in current dir
+    if [ -d ".git" ]; then
+        rm -rf .git
+    fi
+
+    # Move all files including hidden files
+    shopt -s dotglob
+    mv "$TEMP_DIR"/* . 2>/dev/null || true
+    shopt -u dotglob
+
+    # Clean up
+    rm -rf "$TEMP_DIR"
+
+    print_success "Files moved to current directory"
+    print_info "Working directory: $(pwd)"
+    echo ""
+
 else
-    error_exit "Failed to clone repository. Please check your internet connection."
-fi
+    # ========================================
+    # Option 2: Install in New Directory
+    # ========================================
+    echo ""
+    echo "Choose installation directory:"
+    echo ""
+    read -p "Installation directory [$DEFAULT_DIR]: " INSTALL_DIR
+    INSTALL_DIR=${INSTALL_DIR:-$DEFAULT_DIR}
 
-# Enter directory
-cd "$INSTALL_DIR" || error_exit "Failed to enter directory: $INSTALL_DIR"
-print_info "Working directory: $(pwd)"
-echo ""
+    # Check if directory exists
+    if [ -d "$INSTALL_DIR" ]; then
+        print_warning "Directory '$INSTALL_DIR' already exists!"
+        read -p "Do you want to remove it and continue? (y/n) [n]: " -n 1 -r REMOVE_DIR
+        echo ""
+
+        if [[ $REMOVE_DIR =~ ^[Yy]$ ]]; then
+            print_info "Removing existing directory..."
+            rm -rf "$INSTALL_DIR"
+            print_success "Directory removed"
+        else
+            error_exit "Installation cancelled. Please choose a different directory."
+        fi
+    fi
+
+    # Clone Repository
+    print_header "Step 3: Cloning Repository"
+
+    print_info "Cloning from: $REPO_URL"
+    print_info "Branch: $BRANCH"
+    echo ""
+
+    if git clone -b "$BRANCH" "$REPO_URL" "$INSTALL_DIR"; then
+        print_success "Repository cloned successfully!"
+    else
+        error_exit "Failed to clone repository. Please check your internet connection."
+    fi
+
+    # Enter directory
+    cd "$INSTALL_DIR" || error_exit "Failed to enter directory: $INSTALL_DIR"
+    print_info "Working directory: $(pwd)"
+    echo ""
+fi
 
 # ========================================
 # STEP 4: Run Installation
