@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 @section('title', 'จัดการ Quota')
 @section('content')
 <div class="container-fluid px-4 py-6" x-data="quotaManage()">
