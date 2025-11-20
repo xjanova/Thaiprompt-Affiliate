@@ -1,8 +1,48 @@
-# 🚀 Version Management Scripts
+# 🚀 Scripts Directory
 
-คู่มือการจัดการเวอร์ชั่นของ Thai Prompt Affiliate Platform
+คู่มือการใช้งาน Scripts ต่างๆ ของ Thai Prompt Affiliate Platform
 
-## 📋 วิธีการใช้งาน
+## 📋 Available Scripts
+
+### 🔧 fix-affiliates-migration.sh
+
+**Purpose:** แก้ไขปัญหา migration ของตาราง affiliates
+
+**ใช้เมื่อเจอ Error:**
+- `SQLSTATE[42S01]: Base table or view already exists: 1050 Table 'affiliates' already exists`
+- `SQLSTATE[HY000]: General error: 1005 Can't create table (errno: 150 "Foreign key constraint is incorrectly formed")`
+
+**สิ่งที่ Script ทำ:**
+1. ✅ ลบไฟล์ migration เก่า (`2024_01_01_000002_create_affiliates_table.php`)
+2. ✅ ลบตาราง `affiliates` ที่มีอยู่ (ถ้ามี)
+3. ✅ ทำความสะอาด `migrations` table entries
+4. ✅ ตรวจสอบไฟล์ migration ใหม่ (`2025_11_17_000001_create_affiliates_table.php`)
+5. ✅ ตรวจสอบว่าตาราง `users` มีอยู่แล้ว (required for foreign keys)
+
+**วิธีใช้:**
+
+```bash
+# ไปที่ project root
+cd /home/admin/domains/thaiprompt.online/public_html
+
+# รัน fix script
+bash scripts/fix-affiliates-migration.sh
+
+# หลังจาก cleanup เสร็จ รัน migrations ใหม่
+php artisan migrate
+
+# หรือรัน install.sh ต่อ
+./install.sh
+```
+
+**⚠️ คำเตือน:**
+- Script นี้จะ DROP ตาราง `affiliates` ถ้ามีอยู่
+- ปลอดภัย สามารถรันได้หลายครั้ง (idempotent)
+- จะลบเฉพาะตาราง `affiliates` เท่านั้น ตารางอื่นไม่กระทบ
+
+---
+
+## 📋 Version Management Scripts
 
 ### วิธีที่ 1: อัพเดตเวอร์ชั่นแบบเร็ว (แนะนำ)
 
