@@ -99,7 +99,6 @@ clear_cache() {
 save_checkpoint() {
     local step_name=$1
     echo "$step_name" >> "$PROGRESS_FILE"
-    print_info "✓ Checkpoint saved: $step_name"
 }
 
 # เช็คว่า step นี้ทำแล้วหรือยัง
@@ -172,10 +171,8 @@ fi
 # ========================================
 # STEP 0: Verify Repository Files
 # ========================================
-if is_step_completed "STEP_0_VERIFY_FILES"; then
-    print_info "⏭️  Skipping Step 0 (already completed)"
-else
-    print_header "Step 0: Verifying Repository Files"
+if ! is_step_completed "STEP_0_VERIFY_FILES"; then
+print_header "Step 0: Verifying Repository Files"
 
 # ตรวจสอบไฟล์สำคัญที่จำเป็นต้องมี
 print_info "Checking for required files..."
@@ -880,43 +877,24 @@ else
 fi
 
 save_checkpoint "STEP_0_VERIFY_FILES"
+else
+    print_info "⏭️  Skipping Step 0 (already completed)"
 fi # ปิด STEP 0
 
 # ========================================
-# STEP 1: System Requirements Check
+# STEP 9: Database Setup
 # ========================================
-if is_step_completed "STEP_1_REQUIREMENTS"; then
-    print_info "⏭️  Skipping Step 1 (already completed)"
-else
 print_header "Step 9: Database Setup"
 
 # Clear config cache
 print_info "Clearing configuration cache..."
 php artisan config:clear
 
-print_info "Running database migrations using deploy.sh (smart migration)..."
-echo ""
-print_info "💡 deploy.sh มีระบบจัดการ migration ที่ดีกว่า:"
-print_info "   • ตรวจสอบ foreign key dependencies"
-print_info "   • Auto-retry หาก migration ล้มเหลว"
-print_info "   • Rollback อัตโนมัติถ้าเกิด error"
-echo ""
-
-# ใช้ deploy.sh สำหรับ migrate (ฉลาดกว่า!)
-if [ -f "./deploy.sh" ]; then
-    if bash ./deploy.sh; then
-        print_success "Database migrations completed (via deploy.sh)"
-    else
-        error_exit "Database migration failed"
-    fi
+print_info "Running database migrations..."
+if php artisan migrate --force; then
+    print_success "Database migrations completed"
 else
-    # Fallback: ถ้าไม่มี deploy.sh ใช้ artisan migrate
-    print_warning "deploy.sh not found, using fallback method..."
-    if php artisan migrate --force; then
-        print_success "Database migrations completed"
-    else
-        error_exit "Database migration failed"
-    fi
+    error_exit "Database migration failed"
 fi
 
 # Ask about demo data
