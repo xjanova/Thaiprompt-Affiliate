@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.84.1] - 2025-11-20
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1379 from xjanova/claude/fix-admin-layout-view-01MZjFRCgmK2C2X4tQEz671S (b11dc980)
+- fix: แก้ไข install.sh และ quick-install.sh สำหรับ Laravel 11 (f2cadf5f)
+### 🔧 Other Changes
+
+
 ## [v3.84.0] - 2025-11-20
 
 ### ✨ Features
