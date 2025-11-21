@@ -504,32 +504,47 @@ verify_route_cache() {
             fi
         fi
 
-        # Verify route:list works
-        local route_list_output=$(php artisan route:list 2>&1)
-        local route_list_exit_code=$?
+        # Verify route cache file (without DB connection)
+        # Note: php artisan route:list requires DB connection which may not be available yet
+        # So we verify the cache file directly instead
 
-        if [ $route_list_exit_code -eq 0 ]; then
-            print_success "✓ Route cache is valid"
-            cache_valid=1
+        # Check if cache file exists and is not empty
+        if [ -f "bootstrap/cache/routes-v7.php" ] && [ -s "bootstrap/cache/routes-v7.php" ]; then
+            # Verify PHP syntax of the cache file
+            if php -l bootstrap/cache/routes-v7.php >/dev/null 2>&1; then
+                # Check if file contains route definitions
+                if grep -q "CompiledRouteCollection" bootstrap/cache/routes-v7.php 2>/dev/null; then
+                    print_success "✓ Route cache file is valid"
+                    cache_valid=1
 
-            # Additional verification: count routes
-            local route_count=$(echo "$route_list_output" | grep -v "^$" | grep -v "Showing" | grep -v "GET\|POST\|PUT" | wc -l)
-            if [ "$route_count" -gt 10 ]; then
-                print_success "✓ Verified route cache is working"
+                    # Count approximate routes in cache
+                    local route_pattern_count=$(grep -c "'" bootstrap/cache/routes-v7.php 2>/dev/null || echo "0")
+                    if [ "$route_pattern_count" -gt 50 ]; then
+                        print_success "✓ Route cache contains valid data"
+                    fi
+                else
+                    print_warning "⚠ Route cache file missing route definitions"
+                    retry_count=$((retry_count + 1))
+                    continue
+                fi
+            else
+                print_warning "⚠ Route cache file has PHP syntax errors"
+
+                # Show syntax error details
+                if [ $retry_count -eq 0 ]; then
+                    echo ""
+                    print_info "→ Syntax error details:"
+                    php -l bootstrap/cache/routes-v7.php 2>&1 | head -5
+                    echo ""
+                fi
+
+                retry_count=$((retry_count + 1))
+                continue
             fi
         else
-            print_warning "⚠ Route cache verification failed"
+            print_warning "⚠ Route cache file is missing or empty"
 
-            # Show error details for debugging
-            if [ $retry_count -eq 0 ]; then
-                echo ""
-                print_info "→ Error details:"
-                echo "$route_list_output" | head -10
-                echo ""
-            fi
-
-            print_info "→ Clearing and regenerating route cache..."
-
+            print_info "→ Regenerating route cache..."
             php artisan route:clear >/dev/null 2>&1 || true
             sleep 1
             php artisan route:cache 2>&1 | tee -a "$LOG_FILE" || true
