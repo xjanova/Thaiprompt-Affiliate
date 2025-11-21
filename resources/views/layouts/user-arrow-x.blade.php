@@ -324,6 +324,13 @@
                     <span class="font-medium text-gray-700 dark:text-gray-300">ระดับ Rank</span>
                 </a>
 
+                {{-- Marketing Tools / Recruit Page --}}
+                <a href="{{ route('user.marketing.recruit.index') }}"
+                   class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ request()->routeIs('user.marketing.*') ? 'active' : '' }}">
+                    <i class="fas fa-bullhorn w-5 text-pink-500"></i>
+                    <span class="font-medium text-gray-700 dark:text-gray-300">เครื่องมือการตลาด</span>
+                </a>
+
                 {{-- Divider --}}
                 <div class="my-4 border-t border-gray-200 dark:border-gray-700"></div>
 
