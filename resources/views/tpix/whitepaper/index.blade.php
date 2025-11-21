@@ -17,74 +17,91 @@
 
     {{-- Custom Styles --}}
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
         /* Alpine.js x-cloak */
         [x-cloak] {
             display: none !important;
         }
 
-        :root {
-            /* Premium Black & Gold Color Palette */
-            --gold-primary: #FFD700;
-            --gold-light: #FFF4D6;
-            --gold-dark: #B8860B;
-            --black-primary: #0A0A0A;
-            --black-secondary: #1A1A1A;
-            --black-tertiary: #2A2A2A;
-        }
-
         body {
-            font-family: 'Noto Sans Thai', 'Kanit', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
 
-        /* Luxury Font for Headings */
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'Cinzel', 'Kanit', serif;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-        }
-
-        /* Premium Gradient Backgrounds - Black & Gold */
+        /* Modern Gradient Backgrounds */
         .gradient-primary {
-            background: linear-gradient(135deg, #0A0A0A 0%, #2A2A2A 50%, #1A1A1A 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
         }
 
-        .gradient-gold {
-            background: linear-gradient(135deg, #FFD700 0%, #FDB931 50%, #B8860B 100%);
+        .gradient-secondary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         }
 
-        .gradient-black-gold {
-            background: linear-gradient(135deg, #0A0A0A 0%, #2A2A2A 30%, #FFD700 100%);
+        .gradient-accent {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #ec77ab 100%);
         }
 
-        .gradient-gold-glow {
-            background: linear-gradient(135deg, #FFD700 0%, #FFF4D6 50%, #FFD700 100%);
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        .gradient-glow {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            box-shadow: 0 0 40px rgba(102, 126, 234, 0.6);
         }
 
-        /* Glassmorphism - Premium Black & Gold */
+        /* Text Gradients */
+        .text-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .text-gradient-pink {
+            background: linear-gradient(135deg, #f093fb 0%, #ec77ab 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Glassmorphism */
         .glass {
-            background: rgba(10, 10, 10, 0.7);
+            background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            box-shadow: 0 8px 32px 0 rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
         }
 
-        .glass-dark {
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 215, 0, 0.2);
+        .dark .glass {
+            background: rgba(31, 41, 55, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
 
-        .glass-gold {
-            background: rgba(255, 215, 0, 0.1);
+        .glass-blue {
+            background: rgba(102, 126, 234, 0.1);
             backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 215, 0, 0.4);
+            border: 1px solid rgba(102, 126, 234, 0.3);
         }
 
-        /* Animated gradient background - Premium Black & Gold */
+        .dark .glass-blue {
+            background: rgba(102, 126, 234, 0.15);
+            border: 1px solid rgba(102, 126, 234, 0.4);
+        }
+
+        /* 3D Card Effects */
+        .card-3d {
+            transform: perspective(1000px) rotateX(0deg) rotateY(0deg);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-3d:hover {
+            transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) translateY(-8px);
+            box-shadow: 0 25px 50px -12px rgba(102, 126, 234, 0.4);
+        }
+
+        .dark .card-3d:hover {
+            box-shadow: 0 25px 50px -12px rgba(147, 51, 234, 0.4);
+        }
+
+        /* Animated gradient background */
         @keyframes gradient-animation {
             0% {
                 background-position: 0% 50%;
@@ -98,43 +115,27 @@
         }
 
         .animated-gradient {
-            background: linear-gradient(-45deg, #0A0A0A, #1A1A1A, #2A2A2A, #FFD700, #1A1A1A);
+            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #4facfe);
             background-size: 400% 400%;
-            animation: gradient-animation 20s ease infinite;
+            animation: gradient-animation 15s ease infinite;
         }
 
-        /* Gold Glow Effect */
-        .gold-glow {
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5),
-                         0 0 20px rgba(255, 215, 0, 0.3),
-                         0 0 30px rgba(255, 215, 0, 0.2);
+        /* Glow Effect */
+        .glow-blue {
+            text-shadow: 0 0 10px rgba(102, 126, 234, 0.8),
+                         0 0 20px rgba(102, 126, 234, 0.6),
+                         0 0 30px rgba(102, 126, 234, 0.4);
         }
 
-        .gold-border {
-            border: 2px solid #FFD700;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3),
-                        inset 0 0 20px rgba(255, 215, 0, 0.1);
+        .glow-purple {
+            text-shadow: 0 0 10px rgba(118, 75, 162, 0.8),
+                         0 0 20px rgba(118, 75, 162, 0.6),
+                         0 0 30px rgba(118, 75, 162, 0.4);
         }
 
         /* Smooth scroll */
         html {
             scroll-behavior: smooth;
-        }
-
-        /* Section fade-in animation */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .fade-in-up {
-            animation: fadeInUp 0.6s ease-out;
         }
 
         /* Floating animation */
@@ -151,6 +152,20 @@
             animation: floating 3s ease-in-out infinite;
         }
 
+        /* Pulse animation */
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(102, 126, 234, 0.8);
+            }
+        }
+
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
         /* Print styles */
         @media print {
             .no-print {
@@ -163,7 +178,7 @@
         }
     </style>
 </head>
-<body class="bg-black transition-colors duration-300"
+<body class="bg-white dark:bg-gray-900 transition-colors duration-300"
       x-data="{ showTranslateToast: false, translateToastMessage: '', translateToastLang: '' }"
       @language-changed.window="
         showTranslateToast = true;
@@ -184,8 +199,8 @@
          x-transition:leave-start="opacity-100 translate-y-0"
          x-transition:leave-end="opacity-0 translate-y-2"
          class="fixed bottom-4 right-4 z-[9999] no-print">
-        <div class="glass-gold gold-border px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px]">
-            <div class="flex-shrink-0 text-yellow-400">
+        <div class="glass-blue px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 min-w-[300px]">
+            <div class="flex-shrink-0 text-blue-600 dark:text-blue-400">
                 <svg x-show="translateToastMessage.includes('กำลัง')" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
@@ -194,49 +209,48 @@
                 </svg>
             </div>
             <div class="flex-1">
-                <p class="font-medium text-yellow-400 no-translate" x-text="translateToastMessage"></p>
+                <p class="font-medium text-gray-900 dark:text-white no-translate" x-text="translateToastMessage"></p>
             </div>
         </div>
     </div>
 
-    {{-- Fixed Navigation - Premium Black & Gold --}}
-    <nav class="fixed top-0 left-0 right-0 z-50 glass gold-border no-print" x-data="{ mobileMenuOpen: false }">
+    {{-- Fixed Navigation --}}
+    <nav class="fixed top-0 left-0 right-0 z-50 glass no-print" x-data="{ mobileMenuOpen: false }">
         <div class="container mx-auto px-4 py-4">
             <div class="flex items-center justify-between">
                 {{-- Logo --}}
                 <div class="flex items-center space-x-3">
-                    <img src="data:image/svg+xml;base64,{{ base64_encode(file_get_contents(public_path('images/tpix-logo.png'))) }}"
-                         alt="TPIX Logo"
-                         class="w-12 h-12 rounded-full shadow-lg gold-border"
-                         onerror="this.src='https://via.placeholder.com/48/FFD700/0A0A0A?text=TPIX'">
+                    <div class="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center shadow-2xl shadow-blue-500/50">
+                        <span class="text-2xl font-black text-white">T</span>
+                    </div>
                     <div>
-                        <h1 class="text-xl font-bold text-yellow-400 gold-glow">TPIX</h1>
-                        <p class="text-xs text-yellow-200/70">Whitepaper v{{ $data['version'] }}</p>
+                        <h1 class="text-xl font-bold text-gradient">TPIX</h1>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">Whitepaper v{{ $data['version'] }}</p>
                     </div>
                 </div>
 
                 {{-- Desktop Menu --}}
                 <div class="hidden lg:flex items-center space-x-1">
-                    <a href="#overview" class="px-3 py-2 text-sm font-medium text-yellow-400 hover:text-yellow-300 transition rounded-lg hover:bg-yellow-400/10">
+                    <a href="#overview" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
                         ภาพรวม
                     </a>
-                    <a href="#use-cases" class="px-3 py-2 text-sm font-medium text-yellow-400 hover:text-yellow-300 transition rounded-lg hover:bg-yellow-400/10">
+                    <a href="#use-cases" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
                         การใช้งาน
                     </a>
-                    <a href="#tokenomics" class="px-3 py-2 text-sm font-medium text-yellow-400 hover:text-yellow-300 transition rounded-lg hover:bg-yellow-400/10">
+                    <a href="#tokenomics" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
                         Tokenomics
                     </a>
-                    <a href="#roadmap" class="px-3 py-2 text-sm font-medium text-yellow-400 hover:text-yellow-300 transition rounded-lg hover:bg-yellow-400/10">
+                    <a href="#roadmap" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
                         แผนงาน
                     </a>
-                    <a href="{{ route('home') }}" class="px-3 py-2 text-sm font-medium text-yellow-400 hover:text-yellow-300 transition rounded-lg hover:bg-yellow-400/10">
+                    <a href="{{ route('home') }}" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
                         หน้าแรก
                     </a>
-                    <a href="{{ route('wiki.index') }}" class="px-3 py-2 text-sm font-medium text-yellow-400 hover:text-yellow-300 transition rounded-lg hover:bg-yellow-400/10 flex items-center space-x-1">
+                    <a href="{{ route('wiki.index') }}" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center space-x-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                         </svg>
-                        <span>WIKI ไทยพร๊อมท์</span>
+                        <span>WIKI</span>
                     </a>
                 </div>
 
@@ -244,7 +258,7 @@
                 <div class="flex items-center space-x-2">
                     {{-- Mobile Menu Toggle --}}
                     <button @click="mobileMenuOpen = !mobileMenuOpen"
-                            class="lg:hidden p-2 rounded-lg glass-gold text-yellow-400 hover:bg-yellow-400/20 transition">
+                            class="lg:hidden p-2 rounded-lg glass-blue text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition">
                         <svg x-show="!mobileMenuOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                         </svg>
@@ -257,14 +271,13 @@
                     <div x-data="{ langOpen: false }" class="relative">
                         <button @click="langOpen = !langOpen"
                                 type="button"
-                                class="p-2 rounded-lg glass-gold text-yellow-400 hover:bg-yellow-400/20 transition relative"
+                                class="p-2 rounded-lg glass-blue text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition relative"
                                 :title="$store.language.getCurrentLanguage().nativeName">
                             <span class="text-lg no-translate" x-text="$store.language.getCurrentLanguage().flag"></span>
-                            {{-- Loading indicator ขยายขนาดให้มองเห็นชัดเจน --}}
                             <div x-show="$store.language.isTranslating"
-                                 class="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full animate-ping"></div>
+                                 class="absolute -top-1 -right-1 w-3 h-3 bg-gradient-primary rounded-full animate-ping"></div>
                             <div x-show="$store.language.isTranslating"
-                                 class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full"></div>
+                                 class="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full"></div>
                         </button>
 
                         <div x-show="langOpen"
@@ -275,17 +288,17 @@
                              x-transition:leave="transition ease-in duration-150"
                              x-transition:leave-start="opacity-100 translate-y-0"
                              x-transition:leave-end="opacity-0 translate-y-2"
-                             class="absolute right-0 mt-2 w-56 glass gold-border rounded-lg shadow-2xl overflow-hidden z-50"
+                             class="absolute right-0 mt-2 w-56 glass rounded-2xl shadow-2xl overflow-hidden z-50"
                              x-cloak>
-                            <div class="px-3 py-2 border-b border-yellow-400/30 bg-black/50">
+                            <div class="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
                                 <div class="flex items-center justify-between">
-                                    <h3 class="text-xs font-bold text-yellow-400 no-translate">
+                                    <h3 class="text-xs font-bold text-gray-900 dark:text-white no-translate">
                                         <i class="fas fa-globe mr-1"></i>
                                         เลือกภาษา
                                     </h3>
                                     <button @click="$store.language.clearCache()"
                                             type="button"
-                                            class="p-1 rounded hover:bg-yellow-400/20 transition text-yellow-200 hover:text-yellow-400"
+                                            class="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 transition text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
                                             title="รีเซ็ต">
                                         <i class="fas fa-sync text-xs"></i>
                                     </button>
@@ -296,21 +309,21 @@
                                 <template x-for="lang in $store.language.languages" :key="lang.code">
                                     <button @click="$store.language.setLanguage(lang.code); langOpen = false"
                                             type="button"
-                                            class="w-full flex items-center gap-2 px-3 py-2 hover:bg-yellow-400/10 transition"
-                                            :class="$store.language.current === lang.code ? 'bg-yellow-400/20' : ''">
+                                            class="w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition"
+                                            :class="$store.language.current === lang.code ? 'bg-blue-100 dark:bg-blue-900/30' : ''">
                                         <span class="text-lg flex-shrink-0 no-translate" x-text="lang.flag"></span>
                                         <div class="flex-1 min-w-0 text-left">
-                                            <p class="text-sm font-medium text-yellow-400 no-translate" x-text="lang.nativeName"></p>
-                                            <p class="text-xs text-yellow-200/60 no-translate" x-text="lang.name"></p>
+                                            <p class="text-sm font-medium text-gray-900 dark:text-white no-translate" x-text="lang.nativeName"></p>
+                                            <p class="text-xs text-gray-600 dark:text-gray-400 no-translate" x-text="lang.name"></p>
                                         </div>
                                         <i x-show="$store.language.current === lang.code"
-                                           class="fas fa-check text-yellow-400 text-sm"></i>
+                                           class="fas fa-check text-blue-600 dark:text-blue-400 text-sm"></i>
                                     </button>
                                 </template>
                             </div>
 
-                            <div class="px-3 py-2 border-t border-yellow-400/30 bg-black/50">
-                                <div class="flex items-center justify-between text-xs text-yellow-200/70">
+                            <div class="px-3 py-2 border-t border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
                                     <span class="no-translate">
                                         <i class="fas fa-language mr-1"></i>
                                         Google Translate
@@ -325,7 +338,7 @@
 
                     {{-- Dark Mode Toggle --}}
                     <button @click="darkMode = !darkMode"
-                            class="p-2 rounded-lg glass-gold text-yellow-400 hover:bg-yellow-400/20 transition">
+                            class="p-2 rounded-lg glass-blue text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition">
                         <svg x-show="!darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
                         </svg>
@@ -336,7 +349,7 @@
 
                     {{-- Download PDF Button --}}
                     <a href="{{ route('tpix.whitepaper.pdf') }}"
-                       class="hidden sm:flex px-4 py-2 gradient-gold text-black rounded-lg hover:shadow-2xl transition shadow-lg items-center space-x-2 font-bold">
+                       class="hidden sm:flex px-4 py-2 gradient-primary text-white rounded-xl hover:shadow-2xl hover:scale-105 transition shadow-lg items-center space-x-2 font-semibold">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
@@ -353,30 +366,30 @@
                  x-transition:leave="transition ease-in duration-150"
                  x-transition:leave-start="opacity-100 transform scale-100"
                  x-transition:leave-end="opacity-0 transform scale-95"
-                 class="lg:hidden mt-4 py-4 border-t border-yellow-400/30">
+                 class="lg:hidden mt-4 py-4 border-t border-gray-200 dark:border-gray-700">
                 <div class="flex flex-col space-y-2">
-                    <a href="#overview" @click="mobileMenuOpen = false" class="px-3 py-2 text-sm font-medium text-yellow-400 hover:text-yellow-300 transition rounded-lg hover:bg-yellow-400/10">
+                    <a href="#overview" @click="mobileMenuOpen = false" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
                         ภาพรวม
                     </a>
-                    <a href="#use-cases" @click="mobileMenuOpen = false" class="px-3 py-2 text-sm font-medium text-yellow-400 hover:text-yellow-300 transition rounded-lg hover:bg-yellow-400/10">
+                    <a href="#use-cases" @click="mobileMenuOpen = false" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
                         การใช้งาน
                     </a>
-                    <a href="#tokenomics" @click="mobileMenuOpen = false" class="px-3 py-2 text-sm font-medium text-yellow-400 hover:text-yellow-300 transition rounded-lg hover:bg-yellow-400/10">
+                    <a href="#tokenomics" @click="mobileMenuOpen = false" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
                         Tokenomics
                     </a>
-                    <a href="#roadmap" @click="mobileMenuOpen = false" class="px-3 py-2 text-sm font-medium text-yellow-400 hover:text-yellow-300 transition rounded-lg hover:bg-yellow-400/10">
+                    <a href="#roadmap" @click="mobileMenuOpen = false" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
                         แผนงาน
                     </a>
-                    <a href="{{ route('home') }}" class="px-3 py-2 text-sm font-medium text-yellow-400 hover:text-yellow-300 transition rounded-lg hover:bg-yellow-400/10">
+                    <a href="{{ route('home') }}" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
                         หน้าแรก
                     </a>
-                    <a href="{{ route('wiki.index') }}" class="px-3 py-2 text-sm font-medium text-yellow-400 hover:text-yellow-300 transition rounded-lg hover:bg-yellow-400/10 flex items-center space-x-1">
+                    <a href="{{ route('wiki.index') }}" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center space-x-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                         </svg>
-                        <span>WIKI ไทยพร๊อมท์</span>
+                        <span>WIKI</span>
                     </a>
-                    <a href="{{ route('tpix.whitepaper.pdf') }}" class="sm:hidden px-3 py-2 text-sm font-medium gradient-gold text-black rounded-lg hover:shadow-xl transition shadow-lg flex items-center space-x-2 font-bold">
+                    <a href="{{ route('tpix.whitepaper.pdf') }}" class="sm:hidden px-3 py-2 text-sm font-medium gradient-primary text-white rounded-xl hover:shadow-xl transition shadow-lg flex items-center space-x-2 font-semibold">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
@@ -387,60 +400,59 @@
         </div>
     </nav>
 
-    {{-- Hero Section - Premium Black & Gold --}}
+    {{-- Hero Section --}}
     <section class="relative min-h-screen flex items-center justify-center overflow-hidden animated-gradient">
-        <div class="absolute inset-0 opacity-20">
-            <div class="absolute top-20 left-10 w-72 h-72 bg-yellow-400 rounded-full mix-blend-lighten filter blur-xl animate-pulse"></div>
-            <div class="absolute top-40 right-10 w-72 h-72 bg-yellow-600 rounded-full mix-blend-lighten filter blur-xl animate-pulse" style="animation-delay: 2s;"></div>
-            <div class="absolute bottom-20 left-1/2 w-72 h-72 bg-yellow-500 rounded-full mix-blend-lighten filter blur-xl animate-pulse" style="animation-delay: 4s;"></div>
+        <div class="absolute inset-0 opacity-30">
+            <div class="absolute top-20 left-10 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+            <div class="absolute top-40 right-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style="animation-delay: 2s;"></div>
+            <div class="absolute bottom-20 left-1/2 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style="animation-delay: 4s;"></div>
         </div>
 
         <div class="container mx-auto px-4 text-center relative z-10 pt-20">
             {{-- Main Logo --}}
             <div class="mb-8 floating">
-                <img src="data:image/svg+xml;base64,{{ base64_encode(file_get_contents(public_path('images/tpix-logo.png'))) }}"
-                     alt="TPIX Logo"
-                     class="w-64 h-64 mx-auto drop-shadow-2xl"
-                     onerror="this.src='https://via.placeholder.com/256/667eea/FFFFFF?text=TPIX'">
+                <div class="w-64 h-64 mx-auto rounded-3xl gradient-glow flex items-center justify-center pulse-glow">
+                    <span class="text-9xl font-black text-white">T</span>
+                </div>
             </div>
 
             {{-- Title --}}
-            <h1 class="text-6xl md:text-8xl font-black text-yellow-400 gold-glow mb-6 drop-shadow-2xl">
+            <h1 class="text-6xl md:text-8xl font-black text-white glow-blue mb-6 drop-shadow-2xl">
                 TPIX
             </h1>
 
-            <p class="text-2xl md:text-4xl text-yellow-200 font-light mb-4 drop-shadow-lg">
+            <p class="text-2xl md:text-4xl text-white/90 font-light mb-4 drop-shadow-lg">
                 Native Cryptocurrency
             </p>
 
-            <p class="text-xl md:text-2xl text-yellow-100/90 mb-8 drop-shadow-lg">
+            <p class="text-xl md:text-2xl text-white/80 mb-8 drop-shadow-lg">
                 Blockchain ของตัวเอง สำหรับระบบนิเวศน์ Thaiprompt Affiliate
             </p>
 
-            {{-- Key Stats - Premium Gold Cards --}}
+            {{-- Key Stats --}}
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mt-12">
-                <div class="glass gold-border rounded-xl p-6 hover:scale-105 transition-transform">
-                    <div class="text-3xl font-bold text-yellow-400 gold-glow mb-2">7B</div>
-                    <div class="text-sm text-yellow-200/80">Total Supply</div>
+                <div class="glass rounded-2xl p-6 hover:scale-105 transform transition-all duration-300 shadow-2xl shadow-blue-500/20">
+                    <div class="text-3xl font-bold text-gradient mb-2">7B</div>
+                    <div class="text-sm text-gray-700 dark:text-gray-300">Total Supply</div>
                 </div>
-                <div class="glass gold-border rounded-xl p-6 hover:scale-105 transition-transform">
-                    <div class="text-3xl font-bold text-yellow-400 gold-glow mb-2">2s</div>
-                    <div class="text-sm text-yellow-200/80">Block Time</div>
+                <div class="glass rounded-2xl p-6 hover:scale-105 transform transition-all duration-300 shadow-2xl shadow-purple-500/20">
+                    <div class="text-3xl font-bold text-gradient mb-2">2s</div>
+                    <div class="text-sm text-gray-700 dark:text-gray-300">Block Time</div>
                 </div>
-                <div class="glass gold-border rounded-xl p-6 hover:scale-105 transition-transform">
-                    <div class="text-3xl font-bold text-yellow-400 gold-glow mb-2">1,500</div>
-                    <div class="text-sm text-yellow-200/80">TPS</div>
+                <div class="glass rounded-2xl p-6 hover:scale-105 transform transition-all duration-300 shadow-2xl shadow-pink-500/20">
+                    <div class="text-3xl font-bold text-gradient mb-2">1,500</div>
+                    <div class="text-sm text-gray-700 dark:text-gray-300">TPS</div>
                 </div>
-                <div class="glass gold-border rounded-xl p-6 hover:scale-105 transition-transform">
-                    <div class="text-3xl font-bold text-yellow-400 gold-glow mb-2">IBFT</div>
-                    <div class="text-sm text-yellow-200/80">Consensus</div>
+                <div class="glass rounded-2xl p-6 hover:scale-105 transform transition-all duration-300 shadow-2xl shadow-blue-500/20">
+                    <div class="text-3xl font-bold text-gradient mb-2">IBFT</div>
+                    <div class="text-sm text-gray-700 dark:text-gray-300">Consensus</div>
                 </div>
             </div>
 
             {{-- Scroll Indicator --}}
             <div class="mt-16 no-print">
                 <a href="#overview" class="inline-block animate-bounce">
-                    <svg class="w-8 h-8 text-yellow-400 gold-glow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
                     </svg>
                 </a>
@@ -448,43 +460,43 @@
         </div>
     </section>
 
-    {{-- Main Content - Premium Black Background --}}
-    <div class="bg-black transition-colors duration-300">
+    {{-- Main Content --}}
+    <div class="bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
 
-        {{-- Table of Contents - Premium Gold --}}
+        {{-- Table of Contents --}}
         <section id="toc" class="py-20 no-print">
             <div class="container mx-auto px-4">
                 <div class="max-w-4xl mx-auto">
-                    <h2 class="text-4xl font-bold text-yellow-400 gold-glow mb-12 text-center">
+                    <h2 class="text-4xl font-bold text-gradient mb-12 text-center">
                         สารบัญ
                     </h2>
 
                     <div class="grid md:grid-cols-2 gap-4">
                         @php
                         $sections = [
-                            ['id' => 'overview', 'title' => '1. ภาพรวมโครงการ', 'icon' => 'eye'],
-                            ['id' => 'problem', 'title' => '2. ปัญหาและแนวทางแก้ไข', 'icon' => 'lightbulb'],
-                            ['id' => 'technology', 'title' => '3. เทคโนโลยีและสถาปัตยกรรม', 'icon' => 'chip'],
-                            ['id' => 'ecosystem', 'title' => '4. ระบบนิเวศน์ TPIX', 'icon' => 'globe'],
-                            ['id' => 'tokenomics', 'title' => '5. โทเค็นโนมิกส์', 'icon' => 'chart-pie'],
-                            ['id' => 'dex', 'title' => '6. Decentralized Exchange', 'icon' => 'arrows-exchange'],
-                            ['id' => 'use-cases', 'title' => '7. Use Cases', 'icon' => 'cube'],
-                            ['id' => 'roadmap', 'title' => '8. Roadmap', 'icon' => 'map'],
-                            ['id' => 'team', 'title' => '9. ทีมและพันธมิตร', 'icon' => 'users'],
-                            ['id' => 'conclusion', 'title' => '10. สรุป', 'icon' => 'check-circle'],
+                            ['id' => 'overview', 'title' => '1. ภาพรวมโครงการ', 'icon' => 'eye', 'color' => 'blue'],
+                            ['id' => 'problem', 'title' => '2. ปัญหาและแนวทางแก้ไข', 'icon' => 'lightbulb', 'color' => 'purple'],
+                            ['id' => 'technology', 'title' => '3. เทคโนโลยีและสถาปัตยกรรม', 'icon' => 'chip', 'color' => 'pink'],
+                            ['id' => 'ecosystem', 'title' => '4. ระบบนิเวศน์ TPIX', 'icon' => 'globe', 'color' => 'blue'],
+                            ['id' => 'tokenomics', 'title' => '5. โทเค็นโนมิกส์', 'icon' => 'chart-pie', 'color' => 'purple'],
+                            ['id' => 'dex', 'title' => '6. Decentralized Exchange', 'icon' => 'arrows-exchange', 'color' => 'pink'],
+                            ['id' => 'use-cases', 'title' => '7. Use Cases', 'icon' => 'cube', 'color' => 'blue'],
+                            ['id' => 'roadmap', 'title' => '8. Roadmap', 'icon' => 'map', 'color' => 'purple'],
+                            ['id' => 'team', 'title' => '9. ทีมและพันธมิตร', 'icon' => 'users', 'color' => 'pink'],
+                            ['id' => 'conclusion', 'title' => '10. สรุป', 'icon' => 'check-circle', 'color' => 'blue'],
                         ];
                         @endphp
 
                         @foreach($sections as $section)
                         <a href="#{{ $section['id'] }}"
-                           class="block p-4 glass gold-border rounded-xl shadow-lg hover:shadow-2xl transition hover:scale-105">
+                           class="block p-4 glass rounded-2xl shadow-lg hover:shadow-2xl card-3d border-l-4 border-{{ $section['color'] }}-500">
                             <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 rounded-lg gradient-gold flex items-center justify-center flex-shrink-0">
-                                    <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div class="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0 shadow-lg shadow-{{ $section['color'] }}-500/50">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                                     </svg>
                                 </div>
-                                <span class="text-yellow-400 font-medium">{{ $section['title'] }}</span>
+                                <span class="text-gray-900 dark:text-white font-medium">{{ $section['title'] }}</span>
                             </div>
                         </a>
                         @endforeach
@@ -493,167 +505,83 @@
             </div>
         </section>
 
-        {{-- Overview Section - Premium Black & Gold --}}
-        <section id="overview" class="py-20 bg-black/50 page-break">
+        {{-- Overview Section --}}
+        <section id="overview" class="py-20 page-break">
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
-                    <h2 class="text-5xl font-bold text-yellow-400 gold-glow mb-6">
-                        ภาพรวมโครงการ
+                    <h2 class="text-5xl font-bold text-gradient mb-6">
+                        {{ $data['overview']['title'] }}
                     </h2>
-                    <div class="h-1 w-32 gradient-gold rounded-full mb-12"></div>
 
-                    <div class="prose prose-lg max-w-none">
-                        <p class="text-xl text-yellow-100 leading-relaxed mb-8">
-                            <strong>TPIX (Thaiprompt Affiliate Blockchain)</strong> เป็นระบบ blockchain ที่พัฒนาขึ้นเฉพาะ
-                            สำหรับระบบนิเวศน์ของ Thaiprompt Affiliate โดยมีเหรียญ <strong>TPIX</strong> เป็น
-                            <strong>Native Coin</strong> หลักของระบบ ซึ่งแตกต่างจาก Token บนเครือข่ายอื่น ๆ
-                            เช่น Ethereum หรือ BSC
+                    <div class="prose prose-lg dark:prose-invert max-w-none">
+                        <p class="text-xl text-gray-700 dark:text-gray-300 leading-relaxed mb-8">
+                            {{ $data['overview']['description'] }}
                         </p>
+                    </div>
 
-                        {{-- Comparison Table - Premium Gold --}}
-                        <div class="glass gold-border rounded-2xl p-8 mb-8">
-                            <h3 class="text-2xl font-bold text-yellow-400 gold-glow mb-6">เปรียบเทียบ TPIX กับ Token อื่น</h3>
-
-                            <div class="overflow-x-auto">
-                                <table class="w-full">
-                                    <thead>
-                                        <tr class="border-b-2 border-yellow-400/50">
-                                            <th class="py-3 px-4 text-left text-yellow-400">คุณสมบัติ</th>
-                                            <th class="py-3 px-4 text-center text-yellow-200/70">Token (ERC20)</th>
-                                            <th class="py-3 px-4 text-center text-yellow-400 gold-glow">TPIX Native Coin</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="text-yellow-100">
-                                        <tr class="border-b border-yellow-400/20">
-                                            <td class="py-3 px-4 font-medium">Gas Fee</td>
-                                            <td class="py-3 px-4 text-center">ต้องใช้ ETH/BNB ❌</td>
-                                            <td class="py-3 px-4 text-center font-bold text-yellow-400">ใช้ TPIX ✅</td>
-                                        </tr>
-                                        <tr class="border-b border-yellow-400/20">
-                                            <td class="py-3 px-4 font-medium">การควบคุม</td>
-                                            <td class="py-3 px-4 text-center">ขึ้นกับ Ethereum/BSC ❌</td>
-                                            <td class="py-3 px-4 text-center font-bold text-yellow-400">ควบคุมเต็มที่ ✅</td>
-                                        </tr>
-                                        <tr class="border-b border-yellow-400/20">
-                                            <td class="py-3 px-4 font-medium">ค่าธรรมเนียม</td>
-                                            <td class="py-3 px-4 text-center">สูง (ขึ้นกับ network) ❌</td>
-                                            <td class="py-3 px-4 text-center font-bold text-yellow-400">ต่ำ (กำหนดเอง) ✅</td>
-                                        </tr>
-                                        <tr class="border-b border-yellow-400/20">
-                                            <td class="py-3 px-4 font-medium">ความเร็ว</td>
-                                            <td class="py-3 px-4 text-center">12-15 วินาที ⏱️</td>
-                                            <td class="py-3 px-4 text-center font-bold text-yellow-400">2 วินาที ⚡</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="py-3 px-4 font-medium">Smart Contracts</td>
-                                            <td class="py-3 px-4 text-center">รองรับ ✅</td>
-                                            <td class="py-3 px-4 text-center font-bold text-yellow-400">รองรับ ✅</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                    {{-- Key Features Grid --}}
+                    <div class="grid md:grid-cols-3 gap-6 mt-12">
+                        @foreach($data['overview']['features'] as $feature)
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl shadow-blue-500/10 dark:shadow-purple-500/20 border-t-4 border-gradient-primary">
+                            <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-400/50 mb-4">
+                                <i class="fas fa-{{ $feature['icon'] }} text-white text-2xl"></i>
                             </div>
+                            <h3 class="text-2xl font-bold text-gradient mb-2">
+                                {{ $feature['title'] }}
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">{{ $feature['description'] }}</p>
                         </div>
-
-                        {{-- Key Features Grid - Premium Gold --}}
-                        <div class="grid md:grid-cols-3 gap-6">
-                            <div class="glass gold-border rounded-xl p-6 shadow-2xl hover:shadow-3xl transition hover:scale-105">
-                                <div class="w-14 h-14 gradient-gold rounded-lg flex items-center justify-center mb-4">
-                                    <svg class="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                    </svg>
-                                </div>
-                                <h4 class="text-xl font-bold text-yellow-400 mb-2">Lightning Fast</h4>
-                                <p class="text-yellow-200/80">Block time เพียง 2 วินาที รองรับ ~1,500 TPS</p>
-                            </div>
-
-                            <div class="glass gold-border rounded-xl p-6 shadow-2xl hover:shadow-3xl transition hover:scale-105">
-                                <div class="w-14 h-14 gradient-gold rounded-lg flex items-center justify-center mb-4">
-                                    <svg class="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                    </svg>
-                                </div>
-                                <h4 class="text-xl font-bold text-yellow-400 mb-2">Secure & Decentralized</h4>
-                                <p class="text-yellow-200/80">IBFT Consensus (Proof of Stake) Byzantine Fault Tolerant</p>
-                            </div>
-
-                            <div class="glass gold-border rounded-xl p-6 shadow-2xl hover:shadow-3xl transition hover:scale-105">
-                                <div class="w-14 h-14 gradient-gold rounded-lg flex items-center justify-center mb-4">
-                                    <svg class="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                </div>
-                                <h4 class="text-xl font-bold text-yellow-400 mb-2">Fixed Supply</h4>
-                                <p class="text-yellow-200/80">Total supply 7B TPIX ไม่สามารถสร้างเพิ่มได้</p>
-                            </div>
-                        </div>
+                        @endforeach
                     </div>
                 </div>
             </div>
         </section>
 
-
-        {{-- Problem & Solution Section --}}
-        <section id="problem" class="py-20 bg-black/30 page-break">
+        {{-- Problem Section --}}
+        <section id="problem" class="py-20 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 page-break">
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
-                    <h2 class="text-5xl font-bold text-yellow-400 gold-glow mb-6">
-                        ปัญหาและแนวทางแก้ไข
+                    <h2 class="text-5xl font-bold text-gradient mb-6">
+                        {{ $data['problem']['title'] }}
                     </h2>
-                    <div class="h-1 w-32 gradient-gold rounded-full mb-12"></div>
 
-                    {{-- Problems --}}
-                    <div class="grid md:grid-cols-2 gap-8 mb-12">
-                        <div>
-                            <h3 class="text-3xl font-bold text-red-600 dark:text-red-400 mb-6">❌ ปัญหาของ Crypto ปัจจุบัน</h3>
-
-                            <div class="space-y-4">
-                                <div class="glass gold-border rounded-xl p-6 shadow-lg">
-                                    <h4 class="font-bold text-yellow-400 gold-glow mb-2">1. ค่า Gas Fee สูง</h4>
-                                    <p class="text-yellow-200/80">Token บน Ethereum ต้องใช้ ETH เป็นค่าแก๊ส ซึ่งมีราคาแพงมาก (บางครั้งถึง $50-100 ต่อ transaction)</p>
+                    <div class="space-y-6">
+                        @foreach($data['problem']['problems'] as $problem)
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl">
+                            <div class="flex items-start space-x-4">
+                                <div class="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0 shadow-lg">
+                                    <i class="fas fa-exclamation-triangle text-white text-xl"></i>
                                 </div>
-
-                                <div class="glass gold-border rounded-xl p-6 shadow-lg">
-                                    <h4 class="font-bold text-yellow-400 gold-glow mb-2">2. ไม่สามารถควบคุมระบบได้</h4>
-                                    <p class="text-yellow-200/80">Token บน BSC/Ethereum ต้องพึ่งพาเครือข่ายอื่น ไม่สามารถปรับแต่งกฎเกณฑ์หรือค่าธรรมเนียมได้</p>
-                                </div>
-
-                                <div class="glass gold-border rounded-xl p-6 shadow-lg">
-                                    <h4 class="font-bold text-yellow-400 gold-glow mb-2">3. ช้าและมีข้อจำกัด</h4>
-                                    <p class="text-yellow-200/80">Block time ช้า (12-15 วินาที) และมี TPS จำกัด ทำให้ไม่เหมาะกับการใช้งานจริง</p>
-                                </div>
-
-                                <div class="glass gold-border rounded-xl p-6 shadow-lg">
-                                    <h4 class="font-bold text-yellow-400 gold-glow mb-2">4. ไม่เหมาะกับองค์กร</h4>
-                                    <p class="text-yellow-200/80">Public blockchain มีข้อจำกัดด้านความเป็นส่วนตัวและการควบคุม ไม่เหมาะกับองค์กรที่ต้องการความยืดหยุ่น</p>
+                                <div class="flex-1">
+                                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                        {{ $problem['title'] }}
+                                    </h3>
+                                    <p class="text-gray-700 dark:text-gray-300">{{ $problem['description'] }}</p>
                                 </div>
                             </div>
                         </div>
+                        @endforeach
+                    </div>
 
-                        {{-- Solutions --}}
-                        <div>
-                            <h3 class="text-3xl font-bold text-green-600 dark:text-green-400 mb-6">✅ แนวทางแก้ไขด้วย TPIX</h3>
-
-                            <div class="space-y-4">
-                                <div class="glass-gold rounded-xl p-6 shadow-2xl border-2 border-yellow-400/50">
-                                    <h4 class="font-bold text-yellow-400 gold-glow mb-2">1. ค่าธรรมเนียมต่ำมาก</h4>
-                                    <p class="text-yellow-200/80">ใช้ TPIX เป็นค่าแก๊ส ราคาเพียง ~0.000021 TPIX (~0.42 สตางค์ ถ้า TPIX = 20 บาท)</p>
-                                </div>
-
-                                <div class="glass-gold rounded-xl p-6 shadow-2xl border-2 border-yellow-400/50">
-                                    <h4 class="font-bold text-yellow-400 gold-glow mb-2">2. ควบคุมได้เต็มที่</h4>
-                                    <p class="text-yellow-200/80">Blockchain ของตัวเอง ปรับแต่งได้ทุกอย่าง จาก consensus mechanism ไปจนถึงค่าธรรมเนียม</p>
-                                </div>
-
-                                <div class="glass-gold rounded-xl p-6 shadow-2xl border-2 border-yellow-400/50">
-                                    <h4 class="font-bold text-yellow-400 gold-glow mb-2">3. รวดเร็วและ Scalable</h4>
-                                    <p class="text-yellow-200/80">Block time เพียง 2 วินาที รองรับ ~1,500 TPS เหมาะกับการใช้งานจริง</p>
-                                </div>
-
-                                <div class="glass-gold rounded-xl p-6 shadow-2xl border-2 border-yellow-400/50">
-                                    <h4 class="font-bold text-yellow-400 gold-glow mb-2">4. เหมาะกับทุกองค์กร</h4>
-                                    <p class="text-yellow-200/80">สามารถปรับแต่งให้เหมาะกับความต้องการขององค์กร พร้อมความปลอดภัยระดับสูง</p>
+                    {{-- Solutions --}}
+                    <div class="mt-12">
+                        <h3 class="text-3xl font-bold text-gradient mb-6">แนวทางแก้ไข</h3>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            @foreach($data['problem']['solutions'] as $solution)
+                            <div class="glass rounded-2xl p-6 card-3d shadow-xl border-l-4 border-green-500">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+                                        <i class="fas fa-check text-white"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                            {{ $solution['title'] }}
+                                        </h4>
+                                        <p class="text-gray-600 dark:text-gray-400">{{ $solution['description'] }}</p>
+                                    </div>
                                 </div>
                             </div>
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -661,128 +589,62 @@
         </section>
 
         {{-- Technology Section --}}
-        <section id="technology" class="py-20 bg-black/50 page-break">
+        <section id="technology" class="py-20 page-break">
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
-                    <h2 class="text-5xl font-bold text-yellow-400 gold-glow mb-6">
-                        เทคโนโลยีและสถาปัตยกรรม
+                    <h2 class="text-5xl font-bold text-gradient mb-6">
+                        {{ $data['technology']['title'] }}
                     </h2>
-                    <div class="h-1 w-32 gradient-gold rounded-full mb-12"></div>
 
-                    {{-- Blockchain Specifications --}}
-                    <div class="glass gold-border rounded-2xl p-8 mb-12">
-                        <h3 class="text-3xl font-bold text-yellow-400 gold-glow mb-8">Blockchain Specifications</h3>
-
-                        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            @foreach([
-                                ['label' => 'Chain ID', 'value' => '7000', 'icon' => 'hashtag'],
-                                ['label' => 'Network Name', 'value' => 'TPIX Network', 'icon' => 'globe'],
-                                ['label' => 'Native Coin', 'value' => 'TPIX', 'icon' => 'currency-dollar'],
-                                ['label' => 'Total Supply', 'value' => '7,000,000,000', 'icon' => 'collection'],
-                                ['label' => 'Decimals', 'value' => '18', 'icon' => 'calculator'],
-                                ['label' => 'Block Time', 'value' => '2 seconds', 'icon' => 'clock'],
-                                ['label' => 'Consensus', 'value' => 'IBFT', 'icon' => 'shield-check'],
-                                ['label' => 'VM', 'value' => 'EVM', 'icon' => 'chip'],
-                                ['label' => 'TPS', 'value' => '~1,500', 'icon' => 'lightning-bolt'],
-                            ] as $spec)
-                            <div class="bg-black/50 rounded-xl p-6 shadow">
-                                <div class="text-sm text-yellow-200/80 mb-2">{{ $spec['label'] }}</div>
-                                <div class="text-2xl font-bold text-yellow-400 gold-glow">{{ $spec['value'] }}</div>
+                    {{-- Tech Stack --}}
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                        @foreach($data['technology']['stack'] as $tech)
+                        <div class="glass rounded-2xl p-6 card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
+                            <div class="w-14 h-14 rounded-xl gradient-accent flex items-center justify-center mb-4 shadow-lg shadow-purple-500/50">
+                                <i class="fas fa-{{ $tech['icon'] }} text-white text-2xl"></i>
                             </div>
-                            @endforeach
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                {{ $tech['name'] }}
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm">{{ $tech['description'] }}</p>
                         </div>
+                        @endforeach
                     </div>
 
-                    {{-- Technology Stack --}}
-                    <div class="mb-12">
-                        <h3 class="text-3xl font-bold text-yellow-400 gold-glow mb-8">Technology Stack</h3>
-
-                        <div class="grid md:grid-cols-2 gap-8">
-                            @foreach($data['tech_stack'] as $category => $technologies)
-                            <div class="glass gold-border rounded-xl p-6 shadow-lg">
-                                <h4 class="text-xl font-bold text-yellow-400 mb-4 capitalize">
-                                    {{ ucfirst(str_replace('_', ' ', $category)) }}
-                                </h4>
-                                <div class="space-y-3">
-                                    @foreach($technologies as $name => $description)
-                                    <div class="flex items-start space-x-3">
-                                        <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                        </svg>
-                                        <div>
-                                            <div class="font-medium text-yellow-400 gold-glow">{{ $name }}</div>
-                                            <div class="text-sm text-yellow-200/80">{{ $description }}</div>
-                                        </div>
-                                    </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                            @endforeach
+                    {{-- Architecture Diagram --}}
+                    <div class="glass rounded-2xl p-8 shadow-2xl">
+                        <h3 class="text-3xl font-bold text-gradient mb-6">สถาปัตยกรรมระบบ</h3>
+                        <div class="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 dark:from-gray-800 dark:to-gray-700 rounded-xl flex items-center justify-center">
+                            <div id="architecture-diagram" class="w-full h-full"></div>
                         </div>
-                    </div>
-
-                    {{-- Architecture Diagram Placeholder --}}
-                    <div class="glass gold-border rounded-2xl p-12 text-center">
-                        <div class="text-yellow-200/70 mb-4">
-                            <svg class="w-24 h-24 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
-                            </svg>
-                        </div>
-                        <h4 class="text-xl font-bold text-yellow-400 gold-glow mb-2">System Architecture Diagram</h4>
-                        <p class="text-yellow-200/80">ดูรายละเอียดเพิ่มเติมใน docs/TPIX_BLOCKCHAIN.md</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        {{-- Ecosystem Section with Mind Map --}}
-        <section id="ecosystem" class="py-20 bg-black/30 page-break">
+        {{-- Ecosystem Section --}}
+        <section id="ecosystem" class="py-20 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 page-break">
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
-                    <h2 class="text-5xl font-bold text-yellow-400 gold-glow mb-6">
-                        ระบบนิเวศน์ TPIX
+                    <h2 class="text-5xl font-bold text-gradient mb-6">
+                        {{ $data['ecosystem']['title'] }}
                     </h2>
-                    <div class="h-1 w-32 gradient-gold rounded-full mb-12"></div>
 
-                    {{-- Mind Map Canvas --}}
-                    <div class="bg-black/50 rounded-2xl p-8 shadow-2xl mb-12">
-                        <h3 class="text-2xl font-bold text-yellow-400 gold-glow mb-6 text-center">
-                            TPIX Ecosystem Mind Map
-                        </h3>
-                        <div id="ecosystem-mindmap" style="height: 600px;" class="border-2 border-gray-200 dark:border-gray-700 rounded-xl"></div>
-                    </div>
+                    <p class="text-xl text-gray-700 dark:text-gray-300 mb-12">
+                        {{ $data['ecosystem']['description'] }}
+                    </p>
 
-                    {{-- Integration Points --}}
-                    <h3 class="text-3xl font-bold text-yellow-400 gold-glow mb-8">จุดเชื่อมต่อกับระบบต่าง ๆ</h3>
-
-                    <div class="grid md:grid-cols-2 gap-8">
-                        @foreach($data['integrations'] as $key => $integration)
-                        <div class="glass gold-border rounded-xl p-8 shadow-lg hover:shadow-2xl transition">
-                            <div class="flex items-center space-x-4 mb-6">
-                                <div class="w-16 h-16 gradient-gold rounded-xl flex items-center justify-center flex-shrink-0">
-                                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h4 class="text-xl font-bold text-yellow-400 gold-glow">{{ $integration['title'] }}</h4>
-                                    <p class="text-sm text-yellow-200/80">{{ $integration['description'] }}</p>
-                                </div>
+                    {{-- Ecosystem Components --}}
+                    <div class="grid md:grid-cols-2 gap-6">
+                        @foreach($data['ecosystem']['components'] as $component)
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl border-t-4 border-purple-500">
+                            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/50">
+                                <i class="fas fa-{{ $component['icon'] }} text-white text-2xl"></i>
                             </div>
-
-                            <div class="space-y-3">
-                                @foreach($integration['connections'] as $name => $desc)
-                                <div class="flex items-start space-x-3">
-                                    <svg class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    <div>
-                                        <div class="font-medium text-yellow-400 gold-glow">{{ $name }}</div>
-                                        <div class="text-sm text-yellow-200/80">{{ $desc }}</div>
-                                    </div>
-                                </div>
-                                @endforeach
-                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                {{ $component['name'] }}
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">{{ $component['description'] }}</p>
                         </div>
                         @endforeach
                     </div>
@@ -791,56 +653,40 @@
         </section>
 
         {{-- Tokenomics Section --}}
-        <section id="tokenomics" class="py-20 bg-black/50 page-break">
+        <section id="tokenomics" class="py-20 page-break">
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
-                    <h2 class="text-5xl font-bold text-yellow-400 gold-glow mb-6">
-                        โทเค็นโนมิกส์
+                    <h2 class="text-5xl font-bold text-gradient mb-6">
+                        {{ $data['tokenomics']['title'] }}
                     </h2>
-                    <div class="h-1 w-32 gradient-gold rounded-full mb-12"></div>
 
-                    <div class="grid lg:grid-cols-2 gap-12 items-center mb-12">
-                        {{-- Token Distribution Chart --}}
-                        <div>
-                            <h3 class="text-2xl font-bold text-yellow-400 gold-glow mb-6">การกระจาย Token</h3>
-                            <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-8">
-                                <canvas id="tokenomicsChart" height="300"></canvas>
+                    {{-- Key Metrics --}}
+                    <div class="grid md:grid-cols-4 gap-6 mb-12">
+                        @foreach($data['tokenomics']['metrics'] as $metric)
+                        <div class="glass rounded-2xl p-6 text-center card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
+                            <div class="text-4xl font-black text-gradient mb-2">
+                                {{ $metric['value'] }}
+                            </div>
+                            <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                {{ $metric['label'] }}
                             </div>
                         </div>
+                        @endforeach
+                    </div>
 
-                        {{-- Distribution Table --}}
-                        <div>
-                            <h3 class="text-2xl font-bold text-yellow-400 gold-glow mb-6">รายละเอียดการกระจาย</h3>
-                            <div class="space-y-4">
-                                @foreach($data['tokenomics']['distribution'] as $dist)
-                                <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-600 rounded-xl p-6">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="font-bold text-yellow-400 gold-glow">{{ $dist['name'] }}</span>
-                                        <span class="text-2xl font-bold text-yellow-400">{{ $dist['percentage'] }}%</span>
-                                    </div>
-                                    <div class="text-sm text-yellow-200/80">
-                                        {{ number_format($dist['amount']) }} TPIX
-                                    </div>
-                                    <div class="mt-2 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                                        <div class="gradient-gold h-2 rounded-full transition-all duration-1000"
-                                             style="width: {{ $dist['percentage'] }}%"></div>
-                                    </div>
-                                </div>
-                                @endforeach
-                            </div>
+                    {{-- Distribution Chart --}}
+                    <div class="glass rounded-2xl p-8 shadow-2xl mb-12">
+                        <h3 class="text-3xl font-bold text-gradient mb-6">การกระจายโทเค็น</h3>
+                        <div class="aspect-video">
+                            <canvas id="tokenDistributionChart"></canvas>
                         </div>
                     </div>
 
-                    {{-- Total Supply Info --}}
-                    <div class="bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-2xl p-8 text-center">
-                        <div class="text-6xl font-black text-yellow-400 gold-glow mb-4">
-                            7,000,000,000
-                        </div>
-                        <div class="text-2xl text-yellow-100 mb-2">
-                            Total Supply (Fixed)
-                        </div>
-                        <div class="text-yellow-200/80">
-                            ไม่สามารถสร้างเพิ่มได้ | Deflationary Economics
+                    {{-- Vesting Schedule --}}
+                    <div class="glass rounded-2xl p-8 shadow-2xl">
+                        <h3 class="text-3xl font-bold text-gradient mb-6">Vesting Schedule</h3>
+                        <div class="aspect-video">
+                            <canvas id="vestingChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -848,117 +694,67 @@
         </section>
 
         {{-- DEX Section --}}
-        <section id="dex" class="py-20 bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 page-break">
+        <section id="dex" class="py-20 bg-gradient-to-r from-pink-50 to-blue-50 dark:from-gray-800 dark:to-gray-900 page-break">
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
-                    <h2 class="text-5xl font-bold text-yellow-400 gold-glow mb-6">
-                        Decentralized Exchange (DEX)
+                    <h2 class="text-5xl font-bold text-gradient mb-6">
+                        {{ $data['dex']['title'] }}
                     </h2>
-                    <div class="h-1 w-32 gradient-gold rounded-full mb-12"></div>
 
-                    <div class="prose prose-lg dark:prose-invert max-w-none mb-12">
-                        <p class="text-xl text-yellow-100">
-                            TPIX DEX เป็น Automated Market Maker (AMM) ที่ช่วยให้ผู้ใช้สามารถแลกเปลี่ยน tokens
-                            และเพิ่ม liquidity เพื่อรับผลตอบแทนจากค่าธรรมเนียมการซื้อขาย
-                        </p>
-                    </div>
+                    <p class="text-xl text-gray-700 dark:text-gray-300 mb-12">
+                        {{ $data['dex']['description'] }}
+                    </p>
 
                     {{-- DEX Features --}}
-                    <div class="grid md:grid-cols-3 gap-8 mb-12">
-                        @foreach([
-                            [
-                                'title' => 'Token Swaps',
-                                'description' => 'แลกเปลี่ยน tokens ด้วย AMM constant product formula (x * y = k)',
-                                'icon' => 'arrows-exchange',
-                                'features' => ['Instant swaps', 'Price impact calculation', 'Slippage protection']
-                            ],
-                            [
-                                'title' => 'Liquidity Pools',
-                                'description' => 'เพิ่ม liquidity เพื่อรับส่วนแบ่งค่าธรรมเนียม 0.3% จากทุก trade',
-                                'icon' => 'chart-bar',
-                                'features' => ['Add/Remove liquidity', 'LP token minting', 'Fee distribution']
-                            ],
-                            [
-                                'title' => 'Yield Farming',
-                                'description' => 'รับผลตอบแทนจากการให้บริการ liquidity พร้อมติดตาม impermanent loss',
-                                'icon' => 'trending-up',
-                                'features' => ['Pool APY calculation', 'TVL tracking', 'ROI monitoring']
-                            ],
-                        ] as $feature)
-                        <div class="glass gold-border rounded-xl p-8 shadow-lg hover:shadow-2xl transition">
-                            <div class="w-16 h-16 bg-gradient-to-br from-green-600 to-blue-600 rounded-xl flex items-center justify-center mb-6 mx-auto">
-                                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                                </svg>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        @foreach($data['dex']['features'] as $feature)
+                        <div class="glass rounded-2xl p-6 card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
+                            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-500 to-red-600 flex items-center justify-center mb-4 shadow-lg shadow-pink-500/50">
+                                <i class="fas fa-{{ $feature['icon'] }} text-white text-xl"></i>
                             </div>
-                            <h3 class="text-2xl font-bold text-yellow-400 gold-glow mb-4 text-center">{{ $feature['title'] }}</h3>
-                            <p class="text-yellow-200/80 mb-6 text-center">{{ $feature['description'] }}</p>
-                            <ul class="space-y-2">
-                                @foreach($feature['features'] as $item)
-                                <li class="flex items-center space-x-2 text-sm">
-                                    <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    <span class="text-yellow-100">{{ $item }}</span>
-                                </li>
-                                @endforeach
-                            </ul>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                {{ $feature['title'] }}
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm">{{ $feature['description'] }}</p>
                         </div>
                         @endforeach
-                    </div>
-
-                    {{-- AMM Formula --}}
-                    <div class="bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 rounded-2xl p-8 text-center">
-                        <h3 class="text-2xl font-bold text-yellow-400 gold-glow mb-4">AMM Formula</h3>
-                        <div class="text-5xl font-black text-yellow-400 mb-4">
-                            x × y = k
-                        </div>
-                        <div class="text-yellow-100 max-w-2xl mx-auto">
-                            Constant Product Formula ที่รับประกันว่าผลคูณของ token reserves จะคงที่
-                            ช่วยกำหนดราคาอัตโนมัติตามอุปสงค์และอุปทาน
-                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-
         {{-- Use Cases Section --}}
-        <section id="use-cases" class="py-20 bg-black/50 page-break">
+        <section id="use-cases" class="py-20 page-break">
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
-                    <h2 class="text-5xl font-bold text-yellow-400 gold-glow mb-6">
-                        Use Cases
+                    <h2 class="text-5xl font-bold text-gradient mb-6">
+                        {{ $data['use_cases']['title'] }}
                     </h2>
-                    <div class="h-1 w-32 gradient-gold rounded-full mb-12"></div>
 
-                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        @foreach($data['use_cases'] as $useCase)
-                        <div class="bg-gradient-to-br from-white to-purple-50 dark:from-gray-700 dark:to-gray-600 rounded-2xl p-8 shadow-lg hover:shadow-2xl transition hover:scale-105">
-                            <div class="w-16 h-16 gradient-gold rounded-xl flex items-center justify-center mb-6">
-                                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
+                    <div class="space-y-6">
+                        @foreach($data['use_cases']['cases'] as $case)
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl border-l-4 border-blue-500">
+                            <div class="flex items-start space-x-4">
+                                <div class="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/50">
+                                    <i class="fas fa-{{ $case['icon'] }} text-white text-2xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                        {{ $case['title'] }}
+                                    </h3>
+                                    <p class="text-gray-700 dark:text-gray-300 mb-4">{{ $case['description'] }}</p>
+                                    @if(isset($case['benefits']))
+                                    <ul class="space-y-2">
+                                        @foreach($case['benefits'] as $benefit)
+                                        <li class="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+                                            <i class="fas fa-check-circle text-green-500"></i>
+                                            <span>{{ $benefit }}</span>
+                                        </li>
+                                        @endforeach
+                                    </ul>
+                                    @endif
+                                </div>
                             </div>
-
-                            <h3 class="text-2xl font-bold text-yellow-400 gold-glow mb-4">
-                                {{ $useCase['title'] }}
-                            </h3>
-
-                            <p class="text-gray-600 dark:text-gray-300 mb-6">
-                                {{ $useCase['description'] }}
-                            </p>
-
-                            <ul class="space-y-2">
-                                @foreach($useCase['features'] as $feature)
-                                <li class="flex items-start space-x-2">
-                                    <svg class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    <span class="text-yellow-100 text-sm">{{ $feature }}</span>
-                                </li>
-                                @endforeach
-                            </ul>
                         </div>
                         @endforeach
                     </div>
@@ -967,68 +763,86 @@
         </section>
 
         {{-- Roadmap Section --}}
-        <section id="roadmap" class="py-20 bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 page-break">
+        <section id="roadmap" class="py-20 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 page-break">
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
-                    <h2 class="text-5xl font-bold text-yellow-400 gold-glow mb-6">
-                        Roadmap
+                    <h2 class="text-5xl font-bold text-gradient mb-12">
+                        {{ $data['roadmap']['title'] }}
                     </h2>
-                    <div class="h-1 w-32 gradient-gold rounded-full mb-12"></div>
 
                     {{-- Timeline --}}
                     <div class="relative">
-                        {{-- Vertical Line --}}
-                        <div class="absolute left-8 md:left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-600 to-pink-600 transform md:-translate-x-1/2"></div>
+                        <div class="absolute left-1/2 transform -translate-x-1/2 h-full w-1 gradient-primary"></div>
 
-                        {{-- Roadmap Items --}}
-                        <div class="space-y-12">
-                            @foreach($data['roadmap'] as $index => $phase)
-                            <div class="relative">
-                                {{-- Timeline Dot --}}
-                                <div class="absolute left-8 md:left-1/2 transform -translate-x-1/2 w-16 h-16 gradient-gold rounded-full flex items-center justify-center shadow-xl z-10 border-4 border-white dark:border-gray-900">
-                                    @if($phase['status'] === 'completed')
-                                    <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    @elseif($phase['status'] === 'in_progress')
-                                    <svg class="w-8 h-8 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    @else
-                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    @endif
-                                </div>
-
-                                {{-- Content --}}
-                                <div class="ml-24 md:ml-0 {{ $index % 2 === 0 ? 'md:pr-1/2 md:mr-16' : 'md:pl-1/2 md:ml-16' }}">
-                                    <div class="glass gold-border rounded-2xl p-8 shadow-lg hover:shadow-2xl transition">
-                                        <div class="flex items-center justify-between mb-4">
-                                            <h3 class="text-2xl font-bold text-yellow-400 gold-glow">
-                                                {{ $phase['phase'] }}
-                                            </h3>
-                                            <span class="px-4 py-1 rounded-full text-sm font-bold
-                                                {{ $phase['status'] === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : '' }}
-                                                {{ $phase['status'] === 'in_progress' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' : '' }}
-                                                {{ $phase['status'] === 'planned' ? 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300' : '' }}">
-                                                {{ ucfirst($phase['quarter']) }}
-                                            </span>
-                                        </div>
-
-                                        <ul class="space-y-2">
-                                            @foreach($phase['milestones'] as $milestone)
-                                            <li class="flex items-start space-x-3">
-                                                <svg class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                                </svg>
-                                                <span class="text-yellow-100">{{ $milestone }}</span>
-                                            </li>
-                                            @endforeach
-                                        </ul>
+                        @foreach($data['roadmap']['phases'] as $index => $phase)
+                        <div class="mb-12 flex justify-center relative">
+                            <div class="w-full md:w-5/12 {{ $index % 2 === 0 ? 'md:text-right md:mr-auto md:pr-8' : 'md:ml-auto md:pl-8' }}">
+                                <div class="glass rounded-2xl p-6 card-3d shadow-2xl">
+                                    <div class="inline-block px-4 py-1 rounded-full gradient-primary text-white text-sm font-bold mb-3">
+                                        {{ $phase['period'] }}
                                     </div>
+                                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                                        {{ $phase['title'] }}
+                                    </h3>
+                                    <ul class="space-y-2 {{ $index % 2 === 0 ? 'md:text-right' : '' }}">
+                                        @foreach($phase['milestones'] as $milestone)
+                                        <li class="flex items-center space-x-2 text-gray-600 dark:text-gray-400 {{ $index % 2 === 0 ? 'md:flex-row-reverse md:space-x-reverse' : '' }}">
+                                            <i class="fas fa-check-circle text-blue-500 flex-shrink-0"></i>
+                                            <span>{{ $milestone }}</span>
+                                        </li>
+                                        @endforeach
+                                    </ul>
                                 </div>
+                            </div>
+
+                            {{-- Timeline Dot --}}
+                            <div class="absolute left-1/2 transform -translate-x-1/2 w-8 h-8 rounded-full gradient-glow border-4 border-white dark:border-gray-900"></div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {{-- Team Section --}}
+        <section id="team" class="py-20 page-break">
+            <div class="container mx-auto px-4">
+                <div class="max-w-6xl mx-auto">
+                    <h2 class="text-5xl font-bold text-gradient mb-12 text-center">
+                        {{ $data['team']['title'] }}
+                    </h2>
+
+                    {{-- Team Members --}}
+                    <div class="grid md:grid-cols-3 gap-8 mb-16">
+                        @foreach($data['team']['members'] as $member)
+                        <div class="glass rounded-2xl p-6 text-center card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
+                            <div class="w-24 h-24 rounded-full gradient-primary mx-auto mb-4 flex items-center justify-center shadow-2xl shadow-blue-500/50">
+                                <i class="fas fa-user text-white text-3xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                                {{ $member['name'] }}
+                            </h3>
+                            <p class="text-blue-600 dark:text-blue-400 font-medium mb-2">
+                                {{ $member['role'] }}
+                            </p>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm">
+                                {{ $member['bio'] }}
+                            </p>
+                        </div>
+                        @endforeach
+                    </div>
+
+                    {{-- Partners --}}
+                    <div class="glass rounded-2xl p-8 shadow-2xl">
+                        <h3 class="text-3xl font-bold text-gradient mb-6 text-center">พันธมิตรของเรา</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            @foreach($data['team']['partners'] as $partner)
+                            <div class="glass rounded-xl p-4 text-center hover:scale-105 transform transition-all duration-300">
+                                <div class="w-16 h-16 rounded-xl gradient-accent mx-auto mb-3 flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-handshake text-white text-2xl"></i>
+                                </div>
+                                <p class="font-bold text-gray-900 dark:text-white">{{ $partner['name'] }}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">{{ $partner['type'] }}</p>
                             </div>
                             @endforeach
                         </div>
@@ -1037,103 +851,28 @@
             </div>
         </section>
 
-        {{-- Team Section --}}
-        <section id="team" class="py-20 bg-black/50 page-break">
-            <div class="container mx-auto px-4">
-                <div class="max-w-6xl mx-auto">
-                    <h2 class="text-5xl font-bold text-yellow-400 gold-glow mb-6">
-                        ทีมและพันธมิตร
-                    </h2>
-                    <div class="h-1 w-32 gradient-gold rounded-full mb-12"></div>
-
-                    <div class="text-center mb-12">
-                        <div class="inline-block bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-2xl px-12 py-8">
-                            <h3 class="text-3xl font-bold text-yellow-400 gold-glow mb-4">
-                                Thaiprompt Affiliate Team
-                            </h3>
-                            <p class="text-xl text-yellow-100 max-w-3xl">
-                                พัฒนาโดยทีมงานมืออาชีพจาก Thaiprompt Affiliate ด้วยประสบการณ์กว่า 5 ปีในด้าน
-                                Blockchain, Web Development และ E-Commerce
-                            </p>
-                        </div>
-                    </div>
-
-                    {{-- Technology Partners --}}
-                    <h3 class="text-3xl font-bold text-yellow-400 gold-glow mb-8 text-center">Technology Partners</h3>
-
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
-                        @foreach(['Polygon Edge', 'Laravel', 'Docker', 'Blockscout', 'Ethereum', 'Prometheus', 'Grafana', 'ethers.js'] as $tech)
-                        <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl p-8 flex items-center justify-center shadow hover:shadow-lg transition">
-                            <div class="text-center">
-                                <div class="text-2xl font-bold text-yellow-400 gold-glow">{{ $tech }}</div>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-        </section>
-
         {{-- Conclusion Section --}}
-        <section id="conclusion" class="py-20 gradient-gold page-break">
+        <section id="conclusion" class="py-20 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-900 page-break">
             <div class="container mx-auto px-4">
-                <div class="max-w-4xl mx-auto text-center text-white">
-                    <h2 class="text-5xl font-bold mb-8">
-                        สรุป
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-5xl font-bold text-gradient mb-6 text-center">
+                        {{ $data['conclusion']['title'] }}
                     </h2>
 
-                    <div class="text-xl leading-relaxed mb-12 space-y-6">
-                        <p>
-                            <strong>TPIX</strong> คือ Native Cryptocurrency ที่มี Blockchain ของตัวเอง
-                            ซึ่งแก้ปัญหาของ cryptocurrency ปัจจุบันได้อย่างครบถ้วน ไม่ว่าจะเป็นค่าธรรมเนียมที่สูง
-                            ความช้า หรือการไม่สามารถควบคุมระบบได้เต็มที่
+                    <div class="glass rounded-3xl p-12 shadow-2xl text-center">
+                        <p class="text-xl text-gray-700 dark:text-gray-300 leading-relaxed mb-8">
+                            {{ $data['conclusion']['summary'] }}
                         </p>
 
-                        <p>
-                            ด้วย <strong>Total Supply 7,000,000,000 TPIX</strong> ที่ถูกกำหนดตายตัว
-                            <strong>Block Time เพียง 2 วินาที</strong> และ <strong>IBFT Consensus</strong>
-                            ทำให้ TPIX เหมาะสำหรับการใช้งานจริงในระบบนิเวศน์ Thaiprompt Affiliate
-                        </p>
-
-                        <p>
-                            ระบบ DEX, Staking Pools, Token Management และการเชื่อมต่อกับระบบต่าง ๆ
-                            ทำให้ TPIX เป็นมากกว่า cryptocurrency แต่เป็น <strong>Complete Blockchain Ecosystem</strong>
-                            ที่พร้อมรองรับการเติบโตในอนาคต
-                        </p>
-                    </div>
-
-                    {{-- Key Stats Summary --}}
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-                        <div class="glass rounded-xl p-6">
-                            <div class="text-4xl font-black mb-2">7B</div>
-                            <div class="text-sm opacity-90">Total Supply</div>
-                        </div>
-                        <div class="glass rounded-xl p-6">
-                            <div class="text-4xl font-black mb-2">2s</div>
-                            <div class="text-sm opacity-90">Block Time</div>
-                        </div>
-                        <div class="glass rounded-xl p-6">
-                            <div class="text-4xl font-black mb-2">1,500</div>
-                            <div class="text-sm opacity-90">TPS</div>
-                        </div>
-                        <div class="glass rounded-xl p-6">
-                            <div class="text-4xl font-black mb-2">∞</div>
-                            <div class="text-sm opacity-90">Possibilities</div>
-                        </div>
-                    </div>
-
-                    {{-- Call to Action --}}
-                    <div class="space-y-4">
-                        <h3 class="text-3xl font-bold mb-6">
-                            พร้อมเป็นส่วนหนึ่งของ TPIX Ecosystem หรือยัง?
-                        </h3>
-
-                        <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
-                            <a href="#overview" class="px-8 py-4 bg-white text-purple-600 rounded-xl font-bold text-lg hover:bg-gray-100 transition shadow-lg">
-                                อ่านเพิ่มเติม
+                        {{-- Call to Action --}}
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                            <a href="{{ route('home') }}"
+                               class="px-8 py-4 gradient-primary text-white rounded-xl font-bold shadow-2xl shadow-blue-500/50 hover:scale-105 transform transition-all duration-300">
+                                เริ่มต้นใช้งาน TPIX
                             </a>
-                            <a href="{{ route('tpix.whitepaper.pdf') }}" class="px-8 py-4 bg-transparent border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white/10 transition">
-                                ดาวน์โหลด PDF
+                            <a href="{{ route('wiki.index') }}"
+                               class="px-8 py-4 glass-blue text-blue-600 dark:text-blue-400 rounded-xl font-bold hover:scale-105 transform transition-all duration-300">
+                                ศึกษาเพิ่มเติมใน WIKI
                             </a>
                         </div>
                     </div>
@@ -1142,111 +881,77 @@
         </section>
 
         {{-- Footer --}}
-        <footer class="bg-black glass gold-border py-12 no-print border-t-4">
+        <footer class="py-12 bg-gray-900 text-white">
             <div class="container mx-auto px-4">
-                <div class="max-w-6xl mx-auto">
-                    <div class="grid md:grid-cols-3 gap-8 mb-8">
-                        <div>
-                            <h4 class="text-xl font-bold mb-4 text-yellow-400 gold-glow">TPIX Blockchain</h4>
-                            <p class="text-yellow-200/70 mb-4">
-                                Native Cryptocurrency สำหรับระบบนิเวศน์ Thaiprompt Affiliate
-                            </p>
-                            <div class="flex items-center space-x-2">
-                                <img src="data:image/svg+xml;base64,{{ base64_encode(file_get_contents(public_path('images/tpix-logo.png'))) }}"
-                                     alt="TPIX Logo"
-                                     class="w-12 h-12 rounded-full gold-border"
-                                     onerror="this.src='https://via.placeholder.com/48/FFD700/0A0A0A?text=TPIX'">
-                                <div>
-                                    <div class="font-bold text-yellow-400">TPIX</div>
-                                    <div class="text-sm text-yellow-200/60">v{{ $data['version'] }}</div>
-                                </div>
-                            </div>
+                <div class="text-center">
+                    <div class="flex items-center justify-center space-x-3 mb-4">
+                        <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+                            <span class="text-lg font-black text-white">T</span>
                         </div>
-
-                        <div>
-                            <h4 class="text-xl font-bold mb-4 text-yellow-400 gold-glow">เอกสาร</h4>
-                            <ul class="space-y-2 text-yellow-200/70">
-                                <li><a href="#overview" class="hover:text-yellow-400 transition">ภาพรวม</a></li>
-                                <li><a href="#technology" class="hover:text-yellow-400 transition">เทคโนโลยี</a></li>
-                                <li><a href="#tokenomics" class="hover:text-yellow-400 transition">โทเค็นโนมิกส์</a></li>
-                                <li><a href="#roadmap" class="hover:text-yellow-400 transition">Roadmap</a></li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h4 class="text-xl font-bold mb-4 text-yellow-400 gold-glow">ติดต่อ</h4>
-                            <ul class="space-y-2 text-yellow-200/70">
-                                <li>Email: support@tpix.com</li>
-                                <li>Website: tpix.network</li>
-                                <li>GitHub: github.com/tpix-blockchain</li>
-                            </ul>
-                        </div>
+                        <span class="text-2xl font-bold text-gradient-pink">TPIX</span>
                     </div>
-
-                    <div class="border-t border-yellow-400/30 pt-8 text-center text-yellow-200/70">
-                        <p>&copy; {{ date('Y') }} TPIX Blockchain. All rights reserved.</p>
-                        <p class="mt-2 text-sm">Version {{ $data['version'] }} | {{ $data['date'] }}</p>
+                    <p class="text-gray-400 mb-4">
+                        Native Cryptocurrency for Thaiprompt Affiliate Ecosystem
+                    </p>
+                    <div class="flex justify-center space-x-6 mb-6">
+                        <a href="#" class="text-gray-400 hover:text-white transition">
+                            <i class="fab fa-twitter text-2xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition">
+                            <i class="fab fa-telegram text-2xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition">
+                            <i class="fab fa-discord text-2xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition">
+                            <i class="fab fa-github text-2xl"></i>
+                        </a>
                     </div>
+                    <p class="text-sm text-gray-500">
+                        &copy; {{ date('Y') }} Thaiprompt Affiliate. All rights reserved.
+                    </p>
                 </div>
             </div>
         </footer>
 
     </div>
 
-    {{-- Charts & Scripts --}}
+    {{-- Chart.js --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-    <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
 
+    {{-- Charts Initialization --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Tokenomics Pie Chart
-            const tokenomicsCtx = document.getElementById('tokenomicsChart');
-            if (tokenomicsCtx) {
-                new Chart(tokenomicsCtx, {
+            // Token Distribution Chart
+            const distributionCtx = document.getElementById('tokenDistributionChart');
+            if (distributionCtx) {
+                new Chart(distributionCtx, {
                     type: 'doughnut',
                     data: {
-                        labels: {!! json_encode(array_column($data['tokenomics']['distribution'], 'name')) !!},
+                        labels: @json(array_column($data['tokenomics']['distribution'], 'label')),
                         datasets: [{
-                            data: {!! json_encode(array_column($data['tokenomics']['distribution'], 'percentage')) !!},
+                            data: @json(array_column($data['tokenomics']['distribution'], 'value')),
                             backgroundColor: [
-                                'rgba(255, 215, 0, 0.9)',      // Gold primary
-                                'rgba(253, 185, 49, 0.9)',     // Gold light
-                                'rgba(184, 134, 11, 0.9)',     // Gold dark
-                                'rgba(255, 244, 214, 0.9)',    // Gold lightest
-                                'rgba(218, 165, 32, 0.9)',     // Goldenrod
+                                'rgba(102, 126, 234, 0.8)',
+                                'rgba(118, 75, 162, 0.8)',
+                                'rgba(240, 147, 251, 0.8)',
+                                'rgba(79, 172, 254, 0.8)',
+                                'rgba(236, 119, 171, 0.8)',
                             ],
-                            borderColor: [
-                                'rgb(255, 215, 0)',
-                                'rgb(253, 185, 49)',
-                                'rgb(184, 134, 11)',
-                                'rgb(255, 244, 214)',
-                                'rgb(218, 165, 32)',
-                            ],
-                            borderWidth: 2
+                            borderWidth: 0,
                         }]
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: true,
+                        maintainAspectRatio: false,
                         plugins: {
                             legend: {
                                 position: 'bottom',
                                 labels: {
-                                    padding: 15,
+                                    padding: 20,
                                     font: {
-                                        size: 12,
-                                        family: "'Noto Sans Thai', 'Kanit', sans-serif"
-                                    },
-                                    color: '#FFD700'  // Gold text for labels
-                                }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.label || '';
-                                        const value = context.parsed || 0;
-                                        return `${label}: ${value}%`;
+                                        size: 14,
+                                        family: "'Inter', sans-serif"
                                     }
                                 }
                             }
@@ -1255,118 +960,56 @@
                 });
             }
 
-            // Ecosystem Mind Map
-            const mindmapContainer = document.getElementById('ecosystem-mindmap');
-            if (mindmapContainer) {
-                const nodes = new vis.DataSet([
-                    // Center node - Premium Gold
-                    { id: 1, label: 'TPIX\nBlockchain', level: 0, color: { background: '#FFD700', border: '#B8860B' }, font: { color: '#0A0A0A', size: 20, bold: true } },
-
-                    // Main systems - Gold shades
-                    { id: 2, label: 'Affiliate\nSystem', level: 1, color: { background: '#FDB931', border: '#B8860B' }, font: { color: '#0A0A0A', size: 16, bold: true } },
-                    { id: 3, label: 'E-Commerce', level: 1, color: { background: '#DAA520', border: '#B8860B' }, font: { color: '#0A0A0A', size: 16, bold: true } },
-                    { id: 4, label: 'AI Bots', level: 1, color: { background: '#F0C800', border: '#B8860B' }, font: { color: '#0A0A0A', size: 16, bold: true } },
-                    { id: 5, label: 'Hotels', level: 1, color: { background: '#FFE34D', border: '#B8860B' }, font: { color: '#0A0A0A', size: 16, bold: true } },
-
-                    // DEX & Features - Brighter gold
-                    { id: 6, label: 'DEX', level: 1, color: { background: '#FFD700', border: '#B8860B' }, font: { color: '#0A0A0A', size: 16, bold: true } },
-                    { id: 7, label: 'Staking', level: 1, color: { background: '#FDB931', border: '#B8860B' }, font: { color: '#0A0A0A', size: 16, bold: true } },
-                    { id: 8, label: 'Token\nFactory', level: 1, color: { background: '#DAA520', border: '#B8860B' }, font: { color: '#0A0A0A', size: 16, bold: true } },
-
-                    // Sub-features - Light gold
-                    { id: 9, label: 'Rewards', level: 2, color: { background: '#FFF4D6', border: '#DAA520' }, font: { color: '#0A0A0A', size: 14 } },
-                    { id: 10, label: 'Commissions', level: 2, color: { background: '#FFF4D6', border: '#DAA520' }, font: { color: '#0A0A0A', size: 14 } },
-                    { id: 11, label: 'Payment', level: 2, color: { background: '#FFE9A8', border: '#DAA520' }, font: { color: '#0A0A0A', size: 14 } },
-                    { id: 12, label: 'Cashback', level: 2, color: { background: '#FFE9A8', border: '#DAA520' }, font: { color: '#0A0A0A', size: 14 } },
-                    { id: 13, label: 'Swaps', level: 2, color: { background: '#FFDF7E', border: '#DAA520' }, font: { color: '#0A0A0A', size: 14 } },
-                    { id: 14, label: 'Liquidity', level: 2, color: { background: '#FFDF7E', border: '#DAA520' }, font: { color: '#0A0A0A', size: 14 } },
-                ]);
-
-                const edges = new vis.DataSet([
-                    // Main connections
-                    { from: 1, to: 2, width: 3 },
-                    { from: 1, to: 3, width: 3 },
-                    { from: 1, to: 4, width: 3 },
-                    { from: 1, to: 5, width: 3 },
-                    { from: 1, to: 6, width: 3 },
-                    { from: 1, to: 7, width: 3 },
-                    { from: 1, to: 8, width: 3 },
-
-                    // Sub-connections
-                    { from: 2, to: 9, width: 2, dashes: true },
-                    { from: 2, to: 10, width: 2, dashes: true },
-                    { from: 3, to: 11, width: 2, dashes: true },
-                    { from: 3, to: 12, width: 2, dashes: true },
-                    { from: 6, to: 13, width: 2, dashes: true },
-                    { from: 6, to: 14, width: 2, dashes: true },
-                ]);
-
-                const data = { nodes: nodes, edges: edges };
-                const options = {
-                    layout: {
-                        hierarchical: {
-                            direction: 'UD',
-                            sortMethod: 'directed',
-                            nodeSpacing: 150,
-                            levelSeparation: 200
+            // Vesting Chart
+            const vestingCtx = document.getElementById('vestingChart');
+            if (vestingCtx) {
+                new Chart(vestingCtx, {
+                    type: 'line',
+                    data: {
+                        labels: @json($data['tokenomics']['vesting']['labels']),
+                        datasets: [{
+                            label: 'Token Release',
+                            data: @json($data['tokenomics']['vesting']['data']),
+                            borderColor: 'rgba(102, 126, 234, 1)',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
                         }
-                    },
-                    physics: {
-                        enabled: false
-                    },
-                    nodes: {
-                        shape: 'box',
-                        margin: 10,
-                        borderWidth: 2,
-                        borderWidthSelected: 4,
-                        font: {
-                            size: 14,
-                            face: "'Noto Sans Thai', 'Kanit', sans-serif",
-                            multi: true
-                        },
-                        shadow: true
-                    },
-                    edges: {
-                        color: { color: '#667eea', highlight: '#764ba2' },
-                        smooth: {
-                            type: 'cubicBezier',
-                            roundness: 0.5
-                        },
-                        shadow: true
-                    },
-                    interaction: {
-                        hover: true,
-                        tooltipDelay: 200,
-                        zoomView: true,
-                        dragView: true
                     }
-                };
-
-                const network = new vis.Network(mindmapContainer, data, options);
-
-                // Fit to view
-                network.once('stabilizationIterationsDone', function() {
-                    network.fit();
                 });
             }
         });
     </script>
 
-    {{-- Debug Google Translate --}}
-    <script>
-        document.addEventListener('alpine:init', () => {
-            console.log('🔧 Alpine initialized on whitepaper');
-            console.log('🔧 Language store exists:', typeof Alpine.store('language'));
-
-            // ตรวจสอบหลังจาก 3 วินาที
-            setTimeout(() => {
-                console.log('🔧 Google Translate ready:', Alpine.store('language')?.isGoogleTranslateReady);
-                console.log('🔧 Current language:', Alpine.store('language')?.current);
-                console.log('🔧 Select element exists:', document.querySelector('.goog-te-combo'));
-                console.log('🔧 Google translate div:', document.getElementById('google_translate_element'));
-            }, 3000);
-        });
+    {{-- Google Translate Element --}}
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'th',
+                includedLanguages: 'th,en,zh-CN,zh-TW,ja,ko,vi,my,lo,km,id,ms,tl,es,fr,de,it,pt,ru,ar',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
     </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    {{-- Hidden Google Translate Element (ซ่อนไว้ เพราะใช้ custom UI) --}}
+    <div id="google_translate_element" style="display: none;"></div>
 
 </body>
 </html>
