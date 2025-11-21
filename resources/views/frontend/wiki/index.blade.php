@@ -20,6 +20,7 @@
         scrollProgress: 0,
         currentLanguage: 'th',
         languageMenuOpen: false,
+        langMenuPosition: { top: 0, left: 0 },
 
         // รายการภาษาที่รองรับ (ฟรี, ใช้ Google Translate Widget)
         availableLanguages: [
@@ -134,6 +135,24 @@
             return this.availableLanguages.find(lang => lang.code === this.currentLanguage) || this.availableLanguages[0];
         },
 
+        // เปิด language menu และคำนวณตำแหน่ง
+        toggleLanguageMenu() {
+            this.languageMenuOpen = !this.languageMenuOpen;
+
+            if (this.languageMenuOpen) {
+                this.$nextTick(() => {
+                    const button = this.$refs.langButton;
+                    if (button) {
+                        const rect = button.getBoundingClientRect();
+                        this.langMenuPosition = {
+                            top: rect.bottom + 8, // เว้นระยะ 8px จากปุ่ม
+                            left: rect.left
+                        };
+                    }
+                });
+            }
+        },
+
         // Initialize
         init() {
             window.addEventListener('scroll', () => this.updateScrollProgress());
@@ -198,8 +217,8 @@
                 {{-- Language Selector - ระบบแปลภาษาฟรี --}}
                 <div class="relative">
                     <button
-                        @click="languageMenuOpen = !languageMenuOpen"
-                        @click.away="languageMenuOpen = false"
+                        @click="toggleLanguageMenu()"
+                        x-ref="langButton"
                         class="w-full flex items-center justify-between gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition-all duration-300 border border-white/20"
                     >
                         <div class="flex items-center gap-2">
@@ -210,42 +229,6 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </button>
-
-                    {{-- Language Dropdown Menu --}}
-                    <div
-                        x-show="languageMenuOpen"
-                        x-transition:enter="transition ease-out duration-200"
-                        x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
-                        x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                        x-transition:leave="transition ease-in duration-150"
-                        x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                        x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
-                        class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
-                        style="display: none;"
-                    >
-                        <div class="py-2">
-                            <template x-for="lang in availableLanguages" :key="lang.code">
-                                <button
-                                    @click="switchLanguage(lang.code)"
-                                    class="w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors"
-                                    :class="currentLanguage === lang.code ?
-                                        'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold' :
-                                        'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'"
-                                >
-                                    <span class="text-xl" x-text="lang.flag"></span>
-                                    <span x-text="lang.name"></span>
-                                    <svg x-show="currentLanguage === lang.code" class="w-4 h-4 ml-auto text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20" style="display: none;">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                    </svg>
-                                </button>
-                            </template>
-                        </div>
-                        <div class="border-t border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-2">
-                            <p class="text-xs text-gray-600 dark:text-gray-400">
-                                🌐 ระบบแปลภาษาฟรีโดย Google Translate
-                            </p>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -1139,6 +1122,46 @@
             </div>
         </main>
     </div>
+
+    {{-- Language Dropdown Menu - Teleport to body เพื่อหลีกเลี่ยง overflow ของ sidebar --}}
+    <template x-teleport="body">
+        <div
+            x-show="languageMenuOpen"
+            @click.outside="languageMenuOpen = false"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+            x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+            :style="`top: ${langMenuPosition.top}px; left: ${langMenuPosition.left}px;`"
+            class="fixed bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden min-w-[250px]"
+            style="z-index: 9999; display: none;"
+        >
+            <div class="py-2">
+                <template x-for="lang in availableLanguages" :key="lang.code">
+                    <button
+                        @click="switchLanguage(lang.code)"
+                        class="w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors"
+                        :class="currentLanguage === lang.code ?
+                            'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold' :
+                            'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'"
+                    >
+                        <span class="text-xl" x-text="lang.flag"></span>
+                        <span x-text="lang.name"></span>
+                        <svg x-show="currentLanguage === lang.code" class="w-4 h-4 ml-auto text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20" style="display: none;">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                </template>
+            </div>
+            <div class="border-t border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-2">
+                <p class="text-xs text-gray-600 dark:text-gray-400">
+                    🌐 ระบบแปลภาษาฟรีโดย Google Translate
+                </p>
+            </div>
+        </div>
+    </template>
 </div>
 
 @push('scripts')
