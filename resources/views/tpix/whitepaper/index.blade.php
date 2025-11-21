@@ -529,7 +529,7 @@
                             <h3 class="text-2xl font-bold text-gradient mb-2">
                                 Lightning Fast
                             </h3>
-                            <p class="text-gray-600 dark:text-gray-400">Block time {{ $data['blockchain']['block_time'] }}, TPS {{ number_format($data['blockchain']['tps']) }}</p>
+                            <p class="text-gray-600 dark:text-gray-400">Block time {{ $data['blockchain']['block_time'] }}, {{ $data['blockchain']['tps'] }}</p>
                         </div>
 
                         <div class="glass rounded-2xl p-8 card-3d shadow-2xl shadow-blue-500/10 dark:shadow-purple-500/20 border-t-4 border-gradient-primary">
@@ -716,7 +716,7 @@
                                         <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
                                             ความเร็วสูง
                                         </h4>
-                                        <p class="text-gray-600 dark:text-gray-400">Block time เพียง {{ $data['blockchain']['block_time'] }} และ TPS ถึง {{ number_format($data['blockchain']['tps']) }}</p>
+                                        <p class="text-gray-600 dark:text-gray-400">Block time เพียง {{ $data['blockchain']['block_time'] }} และ {{ $data['blockchain']['tps'] }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -960,7 +960,7 @@
                         </div>
                         <div class="glass rounded-2xl p-6 text-center card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
                             <div class="text-4xl font-black text-gradient mb-2">
-                                {{ number_format($data['blockchain']['tps']) }}
+                                {{ str_replace(' transactions/second', '', $data['blockchain']['tps']) }}
                             </div>
                             <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
                                 TPS
@@ -1346,7 +1346,7 @@
                                 <p class="text-gray-600 dark:text-gray-400 font-medium">Block Time</p>
                             </div>
                             <div>
-                                <div class="text-4xl font-black text-gradient mb-2">{{ number_format($data['blockchain']['tps']) }}</div>
+                                <div class="text-4xl font-black text-gradient mb-2">{{ str_replace(' transactions/second', '', $data['blockchain']['tps']) }}</div>
                                 <p class="text-gray-600 dark:text-gray-400 font-medium">TPS</p>
                             </div>
                         </div>
