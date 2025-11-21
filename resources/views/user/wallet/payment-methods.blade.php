@@ -142,7 +142,7 @@
     </div>
 
     <!-- Payment Methods List -->
-    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">ช่องทางรับเงินทั้งหมด</h2>
 
         @if($paymentMethods->isEmpty())
