@@ -199,6 +199,32 @@
         // Initialize
         init() {
             var self = this;
+
+            // ซิงค์ภาษาจาก Google Translate cookie
+            var cookieValue = document.cookie.split('; ').find(function(row) {
+                return row.startsWith('googtrans=');
+            });
+
+            if (cookieValue) {
+                var parts = cookieValue.split('=')[1].split('/');
+                if (parts.length >= 3) {
+                    var targetLang = parts[2];  // ดึงภาษาปลายทาง
+                    if (targetLang && targetLang !== 'th') {
+                        self.currentLanguage = targetLang;
+                        console.log('✅ Synced language from cookie:', targetLang);
+                    } else {
+                        self.currentLanguage = 'th';
+                        console.log('✅ Language set to Thai (default)');
+                    }
+                } else {
+                    console.log('⚠️ Cookie format invalid, using Thai');
+                    self.currentLanguage = 'th';
+                }
+            } else {
+                console.log('ℹ️ No language cookie found, using Thai');
+                self.currentLanguage = 'th';
+            }
+
             window.addEventListener('scroll', function() {
                 self.updateScrollProgress();
             });
