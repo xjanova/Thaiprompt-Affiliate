@@ -850,9 +850,9 @@
                                 <i class="fas fa-plug text-white text-xl"></i>
                             </div>
                             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                                {{ is_array($integration) ? $integration['name'] : $integration }}
+                                {{ $integration['title'] }}
                             </h3>
-                            @if(is_array($integration) && isset($integration['description']))
+                            @if(isset($integration['description']))
                             <p class="text-gray-600 dark:text-gray-400 text-sm">{{ $integration['description'] }}</p>
                             @endif
                         </div>
