@@ -20,6 +20,15 @@
     {{-- Chart.js --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 
+    {{-- Mermaid.js for Mind Maps & Flow Diagrams --}}
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: document.documentElement.classList.contains('dark') ? 'dark' : 'default'
+        });
+    </script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
@@ -1055,6 +1064,12 @@
     {{-- 📊 Charts & Calculators --}}
     @include('tpix.whitepaper.partials.charts-calculators')
 
+    {{-- 📊 Mind Maps --}}
+    @include('tpix.whitepaper.partials.mindmaps')
+
+    {{-- 🔄 Flow Diagrams --}}
+    @include('tpix.whitepaper.partials.flowdiagrams')
+
     {{-- 4. Roadmap Section --}}
     <section id="roadmap" class="section-padding bg-white dark:bg-gray-900">
         <div class="container mx-auto px-4">
@@ -1446,6 +1461,12 @@
         </div>
     </section>
 
+    {{-- 💼 Use Cases & Applications --}}
+    @include('tpix.whitepaper.partials.usecases')
+
+    {{-- 🤝 Partnerships & Integrations --}}
+    @include('tpix.whitepaper.partials.partnerships')
+
     {{-- 👥 Team & Advisors --}}
     @include('tpix.whitepaper.partials.team')
 
@@ -1500,6 +1521,15 @@
             </div>
         </div>
     </section>
+
+    {{-- 🔧 Technical Specifications --}}
+    @include('tpix.whitepaper.partials.technical-specs')
+
+    {{-- 🔒 Security & Audits --}}
+    @include('tpix.whitepaper.partials.security-audits')
+
+    {{-- 📊 Competitive Analysis + Financial Projections + FAQ + Investment --}}
+    @include('tpix.whitepaper.partials.final-sections')
 
     {{-- Legal & Disclaimer Section --}}
     @include('tpix.whitepaper.partials.legal')
