@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.94.4] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: prevent auto-translation and add debug logging (b335205b)
+### 🔧 Other Changes
+- Merge pull request #1398 from xjanova/claude/fix-mlm-team-route-01983ACMoqdoF68C8egbMicG (3f08ce11)
+- perf: optimize translation to use Google Translate Widget directly (d603197b)
+
 ## [v3.94.3] - 2025-11-21
 
 ### ✨ Features
