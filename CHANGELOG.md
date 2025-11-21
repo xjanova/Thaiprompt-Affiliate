@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.99.1] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1408 from xjanova/claude/add-team-leader-page-0136UifDG3tyjaFcFZjtKy4v (cfded16b)
+- fix: auto-create RecruitCustomization when missing (2d4ac8dc)
+### 🔧 Other Changes
+
+
 ## [v3.99.0] - 2025-11-21
 
 ### ✨ Features
