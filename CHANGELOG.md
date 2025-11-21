@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.108.1] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1430 from xjanova/claude/fix-user-commissions-method-01U7QDYzUtajFbVcjfpbCjzG (055c3bb7)
+- fix: add missing commissions() method to User model (8c08c129)
+### 🔧 Other Changes
+
+
 ## [v3.108.0] - 2025-11-21
 
 ### ✨ Features
