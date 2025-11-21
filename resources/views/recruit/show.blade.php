@@ -392,8 +392,15 @@
                 lineChannelId: '{{ $lineSettings->messaging_channel_id ?? '' }}',
                 timeOnPage: 0,
                 scrolledToBottom: false,
+                isPreview: {{ isset($isPreview) && $isPreview ? 'true' : 'false' }}, // Preview mode flag
 
                 init() {
+                    // ถ้าเป็น preview mode ไม่ต้อง track
+                    if (this.isPreview) {
+                        console.log('Preview mode: Tracking disabled');
+                        return;
+                    }
+
                     // Track time on page
                     setInterval(() => {
                         this.timeOnPage++;
@@ -431,6 +438,11 @@
                 },
 
                 trackBehavior(clickedRegister = false) {
+                    // ไม่ track ถ้าเป็น preview mode
+                    if (this.isPreview) {
+                        return;
+                    }
+
                     fetch('{{ route("recruit.track-behavior") }}', {
                         method: 'POST',
                         headers: {
