@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.93.0] - 2025-11-21
+
+### ✨ Features
+- Merge pull request #1393 from xjanova/claude/redesign-user-tokens-page-01Je2V3PyHYEuvTG8oPPYG7a (68219464)
+- feat: redesign user/tokens pages with V3 standards (Tailwind + Alpine.js) (46a9024b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.92.0] - 2025-11-21
 
 ### ✨ Features
