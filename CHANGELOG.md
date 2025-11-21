@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.95.0] - 2025-11-21
+
+### ✨ Features
+- feat: add auto-reload fallback for Google Translate with scroll position preservation (86cde945)
+### 🐛 Bug Fixes
+- fix: force Google Translate to translate immediately with multiple event triggers (efcc57bb)
+### 🔧 Other Changes
+- Merge pull request #1399 from xjanova/claude/create-tpix-whitepaper-01XEfSbHrbEzZiJR4WhZr82T (c739708c)
+
 ## [v3.94.4] - 2025-11-21
 
 ### ✨ Features
