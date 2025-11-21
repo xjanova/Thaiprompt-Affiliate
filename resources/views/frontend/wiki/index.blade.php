@@ -102,29 +102,26 @@
 
             console.log('Switching to language: ' + langCode);
 
+            // ใช้ cookie-based approach (วิธีที่ Google Translate ใช้จริง)
             if (langCode === 'th') {
                 // กลับไปภาษาไทยต้นฉบับ
-                console.log('Resetting to Thai (original language)');
-
-                // เคลียร์ Google Translate cookies
+                console.log('Resetting to Thai');
                 document.cookie = 'googtrans=/th/th; Path=/;';
-
-                // ตั้งค่า select element กลับเป็น th
-                const selectElement = document.querySelector('.goog-te-combo');
-                if (selectElement) {
-                    selectElement.value = '';
-                    selectElement.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-
-                // โหลดหน้าใหม่เพื่อให้แน่ใจว่ากลับเป็นภาษาไทย
-                setTimeout(function() { location.reload(); }, 300);
+                location.reload();
             } else {
-                // เรียกใช้ Google Translate Widget โดยตรง
-                this.triggerGoogleTranslate(langCode);
+                // แปลเป็นภาษาอื่น
+                console.log('Translating to: ' + langCode);
+
+                // ตั้งค่า cookie สำหรับ Google Translate
+                // Format: googtrans=/source/target
+                document.cookie = 'googtrans=/th/' + langCode + '; Path=/;';
+
+                // Reload หน้าเว็บเพื่อให้ Google Translate อ่าน cookie และแปลภาษา
+                location.reload();
             }
         },
 
-        // เรียกใช้ Google Translate Widget (Fast & Reliable)
+        // ฟังก์ชันสำรอง (ไม่ได้ใช้แล้ว)
         triggerGoogleTranslate(langCode) {
             console.log('Attempting to switch to language: ' + langCode);
 
