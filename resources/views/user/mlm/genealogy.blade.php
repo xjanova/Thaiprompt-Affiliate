@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.user-arrow-x')
 
 @section('title', 'ผังสายงานของฉัน - MLM')
 
@@ -10,7 +10,7 @@
 <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
     <div class="max-w-7xl mx-auto px-4">
         <!-- Page Header -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8">
+        <x-arrow-x.card-v3 class="p-8 mb-8">
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-4xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -30,25 +30,25 @@
 
         <!-- Quick Stats Bar -->
         <div class="grid grid-cols-4 gap-4 mb-8">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 text-center">
+            <x-arrow-x.card-v3 class="p-4 text-center">
                 <div class="text-3xl mb-2">👥</div>
                 <div class="text-2xl font-bold text-purple-600">{{ $member->total_team_members ?? 0 }}</div>
                 <div class="text-xs text-gray-600 dark:text-gray-400">สมาชิกทั้งหมด</div>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 text-center">
+            <x-arrow-x.card-v3 class="p-4 text-center">
                 <div class="text-3xl mb-2">⭐</div>
                 <div class="text-2xl font-bold text-blue-600">{{ number_format($member->total_team_pv ?? 0) }}</div>
                 <div class="text-xs text-gray-600 dark:text-gray-400">Team PV</div>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 text-center">
+            <x-arrow-x.card-v3 class="p-4 text-center">
                 <div class="text-3xl mb-2">⬅️</div>
                 <div class="text-2xl font-bold text-green-600">{{ $member->left_leg_members ?? 0 }}</div>
                 <div class="text-xs text-gray-600 dark:text-gray-400">Left Leg</div>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 text-center">
+            <x-arrow-x.card-v3 class="p-4 text-center">
                 <div class="text-3xl mb-2">➡️</div>
                 <div class="text-2xl font-bold text-red-600">{{ $member->right_leg_members ?? 0 }}</div>
                 <div class="text-xs text-gray-600 dark:text-gray-400">Right Leg</div>
@@ -60,7 +60,7 @@
 
         <!-- Info Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <x-arrow-x.card-v3 class="p-6">
                 <h3 class="font-bold text-gray-800 dark:text-white mb-4 flex items-center">
                     <span class="text-2xl mr-2">🎯</span>
                     เป้าหมายถัดไป
@@ -81,7 +81,7 @@
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <x-arrow-x.card-v3 class="p-6">
                 <h3 class="font-bold text-gray-800 dark:text-white mb-4 flex items-center">
                     <span class="text-2xl mr-2">📊</span>
                     สถิติการเติบโต
@@ -102,7 +102,7 @@
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <x-arrow-x.card-v3 class="p-6">
                 <h3 class="font-bold text-gray-800 dark:text-white mb-4 flex items-center">
                     <span class="text-2xl mr-2">⚡</span>
                     การกระทำด่วน
