@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.user-arrow-x')
 
 @section('content')
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900/50 py-8">

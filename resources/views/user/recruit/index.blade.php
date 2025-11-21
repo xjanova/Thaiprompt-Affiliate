@@ -26,7 +26,7 @@
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Total Views -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <x-arrow-x.card-v3 class="p-6">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center">
                     <i class="fas fa-eye text-blue-600 dark:text-blue-400 text-xl"></i>
@@ -44,7 +44,7 @@
         </div>
 
         <!-- Total Leads -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <x-arrow-x.card-v3 class="p-6">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-xl flex items-center justify-center">
                     <i class="fas fa-user-clock text-purple-600 dark:text-purple-400 text-xl"></i>
@@ -62,7 +62,7 @@
         </div>
 
         <!-- Total Conversions -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <x-arrow-x.card-v3 class="p-6">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center">
                     <i class="fas fa-user-check text-green-600 dark:text-green-400 text-xl"></i>
@@ -80,7 +80,7 @@
         </div>
 
         <!-- Conversion Rate -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <x-arrow-x.card-v3 class="p-6">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-xl flex items-center justify-center">
                     <i class="fas fa-chart-line text-yellow-600 dark:text-yellow-400 text-xl"></i>
