@@ -454,17 +454,27 @@ restore_critical_files() {
 verify_route_cache() {
     print_pro_header "🛣️  Advanced Route Cache Verification"
 
-    # Check prerequisites first
+    # Critical prerequisites check
+    # Note: This function is called AFTER composer install (Step 7)
+    # If vendor is missing at this point, it's a critical error
     if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then
-        print_warning "⚠ Vendor directory not found - skipping route cache verification"
-        print_info "  Route cache will be verified during normal deployment flow"
-        return 0
+        print_error "✗ CRITICAL: Vendor directory not found after composer install!"
+        print_error "  This indicates Step 7 (Composer Install) failed"
+        print_info "💡 Troubleshooting:"
+        echo "  1. Check composer.json and composer.lock"
+        echo "  2. Try: composer install --no-dev --optimize-autoloader"
+        echo "  3. Check internet connection to packagist.org"
+        return 1
     fi
 
     if [ ! -f "artisan" ]; then
-        print_warning "⚠ Artisan file not found - skipping route cache verification"
-        return 0
+        print_error "✗ CRITICAL: Artisan file not found!"
+        print_error "  This indicates repository structure is corrupted"
+        return 1
     fi
+
+    print_success "✓ Prerequisites verified (vendor & artisan found)"
+    echo ""
 
     local max_retries=3
     local retry_count=0
@@ -481,14 +491,29 @@ verify_route_cache() {
         # Check if route cache file exists
         if [ ! -f "bootstrap/cache/routes-v7.php" ]; then
             print_warning "⚠ Route cache file not found (will be generated)"
-            retry_count=$((retry_count + 1))
-            continue
+
+            # Try to generate it
+            print_info "→ Generating route cache..."
+            if php artisan route:cache 2>&1 | tee -a "$LOG_FILE"; then
+                print_success "✓ Route cache generated"
+                sleep 1
+            else
+                print_error "✗ Route cache generation failed"
+                retry_count=$((retry_count + 1))
+                continue
+            fi
         fi
 
         # Verify route:list works
         if php artisan route:list >/dev/null 2>&1; then
             print_success "✓ Route cache is valid"
             cache_valid=1
+
+            # Additional verification: count routes
+            local route_count=$(php artisan route:list --compact 2>/dev/null | grep -v "^$" | grep -v "Showing" | wc -l)
+            if [ "$route_count" -gt 0 ]; then
+                print_success "✓ Verified $route_count routes loaded"
+            fi
         else
             print_warning "⚠ Route cache verification failed"
             print_info "→ Clearing and regenerating route cache..."
@@ -503,10 +528,14 @@ verify_route_cache() {
     done
 
     if [ $cache_valid -eq 0 ]; then
-        print_warning "⚠ Route cache verification incomplete after $max_retries attempts"
-        print_info "  Route cache will be regenerated in step 13"
-        print_info "  This is not critical - deployment will continue"
-        return 0  # Return success to allow deployment to continue
+        print_error "✗ Route cache verification failed after $max_retries attempts"
+        print_error "  This is critical for production deployment"
+        print_info "💡 Possible issues:"
+        echo "  1. Syntax errors in route files"
+        echo "  2. Missing middleware or controllers"
+        echo "  3. Circular dependencies"
+        echo "  4. Check: php artisan route:cache (manually)"
+        return 1
     fi
 
     print_success "✓ Route cache verified successfully"
