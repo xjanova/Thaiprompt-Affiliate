@@ -170,7 +170,7 @@
             ['icon' => '💖', 'label' => 'รักษายอด', 'url' => route('user.retention.index'), 'color' => 'from-red-600 to-pink-600'],
             ['icon' => '📦', 'label' => 'ที่อยู่จัดส่ง', 'url' => route('shipping-addresses.index'), 'color' => 'from-cyan-600 to-blue-600'],
             ['icon' => '🔔', 'label' => 'การแจ้งเตือน', 'url' => route('user.notifications.index'), 'color' => 'from-sky-600 to-blue-600'],
-            ['icon' => '⚙️', 'label' => 'ตั้งค่าธีม', 'url' => route('user.themes.index'), 'color' => 'from-purple-600 to-pink-600'],
+            ['icon' => '📚', 'label' => 'คู่มือและความช่วยเหลือ', 'url' => route('wiki.index'), 'color' => 'from-blue-600 to-cyan-600', 'highlight' => true],
         ];
 
         // Add Hotel Owner menu if user is hotel admin
