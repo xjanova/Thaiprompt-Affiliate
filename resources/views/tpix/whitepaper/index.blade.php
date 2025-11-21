@@ -119,7 +119,7 @@
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
 
     {{-- Fixed Navigation --}}
-    <nav class="fixed top-0 left-0 right-0 z-50 glass dark:glass-dark no-print">
+    <nav class="fixed top-0 left-0 right-0 z-50 glass dark:glass-dark no-print" x-data="{ mobileMenuOpen: false }">
         <div class="container mx-auto px-4 py-4">
             <div class="flex items-center justify-between">
                 {{-- Logo --}}
@@ -134,8 +134,44 @@
                     </div>
                 </div>
 
+                {{-- Desktop Menu --}}
+                <div class="hidden lg:flex items-center space-x-1">
+                    <a href="#overview" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400 transition rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50">
+                        ภาพรวม
+                    </a>
+                    <a href="#use-cases" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400 transition rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50">
+                        การใช้งาน
+                    </a>
+                    <a href="#tokenomics" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400 transition rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50">
+                        Tokenomics
+                    </a>
+                    <a href="#roadmap" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400 transition rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50">
+                        แผนงาน
+                    </a>
+                    <a href="{{ route('home') }}" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50">
+                        หน้าแรก
+                    </a>
+                    <a href="https://wiki.thaiprompt.com" target="_blank" rel="noopener noreferrer" class="px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50 flex items-center space-x-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        <span>WIKI ไทยพร๊อมท์</span>
+                    </a>
+                </div>
+
                 {{-- Actions --}}
-                <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-2">
+                    {{-- Mobile Menu Toggle --}}
+                    <button @click="mobileMenuOpen = !mobileMenuOpen"
+                            class="lg:hidden p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                        <svg x-show="!mobileMenuOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                        <svg x-show="mobileMenuOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+
                     {{-- Dark Mode Toggle --}}
                     <button @click="darkMode = !darkMode"
                             class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
@@ -149,7 +185,47 @@
 
                     {{-- Download PDF Button --}}
                     <a href="{{ route('tpix.whitepaper.pdf') }}"
-                       class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow-lg flex items-center space-x-2">
+                       class="hidden sm:flex px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow-lg items-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span>ดาวน์โหลด PDF</span>
+                    </a>
+                </div>
+            </div>
+
+            {{-- Mobile Menu --}}
+            <div x-show="mobileMenuOpen"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 transform scale-95"
+                 x-transition:enter-end="opacity-100 transform scale-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 transform scale-100"
+                 x-transition:leave-end="opacity-0 transform scale-95"
+                 class="lg:hidden mt-4 py-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex flex-col space-y-2">
+                    <a href="#overview" @click="mobileMenuOpen = false" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400 transition rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50">
+                        ภาพรวม
+                    </a>
+                    <a href="#use-cases" @click="mobileMenuOpen = false" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400 transition rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50">
+                        การใช้งาน
+                    </a>
+                    <a href="#tokenomics" @click="mobileMenuOpen = false" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400 transition rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50">
+                        Tokenomics
+                    </a>
+                    <a href="#roadmap" @click="mobileMenuOpen = false" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400 transition rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50">
+                        แผนงาน
+                    </a>
+                    <a href="{{ route('home') }}" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50">
+                        หน้าแรก
+                    </a>
+                    <a href="https://wiki.thaiprompt.com" target="_blank" rel="noopener noreferrer" class="px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition rounded-lg hover:bg-white/50 dark:hover:bg-gray-800/50 flex items-center space-x-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        <span>WIKI ไทยพร๊อมท์</span>
+                    </a>
+                    <a href="{{ route('tpix.whitepaper.pdf') }}" class="sm:hidden px-3 py-2 text-sm font-medium bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition shadow-lg flex items-center space-x-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
