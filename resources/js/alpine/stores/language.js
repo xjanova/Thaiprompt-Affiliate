@@ -268,17 +268,44 @@ Alpine.store('language', {
             selectElement.focus();
             setTimeout(() => selectElement.blur(), 50);
 
-            // รอให้แปลเสร็จ (เพิ่มเวลารอเป็น 1000ms เพื่อให้แน่ใจ)
-            setTimeout(() => {
-                this.isTranslating = false;
-                console.log('✅ แปลเสร็จแล้ว:', targetLang);
+            // ถ้าแปลไม่สำเร็จภายใน 2 วินาที ให้ reload หน้าเว็บ (fallback)
+            const translationTimeout = setTimeout(() => {
+                console.warn('⚠️ Google Translate ไม่ตอบสนอง - กำลัง reload หน้าเว็บ...');
 
-                // Dispatch event เมื่อแปลเสร็จ
-                const lang = this.languages.find(l => l.code === targetLang);
-                window.dispatchEvent(new CustomEvent('translation-complete', {
-                    detail: { code: targetLang, language: lang?.nativeName || targetLang }
-                }));
-            }, 1000);
+                // บันทึก scroll position
+                sessionStorage.setItem('scrollPosition', window.scrollY.toString());
+
+                // Reload หน้าเว็บเพื่อให้แปลภาษา (fallback solution)
+                window.location.reload();
+            }, 2000);
+
+            // ตรวจสอบว่าแปลสำเร็จหรือไม่โดยดูจาก body class
+            const checkTranslation = setInterval(() => {
+                const bodyClass = document.body.className;
+                const isTranslated = bodyClass.includes('translated-') ||
+                                   document.querySelector('html').getAttribute('lang') !== 'th';
+
+                if (isTranslated || targetLang === 'th') {
+                    clearInterval(checkTranslation);
+                    clearTimeout(translationTimeout);
+
+                    this.isTranslating = false;
+                    console.log('✅ แปลเสร็จแล้ว:', targetLang);
+
+                    // Dispatch event เมื่อแปลเสร็จ
+                    const lang = this.languages.find(l => l.code === targetLang);
+                    window.dispatchEvent(new CustomEvent('translation-complete', {
+                        detail: { code: targetLang, language: lang?.nativeName || targetLang }
+                    }));
+
+                    // กลับไปตำแหน่ง scroll เดิม
+                    const savedScroll = sessionStorage.getItem('scrollPosition');
+                    if (savedScroll) {
+                        window.scrollTo(0, parseInt(savedScroll));
+                        sessionStorage.removeItem('scrollPosition');
+                    }
+                }
+            }, 200);
         } else {
             if (this.translateRetryCount < this.maxTranslateRetries) {
                 this.translateRetryCount++;
