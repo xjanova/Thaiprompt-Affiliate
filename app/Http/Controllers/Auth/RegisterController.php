@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\MlmMember;
+use App\Models\LeadLock;
 use App\Models\LineLoginLog;
 use App\Models\LineOaSetting;
+use App\Models\RecruitCustomization;
 use App\Models\Setting;
 use App\Services\LineService;
 use App\Services\LineTokenService;
@@ -143,6 +145,9 @@ class RegisterController extends Controller
             $parentMember->increment('total_direct_referrals');
         }
 
+        // Handle Recruit Page Lead Conversion Tracking
+        $this->handleLeadConversion($request, $parentMember, $mlmMember);
+
         // Log LINE registration if applicable
         if ($lineProfile) {
             LineLoginLog::logAction(
@@ -177,5 +182,57 @@ class RegisterController extends Controller
 
         return redirect()->route('user.dashboard')
             ->with('success', 'ลงทะเบียนสำเร็จ! ยินดีต้อนรับสู่ระบบ MLM');
+    }
+
+    /**
+     * จัดการ Lead Conversion Tracking จากหน้า Recruit
+     *
+     * เมื่อผู้ใช้สมัครสมาชิกผ่านหน้า Recruit จะทำการ:
+     * - Mark LeadLock เป็น "converted"
+     * - Increment total_conversions ของ RecruitCustomization
+     * - Update conversion rate
+     *
+     * @param Request $request
+     * @param MlmMember|null $parentMember แม่ทีมที่แนะนำ
+     * @param MlmMember $newMember สมาชิกใหม่ที่สมัคร
+     * @return void
+     */
+    protected function handleLeadConversion(Request $request, ?MlmMember $parentMember, MlmMember $newMember): void
+    {
+        try {
+            // สร้าง visitor identifier แบบเดียวกับ RecruitController
+            $visitorIdentifier = hash('sha256', $request->ip() . '|' . ($request->userAgent() ?? ''));
+
+            // หา LeadLock ที่ active สำหรับ visitor นี้
+            $leadLock = LeadLock::getActiveLock($visitorIdentifier);
+
+            if ($leadLock) {
+                // Mark LeadLock as converted
+                $leadLock->markAsConverted($newMember->id);
+
+                // Increment conversions ของ RecruitCustomization
+                if ($leadLock->teamLeader) {
+                    $customization = RecruitCustomization::where('user_id', $leadLock->team_leader_id)->first();
+                    if ($customization) {
+                        $customization->incrementConversions();
+                    }
+                }
+
+                \Log::info('Lead conversion tracked successfully', [
+                    'lead_lock_id' => $leadLock->id,
+                    'team_leader_id' => $leadLock->team_leader_id,
+                    'new_member_id' => $newMember->id,
+                    'visitor_identifier' => $visitorIdentifier,
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            // Don't fail registration if conversion tracking fails
+            \Log::error('Failed to track lead conversion', [
+                'error' => $e->getMessage(),
+                'new_member_id' => $newMember->id,
+                'parent_member_id' => $parentMember?->id,
+            ]);
+        }
     }
 }
