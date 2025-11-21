@@ -1276,5 +1276,21 @@
         });
     </script>
 
+    {{-- Debug Google Translate --}}
+    <script>
+        document.addEventListener('alpine:init', () => {
+            console.log('🔧 Alpine initialized on whitepaper');
+            console.log('🔧 Language store exists:', typeof Alpine.store('language'));
+
+            // ตรวจสอบหลังจาก 3 วินาที
+            setTimeout(() => {
+                console.log('🔧 Google Translate ready:', Alpine.store('language')?.isGoogleTranslateReady);
+                console.log('🔧 Current language:', Alpine.store('language')?.current);
+                console.log('🔧 Select element exists:', document.querySelector('.goog-te-combo'));
+                console.log('🔧 Google translate div:', document.getElementById('google_translate_element'));
+            }, 3000);
+        });
+    </script>
+
 </body>
 </html>
