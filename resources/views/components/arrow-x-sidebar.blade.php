@@ -186,23 +186,25 @@
         </div>
     </aside>
 
-    <!-- Toggle Button (with state indicator) -->
+    <!-- Toggle Button (with state indicator) - ปุ่มเบอร์เกอร์เมนู -->
     <button
-        @click="sidebarOpen = !sidebarOpen"
-        class="fixed top-4 z-[60] p-3 bg-gradient-to-br from-purple-600 to-blue-600 dark:from-purple-700 dark:to-blue-700 text-white rounded-xl shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 group backdrop-blur-sm border border-white/20"
+        @click="toggleSidebar()"
+        type="button"
+        class="fixed top-4 z-[60] p-3 bg-gradient-to-br from-purple-600 to-blue-600 dark:from-purple-700 dark:to-blue-700 text-white rounded-xl shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 group backdrop-blur-sm border border-white/20 active:scale-95"
         :class="sidebarOpen ? 'left-[{{ $sidebarWidth + 16 }}px]' : 'left-4'"
-        :style="sidebarOpen ? 'left: calc({{ $sidebarWidth }}px + 1rem)' : 'left: 1rem'">
+        :style="sidebarOpen ? 'left: calc({{ $sidebarWidth }}px + 1rem)' : 'left: 1rem'"
+        aria-label="เปิด/ปิดเมนู">
 
         <!-- Icon changes based on state -->
-        <svg x-show="!sidebarOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg x-show="!sidebarOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
-        <svg x-show="sidebarOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg x-show="sidebarOpen" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
 
         <!-- Pulsing Ring -->
-        <div class="absolute inset-0 rounded-xl bg-purple-500 animate-ping opacity-20"></div>
+        <div class="absolute inset-0 rounded-xl bg-purple-500 animate-ping opacity-20 pointer-events-none"></div>
     </button>
 
     <!-- Overlay for Mobile -->
@@ -253,11 +255,21 @@
 </style>
 
 <script>
+    /**
+     * Arrow X Sidebar - Alpine.js Component
+     *
+     * จัดการการเปิด/ปิด sidebar พร้อม responsive behavior
+     */
     function arrowXSidebar() {
         return {
             sidebarOpen: window.innerWidth >= 1024, // Open by default on desktop
 
             init() {
+                console.log('Arrow X Sidebar initialized', {
+                    sidebarOpen: this.sidebarOpen,
+                    windowWidth: window.innerWidth
+                });
+
                 // Auto-close on mobile when route changes
                 if (window.innerWidth < 1024) {
                     this.sidebarOpen = false;
@@ -267,8 +279,27 @@
                 window.addEventListener('resize', () => {
                     if (window.innerWidth >= 1024) {
                         this.sidebarOpen = true;
+                    } else {
+                        this.sidebarOpen = false;
                     }
                 });
+
+                // Close sidebar when clicking on menu items on mobile
+                this.$el.querySelectorAll('nav a').forEach(link => {
+                    link.addEventListener('click', () => {
+                        if (window.innerWidth < 1024) {
+                            setTimeout(() => {
+                                this.sidebarOpen = false;
+                            }, 200);
+                        }
+                    });
+                });
+            },
+
+            // Toggle sidebar method
+            toggleSidebar() {
+                this.sidebarOpen = !this.sidebarOpen;
+                console.log('Sidebar toggled:', this.sidebarOpen);
             }
         }
     }
