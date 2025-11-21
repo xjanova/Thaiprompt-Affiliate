@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.106.1] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: improve dashboard menu role checking to match user permissions (66903f7b)
+- fix: correct MLM team route name from mlm.team to user.mlm.team (ec23a11e)
+### 🔧 Other Changes
+- Merge pull request #1425 from xjanova/claude/fix-mlm-team-route-01XNqLdikQ9WiY3zvmTT98zr (0df77a10)
+
 ## [v3.106.0] - 2025-11-21
 
 ### ✨ Features
