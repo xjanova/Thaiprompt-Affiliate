@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th" x-data="{ darkMode: false }" :class="{ 'dark': darkMode }">
+<html lang="th" x-data="{ darkMode: false }" :class="{ 'dark': darkMode }" x-init="$store.language.init()">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,9 +12,17 @@
     {{-- Tailwind CSS --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    {{-- Font Awesome --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     {{-- Custom Styles --}}
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
+
+        /* Alpine.js x-cloak */
+        [x-cloak] {
+            display: none !important;
+        }
 
         body {
             font-family: 'Noto Sans Thai', 'Kanit', sans-serif;
@@ -171,6 +179,73 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
+
+                    {{-- Language Switcher --}}
+                    <div x-data="{ langOpen: false }" class="relative">
+                        <button @click="langOpen = !langOpen"
+                                type="button"
+                                class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition relative"
+                                :title="$store.language.getCurrentLanguage().nativeName">
+                            <span class="text-lg no-translate" x-text="$store.language.getCurrentLanguage().flag"></span>
+                            <div x-show="$store.language.isTranslating"
+                                 class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        </button>
+
+                        <div x-show="langOpen"
+                             @click.outside="langOpen = false"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 translate-y-2"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 translate-y-2"
+                             class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
+                             x-cloak>
+                            <div class="px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-xs font-bold text-gray-900 dark:text-white no-translate">
+                                        <i class="fas fa-globe mr-1"></i>
+                                        เลือกภาษา
+                                    </h3>
+                                    <button @click="$store.language.clearCache()"
+                                            type="button"
+                                            class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                            title="รีเซ็ต">
+                                        <i class="fas fa-sync text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="py-1 max-h-80 overflow-y-auto">
+                                <template x-for="lang in $store.language.languages" :key="lang.code">
+                                    <button @click="$store.language.setLanguage(lang.code); langOpen = false"
+                                            type="button"
+                                            class="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                                            :class="$store.language.current === lang.code ? 'bg-blue-50 dark:bg-blue-900/30' : ''">
+                                        <span class="text-lg flex-shrink-0 no-translate" x-text="lang.flag"></span>
+                                        <div class="flex-1 min-w-0 text-left">
+                                            <p class="text-sm font-medium text-gray-900 dark:text-white no-translate" x-text="lang.nativeName"></p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 no-translate" x-text="lang.name"></p>
+                                        </div>
+                                        <i x-show="$store.language.current === lang.code"
+                                           class="fas fa-check text-blue-600 dark:text-blue-400 text-sm"></i>
+                                    </button>
+                                </template>
+                            </div>
+
+                            <div class="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                                <div class="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+                                    <span class="no-translate">
+                                        <i class="fas fa-language mr-1"></i>
+                                        Google Translate
+                                    </span>
+                                    <span class="no-translate">
+                                        <span x-text="$store.language.languages.length"></span> ภาษา
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     {{-- Dark Mode Toggle --}}
                     <button @click="darkMode = !darkMode"
