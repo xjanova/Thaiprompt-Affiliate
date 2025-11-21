@@ -23,8 +23,8 @@
 --}}
 
 <div class="space-y-6 pb-24" x-data="profileManager()" x-init="init()">
-    {{-- Page Header --}}
-    <div class="glass-fusion-card rounded-2xl p-6 shadow-lg">
+    {{-- Page Header - ใช้ Arrow X Card --}}
+    <x-arrow-x.card-v3 class="p-6">
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-3xl font-extrabold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent dark:from-purple-400 dark:via-pink-400 dark:to-orange-400">
@@ -35,35 +35,19 @@
                 </p>
             </div>
         </div>
-    </div>
+    </x-arrow-x.card-v3>
 
-    {{-- Success/Error Messages --}}
+    {{-- Success/Error Messages - ใช้ Arrow X Alert --}}
     @if(session('success'))
-        <div class="glass-fusion-card rounded-xl p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-l-4 border-green-500 shadow-lg" x-data="{ show: true }" x-show="show" x-transition>
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <i class="fas fa-check-circle text-green-600 dark:text-green-400 text-xl mr-3"></i>
-                    <span class="font-semibold text-green-800 dark:text-green-200">{{ session('success') }}</span>
-                </div>
-                <button @click="show = false" class="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 transition">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        </div>
+        <x-arrow-x.alert-v3 type="success" :dismissible="true">
+            {{ session('success') }}
+        </x-arrow-x.alert-v3>
     @endif
 
     @if(session('error'))
-        <div class="glass-fusion-card rounded-xl p-4 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border-l-4 border-red-500 shadow-lg" x-data="{ show: true }" x-show="show" x-transition>
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <i class="fas fa-exclamation-circle text-red-600 dark:text-red-400 text-xl mr-3"></i>
-                    <span class="font-semibold text-red-800 dark:text-red-200">{{ session('error') }}</span>
-                </div>
-                <button @click="show = false" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 transition">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        </div>
+        <x-arrow-x.alert-v3 type="danger" :dismissible="true">
+            {{ session('error') }}
+        </x-arrow-x.alert-v3>
     @endif
 
     {{-- Main Profile Form --}}
@@ -72,9 +56,9 @@
         @method('PUT')
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {{-- Left Sidebar - Avatar Card --}}
+            {{-- Left Sidebar - Avatar Card - ใช้ Arrow X Card --}}
             <div class="lg:col-span-1">
-                <div class="glass-fusion-card rounded-2xl p-6 shadow-lg sticky top-6">
+                <x-arrow-x.card-v3 class="p-6 sticky top-6">
                     {{-- Avatar Section --}}
                     <div class="text-center mb-6">
                         <div class="relative inline-block group">
@@ -121,13 +105,13 @@
                             @endif
                         </div>
                     </div>
-                </div>
+                </x-arrow-x.card-v3>
             </div>
 
             {{-- Right Content - Profile Forms --}}
             <div class="lg:col-span-2 space-y-6">
-                {{-- Personal Information --}}
-                <div class="glass-fusion-card rounded-2xl p-6 shadow-lg">
+                {{-- Personal Information - ใช้ Arrow X Card --}}
+                <x-arrow-x.card-v3 class="p-6">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                         <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center mr-3 shadow-lg">
                             <i class="fas fa-user text-white"></i>
@@ -215,10 +199,10 @@
                             </select>
                         </div>
                     </div>
-                </div>
+                </x-arrow-x.card-v3>
 
                 {{-- Billing Address --}}
-                <div class="glass-fusion-card rounded-2xl p-6 shadow-lg">
+                <x-arrow-x.card-v3 class="p-6">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                         <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3 shadow-lg">
                             <i class="fas fa-map-marker-alt text-white"></i>
@@ -295,10 +279,10 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </x-arrow-x.card-v3>
 
                 {{-- Shipping Address --}}
-                <div class="glass-fusion-card rounded-2xl p-6 shadow-lg">
+                <x-arrow-x.card-v3 class="p-6">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
                             <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center mr-3 shadow-lg">
@@ -403,10 +387,10 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </x-arrow-x.card-v3>
 
                 {{-- Password Change --}}
-                <div class="glass-fusion-card rounded-2xl p-6 shadow-lg">
+                <x-arrow-x.card-v3 class="p-6">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                         <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center mr-3 shadow-lg">
                             <i class="fas fa-key text-white"></i>
@@ -476,7 +460,7 @@
                             </p>
                         </div>
                     </div>
-                </div>
+                </x-arrow-x.card-v3>
             </div>
         </div>
     </form>
