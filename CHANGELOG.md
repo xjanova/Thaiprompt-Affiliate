@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.94.1] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1395 from xjanova/claude/fix-mlm-team-route-01983ACMoqdoF68C8egbMicG (e8c03b06)
+- fix: move language dropdown to top layer with teleport (a74c8cc2)
+### 🔧 Other Changes
+
+
 ## [v3.94.0] - 2025-11-21
 
 ### ✨ Features
