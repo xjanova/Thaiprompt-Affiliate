@@ -190,6 +190,11 @@
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
             transition-duration: 200ms;
         }
+
+        /* Alpine.js x-cloak - ซ่อน elements ก่อน Alpine.js initialize */
+        [x-cloak] {
+            display: none !important;
+        }
     </style>
 
     @stack('styles')
@@ -371,6 +376,12 @@
 
     {{-- Immediate Notification Popup --}}
     <x-immediate-notification-popup />
+
+    {{-- Mobile Bottom Navigation - แบบแอพมือถือ --}}
+    <x-mobile-bottom-navigation type="user" />
+
+    {{-- Mobile Quick Actions - ปุ่มลัดเร็วแบบ FAB --}}
+    <x-mobile-quick-actions type="user" />
 
     @stack('scripts')
 </body>
