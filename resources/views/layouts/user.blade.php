@@ -233,8 +233,11 @@
     <!-- Page Loader -->
     <x-page-loader />
 
-    <!-- Main Content Area -->
-    <div class="min-h-screen arrow-x-content">
+    <!-- Main Content Area (ปรับ margin ตาม sidebar state) -->
+    <div class="min-h-screen arrow-x-content"
+         x-data
+         :class="$store.arrowXSidebar?.sidebarOpen ? 'lg:ml-[280px]' : 'lg:ml-0'"
+         style="transition: margin-left 0.3s ease;">
         <!-- Top Bar -->
         <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
             <div class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-4"
@@ -245,13 +248,17 @@
                     </div>
 
                     <div class="flex items-center space-x-3">
-                        <!-- Dashboard Switcher -->
-                        <x-dashboard-switcher />
+                        <!-- Dashboard Switcher (ซ่อนบนมือถือ - ใช้ bottom nav แทน) -->
+                        <div class="hidden lg:block">
+                            <x-dashboard-switcher />
+                        </div>
 
-                        <!-- Notification Bell -->
-                        <x-notification-bell />
+                        <!-- Notification Bell (ซ่อนบนมือถือ - ใช้ bottom nav แทน) -->
+                        <div class="hidden lg:block">
+                            <x-notification-bell />
+                        </div>
 
-                        <!-- Language Switcher -->
+                        <!-- Language Switcher (แสดงทุก breakpoint) -->
                         <div class="relative z-[60]">
                             <x-language-switcher-pro />
                         </div>
