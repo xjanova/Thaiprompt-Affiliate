@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.118.1] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1447 from xjanova/claude/tpix-admin-dashboard-01D7bFfQwSNikupfJex9Q9UN (ef56ffca)
+- fix: remove invalid use statement in routes/admin.php (3c94e100)
+### 🔧 Other Changes
+
+
 ## [v3.118.0] - 2025-11-21
 
 ### ✨ Features
