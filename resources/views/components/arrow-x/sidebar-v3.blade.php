@@ -1058,7 +1058,8 @@
                 </a>
                 --}}
 
-                {{-- AI Bot Profiles ที่ถูก comment ออกแล้ว (ใช้เมนูนอก comment block แทน)
+                {{-- AI Bot Profiles และ AI Installations ที่ถูก comment ออกแล้ว (ใช้เมนูนอก comment block แทน) --}}
+                {{--
                 <a href="{{ route('admin.ai-bots.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-bots.index') || request()->routeIs('admin.ai-bots.manage') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
