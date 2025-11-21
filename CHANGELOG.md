@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.116.0] - 2025-11-21
+
+### ✨ Features
+- feat: improve cache settings UI and add menu to sidebar (65fced64)
+### 🐛 Bug Fixes
+- fix: prevent Server 500 error when cache extensions not installed (6028eddb)
+### 🔧 Other Changes
+- Merge pull request #1443 from xjanova/claude/add-caching-system-01V8Kp8kUfKGXkPkHNcR5vRf (bb88457a)
+
 ## [v3.115.0] - 2025-11-21
 
 ### ✨ Features
