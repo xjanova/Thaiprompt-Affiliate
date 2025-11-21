@@ -441,28 +441,55 @@ class CacheManagementService
                     break;
 
                 case 'database':
-                    $stats['table'] = 'cache';
-                    $stats['entries_count'] = DB::table('cache')->count();
+                    try {
+                        // เช็คว่ามีตาราง cache หรือไม่
+                        if (DB::getSchemaBuilder()->hasTable('cache')) {
+                            $stats['table'] = 'cache';
+                            $stats['entries_count'] = DB::table('cache')->count();
+                        } else {
+                            $stats['error'] = 'ไม่พบตาราง cache (ต้องรัน migration)';
+                        }
+                    } catch (Exception $e) {
+                        $stats['error'] = 'ไม่สามารถเชื่อมต่อฐานข้อมูล';
+                    }
                     break;
 
                 case 'redis':
-                    $info = Redis::connection('cache')->info();
-                    $stats['version'] = $info['redis_version'] ?? 'N/A';
-                    $stats['used_memory'] = $info['used_memory_human'] ?? 'N/A';
-                    $stats['uptime_days'] = $info['uptime_in_days'] ?? 'N/A';
+                    // เช็คว่า Redis extension ติดตั้งแล้วหรือไม่
+                    if (extension_loaded('redis') || extension_loaded('phpredis')) {
+                        try {
+                            $info = Redis::connection('cache')->info();
+                            $stats['version'] = $info['redis_version'] ?? 'N/A';
+                            $stats['used_memory'] = $info['used_memory_human'] ?? 'N/A';
+                            $stats['uptime_days'] = $info['uptime_in_days'] ?? 'N/A';
+                        } catch (Exception $e) {
+                            $stats['error'] = 'ไม่สามารถเชื่อมต่อ Redis';
+                        }
+                    } else {
+                        $stats['error'] = 'Redis extension ยังไม่ได้ติดตั้ง';
+                    }
                     break;
 
                 case 'memcached':
-                    $memcached = new \Memcached();
-                    $servers = config('cache.stores.memcached.servers', []);
-                    if (!empty($servers)) {
-                        $server = $servers[0];
-                        $memcached->addServer($server['host'], $server['port']);
-                        $serverStats = $memcached->getStats();
-                        $serverKey = $server['host'] . ':' . $server['port'];
-                        $s = $serverStats[$serverKey] ?? [];
-                        $stats['version'] = $s['version'] ?? 'N/A';
-                        $stats['curr_items'] = $s['curr_items'] ?? 'N/A';
+                    // เช็คว่า Memcached extension ติดตั้งแล้วหรือไม่
+                    if (extension_loaded('memcached')) {
+                        try {
+                            $memcached = new \Memcached();
+                            $servers = config('cache.stores.memcached.servers', []);
+                            if (!empty($servers)) {
+                                $server = $servers[0];
+                                $memcached->addServer($server['host'], $server['port']);
+                                $serverStats = $memcached->getStats();
+                                $serverKey = $server['host'] . ':' . $server['port'];
+                                $s = $serverStats[$serverKey] ?? [];
+                                $stats['version'] = $s['version'] ?? 'N/A';
+                                $stats['curr_items'] = $s['curr_items'] ?? 'N/A';
+                            }
+                        } catch (Exception $e) {
+                            $stats['error'] = 'ไม่สามารถเชื่อมต่อ Memcached';
+                        }
+                    } else {
+                        $stats['error'] = 'Memcached extension ยังไม่ได้ติดตั้ง';
                     }
                     break;
             }
