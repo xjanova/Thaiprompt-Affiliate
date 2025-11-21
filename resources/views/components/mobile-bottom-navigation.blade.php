@@ -167,12 +167,19 @@
                         <button
                             type="button"
                             @click="
-                                // เรียกใช้ toggleSidebar จาก arrowXSidebar component
-                                const sidebarEl = document.querySelector('[x-data*=arrowXSidebar]');
-                                if (sidebarEl) {
-                                    const component = Alpine.$data(sidebarEl);
-                                    if (component && typeof component.toggleSidebar === 'function') {
-                                        component.toggleSidebar();
+                                // ใช้ Alpine.store โดยตรง
+                                if (Alpine.store('arrowXSidebar')) {
+                                    Alpine.store('arrowXSidebar').sidebarOpen = !Alpine.store('arrowXSidebar').sidebarOpen;
+                                } else if ($store.sidebar) {
+                                    $store.sidebar.toggle();
+                                } else {
+                                    // Fallback: ค้นหา sidebar component
+                                    const sidebarEl = document.querySelector('[x-data*=arrowXSidebar]');
+                                    if (sidebarEl && Alpine) {
+                                        const component = Alpine.$data(sidebarEl);
+                                        if (component && typeof component.toggleSidebar === 'function') {
+                                            component.toggleSidebar();
+                                        }
                                     }
                                 }
                             "

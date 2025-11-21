@@ -384,12 +384,12 @@
 
         </div>
 
-        <!-- Floating QR Code Button (Mobile & Desktop) -->
+        <!-- Floating QR Code Button (Mobile Only) -->
         <div x-show="showQRButton"
              x-transition:enter="transition ease-out duration-300"
              x-transition:enter-start="translate-y-20 opacity-0"
              x-transition:enter-end="translate-y-0 opacity-100"
-             class="fixed bottom-6 right-6 z-50">
+             class="fixed bottom-6 right-6 z-50 md:hidden">
             <button @click="toggleQRModal()"
                     class="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full shadow-2xl flex items-center justify-center transform hover:scale-110 transition-all duration-300 pulse-slow">
                 <i class="fas fa-qrcode text-2xl"></i>
