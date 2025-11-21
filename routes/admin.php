@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\UserGuideController;
 use App\Http\Controllers\Admin\HeaderSettingsController;
 use App\Http\Controllers\Admin\SecurityController;
+use App\Http\Controllers\Admin\CacheSettingsController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\SeoController;
 use App\Http\Controllers\Admin\WalletController;
@@ -171,6 +172,19 @@ Route::post('profile/change-password', [SettingsController::class, 'changePasswo
 
 // User Guide (V3)
 Route::get('user-guide', [UserGuideController::class, 'index'])->name('user-guide.index');
+
+// Cache Settings (V3) - ระบบจัดการแคช
+Route::prefix('cache')->name('cache.')->group(function () {
+    Route::get('/', [CacheSettingsController::class, 'index'])->name('index');
+    Route::get('/status', [CacheSettingsController::class, 'getDriversStatus'])->name('status');
+    Route::get('/stats', [CacheSettingsController::class, 'getStats'])->name('stats');
+    Route::post('/test', [CacheSettingsController::class, 'testConnection'])->name('test');
+    Route::post('/clear', [CacheSettingsController::class, 'clearCache'])->name('clear');
+    Route::post('/clear-specific', [CacheSettingsController::class, 'clearSpecific'])->name('clear-specific');
+    Route::post('/change-driver', [CacheSettingsController::class, 'changeDriver'])->name('change-driver');
+    Route::post('/optimize', [CacheSettingsController::class, 'optimize'])->name('optimize');
+    Route::get('/installation-guide', [CacheSettingsController::class, 'getInstallationGuide'])->name('installation-guide');
+});
 
 // Site Settings (โลโก้, Favicon, ชื่อเว็บไซต์, SEO, Social Media)
 Route::prefix('site-settings')->name('site-settings.')->group(function () {
