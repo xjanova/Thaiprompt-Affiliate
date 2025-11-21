@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.99.2] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1409 from xjanova/claude/fix-mlm-team-route-01983ACMoqdoF68C8egbMicG (391352e9)
+- fix: preserve language cookie instead of resetting to Thai (1d93d173)
+### 🔧 Other Changes
+
+
 ## [v3.99.1] - 2025-11-21
 
 ### ✨ Features
