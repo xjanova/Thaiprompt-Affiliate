@@ -100,34 +100,79 @@
             this.currentLanguage = langCode;
             this.languageMenuOpen = false;
 
+            console.log(`🌐 Switching to language: ${langCode}`);
+
             if (langCode === 'th') {
-                // กลับไปภาษาไทยต้นฉบับ - โหลดหน้าใหม่
-                location.reload();
+                // กลับไปภาษาไทยต้นฉบับ
+                console.log('🔄 Resetting to Thai (original language)');
+
+                // เคลียร์ Google Translate cookies
+                document.cookie = 'googtrans=/th/th; Path=/;';
+
+                // ตั้งค่า select element กลับเป็น th
+                const selectElement = document.querySelector('.goog-te-combo');
+                if (selectElement) {
+                    selectElement.value = '';
+                    selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+
+                // โหลดหน้าใหม่เพื่อให้แน่ใจว่ากลับเป็นภาษาไทย
+                setTimeout(() => location.reload(), 300);
             } else {
-                // แปลเป็นภาษาอื่น - เรียก Google Translate API ฟรี
-                this.translatePageContent(langCode);
+                // เรียกใช้ Google Translate Widget โดยตรง
+                this.triggerGoogleTranslate(langCode);
             }
         },
 
-        // แปลเนื้อหาทั้งหน้า (ใช้ Google Translate Free API)
-        async translatePageContent(targetLang) {
-            const elements = document.querySelectorAll('[data-translate], h1, h2, h3, h4, p, li, span:not(.notranslate), button, a');
+        // เรียกใช้ Google Translate Widget (Fast & Reliable)
+        triggerGoogleTranslate(langCode) {
+            console.log(`🔄 Attempting to switch to language: ${langCode}`);
 
-            for (const element of elements) {
-                const text = element.textContent?.trim();
-                if (text && text.length > 0 && !element.classList.contains('notranslate')) {
-                    try {
-                        const response = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=th&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`);
-                        const data = await response.json();
+            // รอให้ Google Translate Widget โหลดเสร็จ
+            let attempts = 0;
+            const maxAttempts = 50; // 5 วินาที (50 * 100ms)
 
-                        if (data && data[0] && data[0][0] && data[0][0][0]) {
-                            element.textContent = data[0][0][0];
-                        }
-                    } catch (error) {
-                        console.error('Translation error:', error);
+            const waitForGoogleTranslate = setInterval(() => {
+                attempts++;
+                const selectElement = document.querySelector('.goog-te-combo');
+
+                if (selectElement) {
+                    clearInterval(waitForGoogleTranslate);
+
+                    // Debug: แสดง options ที่มี
+                    console.log('📋 Available language options:',
+                        Array.from(selectElement.options).map(opt => ({
+                            value: opt.value,
+                            text: opt.text
+                        }))
+                    );
+
+                    // ตรวจสอบว่า langCode มีใน options หรือไม่
+                    const hasOption = Array.from(selectElement.options).some(opt => opt.value === langCode);
+
+                    if (!hasOption) {
+                        console.error(`❌ Language code "${langCode}" not found in Google Translate options!`);
+                        return;
                     }
+
+                    // เปลี่ยนภาษาผ่าน Google Translate Widget
+                    selectElement.value = langCode;
+
+                    // Trigger change event (ลอง 2 วิธี)
+                    selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+
+                    // วิธีที่ 2: ใช้ fireEvent สำหรับ IE compatibility
+                    if (selectElement.fireEvent) {
+                        selectElement.fireEvent('onchange');
+                    }
+
+                    console.log(`✅ Successfully switched to ${langCode}`);
+                    console.log(`📊 Current select value: ${selectElement.value}`);
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(waitForGoogleTranslate);
+                    console.error('❌ Google Translate Widget not found after 5 seconds');
                 }
-            }
+            }, 100);
         },
 
         // ดึงข้อมูลภาษาปัจจุบัน
@@ -1178,6 +1223,11 @@
 
 // ซ่อน Google Translate Element (เราใช้ปุ่มของเราเอง)
 document.addEventListener('DOMContentLoaded', function() {
+    // เคลียร์ Google Translate cookies/preferences เพื่อป้องกันการแปลอัตโนมัติ
+    document.cookie = 'googtrans=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    document.cookie = 'googtrans=/th/th; Path=/;'; // บังคับให้เริ่มที่ภาษาไทย
+    localStorage.removeItem('googtrans');
+
     // สร้าง hidden container สำหรับ Google Translate Element
     const gtContainer = document.createElement('div');
     gtContainer.id = 'google_translate_element';
@@ -1195,8 +1245,17 @@ document.addEventListener('DOMContentLoaded', function() {
         body {
             top: 0 !important;
         }
+        /* ป้องกันการแสดง Google Translate toolbar */
+        .goog-te-banner-frame.skiptranslate {
+            display: none !important;
+        }
+        body > .skiptranslate {
+            display: none !important;
+        }
     `;
     document.head.appendChild(style);
+
+    console.log('✅ Google Translate initialized with Thai as default');
 });
 
 // Google Translate Element Initialization
@@ -1204,11 +1263,13 @@ function googleTranslateElementInit() {
     try {
         new google.translate.TranslateElement({
             pageLanguage: 'th',
-            includedLanguages: 'th,en,zh-CN,ja',
+            includedLanguages: 'th,en,zh-CN,ja,ko,vi,es,fr,de,pt,ru,ar,hi',
             layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
             autoDisplay: false,
-            multilanguagePage: true
+            multilanguagePage: false
         }, 'google_translate_element');
+
+        console.log('✅ Google Translate Element created');
     } catch (error) {
         console.error('Google Translate initialization error:', error);
     }
@@ -1228,46 +1289,7 @@ function googleTranslateElementInit() {
     document.body.appendChild(gtScript);
 })();
 
-// เพิ่ม loading indicator สำหรับการแปลภาษา
-document.addEventListener('alpine:init', () => {
-    Alpine.data('wikiTranslator', () => ({
-        translating: false,
-
-        async translateContent(targetLang) {
-            if (this.translating) return;
-
-            this.translating = true;
-
-            try {
-                // แสดง loading indicator
-                const loadingEl = document.createElement('div');
-                loadingEl.id = 'translation-loading';
-                loadingEl.className = 'fixed top-20 right-6 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-2xl z-50 flex items-center gap-3 animate-pulse';
-                loadingEl.innerHTML = `
-                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>กำลังแปลภาษา...</span>
-                `;
-                document.body.appendChild(loadingEl);
-
-                // รอให้การแปลเสร็จ
-                await new Promise(resolve => setTimeout(resolve, 1500));
-
-                // ลบ loading indicator
-                loadingEl?.remove();
-
-            } catch (error) {
-                console.error('Translation error:', error);
-            } finally {
-                this.translating = false;
-            }
-        }
-    }));
-});
-
-console.log('✅ Wiki Translation System loaded (Google Translate Free API)');
+console.log('✅ Wiki Translation System loaded (Google Translate Widget - Fast & Reliable)');
 </script>
 @endpush
 
