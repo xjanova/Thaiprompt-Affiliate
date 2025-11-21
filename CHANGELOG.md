@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.106.0] - 2025-11-21
+
+### ✨ Features
+- feat: add Phase 3-4 final improvements - achieve 10/10 whitepaper credibility ⭐ (46b46b58)
+- feat: add Phase 2 whitepaper improvements - Mind Maps, Flow Diagrams, Use Cases, Partnerships (9d2192f3)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1424 from xjanova/claude/create-whitepaper-page-01RDLJpSSsCqEDquac5khoPh (a65ba503)
+
 ## [v3.105.0] - 2025-11-21
 
 ### ✨ Features
