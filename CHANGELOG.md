@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.117.0] - 2025-11-21
+
+### ✨ Features
+- feat: add TPIX Deployment Wizard views (Steps 1-7) (9b1ae57e)
+- feat: add TPIX Native Coin Deployment Wizard (Step-by-Step Admin UI) (e6e9250d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1444 from xjanova/claude/tpix-admin-dashboard-01D7bFfQwSNikupfJex9Q9UN (5fd2c2e5)
+
 ## [v3.116.0] - 2025-11-21
 
 ### ✨ Features
