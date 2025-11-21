@@ -449,6 +449,35 @@ Route::prefix('email')->name('email.')->group(function () {
     Route::get('/', [EmailController::class, 'index'])->name('index');
     Route::get('/statistics', [EmailController::class, 'statistics'])->name('statistics');
 
+    // Email Campaigns (⭐ NEW)
+    Route::prefix('campaigns')->name('campaigns.')->group(function () {
+        Route::get('/', [Admin\EmailCampaignController::class, 'index'])->name('index');
+        Route::get('/create', [Admin\EmailCampaignController::class, 'create'])->name('create');
+        Route::post('/', [Admin\EmailCampaignController::class, 'store'])->name('store');
+        Route::get('/{campaign}', [Admin\EmailCampaignController::class, 'show'])->name('show');
+        Route::get('/{campaign}/edit', [Admin\EmailCampaignController::class, 'edit'])->name('edit');
+        Route::put('/{campaign}', [Admin\EmailCampaignController::class, 'update'])->name('update');
+        Route::delete('/{campaign}', [Admin\EmailCampaignController::class, 'destroy'])->name('destroy');
+
+        // Campaign Actions
+        Route::post('/{campaign}/start', [Admin\EmailCampaignController::class, 'start'])->name('start');
+        Route::post('/{campaign}/pause', [Admin\EmailCampaignController::class, 'pause'])->name('pause');
+        Route::post('/{campaign}/cancel', [Admin\EmailCampaignController::class, 'cancel'])->name('cancel');
+    });
+
+    // Email Queue (⭐ NEW)
+    Route::prefix('queue')->name('queue.')->group(function () {
+        Route::get('/', [Admin\EmailQueueController::class, 'index'])->name('index');
+        Route::get('/{recipient}', [Admin\EmailQueueController::class, 'show'])->name('show');
+        Route::post('/{recipient}/retry', [Admin\EmailQueueController::class, 'retry'])->name('retry');
+        Route::post('/campaign/{campaign}/retry-all', [Admin\EmailQueueController::class, 'retryAll'])->name('retry-all');
+        Route::delete('/failed/clear', [Admin\EmailQueueController::class, 'clearFailed'])->name('clear-failed');
+    });
+
+    // Email Analytics (⭐ NEW)
+    Route::get('/analytics', [Admin\EmailAnalyticsController::class, 'index'])->name('analytics');
+    Route::get('/analytics/export', [Admin\EmailAnalyticsController::class, 'export'])->name('analytics.export');
+
     // Email Logs
     Route::get('/logs', [EmailController::class, 'logs'])->name('logs');
     Route::get('/logs/{log}', [EmailController::class, 'showLog'])->name('logs.show');
