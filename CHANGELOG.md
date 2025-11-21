@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.99.0] - 2025-11-21
+
+### ✨ Features
+- Merge pull request #1407 from xjanova/claude/create-tpix-whitepaper-01XEfSbHrbEzZiJR4WhZr82T (b3e096d6)
+- feat: redesign TPIX whitepaper with Modern 3D Design System (1e8ca169)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.98.2] - 2025-11-21
 
 ### ✨ Features
