@@ -256,7 +256,8 @@ Route::prefix('otp')->name('otp.')->group(function () {
 
 // Frontend Routes
 // Landing Page with System Links (Public Access)
-Route::get('/', function () {
+// ⚠️ CRITICAL: ต้องระบุ methods อย่างชัดเจนเพื่อป้องกันปัญหา route caching ใน production
+Route::match(['GET', 'HEAD'], '/', function () {
     return view('welcome');
 })->name('home');
 
