@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.user-arrow-x')
 
 @section('title', 'MLM Dashboard')
 
@@ -31,7 +31,7 @@
 <div class="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 py-8">
     <div class="max-w-7xl mx-auto px-4">
         <!-- Welcome Header -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 bg-gradient-to-r from-purple-600 to-pink-600">
+        <x-arrow-x.card-v3 class="p-8 mb-8 bg-gradient-to-r from-purple-600 to-pink-600">
             <div class="flex items-center justify-between text-white">
                 <div>
                     <h1 class="text-4xl font-black mb-2">
@@ -115,7 +115,7 @@
             <div class="lg:col-span-2 space-y-8">
                 <!-- Binary Legs Stats -->
                 @if($member->plan->type === 'binary' || $member->plan->type === 'hybrid')
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+                <x-arrow-x.card-v3 class="p-8">
                     <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
                         <span class="mr-3">🔀</span>
                         Binary Legs
@@ -193,7 +193,7 @@
                 @endif
 
                 <!-- Recent Commissions -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+                <x-arrow-x.card-v3 class="p-8">
                     <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center justify-between">
                         <span><span class="mr-3">💸</span>คอมมิชชันล่าสุด</span>
                         <a href="{{ route('user.mlm.commissions') }}" class="text-sm text-purple-600 hover:text-purple-700">
@@ -227,7 +227,7 @@
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+                <x-arrow-x.card-v3 class="p-8">
                     <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
                         <span class="mr-3">🚀</span>
                         Quick Actions
@@ -260,7 +260,7 @@
             <!-- Right Column: Additional Info -->
             <div class="space-y-8">
                 <!-- Rank Progress -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+                <x-arrow-x.card-v3 class="p-8">
                     <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
                         <span class="mr-3">🎯</span>
                         Rank Progress
@@ -305,7 +305,7 @@
                 </div>
 
                 <!-- Referral Link -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+                <x-arrow-x.card-v3 class="p-8">
                     <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
                         <span class="mr-3">🔗</span>
                         Referral Link
