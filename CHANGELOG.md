@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.118.0] - 2025-11-21
+
+### ✨ Features
+- Merge pull request #1446 from xjanova/claude/complete-email-manager-01MJmq8qR2wFqbqq93QBTPb1 (362ddb2c)
+- feat: complete email manager system with campaign, queue, and analytics (a4630005)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.117.1] - 2025-11-21
 
 ### ✨ Features
