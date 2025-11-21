@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.114.0] - 2025-11-21
+
+### ✨ Features
+- feat: make HTTP route testing optional in deploy-pro (non-blocking) (7d3b711d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1441 from xjanova/claude/fix-root-route-method-018xVvdCsNt8q8RT4e3FFT4B (53fdbab7)
+
 ## [v3.113.0] - 2025-11-21
 
 ### ✨ Features
