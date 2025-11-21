@@ -23,7 +23,7 @@
                 <p class="text-gray-600 dark:text-gray-400">จัดการที่อยู่จัดส่งของคุณ</p>
             </div>
             <a href="{{ route('shipping-addresses.create') }}"
-               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-transform hover:scale-[1.02] transition-all duration-200">
                 + เพิ่มที่อยู่ใหม่
             </a>
         </div>
@@ -142,7 +142,7 @@
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ยังไม่มีที่อยู่จัดส่ง</h3>
                 <p class="text-gray-600 dark:text-gray-400 mb-6">เพิ่มที่อยู่จัดส่งเพื่อใช้ในการสั่งซื้อสินค้า</p>
                 <a href="{{ route('shipping-addresses.create') }}"
-                   class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                   class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-transform hover:scale-[1.02] transition-all duration-200">
                     + เพิ่มที่อยู่จัดส่ง
                 </a>
             </div>

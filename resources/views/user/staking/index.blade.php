@@ -21,7 +21,7 @@
 
 {{-- Stats Overview --}}
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center transform hover:scale-105 transition-transform duration-300">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center transition-transform hover:scale-[1.02] transition-transform duration-300">
         <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 flex items-center justify-center mx-auto mb-4">
             <i class="fas fa-layer-group text-2xl text-white"></i>
         </div>
@@ -29,7 +29,7 @@
         <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Staked</div>
     </div>
 
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center transform hover:scale-105 transition-transform duration-300">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center transition-transform hover:scale-[1.02] transition-transform duration-300">
         <div class="w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 dark:from-green-600 dark:to-emerald-700 flex items-center justify-center mx-auto mb-4">
             <i class="fas fa-users text-2xl text-white"></i>
         </div>
@@ -37,7 +37,7 @@
         <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">Active Stakers</div>
     </div>
 
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center transform hover:scale-105 transition-transform duration-300">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center transition-transform hover:scale-[1.02] transition-transform duration-300">
         <div class="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 dark:from-yellow-600 dark:to-orange-700 flex items-center justify-center mx-auto mb-4">
             <i class="fas fa-percentage text-2xl text-white"></i>
         </div>
@@ -45,7 +45,7 @@
         <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">Average APY</div>
     </div>
 
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center transform hover:scale-105 transition-transform duration-300">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center transition-transform hover:scale-[1.02] transition-transform duration-300">
         <div class="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 dark:from-pink-600 dark:to-rose-700 flex items-center justify-center mx-auto mb-4">
             <i class="fas fa-gift text-2xl text-white"></i>
         </div>

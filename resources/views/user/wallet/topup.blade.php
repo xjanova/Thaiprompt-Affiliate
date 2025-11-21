@@ -91,7 +91,7 @@
             <button type="submit"
                     id="submit-btn"
                     disabled
-                    class="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white font-bold text-lg rounded-lg transition transform hover:scale-105 shadow-lg disabled:transform-none">
+                    class="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white font-bold text-lg rounded-lg transition transition-transform hover:scale-[1.02] shadow-lg disabled:transform-none">
                 🛒 ดำเนินการเติมเงิน
             </button>
         </form>

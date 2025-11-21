@@ -80,7 +80,7 @@
                     <div class="flex justify-center -my-2 relative z-10">
                         <button type="button"
                                 id="swapDirection"
-                                class="group w-12 h-12 bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-purple-600 hover:to-pink-600 rounded-full border-4 border-gray-100 dark:border-gray-900 shadow-lg transition-all duration-300 flex items-center justify-center hover:rotate-180">
+                                class="group w-12 h-12 bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-purple-600 hover:to-pink-600 rounded-full border-4 border-gray-100 dark:border-gray-900 shadow-lg transition-all duration-300 flex items-center justify-center hover:scale-[1.02]">
                             <i class="fas fa-arrow-down text-gray-600 dark:text-gray-400 group-hover:text-white text-lg transition-colors"></i>
                         </button>
                     </div>
@@ -152,7 +152,7 @@
                     {{-- Swap Button --}}
                     <button type="submit"
                             id="swapButton"
-                            class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold text-lg py-5 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:hover:scale-100"
+                            class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold text-lg py-5 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:hover:scale-100"
                             disabled>
                         <span class="flex items-center justify-center gap-2">
                             <i class="fas fa-exchange-alt"></i>

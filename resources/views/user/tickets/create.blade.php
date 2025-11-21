@@ -33,7 +33,7 @@
                     @foreach($categories as $category)
                         <label class="relative cursor-pointer group">
                             <input type="radio" name="category_id" value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'checked' : '' }} class="peer sr-only" required>
-                            <div class="relative p-5 border-2 border-gray-200 dark:border-slate-600 rounded-2xl peer-checked:border-indigo-600 peer-checked:shadow-xl peer-checked:shadow-indigo-500/20 dark:peer-checked:shadow-indigo-500/30 hover:border-indigo-400 hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800 group-hover:scale-105">
+                            <div class="relative p-5 border-2 border-gray-200 dark:border-slate-600 rounded-2xl peer-checked:border-indigo-600 peer-checked:shadow-xl peer-checked:shadow-indigo-500/20 dark:peer-checked:shadow-indigo-500/30 hover:border-indigo-400 hover:shadow-lg transition-all duration-300 bg-white dark:bg-slate-800 group-hover:scale-[1.02]">
                                 <!-- Selected Badge -->
                                 <div class="absolute -top-2 -right-2 w-8 h-8 bg-indigo-600 rounded-full items-center justify-center text-white hidden peer-checked:flex">
                                     <i class="fa-solid fa-check text-sm"></i>
@@ -188,7 +188,7 @@
                     <i class="fa-solid fa-times mr-2"></i>
                     ยกเลิก
                 </a>
-                <button type="submit" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-lg transition-all transform hover:scale-105">
+                <button type="submit" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-lg transition-all transition-transform hover:scale-[1.02]">
                     <i class="fa-solid fa-paper-plane mr-2"></i>
                     สร้าง Ticket
                 </button>

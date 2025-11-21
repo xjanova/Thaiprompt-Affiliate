@@ -11,7 +11,7 @@
                 <h2 class="text-3xl font-bold mb-2">Ticket Support</h2>
                 <p class="text-blue-100 text-sm">ติดตามและจัดการคำขอความช่วยเหลือของคุณ</p>
             </div>
-            <a href="{{ route('user.tickets.create') }}" class="px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:bg-gray-700 text-blue-600 font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105">
+            <a href="{{ route('user.tickets.create') }}" class="px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:bg-gray-700 text-blue-600 font-semibold rounded-lg shadow-lg transition-all transition-transform hover:scale-[1.02]">
                 <i class="fa-solid fa-plus mr-2"></i>
                 สร้าง Ticket ใหม่
             </a>
@@ -139,7 +139,7 @@
                 <i class="fa-solid fa-ticket text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
                 <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">ยังไม่มี Ticket</h3>
                 <p class="text-gray-600 dark:text-gray-400 mb-6">คุณยังไม่มี Ticket ในระบบ สร้าง Ticket ใหม่เพื่อรับความช่วยเหลือ</p>
-                <a href="{{ route('user.tickets.create') }}" class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-lg transition-all transform hover:scale-105">
+                <a href="{{ route('user.tickets.create') }}" class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-lg transition-all transition-transform hover:scale-[1.02]">
                     <i class="fa-solid fa-plus mr-2"></i>
                     สร้าง Ticket ใหม่
                 </a>

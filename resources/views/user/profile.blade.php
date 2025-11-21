@@ -76,7 +76,7 @@
 
                             {{-- Upload Button --}}
                             <label for="avatar-upload"
-                                   class="block w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-center">
+                                   class="block w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transform  transition-all duration-300 cursor-pointer text-center">
                                 <i class="fas fa-camera mr-2"></i>เปลี่ยนรูปโปรไฟล์
                             </label>
 
@@ -294,7 +294,7 @@
                         {{-- Copy from Billing Address --}}
                         <button type="button"
                                 @click="copyBillingAddress()"
-                                class="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white text-sm font-bold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
+                                class="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white text-sm font-bold rounded-lg shadow-lg hover:shadow-xl transform  transition-all">
                             <i class="fas fa-copy mr-2"></i>คัดลอกจากที่อยู่หลัก
                         </button>
                     </div>
@@ -478,7 +478,7 @@
         <div class="glass-fusion-card rounded-full shadow-2xl p-2 flex items-center gap-4 border-2 border-purple-500/50">
             <button type="button"
                     @click="$refs.profileForm.submit()"
-                    class="px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 hover:from-purple-700 hover:via-pink-700 hover:to-orange-700 text-white font-bold text-lg rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 flex items-center gap-3">
+                    class="px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 hover:from-purple-700 hover:via-pink-700 hover:to-orange-700 text-white font-bold text-lg rounded-full shadow-2xl hover:shadow-3xl transition-transform hover:scale-[1.02] transition-all duration-300 flex items-center gap-3">
                 <i class="fas fa-save text-2xl"></i>
                 <span>บันทึกการเปลี่ยนแปลง</span>
             </button>

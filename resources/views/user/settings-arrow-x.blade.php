@@ -412,7 +412,7 @@
                             class="btn-shimmer px-8 py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600
                                    hover:from-purple-700 hover:via-pink-700 hover:to-orange-700
                                    text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl
-                                   transform hover:-translate-y-1 transition-all duration-300">
+                                   transform  transition-all duration-300">
                         <i class="fas fa-save mr-2"></i>
                         บันทึกการตั้งค่า
                     </button>

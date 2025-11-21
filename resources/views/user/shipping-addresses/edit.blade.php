@@ -227,7 +227,7 @@
                 <!-- Form Actions -->
                 <div class="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                     <button type="submit"
-                            class="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-center rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                            class="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-center rounded-xl shadow-lg hover:shadow-xl transition-transform hover:scale-[1.02] transition-all duration-200">
                         ✅ บันทึกการแก้ไข
                     </button>
                     <a href="{{ route('shipping-addresses.index') }}"
