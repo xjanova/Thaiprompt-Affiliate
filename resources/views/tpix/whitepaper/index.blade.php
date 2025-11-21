@@ -124,7 +124,41 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300"
+      x-data="{ showTranslateToast: false, translateToastMessage: '', translateToastLang: '' }"
+      @language-changed.window="
+        showTranslateToast = true;
+        translateToastMessage = 'กำลังแปลเป็น ' + $event.detail.language + '...';
+        translateToastLang = $event.detail.code;
+      "
+      @translation-complete.window="
+        translateToastMessage = 'แปลเป็น ' + $event.detail.language + ' เรียบร้อย ✓';
+        setTimeout(() => showTranslateToast = false, 2000);
+      ">
+
+    {{-- Toast Notification สำหรับการแปลภาษา --}}
+    <div x-show="showTranslateToast"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-2"
+         class="fixed bottom-4 right-4 z-[9999] no-print">
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px]">
+            <div class="flex-shrink-0">
+                <svg x-show="translateToastMessage.includes('กำลัง')" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <svg x-show="!translateToastMessage.includes('กำลัง')" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="font-medium no-translate" x-text="translateToastMessage"></p>
+            </div>
+        </div>
+    </div>
 
     {{-- Fixed Navigation --}}
     <nav class="fixed top-0 left-0 right-0 z-50 glass dark:glass-dark no-print" x-data="{ mobileMenuOpen: false }">
@@ -187,8 +221,11 @@
                                 class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition relative"
                                 :title="$store.language.getCurrentLanguage().nativeName">
                             <span class="text-lg no-translate" x-text="$store.language.getCurrentLanguage().flag"></span>
+                            {{-- Loading indicator ขยายขนาดให้มองเห็นชัดเจน --}}
                             <div x-show="$store.language.isTranslating"
-                                 class="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                 class="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-ping"></div>
+                            <div x-show="$store.language.isTranslating"
+                                 class="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
                         </button>
 
                         <div x-show="langOpen"

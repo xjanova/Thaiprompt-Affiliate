@@ -183,6 +183,13 @@ Alpine.store('language', {
     setLanguage(langCode) {
         this.current = langCode;
         localStorage.setItem('app_language', langCode);
+
+        // Dispatch event เมื่อเริ่มแปล
+        const lang = this.languages.find(l => l.code === langCode);
+        window.dispatchEvent(new CustomEvent('language-changed', {
+            detail: { code: langCode, language: lang?.nativeName || langCode }
+        }));
+
         this.translatePage(langCode);
     },
 
@@ -230,22 +237,24 @@ Alpine.store('language', {
             // รีเซ็ต retry count
             this.translateRetryCount = 0;
 
-            // เปลี่ยนค่า select และ trigger change event
+            // Debug: แสดงภาษาที่กำลังแปล
+            console.log('🌐 กำลังแปลเป็น:', targetLang, this.languages.find(l => l.code === targetLang)?.nativeName);
+
+            // เปลี่ยนค่า select และ trigger change event (แปลครั้งเดียวพอ!)
             selectElement.value = targetLang;
             selectElement.dispatchEvent(new Event('change'));
 
-            // แปลอีกครั้งหลัง 1 วินาที เพื่อแปลส่วนที่ค้างไว้
+            // รอให้แปลเสร็จ (500ms เท่านั้น)
             setTimeout(() => {
-                selectElement.value = targetLang;
-                selectElement.dispatchEvent(new Event('change'));
-            }, 1000);
-
-            // แปลอีกครั้งหลัง 2 วินาที เพื่อให้แน่ใจ (final pass)
-            setTimeout(() => {
-                selectElement.value = targetLang;
-                selectElement.dispatchEvent(new Event('change'));
                 this.isTranslating = false;
-            }, 2000);
+                console.log('✅ แปลเสร็จแล้ว:', targetLang);
+
+                // Dispatch event เมื่อแปลเสร็จ
+                const lang = this.languages.find(l => l.code === targetLang);
+                window.dispatchEvent(new CustomEvent('translation-complete', {
+                    detail: { code: targetLang, language: lang?.nativeName || targetLang }
+                }));
+            }, 500);
         } else {
             if (this.translateRetryCount < this.maxTranslateRetries) {
                 this.translateRetryCount++;
