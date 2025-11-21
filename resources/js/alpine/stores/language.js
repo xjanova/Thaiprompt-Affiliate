@@ -45,6 +45,15 @@ Alpine.store('language', {
             localStorage.setItem('app_language', 'th');
         }
 
+        // กลับไปตำแหน่ง scroll เดิมหลัง reload
+        const savedScroll = sessionStorage.getItem('tpix_scroll_position');
+        if (savedScroll) {
+            setTimeout(() => {
+                window.scrollTo(0, parseInt(savedScroll));
+                sessionStorage.removeItem('tpix_scroll_position');
+            }, 100);
+        }
+
         console.log('🌐 Language Store initialized with Google Translate:', this.current);
     },
 
@@ -264,48 +273,17 @@ Alpine.store('language', {
                 selectElement.onchange.call(selectElement);
             }
 
-            // Focus และ blur เพื่อบังคับให้ Google Translate สังเกตเห็น
-            selectElement.focus();
-            setTimeout(() => selectElement.blur(), 50);
+            // Google Translate Element มักจะไม่แปลทันทีด้วย events
+            // วิธีที่ดีที่สุดคือ reload หน้าเว็บทันที (เหมือน Chrome translate)
+            console.log('🔄 กำลัง reload หน้าเว็บเพื่อแปลภาษา...');
 
-            // ถ้าแปลไม่สำเร็จภายใน 2 วินาที ให้ reload หน้าเว็บ (fallback)
-            const translationTimeout = setTimeout(() => {
-                console.warn('⚠️ Google Translate ไม่ตอบสนอง - กำลัง reload หน้าเว็บ...');
+            // บันทึก scroll position
+            sessionStorage.setItem('tpix_scroll_position', window.scrollY.toString());
 
-                // บันทึก scroll position
-                sessionStorage.setItem('scrollPosition', window.scrollY.toString());
-
-                // Reload หน้าเว็บเพื่อให้แปลภาษา (fallback solution)
+            // Reload ทันทีเพื่อให้ Google Translate แปลภาษา
+            setTimeout(() => {
                 window.location.reload();
-            }, 2000);
-
-            // ตรวจสอบว่าแปลสำเร็จหรือไม่โดยดูจาก body class
-            const checkTranslation = setInterval(() => {
-                const bodyClass = document.body.className;
-                const isTranslated = bodyClass.includes('translated-') ||
-                                   document.querySelector('html').getAttribute('lang') !== 'th';
-
-                if (isTranslated || targetLang === 'th') {
-                    clearInterval(checkTranslation);
-                    clearTimeout(translationTimeout);
-
-                    this.isTranslating = false;
-                    console.log('✅ แปลเสร็จแล้ว:', targetLang);
-
-                    // Dispatch event เมื่อแปลเสร็จ
-                    const lang = this.languages.find(l => l.code === targetLang);
-                    window.dispatchEvent(new CustomEvent('translation-complete', {
-                        detail: { code: targetLang, language: lang?.nativeName || targetLang }
-                    }));
-
-                    // กลับไปตำแหน่ง scroll เดิม
-                    const savedScroll = sessionStorage.getItem('scrollPosition');
-                    if (savedScroll) {
-                        window.scrollTo(0, parseInt(savedScroll));
-                        sessionStorage.removeItem('scrollPosition');
-                    }
-                }
-            }, 200);
+            }, 300);
         } else {
             if (this.translateRetryCount < this.maxTranslateRetries) {
                 this.translateRetryCount++;
