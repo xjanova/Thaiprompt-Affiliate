@@ -100,39 +100,79 @@
             this.currentLanguage = langCode;
             this.languageMenuOpen = false;
 
+            console.log(`🌐 Switching to language: ${langCode}`);
+
             if (langCode === 'th') {
-                // กลับไปภาษาไทยต้นฉบับ - โหลดหน้าใหม่
-                location.reload();
+                // กลับไปภาษาไทยต้นฉบับ
+                console.log('🔄 Resetting to Thai (original language)');
+
+                // เคลียร์ Google Translate cookies
+                document.cookie = 'googtrans=/th/th; Path=/;';
+
+                // ตั้งค่า select element กลับเป็น th
+                const selectElement = document.querySelector('.goog-te-combo');
+                if (selectElement) {
+                    selectElement.value = '';
+                    selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+
+                // โหลดหน้าใหม่เพื่อให้แน่ใจว่ากลับเป็นภาษาไทย
+                setTimeout(() => location.reload(), 300);
             } else {
-                // เรียกใช้ Google Translate Widget โดยตรง (เร็วกว่า + รองรับทุกภาษา)
+                // เรียกใช้ Google Translate Widget โดยตรง
                 this.triggerGoogleTranslate(langCode);
             }
         },
 
         // เรียกใช้ Google Translate Widget (Fast & Reliable)
         triggerGoogleTranslate(langCode) {
+            console.log(`🔄 Attempting to switch to language: ${langCode}`);
+
             // รอให้ Google Translate Widget โหลดเสร็จ
+            let attempts = 0;
+            const maxAttempts = 50; // 5 วินาที (50 * 100ms)
+
             const waitForGoogleTranslate = setInterval(() => {
+                attempts++;
                 const selectElement = document.querySelector('.goog-te-combo');
 
                 if (selectElement) {
                     clearInterval(waitForGoogleTranslate);
 
+                    // Debug: แสดง options ที่มี
+                    console.log('📋 Available language options:',
+                        Array.from(selectElement.options).map(opt => ({
+                            value: opt.value,
+                            text: opt.text
+                        }))
+                    );
+
+                    // ตรวจสอบว่า langCode มีใน options หรือไม่
+                    const hasOption = Array.from(selectElement.options).some(opt => opt.value === langCode);
+
+                    if (!hasOption) {
+                        console.error(`❌ Language code "${langCode}" not found in Google Translate options!`);
+                        return;
+                    }
+
                     // เปลี่ยนภาษาผ่าน Google Translate Widget
                     selectElement.value = langCode;
 
-                    // Trigger change event
-                    const event = new Event('change', { bubbles: true });
-                    selectElement.dispatchEvent(event);
+                    // Trigger change event (ลอง 2 วิธี)
+                    selectElement.dispatchEvent(new Event('change', { bubbles: true }));
 
-                    console.log(`✅ Switched to ${langCode} using Google Translate Widget`);
+                    // วิธีที่ 2: ใช้ fireEvent สำหรับ IE compatibility
+                    if (selectElement.fireEvent) {
+                        selectElement.fireEvent('onchange');
+                    }
+
+                    console.log(`✅ Successfully switched to ${langCode}`);
+                    console.log(`📊 Current select value: ${selectElement.value}`);
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(waitForGoogleTranslate);
+                    console.error('❌ Google Translate Widget not found after 5 seconds');
                 }
             }, 100);
-
-            // Timeout หลัง 5 วินาที
-            setTimeout(() => {
-                clearInterval(waitForGoogleTranslate);
-            }, 5000);
         },
 
         // ดึงข้อมูลภาษาปัจจุบัน
@@ -1183,6 +1223,11 @@
 
 // ซ่อน Google Translate Element (เราใช้ปุ่มของเราเอง)
 document.addEventListener('DOMContentLoaded', function() {
+    // เคลียร์ Google Translate cookies/preferences เพื่อป้องกันการแปลอัตโนมัติ
+    document.cookie = 'googtrans=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    document.cookie = 'googtrans=/th/th; Path=/;'; // บังคับให้เริ่มที่ภาษาไทย
+    localStorage.removeItem('googtrans');
+
     // สร้าง hidden container สำหรับ Google Translate Element
     const gtContainer = document.createElement('div');
     gtContainer.id = 'google_translate_element';
@@ -1200,8 +1245,17 @@ document.addEventListener('DOMContentLoaded', function() {
         body {
             top: 0 !important;
         }
+        /* ป้องกันการแสดง Google Translate toolbar */
+        .goog-te-banner-frame.skiptranslate {
+            display: none !important;
+        }
+        body > .skiptranslate {
+            display: none !important;
+        }
     `;
     document.head.appendChild(style);
+
+    console.log('✅ Google Translate initialized with Thai as default');
 });
 
 // Google Translate Element Initialization
@@ -1209,11 +1263,13 @@ function googleTranslateElementInit() {
     try {
         new google.translate.TranslateElement({
             pageLanguage: 'th',
-            includedLanguages: 'th,en,zh-CN,ja',
+            includedLanguages: 'th,en,zh-CN,ja,ko,vi,es,fr,de,pt,ru,ar,hi',
             layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
             autoDisplay: false,
-            multilanguagePage: true
+            multilanguagePage: false
         }, 'google_translate_element');
+
+        console.log('✅ Google Translate Element created');
     } catch (error) {
         console.error('Google Translate initialization error:', error);
     }
