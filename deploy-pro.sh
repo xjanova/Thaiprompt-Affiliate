@@ -505,17 +505,29 @@ verify_route_cache() {
         fi
 
         # Verify route:list works
-        if php artisan route:list >/dev/null 2>&1; then
+        local route_list_output=$(php artisan route:list 2>&1)
+        local route_list_exit_code=$?
+
+        if [ $route_list_exit_code -eq 0 ]; then
             print_success "✓ Route cache is valid"
             cache_valid=1
 
             # Additional verification: count routes
-            local route_count=$(php artisan route:list --compact 2>/dev/null | grep -v "^$" | grep -v "Showing" | wc -l)
-            if [ "$route_count" -gt 0 ]; then
-                print_success "✓ Verified $route_count routes loaded"
+            local route_count=$(echo "$route_list_output" | grep -v "^$" | grep -v "Showing" | grep -v "GET\|POST\|PUT" | wc -l)
+            if [ "$route_count" -gt 10 ]; then
+                print_success "✓ Verified route cache is working"
             fi
         else
             print_warning "⚠ Route cache verification failed"
+
+            # Show error details for debugging
+            if [ $retry_count -eq 0 ]; then
+                echo ""
+                print_info "→ Error details:"
+                echo "$route_list_output" | head -10
+                echo ""
+            fi
+
             print_info "→ Clearing and regenerating route cache..."
 
             php artisan route:clear >/dev/null 2>&1 || true
