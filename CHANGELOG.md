@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.113.0] - 2025-11-21
+
+### ✨ Features
+- feat: enhance route cache clearing in deploy-pro to fix production issues (9550e446)
+- feat: add quick fix script for production route cache issue (a561532b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1440 from xjanova/claude/fix-root-route-method-018xVvdCsNt8q8RT4e3FFT4B (a5c24131)
+
 ## [v3.112.0] - 2025-11-21
 
 ### ✨ Features
