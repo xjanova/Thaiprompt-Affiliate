@@ -23,8 +23,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 // หน้าแสดงสินค้าซอฟต์แวร์
-Route::get('/software-products', [App\Http\Controllers\SoftwareProductController::class, 'index'])->name('software.products.index');
-Route::get('/software-products/{slug}', [App\Http\Controllers\SoftwareProductController::class, 'show'])->name('software.products.show');
+// ⚠️ E-commerce Critical: Software products ต้องถูก index โดย search engines
+Route::match(['GET', 'HEAD'], '/software-products', [App\Http\Controllers\SoftwareProductController::class, 'index'])->name('software.products.index');
+Route::match(['GET', 'HEAD'], '/software-products/{slug}', [App\Http\Controllers\SoftwareProductController::class, 'show'])->name('software.products.show');
 
 // ระบบใบเสนอราคา (ต้อง login)
 Route::middleware(['auth'])->group(function () {

@@ -75,10 +75,11 @@ Route::prefix('demo')->name('demo.')->group(function () {
 });
 
 // Tournament Routes
+// ⚠️ SEO: Tournament pages มี SEO value สูง
 Route::prefix('tournaments')->name('tournaments.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\TournamentController::class, 'index'])->name('index');
-    Route::get('/{slug}', [\App\Http\Controllers\TournamentController::class, 'show'])->name('show');
-    Route::get('/{slug}/leaderboard', [\App\Http\Controllers\TournamentController::class, 'leaderboard'])->name('leaderboard');
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\TournamentController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\TournamentController::class, 'show'])->name('show');
+    Route::match(['GET', 'HEAD'], '/{slug}/leaderboard', [\App\Http\Controllers\TournamentController::class, 'leaderboard'])->name('leaderboard');
 
     // Authenticated routes
     Route::middleware('auth')->group(function () {
@@ -98,9 +99,10 @@ Route::middleware('auth')->prefix('rewards')->name('rewards.')->group(function (
 });
 
 // Games Routes
+// ⚠️ SEO Critical: Game pages สำคัญสำหรับ organic traffic
 Route::prefix('games')->name('games.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\GameController::class, 'index'])->name('index');
-    Route::get('/{slug}', [\App\Http\Controllers\GameController::class, 'show'])->name('show');
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\GameController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\GameController::class, 'show'])->name('show');
 
     // API Routes for game progress
     Route::middleware('auth')->group(function () {
@@ -129,7 +131,7 @@ Route::prefix('games')->name('games.')->group(function () {
         });
     });
 
-    Route::get('/{slug}/leaderboard', [\App\Http\Controllers\GameController::class, 'leaderboard'])->name('leaderboard');
+    Route::match(['GET', 'HEAD'], '/{slug}/leaderboard', [\App\Http\Controllers\GameController::class, 'leaderboard'])->name('leaderboard');
 });
 
 Route::get('/demo/game-selector', [GameController::class, 'index'])->name('demo.game-selector');
@@ -144,13 +146,14 @@ Route::get('/demo/snooker', function () {
 })->name('demo.snooker');
 
 // Prompt to Web Routes
+// ⚠️ Public Tool: Prompt-to-web generator ต้องถูก index โดย search engines
 Route::prefix('prompt-to-web')->name('prompt-to-web.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\PromptToWebController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\PromptToWebController::class, 'index'])->name('index');
     Route::post('/generate', [\App\Http\Controllers\PromptToWebController::class, 'generate'])->name('generate');
     Route::post('/{id}/improve', [\App\Http\Controllers\PromptToWebController::class, 'improve'])->name('improve');
-    Route::get('/preview/{slug}', [\App\Http\Controllers\PromptToWebController::class, 'preview'])->name('preview');
-    Route::get('/show/{slug}', [\App\Http\Controllers\PromptToWebController::class, 'show'])->name('show');
-    Route::get('/list', [\App\Http\Controllers\PromptToWebController::class, 'list'])->name('list');
+    Route::match(['GET', 'HEAD'], '/preview/{slug}', [\App\Http\Controllers\PromptToWebController::class, 'preview'])->name('preview');
+    Route::match(['GET', 'HEAD'], '/show/{slug}', [\App\Http\Controllers\PromptToWebController::class, 'show'])->name('show');
+    Route::match(['GET', 'HEAD'], '/list', [\App\Http\Controllers\PromptToWebController::class, 'list'])->name('list');
     Route::delete('/{id}', [\App\Http\Controllers\PromptToWebController::class, 'delete'])->name('delete');
 });
 
@@ -159,7 +162,8 @@ Route::get('/demo/tetris', function () {
 })->name('demo.tetris');
 
 // Sitemap
-Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+// ⚠️ SEO Critical: Search engines ใช้ HEAD request ตรวจสอบ sitemap
+Route::match(['GET', 'HEAD'], '/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 // Language Switching
 Route::get('/lang/{locale}', [LanguageController::class, 'switch'])->name('lang.switch');
@@ -174,24 +178,26 @@ Route::prefix('api/translate')->name('api.translate.')->middleware('throttle:60,
 });
 
 // Public Certificate Verification
+// ⚠️ Public Service: Certificate verification ต้องเข้าถึงได้สาธารณะ
 Route::prefix('certificate')->name('certificate.')->group(function () {
-    Route::get('/verify/{verificationCode}', [\App\Http\Controllers\Admin\CertificateController::class, 'verify'])->name('verify');
-    Route::get('/share/{id}', [\App\Http\Controllers\Admin\CertificateController::class, 'share'])->name('share');
+    Route::match(['GET', 'HEAD'], '/verify/{verificationCode}', [\App\Http\Controllers\Admin\CertificateController::class, 'verify'])->name('verify');
+    Route::match(['GET', 'HEAD'], '/share/{id}', [\App\Http\Controllers\Admin\CertificateController::class, 'share'])->name('share');
 });
 
 // Authentication Routes
+// ⚠️ Authentication: หน้า login/register ต้องรองรับ HEAD method
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::match(['GET', 'HEAD'], '/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])
         ->middleware(['turnstile:login', 'throttle.login']);
 
-    Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+    Route::match(['GET', 'HEAD'], '/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
     Route::post('/register', [RegisterController::class, 'register'])->middleware('turnstile:register');
 
     // LINE Login Routes
-    Route::get('/auth/line', [LineLoginController::class, 'redirect'])->name('line.login');
-    Route::get('/auth/line/callback', [LineLoginController::class, 'callback'])->name('line.callback');
-    Route::get('/auth/line/register-guide', function () {
+    Route::match(['GET', 'HEAD'], '/auth/line', [LineLoginController::class, 'redirect'])->name('line.login');
+    Route::match(['GET', 'HEAD'], '/auth/line/callback', [LineLoginController::class, 'callback'])->name('line.callback');
+    Route::match(['GET', 'HEAD'], '/auth/line/register-guide', function () {
         return view('auth.line-register-guide');
     })->name('line.register.guide');
 });
@@ -199,8 +205,9 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Public Recruit Page Routes
+// ⚠️ Affiliate Critical: Recruit links สำคัญสำหรับระบบ MLM/Affiliate
 Route::prefix('recruit')->name('recruit.')->group(function () {
-    Route::get('/{member_code}', [\App\Http\Controllers\RecruitController::class, 'show'])->name('show');
+    Route::match(['GET', 'HEAD'], '/{member_code}', [\App\Http\Controllers\RecruitController::class, 'show'])->name('show');
     Route::post('/track-behavior', [\App\Http\Controllers\RecruitController::class, 'trackBehavior'])->name('track-behavior');
 });
 
@@ -222,19 +229,21 @@ Route::prefix('language')->name('language.')->group(function () {
 });
 
 // LINE Signup via Invitation Link (Public Routes with Rate Limiting)
+// ⚠️ Affiliate: LINE signup links สำคัญสำหรับระบบ affiliate
 Route::prefix('line/signup')->name('line.signup.')->middleware(['line.signup.throttle'])->group(function () {
-    Route::get('/invitation/{token}', [\App\Http\Controllers\LineSignupController::class, 'handleInvitation'])->name('invitation');
-    Route::get('/callback', [\App\Http\Controllers\LineSignupController::class, 'handleCallback'])->name('callback');
+    Route::match(['GET', 'HEAD'], '/invitation/{token}', [\App\Http\Controllers\LineSignupController::class, 'handleInvitation'])->name('invitation');
+    Route::match(['GET', 'HEAD'], '/callback', [\App\Http\Controllers\LineSignupController::class, 'handleCallback'])->name('callback');
 });
 
 // LINE Membership Signup System (New AI-Powered Signup)
+// ⚠️ Affiliate: LINE membership signup สำคัญสำหรับระบบ affiliate
 Route::prefix('line/membership')->name('line.membership.')->group(function () {
     // Public invitation routes
-    Route::get('/invitation/{token}', [\App\Http\Controllers\LineMembershipSignupController::class, 'showInvitation'])->name('invitation');
+    Route::match(['GET', 'HEAD'], '/invitation/{token}', [\App\Http\Controllers\LineMembershipSignupController::class, 'showInvitation'])->name('invitation');
     Route::post('/invitation/{token}', [\App\Http\Controllers\LineMembershipSignupController::class, 'processInvitation'])->name('invitation.process');
 
     // Progress tracking (for debugging)
-    Route::get('/progress/{sessionToken}', [\App\Http\Controllers\LineMembershipSignupController::class, 'showProgress'])->name('progress');
+    Route::match(['GET', 'HEAD'], '/progress/{sessionToken}', [\App\Http\Controllers\LineMembershipSignupController::class, 'showProgress'])->name('progress');
 
     // Authenticated routes
     Route::middleware('auth')->group(function () {
@@ -262,19 +271,21 @@ Route::match(['GET', 'HEAD'], '/', function () {
 })->name('home');
 
 // Original Home Page
-Route::get('/home', [HomeController::class, 'index'])->name('home.original');
-Route::get('/about', [HomeController::class, 'about'])->name('about');
-Route::get('/about-us', [HomeController::class, 'aboutProfessional'])->name('about.professional');
-Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
+// ⚠️ SEO Critical: Landing pages ต้องรองรับ HEAD method
+Route::match(['GET', 'HEAD'], '/home', [HomeController::class, 'index'])->name('home.original');
+Route::match(['GET', 'HEAD'], '/about', [HomeController::class, 'about'])->name('about');
+Route::match(['GET', 'HEAD'], '/about-us', [HomeController::class, 'aboutProfessional'])->name('about.professional');
+Route::match(['GET', 'HEAD'], '/contact', [HomeController::class, 'contact'])->name('contact');
 
 // 3D Interactive Presentation
-Route::get('/presentation', [HomeController::class, 'presentation'])->name('presentation');
+Route::match(['GET', 'HEAD'], '/presentation', [HomeController::class, 'presentation'])->name('presentation');
 
 // Wiki Routes (New modular system)
+// ⚠️ SEO High: Wiki pages มี content value สูง
 Route::prefix('wiki')->name('wiki.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\Frontend\WikiController::class, 'index'])->name('index');
-    Route::get('/content/{category}/{section?}', [\App\Http\Controllers\Frontend\WikiController::class, 'getContent'])->name('content');
-    Route::get('/search', [\App\Http\Controllers\Frontend\WikiController::class, 'search'])->name('search');
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\Frontend\WikiController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/content/{category}/{section?}', [\App\Http\Controllers\Frontend\WikiController::class, 'getContent'])->name('content');
+    Route::match(['GET', 'HEAD'], '/search', [\App\Http\Controllers\Frontend\WikiController::class, 'search'])->name('search');
 });
 
 // Legacy wiki route (redirect to new system)
@@ -283,16 +294,18 @@ Route::get('/platform-wiki', function () {
 })->name('platform.wiki');
 
 // Dynamic Page Routes (Privacy Policy, Terms, etc.)
-Route::get('/page/{slug}', [PageController::class, 'show'])->name('page.show');
+// ⚠️ Legal Critical: Privacy Policy, Terms of Service ต้องเข้าถึงได้ตลอดเวลา
+Route::match(['GET', 'HEAD'], '/page/{slug}', [PageController::class, 'show'])->name('page.show');
 
 // Marketplace Routes (Public browsing, Auth for renting)
+// ⚠️ E-commerce Critical: Marketplace pages ต้องถูก index โดย search engines
 Route::prefix('marketplace')->name('marketplace.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\MarketplaceController::class, 'index'])->name('index');
-    Route::get('/{id}', [\App\Http\Controllers\MarketplaceController::class, 'show'])->name('show');
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\MarketplaceController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/{id}', [\App\Http\Controllers\MarketplaceController::class, 'show'])->name('show');
 
     // Bot marketplace routes (alias to chatbot.marketplace)
     Route::prefix('bots')->name('bots.')->group(function () {
-        Route::get('/{id}', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'show'])->name('show');
+        Route::match(['GET', 'HEAD'], '/{id}', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'show'])->name('show');
     });
 
     // Authenticated routes
@@ -325,23 +338,26 @@ Route::middleware('auth')->prefix('owner-dashboard')->name('owner-dashboard.')->
 // ========================================
 
 // Shop Routes (Public browsing)
+// ⚠️ E-commerce Critical: Shop system ต้องถูก index โดย search engines
 Route::prefix('shop')->name('shop.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\ShopController::class, 'index'])->name('index');
-    Route::get('/category/{slug}', [\App\Http\Controllers\ShopController::class, 'category'])->name('category');
-    Route::get('/search', [\App\Http\Controllers\ShopController::class, 'quickSearch'])->name('search');
-    Route::get('/{slug}', [\App\Http\Controllers\ShopController::class, 'show'])->name('show');
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\ShopController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/category/{slug}', [\App\Http\Controllers\ShopController::class, 'category'])->name('category');
+    Route::match(['GET', 'HEAD'], '/search', [\App\Http\Controllers\ShopController::class, 'quickSearch'])->name('search');
+    Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\ShopController::class, 'show'])->name('show');
 });
 
 // Vendor Store Routes (Public browsing of individual vendor stores)
+// ⚠️ E-commerce: Vendor stores ต้องถูก index
 Route::prefix('stores')->name('vendor.stores.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\VendorStoreController::class, 'index'])->name('index');
-    Route::get('/{slug}', [\App\Http\Controllers\VendorStoreController::class, 'show'])->name('show');
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\VendorStoreController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\VendorStoreController::class, 'show'])->name('show');
 });
 
 // Admin Store Routes (Public browsing of admin's official store)
+// ⚠️ E-commerce: Admin store ต้องถูก index
 Route::prefix('admin-store')->name('admin-store.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\AdminStoreController::class, 'index'])->name('index');
-    Route::get('/{id}', [\App\Http\Controllers\AdminStoreController::class, 'show'])->name('show');
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\AdminStoreController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/{id}', [\App\Http\Controllers\AdminStoreController::class, 'show'])->name('show');
 });
 
 // Cart Routes (Authenticated)
@@ -394,17 +410,18 @@ Route::middleware('auth')->prefix('orders')->name('orders.')->group(function () 
 // ========================================
 
 // Public Hotel Browsing Routes
+// ⚠️ E-commerce Critical: Hotel booking system ต้องถูก index โดย search engines
 Route::prefix('hotels')->name('hotels.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\HotelController::class, 'index'])->name('index');
-    Route::get('/featured', [\App\Http\Controllers\HotelController::class, 'featured'])->name('featured');
-    Route::get('/city/{city}', [\App\Http\Controllers\HotelController::class, 'byCity'])->name('by-city');
-    Route::get('/search', [\App\Http\Controllers\HotelController::class, 'search'])->name('search');
-    Route::get('/autocomplete', [\App\Http\Controllers\HotelController::class, 'autocomplete'])->name('autocomplete');
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\HotelController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/featured', [\App\Http\Controllers\HotelController::class, 'featured'])->name('featured');
+    Route::match(['GET', 'HEAD'], '/city/{city}', [\App\Http\Controllers\HotelController::class, 'byCity'])->name('by-city');
+    Route::match(['GET', 'HEAD'], '/search', [\App\Http\Controllers\HotelController::class, 'search'])->name('search');
+    Route::match(['GET', 'HEAD'], '/autocomplete', [\App\Http\Controllers\HotelController::class, 'autocomplete'])->name('autocomplete');
     Route::post('/check-availability', [\App\Http\Controllers\HotelController::class, 'checkAvailability'])->name('check-availability');
-    Route::get('/{slug}', [\App\Http\Controllers\HotelController::class, 'show'])->name('show');
+    Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\HotelController::class, 'show'])->name('show');
 
     // Hotel Reviews (Public viewing)
-    Route::get('/{slug}/reviews', [\App\Http\Controllers\HotelReviewController::class, 'index'])->name('reviews.index');
+    Route::match(['GET', 'HEAD'], '/{slug}/reviews', [\App\Http\Controllers\HotelReviewController::class, 'index'])->name('reviews.index');
 });
 
 // Hotel Booking Routes (Authenticated)
@@ -441,9 +458,10 @@ Route::middleware('auth')->prefix('hotels')->name('hotels.')->group(function () 
 // ========================================
 use App\Http\Controllers\Frontend\SliderController;
 
+// ⚠️ Public Component: Slider component ต้องรองรับ HEAD method
 Route::prefix('sliders')->name('sliders.')->group(function () {
-    Route::get('/{idOrAlias}', [SliderController::class, 'show'])->name('show');
-    Route::get('/{idOrAlias}/data', [SliderController::class, 'getData'])->name('data');
+    Route::match(['GET', 'HEAD'], '/{idOrAlias}', [SliderController::class, 'show'])->name('show');
+    Route::match(['GET', 'HEAD'], '/{idOrAlias}/data', [SliderController::class, 'getData'])->name('data');
     Route::post('/{slider}/track-click', [SliderController::class, 'trackClick'])->name('track-click');
     Route::post('/{slider}/track-slide-change', [SliderController::class, 'trackSlideChange'])->name('track-slide-change');
 });
@@ -469,27 +487,28 @@ Route::middleware('auth')->prefix('pos')->name('pos.')->group(function () {
 });
 
 // Tarot Reading Routes (Public)
+// ⚠️ Public Service: Tarot reading service ต้องถูก index โดย search engines
 Route::prefix('tarot')->name('tarot.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\TarotReadingController::class, 'index'])->name('index');
-    Route::get('/category/{slug}', [\App\Http\Controllers\TarotReadingController::class, 'showCategory'])->name('category');
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\TarotReadingController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/category/{slug}', [\App\Http\Controllers\TarotReadingController::class, 'showCategory'])->name('category');
     Route::post('/start', [\App\Http\Controllers\TarotReadingController::class, 'startReading'])->name('start');
-    Route::get('/select-cards/{readingId}', [\App\Http\Controllers\TarotReadingController::class, 'showCardSelection'])->name('select-cards');
+    Route::match(['GET', 'HEAD'], '/select-cards/{readingId}', [\App\Http\Controllers\TarotReadingController::class, 'showCardSelection'])->name('select-cards');
     Route::post('/save-selection', [\App\Http\Controllers\TarotReadingController::class, 'saveCardSelection'])->name('save-selection');
-    Route::get('/reading/{id}', [\App\Http\Controllers\TarotReadingController::class, 'showReading'])->name('reading.show');
-    Route::get('/card-backs', [\App\Http\Controllers\TarotReadingController::class, 'getCardBackImages'])->name('card-backs');
+    Route::match(['GET', 'HEAD'], '/reading/{id}', [\App\Http\Controllers\TarotReadingController::class, 'showReading'])->name('reading.show');
+    Route::match(['GET', 'HEAD'], '/card-backs', [\App\Http\Controllers\TarotReadingController::class, 'getCardBackImages'])->name('card-backs');
 
     // Cart routes
     Route::prefix('cart')->name('cart.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\TarotCartController::class, 'index'])->name('index');
+        Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\TarotCartController::class, 'index'])->name('index');
         Route::post('/add', [\App\Http\Controllers\TarotCartController::class, 'addToCart'])->name('add');
         Route::delete('/remove/{id}', [\App\Http\Controllers\TarotCartController::class, 'removeItem'])->name('remove');
         Route::post('/clear', [\App\Http\Controllers\TarotCartController::class, 'clearCart'])->name('clear');
-        Route::get('/checkout', [\App\Http\Controllers\TarotCartController::class, 'checkout'])->name('checkout');
+        Route::match(['GET', 'HEAD'], '/checkout', [\App\Http\Controllers\TarotCartController::class, 'checkout'])->name('checkout');
         Route::post('/checkout/process', [\App\Http\Controllers\TarotCartController::class, 'processCheckout'])->name('processCheckout');
     });
 
     // Payment routes
-    Route::get('/payment', [\App\Http\Controllers\TarotReadingController::class, 'payment'])->name('payment');
+    Route::match(['GET', 'HEAD'], '/payment', [\App\Http\Controllers\TarotReadingController::class, 'payment'])->name('payment');
     Route::post('/payment/process', [\App\Http\Controllers\TarotReadingController::class, 'processPayment'])->name('payment.process');
 
     // Authenticated routes
@@ -501,15 +520,16 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
 });
 
 // QR Code & Barcode Generator Routes (Public)
+// ⚠️ Public Tool: QR/Barcode generator เป็น SEO-friendly tool
 Route::prefix('qr-barcode')->name('qr-barcode.')->group(function () {
     // Public routes
-    Route::get('/', [\App\Http\Controllers\QrBarcodeController::class, 'index'])->name('index');
-    Route::get('/scanner', [\App\Http\Controllers\QrBarcodeController::class, 'scanner'])->name('scanner');
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\QrBarcodeController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/scanner', [\App\Http\Controllers\QrBarcodeController::class, 'scanner'])->name('scanner');
     Route::post('/decode', [\App\Http\Controllers\QrBarcodeController::class, 'decode'])->name('decode');
-    Route::get('/templates', [\App\Http\Controllers\QrBarcodeController::class, 'templates'])->name('templates');
-    Route::get('/gallery', [\App\Http\Controllers\QrBarcodeController::class, 'gallery'])->name('gallery');
-    Route::get('/show/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'show'])->name('show');
-    Route::get('/r/{shortUrl}', [\App\Http\Controllers\QrBarcodeController::class, 'redirect'])->name('redirect');
+    Route::match(['GET', 'HEAD'], '/templates', [\App\Http\Controllers\QrBarcodeController::class, 'templates'])->name('templates');
+    Route::match(['GET', 'HEAD'], '/gallery', [\App\Http\Controllers\QrBarcodeController::class, 'gallery'])->name('gallery');
+    Route::match(['GET', 'HEAD'], '/show/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'show'])->name('show');
+    Route::match(['GET', 'HEAD'], '/r/{shortUrl}', [\App\Http\Controllers\QrBarcodeController::class, 'redirect'])->name('redirect');
 
     // Authenticated routes
     Route::middleware('auth')->group(function () {
@@ -529,13 +549,15 @@ Route::prefix('qr-barcode')->name('qr-barcode.')->group(function () {
 require __DIR__.'/software_sales.php';
 
 // Cookie Policy Page
-Route::get('/cookie-policy', function () {
+// ⚠️ Legal Compliance: Cookie policy ต้องเข้าถึงได้ตลอดเวลา
+Route::match(['GET', 'HEAD'], '/cookie-policy', function () {
     return view('cookie-policy');
 })->name('cookie-policy');
 
 // Cryptocurrency Price Charts
+// ⚠️ Public Tool: Crypto charts ต้องถูก index โดย search engines
 Route::prefix('crypto')->name('crypto.')->group(function () {
-    Route::get('/charts', [\App\Http\Controllers\CryptoPriceChartController::class, 'index'])->name('charts');
+    Route::match(['GET', 'HEAD'], '/charts', [\App\Http\Controllers\CryptoPriceChartController::class, 'index'])->name('charts');
 });
 
 // Cryptocurrency API Routes
@@ -563,9 +585,10 @@ Route::prefix('chatbot')->name('chatbot.')->middleware('auth')->group(function (
 });
 
 // Chatbot Marketplace
+// ⚠️ Marketplace: Chatbot marketplace ต้องถูก index โดย search engines
 Route::prefix('chatbot/marketplace')->name('chatbot.marketplace.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'index'])->name('index');
-    Route::get('/{id}', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'show'])->name('show');
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/{id}', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'show'])->name('show');
 
     Route::middleware('auth')->group(function () {
         Route::get('/my-rentals', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'myRentals'])->name('my-rentals');
@@ -581,8 +604,9 @@ use App\Http\Controllers\TradingBotController;
 use App\Http\Controllers\Admin\TradingBotAdminController;
 
 // Public Trading Bot Marketplace
+// ⚠️ Marketplace: Trading bot marketplace ต้องถูก index โดย search engines
 Route::prefix('trading-bot')->name('trading-bot.')->group(function () {
-    Route::get('/marketplace', [TradingBotController::class, 'marketplace'])->name('marketplace');
+    Route::match(['GET', 'HEAD'], '/marketplace', [TradingBotController::class, 'marketplace'])->name('marketplace');
 });
 
 // Authenticated Trading Bot Routes
@@ -669,12 +693,13 @@ Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin/trading-bot
 | Routes สำหรับแสดงและ export ไวท์เปเปอร์ของ TPIX
 |
 */
+// ⚠️ Marketing Critical: TPIX Whitepaper ต้องถูก index โดย search engines
 Route::prefix('tpix')->name('tpix.')->group(function () {
     // แสดงหน้าไวท์เปเปอร์
-    Route::get('/whitepaper', [TPIXWhitepaperController::class, 'index'])
+    Route::match(['GET', 'HEAD'], '/whitepaper', [TPIXWhitepaperController::class, 'index'])
         ->name('whitepaper.index');
 
     // Export PDF
-    Route::get('/whitepaper/pdf', [TPIXWhitepaperController::class, 'exportPdf'])
+    Route::match(['GET', 'HEAD'], '/whitepaper/pdf', [TPIXWhitepaperController::class, 'exportPdf'])
         ->name('whitepaper.pdf');
 });
