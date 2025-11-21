@@ -510,28 +510,108 @@
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
                     <h2 class="text-5xl font-bold text-gradient mb-6">
-                        {{ $data['overview']['title'] }}
+                        ภาพรวมโครงการ
                     </h2>
 
                     <div class="prose prose-lg dark:prose-invert max-w-none">
                         <p class="text-xl text-gray-700 dark:text-gray-300 leading-relaxed mb-8">
-                            {{ $data['overview']['description'] }}
+                            {{ $data['full_name'] }} ({{ $data['short_name'] }}) เป็น Native Cryptocurrency ที่มี Blockchain ของตัวเอง
+                            ออกแบบมาเพื่อรองรับระบบนิเวศน์ Thaiprompt Affiliate ด้วยความเร็วสูง ค่าธรรมเนียมต่ำ และความปลอดภัยระดับสูง
                         </p>
                     </div>
 
                     {{-- Key Features Grid --}}
                     <div class="grid md:grid-cols-3 gap-6 mt-12">
-                        @foreach($data['overview']['features'] as $feature)
                         <div class="glass rounded-2xl p-8 card-3d shadow-2xl shadow-blue-500/10 dark:shadow-purple-500/20 border-t-4 border-gradient-primary">
                             <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-400/50 mb-4">
-                                <i class="fas fa-{{ $feature['icon'] }} text-white text-2xl"></i>
+                                <i class="fas fa-bolt text-white text-2xl"></i>
                             </div>
                             <h3 class="text-2xl font-bold text-gradient mb-2">
-                                {{ $feature['title'] }}
+                                Lightning Fast
                             </h3>
-                            <p class="text-gray-600 dark:text-gray-400">{{ $feature['description'] }}</p>
+                            <p class="text-gray-600 dark:text-gray-400">Block time {{ $data['blockchain']['block_time'] }}, TPS {{ number_format($data['blockchain']['tps']) }}</p>
                         </div>
-                        @endforeach
+
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl shadow-blue-500/10 dark:shadow-purple-500/20 border-t-4 border-gradient-primary">
+                            <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-400/50 mb-4">
+                                <i class="fas fa-shield-alt text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gradient mb-2">
+                                Secure & Decentralized
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">{{ $data['blockchain']['consensus'] }} Consensus</p>
+                        </div>
+
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl shadow-blue-500/10 dark:shadow-purple-500/20 border-t-4 border-gradient-primary">
+                            <div class="w-16 h-16 bg-gradient-to-br from-pink-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-pink-400/50 mb-4">
+                                <i class="fas fa-coins text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gradient mb-2">
+                                Fixed Supply
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">{{ $data['blockchain']['total_supply'] }} TPIX</p>
+                        </div>
+                    </div>
+
+                    {{-- Blockchain Details --}}
+                    <div class="glass rounded-2xl p-8 shadow-2xl mt-12">
+                        <h3 class="text-3xl font-bold text-gradient mb-6">รายละเอียด Blockchain</h3>
+                        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center">
+                                    <i class="fas fa-network-wired text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Network</p>
+                                    <p class="font-bold text-gray-900 dark:text-white">{{ $data['blockchain']['name'] }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center">
+                                    <i class="fas fa-link text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Chain ID</p>
+                                    <p class="font-bold text-gray-900 dark:text-white">{{ $data['blockchain']['chain_id'] }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center">
+                                    <i class="fas fa-cube text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Virtual Machine</p>
+                                    <p class="font-bold text-gray-900 dark:text-white">{{ $data['blockchain']['vm'] }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center">
+                                    <i class="fas fa-decimal text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Decimals</p>
+                                    <p class="font-bold text-gray-900 dark:text-white">{{ $data['blockchain']['decimals'] }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center">
+                                    <i class="fas fa-check-double text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Finality</p>
+                                    <p class="font-bold text-gray-900 dark:text-white">{{ $data['blockchain']['finality'] }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-lg gradient-primary flex items-center justify-center">
+                                    <i class="fas fa-database text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Native Coin</p>
+                                    <p class="font-bold text-gray-900 dark:text-white">{{ $data['blockchain']['native_coin'] }}</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -542,11 +622,11 @@
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
                     <h2 class="text-5xl font-bold text-gradient mb-6">
-                        {{ $data['problem']['title'] }}
+                        ปัญหาและแนวทางแก้ไข
                     </h2>
 
                     <div class="space-y-6">
-                        @foreach($data['problem']['problems'] as $problem)
+                        {{-- ปัญหา 1 --}}
                         <div class="glass rounded-2xl p-8 card-3d shadow-2xl">
                             <div class="flex items-start space-x-4">
                                 <div class="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0 shadow-lg">
@@ -554,20 +634,64 @@
                                 </div>
                                 <div class="flex-1">
                                     <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                                        {{ $problem['title'] }}
+                                        ค่า Gas Fee สูง
                                     </h3>
-                                    <p class="text-gray-700 dark:text-gray-300">{{ $problem['description'] }}</p>
+                                    <p class="text-gray-700 dark:text-gray-300">Token บน Ethereum ต้องใช้ ETH ในการทำธุรกรรม ซึ่งมีราคาแพงมาก ($50-100/tx ในช่วงเวลาที่เครือข่ายคับคั่ง)</p>
                                 </div>
                             </div>
                         </div>
-                        @endforeach
+
+                        {{-- ปัญหา 2 --}}
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl">
+                            <div class="flex items-start space-x-4">
+                                <div class="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0 shadow-lg">
+                                    <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                        ความเร็วช้า
+                                    </h3>
+                                    <p class="text-gray-700 dark:text-gray-300">Blockchain แบบ Public มักมีปัญหาความเร็ว Block time นาน และ TPS ต่ำ ทำให้การทำธุรกรรมช้า</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- ปัญหา 3 --}}
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl">
+                            <div class="flex items-start space-x-4">
+                                <div class="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0 shadow-lg">
+                                    <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                        ไม่มีการควบคุมโทเค็น
+                                    </h3>
+                                    <p class="text-gray-700 dark:text-gray-300">Token บน Blockchain อื่นไม่สามารถควบคุม Tokenomics, การกระจาย, หรือ Utility ได้อย่างเต็มที่</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- ปัญหา 4 --}}
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl">
+                            <div class="flex items-start space-x-4">
+                                <div class="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0 shadow-lg">
+                                    <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                        ขาดระบบนิเวศน์
+                                    </h3>
+                                    <p class="text-gray-700 dark:text-gray-300">Token ส่วนใหญ่ไม่มีระบบนิเวศน์ที่สมบูรณ์ ขาด DEX, Bridge, Staking และ DApps ที่เชื่อมโยงกัน</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Solutions --}}
                     <div class="mt-12">
-                        <h3 class="text-3xl font-bold text-gradient mb-6">แนวทางแก้ไข</h3>
+                        <h3 class="text-3xl font-bold text-gradient mb-6">แนวทางแก้ไขด้วย TPIX</h3>
                         <div class="grid md:grid-cols-2 gap-6">
-                            @foreach($data['problem']['solutions'] as $solution)
+                            {{-- Solution 1 --}}
                             <div class="glass rounded-2xl p-6 card-3d shadow-xl border-l-4 border-green-500">
                                 <div class="flex items-start space-x-3">
                                     <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-lg">
@@ -575,13 +699,57 @@
                                     </div>
                                     <div class="flex-1">
                                         <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                                            {{ $solution['title'] }}
+                                            ค่าธรรมเนียมต่ำมาก
                                         </h4>
-                                        <p class="text-gray-600 dark:text-gray-400">{{ $solution['description'] }}</p>
+                                        <p class="text-gray-600 dark:text-gray-400">ใช้ TPIX เป็น Native Coin ทำให้ค่าธรรมเนียมต่ำกว่า ~99% เมื่อเทียบกับ Ethereum</p>
                                     </div>
                                 </div>
                             </div>
-                            @endforeach
+
+                            {{-- Solution 2 --}}
+                            <div class="glass rounded-2xl p-6 card-3d shadow-xl border-l-4 border-green-500">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+                                        <i class="fas fa-check text-white"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                            ความเร็วสูง
+                                        </h4>
+                                        <p class="text-gray-600 dark:text-gray-400">Block time เพียง {{ $data['blockchain']['block_time'] }} และ TPS ถึง {{ number_format($data['blockchain']['tps']) }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Solution 3 --}}
+                            <div class="glass rounded-2xl p-6 card-3d shadow-xl border-l-4 border-green-500">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+                                        <i class="fas fa-check text-white"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                            ควบคุมได้เต็มที่
+                                        </h4>
+                                        <p class="text-gray-600 dark:text-gray-400">Blockchain ของตัวเอง ทำให้ควบคุม Tokenomics, Distribution และ Features ได้ 100%</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Solution 4 --}}
+                            <div class="glass rounded-2xl p-6 card-3d shadow-xl border-l-4 border-green-500">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+                                        <i class="fas fa-check text-white"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                            ระบบนิเวศน์สมบูรณ์
+                                        </h4>
+                                        <p class="text-gray-600 dark:text-gray-400">มี DEX, Bridge, Staking, NFT Marketplace และ DApps ครบครันในระบบเดียว</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -593,29 +761,68 @@
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
                     <h2 class="text-5xl font-bold text-gradient mb-6">
-                        {{ $data['technology']['title'] }}
+                        เทคโนโลยีและสถาปัตยกรรม
                     </h2>
 
-                    {{-- Tech Stack --}}
-                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                        @foreach($data['technology']['stack'] as $tech)
-                        <div class="glass rounded-2xl p-6 card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
-                            <div class="w-14 h-14 rounded-xl gradient-accent flex items-center justify-center mb-4 shadow-lg shadow-purple-500/50">
-                                <i class="fas fa-{{ $tech['icon'] }} text-white text-2xl"></i>
+                    {{-- Tech Stack by Category --}}
+                    @foreach($data['tech_stack'] as $category => $technologies)
+                    <div class="mb-12">
+                        <h3 class="text-3xl font-bold text-gradient mb-6">
+                            {{ ucfirst(str_replace('_', ' ', $category)) }}
+                        </h3>
+                        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            @foreach($technologies as $name => $description)
+                            <div class="glass rounded-2xl p-6 card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
+                                <div class="w-14 h-14 rounded-xl gradient-accent flex items-center justify-center mb-4 shadow-lg shadow-purple-500/50">
+                                    @if($category === 'blockchain')
+                                        <i class="fas fa-cube text-white text-2xl"></i>
+                                    @elseif($category === 'backend')
+                                        <i class="fas fa-server text-white text-2xl"></i>
+                                    @elseif($category === 'smart_contracts')
+                                        <i class="fas fa-file-contract text-white text-2xl"></i>
+                                    @elseif($category === 'frontend')
+                                        <i class="fas fa-desktop text-white text-2xl"></i>
+                                    @elseif($category === 'devops')
+                                        <i class="fas fa-cogs text-white text-2xl"></i>
+                                    @else
+                                        <i class="fas fa-code text-white text-2xl"></i>
+                                    @endif
+                                </div>
+                                <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                    {{ $name }}
+                                </h4>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm">{{ $description }}</p>
                             </div>
-                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                                {{ $tech['name'] }}
-                            </h3>
-                            <p class="text-gray-600 dark:text-gray-400 text-sm">{{ $tech['description'] }}</p>
+                            @endforeach
                         </div>
-                        @endforeach
                     </div>
+                    @endforeach
 
-                    {{-- Architecture Diagram --}}
-                    <div class="glass rounded-2xl p-8 shadow-2xl">
+                    {{-- Architecture Overview --}}
+                    <div class="glass rounded-2xl p-8 shadow-2xl mt-12">
                         <h3 class="text-3xl font-bold text-gradient mb-6">สถาปัตยกรรมระบบ</h3>
-                        <div class="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 dark:from-gray-800 dark:to-gray-700 rounded-xl flex items-center justify-center">
-                            <div id="architecture-diagram" class="w-full h-full"></div>
+                        <div class="grid md:grid-cols-3 gap-6">
+                            <div class="text-center">
+                                <div class="w-20 h-20 rounded-2xl gradient-primary mx-auto mb-4 flex items-center justify-center shadow-2xl">
+                                    <i class="fas fa-layer-group text-white text-3xl"></i>
+                                </div>
+                                <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Layer 1</h4>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm">{{ $data['blockchain']['name'] }} Blockchain</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-20 h-20 rounded-2xl gradient-accent mx-auto mb-4 flex items-center justify-center shadow-2xl">
+                                    <i class="fas fa-exchange-alt text-white text-3xl"></i>
+                                </div>
+                                <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">DeFi Layer</h4>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm">DEX, Staking, Bridge</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-20 h-20 rounded-2xl gradient-secondary mx-auto mb-4 flex items-center justify-center shadow-2xl">
+                                    <i class="fas fa-rocket text-white text-3xl"></i>
+                                </div>
+                                <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Application Layer</h4>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm">DApps, NFT, Smart Contracts</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -627,26 +834,99 @@
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
                     <h2 class="text-5xl font-bold text-gradient mb-6">
-                        {{ $data['ecosystem']['title'] }}
+                        ระบบนิเวศน์ TPIX
                     </h2>
 
                     <p class="text-xl text-gray-700 dark:text-gray-300 mb-12">
-                        {{ $data['ecosystem']['description'] }}
+                        TPIX Blockchain เชื่อมโยงกับระบบนิเวศน์ Thaiprompt Affiliate ที่มีผู้ใช้งานกว่า 100,000+ คน พร้อมด้วย DApps และบริการต่างๆ มากมาย
                     </p>
+
+                    {{-- Integrations --}}
+                    @if(isset($data['integrations']) && count($data['integrations']) > 0)
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                        @foreach($data['integrations'] as $integration)
+                        <div class="glass rounded-2xl p-6 card-3d shadow-2xl border-t-4 border-purple-500">
+                            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/50">
+                                <i class="fas fa-plug text-white text-xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                {{ is_array($integration) ? $integration['name'] : $integration }}
+                            </h3>
+                            @if(is_array($integration) && isset($integration['description']))
+                            <p class="text-gray-600 dark:text-gray-400 text-sm">{{ $integration['description'] }}</p>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                    @endif
 
                     {{-- Ecosystem Components --}}
                     <div class="grid md:grid-cols-2 gap-6">
-                        @foreach($data['ecosystem']['components'] as $component)
+                        {{-- Component 1 --}}
                         <div class="glass rounded-2xl p-8 card-3d shadow-2xl border-t-4 border-purple-500">
                             <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/50">
-                                <i class="fas fa-{{ $component['icon'] }} text-white text-2xl"></i>
+                                <i class="fas fa-users text-white text-2xl"></i>
                             </div>
                             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                                {{ $component['name'] }}
+                                Affiliate Network
                             </h3>
-                            <p class="text-gray-600 dark:text-gray-400">{{ $component['description'] }}</p>
+                            <p class="text-gray-600 dark:text-gray-400">เครือข่าย Affiliate กว่า 100,000+ คน ใช้ TPIX สำหรับคอมมิชชั่น โบนัส และรางวัล</p>
                         </div>
-                        @endforeach
+
+                        {{-- Component 2 --}}
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl border-t-4 border-purple-500">
+                            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/50">
+                                <i class="fas fa-store text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                E-Commerce Marketplace
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">ซื้อขายสินค้า บริการ และ Digital Products ด้วย TPIX</p>
+                        </div>
+
+                        {{-- Component 3 --}}
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl border-t-4 border-purple-500">
+                            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/50">
+                                <i class="fas fa-robot text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                AI Bot Marketplace
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">ซื้อขาย AI Chatbots, LINE Bots และ Automation Tools</p>
+                        </div>
+
+                        {{-- Component 4 --}}
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl border-t-4 border-purple-500">
+                            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/50">
+                                <i class="fas fa-hotel text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                Hotel Booking System
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">จองโรงแรมด้วย TPIX พร้อมรับส่วนลดพิเศษ</p>
+                        </div>
+
+                        {{-- Component 5 --}}
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl border-t-4 border-purple-500">
+                            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/50">
+                                <i class="fas fa-coins text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                Staking & Rewards
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">Stake TPIX เพื่อรับรางวัลและสิทธิพิเศษต่างๆ</p>
+                        </div>
+
+                        {{-- Component 6 --}}
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl border-t-4 border-purple-500">
+                            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/50">
+                                <i class="fas fa-image text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                NFT Marketplace
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">ซื้อขาย NFTs, Digital Art และ Collectibles</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -657,21 +937,43 @@
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
                     <h2 class="text-5xl font-bold text-gradient mb-6">
-                        {{ $data['tokenomics']['title'] }}
+                        โทเค็นโนมิกส์
                     </h2>
 
                     {{-- Key Metrics --}}
                     <div class="grid md:grid-cols-4 gap-6 mb-12">
-                        @foreach($data['tokenomics']['metrics'] as $metric)
                         <div class="glass rounded-2xl p-6 text-center card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
                             <div class="text-4xl font-black text-gradient mb-2">
-                                {{ $metric['value'] }}
+                                {{ number_format($data['tokenomics']['total_supply'] / 1000000000, 1) }}B
                             </div>
                             <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                {{ $metric['label'] }}
+                                Total Supply
                             </div>
                         </div>
-                        @endforeach
+                        <div class="glass rounded-2xl p-6 text-center card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
+                            <div class="text-4xl font-black text-gradient mb-2">
+                                {{ $data['blockchain']['block_time'] }}
+                            </div>
+                            <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                Block Time
+                            </div>
+                        </div>
+                        <div class="glass rounded-2xl p-6 text-center card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
+                            <div class="text-4xl font-black text-gradient mb-2">
+                                {{ number_format($data['blockchain']['tps']) }}
+                            </div>
+                            <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                TPS
+                            </div>
+                        </div>
+                        <div class="glass rounded-2xl p-6 text-center card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
+                            <div class="text-4xl font-black text-gradient mb-2">
+                                {{ $data['blockchain']['decimals'] }}
+                            </div>
+                            <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                Decimals
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Distribution Chart --}}
@@ -682,11 +984,55 @@
                         </div>
                     </div>
 
-                    {{-- Vesting Schedule --}}
+                    {{-- Distribution Details --}}
+                    <div class="grid md:grid-cols-2 gap-6 mb-12">
+                        @foreach($data['tokenomics']['distribution'] as $item)
+                        <div class="glass rounded-2xl p-6 card-3d shadow-xl border-l-4 border-blue-500">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-xl font-bold text-gray-900 dark:text-white">
+                                    {{ $item['name'] }}
+                                </h4>
+                                <span class="text-2xl font-black text-gradient">
+                                    {{ $item['percentage'] }}%
+                                </span>
+                            </div>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm mb-2">
+                                {{ number_format($item['amount']) }} TPIX
+                            </p>
+                            @if(isset($item['description']))
+                            <p class="text-gray-500 dark:text-gray-500 text-xs">
+                                {{ $item['description'] }}
+                            </p>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+
+                    {{-- Supply Info --}}
                     <div class="glass rounded-2xl p-8 shadow-2xl">
-                        <h3 class="text-3xl font-bold text-gradient mb-6">Vesting Schedule</h3>
-                        <div class="aspect-video">
-                            <canvas id="vestingChart"></canvas>
+                        <h3 class="text-3xl font-bold text-gradient mb-6">ข้อมูล Supply</h3>
+                        <div class="grid md:grid-cols-3 gap-6">
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-gradient mb-2">
+                                    {{ number_format($data['tokenomics']['total_supply']) }}
+                                </div>
+                                <p class="text-gray-600 dark:text-gray-400">Total Supply</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">จำนวนทั้งหมด (Fixed)</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-gradient mb-2">
+                                    0
+                                </div>
+                                <p class="text-gray-600 dark:text-gray-400">Inflation Rate</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">ไม่มีการพิมพ์เพิ่ม</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-gradient mb-2">
+                                    100%
+                                </div>
+                                <p class="text-gray-600 dark:text-gray-400">Transparency</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">โปร่งใสทุกธุรกรรม</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -698,26 +1044,74 @@
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
                     <h2 class="text-5xl font-bold text-gradient mb-6">
-                        {{ $data['dex']['title'] }}
+                        {{ $data['features']['dex']['title'] }}
                     </h2>
 
                     <p class="text-xl text-gray-700 dark:text-gray-300 mb-12">
-                        {{ $data['dex']['description'] }}
+                        Decentralized Exchange (DEX) บน TPIX Blockchain ให้คุณซื้อขายโทเค็นได้โดยตรง ไม่ผ่านตัวกลาง ปลอดภัย โปร่งใส และค่าธรรมเนียมต่ำ
                     </p>
 
                     {{-- DEX Features --}}
-                    <div class="grid md:grid-cols-3 gap-6">
-                        @foreach($data['dex']['features'] as $feature)
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        @foreach($data['features']['dex']['items'] as $item)
                         <div class="glass rounded-2xl p-6 card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
                             <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-500 to-red-600 flex items-center justify-center mb-4 shadow-lg shadow-pink-500/50">
-                                <i class="fas fa-{{ $feature['icon'] }} text-white text-xl"></i>
+                                <i class="fas fa-check-circle text-white text-xl"></i>
                             </div>
-                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                                {{ $feature['title'] }}
-                            </h3>
-                            <p class="text-gray-600 dark:text-gray-400 text-sm">{{ $feature['description'] }}</p>
+                            <p class="text-lg font-medium text-gray-900 dark:text-white">{{ $item }}</p>
                         </div>
                         @endforeach
+                    </div>
+
+                    {{-- Additional DEX Info --}}
+                    <div class="grid md:grid-cols-2 gap-6 mt-12">
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl border-l-4 border-pink-500">
+                            <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-pink-500 to-red-600 flex items-center justify-center mb-4 shadow-lg shadow-pink-500/50">
+                                <i class="fas fa-exchange-alt text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                Swap & Trade
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">
+                                แลกเปลี่ยน TPIX กับโทเค็นอื่นๆ ได้ทันที ด้วย Automated Market Maker (AMM)
+                            </p>
+                        </div>
+
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl border-l-4 border-pink-500">
+                            <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-pink-500 to-red-600 flex items-center justify-center mb-4 shadow-lg shadow-pink-500/50">
+                                <i class="fas fa-water text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                Liquidity Pools
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">
+                                เพิ่มสภาพคล่องและรับรางวัลจากค่าธรรมเนียมการซื้อขาย
+                            </p>
+                        </div>
+
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl border-l-4 border-pink-500">
+                            <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-pink-500 to-red-600 flex items-center justify-center mb-4 shadow-lg shadow-pink-500/50">
+                                <i class="fas fa-seedling text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                Yield Farming
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">
+                                Stake LP tokens เพื่อรับรางวัลเพิ่มเติม และสร้างรายได้แบบ passive
+                            </p>
+                        </div>
+
+                        <div class="glass rounded-2xl p-8 card-3d shadow-2xl border-l-4 border-pink-500">
+                            <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-pink-500 to-red-600 flex items-center justify-center mb-4 shadow-lg shadow-pink-500/50">
+                                <i class="fas fa-bridge text-white text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                Cross-Chain Bridge
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400">
+                                เชื่อมต่อกับ Blockchain อื่นๆ เพื่อรองรับการซื้อขายข้าม chain
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -728,11 +1122,11 @@
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
                     <h2 class="text-5xl font-bold text-gradient mb-6">
-                        {{ $data['use_cases']['title'] }}
+                        Use Cases
                     </h2>
 
                     <div class="space-y-6">
-                        @foreach($data['use_cases']['cases'] as $case)
+                        @foreach($data['use_cases'] as $case)
                         <div class="glass rounded-2xl p-8 card-3d shadow-2xl border-l-4 border-blue-500">
                             <div class="flex items-start space-x-4">
                                 <div class="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/50">
@@ -743,12 +1137,12 @@
                                         {{ $case['title'] }}
                                     </h3>
                                     <p class="text-gray-700 dark:text-gray-300 mb-4">{{ $case['description'] }}</p>
-                                    @if(isset($case['benefits']))
+                                    @if(isset($case['features']) && count($case['features']) > 0)
                                     <ul class="space-y-2">
-                                        @foreach($case['benefits'] as $benefit)
+                                        @foreach($case['features'] as $feature)
                                         <li class="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
                                             <i class="fas fa-check-circle text-green-500"></i>
-                                            <span>{{ $benefit }}</span>
+                                            <span>{{ $feature }}</span>
                                         </li>
                                         @endforeach
                                     </ul>
@@ -767,23 +1161,26 @@
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
                     <h2 class="text-5xl font-bold text-gradient mb-12">
-                        {{ $data['roadmap']['title'] }}
+                        Roadmap (2023-2026)
                     </h2>
 
                     {{-- Timeline --}}
                     <div class="relative">
                         <div class="absolute left-1/2 transform -translate-x-1/2 h-full w-1 gradient-primary"></div>
 
-                        @foreach($data['roadmap']['phases'] as $index => $phase)
+                        @foreach($data['roadmap'] as $index => $phase)
                         <div class="mb-12 flex justify-center relative">
                             <div class="w-full md:w-5/12 {{ $index % 2 === 0 ? 'md:text-right md:mr-auto md:pr-8' : 'md:ml-auto md:pl-8' }}">
                                 <div class="glass rounded-2xl p-6 card-3d shadow-2xl">
                                     <div class="inline-block px-4 py-1 rounded-full gradient-primary text-white text-sm font-bold mb-3">
-                                        {{ $phase['period'] }}
+                                        {{ $phase['quarter'] }}
                                     </div>
                                     <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                                        {{ $phase['title'] }}
+                                        {{ $phase['phase'] }}
                                     </h3>
+                                    <div class="inline-block px-3 py-1 rounded-lg {{ $phase['status'] === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : ($phase['status'] === 'in_progress' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400') }} text-xs font-semibold mb-4">
+                                        {{ $phase['status'] === 'completed' ? '✓ เสร็จสมบูรณ์' : ($phase['status'] === 'in_progress' ? '⏳ กำลังดำเนินการ' : '📋 วางแผน') }}
+                                    </div>
                                     <ul class="space-y-2 {{ $index % 2 === 0 ? 'md:text-right' : '' }}">
                                         @foreach($phase['milestones'] as $milestone)
                                         <li class="flex items-center space-x-2 text-gray-600 dark:text-gray-400 {{ $index % 2 === 0 ? 'md:flex-row-reverse md:space-x-reverse' : '' }}">
@@ -809,42 +1206,114 @@
             <div class="container mx-auto px-4">
                 <div class="max-w-6xl mx-auto">
                     <h2 class="text-5xl font-bold text-gradient mb-12 text-center">
-                        {{ $data['team']['title'] }}
+                        ทีมและพันธมิตร
                     </h2>
 
-                    {{-- Team Members --}}
+                    {{-- Core Team --}}
                     <div class="grid md:grid-cols-3 gap-8 mb-16">
-                        @foreach($data['team']['members'] as $member)
                         <div class="glass rounded-2xl p-6 text-center card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
                             <div class="w-24 h-24 rounded-full gradient-primary mx-auto mb-4 flex items-center justify-center shadow-2xl shadow-blue-500/50">
-                                <i class="fas fa-user text-white text-3xl"></i>
+                                <i class="fas fa-user-tie text-white text-3xl"></i>
                             </div>
                             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">
-                                {{ $member['name'] }}
+                                Core Team
                             </h3>
                             <p class="text-blue-600 dark:text-blue-400 font-medium mb-2">
-                                {{ $member['role'] }}
+                                Blockchain Developers
                             </p>
                             <p class="text-gray-600 dark:text-gray-400 text-sm">
-                                {{ $member['bio'] }}
+                                ทีมพัฒนา Blockchain ที่มีประสบการณ์ด้าน Layer 1, Smart Contracts และ DeFi
                             </p>
                         </div>
-                        @endforeach
+
+                        <div class="glass rounded-2xl p-6 text-center card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
+                            <div class="w-24 h-24 rounded-full gradient-accent mx-auto mb-4 flex items-center justify-center shadow-2xl shadow-purple-500/50">
+                                <i class="fas fa-users text-white text-3xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                                Business Team
+                            </h3>
+                            <p class="text-blue-600 dark:text-blue-400 font-medium mb-2">
+                                Strategy & Partnerships
+                            </p>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm">
+                                ทีมพัฒนาธุรกิจและหาพันธมิตรเพื่อขยาย Ecosystem
+                            </p>
+                        </div>
+
+                        <div class="glass rounded-2xl p-6 text-center card-3d shadow-2xl hover:scale-105 transform transition-all duration-300">
+                            <div class="w-24 h-24 rounded-full gradient-secondary mx-auto mb-4 flex items-center justify-center shadow-2xl shadow-blue-500/50">
+                                <i class="fas fa-shield-alt text-white text-3xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                                Security Team
+                            </h3>
+                            <p class="text-blue-600 dark:text-blue-400 font-medium mb-2">
+                                Smart Contract Auditors
+                            </p>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm">
+                                ทีม Security ตรวจสอบและรักษาความปลอดภัยของ Smart Contracts
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- Advisors & Partners --}}
+                    <div class="glass rounded-2xl p-8 shadow-2xl mb-12">
+                        <h3 class="text-3xl font-bold text-gradient mb-6 text-center">ที่ปรึกษา</h3>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-16 h-16 rounded-xl gradient-primary flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-graduation-cap text-white text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-lg font-bold text-gray-900 dark:text-white">Blockchain Advisors</h4>
+                                    <p class="text-gray-600 dark:text-gray-400 text-sm">ผู้เชี่ยวชาญด้าน Blockchain และ Cryptocurrency</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="w-16 h-16 rounded-xl gradient-accent flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-balance-scale text-white text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-lg font-bold text-gray-900 dark:text-white">Legal Advisors</h4>
+                                    <p class="text-gray-600 dark:text-gray-400 text-sm">ที่ปรึกษากฎหมายด้าน Crypto และ Fintech</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Partners --}}
                     <div class="glass rounded-2xl p-8 shadow-2xl">
                         <h3 class="text-3xl font-bold text-gradient mb-6 text-center">พันธมิตรของเรา</h3>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            @foreach($data['team']['partners'] as $partner)
+                            <div class="glass rounded-xl p-4 text-center hover:scale-105 transform transition-all duration-300">
+                                <div class="w-16 h-16 rounded-xl gradient-primary mx-auto mb-3 flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-exchange-alt text-white text-2xl"></i>
+                                </div>
+                                <p class="font-bold text-gray-900 dark:text-white">Exchanges</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">Trading Platforms</p>
+                            </div>
                             <div class="glass rounded-xl p-4 text-center hover:scale-105 transform transition-all duration-300">
                                 <div class="w-16 h-16 rounded-xl gradient-accent mx-auto mb-3 flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-wallet text-white text-2xl"></i>
+                                </div>
+                                <p class="font-bold text-gray-900 dark:text-white">Wallets</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">Wallet Providers</p>
+                            </div>
+                            <div class="glass rounded-xl p-4 text-center hover:scale-105 transform transition-all duration-300">
+                                <div class="w-16 h-16 rounded-xl gradient-secondary mx-auto mb-3 flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-code text-white text-2xl"></i>
+                                </div>
+                                <p class="font-bold text-gray-900 dark:text-white">DApps</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">Application Partners</p>
+                            </div>
+                            <div class="glass rounded-xl p-4 text-center hover:scale-105 transform transition-all duration-300">
+                                <div class="w-16 h-16 rounded-xl gradient-primary mx-auto mb-3 flex items-center justify-center shadow-lg">
                                     <i class="fas fa-handshake text-white text-2xl"></i>
                                 </div>
-                                <p class="font-bold text-gray-900 dark:text-white">{{ $partner['name'] }}</p>
-                                <p class="text-xs text-gray-600 dark:text-gray-400">{{ $partner['type'] }}</p>
+                                <p class="font-bold text-gray-900 dark:text-white">Communities</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">Community Partners</p>
                             </div>
-                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -856,13 +1325,31 @@
             <div class="container mx-auto px-4">
                 <div class="max-w-4xl mx-auto">
                     <h2 class="text-5xl font-bold text-gradient mb-6 text-center">
-                        {{ $data['conclusion']['title'] }}
+                        สรุป
                     </h2>
 
                     <div class="glass rounded-3xl p-12 shadow-2xl text-center">
                         <p class="text-xl text-gray-700 dark:text-gray-300 leading-relaxed mb-8">
-                            {{ $data['conclusion']['summary'] }}
+                            TPIX เป็น Native Cryptocurrency ที่มี Blockchain ของตัวเอง ออกแบบมาเพื่อแก้ปัญหาค่าธรรมเนียมสูง ความเร็วช้า
+                            และข้อจำกัดของ Token บน Blockchain อื่นๆ ด้วยความเร็วสูง ({{ $data['blockchain']['tps'] }} TPS),
+                            ค่าธรรมเนียมต่ำมาก และระบบนิเวศน์ที่สมบูรณ์ TPIX จะเป็นหัวใจหลักของระบบ Thaiprompt Affiliate
+                            ที่มีผู้ใช้งานกว่า 100,000+ คน และเติบโตอย่างต่อเนื่อง
                         </p>
+
+                        <div class="grid md:grid-cols-3 gap-6 mb-8">
+                            <div>
+                                <div class="text-4xl font-black text-gradient mb-2">{{ number_format($data['tokenomics']['total_supply'] / 1000000000, 1) }}B</div>
+                                <p class="text-gray-600 dark:text-gray-400 font-medium">Total Supply</p>
+                            </div>
+                            <div>
+                                <div class="text-4xl font-black text-gradient mb-2">{{ $data['blockchain']['block_time'] }}</div>
+                                <p class="text-gray-600 dark:text-gray-400 font-medium">Block Time</p>
+                            </div>
+                            <div>
+                                <div class="text-4xl font-black text-gradient mb-2">{{ number_format($data['blockchain']['tps']) }}</div>
+                                <p class="text-gray-600 dark:text-gray-400 font-medium">TPS</p>
+                            </div>
+                        </div>
 
                         {{-- Call to Action --}}
                         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -925,12 +1412,17 @@
             // Token Distribution Chart
             const distributionCtx = document.getElementById('tokenDistributionChart');
             if (distributionCtx) {
+                // Extract labels and percentages from distribution data
+                const distributionData = @json($data['tokenomics']['distribution']);
+                const labels = distributionData.map(item => item.name);
+                const percentages = distributionData.map(item => item.percentage);
+
                 new Chart(distributionCtx, {
                     type: 'doughnut',
                     data: {
-                        labels: @json(array_column($data['tokenomics']['distribution'], 'label')),
+                        labels: labels,
                         datasets: [{
-                            data: @json(array_column($data['tokenomics']['distribution'], 'value')),
+                            data: percentages,
                             backgroundColor: [
                                 'rgba(102, 126, 234, 0.8)',
                                 'rgba(118, 75, 162, 0.8)',
@@ -952,41 +1444,19 @@
                                     font: {
                                         size: 14,
                                         family: "'Inter', sans-serif"
+                                    },
+                                    color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const item = distributionData[context.dataIndex];
+                                        return label + ': ' + value + '% (' + item.amount.toLocaleString() + ' TPIX)';
                                     }
                                 }
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Vesting Chart
-            const vestingCtx = document.getElementById('vestingChart');
-            if (vestingCtx) {
-                new Chart(vestingCtx, {
-                    type: 'line',
-                    data: {
-                        labels: @json($data['tokenomics']['vesting']['labels']),
-                        datasets: [{
-                            label: 'Token Release',
-                            data: @json($data['tokenomics']['vesting']['data']),
-                            borderColor: 'rgba(102, 126, 234, 1)',
-                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true
                             }
                         }
                     }
