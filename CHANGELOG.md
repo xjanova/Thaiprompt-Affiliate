@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.108.0] - 2025-11-21
+
+### ✨ Features
+- feat: improve QR code modal to fullscreen on mobile (70cc2800)
+- feat: add floating QR code button and modal for recruit page (82ae51d4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1429 from xjanova/claude/add-recruit-qr-code-01HGnucrodgRETVSyZZnxt4c (4a175750)
+
 ## [v3.107.2] - 2025-11-21
 
 ### ✨ Features
