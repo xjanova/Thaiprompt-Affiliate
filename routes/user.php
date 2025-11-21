@@ -402,3 +402,13 @@ Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
     Route::get('/my-creations', [\App\Http\Controllers\User\AiGenController::class, 'myCreations'])->name('my-creations');
     Route::get('/explore', [\App\Http\Controllers\User\AiGenController::class, 'explore'])->name('explore');
 });
+
+// Recruit Page Management (User - เครื่องมือการตลาด)
+Route::prefix('marketing')->name('marketing.')->group(function () {
+    Route::prefix('recruit')->name('recruit.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\User\RecruitPageController::class, 'index'])->name('index');
+        Route::put('/update', [\App\Http\Controllers\User\RecruitPageController::class, 'update'])->name('update');
+        Route::get('/leads', [\App\Http\Controllers\User\RecruitPageController::class, 'leads'])->name('leads');
+        Route::get('/analytics', [\App\Http\Controllers\User\RecruitPageController::class, 'analytics'])->name('analytics');
+    });
+});
