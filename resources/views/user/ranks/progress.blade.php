@@ -18,7 +18,7 @@
     </div>
 
     <!-- Current Rank Card -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+    <x-arrow-x.card-v3 class="p-8">
         <div class="text-center mb-8">
             <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">ยศปัจจุบันของคุณ</h2>
             @if($user->currentRank)
@@ -69,7 +69,7 @@
     </div>
 
     <!-- Rank Progression -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+    <x-arrow-x.card-v3 class="p-8">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
             <span>📊</span> เส้นทางความก้าวหน้า
         </h2>
