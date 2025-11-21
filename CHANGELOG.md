@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.92.0] - 2025-11-21
+
+### ✨ Features
+- Merge pull request #1392 from xjanova/claude/create-tpix-whitepaper-01XEfSbHrbEzZiJR4WhZr82T (46ce36e2)
+- feat: add language switcher to TPIX whitepaper using Google Translate Element (c0c943c6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.91.1] - 2025-11-21
 
 ### ✨ Features
