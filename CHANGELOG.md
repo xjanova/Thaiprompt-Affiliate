@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.99.7] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1414 from xjanova/claude/create-tpix-whitepaper-01XEfSbHrbEzZiJR4WhZr82T (4b46110a)
+- fix: correct integrations array key from 'name' to 'title' (006f1e67)
+### 🔧 Other Changes
+
+
 ## [v3.99.6] - 2025-11-21
 
 ### ✨ Features
