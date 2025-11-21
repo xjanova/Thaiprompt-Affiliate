@@ -22,7 +22,7 @@
         @method('PUT')
 
         <!-- Master Switch -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <x-arrow-x.card-v3 class="p-6">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
@@ -48,7 +48,7 @@
         <!-- Email Categories -->
         <div id="emailCategories" class="space-y-4">
             <!-- Security Alerts -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+            <x-arrow-x.card-v3 class="p-6">
                 <div class="flex items-start gap-4">
                     <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span class="text-2xl">🔐</span>
@@ -77,7 +77,7 @@
             </div>
 
             <!-- Commission Notifications -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+            <x-arrow-x.card-v3 class="p-6">
                 <div class="flex items-start gap-4">
                     <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span class="text-2xl">💰</span>
@@ -102,7 +102,7 @@
             </div>
 
             <!-- Withdrawal Notifications -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+            <x-arrow-x.card-v3 class="p-6">
                 <div class="flex items-start gap-4">
                     <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span class="text-2xl">🏦</span>
@@ -127,7 +127,7 @@
             </div>
 
             <!-- System Announcements -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+            <x-arrow-x.card-v3 class="p-6">
                 <div class="flex items-start gap-4">
                     <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span class="text-2xl">📢</span>
@@ -152,7 +152,7 @@
             </div>
 
             <!-- Weekly Reports -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+            <x-arrow-x.card-v3 class="p-6">
                 <div class="flex items-start gap-4">
                     <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span class="text-2xl">📊</span>
@@ -177,7 +177,7 @@
             </div>
 
             <!-- Marketing Emails -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+            <x-arrow-x.card-v3 class="p-6">
                 <div class="flex items-start gap-4">
                     <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span class="text-2xl">🎯</span>
@@ -203,7 +203,7 @@
         </div>
 
         <!-- Language Preference -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <x-arrow-x.card-v3 class="p-6">
             <div class="flex items-center gap-4 mb-4">
                 <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center">
                     <span class="text-2xl">🌐</span>

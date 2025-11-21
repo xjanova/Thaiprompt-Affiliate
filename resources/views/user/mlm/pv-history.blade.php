@@ -19,7 +19,7 @@
 
     <!-- PV Summary -->
     <div class="grid md:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <x-arrow-x.card-v3 class="p-6">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                     <span class="text-2xl">💎</span>
@@ -33,7 +33,7 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <x-arrow-x.card-v3 class="p-6">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                     <span class="text-2xl">➕</span>
@@ -47,7 +47,7 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <x-arrow-x.card-v3 class="p-6">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
                     <span class="text-2xl">➖</span>
@@ -61,7 +61,7 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <x-arrow-x.card-v3 class="p-6">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                     <span class="text-2xl">📅</span>

@@ -19,7 +19,7 @@
     </div>
 
     <!-- Payment Information -->
-    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <div class="text-center">
             <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full mb-4">
                 <svg class="w-8 h-8 text-green-600 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,7 +55,7 @@
     </div>
 
     <!-- QR Code Section -->
-    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6 text-center">สแกน QR Code เพื่อชำระเงิน</h3>
 
         <div class="flex flex-col items-center">
@@ -88,7 +88,7 @@
     </div>
 
     <!-- Instructions -->
-    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">📱 วิธีการชำระเงิน</h3>
 
         <div class="space-y-4">

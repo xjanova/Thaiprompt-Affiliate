@@ -5,62 +5,44 @@
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Header -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-white/20 dark:border-gray-700/50">
+    <x-arrow-x.card-v3 class="p-6">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">คอมมิชชั่นของฉัน</h1>
         <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ดูประวัติคอมมิชชั่นทั้งหมด</p>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-white/20 dark:border-gray-700/50">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">ทั้งหมด</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ $commissions->total() }}</p>
-                </div>
-                <div class="text-4xl">📊</div>
-            </div>
-        </div>
+        <x-arrow-x.stats.card-3d
+            :value="$commissions->total()"
+            label="ทั้งหมด"
+            icon="fas fa-chart-bar"
+            gradient="from-purple-500 to-indigo-600"
+        />
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-white/20 dark:border-gray-700/50">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">รอดำเนินการ</p>
-                    <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
-                        {{ Auth::user()->commissions()->where('status', 'pending')->count() }}
-                    </p>
-                </div>
-                <div class="text-4xl">⏳</div>
-            </div>
-        </div>
+        <x-arrow-x.stats.card-3d
+            :value="Auth::user()->commissions()->where('status', 'pending')->count()"
+            label="รอดำเนินการ"
+            icon="fas fa-clock"
+            gradient="from-yellow-500 to-orange-600"
+        />
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-white/20 dark:border-gray-700/50">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">อนุมัติแล้ว</p>
-                    <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-                        {{ Auth::user()->commissions()->where('status', 'approved')->count() }}
-                    </p>
-                </div>
-                <div class="text-4xl">✅</div>
-            </div>
-        </div>
+        <x-arrow-x.stats.card-3d
+            :value="Auth::user()->commissions()->where('status', 'approved')->count()"
+            label="อนุมัติแล้ว"
+            icon="fas fa-check-circle"
+            gradient="from-green-500 to-emerald-600"
+        />
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-white/20 dark:border-gray-700/50">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">จ่ายแล้ว</p>
-                    <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                        {{ Auth::user()->commissions()->where('status', 'paid')->count() }}
-                    </p>
-                </div>
-                <div class="text-4xl">💰</div>
-            </div>
-        </div>
+        <x-arrow-x.stats.card-3d
+            :value="Auth::user()->commissions()->where('status', 'paid')->count()"
+            label="จ่ายแล้ว"
+            icon="fas fa-money-bill-wave"
+            gradient="from-blue-500 to-cyan-600"
+        />
     </div>
 
     <!-- Commissions Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-white/20 dark:border-gray-700/50">
+    <x-arrow-x.card-v3 class="overflow-hidden p-0">
         @if($commissions->count() > 0)
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -143,6 +125,6 @@
                 <p class="text-gray-500 dark:text-gray-500 text-sm mt-2">เมื่อมีคอมมิชชั่นเข้ามาจะแสดงที่นี่</p>
             </div>
         @endif
-    </div>
+    </x-arrow-x.card-v3>
 </div>
 @endsection

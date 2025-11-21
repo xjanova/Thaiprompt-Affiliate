@@ -74,41 +74,34 @@
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-xl p-6 text-white">
-            <div class="flex items-center justify-between mb-4">
-                <div class="text-4xl">📥</div>
-            </div>
-            <p class="text-white text-opacity-80 text-sm mb-1">รายรับทั้งหมด</p>
-            <p class="text-3xl md:text-4xl font-bold">฿{{ number_format($wallet->total_income, 2) }}</p>
-            <p class="text-xs text-white text-opacity-70 mt-2">Total Income</p>
-        </div>
+        <x-arrow-x.stats.card-3d
+            :value="'฿' . number_format($wallet->total_income, 2)"
+            label="รายรับทั้งหมด"
+            icon="fas fa-arrow-down"
+            gradient="from-green-500 to-emerald-600"
+        />
 
-        <div class="bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl shadow-xl p-6 text-white">
-            <div class="flex items-center justify-between mb-4">
-                <div class="text-4xl">📤</div>
-            </div>
-            <p class="text-white text-opacity-80 text-sm mb-1">รายจ่ายทั้งหมด</p>
-            <p class="text-3xl md:text-4xl font-bold">฿{{ number_format($wallet->total_expense, 2) }}</p>
-            <p class="text-xs text-white text-opacity-70 mt-2">Total Expense</p>
-        </div>
+        <x-arrow-x.stats.card-3d
+            :value="'฿' . number_format($wallet->total_expense, 2)"
+            label="รายจ่ายทั้งหมด"
+            icon="fas fa-arrow-up"
+            gradient="from-red-500 to-rose-600"
+        />
 
-        <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-xl p-6 text-white">
-            <div class="flex items-center justify-between mb-4">
-                <div class="text-4xl">💰</div>
-            </div>
-            <p class="text-white text-opacity-80 text-sm mb-1">ยอดเงินคงเหลือ</p>
-            <p class="text-3xl md:text-4xl font-bold">฿{{ number_format($wallet->balance, 2) }}</p>
-            <p class="text-xs text-white text-opacity-70 mt-2">Current Balance</p>
-        </div>
+        <x-arrow-x.stats.card-3d
+            :value="'฿' . number_format($wallet->balance, 2)"
+            label="ยอดเงินคงเหลือ"
+            icon="fas fa-wallet"
+            gradient="from-blue-500 to-indigo-600"
+        />
 
-        <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-xl p-6 text-white">
-            <div class="flex items-center justify-between mb-4">
-                <div class="text-4xl">🎁</div>
-            </div>
-            <p class="text-white text-opacity-80 text-sm mb-1">Cashback ทั้งหมด</p>
-            <p class="text-3xl md:text-4xl font-bold">฿{{ number_format($cashbackStats['total'] ?? 0, 2) }}</p>
-            <p class="text-xs text-white text-opacity-70 mt-2">{{ $cashbackStats['count'] ?? 0 }} ครั้ง</p>
-        </div>
+        <x-arrow-x.stats.card-3d
+            :value="'฿' . number_format($cashbackStats['total'] ?? 0, 2)"
+            label="Cashback ทั้งหมด"
+            subtitle="{{ ($cashbackStats['count'] ?? 0) }} ครั้ง"
+            icon="fas fa-gift"
+            gradient="from-amber-500 to-orange-600"
+        />
     </div>
 
     <!-- Admin Adjustments Card -->
@@ -187,7 +180,7 @@
     @endif
 
     <!-- Recent Transactions -->
-    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">📊 รายการธุรกรรมล่าสุด</h3>
@@ -255,11 +248,11 @@
                 </tbody>
             </table>
         </div>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Payment Methods -->
     @if($paymentMethods->isNotEmpty())
-    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">🏦 ช่องทางรับเงิน</h3>
@@ -304,7 +297,7 @@
                 </div>
             @endforeach
         </div>
-    </div>
+    </x-arrow-x.card-v3>
     @endif
 
     <!-- Available Payment Gateways -->
@@ -324,7 +317,7 @@
 
     <!-- Wallet Status Alert -->
     @if($wallet->isLocked())
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+        <x-arrow-x.alert-v3 type="error" class="mb-6">
             <div class="flex items-center gap-3">
                 <span class="text-2xl">🔒</span>
                 <div>
@@ -335,7 +328,7 @@
                     @endif
                 </div>
             </div>
-        </div>
+        </x-arrow-x.alert-v3>
     @endif
 </div>
 

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.user-arrow-x')
 
 @section('title', 'ประวัติการแลกเปลี่ยน - TPIX DEX')
 

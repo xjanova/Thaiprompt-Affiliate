@@ -18,7 +18,7 @@
     </div>
 
     <!-- Status Card -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
@@ -110,7 +110,7 @@
 
     @if(!$status['enabled'])
         <!-- Enable 2FA Form -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <x-arrow-x.card-v3 class="p-6">
             <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                 <span>🚀</span> เปิดใช้งาน 2FA
             </h2>
@@ -194,7 +194,7 @@
         <!-- Advanced Settings (When 2FA is Enabled) -->
         <div class="grid md:grid-cols-2 gap-6">
             <!-- Recovery Codes -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+            <x-arrow-x.card-v3 class="p-6">
                 <div class="flex items-center gap-3 mb-4">
                     <span class="text-3xl">🔑</span>
                     <h3 class="text-xl font-bold text-gray-800 dark:text-white">รหัสกู้คืน</h3>
@@ -219,7 +219,7 @@
             </div>
 
             <!-- Trusted Devices -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+            <x-arrow-x.card-v3 class="p-6">
                 <div class="flex items-center gap-3 mb-4">
                     <span class="text-3xl">📱</span>
                     <h3 class="text-xl font-bold text-gray-800 dark:text-white">อุปกรณ์ที่เชื่อถือ</h3>

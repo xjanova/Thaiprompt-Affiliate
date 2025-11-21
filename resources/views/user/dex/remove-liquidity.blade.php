@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.user-arrow-x')
 
 @section('title', 'ถอน Liquidity - TPIX DEX')
 

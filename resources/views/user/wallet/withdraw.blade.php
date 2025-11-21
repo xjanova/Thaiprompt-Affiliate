@@ -31,7 +31,7 @@
     </div>
 
     <!-- Withdrawal Form -->
-    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">แบบฟอร์มถอนเงิน</h2>
 
         @if($paymentMethods->isEmpty())
@@ -137,10 +137,10 @@
                 </div>
             </form>
         @endif
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Recent Withdrawals -->
-    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">📋 คำขอถอนเงินล่าสุด</h3>
             <a href="{{ route('user.wallet.withdrawals') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
