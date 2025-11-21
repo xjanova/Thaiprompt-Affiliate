@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.117.1] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1445 from xjanova/claude/add-ai-bot-profiles-01C9dj1eTmFbi9cBCmpqNSfL (14b015cd)
+- fix: แก้ไขเมนู AI Bot Profiles และ AI Installations ที่ซ้ำกัน (9c9b0f1b)
+### 🔧 Other Changes
+
+
 ## [v3.117.0] - 2025-11-21
 
 ### ✨ Features
