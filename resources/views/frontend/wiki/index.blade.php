@@ -1224,39 +1224,45 @@
 
 // ซ่อน Google Translate Element (เราใช้ปุ่มของเราเอง)
 document.addEventListener('DOMContentLoaded', function() {
-    // เคลียร์ Google Translate cookies/preferences เพื่อป้องกันการแปลอัตโนมัติ
-    document.cookie = 'googtrans=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    document.cookie = 'googtrans=/th/th; Path=/;'; // บังคับให้เริ่มที่ภาษาไทย
-    localStorage.removeItem('googtrans');
+    // เช็คว่ามี cookie googtrans อยู่แล้วหรือไม่
+    var currentCookie = document.cookie.split('; ').find(function(row) {
+        return row.startsWith('googtrans=');
+    });
+
+    // ถ้าไม่มี cookie หรือ cookie ไม่ถูกต้อง ให้ตั้งเป็นภาษาไทย
+    if (!currentCookie || currentCookie === 'googtrans=' || currentCookie === 'googtrans=null') {
+        document.cookie = 'googtrans=/th/th; Path=/;';
+        console.log('Set default language to Thai');
+    } else {
+        console.log('Keep existing language:', currentCookie);
+    }
 
     // สร้าง hidden container สำหรับ Google Translate Element
-    const gtContainer = document.createElement('div');
+    var gtContainer = document.createElement('div');
     gtContainer.id = 'google_translate_element';
     gtContainer.style.display = 'none';
     document.body.appendChild(gtContainer);
 
     // ซ่อน Google Translate Toolbar ถ้ามี
-    const style = document.createElement('style');
-    style.textContent = `
-        .goog-te-banner-frame,
-        .goog-te-balloon-frame,
-        .skiptranslate {
-            display: none !important;
-        }
-        body {
-            top: 0 !important;
-        }
-        /* ป้องกันการแสดง Google Translate toolbar */
-        .goog-te-banner-frame.skiptranslate {
-            display: none !important;
-        }
-        body > .skiptranslate {
-            display: none !important;
-        }
-    `;
+    var style = document.createElement('style');
+    style.textContent =
+        '.goog-te-banner-frame, ' +
+        '.goog-te-balloon-frame, ' +
+        '.skiptranslate { ' +
+        '    display: none !important; ' +
+        '} ' +
+        'body { ' +
+        '    top: 0 !important; ' +
+        '} ' +
+        '.goog-te-banner-frame.skiptranslate { ' +
+        '    display: none !important; ' +
+        '} ' +
+        'body > .skiptranslate { ' +
+        '    display: none !important; ' +
+        '}';
     document.head.appendChild(style);
 
-    console.log('✅ Google Translate initialized with Thai as default');
+    console.log('Google Translate initialized');
 });
 
 // Google Translate Element Initialization
