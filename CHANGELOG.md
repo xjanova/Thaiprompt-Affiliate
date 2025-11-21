@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.108.3] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1432 from xjanova/claude/fix-mobile-burger-menu-01CaaREEnovj7CJadnppZ2gJ (129cbfb5)
+- refactor: simplify card hover effects - scale only, no rotation/tilt (ff66397f)
+
 ## [v3.108.2] - 2025-11-21
 
 ### ✨ Features
