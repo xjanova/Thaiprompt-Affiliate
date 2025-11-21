@@ -1058,6 +1058,7 @@
                 </a>
                 --}}
 
+                {{-- AI Bot Profiles ที่ถูก comment ออกแล้ว (ใช้เมนูนอก comment block แทน)
                 <a href="{{ route('admin.ai-bots.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-bots.index') || request()->routeIs('admin.ai-bots.manage') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
@@ -1071,6 +1072,7 @@
                     <i class="fas fa-download w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">AI Installations</span>
                 </a>
+                --}}
 
                 {{-- AI Rentals (Route Not Defined) --}}
                 {{--
@@ -1085,11 +1087,18 @@
         </div>
         --}}
 
-        {{-- AI Bot Profiles (Active Route Only) --}}
+        {{-- AI Bot Profiles --}}
         <a href="{{ route('admin.ai-bots.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ai-bots.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-user-robot w-5 text-center drop-shadow"></i>
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">AI Bot Profiles</span>
+        </a>
+
+        {{-- AI Installations --}}
+        <a href="{{ route('admin.ai-installation.index') }}"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ai-installation.*') ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+            <i class="fas fa-download w-5 text-center drop-shadow"></i>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">AI Installations</span>
         </a>
 
         {{-- Products --}}
