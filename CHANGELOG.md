@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.107.2] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1428 from xjanova/claude/fix-ranks-progress-syntax-019wfgf6N3EuyycQtnb7F5ET (7d5e923e)
+- fix: add production cache fix script and comprehensive documentation (edbef696)
+### 🔧 Other Changes
+
+
 ## [v3.107.1] - 2025-11-21
 
 ### ✨ Features
