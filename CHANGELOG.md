@@ -2,6 +2,26 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.104.0] - 2025-11-21
+
+### ✨ Features
+- feat: upgrade ALL remaining user pages to Arrow X Theme (DEX, AI-Gen, Tickets, Prospects, Retention, Recruit, Shipping, KYC, Tokens, 2FA, Themes, etc.) (f9f81005)
+- feat: upgrade Staking (4) and Ranks (2) pages to Arrow X Theme (cf3a3702)
+- feat: upgrade all MLM pages (11 pages) to Arrow X Theme (51d5e466)
+- feat: upgrade remaining wallet pages to Arrow X Theme components (974929cf)
+- feat: upgrade user wallet transfer and transactions pages to Arrow X Theme (4c9c21a8)
+- feat: upgrade user wallet withdraw page to Arrow X Theme components (75a72f1f)
+- feat: upgrade user wallet deposit page to Arrow X Theme components (085bf59d)
+- feat: upgrade user wallet index to Arrow X Theme components (2d7b3a2f)
+- feat: upgrade user commissions page to Arrow X Theme components (206062c4)
+- feat: upgrade user profile to Arrow X Theme components (3fac7ca2)
+- feat: upgrade user dashboard to Arrow X Theme components (34eb25e4)
+- feat: upgrade user layout to full Arrow X Theme (d7659b18)
+### 🐛 Bug Fixes
+- fix: upgrade MLM Dashboard to Arrow X Theme (missed in previous commit) (93fc626b)
+### 🔧 Other Changes
+- Merge pull request #1421 from xjanova/claude/fix-mobile-burger-menu-01CaaREEnovj7CJadnppZ2gJ (42f87448)
+
 ## [v3.103.0] - 2025-11-21
 
 ### ✨ Features
