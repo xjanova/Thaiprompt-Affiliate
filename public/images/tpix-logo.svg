@@ -1,0 +1,84 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="128" cy="128" r="128" fill="url(#gradient1)"/>
+
+  <!-- Golden Border -->
+  <circle cx="128" cy="128" r="120" fill="none" stroke="url(#gradient2)" stroke-width="4"/>
+
+  <!-- Thai Pattern Border -->
+  <path d="M128 20 L140 30 L128 40 L116 30 Z M170 40 L180 52 L170 64 L160 52 Z M210 80 L220 92 L210 104 L200 92 Z M230 128 L240 140 L230 152 L220 140 Z M210 176 L220 188 L210 200 L200 188 Z M170 216 L180 228 L170 240 L160 228 Z M128 236 L140 246 L128 256 L116 246 Z M86 216 L96 228 L86 240 L76 228 Z M46 176 L56 188 L46 200 L36 188 Z M26 128 L36 140 L26 152 L16 140 Z M46 80 L56 92 L46 104 L36 92 Z M86 40 L96 52 L86 64 L76 52 Z"
+        fill="#FFD700" opacity="0.3"/>
+
+  <!-- TPIX Text/Logo -->
+  <text x="128" y="140" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#FFFFFF" text-anchor="middle">T</text>
+  <text x="128" y="140" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="url(#gradient3)" text-anchor="middle">T</text>
+
+  <!-- Circuit Board Pattern -->
+  <g opacity="0.4">
+    <!-- Horizontal Lines -->
+    <line x1="40" y1="80" x2="100" y2="80" stroke="#00F2FE" stroke-width="2"/>
+    <line x1="156" y1="80" x2="216" y2="80" stroke="#00F2FE" stroke-width="2"/>
+    <line x1="40" y1="120" x2="90" y2="120" stroke="#4FACFE" stroke-width="2"/>
+    <line x1="40" y1="160" x2="100" y2="160" stroke="#00F2FE" stroke-width="2"/>
+    <line x1="156" y1="160" x2="216" y2="160" stroke="#00F2FE" stroke-width="2"/>
+    <line x1="166" y1="120" x2="216" y2="120" stroke="#4FACFE" stroke-width="2"/>
+
+    <!-- Vertical Lines -->
+    <line x1="60" y1="40" x2="60" y2="70" stroke="#00F2FE" stroke-width="2"/>
+    <line x1="60" y1="90" x2="60" y2="150" stroke="#4FACFE" stroke-width="2"/>
+    <line x1="196" y1="40" x2="196" y2="70" stroke="#00F2FE" stroke-width="2"/>
+    <line x1="196" y1="90" x2="196" y2="150" stroke="#4FACFE" stroke-width="2"/>
+
+    <!-- Circuit Nodes -->
+    <circle cx="60" cy="80" r="4" fill="#00F2FE"/>
+    <circle cx="100" cy="80" r="4" fill="#00F2FE"/>
+    <circle cx="156" cy="80" r="4" fill="#00F2FE"/>
+    <circle cx="196" cy="80" r="4" fill="#00F2FE"/>
+    <circle cx="60" cy="120" r="4" fill="#4FACFE"/>
+    <circle cx="90" cy="120" r="4" fill="#4FACFE"/>
+    <circle cx="166" cy="120" r="4" fill="#4FACFE"/>
+    <circle cx="196" cy="120" r="4" fill="#4FACFE"/>
+    <circle cx="60" cy="160" r="4" fill="#00F2FE"/>
+    <circle cx="100" cy="160" r="4" fill="#00F2FE"/>
+    <circle cx="156" cy="160" r="4" fill="#00F2FE"/>
+    <circle cx="196" cy="160" r="4" fill="#00F2FE"/>
+  </g>
+
+  <!-- AI Symbol -->
+  <g transform="translate(180, 50)">
+    <rect x="0" y="0" width="20" height="20" rx="4" fill="#00F2FE" opacity="0.6"/>
+    <text x="10" y="15" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#FFFFFF" text-anchor="middle">AI</text>
+  </g>
+
+  <!-- Leaf/Nature Symbol (representing sustainability) -->
+  <g transform="translate(200, 180)">
+    <path d="M10 0 Q20 0 20 10 Q20 20 10 20 Q0 15 0 10 Q0 0 10 0" fill="#4FACFE" opacity="0.6"/>
+  </g>
+
+  <!-- Blockchain Cube -->
+  <g transform="translate(50, 180)" opacity="0.6">
+    <polygon points="10,0 20,5 10,10 0,5" fill="#667EEA"/>
+    <polygon points="10,10 20,15 20,5 10,0" fill="#764BA2"/>
+    <polygon points="0,5 10,10 10,20 0,15" fill="#F093FB"/>
+  </g>
+
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667EEA;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#764BA2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F093FB;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#FFA500;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFD700;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="gradient3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#4FACFE;stop-opacity:0.9" />
+    </linearGradient>
+  </defs>
+</svg>

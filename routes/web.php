@@ -11,6 +11,7 @@ use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\OtpController;
+use App\Http\Controllers\TPIXWhitepaperController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -651,4 +652,22 @@ Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin/trading-bot
     // Settings
     Route::get('/settings', [TradingBotAdminController::class, 'settings'])->name('settings');
     Route::put('/settings', [TradingBotAdminController::class, 'updateSettings'])->name('settings.update');
+});
+
+/*
+|--------------------------------------------------------------------------
+| TPIX Whitepaper Routes
+|--------------------------------------------------------------------------
+|
+| Routes สำหรับแสดงและ export ไวท์เปเปอร์ของ TPIX
+|
+*/
+Route::prefix('tpix')->name('tpix.')->group(function () {
+    // แสดงหน้าไวท์เปเปอร์
+    Route::get('/whitepaper', [TPIXWhitepaperController::class, 'index'])
+        ->name('whitepaper.index');
+
+    // Export PDF
+    Route::get('/whitepaper/pdf', [TPIXWhitepaperController::class, 'exportPdf'])
+        ->name('whitepaper.pdf');
 });
