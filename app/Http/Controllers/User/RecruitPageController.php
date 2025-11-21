@@ -97,7 +97,14 @@ class RecruitPageController extends Controller
         ]);
 
         try {
-            $customization = RecruitCustomization::where('user_id', $user->id)->firstOrFail();
+            // ดึงหรือสร้าง customization
+            $customization = RecruitCustomization::firstOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'template_id' => RecruitTemplate::getDefault()?->id,
+                    'is_active' => true,
+                ]
+            );
 
             // จัดการอัพโหลดรูปภาพ
             if ($request->hasFile('custom_image')) {

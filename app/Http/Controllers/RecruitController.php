@@ -36,13 +36,19 @@ class RecruitController extends Controller
 
         $teamLeader = $mlmMember->user;
 
-        // ดึงข้อมูล customization
-        $customization = RecruitCustomization::where('user_id', $teamLeader->id)
-            ->with('template')
-            ->first();
+        // ดึงหรือสร้าง customization อัตโนมัติ
+        $customization = RecruitCustomization::firstOrCreate(
+            ['user_id' => $teamLeader->id],
+            [
+                'template_id' => \App\Models\RecruitTemplate::getDefault()?->id,
+                'is_active' => true, // เปิดใช้งานทันทีเมื่อสร้างใหม่
+            ]
+        );
 
-        // ถ้าไม่มี customization หรือไม่ active
-        if (!$customization || !$customization->is_active) {
+        $customization->load('template');
+
+        // ถ้าปิดการใช้งาน (is_active = false) ให้แสดง 404
+        if (!$customization->is_active) {
             abort(404, 'หน้านี้ไม่พร้อมใช้งาน');
         }
 
@@ -50,6 +56,11 @@ class RecruitController extends Controller
         $template = $customization->template;
         if (!$template || !$template->is_active) {
             $template = \App\Models\RecruitTemplate::getDefault();
+
+            // ถ้ายังไม่มีเทมเพลต default เลย
+            if (!$template) {
+                abort(500, 'ระบบยังไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบ');
+            }
         }
 
         // สร้าง Visitor Identifier (IP + User Agent hash)
