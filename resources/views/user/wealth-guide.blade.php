@@ -33,70 +33,70 @@
                 <span>🧭</span> สารบัญด่วน
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                <a href="#chapter-1" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-all transform hover:scale-105 group">
+                <a href="#chapter-1" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-all transition-transform hover:scale-[1.02] group">
                     <span class="text-3xl group-hover:scale-110 transition-transform">🚀</span>
                     <div>
                         <div class="font-bold text-blue-800">บทที่ 1</div>
                         <div class="text-sm text-blue-600">เริ่มต้นอย่างไร</div>
                     </div>
                 </a>
-                <a href="#chapter-2" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all transform hover:scale-105 group">
+                <a href="#chapter-2" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all transition-transform hover:scale-[1.02] group">
                     <span class="text-3xl group-hover:scale-110 transition-transform">💡</span>
                     <div>
                         <div class="font-bold text-purple-800">บทที่ 2</div>
                         <div class="text-sm text-purple-600">ระบบทำงานอย่างไร</div>
                     </div>
                 </a>
-                <a href="#chapter-3" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 transition-all transform hover:scale-105 group">
+                <a href="#chapter-3" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 transition-all transition-transform hover:scale-[1.02] group">
                     <span class="text-3xl group-hover:scale-110 transition-transform">💰</span>
                     <div>
                         <div class="font-bold text-green-800">บทที่ 3</div>
                         <div class="text-sm text-green-600">4 ช่องทางรายได้</div>
                     </div>
                 </a>
-                <a href="#chapter-4" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 transition-all transform hover:scale-105 group">
+                <a href="#chapter-4" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 transition-all transition-transform hover:scale-[1.02] group">
                     <span class="text-3xl group-hover:scale-110 transition-transform">⭐</span>
                     <div>
                         <div class="font-bold text-yellow-800">บทที่ 4</div>
                         <div class="text-sm text-yellow-600">ระบบยศและอันดับ</div>
                     </div>
                 </a>
-                <a href="#chapter-5" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-pink-50 to-pink-100 hover:from-pink-100 hover:to-pink-200 transition-all transform hover:scale-105 group">
+                <a href="#chapter-5" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-pink-50 to-pink-100 hover:from-pink-100 hover:to-pink-200 transition-all transition-transform hover:scale-[1.02] group">
                     <span class="text-3xl group-hover:scale-110 transition-transform">👥</span>
                     <div>
                         <div class="font-bold text-pink-800">บทที่ 5</div>
                         <div class="text-sm text-pink-600">สร้างทีมที่แข็งแกร่ง</div>
                     </div>
                 </a>
-                <a href="#chapter-6" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-200 transition-all transform hover:scale-105 group">
+                <a href="#chapter-6" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-200 transition-all transition-transform hover:scale-[1.02] group">
                     <span class="text-3xl group-hover:scale-110 transition-transform">📈</span>
                     <div>
                         <div class="font-bold text-indigo-800">บทที่ 6</div>
                         <div class="text-sm text-indigo-600">กลยุทธ์ขายที่ได้ผล</div>
                     </div>
                 </a>
-                <a href="#chapter-7" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 transition-all transform hover:scale-105 group">
+                <a href="#chapter-7" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 transition-all transition-transform hover:scale-[1.02] group">
                     <span class="text-3xl group-hover:scale-110 transition-transform">💳</span>
                     <div>
                         <div class="font-bold text-red-800">บทที่ 7</div>
                         <div class="text-sm text-red-600">กระเป๋าเงินและถอนเงิน</div>
                     </div>
                 </a>
-                <a href="#chapter-8" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-teal-50 to-teal-100 hover:from-teal-100 hover:to-teal-200 transition-all transform hover:scale-105 group">
+                <a href="#chapter-8" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-teal-50 to-teal-100 hover:from-teal-100 hover:to-teal-200 transition-all transition-transform hover:scale-[1.02] group">
                     <span class="text-3xl group-hover:scale-110 transition-transform">👑</span>
                     <div>
                         <div class="font-bold text-teal-800">บทที่ 8</div>
                         <div class="text-sm text-teal-600">เป็นแม่ทีมมืออาชีพ</div>
                     </div>
                 </a>
-                <a href="#chapter-9" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 transition-all transform hover:scale-105 group">
+                <a href="#chapter-9" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 transition-all transition-transform hover:scale-[1.02] group">
                     <span class="text-3xl group-hover:scale-110 transition-transform">🎓</span>
                     <div>
                         <div class="font-bold text-orange-800">บทที่ 9</div>
                         <div class="text-sm text-orange-600">เคล็ดลับและคำแนะนำ</div>
                     </div>
                 </a>
-                <a href="#chapter-10" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-cyan-50 to-cyan-100 hover:from-cyan-100 hover:to-cyan-200 transition-all transform hover:scale-105 group">
+                <a href="#chapter-10" class="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-cyan-50 to-cyan-100 hover:from-cyan-100 hover:to-cyan-200 transition-all transition-transform hover:scale-[1.02] group">
                     <span class="text-3xl group-hover:scale-110 transition-transform">❓</span>
                     <div>
                         <div class="font-bold text-cyan-800">บทที่ 10</div>
@@ -1030,10 +1030,10 @@
                 คุณมีทุกอย่างที่ต้องการแล้ว ขาดแค่การเริ่มต้น!
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('user.dashboard') }}" class="px-10 py-5 bg-white dark:bg-gray-800 text-purple-600 rounded-full text-xl font-bold shadow-2xl hover:bg-gray-100 dark:bg-gray-700 transform hover:scale-105 transition-all">
+                <a href="{{ route('user.dashboard') }}" class="px-10 py-5 bg-white dark:bg-gray-800 text-purple-600 rounded-full text-xl font-bold shadow-2xl hover:bg-gray-100 dark:bg-gray-700 transition-transform hover:scale-[1.02] transition-all">
                     📊 ไปที่แดชบอร์ด
                 </a>
-                <a href="{{ route('user.mlm.income-simulator') }}" class="px-10 py-5 bg-yellow-400 text-purple-900 rounded-full text-xl font-bold shadow-2xl hover:bg-yellow-300 transform hover:scale-105 transition-all">
+                <a href="{{ route('user.mlm.income-simulator') }}" class="px-10 py-5 bg-yellow-400 text-purple-900 rounded-full text-xl font-bold shadow-2xl hover:bg-yellow-300 transition-transform hover:scale-[1.02] transition-all">
                     💰 คำนวณรายได้
                 </a>
             </div>

@@ -97,7 +97,7 @@
                 </div>
 
                 <!-- Rebalance Button -->
-                <button class="mt-6 w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold text-white shadow-lg transition-all duration-300 transform hover:scale-105">
+                <button class="mt-6 w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl font-bold text-white shadow-lg transition-all duration-300 transition-transform hover:scale-[1.02]">
                     ⚖️ Rebalance Portfolio
                 </button>
             </div>
@@ -208,21 +208,21 @@
             <!-- Quick Actions -->
             <div class="grid grid-cols-3 gap-4">
                 <a href="{{ route('user.crypto-wallet.deposit') }}"
-                   class="bg-gradient-to-br from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-2xl p-6 text-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group">
+                   class="bg-gradient-to-br from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-2xl p-6 text-center shadow-xl hover:shadow-2xl transition-all duration-300 transition-transform hover:scale-[1.02] group">
                     <div class="text-4xl mb-3 transform group-hover:scale-110 transition">📥</div>
                     <div class="text-white font-bold text-lg">Deposit</div>
                     <div class="text-green-100 text-sm">Add funds</div>
                 </a>
 
                 <a href="{{ route('user.crypto-wallet.withdraw') }}"
-                   class="bg-gradient-to-br from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 rounded-2xl p-6 text-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group">
+                   class="bg-gradient-to-br from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 rounded-2xl p-6 text-center shadow-xl hover:shadow-2xl transition-all duration-300 transition-transform hover:scale-[1.02] group">
                     <div class="text-4xl mb-3 transform group-hover:scale-110 transition">📤</div>
                     <div class="text-white font-bold text-lg">Withdraw</div>
                     <div class="text-pink-100 text-sm">Cash out</div>
                 </a>
 
                 <a href="{{ route('user.crypto-wallet.exchange') }}"
-                   class="bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-2xl p-6 text-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group">
+                   class="bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-2xl p-6 text-center shadow-xl hover:shadow-2xl transition-all duration-300 transition-transform hover:scale-[1.02] group">
                     <div class="text-4xl mb-3 transform group-hover:scale-110 transition">💱</div>
                     <div class="text-white font-bold text-lg">Exchange</div>
                     <div class="text-purple-100 text-sm">Swap coins</div>

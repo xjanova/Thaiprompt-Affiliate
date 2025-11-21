@@ -35,7 +35,7 @@
                 ทำการยืนยันตัวตน (KYC) เพื่อถอนเงิน และใช้งานฟีเจอร์เต็มรูปแบบ
             </p>
             <a href="{{ route('user.kyc.create') }}"
-               class="inline-flex items-center gap-2 px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105">
+               class="inline-flex items-center gap-2 px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02]">
                 <i class="fas fa-id-card"></i>
                 <span>ยืนยันตัวตนตอนนี้</span>
             </a>
@@ -158,7 +158,7 @@
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {{-- Deposit --}}
                     <a href="{{ route('user.wallet.deposit') }}"
-                       class="group flex flex-col items-center p-4 glass-neu rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-105">
+                       class="group flex flex-col items-center p-4 glass-neu rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
                         <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform duration-200">
                             <i class="fas fa-plus text-white text-xl"></i>
                         </div>
@@ -167,7 +167,7 @@
 
                     {{-- Withdraw --}}
                     <a href="{{ route('user.wallet.withdraw') }}"
-                       class="group flex flex-col items-center p-4 glass-neu rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-105">
+                       class="group flex flex-col items-center p-4 glass-neu rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
                         <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform duration-200">
                             <i class="fas fa-hand-holding-usd text-white text-xl"></i>
                         </div>
@@ -176,7 +176,7 @@
 
                     {{-- Invite --}}
                     <a href="{{ route('user.mlm.referral') }}"
-                       class="group flex flex-col items-center p-4 glass-neu rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-105">
+                       class="group flex flex-col items-center p-4 glass-neu rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
                         <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform duration-200">
                             <i class="fas fa-user-plus text-white text-xl"></i>
                         </div>
@@ -185,7 +185,7 @@
 
                     {{-- Profile --}}
                     <a href="{{ route('user.profile') }}"
-                       class="group flex flex-col items-center p-4 glass-neu rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-105">
+                       class="group flex flex-col items-center p-4 glass-neu rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
                         <div class="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform duration-200">
                             <i class="fas fa-user-edit text-white text-xl"></i>
                         </div>

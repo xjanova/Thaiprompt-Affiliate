@@ -162,7 +162,7 @@
                         <i class="fa-solid fa-info-circle mr-1"></i>
                         ทีมงานจะตอบกลับโดยเร็วที่สุด
                     </p>
-                    <button type="submit" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-lg transition-all transform hover:scale-105">
+                    <button type="submit" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-lg transition-all transition-transform hover:scale-[1.02]">
                         <i class="fa-solid fa-paper-plane mr-2"></i>
                         ส่งข้อความ
                     </button>

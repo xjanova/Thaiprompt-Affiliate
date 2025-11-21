@@ -47,25 +47,25 @@
 
     <!-- Quick Actions -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <a href="{{ route('user.wallet.deposit') }}" class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900 border border-green-200 dark:border-green-700 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+        <a href="{{ route('user.wallet.deposit') }}" class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900 border border-green-200 dark:border-green-700 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02]">
             <div class="text-4xl mb-3">💵</div>
             <p class="text-green-800 dark:text-green-100 font-semibold">ฝากเงิน</p>
             <p class="text-xs text-green-600 dark:text-green-300 mt-1">Deposit</p>
         </a>
 
-        <a href="{{ route('user.wallet.withdraw') }}" class="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900 dark:to-rose-900 border border-red-200 dark:border-red-700 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+        <a href="{{ route('user.wallet.withdraw') }}" class="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900 dark:to-rose-900 border border-red-200 dark:border-red-700 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02]">
             <div class="text-4xl mb-3">💸</div>
             <p class="text-red-800 dark:text-red-100 font-semibold">ถอนเงิน</p>
             <p class="text-xs text-red-600 dark:text-red-300 mt-1">Withdraw</p>
         </a>
 
-        <a href="{{ route('user.wallet.transfer') }}" class="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900 dark:to-cyan-900 border border-blue-200 dark:border-blue-700 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+        <a href="{{ route('user.wallet.transfer') }}" class="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900 dark:to-cyan-900 border border-blue-200 dark:border-blue-700 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02]">
             <div class="text-4xl mb-3">📤</div>
             <p class="text-blue-800 dark:text-blue-100 font-semibold">โอนเงิน</p>
             <p class="text-xs text-blue-600 dark:text-blue-300 mt-1">Transfer</p>
         </a>
 
-        <a href="{{ route('user.wallet.transactions') }}" class="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900 dark:to-indigo-900 border border-purple-200 dark:border-purple-700 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+        <a href="{{ route('user.wallet.transactions') }}" class="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900 dark:to-indigo-900 border border-purple-200 dark:border-purple-700 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02]">
             <div class="text-4xl mb-3">📝</div>
             <p class="text-purple-800 dark:text-purple-100 font-semibold">ประวัติ</p>
             <p class="text-xs text-purple-600 dark:text-purple-300 mt-1">History</p>

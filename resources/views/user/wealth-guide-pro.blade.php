@@ -48,15 +48,15 @@
                 <!-- CTA Buttons -->
                 <div class="flex flex-wrap justify-center gap-4">
                     <button onclick="scrollToSection('income-overview')"
-                            class="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold rounded-xl hover:from-yellow-500 hover:to-orange-600 transform hover:scale-105 transition-all shadow-xl">
+                            class="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold rounded-xl hover:from-yellow-500 hover:to-orange-600 transition-transform hover:scale-[1.02] transition-all shadow-xl">
                         🎯 เริ่มต้นสร้างรายได้
                     </button>
                     <button onclick="scrollToSection('3d-mindmap')"
-                            class="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-pink-600 transform hover:scale-105 transition-all shadow-xl">
+                            class="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-transform hover:scale-[1.02] transition-all shadow-xl">
                         🧠 ดู 3D Mind Map
                     </button>
                     <button onclick="scrollToSection('income-calculator')"
-                            class="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-xl hover:from-blue-600 hover:to-cyan-600 transform hover:scale-105 transition-all shadow-xl">
+                            class="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-transform hover:scale-[1.02] transition-all shadow-xl">
                         💎 คำนวณรายได้
                     </button>
                 </div>
@@ -598,7 +598,7 @@
                         </div>
 
                         <button onclick="calculateIncome()"
-                                class="w-full px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-xl hover:from-cyan-600 hover:to-blue-600 transform hover:scale-105 transition-all shadow-lg">
+                                class="w-full px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-transform hover:scale-[1.02] transition-all shadow-lg">
                             💎 คำนวณรายได้
                         </button>
                     </div>
@@ -887,7 +887,7 @@
 
                 <div class="mt-8 text-center">
                     <a href="{{ route('user.dashboard') }}"
-                       class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-xl hover:from-orange-600 hover:to-red-600 transform hover:scale-105 transition-all shadow-xl text-lg">
+                       class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-xl hover:from-orange-600 hover:to-red-600 transition-transform hover:scale-[1.02] transition-all shadow-xl text-lg">
                         <span>🏠</span>
                         <span>ไปที่แดชบอร์ด</span>
                     </a>

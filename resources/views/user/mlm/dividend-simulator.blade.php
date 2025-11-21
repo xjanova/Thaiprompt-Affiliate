@@ -61,7 +61,7 @@
 
             <div class="mt-6 flex gap-4">
                 <button onclick="startSimulation()"
-                        class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg font-bold py-4 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105">
+                        class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg font-bold py-4 rounded-xl shadow-lg transition-all duration-300 transition-transform hover:scale-[1.02]">
                     ▶️ เริ่มจำลอง
                 </button>
                 <button onclick="resetSimulation()"
@@ -108,28 +108,28 @@
             <!-- Real-time Calculation Display -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                 <!-- Annual Dividend -->
-                <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-105">
+                <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-[1.02]">
                     <div class="text-sm font-semibold mb-2 opacity-90">📦 ปันผลปีนี้</div>
                     <div class="text-4xl font-bold mb-2">฿<span id="annual-dividend">0</span></div>
                     <div class="text-sm opacity-75">รับจากการปันผล</div>
                 </div>
 
                 <!-- Reinvested Amount -->
-                <div class="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-105">
+                <div class="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-[1.02]">
                     <div class="text-sm font-semibold mb-2 opacity-90">🔄 นำกลับไปลงทุน</div>
                     <div class="text-4xl font-bold mb-2">฿<span id="reinvested-amount">0</span></div>
                     <div class="text-sm opacity-75">เพิ่มเงินต้น</div>
                 </div>
 
                 <!-- Cash Out -->
-                <div class="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-105">
+                <div class="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-[1.02]">
                     <div class="text-sm font-semibold mb-2 opacity-90">💸 รับเข้ากระเป๋า</div>
                     <div class="text-4xl font-bold mb-2">฿<span id="cash-out">0</span></div>
                     <div class="text-sm opacity-75">เงินสดที่ได้รับ</div>
                 </div>
 
                 <!-- Total Principal -->
-                <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-105 animate-pulse">
+                <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-[1.02] animate-pulse">
                     <div class="text-sm font-semibold mb-2 opacity-90">💰 เงินต้นรวม</div>
                     <div class="text-4xl font-bold mb-2">฿<span id="total-principal">0</span></div>
                     <div class="text-sm opacity-75">ณ สิ้นปี</div>
@@ -233,11 +233,11 @@
                 <p class="text-xl mb-6 opacity-90">สร้างรายได้แบบ Passive Income ด้วยการปันผล</p>
                 <div class="flex gap-4 justify-center">
                     <button onclick="window.location.href='{{ route('user.mlm.dashboard') }}'"
-                            class="bg-white dark:bg-gray-800 text-purple-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 dark:bg-gray-700 transition-all duration-300 transform hover:scale-105">
+                            class="bg-white dark:bg-gray-800 text-purple-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 dark:bg-gray-700 transition-all duration-300 transition-transform hover:scale-[1.02]">
                         เริ่มต้นเลย!
                     </button>
                     <button onclick="startSimulation()"
-                            class="bg-purple-800 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-purple-900 transition-all duration-300 transform hover:scale-105">
+                            class="bg-purple-800 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-purple-900 transition-all duration-300 transition-transform hover:scale-[1.02]">
                         จำลองอีกครั้ง
                     </button>
                 </div>

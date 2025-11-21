@@ -209,7 +209,7 @@
                             </div>
                         </div>
 
-                        <button class="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                        <button class="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transition-transform hover:scale-[1.02]">
                             🚀 Buy Now
                         </button>
                     </div>
@@ -244,7 +244,7 @@
                             </div>
                         </div>
 
-                        <button class="w-full py-4 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                        <button class="w-full py-4 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transition-transform hover:scale-[1.02]">
                             💰 Sell Now
                         </button>
                     </div>

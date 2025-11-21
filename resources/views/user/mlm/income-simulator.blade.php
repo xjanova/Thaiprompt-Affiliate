@@ -90,7 +90,7 @@
 
             <div class="mt-6 flex gap-4">
                 <button onclick="startSimulation()"
-                        class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-lg font-bold py-4 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105">
+                        class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-lg font-bold py-4 rounded-xl shadow-lg transition-all duration-300 transition-transform hover:scale-[1.02]">
                     ▶️ เริ่มจำลอง
                 </button>
                 <button onclick="resetSimulation()"
@@ -186,21 +186,21 @@
             <!-- Real-time Calculation Display -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <!-- Personal Commission -->
-                <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-105">
+                <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-[1.02]">
                     <div class="text-sm font-semibold mb-2 opacity-90">📦 คอมมิชชั่นส่วนตัว</div>
                     <div class="text-4xl font-bold mb-2">฿<span id="personal-income">0</span></div>
                     <div class="text-sm opacity-75" id="personal-income-label">จาก PV ของคุณ (ต้องมียศ)</div>
                 </div>
 
                 <!-- Team Commission -->
-                <div class="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-105">
+                <div class="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-[1.02]">
                     <div class="text-sm font-semibold mb-2 opacity-90">👥 คอมมิชชั่นจากทีม</div>
                     <div class="text-4xl font-bold mb-2">฿<span id="team-income">0</span></div>
                     <div class="text-sm opacity-75" id="team-income-label">Unilevel + Binary</div>
                 </div>
 
                 <!-- Total Income -->
-                <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-105 animate-pulse">
+                <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-[1.02] animate-pulse">
                     <div class="text-sm font-semibold mb-2 opacity-90">💰 รวมคอมมิชชั่น</div>
                     <div class="text-4xl font-bold mb-2">฿<span id="total-income">0</span></div>
                     <div class="text-sm opacity-75">รวมทั้งหมดเดือนนี้</div>
@@ -304,11 +304,11 @@
                 <p class="text-xl mb-6 opacity-90">นี่คือโอกาสของคุณที่จะสร้างรายได้แบบ Passive Income</p>
                 <div class="flex gap-4 justify-center">
                     <button onclick="window.location.href='{{ route('user.mlm.dashboard') }}'"
-                            class="bg-white dark:bg-gray-800 text-purple-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 dark:bg-gray-700 transition-all duration-300 transform hover:scale-105">
+                            class="bg-white dark:bg-gray-800 text-purple-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 dark:bg-gray-700 transition-all duration-300 transition-transform hover:scale-[1.02]">
                         เริ่มต้นเลย!
                     </button>
                     <button onclick="startSimulation()"
-                            class="bg-purple-800 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-purple-900 transition-all duration-300 transform hover:scale-105">
+                            class="bg-purple-800 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-purple-900 transition-all duration-300 transition-transform hover:scale-[1.02]">
                         จำลองอีกครั้ง
                     </button>
                 </div>

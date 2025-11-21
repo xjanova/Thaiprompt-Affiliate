@@ -32,7 +32,7 @@
                 </p>
 
                 {{-- CTA Button --}}
-                <a href="{{ route('user.dex.add-liquidity') }}" class="inline-flex items-center px-8 py-4 bg-white dark:bg-gray-800 text-blue-600 font-bold rounded-xl hover:bg-gray-100 dark:bg-gray-700 transform hover:scale-105 transition-all duration-200 shadow-2xl hover:shadow-white/20">
+                <a href="{{ route('user.dex.add-liquidity') }}" class="inline-flex items-center px-8 py-4 bg-white dark:bg-gray-800 text-blue-600 font-bold rounded-xl hover:bg-gray-100 dark:bg-gray-700 transition-transform hover:scale-[1.02] transition-all duration-200 shadow-2xl hover:shadow-white/20">
                     <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                     </svg>
@@ -248,7 +248,7 @@
                 </div>
                 <p class="text-gray-500 dark:text-gray-400 mb-6">คุณยังไม่มี Liquidity Position</p>
                 <a href="{{ route('user.dex.add-liquidity') }}"
-                   class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-xl transform hover:scale-105 transition-all duration-200 shadow-lg">
+                   class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-xl transition-transform hover:scale-[1.02] transition-all duration-200 shadow-lg">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                     </svg>
@@ -518,7 +518,7 @@ function displayPools(pools) {
                             </svg>
                         </button>
                         <a href="/user/dex/add-liquidity?pool=${pool.id}"
-                           class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg">
+                           class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all duration-200 transition-transform hover:scale-[1.02] shadow-lg">
                             <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                             </svg>
@@ -698,7 +698,7 @@ function viewPoolDetails(poolId) {
                         </div>
 
                         <a href="/user/dex/add-liquidity?pool=${pool.id}"
-                           class="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-xl transform hover:scale-105 transition-all duration-200 shadow-lg">
+                           class="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-xl transition-transform hover:scale-[1.02] transition-all duration-200 shadow-lg">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                             </svg>

@@ -203,17 +203,17 @@
             <!-- Submit Button -->
             <div class="mt-8 flex gap-4">
                 <button type="submit"
-                        class="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                        class="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-transform hover:scale-[1.02] transition-all duration-300 shadow-lg">
                     <i class="fas fa-save mr-2"></i>บันทึกการเปลี่ยนแปลง
                 </button>
 
                 <a href="{{ route('user.marketing.recruit.leads') }}"
-                   class="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-bold text-lg hover:from-blue-700 hover:to-cyan-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                   class="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-bold text-lg hover:from-blue-700 hover:to-cyan-700 transition-transform hover:scale-[1.02] transition-all duration-300 shadow-lg">
                     <i class="fas fa-users mr-2"></i>ดูผู้มุ่งหวัง
                 </a>
 
                 <a href="{{ route('user.marketing.recruit.analytics') }}"
-                   class="px-8 py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-bold text-lg hover:from-green-700 hover:to-teal-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                   class="px-8 py-4 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-xl font-bold text-lg hover:from-green-700 hover:to-teal-700 transition-transform hover:scale-[1.02] transition-all duration-300 shadow-lg">
                     <i class="fas fa-chart-bar mr-2"></i>สถิติการตลาด
                 </a>
             </div>

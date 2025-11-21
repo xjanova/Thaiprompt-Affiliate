@@ -16,7 +16,7 @@
         <!-- Scenario Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <!-- Starter Plan -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-3xl">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl">
                 <div class="bg-gradient-to-br from-green-400 to-teal-500 p-6 text-white">
                     <div class="text-4xl mb-3 text-center">🌱</div>
                     <h3 class="text-2xl font-bold text-center mb-2">แผนเริ่มต้น</h3>
@@ -53,7 +53,7 @@
             </div>
 
             <!-- Growth Plan -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-3xl ring-4 ring-purple-500">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl ring-4 ring-purple-500">
                 <div class="bg-gradient-to-br from-purple-500 to-pink-600 p-6 text-white relative">
                     <div class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full">
                         แนะนำ!
@@ -93,7 +93,7 @@
             </div>
 
             <!-- Elite Plan -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-3xl">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl">
                 <div class="bg-gradient-to-br from-yellow-400 to-orange-500 p-6 text-white">
                     <div class="text-4xl mb-3 text-center">👑</div>
                     <h3 class="text-2xl font-bold text-center mb-2">แผนชนชั้นสูง</h3>
@@ -218,7 +218,7 @@
         <!-- CTA -->
         <div class="text-center">
             <a href="{{ route('user.mlm.income-simulator') }}"
-               class="inline-block bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xl font-bold px-12 py-5 rounded-2xl shadow-2xl transition-all duration-300 transform hover:scale-105">
+               class="inline-block bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xl font-bold px-12 py-5 rounded-2xl shadow-2xl transition-all duration-300 transition-transform hover:scale-[1.02]">
                 🚀 ลองจำลองรายได้ของคุณเอง
             </a>
         </div>

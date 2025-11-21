@@ -14,7 +14,7 @@
     @if($plans->count() > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach($plans as $plan)
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transform hover:scale-105 transition {{ $plan->is_featured ? 'ring-2 ring-purple-500' : '' }}">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform hover:scale-[1.02] transition {{ $plan->is_featured ? 'ring-2 ring-purple-500' : '' }}">
                 @if($plan->is_featured)
                     <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-center py-2 text-sm font-semibold">
                         ⭐ แนะนำ

@@ -40,19 +40,19 @@
 
     <!-- Quick Actions -->
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <a href="{{ route('user.investments.plans') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+        <a href="{{ route('user.investments.plans') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02]">
             <div class="text-4xl mb-3">💎</div>
             <p class="text-gray-800 dark:text-white font-semibold">แผนการลงทุน</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Investment Plans</p>
         </a>
 
-        <a href="{{ route('user.wallet.index') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+        <a href="{{ route('user.wallet.index') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02]">
             <div class="text-4xl mb-3">💳</div>
             <p class="text-gray-800 dark:text-white font-semibold">กระเป๋าเงิน</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Wallet</p>
         </a>
 
-        <a href="#roi-distributions" class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+        <a href="#roi-distributions" class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02]">
             <div class="text-4xl mb-3">📊</div>
             <p class="text-gray-800 dark:text-white font-semibold">ประวัติ ROI</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ROI History</p>
