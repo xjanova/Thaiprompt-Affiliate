@@ -198,6 +198,12 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+// Public Recruit Page Routes
+Route::prefix('recruit')->name('recruit.')->group(function () {
+    Route::get('/{member_code}', [\App\Http\Controllers\RecruitController::class, 'show'])->name('show');
+    Route::post('/track-behavior', [\App\Http\Controllers\RecruitController::class, 'trackBehavior'])->name('track-behavior');
+});
+
 // LINE Account Linking (for authenticated users)
 Route::middleware('auth')->group(function () {
     Route::get('/auth/line/link', [LineLoginController::class, 'link'])->name('line.link');

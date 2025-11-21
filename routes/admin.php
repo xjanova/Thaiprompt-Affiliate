@@ -2118,5 +2118,19 @@ Route::prefix('arrow-x-theme')->name('arrow-x-theme.')->group(function () {
         ->name('compile-files');
 });
 
+// Recruit Template Management Routes
+Route::prefix('recruit-templates')->name('recruit-templates.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\RecruitTemplateController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\Admin\RecruitTemplateController::class, 'create'])->name('create');
+    Route::post('/', [App\Http\Controllers\Admin\RecruitTemplateController::class, 'store'])->name('store');
+    Route::get('/{recruitTemplate}', [App\Http\Controllers\Admin\RecruitTemplateController::class, 'show'])->name('show');
+    Route::get('/{recruitTemplate}/edit', [App\Http\Controllers\Admin\RecruitTemplateController::class, 'edit'])->name('edit');
+    Route::put('/{recruitTemplate}', [App\Http\Controllers\Admin\RecruitTemplateController::class, 'update'])->name('update');
+    Route::delete('/{recruitTemplate}', [App\Http\Controllers\Admin\RecruitTemplateController::class, 'destroy'])->name('destroy');
+    Route::post('/{recruitTemplate}/set-default', [App\Http\Controllers\Admin\RecruitTemplateController::class, 'setDefault'])->name('set-default');
+    Route::post('/{recruitTemplate}/toggle-active', [App\Http\Controllers\Admin\RecruitTemplateController::class, 'toggleActive'])->name('toggle-active');
+    Route::get('/{recruitTemplate}/preview', [App\Http\Controllers\Admin\RecruitTemplateController::class, 'preview'])->name('preview');
+});
+
 // Bot Automation System Routes
 require __DIR__.'/bot_automation.php';
