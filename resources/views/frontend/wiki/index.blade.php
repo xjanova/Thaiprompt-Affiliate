@@ -100,11 +100,11 @@
             this.currentLanguage = langCode;
             this.languageMenuOpen = false;
 
-            console.log(`🌐 Switching to language: ${langCode}`);
+            console.log('Switching to language: ' + langCode);
 
             if (langCode === 'th') {
                 // กลับไปภาษาไทยต้นฉบับ
-                console.log('🔄 Resetting to Thai (original language)');
+                console.log('Resetting to Thai (original language)');
 
                 // เคลียร์ Google Translate cookies
                 document.cookie = 'googtrans=/th/th; Path=/;';
@@ -117,7 +117,7 @@
                 }
 
                 // โหลดหน้าใหม่เพื่อให้แน่ใจว่ากลับเป็นภาษาไทย
-                setTimeout(() => location.reload(), 300);
+                setTimeout(function() { location.reload(); }, 300);
             } else {
                 // เรียกใช้ Google Translate Widget โดยตรง
                 this.triggerGoogleTranslate(langCode);
@@ -126,71 +126,72 @@
 
         // เรียกใช้ Google Translate Widget (Fast & Reliable)
         triggerGoogleTranslate(langCode) {
-            console.log(`🔄 Attempting to switch to language: ${langCode}`);
+            console.log('Attempting to switch to language: ' + langCode);
 
             // รอให้ Google Translate Widget โหลดเสร็จ
-            let attempts = 0;
-            const maxAttempts = 50; // 5 วินาที (50 * 100ms)
+            var attempts = 0;
+            var maxAttempts = 50;
+            var self = this;
 
-            const waitForGoogleTranslate = setInterval(() => {
+            var waitForGoogleTranslate = setInterval(function() {
                 attempts++;
-                const selectElement = document.querySelector('.goog-te-combo');
+                var selectElement = document.querySelector('.goog-te-combo');
 
                 if (selectElement) {
                     clearInterval(waitForGoogleTranslate);
 
                     // Debug: แสดง options ที่มี
-                    console.log('📋 Available language options:',
-                        Array.from(selectElement.options).map(opt => ({
-                            value: opt.value,
-                            text: opt.text
-                        }))
+                    console.log('Available language options:',
+                        Array.from(selectElement.options).map(function(opt) {
+                            return { value: opt.value, text: opt.text };
+                        })
                     );
 
                     // ตรวจสอบว่า langCode มีใน options หรือไม่
-                    const hasOption = Array.from(selectElement.options).some(opt => opt.value === langCode);
+                    var hasOption = Array.from(selectElement.options).some(function(opt) {
+                        return opt.value === langCode;
+                    });
 
                     if (!hasOption) {
-                        console.error(`❌ Language code "${langCode}" not found in Google Translate options!`);
+                        console.error('Language code not found: ' + langCode);
                         return;
                     }
 
                     // เปลี่ยนภาษาผ่าน Google Translate Widget
                     selectElement.value = langCode;
 
-                    // Trigger change event (ลอง 2 วิธี)
+                    // Trigger change event
                     selectElement.dispatchEvent(new Event('change', { bubbles: true }));
 
-                    // วิธีที่ 2: ใช้ fireEvent สำหรับ IE compatibility
-                    if (selectElement.fireEvent) {
-                        selectElement.fireEvent('onchange');
-                    }
-
-                    console.log(`✅ Successfully switched to ${langCode}`);
-                    console.log(`📊 Current select value: ${selectElement.value}`);
+                    console.log('Successfully switched to: ' + langCode);
                 } else if (attempts >= maxAttempts) {
                     clearInterval(waitForGoogleTranslate);
-                    console.error('❌ Google Translate Widget not found after 5 seconds');
+                    console.error('Google Translate Widget not found after 5 seconds');
                 }
             }, 100);
         },
 
         // ดึงข้อมูลภาษาปัจจุบัน
         getCurrentLanguage() {
-            return this.availableLanguages.find(lang => lang.code === this.currentLanguage) || this.availableLanguages[0];
+            var self = this;
+            var found = this.availableLanguages.find(function(lang) {
+                return lang.code === self.currentLanguage;
+            });
+            return found || this.availableLanguages[0];
         },
 
         // เปิด language menu และคำนวณตำแหน่ง
         toggleLanguageMenu() {
+            var self = this;
             this.languageMenuOpen = !this.languageMenuOpen;
 
             if (this.languageMenuOpen) {
-                this.$nextTick(() => {
-                    const button = this.$refs.langButton;
+                this.$nextTick(function() {
+                    var button = self.$refs.langButton;
                     if (button) {
-                        const rect = button.getBoundingClientRect();
-                        this.langMenuPosition = {
-                            top: rect.bottom + 8, // เว้นระยะ 8px จากปุ่ม
+                        var rect = button.getBoundingClientRect();
+                        self.langMenuPosition = {
+                            top: rect.bottom + 8,
                             left: rect.left
                         };
                     }
@@ -200,7 +201,10 @@
 
         // Initialize
         init() {
-            window.addEventListener('scroll', () => this.updateScrollProgress());
+            var self = this;
+            window.addEventListener('scroll', function() {
+                self.updateScrollProgress();
+            });
             this.updateScrollProgress();
         }
     }"
