@@ -2,17 +2,19 @@
     $user = Auth::user();
     $currentRoute = request()->route()->getName();
 
-    // Determine current dashboard
+    // Determine current dashboard (ตรวจสอบว่ากำลังอยู่ที่ dashboard ไหน)
     $isAdmin = str_starts_with($currentRoute, 'admin.');
     $isSeller = str_starts_with($currentRoute, 'seller.');
     $isUser = str_starts_with($currentRoute, 'user.');
 
-    // Check user roles
-    $hasAdminAccess = in_array($user->role, ['admin', 'super_admin']);
-    $hasSellerAccess = in_array($user->role, ['seller', 'super_admin']);
-    $hasUserAccess = $user->role === 'user' || $hasAdminAccess || $hasSellerAccess;
+    // Check user roles (ตรวจสอบสิทธิ์ที่ผู้ใช้มี)
+    // ใช้ hasRole() method จาก User model ซึ่งรองรับ super_admin อัตโนมัติ
+    $hasAdminAccess = $user->hasRole(['admin', 'super_admin']);
+    $hasSellerAccess = $user->hasRole(['seller', 'super_admin']);
+    // ทุกคนสามารถเข้าใช้ user dashboard ได้ (แต่ต้องมี authentication)
+    $hasUserAccess = true;
 
-    // Count available dashboards
+    // Count available dashboards (นับจำนวน dashboard ที่สามารถเข้าถึงได้)
     $availableDashboards = 0;
     if ($hasAdminAccess) $availableDashboards++;
     if ($hasSellerAccess) $availableDashboards++;
@@ -174,10 +176,11 @@
         </div>
         @endif
 
-        <!-- Quick Actions -->
+        <!-- Quick Actions (แสดงเมนูลัดตาม Dashboard ที่กำลังใช้งาน) -->
         <div class="p-3 border-b border-gray-200 dark:border-gray-700">
             <p class="px-2 py-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">เมนูลัด</p>
 
+            {{-- เมนูลัดสำหรับ User Dashboard --}}
             @if($isUser)
                 <a href="{{ route('user.profile') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/20 dark:hover:to-purple-900/20 rounded-xl transition-all duration-300 group">
                     <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:from-indigo-100 group-hover:to-purple-100 dark:group-hover:from-indigo-900/50 dark:group-hover:to-purple-900/50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:scale-110 transition-all duration-300 shadow-sm">
@@ -197,7 +200,7 @@
                     <span class="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">กระเป๋าเงิน</span>
                 </a>
 
-                <a href="{{ route('mlm.team') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20 rounded-xl transition-all duration-300 group">
+                <a href="{{ route('user.mlm.team') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20 rounded-xl transition-all duration-300 group">
                     <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:from-purple-100 group-hover:to-pink-100 dark:group-hover:from-purple-900/50 dark:group-hover:to-pink-900/50 group-hover:text-purple-600 dark:group-hover:text-purple-400 group-hover:scale-110 transition-all duration-300 shadow-sm">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -205,6 +208,7 @@
                     </div>
                     <span class="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">ทีมงาน</span>
                 </a>
+            {{-- เมนูลัดสำหรับ Admin Dashboard --}}
             @elseif($isAdmin)
                 <a href="{{ route('user.dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/20 rounded-xl transition-all duration-300 group">
                     <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:from-blue-100 group-hover:to-indigo-100 dark:group-hover:from-blue-900/50 dark:group-hover:to-indigo-900/50 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:scale-110 transition-all duration-300 shadow-sm">
@@ -251,6 +255,7 @@
                     </div>
                     <span class="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">จัดการผู้ใช้</span>
                 </a>
+            {{-- เมนูลัดสำหรับ Seller Dashboard --}}
             @elseif($isSeller)
                 <a href="{{ route('seller.profile') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/20 dark:hover:to-purple-900/20 rounded-xl transition-all duration-300 group">
                     <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:from-indigo-100 group-hover:to-purple-100 dark:group-hover:from-indigo-900/50 dark:group-hover:to-purple-900/50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:scale-110 transition-all duration-300 shadow-sm">
