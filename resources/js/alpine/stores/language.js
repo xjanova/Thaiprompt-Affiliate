@@ -239,22 +239,73 @@ Alpine.store('language', {
 
             // Debug: แสดงภาษาที่กำลังแปล
             console.log('🌐 กำลังแปลเป็น:', targetLang, this.languages.find(l => l.code === targetLang)?.nativeName);
+            console.log('🌐 Select element value before:', selectElement.value);
 
-            // เปลี่ยนค่า select และ trigger change event (แปลครั้งเดียวพอ!)
+            // เปลี่ยนค่า select
+            const oldValue = selectElement.value;
             selectElement.value = targetLang;
-            selectElement.dispatchEvent(new Event('change'));
 
-            // รอให้แปลเสร็จ (500ms เท่านั้น)
-            setTimeout(() => {
-                this.isTranslating = false;
-                console.log('✅ แปลเสร็จแล้ว:', targetLang);
+            console.log('🌐 Select element value after:', selectElement.value);
+            console.log('🌐 Value changed:', oldValue, '→', targetLang);
 
-                // Dispatch event เมื่อแปลเสร็จ
-                const lang = this.languages.find(l => l.code === targetLang);
-                window.dispatchEvent(new CustomEvent('translation-complete', {
-                    detail: { code: targetLang, language: lang?.nativeName || targetLang }
-                }));
-            }, 500);
+            // Trigger หลาย events พร้อมกัน (บางครั้ง Google Translate ต้องการหลาย events)
+            const events = [
+                new Event('change', { bubbles: true, cancelable: true }),
+                new Event('input', { bubbles: true, cancelable: true }),
+                new Event('click', { bubbles: true, cancelable: true }),
+            ];
+
+            events.forEach(event => {
+                selectElement.dispatchEvent(event);
+            });
+
+            // เรียก onchange handler ถ้ามี (fallback)
+            if (typeof selectElement.onchange === 'function') {
+                selectElement.onchange.call(selectElement);
+            }
+
+            // Focus และ blur เพื่อบังคับให้ Google Translate สังเกตเห็น
+            selectElement.focus();
+            setTimeout(() => selectElement.blur(), 50);
+
+            // ถ้าแปลไม่สำเร็จภายใน 2 วินาที ให้ reload หน้าเว็บ (fallback)
+            const translationTimeout = setTimeout(() => {
+                console.warn('⚠️ Google Translate ไม่ตอบสนอง - กำลัง reload หน้าเว็บ...');
+
+                // บันทึก scroll position
+                sessionStorage.setItem('scrollPosition', window.scrollY.toString());
+
+                // Reload หน้าเว็บเพื่อให้แปลภาษา (fallback solution)
+                window.location.reload();
+            }, 2000);
+
+            // ตรวจสอบว่าแปลสำเร็จหรือไม่โดยดูจาก body class
+            const checkTranslation = setInterval(() => {
+                const bodyClass = document.body.className;
+                const isTranslated = bodyClass.includes('translated-') ||
+                                   document.querySelector('html').getAttribute('lang') !== 'th';
+
+                if (isTranslated || targetLang === 'th') {
+                    clearInterval(checkTranslation);
+                    clearTimeout(translationTimeout);
+
+                    this.isTranslating = false;
+                    console.log('✅ แปลเสร็จแล้ว:', targetLang);
+
+                    // Dispatch event เมื่อแปลเสร็จ
+                    const lang = this.languages.find(l => l.code === targetLang);
+                    window.dispatchEvent(new CustomEvent('translation-complete', {
+                        detail: { code: targetLang, language: lang?.nativeName || targetLang }
+                    }));
+
+                    // กลับไปตำแหน่ง scroll เดิม
+                    const savedScroll = sessionStorage.getItem('scrollPosition');
+                    if (savedScroll) {
+                        window.scrollTo(0, parseInt(savedScroll));
+                        sessionStorage.removeItem('scrollPosition');
+                    }
+                }
+            }, 200);
         } else {
             if (this.translateRetryCount < this.maxTranslateRetries) {
                 this.translateRetryCount++;
