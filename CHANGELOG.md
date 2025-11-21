@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.108.4] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: mobile QR button and burger menu functionality (feb2f80c)
+- fix: show QR button only on mobile, desktop has QR in profile (6c38c9bb)
+### 🔧 Other Changes
+- Merge pull request #1433 from xjanova/claude/add-recruit-qr-code-01HGnucrodgRETVSyZZnxt4c (b9a302ae)
+
 ## [v3.108.3] - 2025-11-21
 
 ### ✨ Features
