@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.110.0] - 2025-11-21
+
+### ✨ Features
+- feat: make route verification strict in deploy-pro - require vendor after composer install (cbe37904)
+### 🐛 Bug Fixes
+- fix: make deploy-pro.sh route verification more graceful and handle missing dependencies (ada991c6)
+### 🔧 Other Changes
+- Merge pull request #1437 from xjanova/claude/fix-root-route-method-018xVvdCsNt8q8RT4e3FFT4B (cef1b128)
+
 ## [v3.109.0] - 2025-11-21
 
 ### ✨ Features
