@@ -397,7 +397,7 @@
             <div class="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
         </div>
 
-        <!-- QR Code Modal -->
+        <!-- QR Code Modal - Fullscreen on Mobile -->
         <div x-show="showQRModal"
              x-transition:enter="transition ease-out duration-300"
              x-transition:enter-start="opacity-0"
@@ -405,11 +405,14 @@
              x-transition:leave="transition ease-in duration-200"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             @click="toggleQRModal()"
-             class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-4"
+             class="fixed inset-0 z-50"
              style="display: none;">
 
-            <!-- Modal Content -->
+            <!-- Fullscreen Background -->
+            <div @click="toggleQRModal()"
+                 class="absolute inset-0 bg-gradient-to-br from-purple-900 via-pink-900 to-purple-900"></div>
+
+            <!-- Modal Content - Fullscreen on Mobile, Centered on Desktop -->
             <div @click.stop
                  x-transition:enter="transition ease-out duration-300 transform"
                  x-transition:enter-start="translate-y-full md:translate-y-0 md:scale-90 opacity-0"
@@ -417,83 +420,93 @@
                  x-transition:leave="transition ease-in duration-200 transform"
                  x-transition:leave-start="translate-y-0 md:scale-100 opacity-100"
                  x-transition:leave-end="translate-y-full md:translate-y-0 md:scale-90 opacity-0"
-                 class="glass rounded-t-3xl md:rounded-3xl shadow-2xl w-full md:max-w-md max-h-[90vh] overflow-y-auto">
+                 class="relative h-full md:h-auto md:max-h-[90vh] w-full md:max-w-lg md:mx-auto md:my-8 md:rounded-3xl bg-white md:shadow-2xl flex flex-col overflow-hidden">
 
                 <!-- Header -->
-                <div class="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-4 rounded-t-3xl flex items-center justify-between z-10">
+                <div class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-6 md:py-4 md:rounded-t-3xl flex items-center justify-between flex-shrink-0">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                            <i class="fas fa-qrcode text-xl"></i>
+                        <div class="w-12 h-12 md:w-10 md:h-10 bg-white/20 rounded-full flex items-center justify-center">
+                            <i class="fas fa-qrcode text-2xl md:text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="font-bold text-lg">แชร์หน้า Recruit</h3>
-                            <p class="text-xs text-purple-100">สแกนหรือดาวน์โหลด QR Code</p>
+                            <h3 class="font-bold text-xl md:text-lg">แชร์หน้า Recruit</h3>
+                            <p class="text-sm md:text-xs text-purple-100">สแกนหรือดาวน์โหลด QR Code</p>
                         </div>
                     </div>
                     <button @click="toggleQRModal()"
-                            class="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition">
-                        <i class="fas fa-times"></i>
+                            class="w-10 h-10 md:w-8 md:h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition">
+                        <i class="fas fa-times text-xl md:text-base"></i>
                     </button>
                 </div>
 
-                <!-- QR Code Display -->
-                <div class="p-6 text-center">
-                    <div class="inline-block bg-white p-6 rounded-2xl shadow-lg mb-4">
-                        <div id="qrcode-modal"></div>
-                    </div>
+                <!-- Scrollable Content -->
+                <div class="flex-1 overflow-y-auto">
+                    <!-- QR Code Display - Large on Mobile -->
+                    <div class="p-6 md:p-6 text-center flex flex-col items-center justify-center min-h-[60vh] md:min-h-0">
+                        <!-- QR Code Container -->
+                        <div class="inline-block bg-white p-8 md:p-6 rounded-3xl md:rounded-2xl shadow-2xl mb-6 md:mb-4">
+                            <div id="qrcode-modal" class="qr-container"></div>
+                        </div>
 
-                    <p class="text-sm text-gray-600 mb-4">
-                        <i class="fas fa-info-circle text-purple-600 mr-1"></i>
-                        สแกน QR Code เพื่อเปิดหน้านี้
-                    </p>
+                        <p class="text-base md:text-sm text-gray-800 mb-6 md:mb-4 font-semibold">
+                            <i class="fas fa-camera text-purple-600 mr-2"></i>
+                            สแกน QR Code เพื่อเปิดหน้านี้
+                        </p>
 
-                    <!-- Recruit URL -->
-                    <div class="mb-6">
-                        <label class="block text-xs font-semibold text-gray-600 mb-2 text-left">
-                            ลิงก์หน้า Recruit:
-                        </label>
-                        <div class="flex gap-2">
-                            <input type="text"
-                                   id="recruitUrlModal"
-                                   :value="recruitUrl"
-                                   readonly
-                                   class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl text-xs font-mono bg-gray-50">
-                            <button @click="copyRecruitUrl()"
-                                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition flex items-center gap-2 whitespace-nowrap">
-                                <i class="fas fa-copy"></i>
-                                <span class="hidden md:inline">คัดลอก</span>
+                        <!-- Member Code Display -->
+                        <div class="mb-6 md:mb-4 bg-purple-50 rounded-2xl p-4">
+                            <p class="text-xs text-gray-600 mb-1">รหัสสมาชิก</p>
+                            <p class="text-2xl md:text-xl font-bold text-purple-600" x-text="memberCode"></p>
+                        </div>
+
+                        <!-- Recruit URL -->
+                        <div class="w-full max-w-md mb-6">
+                            <label class="block text-sm md:text-xs font-semibold text-gray-700 mb-2 text-left">
+                                ลิงก์หน้า Recruit:
+                            </label>
+                            <div class="flex gap-2">
+                                <input type="text"
+                                       id="recruitUrlModal"
+                                       :value="recruitUrl"
+                                       readonly
+                                       class="flex-1 px-4 py-3 md:px-3 md:py-2 border-2 border-purple-200 rounded-xl text-sm md:text-xs font-mono bg-purple-50 text-gray-700">
+                                <button @click="copyRecruitUrl()"
+                                        class="px-5 py-3 md:px-4 md:py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition flex items-center gap-2">
+                                    <i class="fas fa-copy"></i>
+                                    <span class="hidden sm:inline">คัดลอก</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="w-full max-w-md grid grid-cols-2 gap-3 mb-6 md:mb-4">
+                            <button @click="downloadQRCode()"
+                                    class="px-6 py-4 md:px-4 md:py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl font-bold md:font-semibold transition shadow-lg text-base md:text-sm">
+                                <i class="fas fa-download mr-2"></i>ดาวน์โหลด
+                            </button>
+                            <button @click="shareRecruitPage()"
+                                    class="px-6 py-4 md:px-4 md:py-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white rounded-xl font-bold md:font-semibold transition shadow-lg text-base md:text-sm">
+                                <i class="fas fa-share-alt mr-2"></i>แชร์
                             </button>
                         </div>
-                    </div>
 
-                    <!-- Action Buttons -->
-                    <div class="grid grid-cols-2 gap-3 mb-4">
-                        <button @click="downloadQRCode()"
-                                class="px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl font-semibold transition">
-                            <i class="fas fa-download mr-2"></i>ดาวน์โหลด
-                        </button>
-                        <button @click="shareRecruitPage()"
-                                class="px-4 py-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white rounded-xl font-semibold transition">
-                            <i class="fas fa-share-alt mr-2"></i>แชร์
-                        </button>
-                    </div>
-
-                    <!-- Share via Social Media -->
-                    <div class="border-t border-gray-200 pt-4">
-                        <p class="text-xs font-semibold text-gray-600 mb-3 text-left">แชร์ผ่าน:</p>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button @click="shareVia('line')"
-                                    class="px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition text-sm">
-                                <i class="fab fa-line mr-1"></i>LINE
-                            </button>
-                            <button @click="shareVia('facebook')"
-                                    class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition text-sm">
-                                <i class="fab fa-facebook mr-1"></i>Facebook
-                            </button>
-                            <button @click="shareVia('twitter')"
-                                    class="px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg font-semibold transition text-sm">
-                                <i class="fab fa-twitter mr-1"></i>Twitter
-                            </button>
+                        <!-- Share via Social Media -->
+                        <div class="w-full max-w-md border-t border-gray-200 pt-6 md:pt-4 pb-6">
+                            <p class="text-sm md:text-xs font-bold text-gray-700 mb-3 text-left">แชร์ผ่าน:</p>
+                            <div class="grid grid-cols-3 gap-3 md:gap-2">
+                                <button @click="shareVia('line')"
+                                        class="px-4 py-4 md:px-3 md:py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl md:rounded-lg font-bold md:font-semibold transition shadow-lg text-base md:text-sm">
+                                    <i class="fab fa-line mr-2 md:mr-1 text-xl md:text-base"></i>LINE
+                                </button>
+                                <button @click="shareVia('facebook')"
+                                        class="px-4 py-4 md:px-3 md:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl md:rounded-lg font-bold md:font-semibold transition shadow-lg text-base md:text-sm">
+                                    <i class="fab fa-facebook mr-2 md:mr-1 text-xl md:text-base"></i>Facebook
+                                </button>
+                                <button @click="shareVia('twitter')"
+                                        class="px-4 py-4 md:px-3 md:py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-xl md:rounded-lg font-bold md:font-semibold transition shadow-lg text-base md:text-sm">
+                                    <i class="fab fa-twitter mr-2 md:mr-1 text-xl md:text-base"></i>Twitter
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -573,10 +586,14 @@
                     if (!container || this.qrcode) return;
 
                     try {
+                        // ขนาด QR Code ตามหน้าจอ: มือถือใหญ่ เดสก์ทอปปกติ
+                        const isMobile = window.innerWidth < 768;
+                        const qrSize = isMobile ? 280 : 220;
+
                         this.qrcode = new QRCode(container, {
                             text: this.recruitUrl,
-                            width: 220,
-                            height: 220,
+                            width: qrSize,
+                            height: qrSize,
                             colorDark: "#000000",
                             colorLight: "#ffffff",
                             correctLevel: QRCode.CorrectLevel.H
