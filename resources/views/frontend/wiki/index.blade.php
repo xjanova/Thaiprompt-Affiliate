@@ -102,11 +102,19 @@
 
             console.log('Switching to language: ' + langCode);
 
+            // ลบ cookie เก่าทั้งหมดก่อน (ป้องกัน cookie ติดค้าง)
+            var expireDate = 'Thu, 01 Jan 1970 00:00:01 GMT';
+            document.cookie = 'googtrans=; Path=/; Expires=' + expireDate;
+            document.cookie = 'googtrans=; Path=/; Domain=' + window.location.hostname + '; Expires=' + expireDate;
+
+            console.log('✅ Cleared old cookies');
+
             // ใช้ cookie-based approach (วิธีที่ Google Translate ใช้จริง)
             if (langCode === 'th') {
                 // กลับไปภาษาไทยต้นฉบับ
                 console.log('Resetting to Thai');
                 document.cookie = 'googtrans=/th/th; Path=/;';
+                console.log('✅ Set cookie: googtrans=/th/th');
                 location.reload();
             } else {
                 // แปลเป็นภาษาอื่น
@@ -114,7 +122,9 @@
 
                 // ตั้งค่า cookie สำหรับ Google Translate
                 // Format: googtrans=/source/target
-                document.cookie = 'googtrans=/th/' + langCode + '; Path=/;';
+                var cookieValue = 'googtrans=/th/' + langCode + '; Path=/;';
+                document.cookie = cookieValue;
+                console.log('✅ Set cookie: ' + cookieValue);
 
                 // Reload หน้าเว็บเพื่อให้ Google Translate อ่าน cookie และแปลภาษา
                 location.reload();
