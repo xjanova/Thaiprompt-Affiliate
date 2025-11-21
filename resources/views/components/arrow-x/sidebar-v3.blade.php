@@ -362,9 +362,17 @@
         {{-- TPIX Blockchain --}}
         <a href="{{ route('admin.tpix.dashboard') }}"
            @click="$store.sidebar.closeOnMenuClick()"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tpix.*') ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tpix.dashboard') ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-cube w-5 text-center drop-shadow"></i>
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">TPIX Blockchain</span>
+        </a>
+
+        {{-- TPIX Deployment Wizard --}}
+        <a href="{{ route('admin.tpix.deployment.index') }}"
+           @click="$store.sidebar.closeOnMenuClick()"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tpix.deployment.*') ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+            <i class="fas fa-rocket w-5 text-center drop-shadow"></i>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">TPIX Deployment Wizard</span>
         </a>
 
         {{-- Token Management --}}
