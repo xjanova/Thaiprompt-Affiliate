@@ -25,7 +25,7 @@
     </div>
 
     <!-- Transfer Form -->
-    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">แบบฟอร์มโอนเงิน</h2>
 
         <form method="POST" action="{{ route('user.wallet.transfer.submit') }}" class="space-y-6">
@@ -99,7 +99,7 @@
     </div>
 
     <!-- How to Find Wallet Address -->
-    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">❓ จะหา Wallet Address ของผู้รับได้อย่างไร?</h3>
 
         <div class="space-y-4 text-sm text-gray-700 dark:text-gray-300">
@@ -137,7 +137,7 @@
     </div>
 
     <!-- Recent Transfers -->
-    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">📊 การโอนเงินล่าสุด</h3>
             <a href="{{ route('user.wallet.transactions') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">

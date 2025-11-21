@@ -25,7 +25,7 @@
     </div>
 
     <!-- Filters -->
-    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">🔍 ตัวกรอง</h2>
 
         <form method="GET" action="{{ route('user.wallet.transactions') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -75,7 +75,7 @@
     </div>
 
     <!-- Transactions Table -->
-    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">รายการธุรกรรม</h2>
