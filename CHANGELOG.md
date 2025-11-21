@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.97.0] - 2025-11-21
+
+### ✨ Features
+- Merge pull request #1402 from xjanova/claude/add-team-leader-page-0136UifDG3tyjaFcFZjtKy4v (9a8776aa)
+- feat: add Recruit Page System for team leaders (9b1e3ed3)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.96.1] - 2025-11-21
 
 ### ✨ Features
