@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Models\Commission;
 use App\Models\MlmCommission;
 use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
@@ -405,12 +406,18 @@ class DashboardController extends Controller
     /**
      * แสดงรายการ Commissions ของ User
      *
+     * แสดงคอมมิชชั่นทั่วไปจากตาราง commissions (ไม่ใช่ MLM commissions)
+     *
      * @return \Illuminate\View\View
      */
     public function commissions()
     {
         $user = Auth::user();
-        $commissions = $user->mlmCommissions()->paginate(20);
+
+        // ดึงคอมมิชชั่นทั่วไปจากตาราง commissions
+        $commissions = $user->commissions()
+            ->latest()
+            ->paginate(20);
 
         return view('user.commissions', compact('commissions'));
     }
