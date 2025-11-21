@@ -291,20 +291,90 @@ class RecruitTemplateController extends Controller
      */
     public function preview(RecruitTemplate $recruitTemplate)
     {
-        // จำลองข้อมูลแม่ทีมสำหรับ preview
-        $mockTeamLeader = (object) [
-            'name' => 'สมชาย ใจดี',
-            'member_code' => 'DEMO001',
-            'profile_picture_url' => 'https://ui-avatars.com/api/?name=S&background=667eea&color=fff&size=200',
-            'phone' => '081-234-5678',
-            'address' => 'กรุงเทพมหานคร',
-        ];
+        // จำลองข้อมูล User สำหรับ preview
+        $mockUser = new \stdClass();
+        $mockUser->id = 0;
+        $mockUser->name = 'สมชาย ใจดี';
+        $mockUser->email = 'demo@example.com';
+        $mockUser->profile_picture_url = 'https://ui-avatars.com/api/?name=S&background=667eea&color=fff&size=200';
+
+        // จำลองข้อมูล MLM Member
+        $mockMlmMember = new \stdClass();
+        $mockMlmMember->id = 0;
+        $mockMlmMember->member_code = 'DEMO001';
+        $mockMlmMember->user_id = 0;
+        $mockMlmMember->user = $mockUser;
+
+        // จำลองข้อมูล Customization
+        $mockCustomization = new \stdClass();
+        $mockCustomization->id = 0;
+        $mockCustomization->user_id = 0;
+        $mockCustomization->template_id = $recruitTemplate->id;
+        $mockCustomization->custom_name = 'สมชาย ใจดี';
+        $mockCustomization->custom_phone = '081-234-5678';
+        $mockCustomization->custom_address = 'กรุงเทพมหานคร ประเทศไทย';
+        $mockCustomization->custom_pitch = 'ร่วมทีมกับผม สร้างรายได้แบบไม่จำกัด เริ่มต้นง่าย ไม่มีความเสี่ยง!';
+        $mockCustomization->custom_image = 'https://ui-avatars.com/api/?name=S&background=667eea&color=fff&size=200';
+        $mockCustomization->is_active = true;
+        $mockCustomization->total_views = 1234;
+        $mockCustomization->total_leads = 89;
+        $mockCustomization->total_conversions = 45;
+        $mockCustomization->conversion_rate = 3.65;
+        $mockCustomization->template = $recruitTemplate;
+
+        // เพิ่ม mock methods ที่ view ต้องการ
+        $mockCustomization->getDisplayName = function() use ($mockCustomization, $mockUser) {
+            return $mockCustomization->custom_name ?: $mockUser->name;
+        };
+        $mockCustomization->getDisplayImage = function() use ($mockCustomization, $mockUser) {
+            return $mockCustomization->custom_image ?: $mockUser->profile_picture_url;
+        };
+
+        // แปลง stdClass เป็น object ที่เรียก method ได้
+        $customizationWrapper = new class($mockCustomization) {
+            private $data;
+
+            public function __construct($data) {
+                $this->data = $data;
+            }
+
+            public function __get($name) {
+                return $this->data->$name ?? null;
+            }
+
+            public function __isset($name) {
+                return isset($this->data->$name);
+            }
+
+            public function getDisplayName() {
+                $callable = $this->data->getDisplayName;
+                return $callable();
+            }
+
+            public function getDisplayImage() {
+                $callable = $this->data->getDisplayImage;
+                return $callable();
+            }
+        };
+
+        // จำลอง LINE Settings (ไม่มีก็ไม่เป็นไร)
+        $mockLineSettings = null;
+
+        // URL สำหรับสมัคร (demo)
+        $registerUrl = route('register') . '?ref=DEMO001';
+
+        // จำลอง Lead Lock (null เพราะไม่มี tracking ใน preview)
+        $leadLock = null;
 
         return view('recruit.show', [
+            'teamLeader' => $mockUser,
+            'mlmMember' => $mockMlmMember,
+            'customization' => $customizationWrapper,
             'template' => $recruitTemplate,
-            'teamLeader' => $mockTeamLeader,
-            'customization' => null,
-            'isPreview' => true,
+            'leadLock' => $leadLock,
+            'lineSettings' => $mockLineSettings,
+            'registerUrl' => $registerUrl,
+            'isPreview' => true, // Flag เพื่อปิด tracking
         ]);
     }
 }
