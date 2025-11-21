@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.96.1] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1401 from xjanova/claude/fix-mlm-team-route-01983ACMoqdoF68C8egbMicG (e50a66db)
+- fix: replace ES6 syntax with ES5 for compatibility (34239d43)
+### 🔧 Other Changes
+
+
 ## [v3.96.0] - 2025-11-21
 
 ### ✨ Features
