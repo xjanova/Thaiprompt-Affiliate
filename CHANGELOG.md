@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.108.2] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1431 from xjanova/claude/fix-commissions-deleted-at-01GJdhJZTqToYXgu9mZpedVs (3679a069)
+- fix: add missing deleted_at column to commissions table (7e671dae)
+### 🔧 Other Changes
+
+
 ## [v3.108.1] - 2025-11-21
 
 ### ✨ Features
