@@ -2182,57 +2182,55 @@ require __DIR__.'/bot_automation.php';
 // TPIX Native Coin Deployment Wizard
 // =====================================
 Route::prefix('tpix/deployment')->name('tpix.deployment.')->group(function () {
-    use App\Http\Controllers\Admin\TpixDeploymentController;
-
     // Index & Management
-    Route::get('/', [TpixDeploymentController::class, 'index'])->name('index');
-    Route::get('/create', [TpixDeploymentController::class, 'create'])->name('create');
-    Route::post('/', [TpixDeploymentController::class, 'store'])->name('store');
+    Route::get('/', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'store'])->name('store');
 
     // Wizard Routes (แยกตาม slug)
     Route::prefix('{slug}')->group(function () {
         // Main Wizard (Redirect to current step)
-        Route::get('/', [TpixDeploymentController::class, 'wizard'])->name('wizard');
+        Route::get('/', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'wizard'])->name('wizard');
 
         // Step 1: Prerequisites Check
-        Route::get('/step-1', [TpixDeploymentController::class, 'step1'])->name('step1');
-        Route::post('/step-1', [TpixDeploymentController::class, 'saveStep1'])->name('step1.save');
+        Route::get('/step-1', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'step1'])->name('step1');
+        Route::post('/step-1', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'saveStep1'])->name('step1.save');
 
         // Step 2: Token Configuration
-        Route::get('/step-2', [TpixDeploymentController::class, 'step2'])->name('step2');
-        Route::post('/step-2', [TpixDeploymentController::class, 'saveStep2'])->name('step2.save');
+        Route::get('/step-2', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'step2'])->name('step2');
+        Route::post('/step-2', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'saveStep2'])->name('step2.save');
 
         // Step 3: Tokenomics
-        Route::get('/step-3', [TpixDeploymentController::class, 'step3'])->name('step3');
-        Route::post('/step-3', [TpixDeploymentController::class, 'saveStep3'])->name('step3.save');
+        Route::get('/step-3', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'step3'])->name('step3');
+        Route::post('/step-3', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'saveStep3'])->name('step3.save');
 
         // Step 4: Smart Contract
-        Route::get('/step-4', [TpixDeploymentController::class, 'step4'])->name('step4');
-        Route::post('/step-4', [TpixDeploymentController::class, 'saveStep4'])->name('step4.save');
+        Route::get('/step-4', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'step4'])->name('step4');
+        Route::post('/step-4', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'saveStep4'])->name('step4.save');
 
         // Step 5: Deploy & Verify
-        Route::get('/step-5', [TpixDeploymentController::class, 'step5'])->name('step5');
-        Route::post('/step-5/deploy', [TpixDeploymentController::class, 'deployContract'])->name('step5.deploy');
-        Route::post('/step-5/verify', [TpixDeploymentController::class, 'verifyContract'])->name('step5.verify');
+        Route::get('/step-5', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'step5'])->name('step5');
+        Route::post('/step-5/deploy', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'deployContract'])->name('step5.deploy');
+        Route::post('/step-5/verify', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'verifyContract'])->name('step5.verify');
 
         // Step 6: DEX Integration
-        Route::get('/step-6', [TpixDeploymentController::class, 'step6'])->name('step6');
-        Route::post('/step-6/create-pool', [TpixDeploymentController::class, 'createLiquidityPool'])->name('step6.create-pool');
-        Route::post('/step-6/enable-trading', [TpixDeploymentController::class, 'enableTrading'])->name('step6.enable-trading');
+        Route::get('/step-6', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'step6'])->name('step6');
+        Route::post('/step-6/create-pool', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'createLiquidityPool'])->name('step6.create-pool');
+        Route::post('/step-6/enable-trading', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'enableTrading'])->name('step6.enable-trading');
 
         // Step 7: Listing & Marketing
-        Route::get('/step-7', [TpixDeploymentController::class, 'step7'])->name('step7');
-        Route::post('/step-7/submit-cmc', [TpixDeploymentController::class, 'submitToCMC'])->name('step7.submit-cmc');
-        Route::post('/step-7/submit-coingecko', [TpixDeploymentController::class, 'submitToCoinGecko'])->name('step7.submit-coingecko');
-        Route::post('/step-7/complete', [TpixDeploymentController::class, 'complete'])->name('step7.complete');
+        Route::get('/step-7', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'step7'])->name('step7');
+        Route::post('/step-7/submit-cmc', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'submitToCMC'])->name('step7.submit-cmc');
+        Route::post('/step-7/submit-coingecko', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'submitToCoinGecko'])->name('step7.submit-coingecko');
+        Route::post('/step-7/complete', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'complete'])->name('step7.complete');
 
         // Delete Configuration
-        Route::delete('/', [TpixDeploymentController::class, 'destroy'])->name('destroy');
+        Route::delete('/', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'destroy'])->name('destroy');
     });
 
     // API Routes
     Route::prefix('api')->name('api.')->group(function () {
-        Route::get('/check-prerequisites', [TpixDeploymentController::class, 'checkPrerequisitesApi'])
+        Route::get('/check-prerequisites', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'checkPrerequisitesApi'])
             ->name('check-prerequisites');
     });
 });
