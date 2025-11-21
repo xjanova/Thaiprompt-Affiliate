@@ -25,7 +25,7 @@
     </div>
 
     <!-- Payment Methods -->
-    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+    <x-arrow-x.card-v3 class="p-6">
         <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">เลือกช่องทางการชำระเงิน</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -60,10 +60,10 @@
                 @endif
             @endforeach
         </div>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- PromptPay Payment Form -->
-    <div id="promptpay-form" class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6 hidden">
+    <x-arrow-x.card-v3 id="promptpay-form" class="p-6 hidden">
         <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">💳 ชำระเงินผ่าน พร้อมเพย์</h3>
 
         <form method="POST" action="{{ route('user.wallet.deposit.promptpay') }}" class="space-y-4">
@@ -97,10 +97,10 @@
                 </button>
             </div>
         </form>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Bank Transfer Form -->
-    <div id="bank_transfer-form" class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6 hidden">
+    <x-arrow-x.card-v3 id="bank_transfer-form" class="p-6 hidden">
         <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">🏦 โอนผ่านธนาคาร</h3>
 
         <form method="POST" action="{{ route('user.wallet.deposit.bank-transfer') }}" enctype="multipart/form-data" class="space-y-4">
@@ -151,10 +151,10 @@
                 </button>
             </div>
         </form>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Stripe Form -->
-    <div id="stripe-form" class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6 hidden">
+    <x-arrow-x.card-v3 id="stripe-form" class="p-6 hidden">
         <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">💰 ชำระเงินด้วย Stripe</h3>
 
         <div class="bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4">
@@ -168,10 +168,10 @@
                 class="w-full mt-4 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition">
             กลับ
         </button>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- PayPal Form -->
-    <div id="paypal-form" class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6 hidden">
+    <x-arrow-x.card-v3 id="paypal-form" class="p-6 hidden">
         <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">💵 ชำระเงินด้วย PayPal</h3>
 
         <div class="bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4">
@@ -185,7 +185,7 @@
                 class="w-full mt-4 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition">
             กลับ
         </button>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Instructions -->
     <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
