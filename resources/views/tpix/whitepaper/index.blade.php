@@ -1,3 +1,4 @@
+{{-- TPIX Whitepaper - Modern 3D Design - Last Updated: 2025-11-21 - Cache Buster: v3.0 --}}
 <!DOCTYPE html>
 <html lang="th" x-data="{ darkMode: false }" :class="{ 'dark': darkMode }" x-init="$store.language.init()">
 <head>
