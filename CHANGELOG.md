@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.99.5] - 2025-11-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: clear old cookies before setting new language to prevent conflicts (5875de7c)
+- fix: sync Alpine.js language state with Google Translate cookie (5321e218)
+### 🔧 Other Changes
+- Merge pull request #1412 from xjanova/claude/fix-mlm-team-route-01983ACMoqdoF68C8egbMicG (f630fa5c)
+
 ## [v3.99.4] - 2025-11-21
 
 ### ✨ Features
