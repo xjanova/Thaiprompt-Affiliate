@@ -761,6 +761,18 @@ class User extends Authenticatable
     }
 
     /**
+     * Get all general commissions for this user (from commissions table)
+     *
+     * คอมมิชชั่นทั่วไปจากตาราง commissions
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function commissions()
+    {
+        return $this->hasMany(\App\Models\Commission::class);
+    }
+
+    /**
      * Get active MLM membership for a specific plan
      */
     public function getMlmMember($planId)
