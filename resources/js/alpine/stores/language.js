@@ -239,12 +239,36 @@ Alpine.store('language', {
 
             // Debug: แสดงภาษาที่กำลังแปล
             console.log('🌐 กำลังแปลเป็น:', targetLang, this.languages.find(l => l.code === targetLang)?.nativeName);
+            console.log('🌐 Select element value before:', selectElement.value);
 
-            // เปลี่ยนค่า select และ trigger change event (แปลครั้งเดียวพอ!)
+            // เปลี่ยนค่า select
+            const oldValue = selectElement.value;
             selectElement.value = targetLang;
-            selectElement.dispatchEvent(new Event('change'));
 
-            // รอให้แปลเสร็จ (500ms เท่านั้น)
+            console.log('🌐 Select element value after:', selectElement.value);
+            console.log('🌐 Value changed:', oldValue, '→', targetLang);
+
+            // Trigger หลาย events พร้อมกัน (บางครั้ง Google Translate ต้องการหลาย events)
+            const events = [
+                new Event('change', { bubbles: true, cancelable: true }),
+                new Event('input', { bubbles: true, cancelable: true }),
+                new Event('click', { bubbles: true, cancelable: true }),
+            ];
+
+            events.forEach(event => {
+                selectElement.dispatchEvent(event);
+            });
+
+            // เรียก onchange handler ถ้ามี (fallback)
+            if (typeof selectElement.onchange === 'function') {
+                selectElement.onchange.call(selectElement);
+            }
+
+            // Focus และ blur เพื่อบังคับให้ Google Translate สังเกตเห็น
+            selectElement.focus();
+            setTimeout(() => selectElement.blur(), 50);
+
+            // รอให้แปลเสร็จ (เพิ่มเวลารอเป็น 1000ms เพื่อให้แน่ใจ)
             setTimeout(() => {
                 this.isTranslating = false;
                 console.log('✅ แปลเสร็จแล้ว:', targetLang);
@@ -254,7 +278,7 @@ Alpine.store('language', {
                 window.dispatchEvent(new CustomEvent('translation-complete', {
                     detail: { code: targetLang, language: lang?.nativeName || targetLang }
                 }));
-            }, 500);
+            }, 1000);
         } else {
             if (this.translateRetryCount < this.maxTranslateRetries) {
                 this.translateRetryCount++;
