@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.98.0] - 2025-11-21
+
+### ✨ Features
+- feat: add comprehensive Recruit Page system views (c33892aa)
+### 🐛 Bug Fixes
+- fix: add missing features for Recruit Page system (f71268de)
+### 🔧 Other Changes
+- Merge pull request #1404 from xjanova/claude/add-team-leader-page-0136UifDG3tyjaFcFZjtKy4v (94f719df)
+
 ## [v3.97.0] - 2025-11-21
 
 ### ✨ Features
