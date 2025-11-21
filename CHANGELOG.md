@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.109.0] - 2025-11-21
+
+### ✨ Features
+- feat: add deploy-pro.sh - enterprise production deployment script with advanced route cache management (0a01dc62)
+### 🐛 Bug Fixes
+- fix: add HEAD method support for all public routes to prevent MethodNotAllowedHttpException (33fb3a61)
+### 🔧 Other Changes
+- Merge pull request #1436 from xjanova/claude/fix-root-route-method-018xVvdCsNt8q8RT4e3FFT4B (4a980621)
+
 ## [v3.108.6] - 2025-11-21
 
 ### ✨ Features
