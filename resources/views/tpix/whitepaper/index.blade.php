@@ -18,47 +18,73 @@
     {{-- Custom Styles --}}
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&display=swap');
 
         /* Alpine.js x-cloak */
         [x-cloak] {
             display: none !important;
         }
 
+        :root {
+            /* Premium Black & Gold Color Palette */
+            --gold-primary: #FFD700;
+            --gold-light: #FFF4D6;
+            --gold-dark: #B8860B;
+            --black-primary: #0A0A0A;
+            --black-secondary: #1A1A1A;
+            --black-tertiary: #2A2A2A;
+        }
+
         body {
             font-family: 'Noto Sans Thai', 'Kanit', sans-serif;
         }
 
-        /* Gradient backgrounds */
+        /* Luxury Font for Headings */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Cinzel', 'Kanit', serif;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        /* Premium Gradient Backgrounds - Black & Gold */
         .gradient-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .gradient-secondary {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .gradient-success {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #0A0A0A 0%, #2A2A2A 50%, #1A1A1A 100%);
         }
 
         .gradient-gold {
-            background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
+            background: linear-gradient(135deg, #FFD700 0%, #FDB931 50%, #B8860B 100%);
         }
 
-        /* Glassmorphism */
+        .gradient-black-gold {
+            background: linear-gradient(135deg, #0A0A0A 0%, #2A2A2A 30%, #FFD700 100%);
+        }
+
+        .gradient-gold-glow {
+            background: linear-gradient(135deg, #FFD700 0%, #FFF4D6 50%, #FFD700 100%);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Glassmorphism - Premium Black & Gold */
         .glass {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(10, 10, 10, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(255, 215, 0, 0.1);
         }
 
         .glass-dark {
-            background: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
         }
 
-        /* Animated gradient background */
+        .glass-gold {
+            background: rgba(255, 215, 0, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 215, 0, 0.4);
+        }
+
+        /* Animated gradient background - Premium Black & Gold */
         @keyframes gradient-animation {
             0% {
                 background-position: 0% 50%;
@@ -72,9 +98,22 @@
         }
 
         .animated-gradient {
-            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background: linear-gradient(-45deg, #0A0A0A, #1A1A1A, #2A2A2A, #FFD700, #1A1A1A);
             background-size: 400% 400%;
-            animation: gradient-animation 15s ease infinite;
+            animation: gradient-animation 20s ease infinite;
+        }
+
+        /* Gold Glow Effect */
+        .gold-glow {
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5),
+                         0 0 20px rgba(255, 215, 0, 0.3),
+                         0 0 30px rgba(255, 215, 0, 0.2);
+        }
+
+        .gold-border {
+            border: 2px solid #FFD700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3),
+                        inset 0 0 20px rgba(255, 215, 0, 0.1);
         }
 
         /* Smooth scroll */
@@ -124,7 +163,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300"
+<body class="bg-black transition-colors duration-300"
       x-data="{ showTranslateToast: false, translateToastMessage: '', translateToastLang: '' }"
       @language-changed.window="
         showTranslateToast = true;
@@ -145,8 +184,8 @@
          x-transition:leave-start="opacity-100 translate-y-0"
          x-transition:leave-end="opacity-0 translate-y-2"
          class="fixed bottom-4 right-4 z-[9999] no-print">
-        <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px]">
-            <div class="flex-shrink-0">
+        <div class="glass-gold gold-border px-6 py-3 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px]">
+            <div class="flex-shrink-0 text-yellow-400">
                 <svg x-show="translateToastMessage.includes('กำลัง')" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
@@ -155,7 +194,7 @@
                 </svg>
             </div>
             <div class="flex-1">
-                <p class="font-medium no-translate" x-text="translateToastMessage"></p>
+                <p class="font-medium text-yellow-400 no-translate" x-text="translateToastMessage"></p>
             </div>
         </div>
     </div>
