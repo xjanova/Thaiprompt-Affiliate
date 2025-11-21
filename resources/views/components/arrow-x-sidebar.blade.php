@@ -186,11 +186,11 @@
         </div>
     </aside>
 
-    <!-- Toggle Button (with state indicator) - ปุ่มเบอร์เกอร์เมนู -->
+    <!-- Toggle Button (with state indicator) - ปุ่มเบอร์เกอร์เมนู (ซ่อนบนมือถือ - ใช้ bottom nav แทน) -->
     <button
         @click="toggleSidebar()"
         type="button"
-        class="fixed top-4 z-[60] p-3 bg-gradient-to-br from-purple-600 to-blue-600 dark:from-purple-700 dark:to-blue-700 text-white rounded-xl shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 group backdrop-blur-sm border border-white/20 active:scale-95"
+        class="hidden lg:block fixed top-4 z-[60] p-3 bg-gradient-to-br from-purple-600 to-blue-600 dark:from-purple-700 dark:to-blue-700 text-white rounded-xl shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 group backdrop-blur-sm border border-white/20 active:scale-95"
         :class="sidebarOpen ? 'left-[{{ $sidebarWidth + 16 }}px]' : 'left-4'"
         :style="sidebarOpen ? 'left: calc({{ $sidebarWidth }}px + 1rem)' : 'left: 1rem'"
         aria-label="เปิด/ปิดเมนู">
@@ -222,13 +222,12 @@
 </div>
 
 <style>
-    /* Ensure content doesn't overlap with sidebar on desktop */
-    @media (min-width: 1024px) {
-        .arrow-x-content {
-            margin-left: {{ $sidebarWidth }}px;
-            transition: margin-left 0.3s ease;
-        }
-    }
+    /**
+     * Arrow X Content Spacing
+     *
+     * ไม่ต้องกำหนด margin-left ที่นี่แล้ว
+     * เพราะใช้ Alpine.js :class binding แทน (ดูใน layouts/user.blade.php)
+     */
 
     /* Custom scrollbar for sidebar */
     .arrow-x-sidebar-wrapper aside::-webkit-scrollbar {
@@ -259,6 +258,7 @@
      * Arrow X Sidebar - Alpine.js Component
      *
      * จัดการการเปิด/ปิด sidebar พร้อม responsive behavior
+     * ใช้ Alpine.store เพื่อให้ components อื่นๆ เข้าถึง sidebar state ได้
      */
     function arrowXSidebar() {
         return {
@@ -268,6 +268,18 @@
                 console.log('Arrow X Sidebar initialized', {
                     sidebarOpen: this.sidebarOpen,
                     windowWidth: window.innerWidth
+                });
+
+                // สร้าง Alpine.js store เพื่อแชร์ state กับ components อื่น
+                if (!Alpine.store('arrowXSidebar')) {
+                    Alpine.store('arrowXSidebar', {
+                        sidebarOpen: this.sidebarOpen
+                    });
+                }
+
+                // Sync local state กับ store
+                this.$watch('sidebarOpen', value => {
+                    Alpine.store('arrowXSidebar').sidebarOpen = value;
                 });
 
                 // Auto-close on mobile when route changes
