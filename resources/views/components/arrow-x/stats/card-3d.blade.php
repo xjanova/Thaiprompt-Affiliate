@@ -57,12 +57,12 @@
 @endphp
 
 @if($href)
-    <a href="{{ $href }}" class="block group perspective-1000">
+    <a href="{{ $href }}" class="block group">
 @else
-    <div class="group perspective-1000">
+    <div class="group">
 @endif
 
-        <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105 group-hover:rotate-y-2">
+        <div class="relative transform-gpu transition-all duration-500 group-hover:scale-[1.02]">
             {{-- Glow Effect พื้นหลังเรืองแสง --}}
             <div class="absolute inset-0 bg-gradient-to-br {{ $gradient }} rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
 
@@ -70,7 +70,7 @@
             <div class="relative glass-fusion rounded-2xl p-6 border border-white/30 shadow-2xl">
                 <div class="flex items-center justify-between mb-4">
                     {{-- Icon with Gradient Background --}}
-                    <div class="w-12 h-12 bg-gradient-to-br {{ $gradient }} rounded-xl flex items-center justify-center shadow-lg transform group-hover:rotate-6 transition-transform">
+                    <div class="w-12 h-12 bg-gradient-to-br {{ $gradient }} rounded-xl flex items-center justify-center shadow-lg transition-transform">
                         <i class="{{ $icon }} text-white text-xl drop-shadow"></i>
                     </div>
 
@@ -111,20 +111,6 @@
 @endif
 
 <style>
-/**
- * Perspective Effect - สร้างมุมมอง 3D
- */
-.perspective-1000 {
-    perspective: 1000px;
-}
-
-/**
- * 3D Rotation - หมุน Y axis
- */
-.rotate-y-2 {
-    transform: rotateY(2deg);
-}
-
 /**
  * Glass Fusion Effect - ความโปร่งใสพร้อม backdrop blur
  */

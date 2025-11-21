@@ -36,7 +36,7 @@
     @endif
 
     {{-- Card Container --}}
-    <div class="glass-fusion border border-white/30 rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 {{ $hover ? 'transform group-hover:scale-105 group-hover:-translate-y-2' : '' }}">
+    <div class="glass-fusion border border-white/30 rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 {{ $hover ? 'transform group-hover:scale-[1.02]' : '' }}">
         {{-- Header --}}
         @if($title || $icon)
             <div class="px-6 py-4 border-b border-white/30 flex items-center gap-3">
@@ -76,12 +76,5 @@
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-}
-
-/**
- * 3D Transform Effect
- */
-.group:hover .glass-fusion {
-    transform: perspective(1000px) rotateX(5deg);
 }
 </style>
