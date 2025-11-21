@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.96.0] - 2025-11-21
+
+### ✨ Features
+- Merge pull request #1400 from xjanova/claude/create-tpix-whitepaper-01XEfSbHrbEzZiJR4WhZr82T (0a59d68f)
+- feat: simplify Google Translate with instant reload and upgrade to Premium Black & Gold theme (ed540e54)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.95.0] - 2025-11-21
 
 ### ✨ Features
