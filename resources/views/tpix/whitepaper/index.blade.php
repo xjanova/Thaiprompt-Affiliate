@@ -1522,6 +1522,15 @@
         </div>
     </section>
 
+    {{-- 🔧 Technical Specifications --}}
+    @include('tpix.whitepaper.partials.technical-specs')
+
+    {{-- 🔒 Security & Audits --}}
+    @include('tpix.whitepaper.partials.security-audits')
+
+    {{-- 📊 Competitive Analysis + Financial Projections + FAQ + Investment --}}
+    @include('tpix.whitepaper.partials.final-sections')
+
     {{-- Legal & Disclaimer Section --}}
     @include('tpix.whitepaper.partials.legal')
 
