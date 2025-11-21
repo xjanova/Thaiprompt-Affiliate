@@ -18,6 +18,16 @@
         searchQuery: '',
         loading: false,
         scrollProgress: 0,
+        currentLanguage: 'th',
+        languageMenuOpen: false,
+
+        // รายการภาษาที่รองรับ (ฟรี, ใช้ Google Translate Widget)
+        availableLanguages: [
+            { code: 'th', name: 'ไทย', flag: '🇹🇭' },
+            { code: 'en', name: 'English', flag: '🇺🇸' },
+            { code: 'zh-CN', name: '中文', flag: '🇨🇳' },
+            { code: 'ja', name: '日本語', flag: '🇯🇵' }
+        ],
 
         // รายการหมวดหมู่
         categories: [
@@ -84,6 +94,46 @@
             this.scrollProgress = (winScroll / height) * 100;
         },
 
+        // เปลี่ยนภาษา (ใช้ Google Translate Widget ฟรี)
+        switchLanguage(langCode) {
+            this.currentLanguage = langCode;
+            this.languageMenuOpen = false;
+
+            if (langCode === 'th') {
+                // กลับไปภาษาไทยต้นฉบับ - โหลดหน้าใหม่
+                location.reload();
+            } else {
+                // แปลเป็นภาษาอื่น - เรียก Google Translate API ฟรี
+                this.translatePageContent(langCode);
+            }
+        },
+
+        // แปลเนื้อหาทั้งหน้า (ใช้ Google Translate Free API)
+        async translatePageContent(targetLang) {
+            const elements = document.querySelectorAll('[data-translate], h1, h2, h3, h4, p, li, span:not(.notranslate), button, a');
+
+            for (const element of elements) {
+                const text = element.textContent?.trim();
+                if (text && text.length > 0 && !element.classList.contains('notranslate')) {
+                    try {
+                        const response = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=th&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`);
+                        const data = await response.json();
+
+                        if (data && data[0] && data[0][0] && data[0][0][0]) {
+                            element.textContent = data[0][0][0];
+                        }
+                    } catch (error) {
+                        console.error('Translation error:', error);
+                    }
+                }
+            }
+        },
+
+        // ดึงข้อมูลภาษาปัจจุบัน
+        getCurrentLanguage() {
+            return this.availableLanguages.find(lang => lang.code === this.currentLanguage) || this.availableLanguages[0];
+        },
+
         // Initialize
         init() {
             window.addEventListener('scroll', () => this.updateScrollProgress());
@@ -135,13 +185,66 @@
         >
             {{-- Sidebar Header --}}
             <div class="sticky top-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 text-white p-6 rounded-t-2xl lg:rounded-2xl shadow-lg">
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 mb-4">
                     <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl backdrop-blur-sm">
                         📚
                     </div>
-                    <div>
+                    <div class="flex-1">
                         <h2 class="text-xl font-bold">คู่มือการใช้งาน</h2>
                         <p class="text-sm text-white/80">TP-Affiliate v{{ $stats['version'] ?? '3.0' }}</p>
+                    </div>
+                </div>
+
+                {{-- Language Selector - ระบบแปลภาษาฟรี --}}
+                <div class="relative">
+                    <button
+                        @click="languageMenuOpen = !languageMenuOpen"
+                        @click.away="languageMenuOpen = false"
+                        class="w-full flex items-center justify-between gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition-all duration-300 border border-white/20"
+                    >
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl" x-text="getCurrentLanguage().flag"></span>
+                            <span class="text-sm font-medium" x-text="getCurrentLanguage().name"></span>
+                        </div>
+                        <svg class="w-4 h-4 transition-transform duration-300" :class="languageMenuOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+
+                    {{-- Language Dropdown Menu --}}
+                    <div
+                        x-show="languageMenuOpen"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+                        x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                        x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+                        class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
+                        style="display: none;"
+                    >
+                        <div class="py-2">
+                            <template x-for="lang in availableLanguages" :key="lang.code">
+                                <button
+                                    @click="switchLanguage(lang.code)"
+                                    class="w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors"
+                                    :class="currentLanguage === lang.code ?
+                                        'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold' :
+                                        'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'"
+                                >
+                                    <span class="text-xl" x-text="lang.flag"></span>
+                                    <span x-text="lang.name"></span>
+                                    <svg x-show="currentLanguage === lang.code" class="w-4 h-4 ml-auto text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20" style="display: none;">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                            </template>
+                        </div>
+                        <div class="border-t border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-2">
+                            <p class="text-xs text-gray-600 dark:text-gray-400">
+                                🌐 ระบบแปลภาษาฟรีโดย Google Translate
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1037,4 +1140,112 @@
         </main>
     </div>
 </div>
+
+@push('scripts')
+{{-- Google Translate Widget Script (ฟรี, ไม่ต้อง API key) --}}
+<script>
+/**
+ * ระบบแปลภาษาฟรีสำหรับ Wiki
+ *
+ * ใช้ Google Translate Element Widget ที่ไม่ต้องใช้ API key
+ * รองรับ: ไทย, English, 中文, 日本語
+ *
+ * @see https://translate.google.com/translate_a/element.js
+ */
+
+// ซ่อน Google Translate Element (เราใช้ปุ่มของเราเอง)
+document.addEventListener('DOMContentLoaded', function() {
+    // สร้าง hidden container สำหรับ Google Translate Element
+    const gtContainer = document.createElement('div');
+    gtContainer.id = 'google_translate_element';
+    gtContainer.style.display = 'none';
+    document.body.appendChild(gtContainer);
+
+    // ซ่อน Google Translate Toolbar ถ้ามี
+    const style = document.createElement('style');
+    style.textContent = `
+        .goog-te-banner-frame,
+        .goog-te-balloon-frame,
+        .skiptranslate {
+            display: none !important;
+        }
+        body {
+            top: 0 !important;
+        }
+    `;
+    document.head.appendChild(style);
+});
+
+// Google Translate Element Initialization
+function googleTranslateElementInit() {
+    try {
+        new google.translate.TranslateElement({
+            pageLanguage: 'th',
+            includedLanguages: 'th,en,zh-CN,ja',
+            layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+            autoDisplay: false,
+            multilanguagePage: true
+        }, 'google_translate_element');
+    } catch (error) {
+        console.error('Google Translate initialization error:', error);
+    }
+}
+
+// โหลด Google Translate Script
+(function() {
+    const gtScript = document.createElement('script');
+    gtScript.type = 'text/javascript';
+    gtScript.async = true;
+    gtScript.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+
+    gtScript.onerror = function() {
+        console.warn('Google Translate script failed to load. Translation features may be limited.');
+    };
+
+    document.body.appendChild(gtScript);
+})();
+
+// เพิ่ม loading indicator สำหรับการแปลภาษา
+document.addEventListener('alpine:init', () => {
+    Alpine.data('wikiTranslator', () => ({
+        translating: false,
+
+        async translateContent(targetLang) {
+            if (this.translating) return;
+
+            this.translating = true;
+
+            try {
+                // แสดง loading indicator
+                const loadingEl = document.createElement('div');
+                loadingEl.id = 'translation-loading';
+                loadingEl.className = 'fixed top-20 right-6 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-2xl z-50 flex items-center gap-3 animate-pulse';
+                loadingEl.innerHTML = `
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>กำลังแปลภาษา...</span>
+                `;
+                document.body.appendChild(loadingEl);
+
+                // รอให้การแปลเสร็จ
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                // ลบ loading indicator
+                loadingEl?.remove();
+
+            } catch (error) {
+                console.error('Translation error:', error);
+            } finally {
+                this.translating = false;
+            }
+        }
+    }));
+});
+
+console.log('✅ Wiki Translation System loaded (Google Translate Free API)');
+</script>
+@endpush
+
 @endsection
