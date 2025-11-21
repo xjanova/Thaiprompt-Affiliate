@@ -17,6 +17,9 @@
     {{-- Font Awesome --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    {{-- Chart.js --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
@@ -274,6 +277,12 @@
             </div>
         </div>
     </section>
+
+    {{-- 📄 Executive Summary --}}
+    @include('tpix.whitepaper.partials.executive-summary')
+
+    {{-- ⚠️ Problem & Solution --}}
+    @include('tpix.whitepaper.partials.problem-solution')
 
     {{-- 1. Blockchain Specifications Section --}}
     <section id="blockchain" class="section-padding bg-gray-50 dark:bg-gray-800">
@@ -1043,6 +1052,9 @@
         </div>
     </section>
 
+    {{-- 📊 Charts & Calculators --}}
+    @include('tpix.whitepaper.partials.charts-calculators')
+
     {{-- 4. Roadmap Section --}}
     <section id="roadmap" class="section-padding bg-white dark:bg-gray-900">
         <div class="container mx-auto px-4">
@@ -1434,6 +1446,9 @@
         </div>
     </section>
 
+    {{-- 👥 Team & Advisors --}}
+    @include('tpix.whitepaper.partials.team')
+
     {{-- 7. Community Section --}}
     <section id="community" class="section-padding bg-gray-50 dark:bg-gray-800">
         <div class="container mx-auto px-4">
@@ -1485,6 +1500,9 @@
             </div>
         </div>
     </section>
+
+    {{-- Legal & Disclaimer Section --}}
+    @include('tpix.whitepaper.partials.legal')
 
     {{-- Scroll to Top Button --}}
     <button id="scrollTop"
