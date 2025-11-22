@@ -192,7 +192,7 @@
                 {{ $withdrawals->links() }}
             </div>
         @endif
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Information -->
     <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">

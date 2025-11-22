@@ -46,7 +46,7 @@
                     <div class="text-2xl font-bold">{{ $member->plan->display_name }}</div>
                 </div>
             </div>
-        </div>
+        </x-arrow-x.card-v3>
 
         <!-- Quick Stats -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -189,7 +189,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </x-arrow-x.card-v3>
                 @endif
 
                 <!-- Recent Commissions -->
@@ -224,7 +224,7 @@
                         </div>
                         @endforelse
                     </div>
-                </div>
+                </x-arrow-x.card-v3>
 
                 <!-- Quick Actions -->
                 <x-arrow-x.card-v3 class="p-8">
@@ -254,7 +254,7 @@
                             <div class="font-bold text-gray-800 dark:text-white">ทีมของฉัน</div>
                         </a>
                     </div>
-                </div>
+                </x-arrow-x.card-v3>
             </div>
 
             <!-- Right Column: Additional Info -->
@@ -302,7 +302,7 @@
                         <div class="text-lg font-bold text-purple-800">Silver</div>
                         <div class="text-xs text-purple-600 mt-1">8,000 Team PV needed</div>
                     </div>
-                </div>
+                </x-arrow-x.card-v3>
 
                 <!-- Referral Link -->
                 <x-arrow-x.card-v3 class="p-8">
@@ -332,7 +332,7 @@
                         </div>
                         <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">Scan QR Code to Register</div>
                     </div>
-                </div>
+                </x-arrow-x.card-v3>
 
                 <!-- Tips -->
                 <div class="bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl p-8">

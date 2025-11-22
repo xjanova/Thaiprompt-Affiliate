@@ -52,7 +52,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- QR Code Section -->
     <x-arrow-x.card-v3 class="p-6">
@@ -85,7 +85,7 @@
                 <div id="countdown" class="text-3xl font-bold text-red-600">15:00</div>
             </div>
         </div>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Instructions -->
     <x-arrow-x.card-v3 class="p-6">
@@ -142,7 +142,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Status Check -->
     <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">

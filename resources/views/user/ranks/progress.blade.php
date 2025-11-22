@@ -66,7 +66,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Rank Progression -->
     <x-arrow-x.card-v3 class="p-8">
@@ -167,7 +167,7 @@
                 </div>
             @endforeach
         </div>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Tips -->
     <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl shadow-xl p-6 border border-indigo-200">
