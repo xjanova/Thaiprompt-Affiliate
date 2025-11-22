@@ -131,81 +131,8 @@
             </div>
         @endif
 
-        {{-- Notifications --}}
-        <div x-data="{ notificationOpen: false }" class="relative">
-            <button @click="notificationOpen = !notificationOpen"
-                    type="button"
-                    class="relative p-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-110 active:scale-95">
-                <i class="fas fa-bell text-white drop-shadow"></i>
-
-                {{-- Notification Badge --}}
-                @php
-                    $unreadNotifications = Auth::user()->unreadNotifications->count();
-                @endphp
-                @if($unreadNotifications > 0)
-                    <span class="absolute top-1 right-1 w-2 h-2 bg-gradient-to-r from-red-500 to-pink-600 rounded-full shadow-lg animate-pulse"></span>
-                @endif
-            </button>
-
-            {{-- Notifications Dropdown --}}
-            <div x-show="notificationOpen"
-                 @click.outside="notificationOpen = false"
-                 x-transition
-                 class="absolute top-full right-0 mt-2 w-80 glass-dropdown rounded-xl shadow-2xl border border-white/30 overflow-hidden">
-                {{-- Header --}}
-                <div class="px-4 py-3 border-b border-white/20 bg-black/20">
-                    <div class="flex items-center justify-between">
-                        <h3 class="font-bold text-white drop-shadow">การแจ้งเตือน</h3>
-                        @if($unreadNotifications > 0)
-                            <span class="px-2 py-0.5 bg-gradient-to-r from-red-500 to-pink-600 text-white text-xs font-bold rounded-full shadow-lg">
-                                {{ $unreadNotifications }}
-                            </span>
-                        @endif
-                    </div>
-                </div>
-
-                {{-- Notifications List --}}
-                <div class="max-h-96 overflow-y-auto">
-                    @forelse(Auth::user()->notifications->take(5) as $notification)
-                        <a href="#"
-                           class="block px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/10 last:border-0">
-                            <div class="flex items-start gap-3">
-                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                                    <i class="fas fa-info-circle text-white"></i>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-white truncate">
-                                        {{ $notification->data['title'] ?? 'แจ้งเตือน' }}
-                                    </p>
-                                    <p class="text-xs text-white/70 line-clamp-2">
-                                        {{ $notification->data['message'] ?? '' }}
-                                    </p>
-                                    <p class="text-xs text-white/50 mt-1">
-                                        {{ $notification->created_at->diffForHumans() }}
-                                    </p>
-                                </div>
-                            </div>
-                        </a>
-                    @empty
-                        <div class="px-4 py-8 text-center">
-                            <i class="fas fa-bell-slash text-4xl text-white/30 mb-2"></i>
-                            <p class="text-white/60 text-sm">ไม่มีการแจ้งเตือน</p>
-                        </div>
-                    @endforelse
-                </div>
-
-                {{-- Footer --}}
-                @if($unreadNotifications > 0)
-                    <div class="px-4 py-3 border-t border-white/20">
-                        <a href="{{ route('admin.notifications.index') }}"
-                           class="block text-center text-sm text-white/80 hover:text-white transition-colors">
-                            ดูทั้งหมด
-                            <i class="fas fa-arrow-right ml-1"></i>
-                        </a>
-                    </div>
-                @endif
-            </div>
-        </div>
+        {{-- Notifications (ใช้ Notification Bell V3 Component) --}}
+        <x-arrow-x.navbar.notification-bell-v3 />
 
         {{-- Language Switcher --}}
         <x-arrow-x.language-switcher />

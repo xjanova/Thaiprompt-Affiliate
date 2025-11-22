@@ -667,20 +667,20 @@
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Logs</span>
                 </a>
 
-                {{-- Notification Management --}}
+                {{-- การแจ้งเตือน --}}
                 <a href="{{ route('admin.notifications.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.notifications.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-bell w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Notifications</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">การแจ้งเตือน</span>
                 </a>
 
-                {{-- Notification Templates --}}
+                {{-- เทมเพลตการแจ้งเตือน --}}
                 <a href="{{ route('admin.notification-templates.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.notification-templates.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-clipboard-list w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Notification Templates</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">เทมเพลตการแจ้งเตือน</span>
                 </a>
             </div>
         </div>
