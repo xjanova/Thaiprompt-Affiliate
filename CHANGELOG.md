@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.134.3] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: correct all Blade component closing tags in user views (20 fixes) (ce13a0d2)
+- fix: correct all remaining Blade component closing tags in two-factor setup (4ced6268)
+- fix: correct Blade component closing tag in wallet withdraw view (5da2db45)
+- fix: correct all Blade component closing tags in email-preferences view (4ca0ec78)
+### 🔧 Other Changes
+- Merge pull request #1478 from xjanova/claude/migrate-arrow-x-theme-01V93BtLQ4K8qMVC1NaumnnP (034fe53c)
+
 ## [v3.134.2] - 2025-11-22
 
 ### ✨ Features
