@@ -1,0 +1,376 @@
+{{--
+    NFC Transactions - Admin Panel
+
+    หน้าแสดงรายการธุรกรรมทั้งหมดของระบบ NFC
+    - ตัวกรองขั้นสูง (บัตร, ผู้ใช้, ประเภท, สถานะ, วันที่)
+    - ค้นหาธุรกรรม
+    - ส่งออก CSV
+    - Pagination
+
+    @version 1.0.0
+    @since 2025-11-22
+--}}
+
+@extends('layouts.admin')
+
+@section('title', 'ธุรกรรม NFC ทั้งหมด')
+
+@section('content')
+<div class="container mx-auto px-4 py-8" x-data="nfcTransactions()">
+    {{-- Header --}}
+    <div class="mb-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
+                    📜 ธุรกรรม NFC ทั้งหมด
+                </h1>
+                <p class="text-gray-600 dark:text-gray-400 mt-2">
+                    รายการธุรกรรมบัตร NFC Tap-to-Pay ทั้งหมดในระบบ
+                </p>
+            </div>
+            <div class="flex gap-3">
+                <a href="{{ route('admin.nfc.dashboard') }}"
+                   class="px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    กลับ Dashboard
+                </a>
+                <button @click="exportCSV()"
+                        class="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                    <i class="fas fa-file-export mr-2"></i>
+                    ส่งออก CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Filters --}}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 mb-8 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white">
+                <i class="fas fa-filter text-purple-500 mr-2"></i>
+                ตัวกรอง
+            </h2>
+            <button @click="resetFilters()"
+                    class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                <i class="fas fa-redo mr-1"></i>
+                รีเซ็ตตัวกรอง
+            </button>
+        </div>
+
+        <form action="{{ route('admin.nfc.transactions') }}" method="GET" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {{-- Search --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-search mr-1"></i>
+                        ค้นหา
+                    </label>
+                    <input type="text"
+                           name="search"
+                           value="{{ request('search') }}"
+                           placeholder="Transaction ID, สถานที่..."
+                           class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                </div>
+
+                {{-- Type Filter --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-tag mr-1"></i>
+                        ประเภทธุรกรรม
+                    </label>
+                    <select name="type"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                        <option value="">ทั้งหมด</option>
+                        <option value="payment" {{ request('type') === 'payment' ? 'selected' : '' }}>ชำระเงิน</option>
+                        <option value="topup" {{ request('type') === 'topup' ? 'selected' : '' }}>เติมเงิน</option>
+                        <option value="refund" {{ request('type') === 'refund' ? 'selected' : '' }}>คืนเงิน</option>
+                        <option value="transfer" {{ request('type') === 'transfer' ? 'selected' : '' }}>โอนเงิน</option>
+                        <option value="verification" {{ request('type') === 'verification' ? 'selected' : '' }}>ยืนยันบัตร</option>
+                    </select>
+                </div>
+
+                {{-- Status Filter --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        สถานะ
+                    </label>
+                    <select name="status"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                        <option value="">ทั้งหมด</option>
+                        <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>รอดำเนินการ</option>
+                        <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>กำลังดำเนินการ</option>
+                        <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>สำเร็จ</option>
+                        <option value="failed" {{ request('status') === 'failed' ? 'selected' : '' }}>ล้มเหลว</option>
+                        <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>ยกเลิก</option>
+                        <option value="refunded" {{ request('status') === 'refunded' ? 'selected' : '' }}>คืนเงินแล้ว</option>
+                    </select>
+                </div>
+
+                {{-- Date From --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-calendar-alt mr-1"></i>
+                        วันที่เริ่มต้น
+                    </label>
+                    <input type="date"
+                           name="date_from"
+                           value="{{ request('date_from') }}"
+                           class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                </div>
+
+                {{-- Date To --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-calendar-check mr-1"></i>
+                        วันที่สิ้นสุด
+                    </label>
+                    <input type="date"
+                           name="date_to"
+                           value="{{ request('date_to') }}"
+                           class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                </div>
+            </div>
+
+            {{-- Filter Actions --}}
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    พบธุรกรรม <strong class="text-purple-600 dark:text-purple-400">{{ number_format($transactions->total()) }}</strong> รายการ
+                </p>
+                <button type="submit"
+                        class="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                    <i class="fas fa-search mr-2"></i>
+                    ค้นหา
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {{-- Transactions Table --}}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        @if($transactions->isEmpty())
+            <div class="text-center py-16">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
+                    <i class="fas fa-receipt text-gray-400 text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ไม่พบธุรกรรม</h3>
+                <p class="text-gray-500 dark:text-gray-400">ลองปรับเปลี่ยนตัวกรองหรือลองค้นหาใหม่</p>
+            </div>
+        @else
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-700">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                Transaction ID
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                บัตร / ผู้ใช้
+                            </th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                ประเภท
+                            </th>
+                            <th class="px-6 py-4 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                จำนวนเงิน
+                            </th>
+                            <th class="px-6 py-4 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                ยอดคงเหลือ
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                สถานที่
+                            </th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                สถานะ
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                วันที่/เวลา
+                            </th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                จัดการ
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach($transactions as $transaction)
+                            <tr class="hover:bg-purple-50 dark:hover:bg-gray-700/50 transition-colors duration-200">
+                                {{-- Transaction ID --}}
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold">
+                                            <i class="fas fa-receipt"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-mono font-semibold text-gray-900 dark:text-white">
+                                                {{ Str::limit($transaction->transaction_id, 16) }}
+                                            </p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                                ID: #{{ $transaction->id }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                {{-- Card / User --}}
+                                <td class="px-6 py-4">
+                                    @if($transaction->card)
+                                        <div>
+                                            <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                                                <i class="fas fa-credit-card text-purple-500 mr-1"></i>
+                                                {{ $transaction->card->card_name }}
+                                            </p>
+                                            <p class="text-xs font-mono text-gray-500 dark:text-gray-400">
+                                                {{ $transaction->card->masked_card_number }}
+                                            </p>
+                                            @if($transaction->user)
+                                                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                                    <i class="fas fa-user text-gray-400 mr-1"></i>
+                                                    {{ $transaction->user->name }}
+                                                </p>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <span class="text-sm text-gray-400 dark:text-gray-500">-</span>
+                                    @endif
+                                </td>
+
+                                {{-- Type --}}
+                                <td class="px-6 py-4 text-center">
+                                    @php
+                                        $typeConfig = [
+                                            'payment' => ['icon' => 'fa-shopping-cart', 'color' => 'blue', 'label' => 'ชำระเงิน'],
+                                            'topup' => ['icon' => 'fa-plus-circle', 'color' => 'green', 'label' => 'เติมเงิน'],
+                                            'refund' => ['icon' => 'fa-undo', 'color' => 'yellow', 'label' => 'คืนเงิน'],
+                                            'transfer' => ['icon' => 'fa-exchange-alt', 'color' => 'purple', 'label' => 'โอนเงิน'],
+                                            'verification' => ['icon' => 'fa-check-circle', 'color' => 'teal', 'label' => 'ยืนยันบัตร'],
+                                        ];
+                                        $config = $typeConfig[$transaction->type] ?? ['icon' => 'fa-question', 'color' => 'gray', 'label' => $transaction->type];
+                                    @endphp
+                                    <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold
+                                        bg-{{ $config['color'] }}-100 dark:bg-{{ $config['color'] }}-900/30
+                                        text-{{ $config['color'] }}-700 dark:text-{{ $config['color'] }}-400">
+                                        <i class="fas {{ $config['icon'] }}"></i>
+                                        {{ $config['label'] }}
+                                    </span>
+                                </td>
+
+                                {{-- Amount --}}
+                                <td class="px-6 py-4 text-right">
+                                    <span class="text-base font-bold {{ in_array($transaction->type, ['payment']) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400' }}">
+                                        {{ in_array($transaction->type, ['payment']) ? '-' : '+' }}฿{{ number_format($transaction->amount, 2) }}
+                                    </span>
+                                </td>
+
+                                {{-- Balance After --}}
+                                <td class="px-6 py-4 text-right">
+                                    <div class="text-sm">
+                                        <p class="text-gray-500 dark:text-gray-400 text-xs mb-1">ก่อน: ฿{{ number_format($transaction->balance_before, 2) }}</p>
+                                        <p class="font-semibold text-gray-900 dark:text-white">หลัง: ฿{{ number_format($transaction->balance_after, 2) }}</p>
+                                    </div>
+                                </td>
+
+                                {{-- Location --}}
+                                <td class="px-6 py-4">
+                                    @if($transaction->location)
+                                        <p class="text-sm text-gray-900 dark:text-white">
+                                            <i class="fas fa-map-marker-alt text-red-500 mr-1"></i>
+                                            {{ Str::limit($transaction->location, 30) }}
+                                        </p>
+                                    @else
+                                        <span class="text-sm text-gray-400 dark:text-gray-500">-</span>
+                                    @endif
+                                </td>
+
+                                {{-- Status --}}
+                                <td class="px-6 py-4 text-center">
+                                    @php
+                                        $statusConfig = [
+                                            'pending' => ['color' => 'yellow', 'icon' => 'fa-clock', 'label' => 'รอดำเนินการ'],
+                                            'processing' => ['color' => 'blue', 'icon' => 'fa-spinner', 'label' => 'กำลังดำเนินการ'],
+                                            'completed' => ['color' => 'green', 'icon' => 'fa-check-circle', 'label' => 'สำเร็จ'],
+                                            'failed' => ['color' => 'red', 'icon' => 'fa-times-circle', 'label' => 'ล้มเหลว'],
+                                            'cancelled' => ['color' => 'gray', 'icon' => 'fa-ban', 'label' => 'ยกเลิก'],
+                                            'refunded' => ['color' => 'purple', 'icon' => 'fa-undo-alt', 'label' => 'คืนเงินแล้ว'],
+                                        ];
+                                        $statusConf = $statusConfig[$transaction->status] ?? ['color' => 'gray', 'icon' => 'fa-question', 'label' => $transaction->status];
+                                    @endphp
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold
+                                        bg-{{ $statusConf['color'] }}-100 dark:bg-{{ $statusConf['color'] }}-900/30
+                                        text-{{ $statusConf['color'] }}-700 dark:text-{{ $statusConf['color'] }}-400">
+                                        <i class="fas {{ $statusConf['icon'] }}"></i>
+                                        {{ $statusConf['label'] }}
+                                    </span>
+                                </td>
+
+                                {{-- Date/Time --}}
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm">
+                                        <p class="text-gray-900 dark:text-white font-medium">
+                                            <i class="fas fa-calendar text-gray-400 mr-1"></i>
+                                            {{ $transaction->created_at->format('d/m/Y') }}
+                                        </p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                                            <i class="fas fa-clock text-gray-400 mr-1"></i>
+                                            {{ $transaction->created_at->format('H:i:s') }}
+                                        </p>
+                                    </div>
+                                </td>
+
+                                {{-- Actions --}}
+                                <td class="px-6 py-4 text-center">
+                                    <button @click="viewDetails({{ $transaction->id }})"
+                                            class="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            {{-- Pagination --}}
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                {{ $transactions->links() }}
+            </div>
+        @endif
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    /**
+     * NFC Transactions - Alpine.js Component
+     */
+    function nfcTransactions() {
+        return {
+            /**
+             * รีเซ็ตตัวกรองทั้งหมด
+             */
+            resetFilters() {
+                window.location.href = '{{ route('admin.nfc.transactions') }}';
+            },
+
+            /**
+             * ส่งออกข้อมูลเป็น CSV
+             */
+            exportCSV() {
+                // Build URL with current filters
+                const params = new URLSearchParams(window.location.search);
+                params.set('export', 'csv');
+
+                window.location.href = '{{ route('admin.nfc.transactions') }}?' + params.toString();
+            },
+
+            /**
+             * ดูรายละเอียดธุรกรรม
+             */
+            viewDetails(transactionId) {
+                // TODO: Implement modal or redirect to transaction details page
+                alert('ดูรายละเอียดธุรกรรม ID: ' + transactionId);
+            }
+        };
+    }
+</script>
+@endpush
+@endsection
