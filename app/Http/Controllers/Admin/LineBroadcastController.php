@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendScheduledBroadcast;
 use App\Models\LineBroadcastMessage;
 use App\Models\LineFlexMessageTemplate;
 use App\Models\User;
@@ -58,6 +59,12 @@ class LineBroadcastController extends Controller
         return view('admin.line-bot.broadcast.show', compact('broadcast'));
     }
 
+    /**
+     * ส่ง broadcast ทันที (dispatch job)
+     *
+     * @param int $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function send($id)
     {
         $broadcast = LineBroadcastMessage::findOrFail($id);
@@ -66,49 +73,48 @@ class LineBroadcastController extends Controller
             return back()->with('error', 'ไม่สามารถส่งแคมเปญนี้ได้');
         }
 
-        $recipients = $this->getRecipients($broadcast->target_type, $broadcast->target_users ?? []);
+        try {
+            // Dispatch job ไปยัง queue
+            SendScheduledBroadcast::dispatch($broadcast);
 
-        $broadcast->update([
-            'status' => 'sending',
-            'total_recipients' => count($recipients),
-        ]);
+            return redirect()->route('admin.line-bot.broadcast.show', $id)
+                ->with('success', 'ส่งคำสั่งไปยัง Queue แล้ว! ระบบจะเริ่มส่งข้อความในไม่ช้า');
 
-        $lineService = new LineService();
-        $sentCount = 0;
-        $failedCount = 0;
+        } catch (\Exception $e) {
+            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
 
-        foreach ($recipients as $lineUserId) {
-            try {
-                if ($broadcast->message_type === 'text') {
-                    $success = $lineService->sendPushMessage($lineUserId, $broadcast->content);
-                } elseif ($broadcast->message_type === 'flex' && $broadcast->flexTemplate) {
-                    $flexMessage = [
-                        'type' => 'flex',
-                        'altText' => $broadcast->name,
-                        'contents' => $broadcast->flexTemplate->flex_content,
-                    ];
-                    $success = $lineService->sendPushMessage($lineUserId, $broadcast->name, [$flexMessage]);
-                }
+    /**
+     * ส่งซ้ำสำหรับ broadcast ที่ล้มเหลว
+     *
+     * @param int $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function retry($id)
+    {
+        $broadcast = LineBroadcastMessage::findOrFail($id);
 
-                if ($success) {
-                    $sentCount++;
-                } else {
-                    $failedCount++;
-                }
-            } catch (\Exception $e) {
-                $failedCount++;
-            }
+        if (!$broadcast->canRetry()) {
+            return back()->with('error', 'ไม่สามารถส่งซ้ำได้ (เกินจำนวนครั้งสูงสุด หรือสถานะไม่ถูกต้อง)');
         }
 
-        $broadcast->update([
-            'status' => 'sent',
-            'sent_at' => now(),
-            'sent_count' => $sentCount,
-            'failed_count' => $failedCount,
-        ]);
+        try {
+            // Reset status และส่งใหม่
+            $broadcast->update([
+                'status' => 'scheduled',
+                'scheduled_at' => now(), // ตั้งเวลาเป็นตอนนี้
+            ]);
 
-        return redirect()->route('admin.line-bot.broadcast.show', $id)
-            ->with('success', "ส่งข้อความสำเร็จ {$sentCount} คน ล้มเหลว {$failedCount} คน");
+            // Dispatch job
+            SendScheduledBroadcast::dispatch($broadcast);
+
+            return redirect()->route('admin.line-bot.broadcast.show', $id)
+                ->with('success', 'เริ่มการส่งซ้ำแล้ว!');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
     }
 
     public function destroy($id)

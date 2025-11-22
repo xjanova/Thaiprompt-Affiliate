@@ -2,6 +2,76 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.130.3] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1467 from xjanova/claude/fix-payment-migration-error-01Dr29ZkfqtzEZmYDssBjHeq (0de8a117)
+- fix: update SafeMigration trait for Laravel 11 compatibility (5579f815)
+### 🔧 Other Changes
+
+
+## [v3.130.2] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1466 from xjanova/claude/nfc-tap-to-pay-integration-01Kr9pbWqm4MAvU7AADi7LhN (92e49669)
+- fix: replace TYPE_VIRTUAL with proper card types in seeder (d3f516c2)
+### 🔧 Other Changes
+
+
+## [v3.130.1] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1465 from xjanova/claude/fix-payment-migration-error-01Dr29ZkfqtzEZmYDssBjHeq (80cde54f)
+- refactor: improve migration safety using SafeMigration trait (f808bd6b)
+
+## [v3.130.0] - 2025-11-22
+
+### ✨ Features
+- Merge pull request #1464 from xjanova/claude/complete-line-system-ui-018uqtby5cSWVwB4Tne8hS7a (92a07f3d)
+- feat: complete LINE system enhancements and documentation (2649717f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.129.1] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1463 from xjanova/claude/nfc-tap-to-pay-integration-01Kr9pbWqm4MAvU7AADi7LhN (1e4a852e)
+- fix: add STATUS_SUSPENDED constant to NFCCard model (195f16b0)
+### 🔧 Other Changes
+
+
+## [v3.129.0] - 2025-11-22
+
+### ✨ Features
+- Merge pull request #1462 from xjanova/claude/nfc-tap-to-pay-integration-01Kr9pbWqm4MAvU7AADi7LhN (035663f9)
+- feat: add NFC admin views (Dashboard + Transactions) (6973bb4c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.128.1] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1461 from xjanova/claude/fix-payment-migration-error-01Dr29ZkfqtzEZmYDssBjHeq (ed2e6cc2)
+- fix: correct column reference in tpix_configurations payment fields migration (47faad22)
+### 🔧 Other Changes
+
+
 ## [v3.128.0] - 2025-11-22
 
 ### ✨ Features
