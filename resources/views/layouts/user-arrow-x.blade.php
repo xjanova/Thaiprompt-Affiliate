@@ -100,7 +100,7 @@ I2 Theme Setting) --}}
 
     {{-- Sidebar Component *3+#1 User (C
 I arrow-x-sidebar component) --}}
-    <x-arrow-x-sidebar type="user" />
+    <x-arrow-x.sidebar-v3 type="user" />
 
     {{-- Main Content Area (Flex-1 @7H-"2"@G!7I5H) --}}
     <div class="flex flex-col flex-1 h-full overflow-hidden">
@@ -178,7 +178,7 @@ I arrow-x-sidebar component) --}}
      * -1@ Chart.js A%0 components 5H3@G
      */
     window.addEventListener('theme-changed', (event) => {
-        console.log('<¨ Theme changed in User Dashboard:', event.detail.isDark ? 'Dark' : 'Light');
+        console.log('<ï¿½ Theme changed in User Dashboard:', event.detail.isDark ? 'Dark' : 'Light');
 
         // -1@ Chart.js I2!5
         if (typeof Chart !== 'undefined') {
