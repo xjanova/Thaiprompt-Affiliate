@@ -348,6 +348,21 @@ Route::prefix('nfc-cards')->name('nfc-cards.')->group(function () {
     Route::post('/{nfcCard}/topup', [NFCCardController::class, 'topUp'])->name('topup');
     Route::post('/read', [NFCCardController::class, 'read'])->name('read');
     Route::get('/export', [NFCCardController::class, 'export'])->name('export');
+
+    // 🆕 V2: Enhanced NFC Features
+    Route::post('/{nfcCard}/suspend', [NFCCardController::class, 'suspend'])->name('suspend');
+    Route::put('/{nfcCard}/spending-limits', [NFCCardController::class, 'updateSpendingLimits'])->name('spending-limits.update');
+    Route::post('/{nfcCard}/link-wallet', [NFCCardController::class, 'linkWallet'])->name('link-wallet');
+    Route::post('/{nfcCard}/unlink-wallet', [NFCCardController::class, 'unlinkWallet'])->name('unlink-wallet');
+    Route::put('/{nfcCard}/auto-topup', [NFCCardController::class, 'configureAutoTopUp'])->name('auto-topup.configure');
+    Route::post('/{nfcCard}/enable-tpix', [NFCCardController::class, 'enableTPIX'])->name('enable-tpix');
+    Route::post('/{nfcCard}/disable-tpix', [NFCCardController::class, 'disableTPIX'])->name('disable-tpix');
+});
+
+// 🆕 NFC System Dashboard & Analytics
+Route::prefix('nfc')->name('nfc.')->group(function () {
+    Route::get('/dashboard', [NFCCardController::class, 'dashboard'])->name('dashboard');
+    Route::get('/transactions', [NFCCardController::class, 'transactions'])->name('transactions');
 });
 
 // NFC Reader Management
