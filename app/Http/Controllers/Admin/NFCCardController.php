@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\NFCCard;
+use App\Models\NFCTransaction;
 use App\Models\User;
 use App\Services\NFC\NFCCardService;
 use App\Services\NFC\NFCCardEncryptionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
@@ -450,5 +452,280 @@ class NFCCardController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    // ==========================================
+    // 🆕 V2: Enhanced NFC Features
+    // ==========================================
+
+    /**
+     * แสดง Dashboard ภาพรวมระบบ NFC
+     *
+     * @return \Illuminate\View\View
+     */
+    public function dashboard()
+    {
+        // สถิติรวม
+        $totalCards = NFCCard::count();
+        $activeCards = NFCCard::where('status', NFCCard::STATUS_ACTIVE)
+            ->where('is_enabled', true)
+            ->count();
+        $blockedCards = NFCCard::where('status', NFCCard::STATUS_BLOCKED)->count();
+        $totalBalance = NFCCard::sum('balance');
+
+        // ธุรกรรมวันนี้
+        $todayTransactions = NFCTransaction::whereDate('created_at', today())->count();
+        $todayVolume = NFCTransaction::whereDate('created_at', today())->sum('amount');
+
+        // ธุรกรรม 7 วันล่าสุด
+        $weeklyStats = NFCTransaction::select(
+            DB::raw('DATE(created_at) as date'),
+            DB::raw('COUNT(*) as count'),
+            DB::raw('SUM(amount) as volume')
+        )
+            ->where('created_at', '>=', now()->subDays(7))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        // บัตรที่มียอดเงินต่ำ (น้อยกว่า 500)
+        $lowBalanceCards = NFCCard::where('balance', '<', 500)
+            ->where('status', NFCCard::STATUS_ACTIVE)
+            ->with('user')
+            ->take(10)
+            ->get();
+
+        // ธุรกรรมล่าสุด
+        $recentTransactions = NFCTransaction::with(['card', 'user'])
+            ->latest()
+            ->take(15)
+            ->get();
+
+        return view('admin.nfc.dashboard', compact(
+            'totalCards',
+            'activeCards',
+            'blockedCards',
+            'totalBalance',
+            'todayTransactions',
+            'todayVolume',
+            'weeklyStats',
+            'lowBalanceCards',
+            'recentTransactions'
+        ));
+    }
+
+    /**
+     * แสดงรายการธุรกรรมทั้งหมด
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function transactions(Request $request)
+    {
+        $query = NFCTransaction::with(['card', 'user', 'nfcReader']);
+
+        // Filter by card
+        if ($request->filled('card_id')) {
+            $query->where('nfc_card_id', $request->card_id);
+        }
+
+        // Filter by user
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        // Filter by type
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter by date range
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('transaction_id', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%");
+            });
+        }
+
+        $transactions = $query->latest()->paginate(50)->appends($request->except('page'));
+
+        return view('admin.nfc.transactions', compact('transactions'));
+    }
+
+    /**
+     * พักการใช้งานบัตร
+     *
+     * @param Request $request
+     * @param NFCCard $nfcCard
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function suspend(Request $request, NFCCard $nfcCard)
+    {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        try {
+            $nfcCard->suspend($validated['reason']);
+
+            return back()->with('success', 'พักการใช้งานบัตรเรียบร้อยแล้ว');
+        } catch (Exception $e) {
+            return back()->with('error', 'ไม่สามารถพักการใช้งานบัตรได้: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * อัพเดทวงเงินการใช้จ่าย
+     *
+     * @param Request $request
+     * @param NFCCard $nfcCard
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateSpendingLimits(Request $request, NFCCard $nfcCard)
+    {
+        $validated = $request->validate([
+            'daily_spending_limit' => 'required|numeric|min:0|max:1000000',
+            'monthly_spending_limit' => 'required|numeric|min:0|max:10000000',
+            'transaction_limit' => 'required|numeric|min:0|max:100000',
+        ]);
+
+        try {
+            $this->nfcCardService->setSpendingLimits($nfcCard, [
+                'daily_limit' => $validated['daily_spending_limit'],
+                'monthly_limit' => $validated['monthly_spending_limit'],
+                'transaction_limit' => $validated['transaction_limit'],
+            ]);
+
+            return back()->with('success', 'อัพเดทวงเงินเรียบร้อยแล้ว');
+        } catch (Exception $e) {
+            return back()->with('error', 'ไม่สามารถอัพเดทวงเงินได้: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ผูกบัตรกับ Wallet
+     *
+     * @param Request $request
+     * @param NFCCard $nfcCard
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function linkWallet(Request $request, NFCCard $nfcCard)
+    {
+        $validated = $request->validate([
+            'wallet_id' => 'required|exists:wallets,id',
+        ]);
+
+        try {
+            $this->nfcCardService->linkCardToWallet($nfcCard, $validated['wallet_id']);
+
+            return back()->with('success', 'ผูกการ์ดกับ Wallet เรียบร้อยแล้ว');
+        } catch (Exception $e) {
+            return back()->with('error', 'ไม่สามารถผูกการ์ดกับ Wallet ได้: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ยกเลิกการผูกบัตรกับ Wallet
+     *
+     * @param NFCCard $nfcCard
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function unlinkWallet(NFCCard $nfcCard)
+    {
+        try {
+            $this->nfcCardService->unlinkCardFromWallet($nfcCard);
+
+            return back()->with('success', 'ยกเลิกการผูกการ์ดเรียบร้อยแล้ว');
+        } catch (Exception $e) {
+            return back()->with('error', 'ไม่สามารถยกเลิกการผูกได้: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ตั้งค่า Auto Top-up
+     *
+     * @param Request $request
+     * @param NFCCard $nfcCard
+     * @return \Illuminate\\Http\RedirectResponse
+     */
+    public function configureAutoTopUp(Request $request, NFCCard $nfcCard)
+    {
+        $validated = $request->validate([
+            'enabled' => 'required|boolean',
+            'threshold' => 'required_if:enabled,true|nullable|numeric|min:0|max:10000',
+            'amount' => 'required_if:enabled,true|nullable|numeric|min:100|max:100000',
+        ]);
+
+        try {
+            if ($validated['enabled']) {
+                $this->nfcCardService->configureAutoTopUp(
+                    $nfcCard,
+                    $validated['threshold'],
+                    $validated['amount']
+                );
+                $message = 'เปิดใช้งาน Auto Top-up เรียบร้อยแล้ว';
+            } else {
+                $nfcCard->disableAutoTopup();
+                $message = 'ปิดใช้งาน Auto Top-up เรียบร้อยแล้ว';
+            }
+
+            return back()->with('success', $message);
+        } catch (Exception $e) {
+            return back()->with('error', 'ไม่สามารถตั้งค่า Auto Top-up ได้: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * เปิดใช้งาน TPIX
+     *
+     * @param Request $request
+     * @param NFCCard $nfcCard
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function enableTPIX(Request $request, NFCCard $nfcCard)
+    {
+        $validated = $request->validate([
+            'tpix_wallet_address' => 'required|string|size:42|regex:/^0x[a-fA-F0-9]{40}$/',
+        ]);
+
+        try {
+            $this->nfcCardService->enableTPIXPayment($nfcCard, $validated['tpix_wallet_address']);
+
+            return back()->with('success', 'เปิดใช้งาน TPIX เรียบร้อยแล้ว');
+        } catch (Exception $e) {
+            return back()->with('error', 'ไม่สามารถเปิดใช้งาน TPIX ได้: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ปิดใช้งาน TPIX
+     *
+     * @param NFCCard $nfcCard
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function disableTPIX(NFCCard $nfcCard)
+    {
+        try {
+            $this->nfcCardService->disableTPIXPayment($nfcCard);
+
+            return back()->with('success', 'ปิดใช้งาน TPIX เรียบร้อยแล้ว');
+        } catch (Exception $e) {
+            return back()->with('error', 'ไม่สามารถปิดใช้งาน TPIX ได้: ' . $e->getMessage());
+        }
     }
 }

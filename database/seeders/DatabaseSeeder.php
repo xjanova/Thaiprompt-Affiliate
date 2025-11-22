@@ -61,6 +61,7 @@ class DatabaseSeeder extends Seeder
             CryptoCurrencySeeder::class,        // Cryptocurrency Support (BTC, ETH, USDT, etc.)
             TPIXCurrencySeeder::class,          // TPIX Native Token (TPIX Network Blockchain)
             TPIXStakingPoolSeeder::class,       // TPIX Staking Pools (Flexible, 30d, 90d, 180d, 365d)
+            NFCCardSeeder::class,               // 🆕 NFC Tap-to-Pay Cards (Demo cards with wallet integration, spending limits, TPIX support)
 
             // 7. MLM System
             MlmGlobalSettingsSeeder::class,     // การตั้งค่า MLM ทั่วไป (สร้างข้อมูลเริ่มต้น)
