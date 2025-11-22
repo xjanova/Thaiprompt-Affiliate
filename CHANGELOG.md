@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.141.2] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1489 from xjanova/claude/build-translation-system-01NkWA16tNdJdAGPRELAMLif (2ae60a6f)
+- fix: แก้ไข infinite loop ในระบบแปลภาษา (2bdbfcbb)
+### 🔧 Other Changes
+
+
 ## [v3.141.1] - 2025-11-22
 
 ### ✨ Features
