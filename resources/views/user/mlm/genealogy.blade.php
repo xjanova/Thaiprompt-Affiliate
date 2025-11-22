@@ -26,7 +26,7 @@
                     ← กลับไปแดชบอร์ด
                 </a>
             </div>
-        </div>
+        </x-arrow-x.card-v3>
 
         <!-- Quick Stats Bar -->
         <div class="grid grid-cols-4 gap-4 mb-8">

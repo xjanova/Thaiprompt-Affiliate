@@ -106,7 +106,7 @@
                 </div>
             </div>
         @endif
-    </div>
+    </x-arrow-x.card-v3>
 
     @if(!$status['enabled'])
         <!-- Enable 2FA Form -->
@@ -216,7 +216,7 @@
                         </button>
                     </form>
                 </div>
-            </div>
+            </x-arrow-x.card-v3>
 
             <!-- Trusted Devices -->
             <x-arrow-x.card-v3 class="p-6">
@@ -246,7 +246,7 @@
                         <span class="text-gray-500 dark:text-gray-400 text-sm">ยังไม่มีอุปกรณ์ที่เชื่อถือ</span>
                     </div>
                 @endif
-            </div>
+            </x-arrow-x.card-v3>
         </div>
     @endif
 

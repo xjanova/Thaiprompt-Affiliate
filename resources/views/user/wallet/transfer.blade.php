@@ -96,7 +96,7 @@
                 </button>
             </div>
         </form>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- How to Find Wallet Address -->
     <x-arrow-x.card-v3 class="p-6">
@@ -134,7 +134,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Recent Transfers -->
     <x-arrow-x.card-v3 class="p-6">
@@ -149,7 +149,7 @@
             <span class="text-4xl block mb-2">💸</span>
             <p class="text-sm">คลิก "ดูทั้งหมด" เพื่อดูประวัติการโอนเงิน</p>
         </div>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Instructions -->
     <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">

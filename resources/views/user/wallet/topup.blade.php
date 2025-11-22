@@ -95,7 +95,7 @@
                 🛒 ดำเนินการเติมเงิน
             </button>
         </form>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Info Box -->
     <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-700 rounded-2xl p-6">

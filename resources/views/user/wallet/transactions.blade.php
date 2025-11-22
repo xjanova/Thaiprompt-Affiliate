@@ -72,7 +72,7 @@
                 </a>
             </div>
         </form>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Transactions Table -->
     <x-arrow-x.card-v3 class="p-6">
@@ -173,7 +173,7 @@
                 {{ $transactions->links() }}
             </div>
         @endif
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Summary Statistics -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
