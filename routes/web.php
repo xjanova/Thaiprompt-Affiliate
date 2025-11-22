@@ -260,11 +260,9 @@ Route::prefix('otp')->name('otp.')->group(function () {
 });
 
 // Frontend Routes
-// Landing Page with System Links (Public Access)
+// Landing Page - หน้าแรก (3 ประตู Storytelling)
 // ⚠️ CRITICAL: ต้องระบุ methods อย่างชัดเจนเพื่อป้องกันปัญหา route caching ใน production
-Route::match(['GET', 'HEAD'], '/', function () {
-    return view('welcome');
-})->name('home');
+Route::match(['GET', 'HEAD'], '/', [HomeController::class, 'index'])->name('home');
 
 // Original Home Page
 // ⚠️ SEO Critical: Landing pages ต้องรองรับ HEAD method
