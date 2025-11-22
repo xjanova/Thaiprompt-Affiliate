@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.140.0] - 2025-11-22
+
+### ✨ Features
+- Merge pull request #1486 from xjanova/claude/upgrade-line-ai-integration-01WV6eW4NRrz4XtgfJtYMboB (39a0f29d)
+- feat: upgrade LINE Frontend pages to V3 style with dark mode (2d541bb0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.139.0] - 2025-11-22
 
 ### ✨ Features
