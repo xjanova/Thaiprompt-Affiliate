@@ -2,6 +2,19 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.128.0] - 2025-11-22
+
+### ✨ Features
+- feat: add V2 NFC routes to admin (54d6a7ee)
+- feat: add NFC system to admin navigation menu (631043be)
+- feat: add NFC system seeder and enhanced admin controller (460e1e22)
+- feat: add NFC cards menu item to user navigation (a0331338)
+- feat: add NFC card management routes and V3 views (95256a8a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1460 from xjanova/claude/nfc-tap-to-pay-integration-01Kr9pbWqm4MAvU7AADi7LhN (85a167f0)
+
 ## [v3.127.1] - 2025-11-22
 
 ### ✨ Features
