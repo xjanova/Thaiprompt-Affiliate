@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::table('tpix_configurations', function (Blueprint $table) {
             // Payment Information
             if (!Schema::hasColumn('tpix_configurations', 'wallet_address')) {
-                $table->string('wallet_address', 42)->nullable()->after('deployer_private_key')
+                $table->string('wallet_address', 42)->nullable()->after('deploy_cost_tpix')
                     ->comment('Web3 wallet address ที่ใช้ชำระเงิน');
             }
 
@@ -101,13 +101,16 @@ return new class extends Migration
             }
 
             // Indexes สำหรับ query ที่ใช้บ่อย
-            if (!Schema::hasColumn('tpix_configurations', 'wallet_address')) {
+            $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $indexesFound = $sm->listTableIndexes('tpix_configurations');
+
+            if (!isset($indexesFound['idx_wallet_address'])) {
                 $table->index('wallet_address', 'idx_wallet_address');
             }
-            if (!Schema::hasColumn('tpix_configurations', 'payment_status')) {
+            if (!isset($indexesFound['idx_payment_status'])) {
                 $table->index('payment_status', 'idx_payment_status');
             }
-            if (!Schema::hasColumn('tpix_configurations', 'payment_tx_hash')) {
+            if (!isset($indexesFound['idx_payment_tx'])) {
                 $table->index('payment_tx_hash', 'idx_payment_tx');
             }
         });
@@ -121,10 +124,19 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('tpix_configurations', function (Blueprint $table) {
-            // ลบ indexes ก่อน
-            $table->dropIndex('idx_wallet_address');
-            $table->dropIndex('idx_payment_status');
-            $table->dropIndex('idx_payment_tx');
+            // ลบ indexes ก่อน (ถ้ามี)
+            $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $indexesFound = $sm->listTableIndexes('tpix_configurations');
+
+            if (isset($indexesFound['idx_wallet_address'])) {
+                $table->dropIndex('idx_wallet_address');
+            }
+            if (isset($indexesFound['idx_payment_status'])) {
+                $table->dropIndex('idx_payment_status');
+            }
+            if (isset($indexesFound['idx_payment_tx'])) {
+                $table->dropIndex('idx_payment_tx');
+            }
 
             // ลบ columns
             $columns = [
