@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.130.0] - 2025-11-22
+
+### ✨ Features
+- Merge pull request #1464 from xjanova/claude/complete-line-system-ui-018uqtby5cSWVwB4Tne8hS7a (92a07f3d)
+- feat: complete LINE system enhancements and documentation (2649717f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.129.1] - 2025-11-22
 
 ### ✨ Features
