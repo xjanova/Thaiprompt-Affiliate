@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.124.0] - 2025-11-22
+
+### ✨ Features
+- Merge pull request #1454 from xjanova/claude/ecommerce-mlm-integration-01AYE9u5gmZrWMwtFVu1tNGr (fe4a47f0)
+- feat: complete E-commerce UI flow with Product Detail, Cart, and Checkout pages (ea745e70)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.123.0] - 2025-11-22
 
 ### ✨ Features
