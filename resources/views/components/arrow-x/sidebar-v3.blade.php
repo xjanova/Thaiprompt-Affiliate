@@ -25,6 +25,7 @@
 @props([
     'title' => config('app.name'),
     'logo' => null,
+    'type' => 'admin', // Type: admin, user, seller
 ])
 
 @php
@@ -34,6 +35,13 @@
         ? asset('storage/' . $themeSetting->logo_path)
         : $logo;
     $themeBrandName = $themeSetting->brand_name ?? $title;
+
+    // ถ้าเป็น user ให้โหลดเมนูจาก MenuService
+    $useMenuService = ($type === 'user' || $type === 'seller');
+    if ($useMenuService) {
+        $menuService = app(\App\Services\MenuService::class);
+        $menus = $menuService->getMenuForRole($type, auth()->user());
+    }
 @endphp
 
 {{-- Mobile Overlay (แสดงเมื่อเปิด sidebar บนมือถือ) --}}
@@ -102,8 +110,63 @@
     {{-- Navigation Menu --}}
     <nav class="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
          x-data="{ mlmOpen: {{ request()->routeIs('admin.mlm.*') || request()->routeIs('admin.mlm-prospects.*') ? 'true' : 'false' }} }">
-        {{-- Dashboard --}}
-        <a href="{{ route('admin.dashboard') }}"
+
+        @if($useMenuService)
+            {{-- Dynamic Menu for User/Seller (from MenuService) --}}
+            @foreach($menus as $menu)
+                @if(isset($menu['submenu']) && count($menu['submenu']) > 0)
+                    {{-- Menu with Submenu --}}
+                    <div class="space-y-1" x-data="{ menuOpen: false }">
+                        <button @click="menuOpen = !menuOpen"
+                                type="button"
+                                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform glass-neu text-white/90 hover:bg-white/20 hover:scale-105">
+                            @if(isset($menu['icon']))
+                                @if(str_starts_with($menu['icon'], 'fa'))
+                                    <i class="{{ $menu['icon'] }} w-5 text-center drop-shadow"></i>
+                                @else
+                                    <span class="w-5 text-center text-lg drop-shadow">{{ $menu['icon'] }}</span>
+                                @endif
+                            @endif
+                            <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">{{ $menu['label'] }}</span>
+                            <i x-show="$store.sidebar.shouldExpand && menuOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                            <i x-show="$store.sidebar.shouldExpand && !menuOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+                        </button>
+
+                        {{-- Submenu --}}
+                        <div x-show="menuOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                            @foreach($menu['submenu'] as $child)
+                                <a href="{{ $child['url'] }}"
+                                   @click="$store.sidebar.closeOnMenuClick()"
+                                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->is(ltrim($child['url'] ?? '', '/')) ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-white/50"></div>
+                                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">{{ $child['label'] }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @else
+                    {{-- Single Menu Item --}}
+                    <a href="{{ $menu['url'] }}"
+                       @click="$store.sidebar.closeOnMenuClick()"
+                       class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->is(ltrim($menu['url'] ?? '', '/')) ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                        @if(isset($menu['icon']))
+                            @if(str_starts_with($menu['icon'], 'fa'))
+                                <i class="{{ $menu['icon'] }} w-5 text-center drop-shadow"></i>
+                            @else
+                                <span class="w-5 text-center text-lg drop-shadow">{{ $menu['icon'] }}</span>
+                            @endif
+                        @endif
+                        <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">{{ $menu['label'] }}</span>
+                        @if(isset($menu['badge']) && $menu['badge'] > 0)
+                            <span x-show="$store.sidebar.shouldExpand" x-transition class="ml-auto px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg">{{ $menu['badge'] }}</span>
+                        @endif
+                    </a>
+                @endif
+            @endforeach
+        @else
+            {{-- Static Admin Menu (original hardcoded menu) --}}
+            {{-- Dashboard --}}
+            <a href="{{ route('admin.dashboard') }}"
            @click="$store.sidebar.closeOnMenuClick()"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.dashboard') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-home w-5 text-center drop-shadow"></i>
@@ -1162,6 +1225,7 @@
             <i class="fas fa-question-circle w-5 text-center drop-shadow"></i>
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">ช่วยเหลือ</span>
         </a>
+        @endif {{-- End of @if($useMenuService) --}}
     </nav>
 
     {{-- Footer: Premium Logo + Version + License (Ultra 3D Style) --}}

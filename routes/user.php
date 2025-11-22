@@ -420,11 +420,6 @@ Route::get('shop/{slug}', function ($slug) {
     return redirect('/shop/' . $slug);
 });
 
-// Theme Management (User) - DISABLED: ใช้ Arrow X เป็นค่าเริ่มต้นทุกคนแล้ว
-// Route::prefix('themes')->name('themes.')->group(function () {
-//     Route::get('/', [\App\Http\Controllers\User\ThemeController::class, 'index'])->name('index');
-// });
-
 // Ticket Support System (User)
 Route::prefix('tickets')->name('tickets.')->group(function () {
     Route::get('/', [TicketController::class, 'index'])->name('index');

@@ -29,18 +29,26 @@ return [
     | Allow User Theme Selection
     |--------------------------------------------------------------------------
     |
-    | อนุญาตให้ผู้ใช้เลือก theme ของเมนูเองได้หรือไม่
+    | ⚠️ LOCKED: ระบบถูกล็อคให้ใช้ Arrow-X เท่านั้น
+    | ห้ามเปลี่ยนเป็น true หรือเพิ่มธีมอื่น
     |
     */
 
-    'user_selectable' => true,
+    'user_selectable' => false,
 
     /*
     |--------------------------------------------------------------------------
     | Available Themes
     |--------------------------------------------------------------------------
     |
-    | Theme ทั้งหมดที่มีให้เลือก
+    | ⚠️ LOCKED TO ARROW-X ONLY
+    | ระบบถูกล็อคให้ใช้ Arrow-X เท่านั้น
+    | ห้ามเพิ่มธีมอื่นหรือเปลี่ยนแปลงการตั้งค่านี้
+    |
+    | DEPRECATED THEMES (ถูกลบออกแล้ว):
+    | - millennium (Windows 11-inspired theme) - REMOVED
+    | - classic-x (Traditional sidebar theme) - REMOVED
+    | - windows (Windows 10-style theme) - REMOVED
     |
     */
 
@@ -48,20 +56,23 @@ return [
 
         /*
         |----------------------------------------------------------------------
-        | Arrow X Theme (Default)
+        | Arrow X Theme (LOCKED - ONLY AVAILABLE THEME)
         |----------------------------------------------------------------------
         |
-        | Theme หลักของระบบ V3
+        | Theme หลักและเพียงธีมเดียวของระบบ V3
         | - Modern, premium design
         | - Fully customizable
         | - RGB lighting support
         | - 3D effects & glassmorphism
         |
+        | ⚠️ DO NOT REMOVE OR MODIFY THIS THEME
+        | ⚠️ DO NOT ADD OTHER THEMES
+        |
         */
 
         'arrow-x' => [
             'name' => 'Arrow X',
-            'description' => 'Modern premium theme with full customization',
+            'description' => 'Modern premium theme with full customization (LOCKED - ONLY THEME)',
             'component' => 'themes.arrow-x-menu',
             'preview_image' => '/images/themes/arrow-x-preview.jpg',
             'available_for' => ['admin', 'seller', 'user'],
@@ -79,92 +90,19 @@ return [
             ],
         ],
 
-        /*
-        |----------------------------------------------------------------------
-        | Millennium Theme
-        |----------------------------------------------------------------------
-        |
-        | Windows 11-inspired theme
-        | - Clean, modern UI
-        | - Subtle animations
-        | - Light/dark mode
-        |
-        */
-
-        'millennium' => [
-            'name' => 'Millennium',
-            'description' => 'Windows 11-inspired modern interface',
-            'component' => 'themes.millennium-menu',
-            'preview_image' => '/images/themes/millennium-preview.jpg',
-            'available_for' => ['admin', 'seller', 'user'],
-            'settings' => [
-                'use_gradient' => true,
-                'gradient_from' => '#9333ea',
-                'gradient_to' => '#db2777',
-                'opacity' => 100,
-                'blur_amount' => 0,
-                'border_radius' => 12,
-                'rgb_enabled' => false,
-                'animation_style' => 'fade',
-            ],
-        ],
-
-        /*
-        |----------------------------------------------------------------------
-        | Classic X Theme
-        |----------------------------------------------------------------------
-        |
-        | Traditional sidebar-style theme
-        | - Familiar layout
-        | - Fast performance
-        | - FontAwesome icons
-        |
-        */
-
-        'classic-x' => [
-            'name' => 'Classic X',
-            'description' => 'Traditional sidebar with FontAwesome icons',
-            'component' => 'themes.classic-x-menu',
-            'preview_image' => '/images/themes/classic-x-preview.jpg',
-            'available_for' => ['admin', 'seller', 'user'],
-            'settings' => [
-                'use_gradient' => false,
-                'bg_color' => '#1f2937',
-                'text_color' => '#ffffff',
-                'opacity' => 100,
-                'border_radius' => 8,
-                'rgb_enabled' => false,
-                'animation_style' => 'none',
-            ],
-        ],
-
-        /*
-        |----------------------------------------------------------------------
-        | Windows Theme
-        |----------------------------------------------------------------------
-        |
-        | Windows 10-style theme
-        | - Classic Windows look
-        | - Simple & clean
-        |
-        */
-
-        'windows' => [
-            'name' => 'Windows',
-            'description' => 'Classic Windows 10 style menu',
-            'component' => 'windows-start-menu',
-            'preview_image' => '/images/themes/windows-preview.jpg',
-            'available_for' => ['admin', 'seller', 'user'],
-            'settings' => [
-                'use_gradient' => false,
-                'bg_color' => '#2d2d2d',
-                'text_color' => '#ffffff',
-                'opacity' => 100,
-                'border_radius' => 0,
-                'rgb_enabled' => false,
-                'animation_style' => 'fade',
-            ],
-        ],
+        // ⚠️ ⚠️ ⚠️ CRITICAL WARNING ⚠️ ⚠️ ⚠️
+        // DO NOT ADD ANY OTHER THEMES HERE
+        // ห้ามเพิ่มธีมอื่นที่นี่
+        //
+        // ระบบถูกออกแบบให้ใช้ Arrow-X เท่านั้น
+        // การเพิ่มธีมอื่นจะทำให้:
+        // 1. ผู้ใช้สับสน
+        // 2. เพิ่มภาระในการดูแลรักษา
+        // 3. ลด UX consistency
+        // 4. ขัดต่อการออกแบบระบบ V3
+        //
+        // หากต้องการเพิ่มธีม ให้สร้าง theme ใหม่ภายใต้ Arrow-X framework
+        // โดยการสร้าง preset ใหม่ใน theme_presets table แทน
     ],
 
     /*
