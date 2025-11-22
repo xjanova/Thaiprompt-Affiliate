@@ -141,7 +141,7 @@
                 </h3>
                 <div class="space-y-3">
                     <template x-for="dropout in dropouts.slice(0, 5)" :key="dropout.step">
-                        <div class="flex items-center justify-between p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50 transition-all">
+                        <div class="flex items-center justify-between p-3 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50 transition-all">
                             <div class="flex-1">
                                 <p class="font-medium text-gray-900 dark:text-white" x-text="dropout.step"></p>
                                 <p class="text-xs text-gray-500 dark:text-gray-400" x-text="dropout.reason || 'ไม่ระบุสาเหตุ'"></p>
@@ -166,7 +166,7 @@
                 </h3>
                 <div class="space-y-3">
                     <template x-for="(sponsor, index) in leaderboard.slice(0, 10)" :key="sponsor.sponsor_id">
-                        <div class="flex items-center gap-4 p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50 transition-all">
+                        <div class="flex items-center gap-4 p-3 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50 transition-all">
                             <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
                                  :class="{
                                      'bg-yellow-400 text-yellow-900': index === 0,
@@ -199,7 +199,7 @@
                 </h3>
                 <div class="space-y-3 max-h-96 overflow-y-auto">
                     <template x-for="conv in activeConversations" :key="conv.id">
-                        <div class="p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50 transition-all">
+                        <div class="p-3 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50 transition-all">
                             <div class="flex justify-between items-start mb-2">
                                 <p class="font-medium text-gray-900 dark:text-white" x-text="conv.sponsor_name"></p>
                                 <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full"

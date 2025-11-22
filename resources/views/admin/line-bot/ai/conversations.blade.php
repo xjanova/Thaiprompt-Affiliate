@@ -87,7 +87,7 @@
 
         <div class="divide-y divide-gray-100">
             @forelse($conversations as $conversation)
-                <div class="p-6 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 transition-colors">
+                <div class="p-6 hover:bg-gray-100/50 dark:bg-gray-800/50 transition-colors">
                     <div class="flex items-start justify-between">
                         <div class="flex-1">
                             <div class="flex items-center gap-3 mb-2">
@@ -147,7 +147,7 @@
         </div>
 
         @if($conversations->hasPages())
-            <div class="px-6 py-4 border-t border-gray-100 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50">
+            <div class="px-6 py-4 border-t border-gray-100 bg-gray-100/50 dark:bg-gray-800/50">
                 {{ $conversations->links() }}
             </div>
         @endif

@@ -59,7 +59,7 @@
             <!-- Message Content -->
             <div class="glass-fusion rounded-2xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 mb-4">Message Content</h3>
-                <div class="p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                <div class="p-4 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
                     <p class="text-gray-900 dark:text-white whitespace-pre-wrap">{{ $broadcast->message }}</p>
                 </div>
             </div>

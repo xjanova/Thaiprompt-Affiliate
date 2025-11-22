@@ -188,7 +188,7 @@
                                 <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
                                     <i class="fas fa-microchip text-purple-600 dark:text-purple-400 text-sm"></i>
                                 </div>
-                                <span class="text-xs font-medium text-gray-600 dark:text-gray-400 dark:text-gray-400">Model</span>
+                                <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Model</span>
                             </div>
                             <span class="font-bold text-sm text-gray-900 dark:text-gray-100 px-3 py-1 glass-fusion dark:bg-slate-700 rounded-xl shadow-sm">{{ $setting->model }}</span>
                         </div>
@@ -242,8 +242,8 @@
                     <!-- API Key Status -->
                     <div class="p-3 bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 rounded-xl border border-gray-200 dark:border-gray-700 dark:border-slate-600">
                         <div class="flex items-center gap-2">
-                            <i class="fas fa-key text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm"></i>
-                            <span class="font-mono text-xs text-gray-700 dark:text-gray-300 dark:text-gray-300">{{ $setting->getMaskedApiKey() }}</span>
+                            <i class="fas fa-key text-gray-500 dark:text-gray-400 text-sm"></i>
+                            <span class="font-mono text-xs text-gray-700 dark:text-gray-300">{{ $setting->getMaskedApiKey() }}</span>
                         </div>
                     </div>
 
@@ -276,7 +276,7 @@
                         <i class="fas fa-robot text-purple-500 dark:text-purple-400 text-4xl"></i>
                     </div>
                     <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">No AI Settings Yet</h3>
-                    <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-6">Get started by creating your first AI configuration</p>
+                    <p class="text-gray-600 dark:text-gray-400 mb-6">Get started by creating your first AI configuration</p>
                     <a href="{{ route('admin.line-bot.ai.create') }}"
                        class="inline-block px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition shadow-lg">
                         <i class="fas fa-plus mr-2"></i>Create First AI Setting
@@ -305,13 +305,13 @@
             <input type="hidden" id="test-ai-id" name="ai_id">
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     <i class="fas fa-comment text-purple-500 mr-1"></i> Test Message
                 </label>
                 <textarea id="test-message" name="message" rows="3" required
                     class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                     placeholder="Hello! Please introduce yourself.">Hello! Please introduce yourself.</textarea>
-                <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">The AI will respond to this message</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">The AI will respond to this message</p>
             </div>
 
             <!-- Result Area -->
@@ -342,7 +342,7 @@
 
             <div class="flex gap-3 pt-4">
                 <button type="button" onclick="closeTestModal()"
-                        class="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition font-semibold">
+                        class="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition font-semibold">
                     Close
                 </button>
                 <button type="submit" id="test-submit-btn"

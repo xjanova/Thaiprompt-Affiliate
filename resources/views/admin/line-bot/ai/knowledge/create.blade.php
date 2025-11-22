@@ -68,7 +68,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- Text Type -->
                     <button type="button" @click="knowledgeType = 'text'"
-                            :class="knowledgeType === 'text' ? 'bg-gradient-to-br from-[#00B900] to-[#00E600] text-white shadow-2xl shadow-green-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-green-400 dark:hover:border-green-600'"
+                            :class="knowledgeType === 'text' ? 'bg-gradient-to-br from-[#00B900] to-[#00E600] text-white shadow-2xl shadow-green-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-green-400 dark:hover:border-green-600'"
                             class="group relative overflow-hidden border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                         <div class="relative z-10 flex flex-col items-center gap-3">
                             <div class="w-16 h-16 rounded-xl flex items-center justify-center"
@@ -89,7 +89,7 @@
 
                     <!-- URL Type -->
                     <button type="button" @click="knowledgeType = 'url'"
-                            :class="knowledgeType === 'url' ? 'bg-gradient-to-br from-blue-600 to-cyan-600 text-white shadow-2xl shadow-blue-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-600'"
+                            :class="knowledgeType === 'url' ? 'bg-gradient-to-br from-blue-600 to-cyan-600 text-white shadow-2xl shadow-blue-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-600'"
                             class="group relative overflow-hidden border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                         <div class="relative z-10 flex flex-col items-center gap-3">
                             <div class="w-16 h-16 rounded-xl flex items-center justify-center"
@@ -110,7 +110,7 @@
 
                     <!-- File Type -->
                     <button type="button" @click="knowledgeType = 'file'"
-                            :class="knowledgeType === 'file' ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-2xl shadow-purple-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-purple-400 dark:hover:border-purple-600'"
+                            :class="knowledgeType === 'file' ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-2xl shadow-purple-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-purple-400 dark:hover:border-purple-600'"
                             class="group relative overflow-hidden border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                         <div class="relative z-10 flex flex-col items-center gap-3">
                             <div class="w-16 h-16 rounded-xl flex items-center justify-center"
@@ -131,7 +131,7 @@
 
                     <!-- Internal Type -->
                     <button type="button" @click="knowledgeType = 'internal'"
-                            :class="knowledgeType === 'internal' ? 'bg-gradient-to-br from-orange-600 to-red-600 text-white shadow-2xl shadow-orange-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-orange-400 dark:hover:border-orange-600'"
+                            :class="knowledgeType === 'internal' ? 'bg-gradient-to-br from-orange-600 to-red-600 text-white shadow-2xl shadow-orange-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-orange-400 dark:hover:border-orange-600'"
                             class="group relative overflow-hidden border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                         <div class="relative z-10 flex flex-col items-center gap-3">
                             <div class="w-16 h-16 rounded-xl flex items-center justify-center"
@@ -155,7 +155,7 @@
 
             <!-- Knowledge Name -->
             <div class="space-y-3">
-                <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300">
+                <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
                     <i class="fas fa-tag text-[#00B900]"></i>
                     ชื่อฐานความรู้
                     <span class="text-red-500">*</span>
@@ -174,7 +174,7 @@
             <div class="space-y-6">
                 <!-- Text Content -->
                 <div x-show="knowledgeType === 'text'" x-transition class="space-y-3">
-                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300">
+                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
                         <i class="fas fa-edit text-[#00B900]"></i>
                         เนื้อหาความรู้
                         <span class="text-red-500">*</span>
@@ -182,7 +182,7 @@
                     <textarea name="content" rows="12"
                               placeholder="ใส่เนื้อหาความรู้ที่ต้องการให้ AI เรียนรู้... เช่น ข้อมูลสินค้า, คำถามที่พบบ่อย, ขั้นตอนการใช้งาน"
                               class="w-full px-6 py-4 text-base border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-2xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300 placeholder-gray-400 dark:placeholder-gray-500 font-mono"></textarea>
-                    <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                    <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                         <span><i class="fas fa-info-circle mr-1"></i>รองรับ Markdown สำหรับจัดรูปแบบข้อความ</span>
                         <span><i class="fas fa-keyboard mr-1"></i>ใส่รายละเอียดมากที่สุดเพื่อความแม่นยำ</span>
                     </div>
@@ -190,7 +190,7 @@
 
                 <!-- URL Source -->
                 <div x-show="knowledgeType === 'url'" x-transition class="space-y-3">
-                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300">
+                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
                         <i class="fas fa-link text-blue-600"></i>
                         URL ที่ต้องการดึงข้อมูล
                         <span class="text-red-500">*</span>
@@ -220,7 +220,7 @@
 
                 <!-- File Upload -->
                 <div x-show="knowledgeType === 'file'" x-transition class="space-y-3">
-                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300">
+                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
                         <i class="fas fa-cloud-upload-alt text-purple-600"></i>
                         อัพโหลดไฟล์เอกสาร
                         <span class="text-red-500">*</span>
@@ -233,8 +233,8 @@
                             <div class="w-20 h-20 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 mx-auto mb-4 flex items-center justify-center">
                                 <i class="fas fa-cloud-upload-alt text-white text-3xl"></i>
                             </div>
-                            <p class="text-lg font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">คลิกหรือลากไฟล์มาที่นี่</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">รองรับ: PDF, TXT, DOC, DOCX, CSV (สูงสุด 10MB)</p>
+                            <p class="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">คลิกหรือลากไฟล์มาที่นี่</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">รองรับ: PDF, TXT, DOC, DOCX, CSV (สูงสุด 10MB)</p>
                             <div x-show="fileSelected" class="mt-4 text-green-600 dark:text-green-400 font-semibold flex items-center justify-center gap-2">
                                 <i class="fas fa-check-circle"></i>
                                 <span>เลือกไฟล์แล้ว</span>
@@ -245,7 +245,7 @@
 
                 <!-- Internal Source -->
                 <div x-show="knowledgeType === 'internal'" x-transition class="space-y-3">
-                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300">
+                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
                         <i class="fas fa-database text-orange-600"></i>
                         แหล่งข้อมูลภายใน
                         <span class="text-red-500">*</span>
@@ -267,7 +267,7 @@
 
             <!-- Priority Setting -->
             <div class="space-y-3">
-                <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300">
+                <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
                     <i class="fas fa-sort-amount-up text-[#00B900]"></i>
                     ระดับความสำคัญ
                 </label>
@@ -278,12 +278,12 @@
                                    class="peer sr-only">
                             <div class="border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 peer-checked:border-[#00B900] peer-checked:bg-gradient-to-br peer-checked:from-[#00B900] peer-checked:to-[#00E600] glass-fusion dark:bg-slate-700 rounded-xl p-3 transition-all duration-300 peer-checked:shadow-lg peer-checked:shadow-green-500/40 peer-checked:scale-105" border border-white/20 dark:border-white/10>
                                 <div class="text-center">
-                                    <div class="font-bold mb-1 peer-checked:text-white text-gray-700 dark:text-gray-300 dark:text-gray-300">
+                                    <div class="font-bold mb-1 peer-checked:text-white text-gray-700 dark:text-gray-300">
                                         @for($i = 0; $i <= $value; $i++)
                                             <i class="fas fa-star text-xs"></i>
                                         @endfor
                                     </div>
-                                    <p class="text-xs font-semibold peer-checked:text-white text-gray-600 dark:text-gray-400 dark:text-gray-400">{{ $label }}</p>
+                                    <p class="text-xs font-semibold peer-checked:text-white text-gray-600 dark:text-gray-400">{{ $label }}</p>
                                 </div>
                             </div>
                         </label>
@@ -300,7 +300,7 @@
                         <p class="text-base font-bold text-gray-900 dark:text-white dark:text-gray-200 group-hover:text-[#00B900] dark:group-hover:text-[#00E600] transition-colors">
                             <i class="fas fa-toggle-on mr-2"></i>เปิดใช้งานฐานความรู้นี้ทันที
                         </p>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">AI จะสามารถใช้ความรู้นี้ในการตอบคำถามได้ทันที</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">AI จะสามารถใช้ความรู้นี้ในการตอบคำถามได้ทันที</p>
                     </div>
                 </label>
             </div>
@@ -308,7 +308,7 @@
             <!-- Action Buttons -->
             <div class="flex items-center gap-4 pt-6 border-t-2 border-gray-200 dark:border-gray-700 dark:border-slate-700">
                 <a href="{{ route('admin.line-bot.ai.knowledge.index', $setting->id) }}"
-                   class="flex-1 px-8 py-4 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-300 text-center text-lg font-bold flex items-center justify-center gap-2">
+                   class="flex-1 px-8 py-4 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-300 text-center text-lg font-bold flex items-center justify-center gap-2">
                     <i class="fas fa-arrow-left"></i>
                     <span>ยกเลิก</span>
                 </a>

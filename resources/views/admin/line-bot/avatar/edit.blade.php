@@ -114,7 +114,7 @@
                                 </div>
                                 <div class="flex-1">
                                     <p class="text-2xl font-bold text-gray-900 dark:text-white capitalize">{{ $avatar->type }}</p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                         <i class="fas fa-lock mr-1"></i>ไม่สามารถเปลี่ยนประเภทได้หลังจากสร้างแล้ว
                                     </p>
                                 </div>
@@ -133,7 +133,7 @@
 
                     <!-- Description -->
                     <div class="space-y-3">
-                        <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300">
+                        <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
                             <i class="fas fa-align-left text-[#00B900]"></i>
                             คำอธิบาย
                         </label>
@@ -154,13 +154,13 @@
                                     <div class="flex items-center gap-3">
                                         <i class="fas fa-folder text-blue-600 dark:text-blue-400 text-xl"></i>
                                         <div>
-                                            <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">แหล่งที่มา</p>
+                                            <p class="text-xs text-gray-600 dark:text-gray-400">แหล่งที่มา</p>
                                             <p class="font-bold text-gray-900 dark:text-white capitalize">{{ $avatar->source_type }}</p>
                                         </div>
                                     </div>
                                     @if($avatar->file_size)
                                         <div class="text-right">
-                                            <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">ขนาดไฟล์</p>
+                                            <p class="text-xs text-gray-600 dark:text-gray-400">ขนาดไฟล์</p>
                                             <p class="font-bold text-gray-900 dark:text-white">{{ number_format($avatar->file_size / 1024, 2) }} KB</p>
                                         </div>
                                     @endif
@@ -168,14 +168,14 @@
 
                                 @if($avatar->source_type === 'upload')
                                     <div class="pt-4 border-t border-gray-300 dark:border-gray-600 dark:border-slate-600">
-                                        <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-2">ตำแหน่งไฟล์:</p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">ตำแหน่งไฟล์:</p>
                                         <p class="font-mono text-sm text-gray-900 dark:text-white glass-fusion dark:bg-slate-700 px-4 py-2 rounded-xl break-all">
                                             {{ $avatar->file_path }}
                                         </p>
                                     </div>
                                 @else
                                     <div class="pt-4 border-t border-gray-300 dark:border-gray-600 dark:border-slate-600">
-                                        <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-2">URL ลิงก์:</p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">URL ลิงก์:</p>
                                         <a href="{{ $avatar->file_url }}" target="_blank"
                                            class="font-mono text-sm text-blue-600 dark:text-blue-400 hover:underline glass-fusion dark:bg-slate-700 px-4 py-2 rounded-xl break-all inline-flex items-center gap-2">
                                             {{ $avatar->file_url }}
@@ -198,9 +198,9 @@
                                     <p class="text-lg font-bold text-gray-900 dark:text-white dark:text-gray-200 group-hover:text-[#00B900] dark:group-hover:text-[#00E600] transition-colors">
                                         <i class="fas fa-toggle-on mr-2"></i>เปิดใช้งาน Avatar นี้
                                     </p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">Avatar จะพร้อมใช้งานในระบบ</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Avatar จะพร้อมใช้งานในระบบ</p>
                                 </div>
-                                <div class="px-4 py-2 rounded-full text-sm font-bold {{ $avatar->is_active ? 'bg-green-600 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 dark:text-gray-400' }}">
+                                <div class="px-4 py-2 rounded-full text-sm font-bold {{ $avatar->is_active ? 'bg-green-600 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400' }}">
                                     {{ $avatar->is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน' }}
                                 </div>
                             </label>
@@ -215,7 +215,7 @@
                                     <p class="text-lg font-bold text-gray-900 dark:text-white dark:text-gray-200 group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors">
                                         <i class="fas fa-star mr-2"></i>ตั้งเป็น Avatar เริ่มต้น
                                     </p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">Avatar นี้จะถูกใช้เป็นค่าเริ่มต้นสำหรับ LINE Bot</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Avatar นี้จะถูกใช้เป็นค่าเริ่มต้นสำหรับ LINE Bot</p>
                                 </div>
                                 @if($avatar->is_default)
                                     <div class="px-4 py-2 bg-yellow-600 rounded-full text-sm font-bold text-white flex items-center gap-2">
@@ -235,19 +235,19 @@
                         </h3>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-1">สร้างโดย</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">สร้างโดย</p>
                                 <p class="font-semibold text-gray-900 dark:text-white">{{ $avatar->creator->name ?? 'System' }}</p>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-1">สร้างเมื่อ</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">สร้างเมื่อ</p>
                                 <p class="font-semibold text-gray-900 dark:text-white">{{ $avatar->created_at->format('d/m/Y H:i') }}</p>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-1">อัพเดทล่าสุด</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">อัพเดทล่าสุด</p>
                                 <p class="font-semibold text-gray-900 dark:text-white">{{ $avatar->updated_at->format('d/m/Y H:i') }}</p>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-1">ID</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ID</p>
                                 <p class="font-mono font-semibold text-gray-900 dark:text-white">#{{ $avatar->id }}</p>
                             </div>
                         </div>
@@ -256,7 +256,7 @@
                     <!-- Action Buttons -->
                     <div class="flex items-center gap-4 pt-6 border-t-2 border-gray-200 dark:border-gray-700 dark:border-slate-700">
                         <a href="{{ route('admin.line-bot.avatar.index') }}"
-                           class="flex-1 px-8 py-5 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-2xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-300 text-center text-lg font-bold flex items-center justify-center gap-3">
+                           class="flex-1 px-8 py-5 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-2xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-300 text-center text-lg font-bold flex items-center justify-center gap-3">
                             <i class="fas fa-times-circle text-xl"></i>
                             <span>ยกเลิก</span>
                         </a>
@@ -290,7 +290,7 @@
                         @elseif($avatar->type === 'lottie')
                             <div class="text-center p-8">
                                 <i class="fas fa-play-circle text-purple-600 dark:text-purple-400 text-6xl mb-4"></i>
-                                <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 font-bold">Lottie Animation</p>
+                                <p class="text-gray-600 dark:text-gray-400 font-bold">Lottie Animation</p>
                                 <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 mt-2">JSON Format</p>
                             </div>
                         @else
@@ -302,11 +302,11 @@
 
                     <!-- Status Badges -->
                     <div class="space-y-3 mb-6">
-                        <div class="flex items-center justify-between p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl">
-                            <span class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 flex items-center gap-2">
+                        <div class="flex items-center justify-between p-3 bg-gray-100/50 dark:bg-slate-700 rounded-xl">
+                            <span class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
                                 <i class="fas fa-toggle-on"></i>สถานะ
                             </span>
-                            <span class="px-3 py-1 rounded-full text-xs font-bold {{ $avatar->is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-200 dark:bg-gray-700 dark:bg-gray-700 text-gray-600 dark:text-gray-400 dark:text-gray-400' }}">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold {{ $avatar->is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400' }}">
                                 {{ $avatar->is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน' }}
                             </span>
                         </div>
@@ -364,7 +364,7 @@
 
             <!-- Modal Body -->
             <div class="p-6">
-                <p class="text-gray-700 dark:text-gray-300 dark:text-gray-300 text-lg mb-4">
+                <p class="text-gray-700 dark:text-gray-300 text-lg mb-4">
                     คุณแน่ใจหรือไม่ที่จะลบ Avatar นี้?
                 </p>
                 <div class="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-xl p-4 mb-6">
@@ -379,7 +379,7 @@
 
                 <div class="flex gap-3">
                     <button @click="showDeleteModal = false"
-                            class="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-300 font-bold">
+                            class="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-300 font-bold">
                         ยกเลิก
                     </button>
                     <form action="{{ route('admin.line-bot.avatars.destroy', $avatar->id) }}" method="POST" class="flex-1">

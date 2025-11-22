@@ -103,7 +103,7 @@
                                 <h3 class="font-bold text-gray-900 dark:text-white text-lg">
                                     {{ $conversation->user->line_display_name ?? 'Unknown User' }}
                                 </h3>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
                                     <i class="fas fa-robot mr-1"></i>{{ $conversation->aiSetting->name ?? 'N/A' }}
                                 </p>
                             </div>
@@ -124,7 +124,7 @@
                                     <div class="bg-gradient-to-br from-[#00B900] to-[#00E600] rounded-3xl rounded-br-md px-6 py-4 shadow-lg shadow-green-500/20 transform hover:scale-105 transition-all duration-300">
                                         <p class="text-white text-base leading-relaxed break-words">{{ $message->content }}</p>
                                     </div>
-                                    <div class="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                                    <div class="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
                                         <i class="fas fa-clock"></i>
                                         <span>{{ $message->created_at->format('H:i') }}</span>
                                         @if($message->tokens_used)
@@ -154,7 +154,7 @@
                                     <div class="glass-fusion dark:bg-slate-700 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 rounded-3xl rounded-bl-md px-6 py-4 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300" border border-white/20 dark:border-white/10>
                                         <p class="text-gray-900 dark:text-gray-100 text-base leading-relaxed break-words">{{ $message->content }}</p>
                                     </div>
-                                    <div class="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                                    <div class="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
                                         <i class="fas fa-robot"></i>
                                         <span>AI Response</span>
                                         <span>•</span>
@@ -177,11 +177,11 @@
                     @empty
                         <!-- Empty State -->
                         <div class="text-center py-16">
-                            <div class="w-24 h-24 rounded-full bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
+                            <div class="w-24 h-24 rounded-full bg-gray-100/50 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
                                 <i class="fas fa-comment-slash text-gray-400 dark:text-gray-600 dark:text-gray-400 text-4xl"></i>
                             </div>
                             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ยังไม่มีข้อความ</h3>
-                            <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400">การสนทนายังไม่เริ่มต้น</p>
+                            <p class="text-gray-600 dark:text-gray-400">การสนทนายังไม่เริ่มต้น</p>
                         </div>
                     @endforelse
                 </div>
@@ -190,19 +190,19 @@
                 <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 px-6 py-4 border-t-2 border-gray-200 dark:border-gray-700 dark:border-slate-600">
                     <div class="grid grid-cols-3 gap-4">
                         <div class="text-center">
-                            <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mb-1">รวม Tokens</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">รวม Tokens</p>
                             <p class="text-lg font-bold text-gray-900 dark:text-white">
                                 <i class="fas fa-coins text-yellow-500 mr-1"></i>{{ number_format($conversation->messages->sum('tokens_used')) }}
                             </p>
                         </div>
                         <div class="text-center">
-                            <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mb-1">เวลาเฉลี่ย</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">เวลาเฉลี่ย</p>
                             <p class="text-lg font-bold text-gray-900 dark:text-white">
                                 <i class="fas fa-clock text-blue-500 mr-1"></i>{{ number_format($conversation->messages->where('role', 'assistant')->avg('response_time'), 2) }}s
                             </p>
                         </div>
                         <div class="text-center">
-                            <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mb-1">ระยะเวลา</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">ระยะเวลา</p>
                             <p class="text-lg font-bold text-gray-900 dark:text-white">
                                 <i class="fas fa-hourglass-half text-purple-500 mr-1"></i>{{ $conversation->created_at->diffForHumans($conversation->updated_at, true) }}
                             </p>
@@ -236,33 +236,33 @@
                             </div>
                             <div class="flex-1">
                                 <h4 class="font-bold text-gray-900 dark:text-white text-lg">{{ $conversation->user->line_display_name }}</h4>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">LINE User</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">LINE User</p>
                             </div>
                         </div>
 
                         <div class="space-y-3">
-                            <div class="flex items-center gap-3 p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl">
+                            <div class="flex items-center gap-3 p-3 bg-gray-100/50 dark:bg-slate-700 rounded-xl">
                                 <i class="fas fa-id-badge text-blue-600 dark:text-blue-400"></i>
                                 <div class="flex-1">
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">LINE ID</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">LINE ID</p>
                                     <p class="font-mono text-sm text-gray-900 dark:text-white truncate">{{ $conversation->user->line_user_id }}</p>
                                 </div>
                             </div>
 
                             @if($conversation->user->email)
-                                <div class="flex items-center gap-3 p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl">
+                                <div class="flex items-center gap-3 p-3 bg-gray-100/50 dark:bg-slate-700 rounded-xl">
                                     <i class="fas fa-envelope text-green-600 dark:text-green-400"></i>
                                     <div class="flex-1">
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Email</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Email</p>
                                         <p class="text-sm text-gray-900 dark:text-white truncate">{{ $conversation->user->email }}</p>
                                     </div>
                                 </div>
                             @endif
 
-                            <div class="flex items-center gap-3 p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl">
+                            <div class="flex items-center gap-3 p-3 bg-gray-100/50 dark:bg-slate-700 rounded-xl">
                                 <i class="fas fa-calendar text-purple-600 dark:text-purple-400"></i>
                                 <div class="flex-1">
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">สมาชิกเมื่อ</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">สมาชิกเมื่อ</p>
                                     <p class="text-sm text-gray-900 dark:text-white">{{ $conversation->user->created_at->format('d/m/Y') }}</p>
                                 </div>
                             </div>
@@ -270,7 +270,7 @@
                     @else
                         <div class="text-center py-8">
                             <i class="fas fa-user-slash text-gray-400 text-4xl mb-3"></i>
-                            <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400">ไม่พบข้อมูลผู้ใช้</p>
+                            <p class="text-gray-600 dark:text-gray-400">ไม่พบข้อมูลผู้ใช้</p>
                         </div>
                     @endif
                 </div>
@@ -294,7 +294,7 @@
                                     </div>
                                     <div class="flex-1">
                                         <h4 class="font-bold text-gray-900 dark:text-white">{{ $conversation->aiSetting->name }}</h4>
-                                        <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 font-semibold uppercase">{{ $conversation->aiSetting->provider }}</p>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 font-semibold uppercase">{{ $conversation->aiSetting->provider }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -325,7 +325,7 @@
                     @else
                         <div class="text-center py-8">
                             <i class="fas fa-robot text-gray-400 text-4xl mb-3"></i>
-                            <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400">ไม่พบการตั้งค่า AI</p>
+                            <p class="text-gray-600 dark:text-gray-400">ไม่พบการตั้งค่า AI</p>
                         </div>
                     @endif
                 </div>
@@ -340,28 +340,28 @@
                     </h3>
                 </div>
                 <div class="p-6 space-y-3">
-                    <div class="flex items-center justify-between p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl">
-                        <span class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
+                    <div class="flex items-center justify-between p-3 bg-gray-100/50 dark:bg-slate-700 rounded-xl">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">
                             <i class="fas fa-calendar-plus mr-2"></i>สร้างเมื่อ
                         </span>
                         <span class="text-sm font-bold text-gray-900 dark:text-white">
                             {{ $conversation->created_at->format('d/m/Y H:i') }}
                         </span>
                     </div>
-                    <div class="flex items-center justify-between p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl">
-                        <span class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
+                    <div class="flex items-center justify-between p-3 bg-gray-100/50 dark:bg-slate-700 rounded-xl">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">
                             <i class="fas fa-calendar-check mr-2"></i>อัพเดทล่าสุด
                         </span>
                         <span class="text-sm font-bold text-gray-900 dark:text-white">
                             {{ $conversation->updated_at->format('d/m/Y H:i') }}
                         </span>
                     </div>
-                    <div class="flex items-center justify-between p-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl">
-                        <span class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
+                    <div class="flex items-center justify-between p-3 bg-gray-100/50 dark:bg-slate-700 rounded-xl">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">
                             <i class="fas fa-circle mr-2"></i>สถานะ
                         </span>
                         <span class="px-3 py-1 rounded-full text-xs font-bold
-                            {{ $conversation->status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 dark:text-gray-300' }}">
+                            {{ $conversation->status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-gray-700 text-gray-700 dark:text-gray-300' }}">
                             {{ ucfirst($conversation->status) }}
                         </span>
                     </div>
