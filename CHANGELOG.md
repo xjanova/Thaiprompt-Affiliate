@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.137.0] - 2025-11-22
+
+### ✨ Features
+- Merge pull request #1482 from xjanova/claude/continue-session-01LGNsDDDwfdHPBFV97xvE2U (06441962)
+- feat: set 3 Doors storytelling page as homepage (396a963e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.136.1] - 2025-11-22
 
 ### ✨ Features
