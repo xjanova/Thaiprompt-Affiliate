@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.125.0] - 2025-11-22
+
+### ✨ Features
+- Merge pull request #1456 from xjanova/claude/enhance-notifications-admin-01Jx9n51cV6xEJV5GQQzwUG2 (6e868815)
+- feat: enhance notification system for admin dashboard (3cf9a7e3)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.124.1] - 2025-11-22
 
 ### ✨ Features
