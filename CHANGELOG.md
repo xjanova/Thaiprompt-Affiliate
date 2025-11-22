@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.134.1] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1476 from xjanova/claude/migrate-arrow-x-theme-01V93BtLQ4K8qMVC1NaumnnP (7d8301fd)
+- fix: change deprecated layout from millennium to seller in system-monitoring view (43f18f33)
+### 🔧 Other Changes
+
+
 ## [v3.134.0] - 2025-11-22
 
 ### ✨ Features
