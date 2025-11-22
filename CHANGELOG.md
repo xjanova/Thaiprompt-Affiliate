@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.128.1] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1461 from xjanova/claude/fix-payment-migration-error-01Dr29ZkfqtzEZmYDssBjHeq (ed2e6cc2)
+- fix: correct column reference in tpix_configurations payment fields migration (47faad22)
+### 🔧 Other Changes
+
+
 ## [v3.128.0] - 2025-11-22
 
 ### ✨ Features
