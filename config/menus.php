@@ -835,6 +835,17 @@ return [
         ],
 
         [
+            'id' => 'nfc-cards',
+            'label' => 'บัตร NFC',
+            'icon' => 'fas fa-credit-card',
+            'route' => 'user.nfc.index',
+            'order' => 8.5,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-blue-500 to-purple-500',
+        ],
+
+        [
             'id' => 'investments',
             'label' => 'การลงทุน ROI',
             'icon' => '📈',
