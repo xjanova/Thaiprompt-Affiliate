@@ -89,12 +89,12 @@ class NFCCardSeeder extends Seeder
     {
         // สุ่มประเภทของบัตร
         $cardTypes = [
-            ['name' => 'บัตรหลัก', 'balance' => 5000, 'daily_limit' => 10000, 'monthly_limit' => 100000],
-            ['name' => 'บัตรสำรอง', 'balance' => 2000, 'daily_limit' => 5000, 'monthly_limit' => 50000],
-            ['name' => 'บัตรสะสมแต้ม', 'balance' => 1000, 'daily_limit' => 3000, 'monthly_limit' => 30000],
+            ['name' => 'บัตรหลัก', 'type' => NFCCard::TYPE_STANDARD, 'balance' => 5000, 'daily_limit' => 10000, 'monthly_limit' => 100000, 'weight' => 50],
+            ['name' => 'บัตรสำรอง', 'type' => NFCCard::TYPE_PREMIUM, 'balance' => 2000, 'daily_limit' => 5000, 'monthly_limit' => 50000, 'weight' => 30],
+            ['name' => 'บัตรสะสมแต้ม', 'type' => NFCCard::TYPE_VIP, 'balance' => 1000, 'daily_limit' => 3000, 'monthly_limit' => 30000, 'weight' => 20],
         ];
 
-        $type = $cardTypes[array_rand($cardTypes)];
+        $type = $this->weightedRandom($cardTypes);
 
         // สร้างเลขบัตร 16 หลัก (เริ่มด้วย 5899 สำหรับ NFC)
         $cardNumber = '5899' . str_pad(rand(100000000000, 999999999999), 12, '0', STR_PAD_LEFT);
@@ -120,7 +120,7 @@ class NFCCardSeeder extends Seeder
             'user_id' => $user->id,
             'card_number' => $cardNumber,
             'card_name' => $type['name'] . ' #' . $index,
-            'card_type' => NFCCard::TYPE_VIRTUAL,
+            'card_type' => $type['type'],
             'balance' => $type['balance'],
             'status' => $statusConfig['status'],
             'is_enabled' => $statusConfig['is_enabled'],
