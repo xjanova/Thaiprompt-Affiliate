@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.127.1] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1459 from xjanova/claude/fix-admin-menu-characters-01GQbwGsNYSbrWQWzVshZgAF (c86d750f)
+- fix: remove stray comment characters after support tickets menu (e1c0bdbd)
+### 🔧 Other Changes
+
+
 ## [v3.127.0] - 2025-11-22
 
 ### ✨ Features
