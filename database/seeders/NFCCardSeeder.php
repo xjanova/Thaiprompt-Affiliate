@@ -125,7 +125,7 @@ class NFCCardSeeder extends Seeder
             'status' => $statusConfig['status'],
             'is_enabled' => $statusConfig['is_enabled'],
             'issued_by' => 1, // Admin
-            'issued_at' => now()->subDays(rand(1, 365)),
+            // ❌ ลบ issued_at (column ไม่มี) ใช้ created_at แทน
             'expires_at' => now()->addYears(5),
 
             // Spending limits
@@ -134,8 +134,9 @@ class NFCCardSeeder extends Seeder
             'transaction_limit' => min($type['daily_limit'] / 2, 5000),
             'daily_spent' => rand(0, $type['daily_limit'] * 0.3),
             'monthly_spent' => rand(0, $type['monthly_limit'] * 0.2),
-            'last_daily_reset' => today(),
-            'last_monthly_reset' => now()->startOfMonth(),
+            // ✅ แก้ชื่อ column ให้ตรงกับ migration
+            'last_reset_daily' => today(),
+            'last_reset_monthly' => now()->startOfMonth(),
 
             // Wallet integration
             'wallet_id' => $walletId,
