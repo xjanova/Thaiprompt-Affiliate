@@ -10,6 +10,7 @@ use App\Services\MlmProspectService;
 use App\Services\LineSignupService;
 use App\Services\LineKycService;
 use App\Services\LineHybridBotService;
+use App\Services\LineVoiceMessageService;
 use App\Services\AI\ConversationManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -85,9 +86,10 @@ class LineWebhookController extends Controller
     /**
      * Handle message event
      *
-     * รองรับการรับข้อความทั้ง text และ image
+     * รองรับการรับข้อความทั้ง text, image, และ audio
      * - Text: commands (KYC, info, reset) และ AI chat
      * - Image: KYC verification (ID card และ Selfie)
+     * - Audio: Speech-to-Text แล้วส่งต่อไปยัง AI Bot
      */
     private function handleMessageEvent(array $event, LineOaSetting $settings): void
     {
@@ -116,8 +118,15 @@ class LineWebhookController extends Controller
             return;
         }
 
+        // ✅ Handle AUDIO/VOICE messages
+        if ($messageType === 'audio') {
+            $this->handleVoiceMessage($messageId, $lineUserId, $user);
+            return;
+        }
+
         // ⚠️ Only text messages from here on
         if ($messageType !== 'text') {
+            Log::info('Unhandled message type', ['type' => $messageType]);
             return;
         }
 
@@ -310,5 +319,110 @@ class LineWebhookController extends Controller
 
         // ข้อความ response ถูกส่งโดย LineKycService แล้ว
         // ไม่ต้องส่งซ้ำที่นี่
+    }
+
+    /**
+     * จัดการ Voice Message
+     *
+     * ขั้นตอน:
+     * 1. Download voice message จาก LINE
+     * 2. แปลง voice เป็น text ด้วย Speech-to-Text
+     * 3. ส่งต่อไปยัง Hybrid Bot (เหมือน text message)
+     * 4. ตอบกลับผู้ใช้
+     *
+     * @param string $messageId
+     * @param string $lineUserId
+     * @param User|null $user
+     * @return void
+     */
+    private function handleVoiceMessage(string $messageId, string $lineUserId, ?User $user): void
+    {
+        Log::info('🎤 Processing voice message', [
+            'message_id' => $messageId,
+            'line_user_id' => $lineUserId,
+        ]);
+
+        $lineService = app(LineService::class);
+        $voiceService = app(LineVoiceMessageService::class);
+
+        try {
+            // ส่งข้อความแจ้งว่ากำลังประมวลผล
+            $lineService->sendPushMessage(
+                $lineUserId,
+                '🎤 กำลังฟังและแปลงเสียงของคุณ... กรุณารอสักครู่ค่ะ'
+            );
+
+            // Step 1: Process voice message (download + speech-to-text)
+            $result = $voiceService->processVoiceMessage($messageId, 'th-TH');
+
+            if (!$result['success']) {
+                // แปลงไม่สำเร็จ
+                $errorMsg = '😔 ขออภัยค่ะ ไม่สามารถแปลงเสียงเป็นข้อความได้\n\n';
+
+                if (str_contains($result['error'], 'not configured')) {
+                    $errorMsg .= 'ระบบยังไม่ได้ตั้งค่า Speech-to-Text\nกรุณาติดต่อผู้ดูแลระบบค่ะ';
+                } else {
+                    $errorMsg .= 'เหตุผล: ' . $result['error'];
+                }
+
+                $lineService->sendPushMessage($lineUserId, $errorMsg);
+
+                Log::error('Voice-to-Text failed', [
+                    'message_id' => $messageId,
+                    'error' => $result['error'],
+                ]);
+
+                return;
+            }
+
+            $transcribedText = $result['text'];
+            $confidence = $result['confidence'];
+
+            Log::info('✅ Voice-to-Text successful', [
+                'message_id' => $messageId,
+                'text' => $transcribedText,
+                'confidence' => round($confidence * 100, 2) . '%',
+            ]);
+
+            // Step 2: ส่งข้อความที่แปลงได้กลับไปให้ผู้ใช้เห็น (เป็น confirmation)
+            $confirmationMsg = '🎧 คุณพูดว่า: "' . $transcribedText . '"';
+
+            if ($confidence < 0.8) {
+                $confirmationMsg .= "\n\n⚠️ ระบบไม่แน่ใจกับการแปลง (" . round($confidence * 100) . "%)";
+            }
+
+            $lineService->sendPushMessage($lineUserId, $confirmationMsg);
+
+            // Step 3: ส่งต่อไปยัง Hybrid Bot (เหมือน text message)
+            $hybridBot = app(LineHybridBotService::class);
+            $aiBot = AiBotProfile::where('is_active', true)->first();
+
+            if (!$aiBot) {
+                Log::warning('No active AI bot found for voice message processing');
+                return;
+            }
+
+            $hybridBot->processMessage($lineUserId, $transcribedText, $user, $aiBot);
+
+            Log::info('📨 Voice message forwarded to Hybrid Bot', [
+                'line_user_id' => $lineUserId,
+                'transcribed_text' => $transcribedText,
+                'bot_id' => $aiBot->id,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('❌ Voice message handling error', [
+                'message_id' => $messageId,
+                'line_user_id' => $lineUserId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // แจ้งผู้ใช้
+            $lineService->sendPushMessage(
+                $lineUserId,
+                '😔 เกิดข้อผิดพลาดในการประมวลผลเสียง กรุณาลองใหม่อีกครั้งค่ะ'
+            );
+        }
     }
 }

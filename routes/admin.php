@@ -609,6 +609,7 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
         Route::post('/', [LineBroadcastController::class, 'store'])->name('store');
         Route::get('/{id}', [LineBroadcastController::class, 'show'])->name('show');
         Route::post('/{id}/send', [LineBroadcastController::class, 'send'])->name('send');
+        Route::post('/{id}/retry', [LineBroadcastController::class, 'retry'])->name('retry');
         Route::delete('/{id}', [LineBroadcastController::class, 'destroy'])->name('destroy');
     });
 
