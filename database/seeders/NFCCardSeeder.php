@@ -187,7 +187,7 @@ class NFCCardSeeder extends Seeder
             ['type' => NFCTransaction::TYPE_PAYMENT, 'weight' => 60],
             ['type' => NFCTransaction::TYPE_TOPUP, 'weight' => 25],
             ['type' => NFCTransaction::TYPE_REFUND, 'weight' => 10],
-            ['type' => NFCTransaction::TYPE_TRANSFER_OUT, 'weight' => 5],
+            ['type' => NFCTransaction::TYPE_TRANSFER, 'weight' => 5],
         ];
 
         for ($i = 0; $i < $count; $i++) {
@@ -196,12 +196,12 @@ class NFCCardSeeder extends Seeder
                 NFCTransaction::TYPE_PAYMENT => rand(50, 500),
                 NFCTransaction::TYPE_TOPUP => rand(500, 2000),
                 NFCTransaction::TYPE_REFUND => rand(50, 300),
-                NFCTransaction::TYPE_TRANSFER_OUT => rand(100, 1000),
+                NFCTransaction::TYPE_TRANSFER => rand(100, 1000),
                 default => 100,
             };
 
             // คำนวณ balance_after
-            if (in_array($type, [NFCTransaction::TYPE_PAYMENT, NFCTransaction::TYPE_TRANSFER_OUT])) {
+            if (in_array($type, [NFCTransaction::TYPE_PAYMENT, NFCTransaction::TYPE_TRANSFER])) {
                 $balanceAfter = $balance - $amount;
             } else {
                 $balanceAfter = $balance + $amount;
