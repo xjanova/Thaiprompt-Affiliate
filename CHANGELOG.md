@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.130.3] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1467 from xjanova/claude/fix-payment-migration-error-01Dr29ZkfqtzEZmYDssBjHeq (0de8a117)
+- fix: update SafeMigration trait for Laravel 11 compatibility (5579f815)
+### 🔧 Other Changes
+
+
 ## [v3.130.2] - 2025-11-22
 
 ### ✨ Features
