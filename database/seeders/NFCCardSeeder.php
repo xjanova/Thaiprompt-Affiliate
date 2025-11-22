@@ -128,6 +128,22 @@ class NFCCardSeeder extends Seeder
             // ❌ ลบ issued_at (column ไม่มี) ใช้ created_at แทน
             'expires_at' => now()->addYears(5),
 
+            // ✅ Two-way Encryption Data (required fields)
+            'encrypted_data' => base64_encode(json_encode([
+                'card_holder' => $user->name,
+                'card_number' => $cardNumber,
+                'card_type' => $type['type'],
+                'issued_date' => now()->toDateString(),
+            ])),
+            'encryption_key_hash' => hash('sha256', $cardNumber . config('app.key')),
+            'card_signature' => hash_hmac('sha256', $cardNumber, config('app.key')),
+            'encryption_version' => 1,
+
+            // Card pairing & activation
+            'is_paired' => true,
+            'paired_at' => now()->subDays(rand(1, 30)),
+            'activated_at' => now()->subDays(rand(1, 30)),
+
             // Spending limits
             'daily_spending_limit' => $type['daily_limit'],
             'monthly_spending_limit' => $type['monthly_limit'],
