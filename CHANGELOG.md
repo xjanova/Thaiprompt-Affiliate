@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.141.3] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1490 from xjanova/claude/upgrade-line-admin-page-01TYgz87VrvRnAkQWBu7eDBP (f888dc4b)
+- fix: แก้ไข duplicate และ conflicting Tailwind classes ในหน้า LINE admin (17 ไฟล์) (803840c1)
+### 🔧 Other Changes
+
+
 ## [v3.141.2] - 2025-11-22
 
 ### ✨ Features
