@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.121.0] - 2025-11-22
+
+### ✨ Features
+- Merge pull request #1451 from xjanova/claude/tpix-admin-dashboard-01D7bFfQwSNikupfJex9Q9UN (714015f7)
+- feat: add TPIX pricing calculator component (3aa32a81)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.120.0] - 2025-11-21
 
 ### ✨ Features
