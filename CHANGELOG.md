@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.138.1] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1484 from xjanova/claude/upgrade-line-ai-integration-01WV6eW4NRrz4XtgfJtYMboB (688435ae)
+- docs: add complete LINE OA setup guide with Hybrid AI Bot integration (b6ff158d)
+
 ## [v3.138.0] - 2025-11-22
 
 ### ✨ Features
