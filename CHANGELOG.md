@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.131.2] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1470 from xjanova/claude/fix-payment-migration-error-01Dr29ZkfqtzEZmYDssBjHeq (3585dd32)
+- fix: add required encryption fields to NFCCardSeeder (43e4b59e)
+### 🔧 Other Changes
+
+
 ## [v3.131.1] - 2025-11-22
 
 ### ✨ Features
