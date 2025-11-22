@@ -11,7 +11,9 @@ use Illuminate\Http\Request;
 class ShopController extends Controller
 {
     /**
-     * Display all products (Shop homepage)
+     * แสดงสินค้าทั้งหมด (หน้าแรกของร้านค้า)
+     *
+     * รองรับการกรองตามร้านระบบและร้านผู้เช่าคุณภาพสูง (5 ดาว)
      */
     public function index(Request $request)
     {
@@ -19,7 +21,22 @@ class ShopController extends Controller
             ->active()
             ->inStock();
 
-        // Search
+        // ตัวกรองประเภทร้าน (ใหม่ใน V3)
+        if ($request->filled('shop_type')) {
+            $shopType = $request->shop_type;
+
+            if ($shopType === 'official') {
+                // ร้านของระบบ (seller_id เป็น null หรือเป็น admin)
+                $query->whereNull('seller_id');
+            } elseif ($shopType === 'premium') {
+                // ร้านผู้เช่า 5 ดาว (คะแนนเฉลี่ย >= 4.5 และมี seller)
+                $query->whereNotNull('seller_id')
+                      ->where('rating_average', '>=', 4.5)
+                      ->where('rating_count', '>', 0); // ต้องมีรีวิวอย่างน้อย 1 รีวิว
+            }
+        }
+
+        // ค้นหา
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -29,14 +46,14 @@ class ShopController extends Controller
             });
         }
 
-        // Category Filter
+        // กรองตามหมวดหมู่
         if ($request->filled('category')) {
             $query->whereHas('category', function ($q) use ($request) {
                 $q->where('slug', $request->category);
             });
         }
 
-        // Price Range Filter
+        // กรองตามช่วงราคา
         if ($request->filled('min_price')) {
             $query->where('price', '>=', $request->min_price);
         }
@@ -44,12 +61,12 @@ class ShopController extends Controller
             $query->where('price', '<=', $request->max_price);
         }
 
-        // Brand Filter
+        // กรองตามยี่ห้อ
         if ($request->filled('brand')) {
             $query->where('brand', $request->brand);
         }
 
-        // Sorting
+        // เรียงลำดับ
         $sortBy = $request->get('sort_by', 'newest');
         switch ($sortBy) {
             case 'popular':
@@ -85,7 +102,7 @@ class ShopController extends Controller
             ->pluck('brand')
             ->sort();
 
-        // Featured products
+        // สินค้าแนะนำ
         $featuredProducts = Product::with(['category', 'seller'])
             ->active()
             ->featured()
@@ -93,11 +110,23 @@ class ShopController extends Controller
             ->take(8)
             ->get();
 
+        // สถิติสำหรับตัวกรอง (V3)
+        $stats = [
+            'all' => Product::active()->inStock()->count(),
+            'official' => Product::active()->inStock()->whereNull('seller_id')->count(),
+            'premium' => Product::active()->inStock()
+                ->whereNotNull('seller_id')
+                ->where('rating_average', '>=', 4.5)
+                ->where('rating_count', '>', 0)
+                ->count(),
+        ];
+
         return view('shop.index', compact(
             'products',
             'categories',
             'brands',
-            'featuredProducts'
+            'featuredProducts',
+            'stats'
         ));
     }
 
