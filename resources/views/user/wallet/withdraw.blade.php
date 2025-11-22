@@ -152,7 +152,7 @@
             <span class="text-4xl block mb-2">💸</span>
             <p class="text-sm">คลิก "ดูทั้งหมด" เพื่อดูประวัติการถอนเงิน</p>
         </div>
-    </div>
+    </x-arrow-x.card-v3>
 
     <!-- Instructions -->
     <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
