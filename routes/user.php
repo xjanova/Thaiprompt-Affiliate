@@ -3,6 +3,7 @@
 use App\Http\Controllers\User\DashboardController;
 use App\Http\Controllers\User\SettingsController;
 use App\Http\Controllers\User\WalletController;
+use App\Http\Controllers\User\NFCCardController;
 use App\Http\Controllers\User\CryptoWalletController;
 use App\Http\Controllers\User\CryptoExchangeController;
 use App\Http\Controllers\User\RankController;
@@ -103,6 +104,45 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
     Route::delete('/payment-method/{id}', [WalletController::class, 'deletePaymentMethod'])
         ->middleware('two-factor:payment_method_change')
         ->name('payment-method.delete');
+});
+
+// NFC Card Management (User) - Tap to Pay
+Route::prefix('nfc')->name('nfc.')->group(function () {
+    // Dashboard - รายการการ์ดทั้งหมด
+    Route::get('/', [NFCCardController::class, 'index'])->name('index');
+
+    // รายละเอียดการ์ด
+    Route::get('/{card}', [NFCCardController::class, 'show'])->name('show');
+
+    // เปิด/ปิดการใช้งาน
+    Route::post('/{card}/enable', [NFCCardController::class, 'enable'])->name('enable');
+    Route::post('/{card}/disable', [NFCCardController::class, 'disable'])->name('disable');
+
+    // ตั้งค่าวงเงิน
+    Route::put('/{card}/limits', [NFCCardController::class, 'updateLimits'])
+        ->middleware('two-factor:nfc_limits')
+        ->name('limits.update');
+
+    // ผูกกับ Wallet
+    Route::post('/{card}/link-wallet', [NFCCardController::class, 'linkWallet'])
+        ->middleware('two-factor:nfc_wallet')
+        ->name('wallet.link');
+    Route::post('/{card}/unlink-wallet', [NFCCardController::class, 'unlinkWallet'])
+        ->middleware('two-factor:nfc_wallet')
+        ->name('wallet.unlink');
+
+    // เติมเงินจาก Wallet
+    Route::post('/{card}/topup', [NFCCardController::class, 'topUpFromWallet'])
+        ->middleware('two-factor:nfc_topup')
+        ->name('topup');
+
+    // ตั้งค่า Auto Top-up
+    Route::put('/{card}/auto-topup', [NFCCardController::class, 'configureAutoTopUp'])
+        ->middleware('two-factor:nfc_auto_topup')
+        ->name('auto-topup.configure');
+
+    // ประวัติการทำธุรกรรม
+    Route::get('/{card}/transactions', [NFCCardController::class, 'transactions'])->name('transactions');
 });
 
 // Crypto Wallet Management (User)
