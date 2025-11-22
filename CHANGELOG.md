@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.129.1] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1463 from xjanova/claude/nfc-tap-to-pay-integration-01Kr9pbWqm4MAvU7AADi7LhN (1e4a852e)
+- fix: add STATUS_SUSPENDED constant to NFCCard model (195f16b0)
+### 🔧 Other Changes
+
+
 ## [v3.129.0] - 2025-11-22
 
 ### ✨ Features
