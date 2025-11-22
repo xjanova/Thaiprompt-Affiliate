@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.123.0] - 2025-11-22
+
+### ✨ Features
+- feat: enforce TPIX-only payment with DEX swap redirect (2ecd35f0)
+- feat: add payment system to TPIX configurations (39c26468)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1453 from xjanova/claude/tpix-admin-dashboard-01D7bFfQwSNikupfJex9Q9UN (0b766d2d)
+
 ## [v3.122.0] - 2025-11-22
 
 ### ✨ Features
