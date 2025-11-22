@@ -54,6 +54,13 @@ Alpine.store('language', {
             }, 100);
         }
 
+        // ✅ ลบ translation_triggered flag หลัง reload สำเร็จ
+        // เพื่อให้สามารถเปลี่ยนภาษาได้อีกครั้ง
+        if (sessionStorage.getItem('translation_triggered')) {
+            console.log('🔄 Translation completed, clearing flag');
+            sessionStorage.removeItem('translation_triggered');
+        }
+
         console.log('🌐 Language Store initialized with Google Translate:', this.current);
     },
 
@@ -109,10 +116,17 @@ Alpine.store('language', {
             // ซ่อน Google Translate toolbar
             this.hideGoogleTranslateToolbar();
 
-            // ถ้ามีภาษาที่บันทึกไว้ ให้แปลทันที
+            // ⚠️ CIRCUIT BREAKER: ป้องกัน infinite reload loop
+            // ถ้ามีภาษาที่บันทึกไว้ ให้แปลทันที (เฉพาะครั้งแรกที่ผู้ใช้เปลี่ยนภาษา)
+            // ไม่แปลซ้ำหลัง reload เพื่อหลีกเลี่ยง infinite loop
             const savedLang = localStorage.getItem('app_language');
-            if (savedLang && savedLang !== 'th') {
+            const translationTriggered = sessionStorage.getItem('translation_triggered');
+
+            if (savedLang && savedLang !== 'th' && !translationTriggered) {
+                console.log('🌐 Auto-translating to saved language:', savedLang);
                 setTimeout(() => this.translatePage(savedLang), 1000);
+            } else if (translationTriggered) {
+                console.log('⚠️ Translation already triggered, skipping auto-translate to prevent infinite loop');
             }
         } catch (error) {
             console.error('❌ เกิดข้อผิดพลาดใน Google Translate:', error);
@@ -190,6 +204,10 @@ Alpine.store('language', {
      * เปลี่ยนภาษาและแปลหน้าเว็บ
      */
     setLanguage(langCode) {
+        // ✅ ล้าง translation_triggered flag เมื่อผู้ใช้เปลี่ยนภาษาใหม่
+        // เพื่อให้ translatePage() สามารถทำงานได้
+        sessionStorage.removeItem('translation_triggered');
+
         this.current = langCode;
         localStorage.setItem('app_language', langCode);
 
@@ -276,6 +294,10 @@ Alpine.store('language', {
             // Google Translate Element มักจะไม่แปลทันทีด้วย events
             // วิธีที่ดีที่สุดคือ reload หน้าเว็บทันที (เหมือน Chrome translate)
             console.log('🔄 กำลัง reload หน้าเว็บเพื่อแปลภาษา...');
+
+            // ✅ ตั้ง flag เพื่อบอกว่าได้ trigger translation แล้ว
+            // ป้องกัน initGoogleTranslate() เรียก translatePage() ซ้ำหลัง reload
+            sessionStorage.setItem('translation_triggered', 'true');
 
             // บันทึก scroll position
             sessionStorage.setItem('tpix_scroll_position', window.scrollY.toString());

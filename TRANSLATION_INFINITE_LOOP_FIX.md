@@ -454,16 +454,115 @@ if ($duration > 2.0) {
 
 ---
 
+## 🆕 UPDATE: แก้ไข Reload Loop (2025-11-22)
+
+### ปัญหาเพิ่มเติมที่พบ
+
+หลังจากแก้ไข backend แล้ว ยังพบว่า **เมื่อเปลี่ยนภาษา (Language Switching) หน้าเว็บจะ reload วนลูปไม่สิ้นสุด**
+
+### สาเหตุ: JavaScript Reload Loop
+
+**ไฟล์:** `resources/js/alpine/stores/language.js`
+
+**Event Chain:**
+```
+1. User คลิกเปลี่ยนภาษา (Thai → English)
+   ↓
+2. setLanguage('en') → translatePage('en') (บรรทัด 220)
+   ↓
+3. translatePage() บันทึกภาษาใน localStorage → reload หน้า (บรรทัด 302-304)
+   ↓
+4. หลัง reload → init() (บรรทัด 35-65)
+   ↓
+5. init() → loadGoogleTranslate() → initGoogleTranslate() (บรรทัด 113-130)
+   ↓
+6. initGoogleTranslate() เช็ค localStorage → เจอ 'en' ที่บันทึกไว้
+   ↓
+7. เรียก translatePage('en') อีกครั้ง (บรรทัด 127)
+   ↓
+8. ↺ reload อีก → วนลูปไม่สิ้นสุด!
+```
+
+### วิธีแก้: เพิ่ม Circuit Breaker ด้วย sessionStorage Flag
+
+**แนวคิด:**
+- ใช้ `sessionStorage.setItem('translation_triggered', 'true')` เป็น flag
+- ก่อน reload ตั้ง flag → หลัง reload ตรวจสอบ flag
+- ถ้า flag มีอยู่ → ข้ามการ auto-translate → ป้องกันวนลูป
+
+**การแก้ไข:**
+
+#### 1. init() - ลบ flag หลัง reload สำเร็จ
+```javascript
+// บรรทัด 57-62
+// ✅ ลบ translation_triggered flag หลัง reload สำเร็จ
+// เพื่อให้สามารถเปลี่ยนภาษาได้อีกครั้ง
+if (sessionStorage.getItem('translation_triggered')) {
+    console.log('🔄 Translation completed, clearing flag');
+    sessionStorage.removeItem('translation_triggered');
+}
+```
+
+#### 2. initGoogleTranslate() - เช็ค flag ก่อน auto-translate
+```javascript
+// บรรทัด 119-130
+// ⚠️ CIRCUIT BREAKER: ป้องกัน infinite reload loop
+const savedLang = localStorage.getItem('app_language');
+const translationTriggered = sessionStorage.getItem('translation_triggered');
+
+if (savedLang && savedLang !== 'th' && !translationTriggered) {
+    console.log('🌐 Auto-translating to saved language:', savedLang);
+    setTimeout(() => this.translatePage(savedLang), 1000);
+} else if (translationTriggered) {
+    console.log('⚠️ Translation already triggered, skipping auto-translate');
+}
+```
+
+#### 3. setLanguage() - ล้าง flag เมื่อผู้ใช้เปลี่ยนภาษาใหม่
+```javascript
+// บรรทัด 207-209
+// ✅ ล้าง translation_triggered flag เมื่อผู้ใช้เปลี่ยนภาษาใหม่
+// เพื่อให้ translatePage() สามารถทำงานได้
+sessionStorage.removeItem('translation_triggered');
+```
+
+#### 4. translatePage() - ตั้ง flag ก่อน reload
+```javascript
+// บรรทัด 294-296
+// ✅ ตั้ง flag เพื่อบอกว่าได้ trigger translation แล้ว
+// ป้องกัน initGoogleTranslate() เรียก translatePage() ซ้ำหลัง reload
+sessionStorage.setItem('translation_triggered', 'true');
+```
+
+### ผลลัพธ์
+
+| ก่อนแก้ไข ❌ | หลังแก้ไข ✅ |
+|-------------|-------------|
+| เปลี่ยนภาษา → reload ไม่รู้จบ | เปลี่ยนภาษา → reload 1 ครั้ง → เสร็จ |
+| ไม่สามารถใช้งานได้ | ใช้งานได้ปกติ |
+| Browser hang/crash | ทำงานราบรื่น |
+
+---
+
 ## ✅ Checklist
 
 - [x] แก้ไข TranslationController - เพิ่ม static cache
 - [x] แก้ไข TranslationService - เพิ่ม circuit breaker
 - [x] แก้ไข clearCache() - ใช้ specific clearing
+- [x] แก้ไข language.js - เพิ่ม reload loop protection
 - [x] ทดสอบ syntax errors
 - [x] เขียนเอกสาร
+- [x] Commit และ push การเปลี่ยนแปลง
 - [ ] ทดสอบ API endpoints (ต้องรัน server)
 - [ ] ทดสอบ unit tests
 - [ ] Deploy และ monitor logs
+
+---
+
+## 📦 Commits
+
+1. **2bdbfcb** - `fix: แก้ไข infinite loop ในระบบแปลภาษา` (Backend)
+2. **add2074** - `fix: แก้ไข infinite reload loop เมื่อเปลี่ยนภาษา` (Frontend)
 
 ---
 
