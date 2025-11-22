@@ -1,4 +1,4 @@
-@extends('layouts.user')
+@extends('layouts.user-arrow-x')
 
 @section('title', 'รายละเอียดการ์ด NFC - ' . ($card->card_name ?? 'การ์ด NFC'))
 

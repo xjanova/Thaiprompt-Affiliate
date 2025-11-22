@@ -216,10 +216,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/auth/line/link', [LineLoginController::class, 'link'])->name('line.link');
     Route::get('/auth/line/link/callback', [LineLoginController::class, 'linkCallback'])->name('line.link.callback');
     Route::post('/auth/line/unlink', [LineLoginController::class, 'unlink'])->name('line.unlink');
-
-    // Theme Switching - DISABLED: ใช้ Arrow X เป็นค่าเริ่มต้นทุกคนแล้ว
-    // Route::post('/user/theme/update', [\App\Http\Controllers\User\ThemeController::class, 'updateTheme'])->name('user.theme.update');
-    // Route::get('/user/theme/current', [\App\Http\Controllers\User\ThemeController::class, 'getCurrentTheme'])->name('user.theme.current');
 });
 
 // Language Switcher (Public - no auth required)

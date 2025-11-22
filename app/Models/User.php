@@ -1030,6 +1030,45 @@ class User extends Authenticatable
             if (config('member.auto_generate', true) && empty($user->member_number)) {
                 $user->member_number = static::generateMemberNumber();
             }
+
+            // ⚠️ LOCK THEME TO ARROW-X ONLY
+            // บังคับให้ theme เป็น arrow-x เสมอ
+            $user->menu_theme_preference = 'arrow-x';
         });
+
+        static::saving(function ($user) {
+            // ⚠️ LOCK THEME TO ARROW-X ONLY
+            // ป้องกันการเปลี่ยน theme เป็นอย่างอื่น
+            if ($user->isDirty('menu_theme_preference') && $user->menu_theme_preference !== 'arrow-x') {
+                $user->menu_theme_preference = 'arrow-x';
+            }
+        });
+    }
+
+    /**
+     * Mutator สำหรับ menu_theme_preference
+     *
+     * ⚠️ LOCK THEME TO ARROW-X ONLY
+     * บังคับให้ค่าเป็น 'arrow-x' เสมอ ไม่ว่าจะพยายามตั้งเป็นอะไร
+     *
+     * @param string $value
+     * @return void
+     */
+    public function setMenuThemePreferenceAttribute($value): void
+    {
+        // ⚠️ CRITICAL: ห้ามเปลี่ยนค่านี้!
+        // บังคับให้เป็น arrow-x เท่านั้น
+        // ไม่ยอมรับค่าอื่นเด็ดขาด
+        $this->attributes['menu_theme_preference'] = 'arrow-x';
+
+        // Log warning ถ้ามีการพยายามเปลี่ยนเป็นค่าอื่น
+        if ($value !== 'arrow-x') {
+            \Log::warning('Attempted to set menu_theme_preference to non-arrow-x value', [
+                'user_id' => $this->id ?? 'new',
+                'attempted_value' => $value,
+                'forced_value' => 'arrow-x',
+                'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5)
+            ]);
+        }
     }
 }
