@@ -19,6 +19,7 @@ class NFCCard extends Model
         'card_number',
         'card_name',
         'user_id',
+        'wallet_id',
         'encrypted_data',
         'encryption_key_hash',
         'card_signature',
@@ -26,8 +27,18 @@ class NFCCard extends Model
         'card_type',
         'balance',
         'credit_limit',
+        'daily_spending_limit',
+        'monthly_spending_limit',
+        'transaction_limit',
+        'daily_spent',
+        'monthly_spent',
+        'last_reset_daily',
+        'last_reset_monthly',
         'status',
         'is_paired',
+        'is_enabled',
+        'disabled_at',
+        'disabled_reason',
         'paired_at',
         'activated_at',
         'expires_at',
@@ -36,6 +47,11 @@ class NFCCard extends Model
         'blocked_until',
         'blocked_reason',
         'last_ip',
+        'supports_tpix',
+        'tpix_wallet_address',
+        'auto_topup_enabled',
+        'auto_topup_threshold',
+        'auto_topup_amount',
         'metadata',
         'notes',
         'issued_by',
@@ -45,12 +61,25 @@ class NFCCard extends Model
     protected $casts = [
         'balance' => 'decimal:2',
         'credit_limit' => 'decimal:2',
+        'daily_spending_limit' => 'decimal:2',
+        'monthly_spending_limit' => 'decimal:2',
+        'transaction_limit' => 'decimal:2',
+        'daily_spent' => 'decimal:2',
+        'monthly_spent' => 'decimal:2',
+        'last_reset_daily' => 'date',
+        'last_reset_monthly' => 'date',
+        'auto_topup_threshold' => 'decimal:2',
+        'auto_topup_amount' => 'decimal:2',
         'is_paired' => 'boolean',
+        'is_enabled' => 'boolean',
+        'supports_tpix' => 'boolean',
+        'auto_topup_enabled' => 'boolean',
         'paired_at' => 'datetime',
         'activated_at' => 'datetime',
         'expires_at' => 'datetime',
         'last_used_at' => 'datetime',
         'blocked_until' => 'datetime',
+        'disabled_at' => 'datetime',
         'failed_attempts' => 'integer',
         'encryption_version' => 'integer',
         'metadata' => 'array',
@@ -87,10 +116,22 @@ class NFCCard extends Model
 
     /**
      * Get the user who owns this card
+     *
+     * ผู้ใช้ที่เป็นเจ้าของการ์ด
      */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the wallet linked to this card
+     *
+     * Wallet ที่ผูกกับการ์ด
+     */
+    public function wallet(): BelongsTo
+    {
+        return $this->belongsTo(Wallet::class);
     }
 
     /**
@@ -431,5 +472,378 @@ class NFCCard extends Model
     public function scopeOfType($query, string $type)
     {
         return $query->where('card_type', $type);
+    }
+
+    // ==========================================
+    // 🆕 Spending Limits & Controls Methods
+    // ==========================================
+
+    /**
+     * ตรวจสอบว่าสามารถใช้จ่ายได้หรือไม่
+     *
+     * @param float $amount จำนวนเงินที่ต้องการใช้จ่าย
+     * @return bool
+     */
+    public function canSpend(float $amount): bool
+    {
+        // ตรวจสอบว่าการ์ดเปิดใช้งานหรือไม่
+        if (!$this->is_enabled) {
+            return false;
+        }
+
+        // ตรวจสอบสถานะการ์ด
+        if (!$this->isActive()) {
+            return false;
+        }
+
+        // ตรวจสอบยอดเงินคงเหลือ
+        if (!$this->hasSufficientBalance($amount)) {
+            return false;
+        }
+
+        // ตรวจสอบวงเงินต่อธุรกรรม
+        if ($amount > $this->transaction_limit) {
+            return false;
+        }
+
+        // Reset daily spent ถ้าข้ามวัน
+        $this->resetDailySpentIfNeeded();
+
+        // ตรวจสอบวงเงินรายวัน
+        if (($this->daily_spent + $amount) > $this->daily_spending_limit) {
+            return false;
+        }
+
+        // Reset monthly spent ถ้าข้ามเดือน
+        $this->resetMonthlySpentIfNeeded();
+
+        // ตรวจสอบวงเงินรายเดือน
+        if (($this->monthly_spent + $amount) > $this->monthly_spending_limit) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * บันทึกยอดใช้จ่าย
+     *
+     * @param float $amount
+     * @return bool
+     */
+    public function recordSpending(float $amount): bool
+    {
+        $this->resetDailySpentIfNeeded();
+        $this->resetMonthlySpentIfNeeded();
+
+        return $this->increment('daily_spent', $amount) &&
+               $this->increment('monthly_spent', $amount);
+    }
+
+    /**
+     * Reset ยอดใช้จ่ายรายวันถ้าข้ามวัน
+     *
+     * @return void
+     */
+    protected function resetDailySpentIfNeeded(): void
+    {
+        $today = now()->toDateString();
+
+        if (!$this->last_reset_daily || $this->last_reset_daily->toDateString() !== $today) {
+            $this->update([
+                'daily_spent' => 0,
+                'last_reset_daily' => $today,
+            ]);
+        }
+    }
+
+    /**
+     * Reset ยอดใช้จ่ายรายเดือนถ้าข้ามเดือน
+     *
+     * @return void
+     */
+    protected function resetMonthlySpentIfNeeded(): void
+    {
+        $currentMonth = now()->format('Y-m');
+        $lastResetMonth = $this->last_reset_monthly ? $this->last_reset_monthly->format('Y-m') : null;
+
+        if (!$lastResetMonth || $lastResetMonth !== $currentMonth) {
+            $this->update([
+                'monthly_spent' => 0,
+                'last_reset_monthly' => now()->toDateString(),
+            ]);
+        }
+    }
+
+    /**
+     * ตั้งค่าวงเงินรายวัน
+     *
+     * @param float $limit
+     * @return bool
+     */
+    public function setDailyLimit(float $limit): bool
+    {
+        return $this->update(['daily_spending_limit' => $limit]);
+    }
+
+    /**
+     * ตั้งค่าวงเงินรายเดือน
+     *
+     * @param float $limit
+     * @return bool
+     */
+    public function setMonthlyLimit(float $limit): bool
+    {
+        return $this->update(['monthly_spending_limit' => $limit]);
+    }
+
+    /**
+     * ตั้งค่าวงเงินต่อธุรกรรม
+     *
+     * @param float $limit
+     * @return bool
+     */
+    public function setTransactionLimit(float $limit): bool
+    {
+        return $this->update(['transaction_limit' => $limit]);
+    }
+
+    /**
+     * ดูยอดเงินคงเหลือที่ใช้ได้วันนี้
+     *
+     * @return float
+     */
+    public function getDailyRemainingAttribute(): float
+    {
+        $this->resetDailySpentIfNeeded();
+        return max(0, $this->daily_spending_limit - $this->daily_spent);
+    }
+
+    /**
+     * ดูยอดเงินคงเหลือที่ใช้ได้เดือนนี้
+     *
+     * @return float
+     */
+    public function getMonthlyRemainingAttribute(): float
+    {
+        $this->resetMonthlySpentIfNeeded();
+        return max(0, $this->monthly_spending_limit - $this->monthly_spent);
+    }
+
+    // ==========================================
+    // 🆕 Enable/Disable Card Methods
+    // ==========================================
+
+    /**
+     * เปิดใช้งานการ์ด
+     *
+     * @return bool
+     */
+    public function enable(): bool
+    {
+        return $this->update([
+            'is_enabled' => true,
+            'disabled_at' => null,
+            'disabled_reason' => null,
+        ]);
+    }
+
+    /**
+     * ปิดการใช้งานการ์ด
+     *
+     * @param string|null $reason
+     * @return bool
+     */
+    public function disable(?string $reason = null): bool
+    {
+        return $this->update([
+            'is_enabled' => false,
+            'disabled_at' => now(),
+            'disabled_reason' => $reason,
+        ]);
+    }
+
+    /**
+     * ตรวจสอบว่าการ์ดเปิดใช้งานอยู่หรือไม่
+     *
+     * @return bool
+     */
+    public function isEnabled(): bool
+    {
+        return $this->is_enabled === true;
+    }
+
+    /**
+     * ตรวจสอบว่าการ์ดสามารถใช้งานได้จริงหรือไม่
+     * (ทั้ง enabled และ active และไม่ expired และไม่ blocked)
+     *
+     * @return bool
+     */
+    public function isUsable(): bool
+    {
+        return $this->isEnabled() && $this->isActive() && !$this->isExpired() && !$this->isBlocked();
+    }
+
+    // ==========================================
+    // 🆕 Wallet Integration Methods
+    // ==========================================
+
+    /**
+     * ผูกกับ Wallet
+     *
+     * @param int $walletId
+     * @return bool
+     */
+    public function linkWallet(int $walletId): bool
+    {
+        return $this->update(['wallet_id' => $walletId]);
+    }
+
+    /**
+     * ยกเลิกการผูกกับ Wallet
+     *
+     * @return bool
+     */
+    public function unlinkWallet(): bool
+    {
+        return $this->update(['wallet_id' => null]);
+    }
+
+    /**
+     * ตรวจสอบว่าผูกกับ Wallet แล้วหรือไม่
+     *
+     * @return bool
+     */
+    public function hasLinkedWallet(): bool
+    {
+        return $this->wallet_id !== null;
+    }
+
+    // ==========================================
+    // 🆕 TPIX Integration Methods
+    // ==========================================
+
+    /**
+     * เปิดใช้งาน TPIX
+     *
+     * @param string $tpixWalletAddress
+     * @return bool
+     */
+    public function enableTPIX(string $tpixWalletAddress): bool
+    {
+        return $this->update([
+            'supports_tpix' => true,
+            'tpix_wallet_address' => $tpixWalletAddress,
+        ]);
+    }
+
+    /**
+     * ปิดใช้งาน TPIX
+     *
+     * @return bool
+     */
+    public function disableTPIX(): bool
+    {
+        return $this->update([
+            'supports_tpix' => false,
+            'tpix_wallet_address' => null,
+        ]);
+    }
+
+    /**
+     * ตรวจสอบว่ารองรับ TPIX หรือไม่
+     *
+     * @return bool
+     */
+    public function supportsTPIX(): bool
+    {
+        return $this->supports_tpix === true && !empty($this->tpix_wallet_address);
+    }
+
+    // ==========================================
+    // 🆕 Auto Top-up Methods
+    // ==========================================
+
+    /**
+     * เปิดใช้งาน Auto Top-up
+     *
+     * @param float $threshold
+     * @param float $amount
+     * @return bool
+     */
+    public function enableAutoTopup(float $threshold, float $amount): bool
+    {
+        return $this->update([
+            'auto_topup_enabled' => true,
+            'auto_topup_threshold' => $threshold,
+            'auto_topup_amount' => $amount,
+        ]);
+    }
+
+    /**
+     * ปิดใช้งาน Auto Top-up
+     *
+     * @return bool
+     */
+    public function disableAutoTopup(): bool
+    {
+        return $this->update(['auto_topup_enabled' => false]);
+    }
+
+    /**
+     * ตรวจสอบว่าต้อง Auto Top-up หรือไม่
+     *
+     * @return bool
+     */
+    public function needsAutoTopup(): bool
+    {
+        return $this->auto_topup_enabled &&
+               $this->balance < $this->auto_topup_threshold &&
+               $this->hasLinkedWallet();
+    }
+
+    // ==========================================
+    // 🆕 Scope Methods
+    // ==========================================
+
+    /**
+     * Scope สำหรับการ์ดที่เปิดใช้งาน
+     */
+    public function scopeEnabled($query)
+    {
+        return $query->where('is_enabled', true);
+    }
+
+    /**
+     * Scope สำหรับการ์ดที่สามารถใช้งานได้
+     */
+    public function scopeUsable($query)
+    {
+        return $query->where('is_enabled', true)
+                     ->where('status', self::STATUS_ACTIVE)
+                     ->where(function($q) {
+                         $q->whereNull('expires_at')
+                           ->orWhere('expires_at', '>', now());
+                     })
+                     ->where(function($q) {
+                         $q->whereNull('blocked_until')
+                           ->orWhere('blocked_until', '<', now());
+                     });
+    }
+
+    /**
+     * Scope สำหรับการ์ดที่รองรับ TPIX
+     */
+    public function scopeSupportsTPIX($query)
+    {
+        return $query->where('supports_tpix', true);
+    }
+
+    /**
+     * Scope สำหรับการ์ดที่ผูกกับ Wallet
+     */
+    public function scopeWithWallet($query)
+    {
+        return $query->whereNotNull('wallet_id');
     }
 }

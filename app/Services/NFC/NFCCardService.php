@@ -6,7 +6,9 @@ use App\Models\NFCCard;
 use App\Models\NFCTransaction;
 use App\Models\NFCReader;
 use App\Models\User;
+use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Services\WalletService;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -15,14 +17,19 @@ use Illuminate\Support\Facades\Log;
  * NFC Card Service
  *
  * บริการจัดการบัตร NFC ทั้งหมด รวมถึงการจับคู่, การชำระเงิน, และการจัดการยอดเงิน
+ * 🆕 V2: ผูกกับ WalletService, รองรับ spending limits, TPIX integration
  */
 class NFCCardService
 {
     protected NFCCardEncryptionService $encryptionService;
+    protected WalletService $walletService;
 
-    public function __construct(NFCCardEncryptionService $encryptionService)
-    {
+    public function __construct(
+        NFCCardEncryptionService $encryptionService,
+        WalletService $walletService
+    ) {
         $this->encryptionService = $encryptionService;
+        $this->walletService = $walletService;
     }
 
     /**
@@ -289,6 +296,7 @@ class NFCCardService
      * Process payment with NFC card
      *
      * ประมวลผลการชำระเงินด้วยบัตร NFC
+     * 🆕 V2: เพิ่มการตรวจสอบ spending limits, is_enabled, และผูกกับ Wallet
      */
     public function processPayment(
         NFCCard $card,
@@ -299,14 +307,37 @@ class NFCCardService
         DB::beginTransaction();
 
         try {
+            // 🆕 ตรวจสอบว่าการ์ดเปิดใช้งานหรือไม่
+            if (!$card->isEnabled()) {
+                throw new Exception('Card is disabled by user');
+            }
+
             // ตรวจสอบสถานะบัตร
             if (!$card->isActive()) {
                 throw new Exception('Card is not active');
             }
 
-            // ตรวจสอบยอดเงิน
-            if (!$card->hasSufficientBalance($amount)) {
-                throw new Exception('Insufficient balance');
+            // 🆕 ตรวจสอบ spending limits
+            if (!$card->canSpend($amount)) {
+                // ตรวจสอบว่าเกินวงเงินรายการเดียว
+                if ($amount > $card->transaction_limit) {
+                    throw new Exception("Amount exceeds transaction limit ({$card->transaction_limit})");
+                }
+
+                // ตรวจสอบวงเงินรายวัน
+                if (($card->daily_spent + $amount) > $card->daily_spending_limit) {
+                    throw new Exception("Exceeds daily spending limit");
+                }
+
+                // ตรวจสอบวงเงินรายเดือน
+                if (($card->monthly_spent + $amount) > $card->monthly_spending_limit) {
+                    throw new Exception("Exceeds monthly spending limit");
+                }
+
+                // ตรวจสอบยอดเงินคงเหลือ
+                if (!$card->hasSufficientBalance($amount)) {
+                    throw new Exception('Insufficient balance');
+                }
             }
 
             // สร้าง transaction
@@ -326,11 +357,26 @@ class NFCCardService
             // หักยอดเงินจากบัตร
             $card->deductBalance($amount);
 
+            // 🆕 บันทึกยอดใช้จ่าย
+            $card->recordSpending($amount);
+
             // อัพเดทการใช้งานล่าสุด
             $card->updateLastUsed(request()->ip());
 
             // Mark transaction as completed
             $transaction->markAsCompleted('Payment successful');
+
+            // 🆕 ตรวจสอบ auto top-up
+            if ($card->needsAutoTopup() && $card->wallet) {
+                try {
+                    $this->autoTopUpFromWallet($card);
+                } catch (Exception $e) {
+                    Log::warning('Auto top-up failed', [
+                        'card_id' => $card->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
 
             DB::commit();
 
@@ -517,5 +563,297 @@ class NFCCardService
     public function getCardsByUser(int $userId)
     {
         return NFCCard::where('user_id', $userId)->get();
+    }
+
+    // ==========================================
+    // 🆕 V2: Wallet Integration Methods
+    // ==========================================
+
+    /**
+     * ผูกการ์ดกับ Wallet
+     *
+     * @param NFCCard $card
+     * @param int $walletId
+     * @return bool
+     * @throws Exception
+     */
+    public function linkCardToWallet(NFCCard $card, int $walletId): bool
+    {
+        try {
+            $wallet = Wallet::find($walletId);
+
+            if (!$wallet) {
+                throw new Exception('Wallet not found');
+            }
+
+            if ($wallet->user_id !== $card->user_id) {
+                throw new Exception('Wallet does not belong to card owner');
+            }
+
+            $card->linkWallet($walletId);
+
+            Log::info('NFC Card linked to wallet', [
+                'card_id' => $card->id,
+                'wallet_id' => $walletId,
+            ]);
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Failed to link card to wallet', [
+                'card_id' => $card->id,
+                'wallet_id' => $walletId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * ยกเลิกการผูกการ์ดกับ Wallet
+     *
+     * @param NFCCard $card
+     * @return bool
+     */
+    public function unlinkCardFromWallet(NFCCard $card): bool
+    {
+        try {
+            $card->unlinkWallet();
+
+            Log::info('NFC Card unlinked from wallet', ['card_id' => $card->id]);
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Failed to unlink card from wallet', [
+                'card_id' => $card->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * เติมเงินจาก Wallet
+     *
+     * @param NFCCard $card
+     * @param float $amount
+     * @param string $pin
+     * @return NFCTransaction
+     * @throws Exception
+     */
+    public function topUpFromWallet(NFCCard $card, float $amount, string $pin): NFCTransaction
+    {
+        DB::beginTransaction();
+
+        try {
+            if (!$card->hasLinkedWallet()) {
+                throw new Exception('Card is not linked to any wallet');
+            }
+
+            $wallet = $card->wallet;
+
+            if (!$wallet) {
+                throw new Exception('Wallet not found');
+            }
+
+            // หักเงินจาก wallet
+            $walletTransaction = $this->walletService->withdraw(
+                $wallet,
+                $amount,
+                $pin,
+                'Top-up NFC Card: ' . $card->card_name,
+                'App\Models\NFCCard',
+                $card->id
+            );
+
+            // เติมเงินเข้าการ์ด NFC
+            $nfcTransaction = $this->topUpCard($card, $amount, null, [
+                'source' => 'wallet',
+                'wallet_transaction_id' => $walletTransaction->id,
+            ]);
+
+            // เชื่อมโยง transactions
+            $nfcTransaction->update(['wallet_transaction_id' => $walletTransaction->id]);
+
+            DB::commit();
+
+            Log::info('NFC Card topped up from wallet', [
+                'card_id' => $card->id,
+                'wallet_id' => $wallet->id,
+                'amount' => $amount,
+            ]);
+
+            return $nfcTransaction;
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            Log::error('Failed to top up card from wallet', [
+                'card_id' => $card->id,
+                'amount' => $amount,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Auto top-up จาก Wallet
+     *
+     * @param NFCCard $card
+     * @return NFCTransaction
+     * @throws Exception
+     */
+    protected function autoTopUpFromWallet(NFCCard $card): NFCTransaction
+    {
+        if (!$card->auto_topup_enabled || !$card->hasLinkedWallet()) {
+            throw new Exception('Auto top-up is not configured');
+        }
+
+        $wallet = $card->wallet;
+
+        // ไม่ใช้ PIN สำหรับ auto top-up (ต้องมีการตั้งค่าให้อนุญาตไว้)
+        // ในระบบจริงอาจต้องมีการตรวจสอบเพิ่มเติม
+        return $this->topUpCard($card, $card->auto_topup_amount, null, [
+            'source' => 'wallet_auto_topup',
+            'wallet_id' => $wallet->id,
+        ]);
+    }
+
+    // ==========================================
+    // 🆕 V2: Spending Limits Management
+    // ==========================================
+
+    /**
+     * ตั้งค่าวงเงินการใช้จ่าย
+     *
+     * @param NFCCard $card
+     * @param array $limits
+     * @return bool
+     */
+    public function setSpendingLimits(NFCCard $card, array $limits): bool
+    {
+        try {
+            $updateData = [];
+
+            if (isset($limits['daily_limit'])) {
+                $updateData['daily_spending_limit'] = $limits['daily_limit'];
+            }
+
+            if (isset($limits['monthly_limit'])) {
+                $updateData['monthly_spending_limit'] = $limits['monthly_limit'];
+            }
+
+            if (isset($limits['transaction_limit'])) {
+                $updateData['transaction_limit'] = $limits['transaction_limit'];
+            }
+
+            $card->update($updateData);
+
+            Log::info('Spending limits updated', [
+                'card_id' => $card->id,
+                'limits' => $limits,
+            ]);
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Failed to update spending limits', [
+                'card_id' => $card->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * ตั้งค่า Auto Top-up
+     *
+     * @param NFCCard $card
+     * @param float $threshold
+     * @param float $amount
+     * @return bool
+     */
+    public function configureAutoTopUp(NFCCard $card, float $threshold, float $amount): bool
+    {
+        try {
+            if (!$card->hasLinkedWallet()) {
+                throw new Exception('Card must be linked to wallet for auto top-up');
+            }
+
+            $card->enableAutoTopup($threshold, $amount);
+
+            Log::info('Auto top-up configured', [
+                'card_id' => $card->id,
+                'threshold' => $threshold,
+                'amount' => $amount,
+            ]);
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Failed to configure auto top-up', [
+                'card_id' => $card->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    // ==========================================
+    // 🆕 V2: TPIX Integration Methods
+    // ==========================================
+
+    /**
+     * เปิดใช้งาน TPIX สำหรับการ์ด
+     *
+     * @param NFCCard $card
+     * @param string $tpixWalletAddress
+     * @return bool
+     */
+    public function enableTPIXPayment(NFCCard $card, string $tpixWalletAddress): bool
+    {
+        try {
+            $card->enableTPIX($tpixWalletAddress);
+
+            Log::info('TPIX payment enabled for card', [
+                'card_id' => $card->id,
+                'tpix_address' => $tpixWalletAddress,
+            ]);
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Failed to enable TPIX payment', [
+                'card_id' => $card->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * ปิดใช้งาน TPIX
+     *
+     * @param NFCCard $card
+     * @return bool
+     */
+    public function disableTPIXPayment(NFCCard $card): bool
+    {
+        try {
+            $card->disableTPIX();
+
+            Log::info('TPIX payment disabled for card', ['card_id' => $card->id]);
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('Failed to disable TPIX payment', [
+                'card_id' => $card->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 }
