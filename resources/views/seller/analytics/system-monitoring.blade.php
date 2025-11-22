@@ -1,4 +1,4 @@
-@extends('layouts.millennium')
+@extends('layouts.seller')
 
 @section('title', 'Real-time System Monitoring')
 
