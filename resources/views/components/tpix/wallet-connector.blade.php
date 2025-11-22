@@ -12,9 +12,10 @@
 @props([
     'required' => true,
     'showBalance' => true,
+    'requiredAmount' => 0, // จำนวน TPIX ที่ต้องการ
 ])
 
-<div x-data="tpixWallet({{ $required ? 'true' : 'false' }})"
+<div x-data="tpixWallet({{ $required ? 'true' : 'false' }}, {{ $requiredAmount }})"
      x-init="init()"
      class="relative">
 
@@ -138,6 +139,55 @@
         </div>
     </div>
 
+    {{-- Insufficient TPIX Balance Warning --}}
+    <div x-show="connected && requiredAmount > 0 && !hasEnoughTPIX()" x-cloak class="mt-4">
+        <div class="p-6 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-2xl border-2 border-yellow-500">
+            <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
+                        ⚠️ TPIX ไม่เพียงพอ
+                    </h3>
+                    <div class="space-y-2 text-sm text-yellow-800 dark:text-yellow-200 mb-4">
+                        <div class="flex justify-between">
+                            <span>ยอด TPIX ปัจจุบัน:</span>
+                            <span class="font-bold" x-text="formatBalance(balance) + ' TPIX'"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>ต้องการ:</span>
+                            <span class="font-bold text-orange-600 dark:text-orange-400" x-text="formatBalance(requiredAmount) + ' TPIX'"></span>
+                        </div>
+                        <div class="flex justify-between pt-2 border-t border-yellow-300 dark:border-yellow-700">
+                            <span>ขาดอีก:</span>
+                            <span class="font-bold text-red-600 dark:text-red-400" x-text="formatBalance(getShortage()) + ' TPIX'"></span>
+                        </div>
+                    </div>
+
+                    <a :href="getSwapUrl()"
+                       target="_blank"
+                       class="flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                        </svg>
+                        <span>Swap เหรียญเป็น TPIX ที่ DEX</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                        </svg>
+                    </a>
+
+                    <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-3 text-center">
+                        💡 หลังจาก Swap เสร็จแล้ว กลับมากดปุ่ม "รีเฟรชยอดเงิน" ด้านบน
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Error Message --}}
     <div x-show="error" x-cloak class="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-r-xl">
         <div class="flex items-start gap-3">
@@ -161,7 +211,7 @@
 /**
  * TPIX Wallet Alpine.js Component
  */
-function tpixWallet(required = true) {
+function tpixWallet(required = true, requiredAmount = 0) {
     return {
         // State
         connected: false,
@@ -172,10 +222,12 @@ function tpixWallet(required = true) {
         chainId: null,
         walletType: null,
         error: null,
+        requiredAmount: requiredAmount,
 
         // Constants
         TPIX_CHAIN_ID: '0x1389', // 5001 in hex (TPIX Chain ID)
         TPIX_RPC_URL: '{{ config('tpix.rpc_url', 'https://rpc.tpix.io') }}',
+        DEX_URL: '{{ config('tpix.dex_url', 'https://dex.tpix.io') }}',
 
         /**
          * Initialize component
@@ -388,6 +440,31 @@ function tpixWallet(required = true) {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             }).format(balance);
+        },
+
+        /**
+         * ตรวจสอบว่ามี TPIX เพียงพอหรือไม่
+         */
+        hasEnoughTPIX() {
+            if (this.requiredAmount <= 0) return true;
+            return this.balance >= this.requiredAmount;
+        },
+
+        /**
+         * คำนวณจำนวน TPIX ที่ขาด
+         */
+        getShortage() {
+            if (this.hasEnoughTPIX()) return 0;
+            return this.requiredAmount - this.balance;
+        },
+
+        /**
+         * สร้าง URL สำหรับ Swap ไปยัง DEX
+         */
+        getSwapUrl() {
+            // สร้าง URL ไปยัง DEX พร้อม pre-fill จำนวน TPIX ที่ต้องการ
+            const shortage = this.getShortage();
+            return `${this.DEX_URL}/swap?outputCurrency=TPIX&outputAmount=${shortage}`;
         },
     };
 }
