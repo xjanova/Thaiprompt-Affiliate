@@ -24,7 +24,7 @@
 --}}
 <div class="min-h-screen pb-12" x-data="templateForm()" x-init="init()">
     {{-- Page Header --}}
-    <div class="relative mb-8 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-8 shadow-2xl overflow-hidden">
+    <div class="relative mb-8 rounded-2xl bg-gradient-to-br from-[#00B900] via-[#06C755] to-[#00E600] p-8 shadow-2xl overflow-hidden">
         <div class="absolute inset-0 opacity-10">
             <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0); background-size: 40px 40px;"></div>
         </div>
@@ -202,6 +202,57 @@
                             <span>ทดสอบ JSON ใน <a href="https://developers.line.biz/flex-simulator/" target="_blank" class="text-purple-600 dark:text-purple-400 underline">LINE Flex Simulator</a></span>
                         </li>
                     </ul>
+                </div>
+
+                {{-- LINE Preview Mockup --}}
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6">
+                    <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-[#06C755]" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+                        </svg>
+                        ตัวอย่างใน LINE
+                    </h4>
+
+                    <div class="bg-gradient-to-b from-gray-100 to-gray-200 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-4">
+                        {{-- LINE Chat Mockup Header --}}
+                        <div class="flex items-center gap-3 mb-4 pb-4 border-b border-gray-300 dark:border-slate-600">
+                            <div class="w-10 h-10 bg-gradient-to-br from-[#00B900] to-[#00E600] rounded-full flex items-center justify-center text-white font-bold">
+                                B
+                            </div>
+                            <div>
+                                <span class="font-bold text-gray-900 dark:text-white block">Bot Name</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Active now</span>
+                            </div>
+                        </div>
+
+                        {{-- Message Bubble Preview --}}
+                        <div class="flex justify-start mb-2">
+                            <div class="max-w-sm">
+                                <div class="bg-white dark:bg-slate-700 rounded-2xl rounded-tl-sm p-4 shadow-lg">
+                                    <div class="text-sm text-gray-900 dark:text-white">
+                                        <div class="flex items-center gap-2 mb-2 text-[#06C755]">
+                                            <i class="fas fa-info-circle"></i>
+                                            <span class="font-bold">Flex Message Preview</span>
+                                        </div>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400">
+                                            แก้ไข JSON ด้านขวาเพื่อดูตัวอย่าง<br>
+                                            Flex Message จะแสดงที่นี่
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-2">
+                                    Just now
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-3 bg-gradient-to-r from-[#00B900]/10 to-[#00E600]/10 dark:from-[#00B900]/20 dark:to-[#00E600]/20 rounded-xl border border-[#06C755]/30">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 flex items-start gap-2">
+                            <i class="fas fa-lightbulb text-[#06C755] mt-0.5"></i>
+                            <span>ใช้ <a href="https://developers.line.biz/flex-simulator/" target="_blank" class="text-[#06C755] hover:underline font-semibold">LINE Flex Simulator</a> เพื่อดูตัวอย่างแบบเต็มรูปแบบ</span>
+                        </p>
+                    </div>
                 </div>
             </div>
 

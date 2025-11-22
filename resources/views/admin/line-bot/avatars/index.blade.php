@@ -3,7 +3,7 @@
 @section('title', 'จัดการ LINE Avatar')
 
 @section('content')
-<div class="min-h-screen bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-900 py-6 px-4 sm:px-6 lg:px-8" x-data="{
+<div class="min-h-screen bg-gray-100/50 dark:bg-slate-900 py-6 px-4 sm:px-6 lg:px-8" x-data="{
     showUploadModal: false,
     uploadType: 'image',
     sourceType: 'upload',
@@ -20,13 +20,13 @@
     <div class="mb-8 relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#00B900] via-[#00E600] to-[#00C900] p-8 shadow-2xl shadow-green-500/30">
         <!-- Decorative Background Pattern -->
         <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 left-0 w-64 h-64 glass-fusion rounded-full -translate-x-32 -translate-y-32" border border-white/20 dark:border-white/10></div>
-            <div class="absolute bottom-0 right-0 w-96 h-96 glass-fusion rounded-full translate-x-48 translate-y-48" border border-white/20 dark:border-white/10></div>
+            <div class="absolute top-0 left-0 w-64 h-64 glass-fusion rounded-full -translate-x-32 -translate-y-32 border border-white/20 dark:border-white/10"></div>
+            <div class="absolute bottom-0 right-0 w-96 h-96 glass-fusion rounded-full translate-x-48 translate-y-48 border border-white/20 dark:border-white/10"></div>
         </div>
 
         <div class="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-2xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-xl" border border-white/20 dark:border-white/10>
+                <div class="w-16 h-16 rounded-2xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-xl border border-white/20 dark:border-white/10">
                     <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
                     </svg>
@@ -65,10 +65,10 @@
     @endif
 
     <!-- Filter Tabs -->
-    <div class="mb-6 glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-2" border border-white/20 dark:border-white/10>
+    <div class="mb-6 glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-2">
         <div class="flex flex-wrap gap-2">
             <button @click="filterType = 'all'"
-                    :class="filterType === 'all' ? 'bg-gradient-to-r from-[#00B900] to-[#00E600] text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 dark:text-gray-400 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700'"
+                    :class="filterType === 'all' ? 'bg-gradient-to-r from-[#00B900] to-[#00E600] text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-slate-700'"
                     class="px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
@@ -76,7 +76,7 @@
                 ทั้งหมด ({{ count($avatars) }})
             </button>
             <button @click="filterType = 'image'"
-                    :class="filterType === 'image' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 dark:text-gray-400 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700'"
+                    :class="filterType === 'image' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-slate-700'"
                     class="px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -84,7 +84,7 @@
                 รูปภาพ
             </button>
             <button @click="filterType = 'gif'"
-                    :class="filterType === 'gif' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 dark:text-gray-400 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700'"
+                    :class="filterType === 'gif' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-slate-700'"
                     class="px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/>
@@ -92,7 +92,7 @@
                 GIF
             </button>
             <button @click="filterType = 'lottie'"
-                    :class="filterType === 'lottie' ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 dark:text-gray-400 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700'"
+                    :class="filterType === 'lottie' ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-slate-700'"
                     class="px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
@@ -101,7 +101,7 @@
                 Lottie
             </button>
             <button @click="filterType = 'video'"
-                    :class="filterType === 'video' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 dark:text-gray-400 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700'"
+                    :class="filterType === 'video' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-slate-700'"
                     class="px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
@@ -168,7 +168,7 @@
                             </span>
 
                             @if($avatar->file_size)
-                                <span class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                                <span class="text-xs text-gray-500 dark:text-gray-400">
                                     {{ number_format($avatar->file_size / 1024, 1) }} KB
                                 </span>
                             @endif
@@ -188,7 +188,7 @@
                                     </button>
                                 </form>
                             @else
-                                <div class="flex-1 px-3 py-2 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 text-gray-400 dark:text-gray-500 dark:text-gray-400 rounded-xl text-sm font-bold text-center">
+                                <div class="flex-1 px-3 py-2 bg-gray-100/50 dark:bg-slate-700 text-gray-400 dark:text-gray-500 rounded-xl text-sm font-bold text-center">
                                     ค่าเริ่มต้น
                                 </div>
                             @endif
@@ -207,7 +207,7 @@
                         </div>
 
                         @if($avatar->description)
-                            <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-2 line-clamp-2">{{ $avatar->description }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 line-clamp-2">{{ $avatar->description }}</p>
                         @endif
                     </div>
                 </div>
@@ -215,16 +215,16 @@
         </div>
     @else
         <!-- Empty State -->
-        <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-700 p-12 text-center" border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-700 p-12 text-center">
             <div class="w-32 h-32 rounded-full bg-gradient-to-br from-[#00B900] to-[#00E600] opacity-20 flex items-center justify-center mx-auto mb-6">
-                <svg class="w-16 h-16 text-gray-400 dark:text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-16 h-16 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
                 </svg>
             </div>
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">ยังไม่มี Avatar</h3>
-            <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-6">เริ่มต้นด้วยการอัพโหลด Avatar แรกของคุณ</p>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">เริ่มต้นด้วยการอัพโหลด Avatar แรกของคุณ</p>
             <button @click="showUploadModal = true"
-                    class="px-6 py-3 bg-gradient-to-r from-[#00B900] to-[#00E600] text-white rounded-xl hover:shadow-2xl hover:shadow-green-500/50 transition-all duration-300 transform hover:-translate-y-1 font-bold inline-flex items-center gap-2">
+                    class="px-6 py-3 bg-gradient-to-r from-[#00B900] to-[#00E600] text-white rounded-xl hover:shadow-2xl hover:shadow-green-500/50 transition-all duration-300 font-bold inline-flex items-center gap-2 transform hover:-translate-y-1">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                 </svg>
@@ -238,13 +238,13 @@
          x-cloak
          @click.self="showUploadModal = false"
          class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-        <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all duration-300" border border-white/20 dark:border-white/10
+        <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-white/20 dark:border-white/10 transform transition-all duration-300"
              @click.away="showUploadModal = false">
             <!-- Modal Header -->
             <div class="bg-gradient-to-r from-[#00B900] to-[#00E600] px-6 py-5">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center" border border-white/20 dark:border-white/10>
+                        <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                             </svg>
@@ -266,7 +266,7 @@
 
                 <!-- Avatar Name -->
                 <div>
-                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
+                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         <svg class="w-5 h-5 text-[#00B900]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
                         </svg>
@@ -280,7 +280,7 @@
 
                 <!-- Type Selection -->
                 <div>
-                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-3">
+                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
                         <svg class="w-5 h-5 text-[#00B900]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
@@ -288,24 +288,24 @@
                     </label>
                     <div class="grid grid-cols-4 gap-3">
                         <button type="button" @click="uploadType = 'image'"
-                                :class="uploadType === 'image' ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg scale-105' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 text-gray-600 dark:text-gray-400 dark:text-gray-400 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-slate-600'"
-                                class="p-4 rounded-xl transition-all duration-300 flex flex-col items-center gap-2">
+                                :class="uploadType === 'image' ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg scale-105' : 'bg-gray-100/50 dark:bg-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600'"
+                                class="p-4 rounded-xl transition-all duration-300 flex flex-col items-center gap-2 transform">
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
                             <span class="text-xs font-bold">รูปภาพ</span>
                         </button>
                         <button type="button" @click="uploadType = 'gif'"
-                                :class="uploadType === 'gif' ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg scale-105' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 text-gray-600 dark:text-gray-400 dark:text-gray-400 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-slate-600'"
-                                class="p-4 rounded-xl transition-all duration-300 flex flex-col items-center gap-2">
+                                :class="uploadType === 'gif' ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg scale-105' : 'bg-gray-100/50 dark:bg-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600'"
+                                class="p-4 rounded-xl transition-all duration-300 flex flex-col items-center gap-2 transform">
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/>
                             </svg>
                             <span class="text-xs font-bold">GIF</span>
                         </button>
                         <button type="button" @click="uploadType = 'lottie'"
-                                :class="uploadType === 'lottie' ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg scale-105' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 text-gray-600 dark:text-gray-400 dark:text-gray-400 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-slate-600'"
-                                class="p-4 rounded-xl transition-all duration-300 flex flex-col items-center gap-2">
+                                :class="uploadType === 'lottie' ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg scale-105' : 'bg-gray-100/50 dark:bg-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600'"
+                                class="p-4 rounded-xl transition-all duration-300 flex flex-col items-center gap-2 transform">
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -313,8 +313,8 @@
                             <span class="text-xs font-bold">Lottie</span>
                         </button>
                         <button type="button" @click="uploadType = 'video'"
-                                :class="uploadType === 'video' ? 'bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-lg scale-105' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 text-gray-600 dark:text-gray-400 dark:text-gray-400 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-slate-600'"
-                                class="p-4 rounded-xl transition-all duration-300 flex flex-col items-center gap-2">
+                                :class="uploadType === 'video' ? 'bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-lg scale-105' : 'bg-gray-100/50 dark:bg-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600'"
+                                class="p-4 rounded-xl transition-all duration-300 flex flex-col items-center gap-2 transform">
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                             </svg>
@@ -326,17 +326,17 @@
 
                 <!-- Source Type -->
                 <div>
-                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-3">
+                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
                         แหล่งที่มา
                     </label>
                     <div class="flex gap-3">
                         <button type="button" @click="sourceType = 'upload'"
-                                :class="sourceType === 'upload' ? 'bg-[#00B900] text-white' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 text-gray-600 dark:text-gray-400 dark:text-gray-400'"
+                                :class="sourceType === 'upload' ? 'bg-[#00B900] text-white' : 'bg-gray-100/50 dark:bg-slate-700 text-gray-600 dark:text-gray-400'"
                                 class="flex-1 px-4 py-3 rounded-xl font-bold transition-all duration-300">
                             อัพโหลดไฟล์
                         </button>
                         <button type="button" @click="sourceType = 'url'"
-                                :class="sourceType === 'url' ? 'bg-[#00B900] text-white' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 text-gray-600 dark:text-gray-400 dark:text-gray-400'"
+                                :class="sourceType === 'url' ? 'bg-[#00B900] text-white' : 'bg-gray-100/50 dark:bg-slate-700 text-gray-600 dark:text-gray-400'"
                                 class="flex-1 px-4 py-3 rounded-xl font-bold transition-all duration-300">
                             URL ลิงก์
                         </button>
@@ -346,54 +346,54 @@
 
                 <!-- File Upload -->
                 <div x-show="sourceType === 'upload'">
-                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
+                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         อัพโหลดไฟล์
                     </label>
                     <input type="file" name="file" accept="image/*,video/*,.gif,.json"
-                           class="w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 dark:border-slate-600 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
-                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">รองรับ: JPG, PNG, GIF, MP4, WebM, JSON (Lottie) • สูงสุด 5MB</p>
+                           class="w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-slate-600 bg-gray-100/50 dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">รองรับ: JPG, PNG, GIF, MP4, WebM, JSON (Lottie) • สูงสุด 5MB</p>
                 </div>
 
                 <!-- URL Input -->
                 <div x-show="sourceType === 'url'" x-cloak>
-                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
+                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         URL ลิงก์
                     </label>
                     <input type="url" name="file_url" placeholder="https://example.com/avatar.png"
-                           class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
+                           class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
                 </div>
 
                 <!-- Description -->
                 <div>
-                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
+                    <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         คำอธิบาย (ไม่บังคับ)
                     </label>
                     <textarea name="description" rows="3" placeholder="อธิบายเกี่ยวกับ Avatar นี้..."
-                              class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300"></textarea>
+                              class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300"></textarea>
                 </div>
 
                 <!-- Checkboxes -->
                 <div class="space-y-3">
                     <label class="flex items-center gap-3 cursor-pointer group">
                         <input type="checkbox" name="is_active" value="1" checked
-                               class="w-5 h-5 text-[#00B900] bg-gray-100/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 group-hover:text-[#00B900] dark:group-hover:text-[#00E600]">เปิดใช้งาน Avatar นี้</span>
+                               class="w-5 h-5 text-[#00B900] bg-gray-100/50 border-gray-300 dark:border-gray-600 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700">
+                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-[#00B900] dark:group-hover:text-[#00E600]">เปิดใช้งาน Avatar นี้</span>
                     </label>
                     <label class="flex items-center gap-3 cursor-pointer group">
                         <input type="checkbox" name="is_default" value="1"
-                               class="w-5 h-5 text-[#00B900] bg-gray-100/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 group-hover:text-[#00B900] dark:group-hover:text-[#00E600]">ตั้งเป็น Avatar เริ่มต้น</span>
+                               class="w-5 h-5 text-[#00B900] bg-gray-100/50 border-gray-300 dark:border-gray-600 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700">
+                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-[#00B900] dark:group-hover:text-[#00E600]">ตั้งเป็น Avatar เริ่มต้น</span>
                     </label>
                 </div>
 
                 <!-- Actions -->
-                <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 dark:border-slate-700">
+                <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-slate-700">
                     <button type="button" @click="showUploadModal = false"
-                            class="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-300 font-bold">
+                            class="flex-1 px-6 py-3 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-300 font-bold">
                         ยกเลิก
                     </button>
                     <button type="submit"
-                            class="flex-1 px-6 py-3 bg-gradient-to-r from-[#00B900] to-[#00E600] text-white rounded-xl hover:shadow-2xl hover:shadow-green-500/50 transition-all duration-300 transform hover:-translate-y-1 font-bold flex items-center justify-center gap-2">
+                            class="flex-1 px-6 py-3 bg-gradient-to-r from-[#00B900] to-[#00E600] text-white rounded-xl hover:shadow-2xl hover:shadow-green-500/50 transition-all duration-300 font-bold flex items-center justify-center gap-2 transform hover:-translate-y-1">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                         </svg>

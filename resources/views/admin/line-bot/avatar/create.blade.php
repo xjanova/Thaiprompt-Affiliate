@@ -34,9 +34,9 @@
     <div class="mb-8 relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#00B900] via-[#00E600] to-[#00C900] p-10 shadow-2xl shadow-green-500/30">
         <!-- Animated Background -->
         <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 left-0 w-96 h-96 glass-fusion rounded-full -translate-x-48 -translate-y-48 animate-pulse" border border-white/20 dark:border-white/10></div>
-            <div class="absolute bottom-0 right-0 w-64 h-64 glass-fusion rounded-full translate-x-32 translate-y-32 animate-pulse" border border-white/20 dark:border-white/10 style="animation-delay: 0.5s"></div>
-            <div class="absolute top-1/2 left-1/2 w-48 h-48 glass-fusion rounded-full -translate-x-24 -translate-y-24 animate-pulse" border border-white/20 dark:border-white/10 style="animation-delay: 0.3s"></div>
+            <div class="absolute top-0 left-0 w-96 h-96 glass-fusion rounded-full -translate-x-48 -translate-y-48 animate-pulse"></div>
+            <div class="absolute bottom-0 right-0 w-64 h-64 glass-fusion rounded-full translate-x-32 translate-y-32 animate-pulse" style="animation-delay: 0.5s"></div>
+            <div class="absolute top-1/2 left-1/2 w-48 h-48 glass-fusion rounded-full -translate-x-24 -translate-y-24 animate-pulse" style="animation-delay: 0.3s"></div>
         </div>
 
         <!-- Floating Avatar Icons -->
@@ -52,7 +52,7 @@
         <div class="relative">
             <div class="flex items-start justify-between gap-4">
                 <div class="flex items-center gap-4 flex-1">
-                    <div class="w-20 h-20 rounded-3xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-2xl border-2 border-white/30" border border-white/20 dark:border-white/10>
+                    <div class="w-20 h-20 rounded-3xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-2xl border-2 border-white/30">
                         <i class="fas fa-image text-white text-4xl drop-shadow-lg"></i>
                     </div>
                     <div class="flex-1">
@@ -81,7 +81,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Form Section -->
         <div class="lg:col-span-2">
-            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
+            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden">
                 <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 px-8 py-6 border-b-2 border-gray-200 dark:border-gray-700 dark:border-slate-600">
                     <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                         <i class="fas fa-cog text-[#00B900]"></i>
@@ -94,7 +94,7 @@
 
                     <!-- Avatar Name -->
                     <div class="space-y-3">
-                        <label class="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white dark:text-white">
+                        <label class="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white">
                             <i class="fas fa-tag text-[#00B900]"></i>
                             ชื่อ Avatar
                             <span class="text-red-500">*</span>
@@ -111,7 +111,7 @@
 
                     <!-- Avatar Type Selection -->
                     <div class="space-y-4">
-                        <label class="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white dark:text-white">
+                        <label class="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white">
                             <i class="fas fa-layer-group text-[#00B900]"></i>
                             ประเภท Avatar
                             <span class="text-red-500">*</span>
@@ -120,11 +120,11 @@
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <!-- Image Type -->
                             <button type="button" @click="avatarType = 'image'"
-                                    :class="avatarType === 'image' ? 'bg-gradient-to-br from-blue-600 to-cyan-600 text-white shadow-2xl shadow-blue-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-blue-400'"
+                                    :class="avatarType === 'image' ? 'bg-gradient-to-br from-blue-600 to-cyan-600 text-white shadow-2xl shadow-blue-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-blue-400'"
                                     class="group relative border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                                 <div class="flex flex-col items-center gap-3">
                                     <div class="w-16 h-16 rounded-xl flex items-center justify-center"
-                                         :class="avatarType === 'image' ? 'glass-fusion' : 'bg-blue-50 dark:bg-blue-900/30'" border border-white/20 dark:border-white/10>
+                                         :class="avatarType === 'image' ? 'glass-fusion' : 'bg-blue-50 dark:bg-blue-900/30'">
                                         <i class="fas fa-image text-3xl" :class="avatarType === 'image' ? 'text-white' : 'text-blue-600'"></i>
                                     </div>
                                     <div class="text-center">
@@ -133,18 +133,18 @@
                                     </div>
                                 </div>
                                 <div x-show="avatarType === 'image'" x-transition
-                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center" border border-white/20 dark:border-white/10>
+                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center">
                                     <i class="fas fa-check text-blue-600 text-sm"></i>
                                 </div>
                             </button>
 
                             <!-- GIF Type -->
                             <button type="button" @click="avatarType = 'gif'"
-                                    :class="avatarType === 'gif' ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-2xl shadow-purple-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-purple-400'"
+                                    :class="avatarType === 'gif' ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-2xl shadow-purple-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-purple-400'"
                                     class="group relative border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                                 <div class="flex flex-col items-center gap-3">
                                     <div class="w-16 h-16 rounded-xl flex items-center justify-center"
-                                         :class="avatarType === 'gif' ? 'glass-fusion' : 'bg-purple-50 dark:bg-purple-900/30'" border border-white/20 dark:border-white/10>
+                                         :class="avatarType === 'gif' ? 'glass-fusion' : 'bg-purple-50 dark:bg-purple-900/30'">
                                         <i class="fas fa-film text-3xl" :class="avatarType === 'gif' ? 'text-white' : 'text-purple-600'"></i>
                                     </div>
                                     <div class="text-center">
@@ -153,18 +153,18 @@
                                     </div>
                                 </div>
                                 <div x-show="avatarType === 'gif'" x-transition
-                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center" border border-white/20 dark:border-white/10>
+                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center">
                                     <i class="fas fa-check text-purple-600 text-sm"></i>
                                 </div>
                             </button>
 
                             <!-- Lottie Type -->
                             <button type="button" @click="avatarType = 'lottie'"
-                                    :class="avatarType === 'lottie' ? 'bg-gradient-to-br from-orange-600 to-red-600 text-white shadow-2xl shadow-orange-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-orange-400'"
+                                    :class="avatarType === 'lottie' ? 'bg-gradient-to-br from-orange-600 to-red-600 text-white shadow-2xl shadow-orange-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-orange-400'"
                                     class="group relative border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                                 <div class="flex flex-col items-center gap-3">
                                     <div class="w-16 h-16 rounded-xl flex items-center justify-center"
-                                         :class="avatarType === 'lottie' ? 'glass-fusion' : 'bg-orange-50 dark:bg-orange-900/30'" border border-white/20 dark:border-white/10>
+                                         :class="avatarType === 'lottie' ? 'glass-fusion' : 'bg-orange-50 dark:bg-orange-900/30'">
                                         <i class="fas fa-play-circle text-3xl" :class="avatarType === 'lottie' ? 'text-white' : 'text-orange-600'"></i>
                                     </div>
                                     <div class="text-center">
@@ -173,18 +173,18 @@
                                     </div>
                                 </div>
                                 <div x-show="avatarType === 'lottie'" x-transition
-                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center" border border-white/20 dark:border-white/10>
+                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center">
                                     <i class="fas fa-check text-orange-600 text-sm"></i>
                                 </div>
                             </button>
 
                             <!-- Video Type -->
                             <button type="button" @click="avatarType = 'video'"
-                                    :class="avatarType === 'video' ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-2xl shadow-indigo-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-indigo-400'"
+                                    :class="avatarType === 'video' ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-2xl shadow-indigo-500/40 scale-105 border-transparent' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 dark:border-slate-600 hover:border-indigo-400'"
                                     class="group relative border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                                 <div class="flex flex-col items-center gap-3">
                                     <div class="w-16 h-16 rounded-xl flex items-center justify-center"
-                                         :class="avatarType === 'video' ? 'glass-fusion' : 'bg-indigo-50 dark:bg-indigo-900/30'" border border-white/20 dark:border-white/10>
+                                         :class="avatarType === 'video' ? 'glass-fusion' : 'bg-indigo-50 dark:bg-indigo-900/30'">
                                         <i class="fas fa-video text-3xl" :class="avatarType === 'video' ? 'text-white' : 'text-indigo-600'"></i>
                                     </div>
                                     <div class="text-center">
@@ -193,7 +193,7 @@
                                     </div>
                                 </div>
                                 <div x-show="avatarType === 'video'" x-transition
-                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center" border border-white/20 dark:border-white/10>
+                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center">
                                     <i class="fas fa-check text-indigo-600 text-sm"></i>
                                 </div>
                             </button>
@@ -203,19 +203,19 @@
 
                     <!-- Source Type Selection -->
                     <div class="space-y-4">
-                        <label class="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white dark:text-white">
+                        <label class="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white">
                             <i class="fas fa-source text-[#00B900]"></i>
                             แหล่งที่มาของไฟล์
                         </label>
                         <div class="grid grid-cols-2 gap-4">
                             <button type="button" @click="sourceType = 'upload'"
-                                    :class="sourceType === 'upload' ? 'bg-gradient-to-r from-[#00B900] to-[#00E600] text-white shadow-2xl shadow-green-500/40 scale-105' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600'"
+                                    :class="sourceType === 'upload' ? 'bg-gradient-to-r from-[#00B900] to-[#00E600] text-white shadow-2xl shadow-green-500/40 scale-105' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600'"
                                     class="px-6 py-4 rounded-2xl font-bold transition-all duration-300 hover:scale-105 flex items-center justify-center gap-3">
                                 <i class="fas fa-cloud-upload-alt text-2xl"></i>
                                 <span>อัพโหลดไฟล์</span>
                             </button>
                             <button type="button" @click="sourceType = 'url'"
-                                    :class="sourceType === 'url' ? 'bg-gradient-to-r from-[#00B900] to-[#00E600] text-white shadow-2xl shadow-green-500/40 scale-105' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600'"
+                                    :class="sourceType === 'url' ? 'bg-gradient-to-r from-[#00B900] to-[#00E600] text-white shadow-2xl shadow-green-500/40 scale-105' : 'glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600'"
                                     class="px-6 py-4 rounded-2xl font-bold transition-all duration-300 hover:scale-105 flex items-center justify-center gap-3">
                                 <i class="fas fa-link text-2xl"></i>
                                 <span>URL ลิงก์</span>
@@ -226,7 +226,7 @@
 
                     <!-- File Upload Area -->
                     <div x-show="sourceType === 'upload'" x-transition class="space-y-3">
-                        <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300">
+                        <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
                             <i class="fas fa-file-upload text-[#00B900]"></i>
                             เลือกไฟล์
                             <span class="text-red-500">*</span>
@@ -240,9 +240,9 @@
                                 <div class="w-24 h-24 rounded-full bg-gradient-to-br from-[#00B900] to-[#00E600] mx-auto mb-6 flex items-center justify-center shadow-2xl shadow-green-500/40 animate-pulse">
                                     <i class="fas fa-cloud-upload-alt text-white text-4xl"></i>
                                 </div>
-                                <p class="text-2xl font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-3">คลิกหรือลากไฟล์มาที่นี่</p>
-                                <p class="text-base text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-4">รองรับ JPG, PNG, GIF, MP4, WebM, JSON (Lottie)</p>
-                                <div class="flex items-center justify-center gap-4 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                                <p class="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-3">คลิกหรือลากไฟล์มาที่นี่</p>
+                                <p class="text-base text-gray-600 dark:text-gray-400 mb-4">รองรับ JPG, PNG, GIF, MP4, WebM, JSON (Lottie)</p>
+                                <div class="flex items-center justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                                     <span class="px-3 py-1 glass-fusion dark:bg-slate-700 rounded-full"><i class="fas fa-file-image mr-1"></i>รูปภาพ</span>
                                     <span class="px-3 py-1 glass-fusion dark:bg-slate-700 rounded-full"><i class="fas fa-file-video mr-1"></i>วิดีโอ</span>
                                     <span class="px-3 py-1 glass-fusion dark:bg-slate-700 rounded-full"><i class="fas fa-code mr-1"></i>JSON</span>
@@ -250,12 +250,12 @@
                                 <p class="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 mt-4"><i class="fas fa-info-circle mr-1"></i>ขนาดไฟล์สูงสุด: 5MB</p>
 
                                 <!-- File Selected Indicator -->
-                                <div x-show="showPreview" class="mt-6 p-4 glass-fusion dark:bg-slate-700 rounded-2xl shadow-lg" border border-white/20 dark:border-white/10>
+                                <div x-show="showPreview" class="mt-6 p-4 glass-fusion dark:bg-slate-700 rounded-2xl shadow-lg">
                                     <div class="flex items-center gap-3">
                                         <i class="fas fa-check-circle text-green-600 text-2xl"></i>
                                         <div class="flex-1 text-left">
                                             <p class="font-bold text-gray-900 dark:text-white" x-text="fileName"></p>
-                                            <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400"><span x-text="fileSize"></span> KB</p>
+                                            <p class="text-sm text-gray-600 dark:text-gray-400"><span x-text="fileSize"></span> KB</p>
                                         </div>
                                     </div>
                                 </div>
@@ -265,7 +265,7 @@
 
                     <!-- URL Input -->
                     <div x-show="sourceType === 'url'" x-transition x-cloak class="space-y-3">
-                        <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300">
+                        <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
                             <i class="fas fa-link text-[#00B900]"></i>
                             URL ลิงก์ไฟล์
                             <span class="text-red-500">*</span>
@@ -283,7 +283,7 @@
 
                     <!-- Description -->
                     <div class="space-y-3">
-                        <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300">
+                        <label class="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300">
                             <i class="fas fa-align-left text-[#00B900]"></i>
                             คำอธิบาย (ไม่บังคับ)
                         </label>
@@ -302,7 +302,7 @@
                                     <p class="text-lg font-bold text-gray-900 dark:text-white dark:text-gray-200 group-hover:text-[#00B900] dark:group-hover:text-[#00E600] transition-colors">
                                         <i class="fas fa-toggle-on mr-2"></i>เปิดใช้งาน Avatar นี้
                                     </p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">Avatar จะพร้อมใช้งานทันทีหลังจากสร้าง</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Avatar จะพร้อมใช้งานทันทีหลังจากสร้าง</p>
                                 </div>
                             </label>
                         </div>
@@ -315,7 +315,7 @@
                                     <p class="text-lg font-bold text-gray-900 dark:text-white dark:text-gray-200 group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors">
                                         <i class="fas fa-star mr-2"></i>ตั้งเป็น Avatar เริ่มต้น
                                     </p>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">Avatar นี้จะถูกใช้เป็นค่าเริ่มต้นสำหรับ LINE Bot</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Avatar นี้จะถูกใช้เป็นค่าเริ่มต้นสำหรับ LINE Bot</p>
                                 </div>
                             </label>
                         </div>
@@ -324,7 +324,7 @@
                     <!-- Submit Buttons -->
                     <div class="flex items-center gap-4 pt-6 border-t-2 border-gray-200 dark:border-gray-700 dark:border-slate-700">
                         <a href="{{ route('admin.line-bot.avatar.index') }}"
-                           class="flex-1 px-8 py-5 bg-gray-200 dark:bg-gray-700 dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-2xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-300 text-center text-lg font-bold flex items-center justify-center gap-3">
+                           class="flex-1 px-8 py-5 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-2xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-300 text-center text-lg font-bold flex items-center justify-center gap-3">
                             <i class="fas fa-times-circle text-xl"></i>
                             <span>ยกเลิก</span>
                         </a>
@@ -340,7 +340,7 @@
 
         <!-- Preview Section -->
         <div class="lg:col-span-1">
-            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden sticky top-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden sticky top-6" transform hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4">
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
                         <i class="fas fa-eye"></i>
@@ -352,7 +352,7 @@
                     <div class="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-700 dark:to-slate-600 rounded-3xl flex items-center justify-center overflow-hidden mb-6 border-4 border-gray-300 dark:border-gray-600 dark:border-slate-600">
                         <div x-show="!previewUrl" class="text-center p-8">
                             <i class="fas fa-image text-gray-400 dark:text-gray-600 dark:text-gray-400 text-6xl mb-4"></i>
-                            <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 font-semibold">อัพโหลดไฟล์เพื่อดูตัวอย่าง</p>
+                            <p class="text-gray-500 dark:text-gray-400 font-semibold">อัพโหลดไฟล์เพื่อดูตัวอย่าง</p>
                         </div>
                         <img x-show="previewUrl && (avatarType === 'image' || avatarType === 'gif')"
                              :src="previewUrl"
@@ -364,7 +364,7 @@
                                autoplay loop muted playsinline></video>
                         <div x-show="previewUrl && avatarType === 'lottie'" class="text-center">
                             <i class="fas fa-play-circle text-purple-600 dark:text-purple-400 text-6xl mb-4"></i>
-                            <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 font-semibold">Lottie Animation</p>
+                            <p class="text-gray-600 dark:text-gray-400 font-semibold">Lottie Animation</p>
                         </div>
                     </div>
 

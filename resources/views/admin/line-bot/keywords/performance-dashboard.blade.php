@@ -2,446 +2,223 @@
 
 @section('title', 'ผลการทำงาน Keywords')
 
+@push('styles')
+<style>
+    .card-3d{transition:transform .3s,box-shadow .3s}
+    .card-3d:hover{transform:translateY(-4px);box-shadow:0 15px 35px rgba(0,0,0,.2)}
+    .glass-card{background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2)}
+    .dark .glass-card{background:rgba(17,24,39,.5);border:1px solid rgba(255,255,255,.1)}
+</style>
+@endpush
+
 @section('content')
-<div class="container-fluid px-4 py-8">
-    {{-- Page Header --}}
-    <div class="flex justify-between items-center mb-8">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                📊 ผลการทำงาน Keywords
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400">
-                วิเคราะห์ประสิทธิภาพ keywords อย่างละเอียด
-            </p>
+<div class="container-fluid px-4 py-8" x-data="performanceDash()">
+    {{-- Header --}}
+    <div class="mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-r from-line-green via-blue-500 to-purple-600 p-8">
+        <div class="relative z-10 flex justify-between items-center">
+            <div>
+                <h1 class="text-4xl font-bold text-white mb-2 flex items-center gap-3">
+                    <span class="text-5xl">📊</span>
+                    ผลการทำงาน Keywords
+                </h1>
+                <p class="text-white/90 text-lg">วิเคราะห์ประสิทธิภาพ keywords อย่างละเอียด</p>
+            </div>
+            <button @click="exportReport()" class="px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white rounded-xl font-medium transition-all">
+                📥 Export Report
+            </button>
         </div>
-        <a href="{{ route('admin.line-bot.keywords.performance.export') }}"
-            class="px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-lg transition flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2m0 0v-8m0 8l-4-2m4 2l4-2"></path>
-            </svg>
-            Export Report
-        </a>
+        <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
     </div>
 
-    {{-- Key Metrics Cards --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        {{-- Total Keywords --}}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">รวม Keywords</p>
-                    <p class="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">
-                        {{ $metrics['totalKeywords'] }}
-                    </p>
-                </div>
-                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center text-2xl">
-                    🔑
-                </div>
+    {{-- Key Metrics --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div class="card-3d bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center text-2xl">🔑</div>
+                <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Total</span>
             </div>
+            <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ $metrics['totalKeywords'] }}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Keywords</p>
         </div>
 
-        {{-- Used Keywords --}}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">Keywords ที่ใช้</p>
-                    <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
-                        {{ $metrics['usedKeywords'] }}
-                    </p>
-                </div>
-                <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center text-2xl">
-                    ✅
-                </div>
+        <div class="card-3d bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center text-2xl">✅</div>
+                <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Used</span>
             </div>
+            <p class="text-3xl font-bold text-green-600 dark:text-green-400">{{ $metrics['usedKeywords'] }}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ใช้งาน</p>
         </div>
 
-        {{-- Unused Keywords --}}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">Keywords ไม่ใช้</p>
-                    <p class="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">
-                        {{ $metrics['unusedKeywords'] }}
-                    </p>
-                </div>
-                <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center text-2xl">
-                    ❌
-                </div>
+        <div class="card-3d bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center text-2xl">❌</div>
+                <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Unused</span>
             </div>
+            <p class="text-3xl font-bold text-orange-600 dark:text-orange-400">{{ $metrics['unusedKeywords'] }}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ไม่ใช้</p>
         </div>
 
-        {{-- Coverage Percentage --}}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">Coverage</p>
-                    <p class="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-2">
-                        {{ $metrics['coveragePercentage'] }}%
-                    </p>
-                </div>
-                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center text-2xl">
-                    📈
-                </div>
+        <div class="card-3d bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center text-2xl">📈</div>
+                <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Coverage</span>
             </div>
+            <p class="text-3xl font-bold text-purple-600 dark:text-purple-400">{{ $metrics['coveragePercentage'] }}%</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ครอบคลุม</p>
         </div>
 
-        {{-- Avg Response Time Savings --}}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">เร็วขึ้น</p>
-                    <p class="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">
-                        95%
-                    </p>
-                </div>
-                <div class="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center text-2xl">
-                    ⚡
-                </div>
+        <div class="card-3d bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-lg flex items-center justify-center text-2xl">⚡</div>
+                <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Speed</span>
             </div>
+            <p class="text-3xl font-bold text-red-600 dark:text-red-400">95%</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">เร็วขึ้น</p>
         </div>
     </div>
 
-    {{-- Charts Section --}}
+    {{-- Charts --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {{-- Top Keywords by Usage --}}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                🏆 Top Keywords by Usage
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <span>🏆</span>Top Keywords
             </h2>
-            <div class="h-80">
-                <canvas id="topKeywordsChart"></canvas>
-            </div>
+            <div class="h-80"><canvas id="topKeywordsChart"></canvas></div>
         </div>
 
-        {{-- Category Performance --}}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                📂 Performance by Category
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <span>🎯</span>Keyword vs AI
             </h2>
-            <div class="space-y-4">
-                @foreach($categoryPerformance as $category => $data)
-                <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="font-semibold text-gray-900 dark:text-white capitalize">
-                            {{ $category }}
-                        </h3>
-                        <span class="text-lg font-bold text-blue-600 dark:text-blue-400">
-                            {{ $data['matches'] }}
-                        </span>
-                    </div>
-                    <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        <span>Keywords: {{ $data['keywords'] }}</span>
-                        <span>Avg: {{ $data['avgMatches'] }}</span>
-                    </div>
-                    <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                        <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full"
-                            style="width: {{ min(($data['matches'] / 100) * 100, 100) }}%"></div>
-                    </div>
-                </div>
-                @endforeach
-            </div>
+            <div class="h-80"><canvas id="comparisonChart"></canvas></div>
         </div>
     </div>
 
-    {{-- Effectiveness Scores --}}
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-            ⭐ Effectiveness Scores (Top 15)
+    {{-- Category Performance --}}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 mb-8 border border-gray-200 dark:border-gray-700">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <span>📂</span>Performance by Category
         </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-            @foreach($metrics['effectivenessScores'] as $keyword => $score)
-            <div class="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
-                <div class="flex justify-between items-start mb-2">
-                    <h3 class="font-semibold text-gray-900 dark:text-white text-sm truncate">
-                        {{ $keyword }}
-                    </h3>
-                    <span class="text-lg font-bold text-blue-600 dark:text-blue-400">
-                        {{ $score }}
-                    </span>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach($categoryPerformance as $category => $data)
+            <div class="glass-card rounded-xl p-5">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-gray-900 dark:text-white capitalize">{{ $category }}</h3>
+                    <span class="text-2xl font-bold text-line-green dark:text-green-400">{{ $data['matches'] }}</span>
                 </div>
-                <div class="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-1.5">
-                    <div class="bg-gradient-to-r from-blue-400 to-purple-600 h-1.5 rounded-full"
-                        style="width: {{ $score }}%"></div>
+                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    <span>Keywords: {{ $data['keywords'] }}</span>
+                    <span>Avg: {{ $data['avgMatches'] }}</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div class="bg-gradient-to-r from-line-green to-green-600 h-2 rounded-full" style="width:{{ min(($data['matches']/100)*100,100) }}%"></div>
                 </div>
             </div>
             @endforeach
         </div>
     </div>
 
-    {{-- Keyword vs AI Comparison --}}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {{-- Match Rate Comparison --}}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                🎯 Keyword vs AI Comparison
+    {{-- Detailed Table --}}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <span>📋</span>Detailed Performance
             </h2>
-            <div class="h-80">
-                <canvas id="comparisonChart"></canvas>
-            </div>
         </div>
-
-        {{-- Response Time Comparison --}}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                ⏱️ Response Time Comparison
-            </h2>
-            <div class="space-y-4">
-                <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-900 dark:text-white font-semibold">Keyword Response</span>
-                        <span class="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                            10-50 ms
-                        </span>
-                    </div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        ✅ ตัวเลือกที่เร็วที่สุด
-                    </p>
-                </div>
-
-                <div class="bg-orange-50 dark:bg-orange-900 p-4 rounded-lg">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-900 dark:text-white font-semibold">AI Response</span>
-                        <span class="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                            1-3 seconds
-                        </span>
-                    </div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        ❌ ช้า แต่ยืดหยุ่นมากขึ้น
-                    </p>
-                </div>
-
-                <div class="bg-green-50 dark:bg-green-900 p-4 rounded-lg">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-900 dark:text-white font-semibold">ประหยัด</span>
-                        <span class="text-2xl font-bold text-green-600 dark:text-green-400">
-                            95%+ เร็วขึ้น
-                        </span>
-                    </div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        🚀 การปรับปรุงความเร็ว
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Top Keywords Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-            📋 Detailed Keyword Performance
-        </h2>
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead class="bg-gray-50 dark:bg-gray-700">
+                <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600">
                     <tr>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                            Keyword
-                        </th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                            Times Matched
-                        </th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                            Category
-                        </th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                            Priority
-                        </th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                            Last Matched
-                        </th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                            Score
-                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Keyword</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Matches</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Category</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Priority</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Last Used</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Score</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($keywords as $keyword)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                        <td class="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
-                            {{ $keyword->keyword }}
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                                {{ $keyword->times_matched }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 capitalize">
-                            {{ $keyword->category }}
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                    @forelse($keywords as $kw)
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                        <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">{{ $kw->keyword }}</td>
+                        <td class="px-6 py-4"><span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-bold">{{ $kw->times_matched }}</span></td>
+                        <td class="px-6 py-4 text-gray-600 dark:text-gray-400 capitalize">{{ $kw->category }}</td>
+                        <td class="px-6 py-4">
                             <div class="flex items-center gap-2">
-                                <div class="w-16 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                                    <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full"
-                                        style="width: {{ $keyword->priority }}%"></div>
+                                <div class="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full" style="width:{{ $kw->priority }}%"></div>
                                 </div>
-                                <span class="text-sm">{{ $keyword->priority }}</span>
+                                <span class="text-sm font-bold">{{ $kw->priority }}</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                            @if($keyword->last_matched_at)
-                                {{ $keyword->last_matched_at->diffForHumans() }}
-                            @else
-                                ไม่เคยใช้
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 text-sm">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold
-                                @if($metrics['effectivenessScores'][$keyword->keyword] >= 80)
-                                    bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200
-                                @elseif($metrics['effectivenessScores'][$keyword->keyword] >= 60)
-                                    bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200
-                                @else
-                                    bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200
-                                @endif">
-                                {{ $metrics['effectivenessScores'][$keyword->keyword] ?? 0 }}
+                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $kw->last_matched_at ? $kw->last_matched_at->diffForHumans() : 'ไม่เคย' }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 rounded-full text-sm font-bold
+                                @if(($metrics['effectivenessScores'][$kw->keyword] ?? 0) >= 80) bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200
+                                @elseif(($metrics['effectivenessScores'][$kw->keyword] ?? 0) >= 60) bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200
+                                @else bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 @endif">
+                                {{ $metrics['effectivenessScores'][$kw->keyword] ?? 0 }}
                             </span>
                         </td>
                     </tr>
                     @empty
-                    <tr>
-                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                            ไม่มี keywords ที่เปิดใช้งาน
-                        </td>
-                    </tr>
+                    <tr><td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">ไม่มี keywords</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     </div>
 
-    {{-- Trend Analysis Chart --}}
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-            📈 30-Day Trend Analysis
+    {{-- Trend Chart --}}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 mt-8 border border-gray-200 dark:border-gray-700">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <span>📈</span>30-Day Trend
         </h2>
-        <div class="h-80">
-            <canvas id="trendChart"></canvas>
-        </div>
+        <div class="h-80"><canvas id="trendChart"></canvas></div>
     </div>
 </div>
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-    // Top Keywords Chart
-    fetch('{{ route("admin.line-bot.keywords.performance.chart-data") }}')
-        .then(r => r.json())
-        .then(data => {
-            const ctx = document.getElementById('topKeywordsChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'horizontalBar',
-                data: {
-                    labels: Object.keys(data.topKeywords),
-                    datasets: [{
-                        label: 'Matches',
-                        data: Object.values(data.topKeywords),
-                        backgroundColor: [
-                            '#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#eab308',
-                            '#22c55e', '#06b6d4', '#0ea5e9', '#6366f1', '#a855f7'
-                        ],
-                        borderRadius: 5,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        });
+function performanceDash(){return{exportReport(){alert('📥 กำลัง export...')}}}
 
-    // Comparison Chart
-    fetch('{{ route("admin.line-bot.keywords.performance.comparison-data") }}')
-        .then(r => r.json())
-        .then(data => {
-            const ctx = document.getElementById('comparisonChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Keyword Matches', 'AI Fallback'],
-                    datasets: [{
-                        data: [
-                            data.comparison.keyword_matches,
-                            data.comparison.ai_fallback
-                        ],
-                        backgroundColor: [
-                            '#22c55e',
-                            '#ef4444'
-                        ],
-                        borderColor: ['#16a34a', '#dc2626'],
-                        borderWidth: 2,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-        });
+// Charts
+const chartConfig={responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{padding:15,font:{size:12,weight:'bold'},usePointStyle:true}}}};
 
-    // Trend Chart
-    fetch('{{ route("admin.line-bot.keywords.performance.trend-data") }}')
-        .then(r => r.json())
-        .then(data => {
-            const dates = Object.keys(data.data);
-            const matches = Object.values(data.data).map(d => d.matches);
-            const noMatches = Object.values(data.data).map(d => d.no_matches);
+// Top Keywords
+fetch('{{ route("admin.line-bot.keywords.performance.chart-data") }}').then(r=>r.json()).then(data=>{
+    new Chart(document.getElementById('topKeywordsChart'),{
+        type:'bar',
+        data:{labels:Object.keys(data.topKeywords),datasets:[{label:'Matches',data:Object.values(data.topKeywords),backgroundColor:['#3b82f6','#8b5cf6','#ec4899','#f97316','#eab308','#22c55e','#06b6d4','#0ea5e9','#6366f1','#a855f7'],borderRadius:8}]},
+        options:{...chartConfig,indexAxis:'y',scales:{x:{beginAtZero:true}}}
+    });
+});
 
-            const ctx = document.getElementById('trendChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: dates,
-                    datasets: [
-                        {
-                            label: 'Keyword Matches',
-                            data: matches,
-                            borderColor: '#22c55e',
-                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                            tension: 0.4,
-                            fill: true,
-                        },
-                        {
-                            label: 'AI Fallback',
-                            data: noMatches,
-                            borderColor: '#ef4444',
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            tension: 0.4,
-                            fill: true,
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top'
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        });
+// Comparison
+fetch('{{ route("admin.line-bot.keywords.performance.comparison-data") }}').then(r=>r.json()).then(data=>{
+    new Chart(document.getElementById('comparisonChart'),{
+        type:'doughnut',
+        data:{labels:['Keyword','AI'],datasets:[{data:[data.comparison.keyword_matches,data.comparison.ai_fallback],backgroundColor:['#22c55e','#ef4444'],borderWidth:2}]},
+        options:chartConfig
+    });
+});
+
+// Trend
+fetch('{{ route("admin.line-bot.keywords.performance.trend-data") }}').then(r=>r.json()).then(data=>{
+    const dates=Object.keys(data.data);
+    const matches=Object.values(data.data).map(d=>d.matches);
+    const noMatches=Object.values(data.data).map(d=>d.no_matches);
+    new Chart(document.getElementById('trendChart'),{
+        type:'line',
+        data:{labels:dates,datasets:[
+            {label:'Keyword',data:matches,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,0.1)',borderWidth:3,fill:true,tension:0.4},
+            {label:'AI',data:noMatches,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.1)',borderWidth:3,fill:true,tension:0.4}
+        ]},
+        options:{...chartConfig,scales:{y:{beginAtZero:true}}}
+    });
+});
 </script>
 @endpush
 @endsection

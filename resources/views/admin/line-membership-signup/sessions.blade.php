@@ -40,6 +40,62 @@
         </div>
     </div>
 
+    {{-- Statistics Cards --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        {{-- Total Sessions --}}
+        <div class="glass-fusion backdrop-blur-xl bg-gradient-to-br from-[#00B900]/10 to-[#00E600]/10 dark:from-[#00B900]/20 dark:to-[#00E600]/20 p-6 rounded-2xl border border-[#06C755]/30">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-[#00B900] dark:text-[#00E600]">Sessions ทั้งหมด</h3>
+                <div class="w-12 h-12 bg-gradient-to-br from-[#00B900] to-[#00E600] rounded-xl flex items-center justify-center">
+                    <i class="fas fa-users text-white text-xl"></i>
+                </div>
+            </div>
+            <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-1">{{ number_format($sessions->total()) }}</h2>
+            <p class="text-xs text-[#00B900] dark:text-[#00E600]">ทั้งหมด</p>
+        </div>
+
+        {{-- Completed Sessions --}}
+        <div class="glass-fusion backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 p-6 rounded-2xl border border-white/20 dark:border-slate-700/50">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-green-600 dark:text-green-400">เสร็จสมบูรณ์</h3>
+                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-check-circle text-white text-xl"></i>
+                </div>
+            </div>
+            <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-1">{{ number_format($sessions->where('status', 'completed')->count()) }}</h2>
+            <p class="text-xs text-green-600 dark:text-green-400">Completed</p>
+        </div>
+
+        {{-- In Progress Sessions --}}
+        <div class="glass-fusion backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 p-6 rounded-2xl border border-white/20 dark:border-slate-700/50">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-blue-600 dark:text-blue-400">กำลังดำเนินการ</h3>
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                    </span>
+                </div>
+            </div>
+            <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-1">{{ number_format($sessions->where('status', 'active')->count()) }}</h2>
+            <p class="text-xs text-blue-600 dark:text-blue-400">Active</p>
+        </div>
+
+        {{-- Abandoned Sessions --}}
+        <div class="glass-fusion backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 p-6 rounded-2xl border border-white/20 dark:border-slate-700/50">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-amber-600 dark:text-amber-400">ยกเลิก/ทิ้งไว้</h3>
+                <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+                </div>
+            </div>
+            <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-1">{{ number_format($sessions->where('status', 'abandoned')->count()) }}</h2>
+            <p class="text-xs text-amber-600 dark:text-amber-400">
+                {{ $sessions->total() > 0 ? number_format(($sessions->where('status', 'abandoned')->count() / $sessions->total()) * 100, 1) : 0 }}% Abandon Rate
+            </p>
+        </div>
+    </div>
+
     {{-- Filters & Search --}}
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6">
         <form method="GET" action="{{ route('admin.line-membership-signup.sessions') }}" class="space-y-4">

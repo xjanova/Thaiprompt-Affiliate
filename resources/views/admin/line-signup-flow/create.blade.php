@@ -2,18 +2,30 @@
 
 @section('title', 'สร้าง Signup Flow ใหม่')
 
+@vite(['resources/css/app.css', 'resources/js/app.js'])
+
 @section('content')
-<div class="space-y-6">
-    {{-- Header Section --}}
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">สร้าง Signup Flow ใหม่</h1>
-                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">เพิ่มขั้นตอนการสมัครสมาชิกผ่าน LINE ใหม่</p>
+<div class="space-y-8 py-4">
+    {{-- Header Section - V3 Design --}}
+    <div class="glass-fusion backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 rounded-2xl shadow-lg p-6 border border-white/20 dark:border-slate-700/50">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-gradient-to-br from-[#00B900] to-[#00E600] rounded-2xl flex items-center justify-center shadow-lg shadow-[#06C755]/30">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold bg-gradient-to-r from-[#00B900] to-[#00E600] bg-clip-text text-transparent">สร้าง Signup Flow ใหม่</h1>
+                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">เพิ่มขั้นตอนการสมัครสมาชิกผ่าน LINE ใหม่</p>
+                </div>
             </div>
             <a href="{{ route('admin.line-signup-flow.index') }}"
-               class="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition">
-                ← กลับ
+               class="px-6 py-3 min-h-[44px] glass-fusion backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 border border-white/20 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 rounded-xl font-semibold hover:border-[#06C755] transform hover:scale-105 transition-all shadow-lg flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                กลับ
             </a>
         </div>
     </div>
@@ -22,22 +34,24 @@
     <form method="POST" action="{{ route('admin.line-signup-flow.store') }}" x-data="signupFlowForm()">
         @csrf
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {{-- Main Form --}}
-            <div class="lg:col-span-2 space-y-6">
-                {{-- Basic Information --}}
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+            <div class="lg:col-span-2 space-y-8">
+                {{-- Basic Information - V3 Design --}}
+                <div class="glass-fusion backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 rounded-2xl shadow-lg p-6 border border-white/20 dark:border-slate-700/50">
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
                         ข้อมูลพื้นฐาน
                     </h2>
 
-                    <div class="space-y-4">
+                    <div class="space-y-5">
                         {{-- Name --}}
                         <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label for="name" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                 ชื่อขั้นตอน <span class="text-red-500">*</span>
                             </label>
                             <input type="text"
@@ -45,16 +59,21 @@
                                    id="name"
                                    value="{{ old('name') }}"
                                    required
-                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                   class="w-full px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-[#06C755] focus:border-[#06C755] bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-all"
                                    placeholder="เช่น: ขอชื่อ-นามสกุล">
                             @error('name')
-                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                <p class="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    {{ $message }}
+                                </p>
                             @enderror
                         </div>
 
                         {{-- Step Key --}}
                         <div>
-                            <label for="step_key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label for="step_key" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                 Step Key <span class="text-red-500">*</span>
                             </label>
                             <input type="text"
@@ -63,17 +82,27 @@
                                    value="{{ old('step_key') }}"
                                    required
                                    pattern="[a-z0-9_]+"
-                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono"
+                                   class="w-full px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-[#06C755] focus:border-[#06C755] bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-mono transition-all"
                                    placeholder="เช่น: ask_name">
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">ใช้ตัวพิมพ์เล็ก ตัวเลข และ underscore เท่านั้น</p>
+                            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                ใช้ตัวพิมพ์เล็ก ตัวเลข และ underscore เท่านั้น
+                            </p>
                             @error('step_key')
-                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                <p class="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    {{ $message }}
+                                </p>
                             @enderror
                         </div>
 
                         {{-- Step Order --}}
                         <div>
-                            <label for="step_order" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label for="step_order" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                 ลำดับขั้นตอน <span class="text-red-500">*</span>
                             </label>
                             <input type="number"
@@ -82,21 +111,28 @@
                                    value="{{ old('step_order', 1) }}"
                                    required
                                    min="1"
-                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                   class="w-full px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-[#06C755] focus:border-[#06C755] bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-all"
                                    placeholder="1">
                             @error('step_order')
-                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                <p class="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    {{ $message }}
+                                </p>
                             @enderror
                         </div>
                     </div>
                 </div>
 
-                {{-- Message Configuration --}}
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                        </svg>
+                {{-- Message Configuration - V3 Design --}}
+                <div class="glass-fusion backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 rounded-2xl shadow-lg p-6 border border-white/20 dark:border-slate-700/50">
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-[#00B900] to-[#00E600] rounded-xl flex items-center justify-center shadow-lg shadow-[#06C755]/30">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                            </svg>
+                        </div>
                         ข้อความและการตอบกลับ
                     </h2>
 
@@ -184,27 +220,31 @@
                     </div>
                 </div>
 
-                {{-- Settings --}}
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
+                {{-- Settings - V3 Design --}}
+                <div class="glass-fusion backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 rounded-2xl shadow-lg p-6 border border-white/20 dark:border-slate-700/50">
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
                         การตั้งค่า
                     </h2>
 
                     <div class="space-y-4">
                         {{-- Active Toggle --}}
-                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div class="flex items-center justify-between p-5 glass-fusion bg-gradient-to-br from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200/50 dark:border-green-700/50">
                             <div class="flex-1">
-                                <div class="flex items-center">
-                                    <svg class="w-5 h-5 mr-2 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <label for="is_active" class="text-sm font-medium text-gray-900 dark:text-gray-100">เปิดใช้งาน</label>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <label for="is_active" class="text-sm font-bold text-slate-900 dark:text-white">เปิดใช้งาน</label>
                                 </div>
-                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 ml-7">ขั้นตอนนี้จะทำงานเมื่อเปิดใช้งาน</p>
+                                <p class="mt-2 text-xs text-slate-600 dark:text-slate-400 ml-10">ขั้นตอนนี้จะทำงานเมื่อเปิดใช้งาน</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox"
@@ -213,20 +253,22 @@
                                        value="1"
                                        {{ old('is_active', true) ? 'checked' : '' }}
                                        class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 dark:peer-checked:bg-indigo-500"></div>
+                                <div class="w-14 h-7 bg-slate-300 dark:bg-slate-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#00B900] peer-checked:to-[#00E600] shadow-lg"></div>
                             </label>
                         </div>
 
                         {{-- Skippable Toggle --}}
-                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div class="flex items-center justify-between p-5 glass-fusion bg-gradient-to-br from-amber-50/80 to-orange-50/80 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl border border-amber-200/50 dark:border-amber-700/50">
                             <div class="flex-1">
-                                <div class="flex items-center">
-                                    <svg class="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <label for="is_skippable" class="text-sm font-medium text-gray-900 dark:text-gray-100">ข้ามได้</label>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center shadow-md">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <label for="is_skippable" class="text-sm font-bold text-slate-900 dark:text-white">ข้ามได้</label>
                                 </div>
-                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 ml-7">อนุญาตให้ผู้ใช้ข้ามขั้นตอนนี้ได้</p>
+                                <p class="mt-2 text-xs text-slate-600 dark:text-slate-400 ml-10">อนุญาตให้ผู้ใช้ข้ามขั้นตอนนี้ได้</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox"
@@ -235,20 +277,22 @@
                                        value="1"
                                        {{ old('is_skippable', false) ? 'checked' : '' }}
                                        class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 dark:peer-checked:bg-indigo-500"></div>
+                                <div class="w-14 h-7 bg-slate-300 dark:bg-slate-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-amber-500 peer-checked:to-amber-600 shadow-lg"></div>
                             </label>
                         </div>
 
                         {{-- AI Toggle --}}
-                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <div class="flex items-center justify-between p-5 glass-fusion bg-gradient-to-br from-purple-50/80 to-violet-50/80 dark:from-purple-900/20 dark:to-violet-900/20 rounded-xl border border-purple-200/50 dark:border-purple-700/50">
                             <div class="flex-1">
-                                <div class="flex items-center">
-                                    <svg class="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                                    </svg>
-                                    <label for="require_ai" class="text-sm font-medium text-gray-900 dark:text-gray-100">ใช้ AI</label>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                        </svg>
+                                    </div>
+                                    <label for="require_ai" class="text-sm font-bold text-slate-900 dark:text-white">ใช้ AI</label>
                                 </div>
-                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 ml-7">ประมวลผลคำตอบด้วย AI</p>
+                                <p class="mt-2 text-xs text-slate-600 dark:text-slate-400 ml-10">ประมวลผลคำตอบด้วย AI</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox"
@@ -257,24 +301,27 @@
                                        value="1"
                                        {{ old('require_ai', false) ? 'checked' : '' }}
                                        class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 dark:peer-checked:bg-indigo-500"></div>
+                                <div class="w-14 h-7 bg-slate-300 dark:bg-slate-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-500 peer-checked:to-purple-600 shadow-lg"></div>
                             </label>
                         </div>
                     </div>
                 </div>
 
-                {{-- Action Buttons --}}
-                <div class="flex items-center justify-end space-x-3">
+                {{-- Action Buttons - V3 Design --}}
+                <div class="flex items-center justify-end gap-4 pt-4">
                     <a href="{{ route('admin.line-signup-flow.index') }}"
-                       class="px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition">
+                       class="px-8 py-4 min-h-[44px] glass-fusion backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 border border-white/20 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 rounded-xl font-semibold hover:border-slate-400 transform hover:scale-105 transition-all shadow-lg flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
                         ยกเลิก
                     </a>
                     <button type="submit"
-                            class="px-6 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition flex items-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            class="px-8 py-4 min-h-[44px] bg-gradient-to-r from-[#00B900] to-[#00E600] hover:from-[#00A000] hover:to-[#00D000] text-white rounded-xl font-semibold transform hover:scale-105 transition-all shadow-lg shadow-[#06C755]/30 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
-                        บันทึก
+                        บันทึก Flow
                     </button>
                 </div>
             </div>

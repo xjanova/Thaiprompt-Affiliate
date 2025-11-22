@@ -10,7 +10,7 @@
 --}}
 <div class="min-h-screen" x-data="templatesManager()" x-init="init()">
     {{-- Page Header --}}
-    <div class="relative mb-8 rounded-2xl bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500 p-8 shadow-2xl overflow-hidden">
+    <div class="relative mb-8 rounded-2xl bg-gradient-to-br from-[#00B900] via-[#06C755] to-[#00E600] p-8 shadow-2xl overflow-hidden">
         <div class="absolute inset-0 opacity-10">
             <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0); background-size: 40px 40px;"></div>
         </div>

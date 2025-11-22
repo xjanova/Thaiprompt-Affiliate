@@ -2,18 +2,30 @@
 
 @section('title', 'แก้ไข Signup Flow')
 
+@vite(['resources/css/app.css', 'resources/js/app.js'])
+
 @section('content')
-<div class="space-y-6">
-    {{-- Header Section --}}
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">แก้ไข Signup Flow</h1>
-                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">แก้ไขขั้นตอนการสมัครสมาชิกผ่าน LINE</p>
+<div class="space-y-8 py-4">
+    {{-- Header Section - V3 Design --}}
+    <div class="glass-fusion backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 rounded-2xl shadow-lg p-6 border border-white/20 dark:border-slate-700/50">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-transparent">แก้ไข Signup Flow</h1>
+                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">แก้ไขขั้นตอนการสมัครสมาชิกผ่าน LINE</p>
+                </div>
             </div>
             <a href="{{ route('admin.line-signup-flow.index') }}"
-               class="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition">
-                ← กลับ
+               class="px-6 py-3 min-h-[44px] glass-fusion backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 border border-white/20 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 rounded-xl font-semibold hover:border-[#06C755] transform hover:scale-105 transition-all shadow-lg flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                กลับ
             </a>
         </div>
     </div>
@@ -264,28 +276,33 @@
                     </div>
                 </div>
 
-                {{-- Action Buttons --}}
-                <div class="flex items-center justify-between">
-                    <form method="POST" action="{{ route('admin.line-signup-flow.destroy', $flow->id) }}" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะลบ Signup Flow นี้?');">
+                {{-- Action Buttons - V3 Design with Delete --}}
+                <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 pt-4">
+                    {{-- Delete Button --}}
+                    <form method="POST" action="{{ route('admin.line-signup-flow.destroy', $flow->id) }}" onsubmit="return confirm('⚠️ คุณแน่ใจหรือไม่ที่จะลบ Signup Flow นี้?\n\nการกระทำนี้ไม่สามารถย้อนกลับได้!');" class="md:flex-shrink-0">
                         @csrf
                         @method('DELETE')
                         <button type="submit"
-                                class="px-6 py-3 bg-red-600 dark:bg-red-500 text-white font-semibold rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                class="w-full md:w-auto px-8 py-4 min-h-[44px] bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-semibold transform hover:scale-105 transition-all shadow-lg shadow-red-500/30 flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
-                            ลบ
+                            ลบ Flow
                         </button>
                     </form>
 
-                    <div class="flex items-center space-x-3">
+                    {{-- Save & Cancel Buttons --}}
+                    <div class="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:flex-grow md:justify-end">
                         <a href="{{ route('admin.line-signup-flow.index') }}"
-                           class="px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition">
+                           class="px-8 py-4 min-h-[44px] glass-fusion backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 border border-white/20 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 rounded-xl font-semibold hover:border-slate-400 transform hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
                             ยกเลิก
                         </a>
                         <button type="submit"
-                                class="px-6 py-3 bg-indigo-600 dark:bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                class="px-8 py-4 min-h-[44px] bg-gradient-to-r from-[#00B900] to-[#00E600] hover:from-[#00A000] hover:to-[#00D000] text-white rounded-xl font-semibold transform hover:scale-105 transition-all shadow-lg shadow-[#06C755]/30 flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                             </svg>
                             บันทึกการแก้ไข
