@@ -101,6 +101,7 @@ class NFCCard extends Model
     const STATUS_ACTIVE = 'active';
     const STATUS_INACTIVE = 'inactive';
     const STATUS_BLOCKED = 'blocked';
+    const STATUS_SUSPENDED = 'suspended';
     const STATUS_EXPIRED = 'expired';
     const STATUS_PENDING = 'pending';
 
