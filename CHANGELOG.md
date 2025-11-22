@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.141.1] - 2025-11-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1488 from xjanova/claude/fix-shop-endpoint-01XWHLfA3hL9WUSEwuekDfs8 (5cabd625)
+- fix: improve database connection error handling and add missing API controllers (fbb76e32)
+### 🔧 Other Changes
+
+
 ## [v3.141.0] - 2025-11-22
 
 ### ✨ Features
