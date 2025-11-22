@@ -10,52 +10,25 @@ use Illuminate\Http\Request;
 class HomeController extends Controller
 {
     /**
-     * Show the homepage
+     * Show the homepage - 3 Doors Storytelling Design
+     *
+     * แสดงหน้าแรกแบบ "3 ประตู" (3 Doors):
+     * - ประตูที่ 1: นักลงทุน (Investors)
+     * - ประตูที่ 2: นักพัฒนา (Developers)
+     * - ประตูที่ 3: ชุมชน (Community)
+     *
+     * @return \Illuminate\View\View
      */
     public function index()
     {
-        // Check if system needs setup
+        // ตรวจสอบว่าระบบต้อง setup หรือไม่
         if (!User::where('is_super_admin', true)->exists()) {
             return redirect()->route('setup.index');
         }
 
-        // Get featured stores (5-star or admin selected)
-        $featuredStores = \App\Models\VendorStore::where(function($query) {
-                $query->where('is_featured_home', true)
-                      ->orWhere('rating_average', '>=', 5.0);
-            })
-            ->where('is_active', true)
-            ->where('is_verified', true)
-            ->orderBy('featured_home_order', 'asc')
-            ->orderBy('rating_average', 'desc')
-            ->limit(8)
-            ->get();
-
-        // Get new products (created in last 30 days)
-        $newProducts = \App\Models\Product::where('is_active', true)
-            ->where('is_public_approved', true)
-            ->where('created_at', '>=', now()->subDays(30))
-            ->with(['seller', 'category'])
-            ->orderBy('created_at', 'desc')
-            ->limit(12)
-            ->get();
-
-        // Get site logo from settings
-        $siteLogo = Setting::get('site_logo', asset('images/logo.svg'));
-
-        // Get site info for hero section
-        $siteInfo = [
-            'name' => Setting::get('site_name', 'Thaiprompt Affiliate'),
-            'tagline' => Setting::get('site_tagline', 'แพลตฟอร์มอีคอมเมิร์ซและแอฟฟิลิเอทที่ทรงพลัง'),
-            'description' => Setting::get('site_description', 'ระบบครบวงจรสำหรับการขายสินค้าออนไลน์และสร้างรายได้ผ่านระบบแอฟฟิลิเอท'),
-        ];
-
-        return view('frontend.home-v3', compact(
-            'featuredStores',
-            'newProducts',
-            'siteLogo',
-            'siteInfo'
-        ));
+        // แสดงหน้าแรกแบบ 3 ประตู (Storytelling Design)
+        // ไม่ต้องการข้อมูลเพิ่มเติม เพราะใช้ Alpine.js component
+        return view('frontend.home');
     }
 
     /**

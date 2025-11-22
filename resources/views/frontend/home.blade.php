@@ -20,7 +20,7 @@
  */
 --}}
 
-@extends('layouts.app')
+@extends('layouts.guest')
 
 @section('title', 'Thaiprompt - เปลี่ยนโอกาสให้เป็นผลกำไร')
 
