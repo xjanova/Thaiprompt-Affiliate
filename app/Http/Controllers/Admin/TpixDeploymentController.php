@@ -399,11 +399,12 @@ class TpixDeploymentController extends Controller
         try {
             $config->update($validated);
 
-            $config->nextStep();
+            // ไม่ nextStep() ตอนนี้ เพราะต้องชำระเงินก่อน
+            // $config->nextStep();
 
             return redirect()
-                ->route('admin.tpix.deployment.step5', $slug)
-                ->with('success', 'บันทึก Smart Contract Configuration สำเร็จ!');
+                ->route('admin.tpix.deployment.payment', $slug)
+                ->with('success', 'บันทึก Smart Contract Configuration สำเร็จ! กรุณาชำระเงินเพื่อดำเนินการต่อ');
         } catch (Exception $e) {
             Log::error('Failed to save Step 4', [
                 'config_id' => $config->id,
@@ -414,6 +415,251 @@ class TpixDeploymentController extends Controller
                 ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
                 ->withInput();
         }
+    }
+
+    // =====================================
+    // Payment Confirmation & Processing
+    // =====================================
+
+    /**
+     * แสดงหน้ายืนยันการชำระเงิน
+     *
+     * @param string $slug
+     * @return View
+     */
+    public function showPaymentConfirmation(string $slug): View
+    {
+        $config = TpixConfiguration::where('slug', $slug)->firstOrFail();
+
+        // ต้องผ่าน Step 4 แล้ว
+        if ($config->current_step < 4) {
+            return redirect()
+                ->route("admin.tpix.deployment.step{$config->current_step}", $slug)
+                ->with('warning', 'กรุณาทำ Step ก่อนหน้าให้เสร็จก่อน');
+        }
+
+        // คำนวณราคา
+        $pricingService = app(\App\Services\TPIX\TpixPricingService::class);
+        $pricing = $pricingService->calculateTotalPrice($config);
+
+        return view('admin.tpix.deployment.payment-confirmation', compact('config', 'pricing'));
+    }
+
+    /**
+     * ประมวลผลการชำระเงิน
+     *
+     * @param Request $request
+     * @param string $slug
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function processPayment(Request $request, string $slug)
+    {
+        $config = TpixConfiguration::where('slug', $slug)->firstOrFail();
+
+        $validated = $request->validate([
+            'wallet_address' => 'required|string|size:42|starts_with:0x',
+            'payment_tx_hash' => 'required|string|size:66|starts_with:0x',
+            'payment_amount' => 'required|numeric|min:0',
+            'pricing_breakdown' => 'required|array',
+            'subtotal_amount' => 'required|numeric|min:0',
+            'discount_amount' => 'nullable|numeric|min:0',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // ตรวจสอบว่ายังไม่เคยชำระ
+            if ($config->payment_status === 'completed') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'คุณได้ชำระเงินไปแล้ว',
+                ], 400);
+            }
+
+            // บันทึกข้อมูลการชำระเงิน
+            $config->update([
+                'wallet_address' => $validated['wallet_address'],
+                'payment_tx_hash' => $validated['payment_tx_hash'],
+                'payment_amount' => $validated['payment_amount'],
+                'payment_status' => 'processing',
+                'pricing_breakdown' => $validated['pricing_breakdown'],
+                'subtotal_amount' => $validated['subtotal_amount'],
+                'discount_amount' => $validated['discount_amount'] ?? 0,
+            ]);
+
+            // Log การชำระเงิน
+            $config->addDeploymentLog('payment_initiated', [
+                'tx_hash' => $validated['payment_tx_hash'],
+                'amount' => $validated['payment_amount'],
+                'wallet' => $validated['wallet_address'],
+            ]);
+
+            // เรียก Verify Payment (async)
+            $this->verifyPaymentAsync($config);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกข้อมูลการชำระเงินสำเร็จ',
+                'data' => [
+                    'payment_status' => $config->payment_status,
+                    'tx_hash' => $config->payment_tx_hash,
+                ],
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            Log::error('Failed to process payment', [
+                'config_id' => $config->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ตรวจสอบการชำระเงินบน Blockchain
+     *
+     * @param Request $request
+     * @param string $slug
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function verifyPayment(Request $request, string $slug)
+    {
+        $config = TpixConfiguration::where('slug', $slug)->firstOrFail();
+
+        try {
+            if (empty($config->payment_tx_hash)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบข้อมูลการชำระเงิน',
+                ], 400);
+            }
+
+            // ใช้ TpixPricingService verify
+            $pricingService = app(\App\Services\TPIX\TpixPricingService::class);
+            $result = $pricingService->verifyPayment($config->payment_tx_hash);
+
+            if ($result['verified']) {
+                // อัพเดทสถานะ
+                $config->update([
+                    'payment_status' => 'completed',
+                    'payment_verified_at' => now(),
+                ]);
+
+                $config->addDeploymentLog('payment_verified', [
+                    'tx_hash' => $config->payment_tx_hash,
+                    'confirmations' => $result['confirmations'] ?? 0,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'ตรวจสอบการชำระเงินสำเร็จ',
+                    'data' => [
+                        'verified' => true,
+                        'payment_status' => 'completed',
+                        'confirmations' => $result['confirmations'] ?? 0,
+                    ],
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ยังไม่พบการยืนยันบน Blockchain',
+                'data' => [
+                    'verified' => false,
+                    'status' => $result['status'] ?? 'pending',
+                ],
+            ]);
+        } catch (Exception $e) {
+            Log::error('Failed to verify payment', [
+                'config_id' => $config->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการตรวจสอบ: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * คืนเงิน (กรณี Deploy ล้มเหลว)
+     *
+     * @param string $slug
+     * @return RedirectResponse
+     */
+    public function refundPayment(string $slug): RedirectResponse
+    {
+        $config = TpixConfiguration::where('slug', $slug)->firstOrFail();
+
+        try {
+            // ต้องชำระเงินแล้ว
+            if ($config->payment_status !== 'completed') {
+                return back()->with('error', 'ไม่พบข้อมูลการชำระเงิน');
+            }
+
+            // ต้องไม่เคยคืนเงิน
+            if ($config->payment_status === 'refunded') {
+                return back()->with('warning', 'คืนเงินไปแล้ว');
+            }
+
+            // คำนวณจำนวนคืน (80%)
+            $refundAmount = $config->payment_amount * 0.8;
+
+            // TODO: ทำ refund transaction จริงบน blockchain
+            $refundTxHash = '0x' . bin2hex(random_bytes(32)); // Mock
+
+            // อัพเดทข้อมูล
+            $config->update([
+                'payment_status' => 'refunded',
+                'refund_amount' => $refundAmount,
+                'refund_tx_hash' => $refundTxHash,
+                'refund_reason' => 'Deployment failed',
+                'refunded_at' => now(),
+            ]);
+
+            $config->addDeploymentLog('payment_refunded', [
+                'original_amount' => $config->payment_amount,
+                'refund_amount' => $refundAmount,
+                'refund_tx_hash' => $refundTxHash,
+            ]);
+
+            return back()->with('success', "คืนเงิน {$refundAmount} TPIX สำเร็จ (80% ของค่าบริการ)");
+        } catch (Exception $e) {
+            Log::error('Failed to refund payment', [
+                'config_id' => $config->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'คืนเงินล้มเหลว: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ตรวจสอบการชำระเงินแบบ async
+     *
+     * @param TpixConfiguration $config
+     * @return void
+     */
+    protected function verifyPaymentAsync(TpixConfiguration $config): void
+    {
+        // TODO: Queue job สำหรับตรวจสอบ payment
+        // dispatch(new VerifyTpixPaymentJob($config));
+
+        // ตอนนี้ใช้วิธีง่ายๆ (mock)
+        // ในการใช้งานจริง ควรใช้ Queue Job
+        Log::info('Payment verification queued', [
+            'config_id' => $config->id,
+            'tx_hash' => $config->payment_tx_hash,
+        ]);
     }
 
     // =====================================

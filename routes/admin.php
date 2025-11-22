@@ -2165,6 +2165,12 @@ Route::prefix('tpix/deployment')->name('tpix.deployment.')->group(function () {
         Route::get('/step-4', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'step4'])->name('step4');
         Route::post('/step-4', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'saveStep4'])->name('step4.save');
 
+        // Payment Confirmation & Processing
+        Route::get('/payment', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'showPaymentConfirmation'])->name('payment');
+        Route::post('/payment', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'processPayment'])->name('payment.process');
+        Route::post('/payment/verify', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'verifyPayment'])->name('payment.verify');
+        Route::post('/payment/refund', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'refundPayment'])->name('payment.refund');
+
         // Step 5: Deploy & Verify
         Route::get('/step-5', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'step5'])->name('step5');
         Route::post('/step-5/deploy', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'deployContract'])->name('step5.deploy');
