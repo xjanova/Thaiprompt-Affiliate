@@ -5,10 +5,18 @@ namespace App\Http\Controllers;
 use App\Services\TranslationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 class TranslationController extends Controller
 {
     protected TranslationService $translationService;
+
+    /**
+     * Cache สำหรับภาษาที่ใช้ได้ เพื่อป้องกัน validation loop
+     *
+     * @var array|null
+     */
+    protected static ?array $cachedLanguages = null;
 
     public function __construct(TranslationService $translationService)
     {
@@ -16,11 +24,37 @@ class TranslationController extends Controller
     }
 
     /**
+     * ดึงรายการภาษาที่ใช้ได้พร้อม cache ป้องกัน loop
+     *
+     * @return array
+     */
+    protected function getAvailableLanguageCodes(): array
+    {
+        // ใช้ static cache เพื่อป้องกัน recursive calls ในคำขอเดียวกัน
+        if (self::$cachedLanguages !== null) {
+            return self::$cachedLanguages;
+        }
+
+        // ใช้ cache 1 ชั่วโมง เพื่อลดการ query database
+        self::$cachedLanguages = Cache::remember('translation_available_codes', 3600, function () {
+            try {
+                return \App\Models\LanguageSetting::getEnabledCodes();
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Cannot load language codes: ' . $e->getMessage());
+                // Fallback to config
+                return array_keys(config('translate.supported_languages', ['en' => 'English', 'th' => 'Thai']));
+            }
+        });
+
+        return self::$cachedLanguages;
+    }
+
+    /**
      * Translate text via AJAX
      */
     public function translate(Request $request): JsonResponse
     {
-        $availableLanguages = \App\Models\LanguageSetting::getEnabledCodes();
+        $availableLanguages = $this->getAvailableLanguageCodes();
 
         $request->validate([
             'text' => 'required|string|max:5000',
@@ -66,7 +100,7 @@ class TranslationController extends Controller
      */
     public function translateBatch(Request $request): JsonResponse
     {
-        $availableLanguages = \App\Models\LanguageSetting::getEnabledCodes();
+        $availableLanguages = $this->getAvailableLanguageCodes();
 
         $request->validate([
             'texts' => 'required|array|max:50',

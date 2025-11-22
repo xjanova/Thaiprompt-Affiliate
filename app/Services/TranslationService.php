@@ -13,20 +13,62 @@ class TranslationService
     protected bool $enabled;
     protected array $supportedLanguages;
 
+    /**
+     * ป้องกัน recursive initialization loop
+     *
+     * @var bool
+     */
+    protected static bool $isInitializing = false;
+
+    /**
+     * นับจำนวน recursive calls
+     *
+     * @var int
+     */
+    protected static int $recursionDepth = 0;
+
+    /**
+     * จำกัดความลึกของ recursion
+     */
+    protected const MAX_RECURSION_DEPTH = 3;
+
     public function __construct()
     {
+        // Circuit Breaker: ป้องกัน infinite recursion
+        if (self::$isInitializing) {
+            Log::warning('TranslationService: Recursive initialization detected, using defaults');
+            $this->enabled = false;
+            $this->supportedLanguages = array_keys(config('translate.supported_languages', ['en' => 'English', 'th' => 'Thai']));
+            return;
+        }
+
+        // ตรวจสอบ recursion depth
+        self::$recursionDepth++;
+        if (self::$recursionDepth > self::MAX_RECURSION_DEPTH) {
+            Log::error('TranslationService: Max recursion depth exceeded');
+            self::$recursionDepth--;
+            $this->enabled = false;
+            $this->supportedLanguages = [];
+            return;
+        }
+
+        self::$isInitializing = true;
+
         try {
             // Read from database settings first, fallback to config, then env
             $this->enabled = \App\Models\Setting::get('google_translate_enabled')
                 ?? config('translate.google.enabled', false);
 
-            // Get supported languages from database
-            $this->supportedLanguages = LanguageSetting::getEnabledCodes();
+            // Get supported languages from database with timeout protection
+            $this->supportedLanguages = $this->loadSupportedLanguagesWithFallback();
         } catch (\Exception $e) {
             // ⚠️ ถ้า database ไม่พร้อมใช้งาน ให้ใช้ค่าจาก config
             Log::debug('TranslationService: Cannot load from database, using config - ' . $e->getMessage());
             $this->enabled = config('translate.google.enabled', false);
             $this->supportedLanguages = [];
+        } finally {
+            self::$isInitializing = false;
+            self::$recursionDepth--;
         }
 
         // Fallback to config if no languages in database
@@ -41,6 +83,24 @@ class TranslationService
                 Log::error('Google Translate initialization failed: ' . $e->getMessage());
                 $this->enabled = false;
             }
+        }
+    }
+
+    /**
+     * โหลดภาษาที่รองรับพร้อม fallback
+     *
+     * @return array
+     */
+    protected function loadSupportedLanguagesWithFallback(): array
+    {
+        try {
+            // ใช้ cache เพื่อลดการเรียก database
+            return Cache::remember('translation_supported_languages', 3600, function () {
+                return LanguageSetting::getEnabledCodes();
+            });
+        } catch (\Exception $e) {
+            Log::warning('Cannot load language codes from database: ' . $e->getMessage());
+            return array_keys(config('translate.supported_languages', []));
         }
     }
 
@@ -289,13 +349,41 @@ class TranslationService
     }
 
     /**
-     * Clear translation cache
+     * Clear translation cache (เฉพาะ translation cache เท่านั้น)
+     *
+     * ⚠️ FIXED: ใช้ specific cache clearing แทน Cache::flush()
+     * เพื่อป้องกัน cascade effects ที่อาจทำให้เกิด infinite loop
      *
      * @return void
      */
     public function clearCache(): void
     {
         $prefix = config('translate.cache.prefix', 'translate:');
-        Cache::flush(); // Or use more specific cache clearing if needed
+
+        // ลบเฉพาะ translation caches ที่เกี่ยวข้อง
+        $cachesToClear = [
+            'translation_supported_languages',
+            'translation_available_codes',
+            'language_settings_enabled',
+            'language_settings_all',
+        ];
+
+        foreach ($cachesToClear as $key) {
+            Cache::forget($key);
+        }
+
+        // ลบ cache ที่มี prefix ของ translation
+        // หมายเหตุ: Laravel ไม่มี built-in method สำหรับ prefix clearing
+        // แต่เราสามารถใช้ tags (ถ้า cache driver รองรับ) หรือ track keys
+        try {
+            // ถ้าใช้ Redis หรือ Memcached สามารถใช้ tags ได้
+            if (config('cache.default') === 'redis' || config('cache.default') === 'memcached') {
+                Cache::tags(['translation'])->flush();
+            }
+        } catch (\Exception $e) {
+            Log::debug('Cannot clear translation tags: ' . $e->getMessage());
+        }
+
+        Log::info('Translation cache cleared successfully');
     }
 }
