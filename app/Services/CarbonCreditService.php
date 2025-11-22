@@ -225,7 +225,7 @@ class CarbonCreditService
         }
 
         // Send notification
-        $this->notifyCredit IssuedIssuance($credit);
+        $this->notifyCreditIssuedIssuance($credit);
 
         return $credit;
     }
