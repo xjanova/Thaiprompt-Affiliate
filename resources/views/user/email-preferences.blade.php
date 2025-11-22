@@ -43,7 +43,7 @@
                     <div class="w-14 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white dark:bg-gray-800 after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
             </div>
-        </div>
+        </x-arrow-x.card-v3>
 
         <!-- Email Categories -->
         <div id="emailCategories" class="space-y-4">
@@ -74,7 +74,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </x-arrow-x.card-v3>
 
             <!-- Commission Notifications -->
             <x-arrow-x.card-v3 class="p-6">
@@ -99,7 +99,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </x-arrow-x.card-v3>
 
             <!-- Withdrawal Notifications -->
             <x-arrow-x.card-v3 class="p-6">
@@ -124,7 +124,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </x-arrow-x.card-v3>
 
             <!-- System Announcements -->
             <x-arrow-x.card-v3 class="p-6">
@@ -149,7 +149,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </x-arrow-x.card-v3>
 
             <!-- Weekly Reports -->
             <x-arrow-x.card-v3 class="p-6">
@@ -174,7 +174,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </x-arrow-x.card-v3>
 
             <!-- Marketing Emails -->
             <x-arrow-x.card-v3 class="p-6">
@@ -199,7 +199,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </x-arrow-x.card-v3>
         </div>
 
         <!-- Language Preference -->
@@ -258,7 +258,7 @@
                     </div>
                 </label>
             </div>
-        </div>
+        </x-arrow-x.card-v3>
 
         <!-- Action Buttons -->
         <div class="flex flex-col sm:flex-row gap-4">
