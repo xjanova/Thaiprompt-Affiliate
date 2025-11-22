@@ -55,7 +55,7 @@
     <div class="glass-fusion rounded-xl shadow-md overflow-hidden" border border-white/20 dark:border-white/10>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50">
+                <thead class="bg-gray-100/50 dark:bg-gray-800/50">
                     <tr>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             เวลา
@@ -79,7 +79,7 @@
                 </thead>
                 <tbody class="glass-fusion divide-y divide-gray-200">
                     @forelse($logs as $log)
-                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50">
+                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50">
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {{ $log->created_at->format('d/m/Y H:i:s') }}
                             </td>
@@ -237,9 +237,9 @@
                     </div>
                 </div>
             </div>
-            <div class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <div class="bg-gray-100/50 dark:bg-gray-800/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button type="button" onclick="closeMetadataModal()"
-                        class="w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 glass-fusion text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">
+                        class="w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 glass-fusion text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">
                     ปิด
                 </button>
             </div>

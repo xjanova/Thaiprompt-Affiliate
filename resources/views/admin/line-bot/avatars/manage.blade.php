@@ -3,7 +3,7 @@
 @section('title', 'จัดการ LINE Avatar ขั้นสูง')
 
 @section('content')
-<div class="min-h-screen bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-900 py-6 px-4 sm:px-6 lg:px-8" x-data="{
+<div class="min-h-screen bg-gray-100/50 dark:bg-slate-900 py-6 px-4 sm:px-6 lg:px-8" x-data="{
     selectedAvatars: [],
     viewMode: 'grid',
     showBulkActions: false,
@@ -46,7 +46,7 @@
                 <h1 class="text-3xl font-bold bg-gradient-to-r from-[#00B900] to-[#00E600] bg-clip-text text-transparent">
                     จัดการ Avatar ขั้นสูง
                 </h1>
-                <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">
+                <p class="text-gray-600 dark:text-gray-400 mt-1">
                     จัดการ Avatar แบบกลุ่ม พร้อมฟีเจอร์ขั้นสูง
                 </p>
             </div>
@@ -70,16 +70,16 @@
             </div>
 
             <!-- View Mode Toggle -->
-            <div class="flex items-center gap-2 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl p-1">
+            <div class="flex items-center gap-2 bg-gray-100/50 dark:bg-slate-700 rounded-xl p-1">
                 <button @click="viewMode = 'grid'"
-                        :class="viewMode === 'grid' ? 'glass-fusion dark:bg-slate-600 shadow-md' : 'text-gray-500 dark:text-gray-400 dark:text-gray-400'"
+                        :class="viewMode === 'grid' ? 'glass-fusion dark:bg-slate-600 shadow-md' : 'text-gray-500 dark:text-gray-400'"
                         class="px-4 py-2 rounded-xl transition-all duration-300">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                     </svg>
                 </button>
                 <button @click="viewMode = 'list'"
-                        :class="viewMode === 'list' ? 'glass-fusion dark:bg-slate-600 shadow-md' : 'text-gray-500 dark:text-gray-400 dark:text-gray-400'"
+                        :class="viewMode === 'list' ? 'glass-fusion dark:bg-slate-600 shadow-md' : 'text-gray-500 dark:text-gray-400'"
                         class="px-4 py-2 rounded-xl transition-all duration-300">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
@@ -88,10 +88,10 @@
             </div>
 
             <!-- Select All -->
-            <label class="flex items-center gap-3 cursor-pointer bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 px-4 py-3 rounded-xl hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-slate-600 transition-all duration-300">
+            <label class="flex items-center gap-3 cursor-pointer bg-gray-100/50 dark:bg-slate-700 px-4 py-3 rounded-xl hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 transition-all duration-300">
                 <input type="checkbox" :checked="allSelected" @change="toggleAll()"
                        class="w-5 h-5 text-[#00B900] bg-gray-100/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 rounded focus:ring-green-500">
-                <span class="text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300">เลือกทั้งหมด</span>
+                <span class="text-sm font-bold text-gray-700 dark:text-gray-300">เลือกทั้งหมด</span>
             </label>
         </div>
 
@@ -108,12 +108,12 @@
                         <p class="font-bold text-gray-900 dark:text-white">
                             เลือกแล้ว <span x-text="selectedAvatars.length"></span> รายการ
                         </p>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">เลือกการดำเนินการที่ต้องการ</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">เลือกการดำเนินการที่ต้องการ</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
                     <button @click="selectedAvatars = []"
-                            class="px-4 py-2 glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-600 transition-all duration-300 font-bold flex items-center gap-2">
+                            class="px-4 py-2 glass-fusion dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-600 transition-all duration-300 font-bold flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -189,7 +189,7 @@
                             {{ strtoupper($avatar->type) }}
                         </span>
                         @if($avatar->file_size)
-                            <span class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
                                 {{ number_format($avatar->file_size / 1024, 1) }} KB
                             </span>
                         @endif
@@ -220,14 +220,14 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-slate-700">
                     @foreach($avatars ?? [] as $avatar)
-                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700/50 transition-colors duration-200"
+                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700/50 transition-colors duration-200"
                             :class="isSelected({{ $avatar->id }}) ? 'bg-green-50 dark:bg-green-900/20' : ''">
                             <td class="px-6 py-4">
                                 <input type="checkbox" :checked="isSelected({{ $avatar->id }})" @change="toggleSelection({{ $avatar->id }})"
                                        class="w-5 h-5 text-[#00B900] bg-gray-100/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 rounded focus:ring-green-500">
                             </td>
                             <td class="px-6 py-4">
-                                <div class="w-16 h-16 rounded-xl overflow-hidden bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 flex items-center justify-center">
+                                <div class="w-16 h-16 rounded-xl overflow-hidden bg-gray-100/50 dark:bg-slate-700 flex items-center justify-center">
                                     @if($avatar->type === 'image' || $avatar->type === 'gif')
                                         <img src="{{ $avatar->file_url ?? Storage::url($avatar->file_path) }}"
                                              alt="{{ $avatar->name }}"
@@ -248,7 +248,7 @@
                                 <div>
                                     <p class="font-bold text-gray-900 dark:text-white">{{ $avatar->name }}</p>
                                     @if($avatar->description)
-                                        <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1 line-clamp-1">{{ $avatar->description }}</p>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">{{ $avatar->description }}</p>
                                     @endif
                                 </div>
                             </td>
@@ -262,7 +262,7 @@
                                     {{ strtoupper($avatar->type) }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-gray-600 dark:text-gray-400 dark:text-gray-400 text-sm">
+                            <td class="px-6 py-4 text-gray-600 dark:text-gray-400 text-sm">
                                 @if($avatar->file_size)
                                     {{ number_format($avatar->file_size / 1024, 1) }} KB
                                 @else
@@ -277,7 +277,7 @@
                                             เปิดใช้งาน
                                         </span>
                                     @else
-                                        <span class="px-3 py-1 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 dark:text-gray-400 rounded-full text-xs font-bold">
+                                        <span class="px-3 py-1 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 rounded-full text-xs font-bold">
                                             ปิดใช้งาน
                                         </span>
                                     @endif
@@ -288,7 +288,7 @@
                                     @endif
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-gray-600 dark:text-gray-400 dark:text-gray-400 text-sm">
+                            <td class="px-6 py-4 text-gray-600 dark:text-gray-400 text-sm">
                                 {{ $avatar->created_at->format('d/m/Y H:i') }}
                             </td>
                             <td class="px-6 py-4">
@@ -328,7 +328,7 @@
                 </svg>
             </div>
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">ยังไม่มี Avatar</h3>
-            <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-6">กลับไปหน้าแรกเพื่ออัพโหลด Avatar</p>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">กลับไปหน้าแรกเพื่ออัพโหลด Avatar</p>
             <a href="{{ route('admin.line-bot.avatars.index') }}"
                class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00B900] to-[#00E600] text-white rounded-xl hover:shadow-2xl hover:shadow-green-500/50 transition-all duration-300 transform hover:-translate-y-1 font-bold">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

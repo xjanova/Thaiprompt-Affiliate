@@ -45,23 +45,23 @@
     <!-- Category Filter -->
     <div class="mb-6 flex gap-2 flex-wrap">
         <a href="{{ route('admin.line-bot.flex.index') }}"
-           class="px-4 py-2 rounded-xl {{ !request('category') ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50' }} transition">
+           class="px-4 py-2 rounded-xl {{ !request('category') ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50' }} transition">
             All Templates
         </a>
         <a href="{{ route('admin.line-bot.flex.index', ['category' => 'welcome']) }}"
-           class="px-4 py-2 rounded-xl {{ request('category') === 'welcome' ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50' }} transition">
+           class="px-4 py-2 rounded-xl {{ request('category') === 'welcome' ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50' }} transition">
             Welcome
         </a>
         <a href="{{ route('admin.line-bot.flex.index', ['category' => 'promotion']) }}"
-           class="px-4 py-2 rounded-xl {{ request('category') === 'promotion' ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50' }} transition">
+           class="px-4 py-2 rounded-xl {{ request('category') === 'promotion' ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50' }} transition">
             Promotion
         </a>
         <a href="{{ route('admin.line-bot.flex.index', ['category' => 'product']) }}"
-           class="px-4 py-2 rounded-xl {{ request('category') === 'product' ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50' }} transition">
+           class="px-4 py-2 rounded-xl {{ request('category') === 'product' ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50' }} transition">
             Product
         </a>
         <a href="{{ route('admin.line-bot.flex.index', ['category' => 'notification']) }}"
-           class="px-4 py-2 rounded-xl {{ request('category') === 'notification' ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50' }} transition">
+           class="px-4 py-2 rounded-xl {{ request('category') === 'notification' ? 'bg-pink-600 text-white' : 'glass-fusion text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:bg-gray-800/50' }} transition">
             Notification
         </a>
     </div>
@@ -157,7 +157,7 @@
             </div>
         </div>
 
-        <div id="preview-content" class="p-6 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50" style="max-height: 70vh; overflow-y: auto;">
+        <div id="preview-content" class="p-6 bg-gray-100/50 dark:bg-gray-800/50" style="max-height: 70vh; overflow-y: auto;">
             <div class="text-center py-8">
                 <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
                 <p class="mt-4 text-gray-600 dark:text-gray-400">Loading preview...</p>
