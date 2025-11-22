@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.126.0] - 2025-11-22
+
+### ✨ Features
+- Merge pull request #1457 from xjanova/claude/tpix-admin-dashboard-01D7bFfQwSNikupfJex9Q9UN (445183cf)
+- feat: complete TPIX payment system integration with Web3 wallet (d3944c8b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.125.0] - 2025-11-22
 
 ### ✨ Features
