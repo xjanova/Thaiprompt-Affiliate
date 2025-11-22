@@ -1085,8 +1085,7 @@
                 </a>
                 --}}
             </div>
-        </div>
-        --}}
+        </div> --}}
 
         {{-- AI Bot Profiles --}}
         <a href="{{ route('admin.ai-bots.index') }}"
