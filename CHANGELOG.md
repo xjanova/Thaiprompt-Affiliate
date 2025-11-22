@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.134.0] - 2025-11-22
+
+### ✨ Features
+- feat: unify user sidebar with admin sidebar using dynamic MenuService (e8f0193d)
+- feat: migrate to Arrow-X theme exclusively and lock theme system (fdd94073)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1475 from xjanova/claude/migrate-arrow-x-theme-01V93BtLQ4K8qMVC1NaumnnP (accff695)
+
 ## [v3.133.0] - 2025-11-22
 
 ### ✨ Features
