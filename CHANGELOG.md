@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.122.0] - 2025-11-22
+
+### ✨ Features
+- Merge pull request #1452 from xjanova/claude/add-caching-system-01V8Kp8kUfKGXkPkHNcR5vRf (ab822ff2)
+- feat: redesign cache settings UI to match V3 theme (2182edf2)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.121.0] - 2025-11-22
 
 ### ✨ Features
