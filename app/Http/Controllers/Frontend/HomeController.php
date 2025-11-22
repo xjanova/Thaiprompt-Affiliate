@@ -153,6 +153,57 @@ class HomeController extends Controller
     }
 
     /**
+     * Show the Investors detail page (Door 1)
+     *
+     * แสดงหน้าละเอียดสำหรับนักลงทุน (ประตูที่ 1)
+     * - อธิบายระบบลงทุนที่เชื่อมกับชีวิตจริง
+     * - ROI, ความปลอดภัย, ความโปร่งใส
+     * - เชื่อมโยงกับครอบครัว อนาคต เวลา
+     *
+     * @return \Illuminate\View\View
+     */
+    public function investors()
+    {
+        return view('frontend.investors', [
+            'pageTitle' => 'สำหรับนักลงทุน - การลงทุนที่เชื่อมกับชีวิตจริง',
+        ]);
+    }
+
+    /**
+     * Show the Developers detail page (Door 2)
+     *
+     * แสดงหน้าละเอียดสำหรับนักพัฒนา (ประตูที่ 2)
+     * - เปลี่ยน Code เป็นรายได้
+     * - Marketplace, Revenue Share 70%
+     * - Passive Income, Community
+     *
+     * @return \Illuminate\View\View
+     */
+    public function developers()
+    {
+        return view('frontend.developers', [
+            'pageTitle' => 'สำหรับนักพัฒนา - เปลี่ยน Code เป็นรายได้',
+        ]);
+    }
+
+    /**
+     * Show the Community detail page (Door 3)
+     *
+     * แสดงหน้าละเอียดสำหรับชุมชน (ประตูที่ 3)
+     * - เติบโตไปด้วยกัน ไม่ทิ้งใครไว้ข้างหลัง
+     * - Affiliate System, Knowledge Sharing
+     * - Community Events, Give Back
+     *
+     * @return \Illuminate\View\View
+     */
+    public function community()
+    {
+        return view('frontend.community', [
+            'pageTitle' => 'สำหรับชุมชน - เติบโตไปด้วยกัน',
+        ]);
+    }
+
+    /**
      * Show the 3D Interactive Presentation
      */
     public function presentation()

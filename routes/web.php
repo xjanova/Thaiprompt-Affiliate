@@ -271,6 +271,12 @@ Route::match(['GET', 'HEAD'], '/about', [HomeController::class, 'about'])->name(
 Route::match(['GET', 'HEAD'], '/about-us', [HomeController::class, 'aboutProfessional'])->name('about.professional');
 Route::match(['GET', 'HEAD'], '/contact', [HomeController::class, 'contact'])->name('contact');
 
+// 3 Doors Storytelling Pages - หน้าละเอียดของแต่ละประตู
+// ⚠️ SEO Critical: Landing pages สำหรับแต่ละกลุ่มเป้าหมาย
+Route::match(['GET', 'HEAD'], '/investors', [HomeController::class, 'investors'])->name('frontend.investors');
+Route::match(['GET', 'HEAD'], '/developers', [HomeController::class, 'developers'])->name('frontend.developers');
+Route::match(['GET', 'HEAD'], '/community', [HomeController::class, 'community'])->name('frontend.community');
+
 // 3D Interactive Presentation
 Route::match(['GET', 'HEAD'], '/presentation', [HomeController::class, 'presentation'])->name('presentation');
 
