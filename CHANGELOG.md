@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.141.0] - 2025-11-22
+
+### ✨ Features
+- Merge pull request #1487 from xjanova/claude/continue-session-01LGNsDDDwfdHPBFV97xvE2U (12102641)
+- feat: implement Progressive Reveal - separate detailed pages for 3 Doors (91ae0f2b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.140.0] - 2025-11-22
 
 ### ✨ Features
