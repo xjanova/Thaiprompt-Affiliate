@@ -185,11 +185,11 @@
 
                 <!-- Action Buttons -->
                 <div class="flex flex-col sm:flex-row gap-4">
-                    <a href="{{ route('dashboard') }}" class="flex-1 inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all">
+                    <a href="{{ route('user.dashboard') }}" class="flex-1 inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all">
                         <i class="fas fa-home mr-2"></i>
                         กลับหน้าหลัก
                     </a>
-                    <a href="{{ route('wallet.topup') }}" class="flex-1 inline-flex items-center justify-center px-8 py-4 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-bold rounded-xl border-2 border-gray-200 dark:border-gray-600 shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all">
+                    <a href="{{ route('user.wallet.topup') }}" class="flex-1 inline-flex items-center justify-center px-8 py-4 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-bold rounded-xl border-2 border-gray-200 dark:border-gray-600 shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all">
                         <i class="fas fa-plus-circle mr-2"></i>
                         เติมเงินอีกครั้ง
                     </a>

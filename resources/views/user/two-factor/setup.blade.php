@@ -189,7 +189,7 @@
                     🔐 เปิดใช้งาน 2FA
                 </button>
             </form>
-        </div>
+        </x-arrow-x.card-v3>
     @else
         <!-- Advanced Settings (When 2FA is Enabled) -->
         <div class="grid md:grid-cols-2 gap-6">

@@ -21,7 +21,7 @@ class MlmProspectController extends Controller
         $mlmMember = $user->mlmMember;
 
         if (!$mlmMember) {
-            return redirect()->route('dashboard')
+            return redirect()->route('user.dashboard')
                 ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
         }
 
@@ -45,7 +45,7 @@ class MlmProspectController extends Controller
         $mlmMember = $user->mlmMember;
 
         if (!$mlmMember) {
-            return redirect()->route('dashboard')
+            return redirect()->route('user.dashboard')
                 ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
         }
 
@@ -61,7 +61,7 @@ class MlmProspectController extends Controller
         $mlmMember = $user->mlmMember;
 
         if (!$mlmMember) {
-            return redirect()->route('dashboard')
+            return redirect()->route('user.dashboard')
                 ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
         }
 
@@ -80,7 +80,7 @@ class MlmProspectController extends Controller
         $mlmMember = $user->mlmMember;
 
         if (!$mlmMember) {
-            return redirect()->route('dashboard')
+            return redirect()->route('user.dashboard')
                 ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
         }
 
