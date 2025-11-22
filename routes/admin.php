@@ -184,6 +184,7 @@ Route::prefix('cache')->name('cache.')->group(function () {
     Route::post('/change-driver', [CacheSettingsController::class, 'changeDriver'])->name('change-driver');
     Route::post('/optimize', [CacheSettingsController::class, 'optimize'])->name('optimize');
     Route::get('/installation-guide', [CacheSettingsController::class, 'getInstallationGuide'])->name('installation-guide');
+    Route::get('/guide', [CacheSettingsController::class, 'getInstallationGuide'])->name('guide'); // Alias สำหรับ installation-guide
 });
 
 // Site Settings (โลโก้, Favicon, ชื่อเว็บไซต์, SEO, Social Media)
