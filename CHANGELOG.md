@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.127.0] - 2025-11-22
+
+### ✨ Features
+- Merge pull request #1458 from xjanova/claude/nfc-tap-to-pay-integration-01Kr9pbWqm4MAvU7AADi7LhN (896d4dfe)
+- feat: enhance NFC tap-to-pay with spending limits and wallet integration (eca5237b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.126.0] - 2025-11-22
 
 ### ✨ Features
