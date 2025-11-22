@@ -15,12 +15,19 @@ class TranslationService
 
     public function __construct()
     {
-        // Read from database settings first, fallback to config, then env
-        $this->enabled = \App\Models\Setting::get('google_translate_enabled')
-            ?? config('translate.google.enabled', false);
+        try {
+            // Read from database settings first, fallback to config, then env
+            $this->enabled = \App\Models\Setting::get('google_translate_enabled')
+                ?? config('translate.google.enabled', false);
 
-        // Get supported languages from database
-        $this->supportedLanguages = LanguageSetting::getEnabledCodes();
+            // Get supported languages from database
+            $this->supportedLanguages = LanguageSetting::getEnabledCodes();
+        } catch (\Exception $e) {
+            // ⚠️ ถ้า database ไม่พร้อมใช้งาน ให้ใช้ค่าจาก config
+            Log::debug('TranslationService: Cannot load from database, using config - ' . $e->getMessage());
+            $this->enabled = config('translate.google.enabled', false);
+            $this->supportedLanguages = [];
+        }
 
         // Fallback to config if no languages in database
         if (empty($this->supportedLanguages)) {
@@ -45,9 +52,15 @@ class TranslationService
         $config = [];
 
         // Priority order: Database > Environment > Config
-        $apiKey = \App\Models\Setting::get('google_translate_api_key')
-            ?? env('GOOGLE_TRANSLATE_API_KEY')
-            ?? config('translate.google.api_key');
+        try {
+            $apiKey = \App\Models\Setting::get('google_translate_api_key')
+                ?? env('GOOGLE_TRANSLATE_API_KEY')
+                ?? config('translate.google.api_key');
+        } catch (\Exception $e) {
+            // ⚠️ ถ้า database ไม่พร้อมใช้งาน ให้ใช้ค่าจาก env/config
+            $apiKey = env('GOOGLE_TRANSLATE_API_KEY')
+                ?? config('translate.google.api_key');
+        }
 
         if ($apiKey) {
             $config['key'] = $apiKey;

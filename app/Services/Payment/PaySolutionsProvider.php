@@ -32,17 +32,23 @@ class PaySolutionsProvider implements PaymentProviderInterface
 
     public function __construct()
     {
-        $this->gateway = PaymentGateway::findByCode('paysolutions');
+        try {
+            $this->gateway = PaymentGateway::findByCode('paysolutions');
 
-        if ($this->gateway) {
-            $this->testMode = $this->gateway->test_mode;
-            $this->apiUrl = $this->testMode
-                ? 'https://sandbox-api.paysolutions.asia'
-                : 'https://api.paysolutions.asia';
+            if ($this->gateway) {
+                $this->testMode = $this->gateway->test_mode;
+                $this->apiUrl = $this->testMode
+                    ? 'https://sandbox-api.paysolutions.asia'
+                    : 'https://api.paysolutions.asia';
 
-            $this->merchantId = $this->gateway->getCredential('merchant_id');
-            $this->apiKey = $this->gateway->getCredential('api_key');
-            $this->secretKey = $this->gateway->getCredential('secret_key');
+                $this->merchantId = $this->gateway->getCredential('merchant_id');
+                $this->apiKey = $this->gateway->getCredential('api_key');
+                $this->secretKey = $this->gateway->getCredential('secret_key');
+            }
+        } catch (\Exception $e) {
+            // ⚠️ ถ้า database ไม่พร้อมใช้งาน (testing mode หรือ bootstrap) ให้ข้ามการโหลด config
+            Log::debug('PaySolutionsProvider: Cannot load gateway config - ' . $e->getMessage());
+            $this->gateway = null;
         }
     }
 
