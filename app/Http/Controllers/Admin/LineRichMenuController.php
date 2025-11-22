@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreLineRichMenuRequest;
+use App\Http\Requests\UpdateLineRichMenuRequest;
 use App\Models\LineRichMenu;
+use App\Services\LineRichMenuImageService;
 use App\Services\WebPService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,37 +25,58 @@ class LineRichMenuController extends Controller
         return view('admin.line-bot.rich-menus.create');
     }
 
-    public function store(Request $request)
+    /**
+     * สร้าง Rich Menu ใหม่
+     *
+     * @param StoreLineRichMenuRequest $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function store(StoreLineRichMenuRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'size' => 'required|in:full,half',
-            'selected' => 'boolean',
-            'chat_bar_text' => 'required|string|max:14',
-            'areas' => 'required|json',
-            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:1024',
-            'is_default' => 'boolean',
-            'is_active' => 'boolean',
-        ]);
+        $validated = $request->validated();
 
+        // Process และบันทึกภาพด้วย LineRichMenuImageService
         if ($request->hasFile('image')) {
-            $webpService = app(WebPService::class);
-            $result = $webpService->convertAndStore($request->file('image'), 'rich-menus', 90);
-            $validated['image_path'] = $result['path'];
+            $imageService = app(LineRichMenuImageService::class);
+
+            try {
+                $result = $imageService->processAndStore(
+                    $request->file('image'),
+                    $validated['size'],
+                    $request->input('needs_resize', false)
+                );
+
+                $validated['image_path'] = $result['path'];
+
+                // Flash message บอกรายละเอียดภาพ
+                session()->flash('info', sprintf(
+                    '📸 ภาพถูกประมวลผลแล้ว: %dx%d px, ขนาด %s KB',
+                    $result['width'],
+                    $result['height'],
+                    number_format($result['size_kb'], 2)
+                ));
+
+            } catch (\Exception $e) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['image' => 'เกิดข้อผิดพลาดในการประมวลผลภาพ: ' . $e->getMessage()]);
+            }
         }
 
+        // Decode areas JSON
         $validated['areas'] = json_decode($validated['areas'], true);
         $validated['created_by'] = Auth::id();
 
+        // สร้าง Rich Menu
         $menu = LineRichMenu::create($validated);
 
-        if ($request->is_default) {
+        // ตั้งเป็น default ถ้าระบุ
+        if ($request->input('is_default')) {
             $menu->setAsDefault();
         }
 
         return redirect()->route('admin.line-bot.rich-menu.index')
-            ->with('success', 'สร้าง Rich Menu สำเร็จ');
+            ->with('success', '✅ สร้าง Rich Menu สำเร็จ!');
     }
 
     public function edit($id)
@@ -61,41 +85,64 @@ class LineRichMenuController extends Controller
         return view('admin.line-bot.rich-menus.edit', compact('richMenu'));
     }
 
-    public function update(Request $request, $id)
+    /**
+     * อัปเดต Rich Menu
+     *
+     * @param UpdateLineRichMenuRequest $request
+     * @param int $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function update(UpdateLineRichMenuRequest $request, $id)
     {
         $menu = LineRichMenu::findOrFail($id);
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'size' => 'required|in:full,half',
-            'selected' => 'boolean',
-            'chat_bar_text' => 'required|string|max:14',
-            'areas' => 'required|json',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:1024',
-            'is_default' => 'boolean',
-            'is_active' => 'boolean',
-        ]);
-
+        // Process และบันทึกภาพใหม่ (ถ้ามี)
         if ($request->hasFile('image')) {
-            if ($menu->image_path) {
-                Storage::disk('public')->delete($menu->image_path);
+            $imageService = app(LineRichMenuImageService::class);
+
+            try {
+                // ลบภาพเก่า
+                if ($menu->image_path) {
+                    $imageService->delete($menu->image_path);
+                }
+
+                // Process ภาพใหม่
+                $result = $imageService->processAndStore(
+                    $request->file('image'),
+                    $validated['size'],
+                    $request->input('needs_resize', false)
+                );
+
+                $validated['image_path'] = $result['path'];
+
+                session()->flash('info', sprintf(
+                    '📸 ภาพใหม่ถูกประมวลผลแล้ว: %dx%d px, ขนาด %s KB',
+                    $result['width'],
+                    $result['height'],
+                    number_format($result['size_kb'], 2)
+                ));
+
+            } catch (\Exception $e) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['image' => 'เกิดข้อผิดพลาดในการประมวลผลภาพ: ' . $e->getMessage()]);
             }
-            $webpService = app(WebPService::class);
-            $result = $webpService->convertAndStore($request->file('image'), 'rich-menus', 90);
-            $validated['image_path'] = $result['path'];
         }
 
+        // Decode areas JSON
         $validated['areas'] = json_decode($validated['areas'], true);
 
+        // อัปเดต Rich Menu
         $menu->update($validated);
 
-        if ($request->is_default && !$menu->is_default) {
+        // ตั้งเป็น default ถ้าระบุ (และยังไม่ใช่ default)
+        if ($request->input('is_default') && !$menu->is_default) {
             $menu->setAsDefault();
         }
 
         return redirect()->route('admin.line-bot.rich-menu.index')
-            ->with('success', 'อัปเดต Rich Menu สำเร็จ');
+            ->with('success', '✅ อัปเดต Rich Menu สำเร็จ!');
     }
 
     public function destroy($id)
