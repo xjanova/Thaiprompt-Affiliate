@@ -204,7 +204,25 @@ Alpine.store('language', {
      * เปลี่ยนภาษาและแปลหน้าเว็บ
      */
     setLanguage(langCode) {
-        // ✅ ล้าง translation_triggered flag เมื่อผู้ใช้เปลี่ยนภาษาใหม่
+        console.log('🌐 setLanguage called:', langCode);
+
+        // ✅ ตรวจสอบว่าอยู่ในหน้า Admin หรือไม่
+        const isAdminPage = window.location.pathname.includes('/admin/');
+
+        if (isAdminPage) {
+            // 🔧 ใช้ session-based language switching สำหรับหน้า Admin
+            // ป้องกัน infinite reload loop จาก Google Translate
+            console.log('🔧 Admin page detected - using session-based switch');
+            this.current = langCode;
+            localStorage.setItem('app_language', langCode);
+
+            // Redirect ไปยัง language switch route (จะกลับมาหน้าเดิมอัตโนมัติ)
+            window.location.href = `/language/switch/${langCode}`;
+            return;
+        }
+
+        // ✅ สำหรับหน้าอื่นๆ ใช้ Google Translate ตามปกติ
+        // ล้าง translation_triggered flag เมื่อผู้ใช้เปลี่ยนภาษาใหม่
         // เพื่อให้ translatePage() สามารถทำงานได้
         sessionStorage.removeItem('translation_triggered');
 
