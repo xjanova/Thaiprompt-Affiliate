@@ -425,7 +425,7 @@
                                     </a>
 
                                     {{-- Top Up --}}
-                                    <a href="{{ route('admin.nfc-cards.topup.form', $card) }}"
+                                    <a href="{{ route('admin.nfc-cards.topup-form', $card) }}"
                                        class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 transition-colors"
                                        title="เติมเงิน">
                                         <i class="fas fa-money-bill-wave text-lg"></i>
@@ -448,7 +448,7 @@
                                              class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
                                             <div class="py-1">
                                                 @if(!$card->is_paired)
-                                                    <a href="{{ route('admin.nfc-cards.pair.form', $card) }}"
+                                                    <a href="{{ route('admin.nfc-cards.pair-form', $card) }}"
                                                        class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                                         <i class="fas fa-link mr-2"></i>
                                                         จับคู่กับผู้ใช้
@@ -456,7 +456,6 @@
                                                 @else
                                                     <form action="{{ route('admin.nfc-cards.unpair', $card) }}" method="POST">
                                                         @csrf
-                                                        @method('DELETE')
                                                         <button type="submit"
                                                                 class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                                                                 onclick="return confirm('ยืนยันการยกเลิกการจับคู่?')">
@@ -469,7 +468,6 @@
                                                 @if($card->status === 'active')
                                                     <form action="{{ route('admin.nfc-cards.deactivate', $card) }}" method="POST">
                                                         @csrf
-                                                        @method('PATCH')
                                                         <button type="submit"
                                                                 class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                                             <i class="fas fa-stop-circle mr-2"></i>
@@ -479,7 +477,6 @@
                                                 @else
                                                     <form action="{{ route('admin.nfc-cards.activate', $card) }}" method="POST">
                                                         @csrf
-                                                        @method('PATCH')
                                                         <button type="submit"
                                                                 class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                                             <i class="fas fa-play-circle mr-2"></i>
@@ -498,7 +495,6 @@
                                                 @else
                                                     <form action="{{ route('admin.nfc-cards.unblock', $card) }}" method="POST">
                                                         @csrf
-                                                        @method('PATCH')
                                                         <button type="submit"
                                                                 class="w-full text-left px-4 py-2 text-sm text-green-600 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-gray-700">
                                                             <i class="fas fa-check-circle mr-2"></i>
