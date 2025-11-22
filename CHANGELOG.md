@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.133.0] - 2025-11-22
+
+### ✨ Features
+- Merge pull request #1474 from xjanova/claude/fix-nfc-cards-view-01DLm6BJgdJEQxrTBKpK8Suw (ec317f85)
+- feat: add complete NFC cards views with V3 design (bc7b0a1f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.132.1] - 2025-11-22
 
 ### ✨ Features
