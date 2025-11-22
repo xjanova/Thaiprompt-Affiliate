@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Schema;
  * ใช้สำหรับป้องกันปัญหา Duplicate Column/Index ในการ migrate
  * สามารถนำไปใช้กับ migration ทุกตัวได้
  *
+ * ✅ Laravel 11 Compatible - ไม่ใช้ Doctrine DBAL
+ * ใช้ INFORMATION_SCHEMA queries แทน getDoctrineSchemaManager()
+ *
  * Example Usage:
  * ```
  * use Database\Migrations\Concerns\SafeMigration;
@@ -129,32 +132,45 @@ trait SafeMigration
 
     /**
      * เช็คว่า index มีอยู่หรือไม่
+     *
+     * Laravel 11 compatible - ไม่ใช้ Doctrine DBAL
      */
     protected function indexExists(string $tableName, string $indexName): bool
     {
         $connection = Schema::getConnection();
-        $schemaManager = $connection->getDoctrineSchemaManager();
-        $indexes = $schemaManager->listTableIndexes($tableName);
+        $databaseName = $connection->getDatabaseName();
 
-        return isset($indexes[strtolower($indexName)]);
+        // ใช้ raw SQL query แทน Doctrine
+        $indexes = $connection->select(
+            "SELECT DISTINCT INDEX_NAME
+             FROM INFORMATION_SCHEMA.STATISTICS
+             WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?",
+            [$databaseName, $tableName, $indexName]
+        );
+
+        return !empty($indexes);
     }
 
     /**
      * เช็คว่า foreign key มีอยู่หรือไม่
+     *
+     * Laravel 11 compatible - ไม่ใช้ Doctrine DBAL
      */
     protected function foreignKeyExists(string $tableName, string $constraintName): bool
     {
         $connection = Schema::getConnection();
-        $schemaManager = $connection->getDoctrineSchemaManager();
-        $foreignKeys = $schemaManager->listTableForeignKeys($tableName);
+        $databaseName = $connection->getDatabaseName();
 
-        foreach ($foreignKeys as $foreignKey) {
-            if ($foreignKey->getName() === $constraintName) {
-                return true;
-            }
-        }
+        // ใช้ raw SQL query แทน Doctrine
+        $foreignKeys = $connection->select(
+            "SELECT CONSTRAINT_NAME
+             FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+             WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+             AND CONSTRAINT_TYPE = 'FOREIGN KEY' AND CONSTRAINT_NAME = ?",
+            [$databaseName, $tableName, $constraintName]
+        );
 
-        return false;
+        return !empty($foreignKeys);
     }
 
     /**
