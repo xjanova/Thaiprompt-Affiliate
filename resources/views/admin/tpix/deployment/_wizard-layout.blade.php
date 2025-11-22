@@ -71,14 +71,43 @@
             </div>
         </div>
 
-        {{-- Content Area --}}
-        <div class="relative group">
-            {{-- Glow Effect --}}
-            <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl blur-lg opacity-25 group-hover:opacity-30 transition duration-300"></div>
+        {{-- Wallet Connection (ด้านบน) --}}
+        <div class="mb-6">
+            @php
+                $pricingService = app(\App\Services\TPIX\TpixPricingService::class);
+                $pricing = $pricingService->calculateTotalPrice($config);
+                $requiredTPIX = $pricing['total'];
+            @endphp
+            <x-tpix.wallet-connector
+                :requiredAmount="$requiredTPIX"
+                :showBalance="true"
+                :required="true"
+            />
+        </div>
 
-            {{-- Card --}}
-            <div class="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 md:p-12 border border-white/20 dark:border-gray-700/50">
-                @yield('step-content')
+        {{-- Content Area (2 Columns: Content + Pricing Sidebar) --}}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {{-- Main Content (Left - 2/3) --}}
+            <div class="lg:col-span-2">
+                <div class="relative group">
+                    {{-- Glow Effect --}}
+                    <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl blur-lg opacity-25 group-hover:opacity-30 transition duration-300"></div>
+
+                    {{-- Card --}}
+                    <div class="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 md:p-12 border border-white/20 dark:border-gray-700/50">
+                        @yield('step-content')
+                    </div>
+                </div>
+            </div>
+
+            {{-- Pricing Sidebar (Right - 1/3) --}}
+            <div class="lg:col-span-1">
+                <div class="sticky top-4">
+                    <x-tpix.pricing-calculator
+                        :config="$config"
+                        :showBreakdown="true"
+                    />
+                </div>
             </div>
         </div>
 
