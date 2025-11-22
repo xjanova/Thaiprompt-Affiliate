@@ -190,6 +190,24 @@ class TpixConfiguration extends Model
         'deployment_logs',
         'error_logs',
         'notes',
+
+        // Payment
+        'wallet_address',
+        'payment_amount',
+        'payment_tx_hash',
+        'payment_status',
+        'payment_verified_at',
+        'pricing_breakdown',
+        'subtotal_amount',
+        'discount_amount',
+        'discount_code',
+        'refund_amount',
+        'refund_tx_hash',
+        'refund_reason',
+        'refunded_at',
+        'premium_services',
+        'referral_code',
+        'is_early_adopter',
     ];
 
     /**
@@ -235,6 +253,21 @@ class TpixConfiguration extends Model
         'marketing_materials' => 'array',
         'deployment_logs' => 'array',
         'error_logs' => 'array',
+        'pricing_breakdown' => 'array',
+        'premium_services' => 'array',
+
+        // Payment decimals
+        'payment_amount' => 'decimal:2',
+        'subtotal_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'refund_amount' => 'decimal:2',
+
+        // Payment booleans
+        'is_early_adopter' => 'boolean',
+
+        // Payment timestamps
+        'payment_verified_at' => 'datetime',
+        'refunded_at' => 'datetime',
 
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
