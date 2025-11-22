@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.131.0] - 2025-11-22
+
+### ✨ Features
+- Merge pull request #1468 from xjanova/claude/fix-payment-migration-error-01Dr29ZkfqtzEZmYDssBjHeq (1d9c3a56)
+- feat: add performance indexes to LINE bot tables (d8f0c42d)
+### 🐛 Bug Fixes
+- fix: correct column reference in LINE tables indexes migration (a651f685)
+### 🔧 Other Changes
+- chore: merge claude/Main and resolve LINE indexes conflict (c7b1da88)
+
 ## [v3.130.3] - 2025-11-22
 
 ### ✨ Features
