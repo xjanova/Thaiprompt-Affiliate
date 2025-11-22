@@ -407,7 +407,7 @@ html {
     </section>
 
     {{-- ================================================================
-        3 DOORS SECTION - ทางแก้ปัญหา 3 ประตู
+        3 DOORS SECTION - ทางแก้ปัญหา 3 ประตู (Landing Page)
     ================================================================ --}}
     <section id="doors" class="relative py-32 bg-gradient-to-b from-gray-900 to-black">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -424,316 +424,215 @@ html {
                 </p>
             </div>
 
-            {{-- Door 1: นักลงทุน --}}
-            <div class="mb-40 perspective-2000"
-                 x-intersect.once="$el.classList.add('door-enter')">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            {{-- 3 Door Cards Grid --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
 
-                    {{-- Left: Visual --}}
-                    <div class="order-2 lg:order-1 animate-float-delayed">
-                        <div class="relative">
-                            {{-- Glow Effect --}}
-                            <div class="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl blur-3xl opacity-30"></div>
+                {{-- Door 1: นักลงทุน --}}
+                <a href="{{ route('frontend.investors') }}"
+                   class="group relative block perspective-2000"
+                   x-intersect.once="$el.classList.add('door-enter')"
+                   style="animation-delay: 0.1s;">
 
-                            {{-- Card --}}
-                            <div class="relative backdrop-blur-xl bg-white/10 border-2 border-white/20 rounded-3xl p-8 shadow-2xl">
-                                <div class="text-8xl mb-6 text-center">💰</div>
-                                <h4 class="text-3xl font-bold text-white text-center mb-6">
-                                    Dashboard นักลงทุน
-                                </h4>
+                    {{-- Glow Effect --}}
+                    <div class="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-500"></div>
 
-                                {{-- Stats Grid --}}
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div class="backdrop-blur-xl bg-purple-500/20 rounded-2xl p-6 border border-purple-500/30">
-                                        <p class="text-sm text-gray-400 mb-2">รายได้รวม</p>
-                                        <p class="text-3xl font-black text-purple-400">฿128,450</p>
-                                        <p class="text-xs text-green-400 mt-2">↗ +245% ROI</p>
-                                    </div>
-                                    <div class="backdrop-blur-xl bg-pink-500/20 rounded-2xl p-6 border border-pink-500/30">
-                                        <p class="text-sm text-gray-400 mb-2">รายได้เดือนนี้</p>
-                                        <p class="text-3xl font-black text-pink-400">฿32,100</p>
-                                        <p class="text-xs text-green-400 mt-2">↗ +18%</p>
-                                    </div>
-                                </div>
+                    {{-- Card --}}
+                    <div class="relative backdrop-blur-xl bg-white/5 border-2 border-white/10 rounded-3xl p-8 shadow-2xl
+                                hover:bg-white/10 hover:border-purple-500/50
+                                transform group-hover:scale-105 group-hover:-translate-y-2
+                                transition-all duration-500">
 
-                                {{-- Progress Bar --}}
-                                <div class="mt-6">
-                                    <div class="flex justify-between text-sm text-gray-400 mb-2">
-                                        <span>เป้าหมายปีนี้</span>
-                                        <span>75%</span>
-                                    </div>
-                                    <div class="h-3 bg-gray-800 rounded-full overflow-hidden">
-                                        <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" style="width: 75%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Right: Content --}}
-                    <div class="order-1 lg:order-2 space-y-8">
-                        <div class="inline-flex items-center gap-3 px-6 py-3 backdrop-blur-xl bg-purple-600/20 border-2 border-purple-500/30 rounded-full">
-                            <span class="text-4xl">🚪</span>
-                            <span class="text-lg font-bold text-purple-400">ประตูที่ 1</span>
+                        {{-- Door Icon --}}
+                        <div class="text-7xl mb-6 text-center animate-float group-hover:scale-110 transition-transform duration-300">
+                            💰
                         </div>
 
-                        <h3 class="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 leading-tight">
-                            สำหรับนักลงทุน:<br>
-                            การลงทุนที่เชื่อมกับชีวิตจริง
+                        {{-- Door Number Badge --}}
+                        <div class="inline-flex items-center gap-2 px-4 py-2 backdrop-blur-xl bg-purple-600/20 border border-purple-500/30 rounded-full mb-4">
+                            <span class="text-2xl">🚪</span>
+                            <span class="text-sm font-bold text-purple-400">ประตูที่ 1</span>
+                        </div>
+
+                        {{-- Title --}}
+                        <h3 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-4 leading-tight">
+                            สำหรับนักลงทุน
                         </h3>
 
-                        <div class="space-y-6 text-xl text-gray-300">
-                            <p class="leading-relaxed">
-                                <span class="text-red-400 font-bold">ปัญหา:</span>
-                                คุณอยากลงทุนเพื่ออนาคต แต่การลงทุนมันซับซ้อน มีความเสี่ยง ไม่รู้จะเริ่มอย่างไร
-                            </p>
+                        {{-- Description --}}
+                        <p class="text-lg text-gray-300 mb-6 leading-relaxed">
+                            การลงทุนที่<span class="text-purple-400 font-semibold">เชื่อมกับชีวิตจริง</span>
+                            เริ่มต้นง่าย ไม่ต้องมีเงินมาก
+                        </p>
 
-                            <p class="leading-relaxed">
-                                <span class="text-green-400 font-bold">แก้ไขได้:</span>
-                                เราสร้างระบบลงทุนที่<span class="underline decoration-wavy decoration-purple-400">ใครก็เข้าถึงได้</span> ไม่ต้องมีเงินมาก ไม่ต้องมีความรู้ก่อน
-                            </p>
+                        {{-- Key Points --}}
+                        <ul class="space-y-3 mb-8">
+                            <li class="flex items-start gap-2 text-gray-400">
+                                <i class="fas fa-check-circle text-purple-400 mt-1"></i>
+                                <span>ระบบอัตโนมัติ ทำงาน 24/7</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-gray-400">
+                                <i class="fas fa-check-circle text-purple-400 mt-1"></i>
+                                <span>ROI สูง มั่นคง โปร่งใส</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-gray-400">
+                                <i class="fas fa-check-circle text-purple-400 mt-1"></i>
+                                <span>สร้างรายได้เสริมครอบครัว</span>
+                            </li>
+                        </ul>
 
-                            <div class="backdrop-blur-xl bg-purple-900/20 border-l-4 border-purple-500 rounded-r-2xl p-6">
-                                <p class="font-semibold text-white mb-4">💡 มันเชื่อมกับชีวิตคุณอย่างไร?</p>
-                                <ul class="space-y-3">
-                                    <li class="flex items-start gap-3">
-                                        <i class="fas fa-heart text-pink-400 mt-1"></i>
-                                        <span><strong>ครอบครัว:</strong> สร้างรายได้เสริมให้ครอบครัวมีชีวิตที่ดีขึ้น</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <i class="fas fa-shield-alt text-purple-400 mt-1"></i>
-                                        <span><strong>อนาคต:</strong> เตรียมเงินก้อนสำหรับเป้าหมายชีวิต</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <i class="fas fa-clock text-blue-400 mt-1"></i>
-                                        <span><strong>เวลา:</strong> ระบบทำงานอัตโนมัติ คุณมีเวลากับคนที่คุณรัก</span>
-                                    </li>
-                                </ul>
-                            </div>
+                        {{-- CTA --}}
+                        <div class="flex items-center justify-between text-purple-400 font-bold group-hover:text-purple-300 transition-colors">
+                            <span>เรียนรู้เพิ่มเติม</span>
+                            <i class="fas fa-arrow-right group-hover:translate-x-2 transition-transform"></i>
                         </div>
 
-                        <a href="{{ route('register') }}"
-                           class="inline-flex items-center gap-3 px-10 py-5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-xl rounded-2xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
-                            <i class="fas fa-rocket"></i>
-                            <span>เริ่มลงทุนวันนี้</span>
-                            <i class="fas fa-arrow-right"></i>
-                        </a>
+                        {{-- Hover Shine Effect --}}
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none rounded-3xl"></div>
                     </div>
-                </div>
+                </a>
+
+                {{-- Door 2: นักพัฒนา --}}
+                <a href="{{ route('frontend.developers') }}"
+                   class="group relative block perspective-2000"
+                   x-intersect.once="$el.classList.add('door-enter')"
+                   style="animation-delay: 0.2s;">
+
+                    {{-- Glow Effect --}}
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-500"></div>
+
+                    {{-- Card --}}
+                    <div class="relative backdrop-blur-xl bg-white/5 border-2 border-white/10 rounded-3xl p-8 shadow-2xl
+                                hover:bg-white/10 hover:border-blue-500/50
+                                transform group-hover:scale-105 group-hover:-translate-y-2
+                                transition-all duration-500">
+
+                        {{-- Door Icon --}}
+                        <div class="text-7xl mb-6 text-center animate-float-delayed group-hover:scale-110 transition-transform duration-300">
+                            💻
+                        </div>
+
+                        {{-- Door Number Badge --}}
+                        <div class="inline-flex items-center gap-2 px-4 py-2 backdrop-blur-xl bg-blue-600/20 border border-blue-500/30 rounded-full mb-4">
+                            <span class="text-2xl">🚪</span>
+                            <span class="text-sm font-bold text-blue-400">ประตูที่ 2</span>
+                        </div>
+
+                        {{-- Title --}}
+                        <h3 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 mb-4 leading-tight">
+                            สำหรับนักพัฒนา
+                        </h3>
+
+                        {{-- Description --}}
+                        <p class="text-lg text-gray-300 mb-6 leading-relaxed">
+                            เปลี่ยน<span class="text-blue-400 font-semibold">Code เป็นรายได้</span>
+                            ขายผลงานได้ทันที มี Marketplace พร้อม
+                        </p>
+
+                        {{-- Key Points --}}
+                        <ul class="space-y-3 mb-8">
+                            <li class="flex items-start gap-2 text-gray-400">
+                                <i class="fas fa-check-circle text-blue-400 mt-1"></i>
+                                <span>ได้ถึง 70% Revenue Share</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-gray-400">
+                                <i class="fas fa-check-circle text-blue-400 mt-1"></i>
+                                <span>Passive Income ต่อเนื่อง</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-gray-400">
+                                <i class="fas fa-check-circle text-blue-400 mt-1"></i>
+                                <span>Community นักพัฒนาแน่น</span>
+                            </li>
+                        </ul>
+
+                        {{-- CTA --}}
+                        <div class="flex items-center justify-between text-blue-400 font-bold group-hover:text-blue-300 transition-colors">
+                            <span>เรียนรู้เพิ่มเติม</span>
+                            <i class="fas fa-arrow-right group-hover:translate-x-2 transition-transform"></i>
+                        </div>
+
+                        {{-- Hover Shine Effect --}}
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none rounded-3xl"></div>
+                    </div>
+                </a>
+
+                {{-- Door 3: ชุมชน --}}
+                <a href="{{ route('frontend.community') }}"
+                   class="group relative block perspective-2000"
+                   x-intersect.once="$el.classList.add('door-enter')"
+                   style="animation-delay: 0.3s;">
+
+                    {{-- Glow Effect --}}
+                    <div class="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-500 rounded-3xl blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-500"></div>
+
+                    {{-- Card --}}
+                    <div class="relative backdrop-blur-xl bg-white/5 border-2 border-white/10 rounded-3xl p-8 shadow-2xl
+                                hover:bg-white/10 hover:border-green-500/50
+                                transform group-hover:scale-105 group-hover:-translate-y-2
+                                transition-all duration-500">
+
+                        {{-- Door Icon --}}
+                        <div class="text-7xl mb-6 text-center animate-float group-hover:scale-110 transition-transform duration-300">
+                            🌍
+                        </div>
+
+                        {{-- Door Number Badge --}}
+                        <div class="inline-flex items-center gap-2 px-4 py-2 backdrop-blur-xl bg-green-600/20 border border-green-500/30 rounded-full mb-4">
+                            <span class="text-2xl">🚪</span>
+                            <span class="text-sm font-bold text-green-400">ประตูที่ 3</span>
+                        </div>
+
+                        {{-- Title --}}
+                        <h3 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400 mb-4 leading-tight">
+                            สำหรับชุมชน
+                        </h3>
+
+                        {{-- Description --}}
+                        <p class="text-lg text-gray-300 mb-6 leading-relaxed">
+                            <span class="text-green-400 font-semibold">เติบโตไปด้วยกัน</span>
+                            แชร์ความรู้ สร้างเครือข่าย ช่วยเหลือกัน
+                        </p>
+
+                        {{-- Key Points --}}
+                        <ul class="space-y-3 mb-8">
+                            <li class="flex items-start gap-2 text-gray-400">
+                                <i class="fas fa-check-circle text-green-400 mt-1"></i>
+                                <span>Affiliate System ได้ทั้ง 2 ฝ่าย</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-gray-400">
+                                <i class="fas fa-check-circle text-green-400 mt-1"></i>
+                                <span>เรียนรู้ฟรี แลกเปลี่ยนความรู้</span>
+                            </li>
+                            <li class="flex items-start gap-2 text-gray-400">
+                                <i class="fas fa-check-circle text-green-400 mt-1"></i>
+                                <span>ช่วยเหลือสังคมร่วมกัน</span>
+                            </li>
+                        </ul>
+
+                        {{-- CTA --}}
+                        <div class="flex items-center justify-between text-green-400 font-bold group-hover:text-green-300 transition-colors">
+                            <span>เรียนรู้เพิ่มเติม</span>
+                            <i class="fas fa-arrow-right group-hover:translate-x-2 transition-transform"></i>
+                        </div>
+
+                        {{-- Hover Shine Effect --}}
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none rounded-3xl"></div>
+                    </div>
+</a>
+
             </div>
 
-            {{-- Door 2: นักพัฒนา --}}
-            <div class="mb-40 perspective-2000"
+            {{-- Bottom CTA --}}
+            <div class="text-center mt-20"
                  x-intersect.once="$el.classList.add('door-enter')">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-
-                    {{-- Left: Content --}}
-                    <div class="space-y-8">
-                        <div class="inline-flex items-center gap-3 px-6 py-3 backdrop-blur-xl bg-blue-600/20 border-2 border-blue-500/30 rounded-full">
-                            <span class="text-4xl">🚪</span>
-                            <span class="text-lg font-bold text-blue-400">ประตูที่ 2</span>
-                        </div>
-
-                        <h3 class="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 leading-tight">
-                            สำหรับนักพัฒนา:<br>
-                            เปลี่ยน Code เป็นรายได้
-                        </h3>
-
-                        <div class="space-y-6 text-xl text-gray-300">
-                            <p class="leading-relaxed">
-                                <span class="text-red-400 font-bold">ปัญหา:</span>
-                                คุณเขียนโค้ดเก่ง มี Skill ดี แต่หาเงินยาก ขายผลงานไม่เป็น รายได้ไม่สม่ำเสมอ
-                            </p>
-
-                            <p class="leading-relaxed">
-                                <span class="text-green-400 font-bold">แก้ไขได้:</span>
-                                เราให้<span class="underline decoration-wavy decoration-blue-400">แพลตฟอร์ม</span>ที่คุณขายผลงานได้ทันที มีลูกค้ารอ มี Community พร้อมช่วย
-                            </p>
-
-                            <div class="backdrop-blur-xl bg-blue-900/20 border-l-4 border-blue-500 rounded-r-2xl p-6">
-                                <p class="font-semibold text-white mb-4">🛠️ เรามีอะไรให้นักพัฒนา?</p>
-                                <ul class="space-y-3">
-                                    <li class="flex items-start gap-3">
-                                        <i class="fas fa-code text-blue-400 mt-1"></i>
-                                        <span><strong>Marketplace:</strong> ขายผลงาน Plugins, Themes, Scripts ได้ทันที</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <i class="fas fa-money-bill-wave text-green-400 mt-1"></i>
-                                        <span><strong>Revenue Share:</strong> ได้ถึง 70% จากยอดขาย</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <i class="fas fa-users text-purple-400 mt-1"></i>
-                                        <span><strong>Community:</strong> ชุมชนนักพัฒนา แลกเปลี่ยนความรู้</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <i class="fas fa-chart-line text-cyan-400 mt-1"></i>
-                                        <span><strong>Passive Income:</strong> ขายได้ต่อเนื่อง แม้ไม่ทำงาน</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <a href="{{ route('register') }}"
-                           class="inline-flex items-center gap-3 px-10 py-5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold text-xl rounded-2xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
-                            <i class="fas fa-code"></i>
-                            <span>เริ่มขายผลงาน</span>
-                            <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-
-                    {{-- Right: Visual --}}
-                    <div class="animate-float">
-                        <div class="relative">
-                            {{-- Glow Effect --}}
-                            <div class="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl blur-3xl opacity-30"></div>
-
-                            {{-- Card --}}
-                            <div class="relative backdrop-blur-xl bg-white/10 border-2 border-white/20 rounded-3xl p-8 shadow-2xl">
-                                <div class="text-8xl mb-6 text-center">💻</div>
-                                <h4 class="text-3xl font-bold text-white text-center mb-6">
-                                    Developer Marketplace
-                                </h4>
-
-                                {{-- Code Editor Preview --}}
-                                <div class="bg-gray-900 rounded-2xl p-6 border-2 border-blue-500/30 mb-6">
-                                    <div class="flex items-center gap-2 mb-4">
-                                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                                    </div>
-                                    <code class="text-sm text-green-400 font-mono block">
-                                        <span class="text-purple-400">const</span> <span class="text-blue-400">myProduct</span> = {<br>
-                                        &nbsp;&nbsp;sales: <span class="text-yellow-400">152</span>,<br>
-                                        &nbsp;&nbsp;revenue: <span class="text-orange-400">'฿45,600'</span>,<br>
-                                        &nbsp;&nbsp;rating: <span class="text-yellow-400">4.9</span> <span class="text-gray-500">⭐</span><br>
-                                        };
-                                    </code>
-                                </div>
-
-                                {{-- Stats --}}
-                                <div class="grid grid-cols-3 gap-4 text-center">
-                                    <div>
-                                        <p class="text-2xl font-bold text-blue-400">152</p>
-                                        <p class="text-xs text-gray-400">ยอดขาย</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-2xl font-bold text-cyan-400">฿45K</p>
-                                        <p class="text-xs text-gray-400">รายได้</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-2xl font-bold text-yellow-400">4.9⭐</p>
-                                        <p class="text-xs text-gray-400">คะแนน</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Door 3: ชุมชน --}}
-            <div class="perspective-2000"
-                 x-intersect.once="$el.classList.add('door-enter')">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-
-                    {{-- Left: Visual --}}
-                    <div class="order-2 lg:order-1 animate-float-delayed">
-                        <div class="relative">
-                            {{-- Glow Effect --}}
-                            <div class="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-500 rounded-3xl blur-3xl opacity-30"></div>
-
-                            {{-- Card --}}
-                            <div class="relative backdrop-blur-xl bg-white/10 border-2 border-white/20 rounded-3xl p-8 shadow-2xl">
-                                <div class="text-8xl mb-6 text-center">🌍</div>
-                                <h4 class="text-3xl font-bold text-white text-center mb-6">
-                                    Community Network
-                                </h4>
-
-                                {{-- Network Visualization --}}
-                                <div class="relative h-48 mb-6">
-                                    <div class="absolute inset-0 flex items-center justify-center">
-                                        {{-- Center Node --}}
-                                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-400 flex items-center justify-center text-white text-2xl font-bold shadow-lg animate-pulse">
-                                            คุณ
-                                        </div>
-
-                                        {{-- Connected Nodes --}}
-                                        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-green-500/50 animate-pulse" style="animation-delay: 0.5s;"></div>
-                                        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-green-500/50 animate-pulse" style="animation-delay: 1s;"></div>
-                                        <div class="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-green-500/50 animate-pulse" style="animation-delay: 1.5s;"></div>
-                                        <div class="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-green-500/50 animate-pulse" style="animation-delay: 2s;"></div>
-                                    </div>
-                                </div>
-
-                                {{-- Stats Grid --}}
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div class="backdrop-blur-xl bg-green-500/20 rounded-2xl p-4 border border-green-500/30 text-center">
-                                        <p class="text-3xl font-black text-green-400 mb-1">12,450+</p>
-                                        <p class="text-xs text-gray-400">สมาชิกในชุมชน</p>
-                                    </div>
-                                    <div class="backdrop-blur-xl bg-emerald-500/20 rounded-2xl p-4 border border-emerald-500/30 text-center">
-                                        <p class="text-3xl font-black text-emerald-400 mb-1">฿2.4M</p>
-                                        <p class="text-xs text-gray-400">ช่วยเหลือสังคม</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Right: Content --}}
-                    <div class="order-1 lg:order-2 space-y-8">
-                        <div class="inline-flex items-center gap-3 px-6 py-3 backdrop-blur-xl bg-green-600/20 border-2 border-green-500/30 rounded-full">
-                            <span class="text-4xl">🚪</span>
-                            <span class="text-lg font-bold text-green-400">ประตูที่ 3</span>
-                        </div>
-
-                        <h3 class="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400 leading-tight">
-                            สำหรับชุมชน:<br>
-                            เติบโตไปด้วยกัน
-                        </h3>
-
-                        <div class="space-y-6 text-xl text-gray-300">
-                            <p class="leading-relaxed">
-                                <span class="text-red-400 font-bold">ปัญหา:</span>
-                                คุณทำธุรกิจคนเดียวลำบาก ไม่มีทีม ไม่มีเครือข่าย ต้องทำทุกอย่างเอง
-                            </p>
-
-                            <p class="leading-relaxed">
-                                <span class="text-green-400 font-bold">แก้ไขได้:</span>
-                                เราสร้าง<span class="underline decoration-wavy decoration-green-400">ชุมชน</span>ที่ทุกคนช่วยเหลือกัน เติบโตไปด้วยกัน ไม่ทิ้งใครไว้ข้างหลัง
-                            </p>
-
-                            <div class="backdrop-blur-xl bg-green-900/20 border-l-4 border-green-500 rounded-r-2xl p-6">
-                                <p class="font-semibold text-white mb-4">🌱 เราเกี่ยวพันชุมชนอย่างไร?</p>
-                                <ul class="space-y-3">
-                                    <li class="flex items-start gap-3">
-                                        <i class="fas fa-handshake text-green-400 mt-1"></i>
-                                        <span><strong>Affiliate System:</strong> แนะนำเพื่อน ได้ประโยชน์ทั้งสองฝ่าย</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <i class="fas fa-graduation-cap text-blue-400 mt-1"></i>
-                                        <span><strong>Knowledge Sharing:</strong> แลกเปลี่ยนความรู้ เรียนรู้ฟรี</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <i class="fas fa-users-cog text-purple-400 mt-1"></i>
-                                        <span><strong>Community Events:</strong> Meetup, Workshop, Networking</span>
-                                    </li>
-                                    <li class="flex items-start gap-3">
-                                        <i class="fas fa-heart text-pink-400 mt-1"></i>
-                                        <span><strong>Give Back:</strong> ส่วนหนึ่งของกำไรช่วยเหลือสังคม</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <a href="{{ route('register') }}"
-                           class="inline-flex items-center gap-3 px-10 py-5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-xl rounded-2xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
-                            <i class="fas fa-users"></i>
-                            <span>เข้าร่วมชุมชน</span>
-                            <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-                </div>
+                <p class="text-xl text-gray-400 mb-6">
+                    ยังไม่แน่ใจว่าประตูไหนเหมาะกับคุณ?
+                </p>
+                <a href="{{ route('register') }}"
+                   class="inline-flex items-center gap-3 px-12 py-5 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 hover:from-purple-700 hover:via-pink-700 hover:to-orange-700 text-white font-bold text-xl rounded-2xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
+                    <i class="fas fa-rocket"></i>
+                    <span>ลงทะเบียนฟรี เปิดทั้ง 3 ประตูได้เลย!</span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
             </div>
 
         </div>
