@@ -197,6 +197,24 @@ return [
         ],
 
         [
+            'id' => 'nfc-system',
+            'label' => 'บัตร NFC',
+            'icon' => 'fas fa-credit-card',
+            'route' => null,
+            'order' => 7.5,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-blue-500 to-purple-500',
+            'submenu' => [
+                ['label' => '📊 Dashboard', 'route' => 'admin.nfc.dashboard'],
+                ['label' => '💳 จัดการบัตร', 'route' => 'admin.nfc-cards.index'],
+                ['label' => '➕ ออกบัตรใหม่', 'route' => 'admin.nfc-cards.create'],
+                ['label' => '📜 ธุรกรรมทั้งหมด', 'route' => 'admin.nfc.transactions'],
+                ['label' => '📥 ส่งออกข้อมูล', 'route' => 'admin.nfc-cards.export'],
+            ],
+        ],
+
+        [
             'id' => 'wallet-thb',
             'label' => 'กระเป๋าเงิน THB',
             'icon' => '💰',
