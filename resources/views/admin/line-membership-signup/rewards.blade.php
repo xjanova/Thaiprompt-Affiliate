@@ -42,7 +42,7 @@
 
     {{-- Filters --}}
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6">
-        <form method="GET" action="{{ route('admin.line-membership-signup.rewards') }}" class="flex flex-wrap gap-4">
+        <form method="GET" action="{{ route('admin.line-membership-signup.rewards.index') }}" class="flex flex-wrap gap-4">
             <div class="flex-1 min-w-[200px]">
                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     <i class="fas fa-filter mr-1"></i>
@@ -70,7 +70,7 @@
                     <span>กรองข้อมูล</span>
                 </button>
                 <a
-                    href="{{ route('admin.line-membership-signup.rewards') }}"
+                    href="{{ route('admin.line-membership-signup.rewards.index') }}"
                     class="px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium transition-all duration-300 flex items-center gap-2"
                 >
                     <i class="fas fa-redo"></i>

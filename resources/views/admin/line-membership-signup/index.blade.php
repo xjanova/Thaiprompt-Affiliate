@@ -430,7 +430,7 @@
                 </div>
             </a>
 
-            <a href="{{ route('admin.line-membership-signup.rewards') }}"
+            <a href="{{ route('admin.line-membership-signup.rewards.index') }}"
                class="group relative overflow-hidden p-6 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-2 border-amber-200 dark:border-amber-700 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
                 <div class="flex flex-col items-center gap-3 text-center">
                     <div class="w-14 h-14 flex items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-lg transform group-hover:rotate-12 transition-transform duration-500">
