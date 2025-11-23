@@ -11,21 +11,21 @@
     <div class="mb-8 relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#00B900] via-[#00E600] to-[#00C900] p-8 shadow-2xl shadow-green-500/30">
         <!-- Animated Background -->
         <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 left-0 w-96 h-96 glass-fusion rounded-full -translate-x-48 -translate-y-48" border border-white/20 dark:border-white/10></div>
-            <div class="absolute bottom-0 right-0 w-96 h-96 glass-fusion rounded-full translate-x-48 translate-y-48" border border-white/20 dark:border-white/10></div>
+            <div class="absolute top-0 left-0 w-96 h-96 glass-fusion rounded-full -translate-x-48 -translate-y-48 border border-white/20 dark:border-white/10"></div>
+            <div class="absolute bottom-0 right-0 w-96 h-96 glass-fusion rounded-full translate-x-48 translate-y-48 border border-white/20 dark:border-white/10"></div>
         </div>
 
         <!-- Floating Chat Bubbles -->
         <div class="absolute inset-0 pointer-events-none overflow-hidden">
-            <div class="absolute top-10 right-10 w-16 h-16 glass-fusion rounded-full animate-pulse" border border-white/20 dark:border-white/10></div>
-            <div class="absolute bottom-10 left-10 w-12 h-12 glass-fusion rounded-full animate-pulse" border border-white/20 dark:border-white/10 style="animation-delay: 0.5s"></div>
-            <div class="absolute top-1/2 right-1/4 w-8 h-8 glass-fusion rounded-full animate-pulse" border border-white/20 dark:border-white/10 style="animation-delay: 0.3s"></div>
+            <div class="absolute top-10 right-10 w-16 h-16 glass-fusion rounded-full animate-pulse border border-white/20 dark:border-white/10"></div>
+            <div class="absolute bottom-10 left-10 w-12 h-12 glass-fusion rounded-full animate-pulse border border-white/20 dark:border-white/10" style="animation-delay: 0.5s"></div>
+            <div class="absolute top-1/2 right-1/4 w-8 h-8 glass-fusion rounded-full animate-pulse border border-white/20 dark:border-white/10" style="animation-delay: 0.3s"></div>
         </div>
 
         <div class="relative">
             <div class="flex items-start justify-between gap-4 mb-4">
                 <div class="flex items-center gap-4 flex-1">
-                    <div class="w-16 h-16 rounded-2xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-xl border border-white/30" border border-white/20 dark:border-white/10>
+                    <div class="w-16 h-16 rounded-2xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-xl border border-white/20 dark:border-white/10">
                         <i class="fas fa-comments text-white text-3xl drop-shadow-lg"></i>
                     </div>
                     <div class="flex-1">
@@ -42,7 +42,7 @@
 
             <!-- Conversation Stats -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div class="glass-fusion backdrop-blur-md rounded-xl px-4 py-3 border border-white/25" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion backdrop-blur-md rounded-xl px-4 py-3 border border-white/25 border border-white/20 dark:border-white/10">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-hashtag text-white text-xl"></i>
                         <div>
@@ -51,7 +51,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="glass-fusion backdrop-blur-md rounded-xl px-4 py-3 border border-white/25" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion backdrop-blur-md rounded-xl px-4 py-3 border border-white/25 border border-white/20 dark:border-white/10">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-message text-white text-xl"></i>
                         <div>
@@ -60,7 +60,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="glass-fusion backdrop-blur-md rounded-xl px-4 py-3 border border-white/25" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion backdrop-blur-md rounded-xl px-4 py-3 border border-white/25 border border-white/20 dark:border-white/10">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-clock text-white text-xl"></i>
                         <div>
@@ -69,7 +69,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="glass-fusion backdrop-blur-md rounded-xl px-4 py-3 border border-white/25" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion backdrop-blur-md rounded-xl px-4 py-3 border border-white/25 border border-white/20 dark:border-white/10">
                     <div class="flex items-center gap-3">
                         <div class="w-3 h-3 rounded-full {{ $conversation->status === 'active' ? 'bg-green-400 animate-pulse' : 'bg-gray-400' }}"></div>
                         <div>
@@ -85,9 +85,9 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Chat Messages (Main Content) -->
         <div class="lg:col-span-2">
-            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
+            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden">
                 <!-- Chat Header -->
-                <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 px-6 py-4 border-b-2 border-gray-200 dark:border-gray-700 dark:border-slate-600">
+                <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 px-6 py-4 border-b-2 border-gray-200 dark:border-slate-600">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#00B900] to-[#00E600] flex items-center justify-center shadow-lg">
@@ -151,7 +151,7 @@
                                     <i class="fas fa-robot text-white"></i>
                                 </div>
                                 <div class="flex flex-col max-w-[75%]">
-                                    <div class="glass-fusion dark:bg-slate-700 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 rounded-3xl rounded-bl-md px-6 py-4 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300" border border-white/20 dark:border-white/10>
+                                    <div class="glass-fusion dark:bg-slate-700 border-2 border-gray-200 dark:border-slate-600 rounded-3xl rounded-bl-md px-6 py-4 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
                                         <p class="text-gray-900 dark:text-gray-100 text-base leading-relaxed break-words">{{ $message->content }}</p>
                                     </div>
                                     <div class="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -187,7 +187,7 @@
                 </div>
 
                 <!-- Chat Footer Stats -->
-                <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 px-6 py-4 border-t-2 border-gray-200 dark:border-gray-700 dark:border-slate-600">
+                <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 px-6 py-4 border-t-2 border-gray-200 dark:border-slate-600">
                     <div class="grid grid-cols-3 gap-4">
                         <div class="text-center">
                             <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">รวม Tokens</p>
@@ -215,7 +215,7 @@
         <!-- Sidebar: User Info & AI Settings -->
         <div class="lg:col-span-1 space-y-6">
             <!-- User Information Card -->
-            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
+            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden">
                 <div class="bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4">
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
                         <i class="fas fa-user-circle"></i>
@@ -277,7 +277,7 @@
             </div>
 
             <!-- AI Settings Card -->
-            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
+            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden">
                 <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
                         <i class="fas fa-robot"></i>
@@ -332,7 +332,7 @@
             </div>
 
             <!-- Conversation Metadata -->
-            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
+            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden">
                 <div class="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4">
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
                         <i class="fas fa-info-circle"></i>

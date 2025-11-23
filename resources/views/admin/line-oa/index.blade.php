@@ -14,7 +14,7 @@
         <div class="relative flex items-center justify-between">
             <div>
                 <div class="flex items-center gap-3 mb-2">
-                    <div class="w-14 h-14 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center" border border-white/20 dark:border-white/10>
+                    <div class="w-14 h-14 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
                         <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
                         </svg>
@@ -75,7 +75,7 @@
             <div class="lg:col-span-2 space-y-6">
 
                 <!-- System Status Card -->
-                <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden border border-white/20 dark:border-white/10">
                     <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4">
                         <h3 class="text-lg font-bold text-white flex items-center">
                             <i class="fas fa-power-off mr-2"></i>
@@ -92,14 +92,14 @@
                                 <input type="checkbox" id="is_active" name="is_active" value="1" class="sr-only peer"
                                     {{ old('is_active', $settings->is_active) ? 'checked' : '' }}
                                     x-model="isActive">
-                                <div class="w-16 h-8 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-8 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:glass-fusion after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-7 after:w-7 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-green-500 peer-checked:to-emerald-600" border border-white/20 dark:border-white/10></div>
+                                <div class="w-16 h-8 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-8 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:glass-fusion after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-7 after:w-7 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-green-500 peer-checked:to-emerald-600 border border-white/20 dark:border-white/10"></div>
                             </label>
                         </div>
                     </div>
                 </div>
 
                 <!-- LINE Login Channel Configuration -->
-                <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden border border-white/20 dark:border-white/10">
                     <div class="bg-gradient-to-r from-blue-500 to-cyan-600 px-6 py-4">
                         <h3 class="text-lg font-bold text-white flex items-center">
                             <i class="fas fa-sign-in-alt mr-2"></i>
@@ -167,7 +167,7 @@
                 </div>
 
                 <!-- LINE Messaging API Configuration -->
-                <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden border border-white/20 dark:border-white/10">
                     <div class="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4">
                         <h3 class="text-lg font-bold text-white flex items-center">
                             <i class="fas fa-comments mr-2"></i>
@@ -221,7 +221,7 @@
                 </div>
 
                 <!-- Registration Settings -->
-                <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden border border-white/20 dark:border-white/10">
                     <div class="bg-gradient-to-r from-purple-500 to-pink-600 px-6 py-4">
                         <h3 class="text-lg font-bold text-white flex items-center">
                             <i class="fas fa-user-plus mr-2"></i>
@@ -238,7 +238,7 @@
                                 <input type="checkbox" name="require_line_registration" value="1" class="sr-only peer"
                                     {{ old('require_line_registration', $settings->require_line_registration) ? 'checked' : '' }}
                                     x-model="requireLineReg">
-                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:glass-fusion after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-500 peer-checked:to-pink-600" border border-white/20 dark:border-white/10></div>
+                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:glass-fusion after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-500 peer-checked:to-pink-600 border border-white/20 dark:border-white/10"></div>
                             </label>
                         </div>
 
@@ -260,7 +260,7 @@
                 </div>
 
                 <!-- Messaging Settings -->
-                <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden border border-white/20 dark:border-white/10">
                     <div class="bg-gradient-to-r from-orange-500 to-red-600 px-6 py-4">
                         <h3 class="text-lg font-bold text-white flex items-center">
                             <i class="fas fa-comments mr-2"></i>
@@ -277,7 +277,7 @@
                                 <input type="checkbox" name="enable_line_messaging" value="1" class="sr-only peer"
                                     {{ old('enable_line_messaging', $settings->enable_line_messaging) ? 'checked' : '' }}
                                     x-model="enableMessaging">
-                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:glass-fusion after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-orange-500 peer-checked:to-red-600" border border-white/20 dark:border-white/10></div>
+                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:glass-fusion after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-orange-500 peer-checked:to-red-600 border border-white/20 dark:border-white/10"></div>
                             </label>
                         </div>
 
@@ -327,7 +327,7 @@
                 <!-- Current Status Card -->
                 <div class="bg-gradient-to-br from-green-600 to-emerald-700 rounded-2xl shadow-2xl p-6 text-white sticky top-6">
                     <div class="flex items-center gap-3 mb-6">
-                        <div class="w-12 h-12 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center" border border-white/20 dark:border-white/10>
+                        <div class="w-12 h-12 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
                             <i class="fas fa-chart-line text-2xl"></i>
                         </div>
                         <div>
@@ -337,7 +337,7 @@
                     </div>
 
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between p-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
+                        <div class="flex items-center justify-between p-3 glass-fusion backdrop-blur-sm rounded-xl border border-white/20 dark:border-white/10">
                             <span class="text-sm">System:</span>
                             @if($settings->is_active)
                                 <span class="px-3 py-1 bg-green-400 rounded-full text-xs font-bold text-green-900">Active</span>
@@ -346,7 +346,7 @@
                             @endif
                         </div>
 
-                        <div class="flex items-center justify-between p-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
+                        <div class="flex items-center justify-between p-3 glass-fusion backdrop-blur-sm rounded-xl border border-white/20 dark:border-white/10">
                             <span class="text-sm">Login:</span>
                             @if($settings->login_channel_id)
                                 <span class="px-3 py-1 glass-fusion rounded-full text-xs font-bold">Connected</span>
@@ -355,7 +355,7 @@
                             @endif
                         </div>
 
-                        <div class="flex items-center justify-between p-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
+                        <div class="flex items-center justify-between p-3 glass-fusion backdrop-blur-sm rounded-xl border border-white/20 dark:border-white/10">
                             <span class="text-sm">Messaging:</span>
                             @if($settings->enable_line_messaging)
                                 <span class="px-3 py-1 bg-blue-400 rounded-full text-xs font-bold text-blue-900">Enabled</span>
@@ -364,7 +364,7 @@
                             @endif
                         </div>
 
-                        <div class="flex items-center justify-between p-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
+                        <div class="flex items-center justify-between p-3 glass-fusion backdrop-blur-sm rounded-xl border border-white/20 dark:border-white/10">
                             <span class="text-sm">Required:</span>
                             @if($settings->require_line_registration)
                                 <span class="px-3 py-1 bg-yellow-400 rounded-full text-xs font-bold text-yellow-900">Yes</span>
@@ -470,7 +470,7 @@
 
 <!-- Test Connection Results Modal -->
 <div id="connectionTestModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="glass-fusion rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all" border border-white/20 dark:border-white/10>
+    <div class="glass-fusion rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all border border-white/20 dark:border-white/10">
         <div class="bg-gradient-to-r from-blue-500 to-cyan-600 px-6 py-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-white flex items-center">
@@ -506,7 +506,7 @@
 
 <!-- Test Message Modal -->
 <div id="testModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4" x-data="{ tab: 'select' }">
-    <div class="glass-fusion rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden transform transition-all max-h-[90vh] flex flex-col" border border-white/20 dark:border-white/10>
+    <div class="glass-fusion rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden transform transition-all max-h-[90vh] flex flex-col border border-white/20 dark:border-white/10">
         <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-white flex items-center">

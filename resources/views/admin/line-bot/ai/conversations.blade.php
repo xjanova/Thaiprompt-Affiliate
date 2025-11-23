@@ -30,25 +30,25 @@
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="style="background: var(--arrow-x-accent-gradient)" rounded-2xl p-6 text-white shadow-xl">
+        <div style="background: var(--arrow-x-accent-gradient)" class="rounded-2xl p-6 text-white shadow-xl">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-purple-100 text-sm font-medium mb-1">บทสนทนาทั้งหมด</p>
                     <h3 class="text-3xl font-bold">{{ number_format($stats['total_conversations']) }}</h3>
                 </div>
-                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center border border-white/20 dark:border-white/10">
                     <i class="fas fa-comments text-2xl"></i>
                 </div>
             </div>
         </div>
 
-        <div class="style="background: var(--arrow-x-primary-gradient)" rounded-2xl p-6 text-white shadow-xl">
+        <div style="background: var(--arrow-x-primary-gradient)" class="rounded-2xl p-6 text-white shadow-xl">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-blue-100 text-sm font-medium mb-1">บทสนทนาวันนี้</p>
                     <h3 class="text-3xl font-bold">{{ number_format($stats['today_conversations']) }}</h3>
                 </div>
-                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center border border-white/20 dark:border-white/10">
                     <i class="fas fa-calendar-day text-2xl"></i>
                 </div>
             </div>
@@ -60,7 +60,7 @@
                     <p class="text-green-100 text-sm font-medium mb-1">กำลังดำเนินการ</p>
                     <h3 class="text-3xl font-bold">{{ number_format($stats['active_conversations']) }}</h3>
                 </div>
-                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center border border-white/20 dark:border-white/10">
                     <i class="fas fa-spinner text-2xl"></i>
                 </div>
             </div>
@@ -72,7 +72,7 @@
                     <p class="text-orange-100 text-sm font-medium mb-1">ข้อความทั้งหมด</p>
                     <h3 class="text-3xl font-bold">{{ number_format($stats['total_messages']) }}</h3>
                 </div>
-                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center border border-white/20 dark:border-white/10">
                     <i class="fas fa-envelope text-2xl"></i>
                 </div>
             </div>
@@ -80,7 +80,7 @@
     </div>
 
     <!-- Conversations List -->
-    <div class="glass-fusion rounded-2xl shadow-xl border border-gray-100 overflow-hidden" border border-white/20 dark:border-white/10>
+    <div class="glass-fusion rounded-2xl shadow-xl border border-gray-100 overflow-hidden border border-white/20 dark:border-white/10">
         <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
             <h2 class="text-xl font-bold text-gray-900">รายการบทสนทนา</h2>
         </div>

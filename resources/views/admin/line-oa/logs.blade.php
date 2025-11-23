@@ -52,7 +52,7 @@
     </div>
 
     <!-- Logs Table -->
-    <div class="glass-fusion rounded-xl shadow-md overflow-hidden" border border-white/20 dark:border-white/10>
+    <div class="glass-fusion rounded-xl shadow-md overflow-hidden border border-white/20 dark:border-white/10">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-100/50 dark:bg-gray-800/50">
@@ -145,7 +145,7 @@
         </div>
 
         @if($logs->hasPages())
-            <div class="glass-fusion px-4 py-3 border-t border-gray-200 dark:border-gray-700 sm:px-6" border border-white/20 dark:border-white/10>
+            <div class="glass-fusion px-4 py-3 border-t border-gray-200 dark:border-gray-700 sm:px-6 border border-white/20 dark:border-white/10">
                 {{ $logs->links() }}
             </div>
         @endif
@@ -226,8 +226,8 @@
         <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onclick="closeMetadataModal()"></div>
 
         <!-- Modal panel -->
-        <div class="inline-block align-bottom glass-fusion rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" border border-white/20 dark:border-white/10>
-            <div class="glass-fusion px-4 pt-5 pb-4 sm:p-6 sm:pb-4" border border-white/20 dark:border-white/10>
+        <div class="inline-block align-bottom glass-fusion rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-white/20 dark:border-white/10">
+            <div class="glass-fusion px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border border-white/20 dark:border-white/10">
                 <div class="sm:flex sm:items-start">
                     <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">รายละเอียด Metadata</h3>

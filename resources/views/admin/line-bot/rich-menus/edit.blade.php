@@ -98,20 +98,20 @@
                     </h3>
 
                     <div class="space-y-3 text-sm text-purple-800">
-                        <div class="p-3 glass-fusion rounded-xl" border border-white/20 dark:border-white/10>
+                        <div class="p-3 glass-fusion rounded-xl border border-white/20 dark:border-white/10">
                             <p class="font-semibold mb-1">Image Size:</p>
                             <p class="text-xs">Full: 2500×1686px</p>
                             <p class="text-xs">Half: 2500×843px</p>
                         </div>
 
-                        <div class="p-3 glass-fusion rounded-xl" border border-white/20 dark:border-white/10>
+                        <div class="p-3 glass-fusion rounded-xl border border-white/20 dark:border-white/10">
                             <p class="font-semibold mb-1">Design Tools:</p>
                             <a href="https://www.figma.com/" target="_blank" class="text-xs text-purple-600 hover:underline block">• Figma</a>
                             <a href="https://www.canva.com/" target="_blank" class="text-xs text-purple-600 hover:underline block">• Canva</a>
                             <a href="https://www.photoshop.com/" target="_blank" class="text-xs text-purple-600 hover:underline block">• Photoshop</a>
                         </div>
 
-                        <div class="p-3 glass-fusion rounded-xl" border border-white/20 dark:border-white/10>
+                        <div class="p-3 glass-fusion rounded-xl border border-white/20 dark:border-white/10">
                             <p class="font-semibold mb-1">Action Types:</p>
                             <p class="text-xs">• postback</p>
                             <p class="text-xs">• message</p>

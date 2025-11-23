@@ -91,7 +91,7 @@
                     </h3>
 
                     <div class="space-y-3 text-sm text-emerald-800">
-                        <div class="p-3 glass-fusion rounded-xl" border border-white/20 dark:border-white/10>
+                        <div class="p-3 glass-fusion rounded-xl border border-white/20 dark:border-white/10">
                             <p class="font-semibold mb-1">Best Practices:</p>
                             <ul class="text-xs space-y-1">
                                 <li>• Keep messages concise</li>
@@ -101,12 +101,12 @@
                             </ul>
                         </div>
 
-                        <div class="p-3 glass-fusion rounded-xl" border border-white/20 dark:border-white/10>
+                        <div class="p-3 glass-fusion rounded-xl border border-white/20 dark:border-white/10">
                             <p class="font-semibold mb-1">Timing:</p>
                             <p class="text-xs">Send during active hours (9 AM - 9 PM) for better engagement</p>
                         </div>
 
-                        <div class="p-3 glass-fusion rounded-xl" border border-white/20 dark:border-white/10>
+                        <div class="p-3 glass-fusion rounded-xl border border-white/20 dark:border-white/10">
                             <p class="font-semibold mb-1">Target Wisely:</p>
                             <p class="text-xs">Segment your audience for more relevant messaging</p>
                         </div>

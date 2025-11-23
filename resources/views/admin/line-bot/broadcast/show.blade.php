@@ -39,7 +39,7 @@
                     <p class="text-3xl font-bold">{{ number_format($broadcast->total_recipients ?? 0) }}</p>
                 </div>
 
-                <div class="style="background: var(--arrow-x-success-gradient)" rounded-2xl p-6 text-white">
+                <div style="background: var(--arrow-x-success-gradient)" class="rounded-2xl p-6 text-white">
                     <div class="flex items-center justify-between mb-2">
                         <i class="fas fa-check-circle text-3xl opacity-80"></i>
                     </div>
