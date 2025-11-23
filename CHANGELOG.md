@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.148.2] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1527 from xjanova/claude/fix-missing-route-015qQYvcBDypZJW3CiS4426r (23483b06)
+- fix: shorten main_image_url by using SKU instead of product name (b268fd83)
+### 🔧 Other Changes
+
+
 ## [v3.148.1] - 2025-11-23
 
 ### ✨ Features
