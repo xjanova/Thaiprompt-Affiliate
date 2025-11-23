@@ -141,6 +141,56 @@ class LineWebhookController extends Controller
             return;
         }
 
+        // Step 1.5: Check if user wants to signup (without invitation link)
+        $signupKeywords = ['สมัครสมาชิก', 'สมัคร', 'เริ่ม', 'เริ่มต้น', 'register', 'signup', 'start'];
+        $isSignupRequest = false;
+        foreach ($signupKeywords as $keyword) {
+            if (mb_stripos($messageText, $keyword) !== false) {
+                $isSignupRequest = true;
+                break;
+            }
+        }
+
+        if ($isSignupRequest && !$user) {
+            // ต้องการสมัครสมาชิก แต่ยังไม่มี user → สร้าง prospect ใหม่ (ไม่มี sponsor)
+            $lineService = app(LineService::class);
+
+            // ดึง LINE profile
+            try {
+                $lineProfile = $lineService->getProfile($lineUserId);
+            } catch (\Exception $e) {
+                Log::error('Failed to get LINE profile', [
+                    'line_user_id' => $lineUserId,
+                    'error' => $e->getMessage(),
+                ]);
+                $lineProfile = [
+                    'displayName' => 'User',
+                    'pictureUrl' => null,
+                ];
+            }
+
+            // สร้าง prospect ใหม่ (ไม่มี sponsor - จะใช้ Super Admin auto-placement)
+            $prospect = MlmProspect::create([
+                'line_user_id' => $lineUserId,
+                'line_display_name' => $lineProfile['displayName'] ?? 'User',
+                'line_picture_url' => $lineProfile['pictureUrl'] ?? null,
+                'sponsor_mlm_member_id' => null, // ไม่มี sponsor
+                'sponsor_user_id' => null,
+                'status' => 'pending',
+                'conversation_started_at' => now(),
+            ]);
+
+            Log::info('Created prospect without sponsor (auto-placement)', [
+                'prospect_id' => $prospect->id,
+                'line_user_id' => $lineUserId,
+            ]);
+
+            // เริ่ม signup flow
+            $signupService = app(LineSignupService::class);
+            $signupService->startConversation($prospect);
+            return;
+        }
+
         // Step 2: Use Hybrid Bot (Keyword matching + AI fallback)
         $hybridBot = app(LineHybridBotService::class);
         $aiBot = AiBotProfile::where('is_active', true)

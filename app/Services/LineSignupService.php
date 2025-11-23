@@ -315,11 +315,36 @@ class LineSignupService
     }
 
     /**
-     * Create MLM member
+     * Create MLM member พร้อม auto-placement
+     *
+     * รองรับการสมัครแบบ:
+     * 1. มี sponsor (จาก invitation link) → ใช้ sponsor ที่ระบุ
+     * 2. ไม่มี sponsor → ใช้ Super Admin + auto-placement
      */
     private function createMlmMember(User $user, MlmProspect $prospect): MlmMember
     {
+        // ตรวจสอบ sponsor
         $sponsor = $prospect->sponsorMember;
+
+        // ถ้าไม่มี sponsor → หา Super Admin (user_id = 1)
+        if (!$sponsor) {
+            $superAdmin = User::find(1);
+            if (!$superAdmin) {
+                throw new \Exception('Super Admin not found (user_id = 1)');
+            }
+
+            // หา MLM member ของ Super Admin
+            $sponsor = MlmMember::where('user_id', $superAdmin->id)->first();
+
+            if (!$sponsor) {
+                throw new \Exception('Super Admin MLM member not found');
+            }
+
+            Log::info('No sponsor found, using Super Admin', [
+                'super_admin_id' => $superAdmin->id,
+                'sponsor_member_id' => $sponsor->id,
+            ]);
+        }
 
         // Get default MLM plan
         $defaultPlan = \App\Models\MlmPlan::where('is_default', true)->first();
@@ -328,13 +353,23 @@ class LineSignupService
             throw new \Exception('No default MLM plan found');
         }
 
-        // Create MLM member
+        // หาตำแหน่ง binary แบบ auto-placement
+        $binaryService = app(MlmBinaryService::class);
+        $placement = $binaryService->findPlacementPosition($sponsor);
+
+        // Create MLM member พร้อม binary placement
         $member = MlmMember::create([
             'user_id' => $user->id,
             'mlm_plan_id' => $defaultPlan->id,
+            // Unilevel structure
             'unilevel_sponsor_id' => $sponsor->id,
             'unilevel_level' => $sponsor->unilevel_level + 1,
             'unilevel_path' => $sponsor->unilevel_path . '/' . $sponsor->id,
+            // Binary structure (auto-placement)
+            'binary_sponsor_id' => $sponsor->id,
+            'binary_parent_id' => $placement['parent_id'],
+            'binary_position' => $placement['position'],
+            // Status
             'status' => 'active',
             'joined_at' => now(),
             'member_code' => MlmMember::generateMemberCode(),
@@ -344,9 +379,19 @@ class LineSignupService
         // Update sponsor's direct referral count
         $sponsor->increment('total_direct_referrals');
 
-        Log::info('MLM member created', [
+        // Update binary parent's leg members count
+        if ($placement['position'] === 'left') {
+            MlmMember::find($placement['parent_id'])->increment('left_leg_members');
+        } else {
+            MlmMember::find($placement['parent_id'])->increment('right_leg_members');
+        }
+
+        Log::info('MLM member created with auto-placement', [
             'member_id' => $member->id,
             'sponsor_id' => $sponsor->id,
+            'binary_parent_id' => $placement['parent_id'],
+            'binary_position' => $placement['position'],
+            'had_prospect_sponsor' => $prospect->sponsorMember !== null,
         ]);
 
         return $member;
