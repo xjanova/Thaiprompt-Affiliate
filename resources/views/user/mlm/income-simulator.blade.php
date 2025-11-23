@@ -759,7 +759,7 @@ function incomeSimulator() {
          */
         async loadSettings() {
             try {
-                const response = await fetch('{{ route("admin.mlm.settings.get-settings") }}');
+                const response = await fetch('{{ route("user.mlm.settings") }}');
                 const data = await response.json();
                 this.settings = data.settings;
             } catch (error) {

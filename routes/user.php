@@ -347,6 +347,9 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     Route::get('/referral', [\App\Http\Controllers\User\MlmDashboardController::class, 'referral'])->name('referral');
     Route::get('/team', [\App\Http\Controllers\User\MlmDashboardController::class, 'team'])->name('team');
 
+    // API สำหรับ MLM Settings (Read-only)
+    Route::get('/settings', [\App\Http\Controllers\User\MlmDashboardController::class, 'getSettings'])->name('settings');
+
     // Income Simulator - Marketing Tool
     Route::get('/income-simulator', function () {
         return view('user.mlm.income-simulator');
