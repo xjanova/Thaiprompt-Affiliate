@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.145.1] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1507 from xjanova/claude/remove-line-oa-admin-01Q3p7xMeGZQcC4fRsa7o6M6 (1d80c865)
+- fix: filter inactive and expired rewards from public display (fe0cb100)
+### 🔧 Other Changes
+
+
 ## [v3.145.0] - 2025-11-23
 
 ### ✨ Features
