@@ -22,7 +22,7 @@ return new class extends Migration
         // เช็คว่ามี column user_id หรือไม่
         if (Schema::hasColumn('line_signup_rewards', 'user_id')) {
             // ลบ foreign key constraint ถ้ามี (ใช้ SafeMigration trait)
-            $this->safeDropForeignKey('line_signup_rewards', 'line_signup_rewards_user_id_foreign');
+            $this->safeDropForeign('line_signup_rewards', 'line_signup_rewards_user_id_foreign');
 
             // ลบ column
             Schema::table('line_signup_rewards', function (Blueprint $table) {
