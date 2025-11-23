@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.146.0] - 2025-11-23
+
+### ✨ Features
+- Merge pull request #1509 from xjanova/claude/enhance-shop-management-0164i8nZ58A7UNWKg9nYPrah (2fd5f7cd)
+- feat: enhance shop management system with official shop separation (e78ff37b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.145.2] - 2025-11-23
 
 ### ✨ Features
