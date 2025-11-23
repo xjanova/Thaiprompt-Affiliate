@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.147.11] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1521 from xjanova/claude/fix-undefined-reward-variable-012wn6rV3aV5geqRoeJ6cNRB (78152583)
+- fix: add comprehensive cleanup migration for line_signup_rewards table (d893244b)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' - resolve LineSignupRewardSeeder conflict (bd6b2e4d)
+
 ## [v3.147.10] - 2025-11-23
 
 ### ✨ Features
