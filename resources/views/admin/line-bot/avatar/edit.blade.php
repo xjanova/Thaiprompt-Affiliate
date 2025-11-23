@@ -28,13 +28,13 @@
         <div class="relative">
             <div class="flex items-start justify-between gap-4">
                 <div class="flex items-center gap-4 flex-1">
-                    <div class="w-20 h-20 rounded-3xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-2xl border-2 border-white/30 border border-white/20 dark:border-white/10">
+                    <div class="w-20 h-20 rounded-3xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-2xl border-2 border-white/20 dark:border-white/10">
                         <i class="fas fa-pencil-alt text-white text-4xl drop-shadow-lg"></i>
                     </div>
                     <div class="flex-1">
                         <h1 class="text-5xl font-black text-white mb-2 drop-shadow-lg tracking-tight">✏️ แก้ไข Avatar</h1>
                         <p class="text-white/95 text-xl font-medium">อัพเดทข้อมูลและการตั้งค่า Avatar</p>
-                        <div class="mt-3 px-4 py-2 glass-fusion backdrop-blur-sm rounded-full text-white text-sm font-bold inline-flex items-center gap-2 border border-white/30 border border-white/20 dark:border-white/10">
+                        <div class="mt-3 px-4 py-2 glass-fusion backdrop-blur-sm rounded-full text-white text-sm font-bold inline-flex items-center gap-2 border border-white/20 dark:border-white/10">
                             <i class="fas fa-tag"></i>
                             <span>{{ $avatar->name }}</span>
                         </div>
@@ -60,8 +60,8 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Form Section -->
         <div class="lg:col-span-2">
-            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden border border-white/20 dark:border-white/10">
-                <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 px-8 py-6 border-b-2 border-gray-200 dark:border-gray-700 dark:border-slate-600">
+            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+                <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 px-8 py-6 border-b-2 border-gray-200 dark:border-slate-600">
                     <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                         <i class="fas fa-cog text-[#00B900]"></i>
                         แก้ไขข้อมูล Avatar
@@ -80,7 +80,7 @@
                             <span class="text-red-500">*</span>
                         </label>
                         <input type="text" name="name" required value="{{ old('name', $avatar->name) }}"
-                               class="w-full px-6 py-4 text-lg border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-2xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
+                               class="w-full px-6 py-4 text-lg border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-2xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
                         @error('name')
                             <p class="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-2">
                                 <i class="fas fa-exclamation-circle"></i>{{ $message }}
@@ -94,7 +94,7 @@
                             <i class="fas fa-layer-group text-[#00B900]"></i>
                             ประเภท Avatar
                         </label>
-                        <div class="p-6 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 rounded-2xl bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600">
+                        <div class="p-6 border-2 border-gray-200 dark:border-slate-600 rounded-2xl bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600">
                             <div class="flex items-center gap-4">
                                 <div class="w-16 h-16 rounded-xl flex items-center justify-center
                                     @if($avatar->type === 'image') bg-blue-100 dark:bg-blue-900/30
@@ -139,7 +139,7 @@
                         </label>
                         <textarea name="description" rows="5"
                                   placeholder="อธิบายเกี่ยวกับ Avatar นี้..."
-                                  class="w-full px-6 py-4 text-base border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-2xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300 placeholder-gray-400 dark:placeholder-gray-500">{{ old('description', $avatar->description) }}</textarea>
+                                  class="w-full px-6 py-4 text-base border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-2xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300 placeholder-gray-400 dark:placeholder-gray-500">{{ old('description', $avatar->description) }}</textarea>
                     </div>
 
                     <!-- File Info (Read-only) -->
@@ -148,7 +148,7 @@
                             <i class="fas fa-file text-[#00B900]"></i>
                             ข้อมูลไฟล์
                         </label>
-                        <div class="p-6 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+                        <div class="p-6 border-2 border-gray-200 dark:border-slate-600 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
                             <div class="space-y-4">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-3">
@@ -228,7 +228,7 @@
                     </div>
 
                     <!-- Metadata Display -->
-                    <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 rounded-2xl p-6">
+                    <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 border-2 border-gray-200 dark:border-slate-600 rounded-2xl p-6">
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <i class="fas fa-info-circle text-blue-600"></i>
                             ข้อมูลเพิ่มเติม
@@ -273,7 +273,7 @@
         <!-- Preview & Info Section -->
         <div class="lg:col-span-1 space-y-6">
             <!-- Current Avatar Preview -->
-            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden sticky top-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden sticky top-6" hover:scale-105 transition-transform>
                 <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4">
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
                         <i class="fas fa-eye"></i>

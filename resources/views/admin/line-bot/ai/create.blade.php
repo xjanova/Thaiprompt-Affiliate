@@ -105,7 +105,7 @@
             <div class="lg:col-span-2 space-y-6">
 
                 <!-- ข้อมูลพื้นฐาน -->
-                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden transition-all duration-300 hover:shadow-2xl border border-white/20 dark:border-white/10">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden transition-all duration-300 hover:shadow-2xl">
                     <div class="bg-gradient-to-r from-[#00B900] to-[#00E600] px-6 py-5">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
@@ -128,7 +128,7 @@
                             </label>
                             <input type="text" name="name" value="{{ old('name') }}" required
                                    placeholder="เช่น: AI ตอบคำถามทั่วไป"
-                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300 @error('name') border-red-500 @enderror">
+                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300 @error('name') border-red-500 @enderror">
                             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -150,7 +150,7 @@
                                 <span class="text-red-500">*</span>
                             </label>
                             <select name="provider" x-model="provider" @change="updateModel()" required
-                                    class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
+                                    class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
                                 <option value="openai">OpenAI (GPT-3.5, GPT-4)</option>
                                 <option value="deepseek">DeepSeek</option>
                                 <option value="anthropic">Anthropic (Claude)</option>
@@ -170,7 +170,7 @@
                             </label>
                             <div x-show="provider !== 'custom'">
                                 <select x-model="model" required
-                                        class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
+                                        class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
                                     <template x-for="modelOption in modelOptions" :key="modelOption">
                                         <option :value="modelOption" x-text="modelOption"></option>
                                     </template>
@@ -178,7 +178,7 @@
                             </div>
                             <div x-show="provider === 'custom'" x-cloak>
                                 <input type="text" x-model="model" placeholder="ชื่อโมเดลของคุณ"
-                                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
+                                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
                             </div>
                             <input type="hidden" name="model" :value="model">
                         </div>
@@ -194,7 +194,7 @@
                             </label>
                             <input type="password" name="api_key" value="{{ old('api_key') }}" required
                                    placeholder="sk-..."
-                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300 font-mono text-sm">
+                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300 font-mono text-sm">
                         </div>
 
                         <!-- Custom Endpoint -->
@@ -207,13 +207,13 @@
                             </label>
                             <input type="url" name="api_endpoint" value="{{ old('api_endpoint') }}"
                                    placeholder="https://api.example.com/v1/chat/completions"
-                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
+                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
                         </div>
                     </div>
                 </div>
 
                 <!-- พารามิเตอร์ AI -->
-                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden border border-white/20 dark:border-white/10">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
                     <div class="bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-5">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
@@ -255,7 +255,7 @@
                                 จำนวน Token สูงสุด
                             </label>
                             <input type="number" name="max_tokens" value="{{ old('max_tokens', 1000) }}" min="100" max="4000" step="100"
-                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300">
+                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300">
                             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">ความยาวสูงสุดของคำตอบ (100-4000)</p>
                         </div>
 
@@ -268,7 +268,7 @@
                                 จำนวนข้อความที่จำได้
                             </label>
                             <input type="number" name="conversation_memory_limit" value="{{ old('conversation_memory_limit', 10) }}" min="1" max="50"
-                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300">
+                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300">
                             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">จำนวนข้อความที่ AI จะจดจำในบทสนทนา</p>
                         </div>
 
@@ -288,7 +288,7 @@
                 </div>
 
                 <!-- System Prompt -->
-                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden border border-white/20 dark:border-white/10">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
                     <div class="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-5">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
@@ -308,7 +308,7 @@
                         </label>
                         <textarea name="system_prompt" rows="8"
                                   placeholder="คุณคือผู้ช่วยที่เป็นมิตรและมีประโยชน์สำหรับระบบแอฟฟิลิเอต..."
-                                  class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 font-mono text-sm">{{ old('system_prompt', 'คุณคือผู้ช่วยที่เป็นมิตรและมีประโยชน์ คุณช่วยเหลือผู้ใช้เกี่ยวกับคำถามเกี่ยวกับบริการของเรา') }}</textarea>
+                                  class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 font-mono text-sm">{{ old('system_prompt', 'คุณคือผู้ช่วยที่เป็นมิตรและมีประโยชน์ คุณช่วยเหลือผู้ใช้เกี่ยวกับคำถามเกี่ยวกับบริการของเรา') }}</textarea>
 
                         <div class="mt-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border-2 border-purple-200 dark:border-purple-800">
                             <h4 class="font-bold text-purple-900 dark:text-purple-200 mb-2 flex items-center gap-2">
@@ -342,7 +342,7 @@
                 </div>
 
                 <!-- Fallback Message -->
-                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden border border-white/20 dark:border-white/10">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
                     <div class="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-5">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
@@ -373,7 +373,7 @@
                             </label>
                             <textarea name="fallback_message" rows="4"
                                       placeholder="ขออภัยค่ะ ขณะนี้ระบบไม่สามารถตอบคำถามได้ กรุณาติดต่อเจ้าหน้าที่..."
-                                      class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-300">{{ old('fallback_message', 'ขออภัยค่ะ ขณะนี้ฉันไม่สามารถตอบคำถามนี้ได้ กรุณาลองใหม่อีกครั้งหรือติดต่อเจ้าหน้าที่ค่ะ') }}</textarea>
+                                      class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all duration-300">{{ old('fallback_message', 'ขออภัยค่ะ ขณะนี้ฉันไม่สามารถตอบคำถามนี้ได้ กรุณาลองใหม่อีกครั้งหรือติดต่อเจ้าหน้าที่ค่ะ') }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -384,7 +384,7 @@
             <div class="lg:col-span-1 space-y-6">
 
                 <!-- สถานะ -->
-                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden sticky top-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden sticky top-6" hover:scale-105 transition-transform>
                     <div class="bg-gradient-to-r from-[#00B900] to-[#00E600] px-6 py-5">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
@@ -422,7 +422,7 @@
                 </div>
 
                 <!-- Chat Preview -->
-                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden border border-white/20 dark:border-white/10">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
                     <div class="bg-gradient-to-r from-[#00B900] to-[#00E600] px-6 py-5">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
@@ -461,7 +461,7 @@
                         <div class="flex gap-2">
                             <input type="text" x-model="testMessage" placeholder="พิมพ์ข้อความ..."
                                    @keyup.enter="addPreviewMessage('user', testMessage); testMessage = ''"
-                                   class="flex-1 px-4 py-2 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-full focus:ring-2 focus:ring-[#00B900] focus:border-[#00B900]">
+                                   class="flex-1 px-4 py-2 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-full focus:ring-2 focus:ring-[#00B900] focus:border-[#00B900]">
                             <button type="button" @click="addPreviewMessage('user', testMessage); testMessage = ''"
                                     class="w-10 h-10 bg-gradient-to-r from-[#00B900] to-[#00E600] text-white rounded-full flex items-center justify-center hover:shadow-lg transition-all duration-300">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -518,7 +518,7 @@
                 </div>
 
                 <!-- Provider Links -->
-                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-6" hover:scale-105 transition-transform>
                     <h3 class="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <svg class="w-5 h-5 text-[#00B900]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
@@ -570,7 +570,7 @@
 
         <!-- Submit Button -->
         <div class="mt-8">
-            <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+            <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-6" hover:scale-105 transition-transform>
                 <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <a href="{{ route('admin.line-bot.ai.index') }}"
                        class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center gap-2">

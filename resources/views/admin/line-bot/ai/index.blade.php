@@ -132,7 +132,7 @@
     <!-- AI Settings Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($aiSettings as $setting)
-            <div class="group glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border-2 border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-2xl hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-500 transform hover:-translate-y-2 border border-white/20 dark:border-white/10">
+            <div class="group glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border-2 border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-2xl hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-500 transform hover:-translate-y-2">
                 <!-- Premium Header with Provider Badge -->
                 <div class="relative bg-gradient-to-br
                     @if($setting->provider === 'openai') from-emerald-500 via-green-600 to-teal-700
@@ -148,7 +148,7 @@
 
                     <div class="relative flex items-center justify-between">
                         <div class="flex items-center gap-3 flex-1">
-                            <div class="w-12 h-12 rounded-xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform border border-white/30 border border-white/20 dark:border-white/10">
+                            <div class="w-12 h-12 rounded-xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform border border-white/20 dark:border-white/10">
                                 @if($setting->provider === 'openai')
                                     <i class="fas fa-brain text-white text-xl"></i>
                                 @elseif($setting->provider === 'deepseek')
@@ -183,7 +183,7 @@
                 <div class="p-6 space-y-5">
                     <!-- Model Info with Premium Design -->
                     <div class="space-y-3">
-                        <div class="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-600 rounded-xl border border-gray-200 dark:border-gray-700 dark:border-slate-600 group-hover:border-purple-200 dark:group-hover:border-purple-700 transition-colors">
+                        <div class="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-600 rounded-xl border border-gray-200 dark:border-slate-600 group-hover:border-purple-200 dark:group-hover:border-purple-700 transition-colors">
                             <div class="flex items-center gap-2">
                                 <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
                                     <i class="fas fa-microchip text-purple-600 dark:text-purple-400 text-sm"></i>
@@ -240,7 +240,7 @@
                     </div>
 
                     <!-- API Key Status -->
-                    <div class="p-3 bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 rounded-xl border border-gray-200 dark:border-gray-700 dark:border-slate-600">
+                    <div class="p-3 bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 rounded-xl border border-gray-200 dark:border-slate-600">
                         <div class="flex items-center gap-2">
                             <i class="fas fa-key text-gray-500 dark:text-gray-400 text-sm"></i>
                             <span class="font-mono text-xs text-gray-700 dark:text-gray-300">{{ $setting->getMaskedApiKey() }}</span>
@@ -271,7 +271,7 @@
             </div>
         @empty
             <div class="col-span-3">
-                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-12 text-center border border-white/20 dark:border-white/10">
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-12 text-center">
                     <div class="w-24 h-24 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mx-auto mb-6">
                         <i class="fas fa-robot text-purple-500 dark:text-purple-400 text-4xl"></i>
                     </div>
@@ -289,7 +289,7 @@
 
 <!-- Test AI Modal -->
 <div id="testModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700 border border-white/20 dark:border-white/10" x-data="{ testing: false, result: '', error: '' }">
+    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700" x-data="{ testing: false, result: '', error: '' }">
         <div class="bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-white flex items-center">
@@ -309,7 +309,7 @@
                     <i class="fas fa-comment text-purple-500 mr-1"></i> Test Message
                 </label>
                 <textarea id="test-message" name="message" rows="3" required
-                    class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                    class="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                     placeholder="Hello! Please introduce yourself.">Hello! Please introduce yourself.</textarea>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">The AI will respond to this message</p>
             </div>

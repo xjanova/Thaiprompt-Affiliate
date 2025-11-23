@@ -65,7 +65,7 @@
     @endif
 
     <!-- Filter Tabs -->
-    <div class="mb-6 glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-2 border border-white/20 dark:border-white/10">
+    <div class="mb-6 glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-2">
         <div class="flex flex-wrap gap-2">
             <button @click="filterType = 'all'"
                     :class="filterType === 'all' ? 'bg-gradient-to-r from-[#00B900] to-[#00E600] text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700'"
@@ -215,7 +215,7 @@
         </div>
     @else
         <!-- Empty State -->
-        <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-700 p-12 text-center border border-white/20 dark:border-white/10">
+        <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-700 p-12 text-center">
             <div class="w-32 h-32 rounded-full bg-gradient-to-br from-[#00B900] to-[#00E600] opacity-20 flex items-center justify-center mx-auto mb-6">
                 <svg class="w-16 h-16 text-gray-400 dark:text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
@@ -275,7 +275,7 @@
                     </label>
                     <input type="text" name="name" required
                            placeholder="เช่น: Bot Avatar แบบมีชีวิตชีวา"
-                           class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
+                           class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
                 </div>
 
                 <!-- Type Selection -->
@@ -360,7 +360,7 @@
                         URL ลิงก์
                     </label>
                     <input type="url" name="file_url" placeholder="https://example.com/avatar.png"
-                           class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
+                           class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300">
                 </div>
 
                 <!-- Description -->
@@ -369,7 +369,7 @@
                         คำอธิบาย (ไม่บังคับ)
                     </label>
                     <textarea name="description" rows="3" placeholder="อธิบายเกี่ยวกับ Avatar นี้..."
-                              class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300"></textarea>
+                              class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 glass-fusion dark:bg-slate-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-[#00B900] transition-all duration-300"></textarea>
                 </div>
 
                 <!-- Checkboxes -->
