@@ -5,9 +5,18 @@ namespace Database\Seeders;
 use App\Models\LineSignupReward;
 use App\Models\CouponTemplate;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class LineSignupRewardSeeder extends Seeder
 {
+    /**
+     * เช็คว่าตาราง line_signup_rewards มี column user_id หรือไม่
+     * (สำหรับรองรับทั้งก่อนและหลัง migration ลบ user_id)
+     *
+     * @var bool|null
+     */
+    protected $hasUserIdColumn = null;
+
     /**
      * สร้างข้อมูลตัวอย่างสำหรับระบบรางวัลการสมัครสมาชิก
      *
@@ -16,6 +25,14 @@ class LineSignupRewardSeeder extends Seeder
     public function run(): void
     {
         $this->command->info('🌱 กำลัง seed รางวัลการสมัครสมาชิก...');
+
+        // เช็คว่าตารางมี user_id column หรือไม่
+        $this->hasUserIdColumn = Schema::hasColumn('line_signup_rewards', 'user_id');
+
+        if ($this->hasUserIdColumn) {
+            $this->command->warn('⚠️  ตาราง line_signup_rewards ยังมี column user_id อยู่');
+            $this->command->warn('   จะเพิ่ม user_id = null ในข้อมูล seed (ชั่วคราว)');
+        }
 
         // สร้าง Coupon Template ก่อน
         $this->createCouponTemplates();
@@ -27,6 +44,21 @@ class LineSignupRewardSeeder extends Seeder
         $this->createPackageRewards();
 
         $this->command->info('✅ Seed รางวัลการสมัครสมาชิกสำเร็จ!');
+    }
+
+    /**
+     * เพิ่ม user_id ถ้าตารางยังมี column นี้อยู่
+     *
+     * @param array $data
+     * @return array
+     */
+    protected function addUserIdIfExists(array $data): array
+    {
+        if ($this->hasUserIdColumn) {
+            $data['user_id'] = null;
+        }
+
+        return $data;
     }
 
     /**
@@ -85,7 +117,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'free',
                 'reward_type' => 'wallet_points',
             ],
-            [
+            $this->addUserIdIfExists([
                 'description' => 'รับแต้มฟรีทันทีที่สมัครสมาชิก',
                 'amount' => 100,
                 'icon' => 'fa-wallet',
@@ -95,7 +127,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_stackable' => true,
                 'notify_user' => true,
                 'notification_message' => '🎉 ยินดีต้อนรับ! คุณได้รับแต้ม 100 แต้ม',
-            ]
+            ])
         );
 
         // 2. เหรียญ TPIX
@@ -105,7 +137,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'free',
                 'reward_type' => 'tpix_tokens',
             ],
-            [
+            $this->addUserIdIfExists([
                 'description' => 'เหรียญ TPIX สำหรับเริ่มต้น',
                 'amount' => 10,
                 'icon' => 'fa-coins',
@@ -115,7 +147,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_stackable' => true,
                 'notify_user' => true,
                 'notification_message' => '🪙 คุณได้รับเหรียญ TPIX 10 เหรียญ',
-            ]
+            ])
         );
 
         // 3. คูปองส่วนลด
@@ -127,7 +159,7 @@ class LineSignupRewardSeeder extends Seeder
                     'signup_type' => 'free',
                     'reward_type' => 'coupon',
                 ],
-                [
+                $this->addUserIdIfExists([
                     'description' => 'ส่วนลด 10% สำหรับการซื้อครั้งแรก (ขั้นต่ำ 500 บาท)',
                     'coupon_template_id' => $template->id,
                     'icon' => 'fa-ticket-alt',
@@ -137,7 +169,7 @@ class LineSignupRewardSeeder extends Seeder
                     'is_stackable' => true,
                     'notify_user' => true,
                     'notification_message' => '🎫 คุณได้รับคูปองส่วนลด 10%',
-                ]
+                ])
             );
         }
 
@@ -148,7 +180,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'free',
                 'reward_type' => 'experience_points',
             ],
-            [
+            $this->addUserIdIfExists([
                 'description' => 'คะแนน XP สำหรับปลดล็อคความสามารถ',
                 'amount' => 50,
                 'icon' => 'fa-trophy',
@@ -157,7 +189,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_active' => true,
                 'is_stackable' => true,
                 'notify_user' => false,
-            ]
+            ])
         );
     }
 
@@ -173,7 +205,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'package',
                 'reward_type' => 'wallet_points',
             ],
-            [
+            $this->addUserIdIfExists([
                 'description' => 'แต้มโบนัสพิเศษสำหรับสมาชิกแพคเกจ',
                 'amount' => 500,
                 'icon' => 'fa-wallet',
@@ -183,7 +215,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_stackable' => true,
                 'notify_user' => true,
                 'notification_message' => '💎 คุณได้รับแต้มโบนัส 500 แต้ม',
-            ]
+            ])
         );
 
         // 2. เหรียญ TPIX (แพคเกจ)
@@ -193,7 +225,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'package',
                 'reward_type' => 'tpix_tokens',
             ],
-            [
+            $this->addUserIdIfExists([
                 'description' => 'เหรียญ TPIX จำนวนมากสำหรับสมาชิกแพคเกจ',
                 'amount' => 50,
                 'icon' => 'fa-coins',
@@ -203,7 +235,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_stackable' => true,
                 'notify_user' => true,
                 'notification_message' => '🪙 คุณได้รับเหรียญ TPIX 50 เหรียญ',
-            ]
+            ])
         );
 
         // 3. คูปองพรีเมี่ยม
@@ -215,7 +247,7 @@ class LineSignupRewardSeeder extends Seeder
                     'signup_type' => 'package',
                     'reward_type' => 'coupon',
                 ],
-                [
+                $this->addUserIdIfExists([
                     'description' => 'ส่วนลด 20% ใช้ได้ 3 ครั้ง ไม่มีขั้นต่ำ',
                     'coupon_template_id' => $template->id,
                     'icon' => 'fa-ticket-alt',
@@ -225,7 +257,7 @@ class LineSignupRewardSeeder extends Seeder
                     'is_stackable' => true,
                     'notify_user' => true,
                     'notification_message' => '🎫 คุณได้รับคูปองพรีเมี่ยม 20%',
-                ]
+                ])
             );
         }
 
@@ -236,7 +268,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'package',
                 'reward_type' => 'rank_points',
             ],
-            [
+            $this->addUserIdIfExists([
                 'description' => 'คะแนนช่วยให้เลื่อนระดับเร็วขึ้น',
                 'amount' => 10,
                 'icon' => 'fa-star',
@@ -246,7 +278,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_stackable' => true,
                 'notify_user' => true,
                 'notification_message' => '⭐ คุณได้รับคะแนน Rank +10',
-            ]
+            ])
         );
 
         // 5. คะแนน XP (แพคเกจ)
@@ -256,7 +288,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'package',
                 'reward_type' => 'experience_points',
             ],
-            [
+            $this->addUserIdIfExists([
                 'description' => 'คะแนน XP เพิ่มเติมสำหรับสมาชิกแพคเกจ',
                 'amount' => 200,
                 'icon' => 'fa-trophy',
@@ -265,7 +297,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_active' => true,
                 'is_stackable' => true,
                 'notify_user' => false,
-            ]
+            ])
         );
 
         // 6. ลูกทีมฟรี (สำหรับแพคเกจระดับสูง)
@@ -275,7 +307,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'package',
                 'reward_type' => 'free_downlines',
             ],
-            [
+            $this->addUserIdIfExists([
                 'description' => 'รับดาวน์ไลน์ฟรีจากระบบ (เฉพาะแพคเกจระดับสูง)',
                 'amount' => 3,
                 'package_ids' => [4, 5], // Gold, Diamond (ตัวอย่าง)
@@ -286,7 +318,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_stackable' => false,
                 'notify_user' => true,
                 'notification_message' => '👥 คุณได้รับสิทธิ์ดาวน์ไลน์ฟรี 3 คน',
-            ]
+            ])
         );
     }
 }
