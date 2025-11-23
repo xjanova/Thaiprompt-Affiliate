@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.147.8] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: resolve undefined $reward variable in LINE signup rewards create form (048f16b6)
+### 🔧 Other Changes
+- Merge pull request #1518 from xjanova/claude/fix-undefined-reward-variable-012wn6rV3aV5geqRoeJ6cNRB (7a534dc5)
+- chore: add deployment script for LINE signup reward fix (9b25f087)
+
 ## [v3.147.7] - 2025-11-23
 
 ### ✨ Features
