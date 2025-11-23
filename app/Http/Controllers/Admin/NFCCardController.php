@@ -728,4 +728,248 @@ class NFCCardController extends Controller
             return back()->with('error', 'ไม่สามารถปิดใช้งาน TPIX ได้: ' . $e->getMessage());
         }
     }
+
+    // ==========================================
+    // 🆕 V3: NFC Card Read/Write API
+    // ==========================================
+
+    /**
+     * สร้างรหัสป้องกันปลอม (Anti-Counterfeit Code)
+     *
+     * ใช้สำหรับเขียนลงบัตร NFC เพื่อป้องกันการปลอมแปลง
+     * - สร้าง Hash จาก Card Number + UID + Secret + Timestamp
+     * - สร้าง Digital Signature
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function generateAntiCounterfeitCode(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'card_number' => 'required|string',
+                'uid' => 'nullable|string', // NFC UID (Serial Number)
+            ]);
+
+            $cardNumber = $validated['card_number'];
+            $uid = $validated['uid'] ?? null;
+
+            // สร้างรหัสป้องกันปลอม
+            $timestamp = now()->timestamp;
+            $secret = config('app.key'); // ใช้ App Key เป็น Secret
+
+            // สร้าง Auth Code: Hash(CardNumber + UID + Secret + Timestamp)
+            $authData = implode('|', [
+                $cardNumber,
+                $uid ?? 'NO_UID',
+                $secret,
+                $timestamp
+            ]);
+
+            $antiCounterfeitCode = hash('sha256', $authData);
+
+            // สร้าง Digital Signature: HMAC(AuthCode, Secret)
+            $signature = hash_hmac('sha256', $antiCounterfeitCode, $secret);
+
+            // เก็บข้อมูลการสร้างรหัสลง Database (สำหรับตรวจสอบภายหลัง)
+            // บันทึกลงตาราง nfc_cards หรือ nfc_card_authentications
+            // (ถ้ายังไม่มีการออกบัตร จะต้องทำหลังจากออกบัตรแล้ว)
+
+            Log::info('Generated anti-counterfeit code', [
+                'card_number' => $cardNumber,
+                'uid' => $uid,
+                'timestamp' => $timestamp,
+                'auth_code_hash' => substr($antiCounterfeitCode, 0, 16) . '...',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'code' => $antiCounterfeitCode,
+                'signature' => $signature,
+                'timestamp' => $timestamp,
+                'message' => 'สร้างรหัสป้องกันปลอมสำเร็จ'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Failed to generate anti-counterfeit code', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถสร้างรหัสป้องกันปลอมได้: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ตรวจสอบรหัสป้องกันปลอม
+     *
+     * ใช้เมื่ออ่านบัตร NFC เพื่อตรวจสอบว่าเป็นบัตรแท้หรือไม่
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function verifyAntiCounterfeitCode(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'card_number' => 'required|string',
+                'anti_counterfeit_code' => 'required|string',
+                'signature' => 'required|string',
+                'uid' => 'nullable|string',
+            ]);
+
+            $cardNumber = $validated['card_number'];
+            $receivedCode = $validated['anti_counterfeit_code'];
+            $receivedSignature = $validated['signature'];
+            $uid = $validated['uid'] ?? null;
+
+            // ตรวจสอบว่ามีบัตรในระบบหรือไม่
+            $card = NFCCard::where('card_number', $cardNumber)->first();
+
+            if (!$card) {
+                return response()->json([
+                    'success' => false,
+                    'verified' => false,
+                    'message' => 'ไม่พบบัตรในระบบ'
+                ], 404);
+            }
+
+            // ตรวจสอบ Signature
+            $secret = config('app.key');
+            $expectedSignature = hash_hmac('sha256', $receivedCode, $secret);
+
+            $signatureValid = hash_equals($expectedSignature, $receivedSignature);
+
+            // ตรวจสอบ UID (ถ้ามี)
+            $uidMatch = true;
+            if ($uid && $card->nfc_uid) {
+                $uidMatch = ($uid === $card->nfc_uid);
+            }
+
+            $verified = $signatureValid && $uidMatch;
+
+            // บันทึก Log
+            Log::info('Anti-counterfeit verification', [
+                'card_number' => $cardNumber,
+                'verified' => $verified,
+                'signature_valid' => $signatureValid,
+                'uid_match' => $uidMatch,
+            ]);
+
+            // บันทึกประวัติการตรวจสอบ
+            DB::table('nfc_verification_logs')->insert([
+                'nfc_card_id' => $card->id,
+                'card_number' => $cardNumber,
+                'verification_type' => 'anti_counterfeit',
+                'verified' => $verified,
+                'signature_valid' => $signatureValid,
+                'uid_match' => $uidMatch,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'created_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'verified' => $verified,
+                'card' => [
+                    'card_number' => $card->card_number,
+                    'card_type' => $card->card_type,
+                    'status' => $card->status,
+                    'is_active' => $card->isActive(),
+                    'balance' => $card->balance,
+                ],
+                'checks' => [
+                    'signature_valid' => $signatureValid,
+                    'uid_match' => $uidMatch,
+                ],
+                'message' => $verified ? 'บัตรแท้ - ตรวจสอบผ่าน' : 'บัตรไม่ถูกต้อง - ตรวจสอบไม่ผ่าน'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'verified' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Failed to verify anti-counterfeit code', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'verified' => false,
+                'message' => 'ไม่สามารถตรวจสอบได้: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * บันทึกข้อมูล NFC UID ลงบัตร
+     *
+     * เรียกหลังจากเขียนข้อมูลลงบัตร NFC สำเร็จ
+     *
+     * @param Request $request
+     * @param NFCCard $nfcCard
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function saveNFCUID(Request $request, NFCCard $nfcCard)
+    {
+        try {
+            $validated = $request->validate([
+                'nfc_uid' => 'required|string',
+                'anti_counterfeit_code' => 'required|string',
+                'signature' => 'required|string',
+            ]);
+
+            // อัพเดทข้อมูลบัตร
+            $nfcCard->update([
+                'nfc_uid' => $validated['nfc_uid'],
+                'anti_counterfeit_code' => $validated['anti_counterfeit_code'],
+                'nfc_signature' => $validated['signature'],
+                'nfc_written_at' => now(),
+                'nfc_written_by' => auth()->id(),
+            ]);
+
+            Log::info('NFC UID saved', [
+                'card_id' => $nfcCard->id,
+                'card_number' => $nfcCard->card_number,
+                'nfc_uid' => $validated['nfc_uid'],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกข้อมูล NFC สำเร็จ'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Failed to save NFC UID', [
+                'card_id' => $nfcCard->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถบันทึกข้อมูลได้: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
