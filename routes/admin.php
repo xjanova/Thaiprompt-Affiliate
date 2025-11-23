@@ -29,6 +29,7 @@ use App\Http\Controllers\Admin\LineOaController;
 use App\Http\Controllers\Admin\LineBotAiController;
 use App\Http\Controllers\Admin\LineRichMenuController;
 use App\Http\Controllers\Admin\LineBroadcastController;
+use App\Http\Controllers\Admin\LineSignupRewardController;
 use App\Http\Controllers\Admin\OtpSettingsController;
 use App\Http\Controllers\Admin\TwoFactorSettingsController;
 use App\Http\Controllers\Admin\AiInstallationController;
@@ -771,9 +772,19 @@ Route::prefix('line-membership-signup')->name('line-membership-signup.')->group(
     // Invitations Management
     Route::get('/invitations', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'invitations'])->name('invitations');
 
-    // Rewards Management
-    Route::get('/rewards', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'rewards'])->name('rewards');
-    Route::post('/rewards/{reward}/grant', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'grantReward'])->name('rewards.grant');
+    // Rewards Management (Full CRUD)
+    Route::prefix('rewards')->name('rewards.')->group(function () {
+        Route::get('/', [LineSignupRewardController::class, 'index'])->name('index');
+        Route::get('/create', [LineSignupRewardController::class, 'create'])->name('create');
+        Route::post('/', [LineSignupRewardController::class, 'store'])->name('store');
+        Route::get('/{reward}', [LineSignupRewardController::class, 'show'])->name('show');
+        Route::get('/{reward}/edit', [LineSignupRewardController::class, 'edit'])->name('edit');
+        Route::put('/{reward}', [LineSignupRewardController::class, 'update'])->name('update');
+        Route::delete('/{reward}', [LineSignupRewardController::class, 'destroy'])->name('destroy');
+        Route::post('/{reward}/toggle-active', [LineSignupRewardController::class, 'toggleActive'])->name('toggle-active');
+        Route::post('/update-order', [LineSignupRewardController::class, 'updateOrder'])->name('update-order');
+        Route::get('/statistics/overview', [LineSignupRewardController::class, 'statistics'])->name('statistics');
+    });
 
     // Analytics API
     Route::get('/analytics/data', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'analyticsData'])->name('analytics.data');
