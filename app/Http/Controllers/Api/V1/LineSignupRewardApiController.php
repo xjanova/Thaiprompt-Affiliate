@@ -17,6 +17,11 @@ class LineSignupRewardApiController extends Controller
     /**
      * ดึงรายการรางวัลที่พร้อมให้
      *
+     * แสดงเฉพาะรางวัลที่:
+     * - เปิดใช้งาน (is_active = true)
+     * - อยู่ในช่วงเวลาที่กำหนด (ถ้ามี time limit)
+     * - ยังมีโควต้าเหลือ (ถ้ามี max_claims)
+     *
      * @param Request $request
      * @return JsonResponse
      *
@@ -29,7 +34,7 @@ class LineSignupRewardApiController extends Controller
             $signupType = $request->input('signup_type', 'free');
             $packageId = $request->input('package_id');
 
-            // ดึงรางวัลที่สามารถให้ได้
+            // ดึงรางวัลที่สามารถให้ได้ (กรองเฉพาะที่เปิดใช้งาน)
             $rewards = LineSignupReward::getAvailableRewards($packageId);
 
             // กรองตามประเภทการสมัคร
@@ -114,6 +119,12 @@ class LineSignupRewardApiController extends Controller
     /**
      * ดึงรางวัลสำหรับแพคเกจเฉพาะ
      *
+     * แสดงเฉพาะรางวัลที่:
+     * - เปิดใช้งาน (is_active = true)
+     * - อยู่ในช่วงเวลาที่กำหนด (ถ้ามี time limit)
+     * - ยังมีโควต้าเหลือ (ถ้ามี max_claims)
+     * - สามารถใช้ได้กับแพคเกจนี้
+     *
      * @param int $packageId
      * @return JsonResponse
      */
@@ -150,14 +161,49 @@ class LineSignupRewardApiController extends Controller
     /**
      * เปรียบเทียบรางวัลระหว่างฟรีและแพคเกจ
      *
+     * แสดงเฉพาะรางวัลที่:
+     * - เปิดใช้งาน (is_active = true)
+     * - อยู่ในช่วงเวลาที่กำหนด (ถ้ามี time limit)
+     * - ยังมีโควต้าเหลือ (ถ้ามี max_claims)
+     *
      * @return JsonResponse
      */
     public function compare(): JsonResponse
     {
         try {
-            $freeRewards = LineSignupReward::getAvailableRewards(null);
-            $packageRewards = LineSignupReward::where('is_active', true)
-                ->where('signup_type', 'package')
+            // ดึงรางวัลฟรี (ใช้ getAvailableRewards ที่กรองครบถ้วน)
+            $allFreeRewards = LineSignupReward::getAvailableRewards(null);
+            $freeRewards = $allFreeRewards->filter(function ($reward) {
+                return $reward->signup_type === 'free' || $reward->signup_type === 'both';
+            });
+
+            // ดึงรางวัลแพคเกจ (ต้องกรองเหมือน getAvailableRewards)
+            $packageRewards = LineSignupReward::query()
+                ->where('is_active', true)
+                ->where(function ($query) {
+                    $query->where('signup_type', 'package')
+                        ->orWhere('signup_type', 'both');
+                })
+                // กรองช่วงเวลา
+                ->where(function ($query) {
+                    $query->where('is_time_limited', false)
+                        ->orWhere(function ($q) {
+                            $q->where('is_time_limited', true)
+                                ->where(function ($q2) {
+                                    $q2->whereNull('start_date')
+                                        ->orWhere('start_date', '<=', now());
+                                })
+                                ->where(function ($q2) {
+                                    $q2->whereNull('end_date')
+                                        ->orWhere('end_date', '>=', now());
+                                });
+                        });
+                })
+                // กรอง max_claims
+                ->where(function ($query) {
+                    $query->whereNull('max_claims')
+                        ->orWhereRaw('total_claimed < max_claims');
+                })
                 ->orderBy('display_order')
                 ->get();
 
@@ -183,7 +229,7 @@ class LineSignupRewardApiController extends Controller
                         ];
                     }),
                 ],
-                'message' => 'เปรียบเทียบรางวัลสำเร็จ',
+                'message' => 'เปรียบเทียบรางวัลสำเร็จ (เฉพาะที่เปิดใช้งานและอยู่ในช่วงเวลา)',
             ]);
 
         } catch (\Exception $e) {
