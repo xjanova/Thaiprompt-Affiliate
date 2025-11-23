@@ -18,7 +18,7 @@ use Illuminate\Console\Command;
  *
  * Cron Setup:
  * - ทุกนาที: * * * * * php artisan line:process-retries >> /dev/null 2>&1
- * - ทุก 5 นาที: */5 * * * * php artisan line:process-retries
+ * - ทุก 5 นาที: *\/5 * * * * php artisan line:process-retries
  *
  * @package App\Console\Commands
  */
