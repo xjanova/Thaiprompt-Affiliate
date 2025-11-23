@@ -353,11 +353,27 @@ Route::prefix('stores')->name('vendor.stores.')->group(function () {
     Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\VendorStoreController::class, 'show'])->name('show');
 });
 
-// Admin Store Routes (Public browsing of admin's official store)
+// Official Shop Routes (ร้านของระบบ - แยกจากร้านผู้เช่า)
+// ⚠️ E-commerce Critical: ร้านของระบบต้องถูก index โดย search engines
+// โทนสีและ UI แตกต่างจากร้านทั่วไป (3D, Premium, Glassmorphism)
+Route::prefix('official-shop')->name('official-shop.')->group(function () {
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\OfficialShopController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/featured', [\App\Http\Controllers\OfficialShopController::class, 'featured'])->name('featured');
+    Route::match(['GET', 'HEAD'], '/category/{slug}', [\App\Http\Controllers\OfficialShopController::class, 'category'])->name('category');
+    Route::match(['GET', 'HEAD'], '/search', [\App\Http\Controllers\OfficialShopController::class, 'quickSearch'])->name('search');
+    Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\OfficialShopController::class, 'show'])->name('show');
+});
+
+// Admin Store Routes (Legacy - เก็บไว้เพื่อ backward compatibility)
 // ⚠️ E-commerce: Admin store ต้องถูก index
 Route::prefix('admin-store')->name('admin-store.')->group(function () {
-    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\AdminStoreController::class, 'index'])->name('index');
-    Route::match(['GET', 'HEAD'], '/{id}', [\App\Http\Controllers\AdminStoreController::class, 'show'])->name('show');
+    // Redirect to official shop
+    Route::match(['GET', 'HEAD'], '/', function () {
+        return redirect()->route('official-shop.index');
+    })->name('index');
+    Route::match(['GET', 'HEAD'], '/{slug}', function ($slug) {
+        return redirect()->route('official-shop.show', $slug);
+    })->name('show');
 });
 
 // Cart Routes (Authenticated)
