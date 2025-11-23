@@ -209,4 +209,29 @@ class MlmDashboardController extends Controller
 
         return view('user.mlm.binary-position', compact('member', 'position'));
     }
+
+    /**
+     * ดึงการตั้งค่า MLM สำหรับ income simulator
+     * Read-only endpoint สำหรับ user
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getSettings()
+    {
+        try {
+            // ใช้ MlmGlobalSetting model เพื่อดึงข้อมูล
+            $settings = \App\Models\MlmGlobalSetting::getAll();
+
+            return response()->json([
+                'success' => true,
+                'settings' => $settings,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถโหลดการตั้งค่าได้',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
