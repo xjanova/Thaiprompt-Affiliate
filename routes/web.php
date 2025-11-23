@@ -719,3 +719,33 @@ Route::prefix('tpix')->name('tpix.')->group(function () {
     Route::match(['GET', 'HEAD'], '/whitepaper/pdf', [TPIXWhitepaperController::class, 'exportPdf'])
         ->name('whitepaper.pdf');
 });
+
+/*
+|--------------------------------------------------------------------------
+| NFC Card Verification Routes (Public)
+|--------------------------------------------------------------------------
+|
+| Routes สำหรับตรวจสอบความถูกต้องของบัตร NFC แบบ Public
+| ผู้ใช้ทั่วไปสามารถเข้าถึงได้โดยไม่ต้อง login
+|
+*/
+use App\Http\Controllers\NFCVerificationController;
+
+// ⚠️ Security: Public NFC verification - ไม่ต้อง login
+Route::prefix('nfc')->name('nfc.')->group(function () {
+    // หน้าตรวจสอบบัตร NFC
+    Route::match(['GET', 'HEAD'], '/verify/{cardNumber?}', [NFCVerificationController::class, 'show'])
+        ->name('verify');
+
+    // API สำหรับตรวจสอบบัตร (Full Verification)
+    Route::post('/verify', [NFCVerificationController::class, 'verify'])
+        ->name('verify.api');
+
+    // API สำหรับตรวจสอบด่วน (Quick Verification)
+    Route::post('/verify/quick', [NFCVerificationController::class, 'quickVerify'])
+        ->name('verify.quick');
+
+    // สถิติการตรวจสอบ (สำหรับ Admin หรือ Card Owner)
+    Route::middleware('auth')->get('/statistics/{cardNumber}', [NFCVerificationController::class, 'statistics'])
+        ->name('statistics');
+});
