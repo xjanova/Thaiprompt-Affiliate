@@ -238,7 +238,8 @@ class OfficialShopProductsSeeder extends Seeder
                 'rating_count' => rand(10, 100),
                 'view_count' => rand(100, 1000),
                 'sales_count' => rand(10, 500),
-                'main_image_url' => 'https://via.placeholder.com/800x800.png?text=' . urlencode($productData['name']),
+                // ✅ ใช้ SKU แทน name เพื่อให้ URL สั้นลง (ชื่อไทยยาวเกิน URL encode)
+                'main_image_url' => 'https://via.placeholder.com/800x800.png?text=' . urlencode($productData['sku']),
             ]);
 
             $createdCount++;
