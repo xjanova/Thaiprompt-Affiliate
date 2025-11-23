@@ -319,14 +319,40 @@ class LineSignupService
      *
      * รองรับการสมัครแบบ:
      * 1. มี sponsor (จาก invitation link) → ใช้ sponsor ที่ระบุ
-     * 2. ไม่มี sponsor → ใช้ Super Admin + auto-placement
+     * 2. มี sponsor_code (กรอกระหว่างสมัคร) → ใช้ sponsor จาก code
+     * 3. ไม่มี sponsor → ใช้ Super Admin + auto-placement
      */
     private function createMlmMember(User $user, MlmProspect $prospect): MlmMember
     {
         // ตรวจสอบ sponsor
         $sponsor = $prospect->sponsorMember;
 
-        // ถ้าไม่มี sponsor → หา Super Admin (user_id = 1)
+        // ถ้าไม่มี sponsor จาก invitation link → ตรวจสอบ sponsor_code
+        if (!$sponsor) {
+            $sponsorCode = $prospect->conversation_data['sponsor_code'] ?? null;
+
+            if ($sponsorCode && $sponsorCode !== 'ข้าม') {
+                // ค้นหา sponsor จาก member_code
+                $sponsorMember = MlmMember::where('member_code', $sponsorCode)
+                    ->where('status', 'active')
+                    ->first();
+
+                if ($sponsorMember) {
+                    $sponsor = $sponsorMember;
+                    Log::info('Found sponsor from code', [
+                        'sponsor_code' => $sponsorCode,
+                        'sponsor_member_id' => $sponsor->id,
+                    ]);
+                } else {
+                    Log::warning('Invalid sponsor code', [
+                        'sponsor_code' => $sponsorCode,
+                    ]);
+                    // ถ้า code ไม่ถูกต้อง → ใช้ Super Admin fallback
+                }
+            }
+        }
+
+        // ถ้ายังไม่มี sponsor → หา Super Admin (user_id = 1)
         if (!$sponsor) {
             $superAdmin = User::find(1);
             if (!$superAdmin) {
@@ -604,8 +630,68 @@ class LineSignupService
             'id_card' => $this->validationService->validateThaiIdCard($value),
             'address' => $this->validationService->validateThaiAddress($value),
             'postal_code' => $this->validationService->validateThaiPostalCode($value),
+            'text' => $this->validateSponsorCode($value), // สำหรับ sponsor_code
             default => ['valid' => true, 'formatted' => $value, 'errors' => []],
         };
+    }
+
+    /**
+     * Validate sponsor code
+     *
+     * ตรวจสอบรหัสผู้แนะนำ:
+     * - ถ้าเป็น "ข้าม" → valid (ไม่มี sponsor)
+     * - ถ้ากรอกรหัส → ตรวจสอบว่ามี member_code นี้หรือไม่
+     *
+     * @param string $value
+     * @return array
+     */
+    private function validateSponsorCode(string $value): array
+    {
+        $trimmed = trim($value);
+
+        // ถ้าเป็น "ข้าม" หรือคำที่คล้ายกัน → valid
+        $skipKeywords = ['ข้าม', 'skip', 'ไม่มี', 'no', 'none', 'pass'];
+        foreach ($skipKeywords as $keyword) {
+            if (mb_stripos($trimmed, $keyword) !== false) {
+                return [
+                    'valid' => true,
+                    'formatted' => 'ข้าม',
+                    'errors' => [],
+                    'message' => '✅ ข้ามการกรอกรหัสผู้แนะนำ ระบบจะจัดทีมให้อัตโนมัติ',
+                ];
+            }
+        }
+
+        // ตรวจสอบความยาว
+        if (mb_strlen($trimmed) < 3 || mb_strlen($trimmed) > 50) {
+            return [
+                'valid' => false,
+                'formatted' => null,
+                'errors' => ['รหัสผู้แนะนำต้องมีความยาว 3-50 ตัวอักษร'],
+            ];
+        }
+
+        // ค้นหา sponsor จาก member_code
+        $sponsor = MlmMember::where('member_code', $trimmed)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$sponsor) {
+            return [
+                'valid' => false,
+                'formatted' => null,
+                'errors' => ['❌ ไม่พบรหัสผู้แนะนำนี้ในระบบ กรุณาตรวจสอบอีกครั้ง'],
+                'suggestion' => 'หากไม่มีรหัสผู้แนะนำ สามารถกด "ข้าม" ได้',
+            ];
+        }
+
+        // พบ sponsor → valid
+        return [
+            'valid' => true,
+            'formatted' => $trimmed,
+            'errors' => [],
+            'message' => "✅ พบผู้แนะนำ: {$sponsor->user->name}",
+        ];
     }
 
     /**
