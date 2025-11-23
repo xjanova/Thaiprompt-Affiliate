@@ -2,6 +2,25 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.153.0] - 2025-11-23
+
+### ✨ Features
+- feat: add LINE Direct Messaging integration for Team Transfer (Phase 2C - Part 6) (712b4194)
+- feat: add Team Transfer notification system backend (Phase 2C - Part 4) (914fe9d6)
+- feat: add Team Transfer UI/Views (Phase 2C - Part 3) (7e12e936)
+- feat: add Team Transfer Controllers and Routes (Phase 2C - Part 2) (c53698fa)
+- feat: add Team Transfer System core (Phase 2C - Part 1) (850438f2)
+- feat: add smart sponsor detection in welcome message (3b235b8e)
+- feat: simplify LINE signup flow to 4 steps using LINE profile data (d9a3df9b)
+- feat: add Optional Sponsor Code Step (Phase 2B - Part 2) (29f63b29)
+### 🐛 Bug Fixes
+- fix: add missing history.blade.php view (Team Transfer) (64b6641b)
+- fix: resolve docblock syntax error in ProcessLineRetries.php (fbede02c)
+### 🔧 Other Changes
+- Merge pull request #1533 from xjanova/claude/setup-line-chatbot-01FRiaWuhS9Dj63r8cBokkNj (bb4ad513)
+- merge: resolve conflicts with origin/claude/Main (db3edd57)
+- docs: update Phase 2B completion summary with Part 4 (d515b221)
+
 ## [v3.152.0] - 2025-11-23
 
 ### ✨ Features
