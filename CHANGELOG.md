@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.148.1] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1526 from xjanova/claude/fix-missing-route-015qQYvcBDypZJW3CiS4426r (10c95ead)
+- fix: remove username field from OfficialShopProductsSeeder (2f10e1f9)
+### 🔧 Other Changes
+
+
 ## [v3.148.0] - 2025-11-23
 
 ### ✨ Features
