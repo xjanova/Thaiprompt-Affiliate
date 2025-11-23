@@ -2,6 +2,36 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.147.10] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: resolve idx_user_status index constraint in LINE signup rewards migrations (e8ae0225)
+### 🔧 Other Changes
+- Merge pull request #1520 from xjanova/claude/fix-undefined-reward-variable-012wn6rV3aV5geqRoeJ6cNRB (93cec8d1)
+- chore: update deployment script to include migrations (17e18678)
+
+## [v3.147.9] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1519 from xjanova/claude/fix-migration-line-rewards-01RGb1FksWiDdMXScakM64tv (91b01257)
+- fix: auto-detect ALL extra columns in LineSignupRewardSeeder (b34e8a34)
+### 🔧 Other Changes
+
+
+## [v3.147.8] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: resolve undefined $reward variable in LINE signup rewards create form (048f16b6)
+### 🔧 Other Changes
+- Merge pull request #1518 from xjanova/claude/fix-undefined-reward-variable-012wn6rV3aV5geqRoeJ6cNRB (7a534dc5)
+- chore: add deployment script for LINE signup reward fix (9b25f087)
+
 ## [v3.147.7] - 2025-11-23
 
 ### ✨ Features
