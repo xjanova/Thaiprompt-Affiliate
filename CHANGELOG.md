@@ -2,6 +2,19 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.149.0] - 2025-11-23
+
+### ✨ Features
+- feat: add LINE Auto-Retry deployment automation (Phase 1.6) (2ea9942a)
+- feat: implement LINE Auto-Retry & Error Recovery System (Phase 1.5) (64712af7)
+- feat: add Auto-Retry foundation (migrations & models) (9af613f7)
+- feat: add LINE Quick Settings Panel for easy system control (b5a3b244)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1528 from xjanova/claude/setup-line-chatbot-01FRiaWuhS9Dj63r8cBokkNj (85f5b1bc)
+- docs: add comprehensive LINE Smart Chatbot enhancement plan (b2d1472d)
+
 ## [v3.148.2] - 2025-11-23
 
 ### ✨ Features
