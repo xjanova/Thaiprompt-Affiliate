@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.147.10] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: resolve idx_user_status index constraint in LINE signup rewards migrations (e8ae0225)
+### 🔧 Other Changes
+- Merge pull request #1520 from xjanova/claude/fix-undefined-reward-variable-012wn6rV3aV5geqRoeJ6cNRB (93cec8d1)
+- chore: update deployment script to include migrations (17e18678)
+
 ## [v3.147.9] - 2025-11-23
 
 ### ✨ Features
