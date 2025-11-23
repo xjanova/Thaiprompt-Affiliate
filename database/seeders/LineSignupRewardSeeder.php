@@ -96,7 +96,8 @@ class LineSignupRewardSeeder extends Seeder
     }
 
     /**
-     * เพิ่มค่า null สำหรับ columns พิเศษที่มีอยู่ในตาราง
+     * เพิ่มค่า dummy สำหรับ columns พิเศษที่มีอยู่ในตาราง
+     * (จะถูกลบทิ้งโดย migration ภายหลัง)
      *
      * @param array $data
      * @return array
@@ -104,7 +105,17 @@ class LineSignupRewardSeeder extends Seeder
     protected function addExtraColumnsIfExist(array $data): array
     {
         foreach ($this->extraColumns as $column) {
-            $data[$column] = null;
+            // ใส่ค่า dummy ตามประเภทของคอลัมน์
+            $data[$column] = match($column) {
+                'user_id' => 1,  // user_id - ใส่ ID 1 (admin) เพราะอาจเป็น NOT NULL
+                'session_id', 'claim_id' => null,  // Foreign keys อื่น - ใส่ null
+                'status' => 'pending',                         // Status - ใส่ค่า default
+                'reward_name' => $data['name'] ?? 'Reward',    // String - copy จาก name
+                'reward_amount' => $data['amount'] ?? 0,       // Decimal - copy จาก amount
+                'reward_description' => $data['description'] ?? '', // Text - copy จาก description
+                'granted_at', 'claimed_at', 'expires_at' => null,  // Timestamps - ใส่ null
+                default => '?',  // Unknown - ใส่ placeholder
+            };
         }
 
         return $data;
