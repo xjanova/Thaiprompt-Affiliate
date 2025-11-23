@@ -135,7 +135,9 @@
         <x-arrow-x.navbar.notification-bell-v3 />
 
         {{-- Language Switcher --}}
-        <x-arrow-x.language-switcher />
+        {{-- ⚠️ TEMPORARILY DISABLED: Infinite reload loop issue --}}
+        {{-- TODO: Fix infinite loop before re-enabling --}}
+        {{-- <x-arrow-x.language-switcher /> --}}
 
         {{-- Theme Customizer --}}
         <button @click="$dispatch('toggle-customizer')"
