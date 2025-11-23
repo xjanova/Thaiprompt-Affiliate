@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.142.1] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1497 from xjanova/claude/improve-mlm-simulator-01NqHWnFXEQY6ZzmqjuqwHBC (dca60b16)
+- fix: แก้ไข Route error ใน MLM Income Simulator (9f456080)
+### 🔧 Other Changes
+
+
 ## [v3.142.0] - 2025-11-23
 
 ### ✨ Features
