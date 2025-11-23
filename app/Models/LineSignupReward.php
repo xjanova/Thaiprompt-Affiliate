@@ -39,7 +39,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class LineSignupReward extends Model
 {
-    use SoftDeletes;
+    // use SoftDeletes; // TODO: Uncomment after running migration 2025_11_23_150001
 
     protected $fillable = [
         'name',
