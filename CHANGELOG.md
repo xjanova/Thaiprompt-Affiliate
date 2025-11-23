@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.147.2] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1512 from xjanova/claude/remove-line-oa-admin-01Q3p7xMeGZQcC4fRsa7o6M6 (546d46bb)
+- fix: comment out SoftDeletes trait usage in LineSignupReward model (f1f17096)
+### 🔧 Other Changes
+
+
 ## [v3.147.1] - 2025-11-23
 
 ### ✨ Features
