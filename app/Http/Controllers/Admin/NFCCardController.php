@@ -972,4 +972,290 @@ class NFCCardController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * ล็อคบัตร NFC (ป้องกันการเขียนทับ)
+     *
+     * Admin เท่านั้นที่สามารถล็อคบัตรได้
+     *
+     * @param NFCCard $nfcCard
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function lockCard(NFCCard $nfcCard)
+    {
+        try {
+            // ตรวจสอบว่าบัตรถูกล็อคอยู่แล้วหรือไม่
+            if ($nfcCard->is_locked) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'บัตรถูกล็อคอยู่แล้ว',
+                ], 400);
+            }
+
+            // ล็อคบัตร
+            $nfcCard->update([
+                'is_locked' => true,
+                'locked_at' => now(),
+                'locked_by' => auth()->id(),
+                'unlocked_at' => null,
+                'unlocked_by' => null,
+            ]);
+
+            Log::info('NFC card locked', [
+                'card_id' => $nfcCard->id,
+                'card_number' => $nfcCard->card_number,
+                'locked_by' => auth()->user()->name,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ล็อคบัตรสำเร็จ - บัตรนี้ไม่สามารถเขียนทับได้',
+                'locked_at' => $nfcCard->locked_at->toISOString(),
+                'locked_by' => auth()->user()->name,
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Failed to lock NFC card', [
+                'card_id' => $nfcCard->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถล็อคบัตรได้: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ปลดล็อคบัตร NFC
+     *
+     * Admin เท่านั้นที่สามารถปลดล็อคบัตรได้
+     *
+     * @param NFCCard $nfcCard
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function unlockCard(NFCCard $nfcCard)
+    {
+        try {
+            // ตรวจสอบว่าบัตรถูกล็อคหรือไม่
+            if (!$nfcCard->is_locked) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'บัตรไม่ได้ถูกล็อคอยู่',
+                ], 400);
+            }
+
+            // ปลดล็อคบัตร
+            $nfcCard->update([
+                'is_locked' => false,
+                'unlocked_at' => now(),
+                'unlocked_by' => auth()->id(),
+            ]);
+
+            Log::info('NFC card unlocked', [
+                'card_id' => $nfcCard->id,
+                'card_number' => $nfcCard->card_number,
+                'unlocked_by' => auth()->user()->name,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ปลดล็อคบัตรสำเร็จ - บัตรนี้สามารถเขียนทับได้แล้ว',
+                'unlocked_at' => $nfcCard->unlocked_at->toISOString(),
+                'unlocked_by' => auth()->user()->name,
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Failed to unlock NFC card', [
+                'card_id' => $nfcCard->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถปลดล็อคบัตรได้: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * บันทึกข้อมูลบัตรที่อ่านได้
+     *
+     * เรียกหลังจากอ่านบัตร NFC สำเร็จ
+     *
+     * @param Request $request
+     * @param NFCCard $nfcCard
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function saveCardInfo(Request $request, NFCCard $nfcCard)
+    {
+        try {
+            $validated = $request->validate([
+                'card_type_detected' => 'nullable|string',
+                'memory_size' => 'nullable|integer',
+                'ndef_writeable' => 'nullable|boolean',
+                'ndef_records_count' => 'nullable|integer',
+                'ndef_records_data' => 'nullable|array',
+                'nfc_uid' => 'nullable|string',
+            ]);
+
+            // อัพเดทข้อมูลบัตร
+            $updateData = [];
+
+            if (isset($validated['card_type_detected'])) {
+                $updateData['card_type_detected'] = $validated['card_type_detected'];
+            }
+
+            if (isset($validated['memory_size'])) {
+                $updateData['memory_size'] = $validated['memory_size'];
+            }
+
+            if (isset($validated['ndef_writeable'])) {
+                $updateData['ndef_writeable'] = $validated['ndef_writeable'];
+            }
+
+            if (isset($validated['ndef_records_count'])) {
+                $updateData['ndef_records_count'] = $validated['ndef_records_count'];
+            }
+
+            if (isset($validated['ndef_records_data'])) {
+                $updateData['ndef_records_data'] = json_encode($validated['ndef_records_data']);
+            }
+
+            if (isset($validated['nfc_uid'])) {
+                $updateData['nfc_uid'] = $validated['nfc_uid'];
+            }
+
+            $updateData['last_read_at'] = now();
+            $updateData['read_count'] = DB::raw('read_count + 1');
+
+            $nfcCard->update($updateData);
+
+            Log::info('NFC card info saved', [
+                'card_id' => $nfcCard->id,
+                'card_number' => $nfcCard->card_number,
+                'card_type' => $validated['card_type_detected'] ?? null,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกข้อมูลบัตรสำเร็จ',
+                'card_info' => [
+                    'card_type_detected' => $nfcCard->card_type_detected,
+                    'memory_size' => $nfcCard->memory_size,
+                    'ndef_writeable' => $nfcCard->ndef_writeable,
+                    'ndef_records_count' => $nfcCard->ndef_records_count,
+                    'last_read_at' => $nfcCard->last_read_at,
+                    'read_count' => $nfcCard->read_count,
+                ],
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Failed to save card info', [
+                'card_id' => $nfcCard->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถบันทึกข้อมูลได้: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงรายการ Templates ทั้งหมด
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getTemplates()
+    {
+        try {
+            $templates = config('nfc-templates.templates', []);
+            $cardTypes = config('nfc-templates.card_types', []);
+            $ndefTypes = config('nfc-templates.ndef_types', []);
+
+            return response()->json([
+                'success' => true,
+                'templates' => $templates,
+                'card_types' => $cardTypes,
+                'ndef_types' => $ndefTypes,
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Failed to get NFC templates', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงข้อมูล templates ได้'
+            ], 500);
+        }
+    }
+
+    /**
+     * สร้าง NDEF records จาก template
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function buildTemplateRecords(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'template_key' => 'required|string',
+                'data' => 'required|array',
+            ]);
+
+            $templateKey = $validated['template_key'];
+            $data = $validated['data'];
+
+            // ดึง template
+            $templates = config('nfc-templates.templates', []);
+
+            if (!isset($templates[$templateKey])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบ template ที่เลือก'
+                ], 404);
+            }
+
+            $template = $templates[$templateKey];
+
+            // สร้าง NDEF records
+            $recordsBuilder = $template['records_builder'];
+            $records = $recordsBuilder($data);
+
+            return response()->json([
+                'success' => true,
+                'template_name' => $template['name'],
+                'records' => $records,
+                'records_count' => count($records),
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Failed to build template records', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถสร้าง records ได้: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
