@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.141.7] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไข duplicate border classes ในหน้า LINE bot (9 ไฟล์) (21bdfbf1)
+- fix: แก้ไข HTML syntax errors ในหน้า LINE bot admin (20 ไฟล์) (0d35f270)
+### 🔧 Other Changes
+- Merge pull request #1495 from xjanova/claude/resolve-linebot-conflicts-014rMDk47buoqz1GCdVnaLm1 (b91c3558)
+
 ## [v3.141.6] - 2025-11-23
 
 ### ✨ Features
