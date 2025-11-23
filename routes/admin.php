@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\RankController;
 use App\Http\Controllers\Admin\EmailController;
 use App\Http\Controllers\Admin\MembershipRetentionController as AdminRetentionController;
 use App\Http\Controllers\Admin\LineOaController;
+use App\Http\Controllers\Admin\LineMessageAnalyticsController;
 use App\Http\Controllers\Admin\LineBotAiController;
 use App\Http\Controllers\Admin\LineRichMenuController;
 use App\Http\Controllers\Admin\LineBroadcastController;
@@ -548,8 +549,27 @@ Route::prefix('line-oa')->name('line-oa.')->group(function () {
     Route::get('/line-users', [LineOaController::class, 'getLineUsers'])->name('line-users');
     Route::get('/logs', [LineOaController::class, 'logs'])->name('logs');
 
-    // Analytics Dashboard
+    // Analytics Dashboard (Legacy)
     Route::get('/analytics', [\App\Http\Controllers\Admin\LineAnalyticsController::class, 'index'])->name('analytics');
+});
+
+// LINE Message Analytics (Phase 2 - New Smart Analytics)
+Route::prefix('line-analytics')->name('line-analytics.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [LineMessageAnalyticsController::class, 'dashboard'])->name('dashboard');
+
+    // API Endpoints
+    Route::prefix('api')->name('api.')->group(function () {
+        Route::get('/overview', [LineMessageAnalyticsController::class, 'apiOverview'])->name('overview');
+        Route::get('/trending', [LineMessageAnalyticsController::class, 'apiTrending'])->name('trending');
+        Route::get('/errors', [LineMessageAnalyticsController::class, 'apiErrors'])->name('errors');
+        Route::get('/recovery', [LineMessageAnalyticsController::class, 'apiRecovery'])->name('recovery');
+        Route::get('/message-types', [LineMessageAnalyticsController::class, 'apiMessageTypes'])->name('message-types');
+        Route::get('/user-engagement', [LineMessageAnalyticsController::class, 'apiUserEngagement'])->name('user-engagement');
+    });
+
+    // Utilities
+    Route::post('/clear-cache', [LineMessageAnalyticsController::class, 'clearCache'])->name('clear-cache');
 });
 
 // LINE Bot AI Management
