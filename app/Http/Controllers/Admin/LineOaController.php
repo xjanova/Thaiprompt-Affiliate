@@ -121,6 +121,98 @@ class LineOaController extends Controller
     }
 
     /**
+     * Quick update LINE OA settings (สำหรับ Quick Settings Panel)
+     *
+     * รับ PATCH request จาก Quick Settings Panel เพื่ออัพเดทการตั้งค่าแบบรวดเร็ว
+     * รองรับการอัพเดทเฉพาะ field ที่ส่งมา
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function quickUpdate(Request $request)
+    {
+        // ตรวจสอบข้อมูลที่ส่งมา (อนุญาตเฉพาะ boolean fields)
+        $validated = $request->validate([
+            'is_active' => ['sometimes', 'boolean'],
+            'enable_line_messaging' => ['sometimes', 'boolean'],
+            'require_line_registration' => ['sometimes', 'boolean'],
+        ]);
+
+        try {
+            // ดึงการตั้งค่าปัจจุบัน หรือสร้างใหม่ถ้ายังไม่มี
+            $settings = LineOaSetting::first();
+
+            if (!$settings) {
+                $settings = LineOaSetting::create(array_merge([
+                    'is_active' => false,
+                    'enable_line_messaging' => false,
+                    'require_line_registration' => false,
+                ], $validated));
+            } else {
+                // อัพเดทเฉพาะ fields ที่ส่งมา
+                $settings->update($validated);
+            }
+
+            // ล้าง cache
+            LineOaSetting::clearCache();
+
+            // สร้างข้อความแจ้งเตือนตามการเปลี่ยนแปลง
+            $message = $this->generateQuickUpdateMessage($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'settings' => [
+                    'is_active' => $settings->is_active,
+                    'enable_line_messaging' => $settings->enable_line_messaging,
+                    'require_line_registration' => $settings->require_line_registration,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('LINE Quick Update Error: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถอัพเดทการตั้งค่าได้: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * สร้างข้อความแจ้งเตือนตามการเปลี่ยนแปลง
+     *
+     * @param array $changes
+     * @return string
+     */
+    private function generateQuickUpdateMessage(array $changes): string
+    {
+        $messages = [];
+
+        if (isset($changes['is_active'])) {
+            $messages[] = $changes['is_active']
+                ? '🟢 เปิดใช้งานระบบ LINE OA'
+                : '⚫ ปิดใช้งานระบบ LINE OA';
+        }
+
+        if (isset($changes['enable_line_messaging'])) {
+            $messages[] = $changes['enable_line_messaging']
+                ? '💬 เปิดใช้งาน LINE Messaging'
+                : '🔇 ปิดใช้งาน LINE Messaging';
+        }
+
+        if (isset($changes['require_line_registration'])) {
+            $messages[] = $changes['require_line_registration']
+                ? '✅ บังคับลงทะเบียนผ่าน LINE'
+                : '⭕ ไม่บังคับลงทะเบียนผ่าน LINE';
+        }
+
+        return implode(' | ', $messages) ?: 'อัพเดทสำเร็จ';
+    }
+
+    /**
      * Get users with LINE User ID
      */
     public function getLineUsers(Request $request)
