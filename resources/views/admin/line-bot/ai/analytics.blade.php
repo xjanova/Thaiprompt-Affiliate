@@ -30,27 +30,27 @@
 
     <!-- Main Statistics -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="style="background: var(--arrow-x-primary-gradient)" rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+        <div style="background: var(--arrow-x-primary-gradient)" class="rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-blue-100 text-sm font-medium mb-1">การตั้งค่า AI</p>
                     <h3 class="text-4xl font-bold mb-1">{{ $stats['total_ai_settings'] }}</h3>
                     <p class="text-xs text-blue-200">{{ $stats['active_ai_settings'] }} เปิดใช้งาน</p>
                 </div>
-                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center border border-white/20 dark:border-white/10">
                     <i class="fas fa-robot text-2xl"></i>
                 </div>
             </div>
         </div>
 
-        <div class="style="background: var(--arrow-x-accent-gradient)" rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+        <div style="background: var(--arrow-x-accent-gradient)" class="rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-purple-100 text-sm font-medium mb-1">ฐานความรู้</p>
                     <h3 class="text-4xl font-bold mb-1">{{ $stats['total_knowledge_bases'] }}</h3>
                     <p class="text-xs text-purple-200">แหล่งข้อมูลทั้งหมด</p>
                 </div>
-                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center border border-white/20 dark:border-white/10">
                     <i class="fas fa-book text-2xl"></i>
                 </div>
             </div>
@@ -63,7 +63,7 @@
                     <h3 class="text-4xl font-bold mb-1">{{ number_format($stats['total_conversations']) }}</h3>
                     <p class="text-xs text-green-200">{{ $stats['today_conversations'] }} วันนี้</p>
                 </div>
-                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center border border-white/20 dark:border-white/10">
                     <i class="fas fa-comments text-2xl"></i>
                 </div>
             </div>
@@ -76,7 +76,7 @@
                     <h3 class="text-4xl font-bold mb-1">{{ number_format($stats['total_messages']) }}</h3>
                     <p class="text-xs text-orange-200">{{ $stats['today_messages'] }} วันนี้</p>
                 </div>
-                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center border border-white/20 dark:border-white/10">
                     <i class="fas fa-envelope text-2xl"></i>
                 </div>
             </div>
@@ -119,7 +119,7 @@
     </div>
 
     <!-- AI Settings Performance -->
-    <div class="glass-fusion rounded-2xl shadow-xl border border-gray-100 overflow-hidden" border border-white/20 dark:border-white/10>
+    <div class="glass-fusion rounded-2xl shadow-xl border border-gray-100 overflow-hidden border border-white/20 dark:border-white/10">
         <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
             <h2 class="text-xl font-bold text-gray-900">ประสิทธิภาพของแต่ละ AI Setting</h2>
         </div>

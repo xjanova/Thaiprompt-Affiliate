@@ -34,9 +34,9 @@
     <div class="mb-8 relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#00B900] via-[#00E600] to-[#00C900] p-10 shadow-2xl shadow-green-500/30">
         <!-- Animated Background -->
         <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 left-0 w-96 h-96 glass-fusion rounded-full -translate-x-48 -translate-y-48 animate-pulse" border border-white/20 dark:border-white/10></div>
-            <div class="absolute bottom-0 right-0 w-64 h-64 glass-fusion rounded-full translate-x-32 translate-y-32 animate-pulse" border border-white/20 dark:border-white/10 style="animation-delay: 0.5s"></div>
-            <div class="absolute top-1/2 left-1/2 w-48 h-48 glass-fusion rounded-full -translate-x-24 -translate-y-24 animate-pulse" border border-white/20 dark:border-white/10 style="animation-delay: 0.3s"></div>
+            <div class="absolute top-0 left-0 w-96 h-96 glass-fusion rounded-full -translate-x-48 -translate-y-48 animate-pulse border border-white/20 dark:border-white/10"></div>
+            <div class="absolute bottom-0 right-0 w-64 h-64 glass-fusion rounded-full translate-x-32 translate-y-32 animate-pulse border border-white/20 dark:border-white/10" style="animation-delay: 0.5s"></div>
+            <div class="absolute top-1/2 left-1/2 w-48 h-48 glass-fusion rounded-full -translate-x-24 -translate-y-24 animate-pulse border border-white/20 dark:border-white/10" style="animation-delay: 0.3s"></div>
         </div>
 
         <!-- Floating Avatar Icons -->
@@ -52,7 +52,7 @@
         <div class="relative">
             <div class="flex items-start justify-between gap-4">
                 <div class="flex items-center gap-4 flex-1">
-                    <div class="w-20 h-20 rounded-3xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-2xl border-2 border-white/30" border border-white/20 dark:border-white/10>
+                    <div class="w-20 h-20 rounded-3xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-2xl border-2 border-white/30 border border-white/20 dark:border-white/10">
                         <i class="fas fa-image text-white text-4xl drop-shadow-lg"></i>
                     </div>
                     <div class="flex-1">
@@ -81,7 +81,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Form Section -->
         <div class="lg:col-span-2">
-            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
+            <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden border border-white/20 dark:border-white/10">
                 <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 px-8 py-6 border-b-2 border-gray-200 dark:border-gray-700 dark:border-slate-600">
                     <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                         <i class="fas fa-cog text-[#00B900]"></i>
@@ -124,7 +124,7 @@
                                     class="group relative border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                                 <div class="flex flex-col items-center gap-3">
                                     <div class="w-16 h-16 rounded-xl flex items-center justify-center"
-                                         :class="avatarType === 'image' ? 'glass-fusion' : 'bg-blue-50 dark:bg-blue-900/30'" border border-white/20 dark:border-white/10>
+                                         :class="avatarType === 'image' ? 'glass-fusion' : 'bg-blue-50 dark:bg-blue-900/30' border border-white/20 dark:border-white/10">
                                         <i class="fas fa-image text-3xl" :class="avatarType === 'image' ? 'text-white' : 'text-blue-600'"></i>
                                     </div>
                                     <div class="text-center">
@@ -133,7 +133,7 @@
                                     </div>
                                 </div>
                                 <div x-show="avatarType === 'image'" x-transition
-                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center" border border-white/20 dark:border-white/10>
+                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center border border-white/20 dark:border-white/10">
                                     <i class="fas fa-check text-blue-600 text-sm"></i>
                                 </div>
                             </button>
@@ -144,7 +144,7 @@
                                     class="group relative border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                                 <div class="flex flex-col items-center gap-3">
                                     <div class="w-16 h-16 rounded-xl flex items-center justify-center"
-                                         :class="avatarType === 'gif' ? 'glass-fusion' : 'bg-purple-50 dark:bg-purple-900/30'" border border-white/20 dark:border-white/10>
+                                         :class="avatarType === 'gif' ? 'glass-fusion' : 'bg-purple-50 dark:bg-purple-900/30' border border-white/20 dark:border-white/10">
                                         <i class="fas fa-film text-3xl" :class="avatarType === 'gif' ? 'text-white' : 'text-purple-600'"></i>
                                     </div>
                                     <div class="text-center">
@@ -153,7 +153,7 @@
                                     </div>
                                 </div>
                                 <div x-show="avatarType === 'gif'" x-transition
-                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center" border border-white/20 dark:border-white/10>
+                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center border border-white/20 dark:border-white/10">
                                     <i class="fas fa-check text-purple-600 text-sm"></i>
                                 </div>
                             </button>
@@ -164,7 +164,7 @@
                                     class="group relative border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                                 <div class="flex flex-col items-center gap-3">
                                     <div class="w-16 h-16 rounded-xl flex items-center justify-center"
-                                         :class="avatarType === 'lottie' ? 'glass-fusion' : 'bg-orange-50 dark:bg-orange-900/30'" border border-white/20 dark:border-white/10>
+                                         :class="avatarType === 'lottie' ? 'glass-fusion' : 'bg-orange-50 dark:bg-orange-900/30' border border-white/20 dark:border-white/10">
                                         <i class="fas fa-play-circle text-3xl" :class="avatarType === 'lottie' ? 'text-white' : 'text-orange-600'"></i>
                                     </div>
                                     <div class="text-center">
@@ -173,7 +173,7 @@
                                     </div>
                                 </div>
                                 <div x-show="avatarType === 'lottie'" x-transition
-                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center" border border-white/20 dark:border-white/10>
+                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center border border-white/20 dark:border-white/10">
                                     <i class="fas fa-check text-orange-600 text-sm"></i>
                                 </div>
                             </button>
@@ -184,7 +184,7 @@
                                     class="group relative border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                                 <div class="flex flex-col items-center gap-3">
                                     <div class="w-16 h-16 rounded-xl flex items-center justify-center"
-                                         :class="avatarType === 'video' ? 'glass-fusion' : 'bg-indigo-50 dark:bg-indigo-900/30'" border border-white/20 dark:border-white/10>
+                                         :class="avatarType === 'video' ? 'glass-fusion' : 'bg-indigo-50 dark:bg-indigo-900/30' border border-white/20 dark:border-white/10">
                                         <i class="fas fa-video text-3xl" :class="avatarType === 'video' ? 'text-white' : 'text-indigo-600'"></i>
                                     </div>
                                     <div class="text-center">
@@ -193,7 +193,7 @@
                                     </div>
                                 </div>
                                 <div x-show="avatarType === 'video'" x-transition
-                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center" border border-white/20 dark:border-white/10>
+                                     class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center border border-white/20 dark:border-white/10">
                                     <i class="fas fa-check text-indigo-600 text-sm"></i>
                                 </div>
                             </button>
@@ -250,7 +250,7 @@
                                 <p class="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 mt-4"><i class="fas fa-info-circle mr-1"></i>ขนาดไฟล์สูงสุด: 5MB</p>
 
                                 <!-- File Selected Indicator -->
-                                <div x-show="showPreview" class="mt-6 p-4 glass-fusion dark:bg-slate-700 rounded-2xl shadow-lg" border border-white/20 dark:border-white/10>
+                                <div x-show="showPreview" class="mt-6 p-4 glass-fusion dark:bg-slate-700 rounded-2xl shadow-lg border border-white/20 dark:border-white/10">
                                     <div class="flex items-center gap-3">
                                         <i class="fas fa-check-circle text-green-600 text-2xl"></i>
                                         <div class="flex-1 text-left">

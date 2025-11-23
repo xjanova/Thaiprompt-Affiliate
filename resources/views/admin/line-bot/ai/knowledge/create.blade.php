@@ -13,8 +13,8 @@
     <div class="mb-8 relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#00B900] via-[#00E600] to-[#00C900] p-10 shadow-2xl shadow-green-500/30">
         <!-- Animated Background Pattern -->
         <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 left-0 w-96 h-96 glass-fusion rounded-full -translate-x-48 -translate-y-48 animate-pulse" border border-white/20 dark:border-white/10></div>
-            <div class="absolute bottom-0 right-0 w-64 h-64 glass-fusion rounded-full translate-x-32 translate-y-32 animate-pulse" border border-white/20 dark:border-white/10 style="animation-delay: 0.5s"></div>
+            <div class="absolute top-0 left-0 w-96 h-96 glass-fusion rounded-full -translate-x-48 -translate-y-48 animate-pulse border border-white/20 dark:border-white/10"></div>
+            <div class="absolute bottom-0 right-0 w-64 h-64 glass-fusion rounded-full translate-x-32 translate-y-32 animate-pulse border border-white/20 dark:border-white/10" style="animation-delay: 0.5s"></div>
         </div>
 
         <!-- Floating Knowledge Icons -->
@@ -29,7 +29,7 @@
 
         <div class="relative">
             <div class="flex items-center gap-4 mb-4">
-                <div class="w-16 h-16 rounded-2xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-xl border border-white/30" border border-white/20 dark:border-white/10>
+                <div class="w-16 h-16 rounded-2xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-xl border border-white/30 border border-white/20 dark:border-white/10">
                     <i class="fas fa-book-open text-white text-3xl drop-shadow-lg"></i>
                 </div>
                 <div class="flex-1">
@@ -39,7 +39,7 @@
             </div>
 
             <!-- AI Setting Info -->
-            <div class="mt-6 flex items-center gap-3 glass-fusion backdrop-blur-md rounded-xl px-4 py-3 border border-white/25" border border-white/20 dark:border-white/10>
+            <div class="mt-6 flex items-center gap-3 glass-fusion backdrop-blur-md rounded-xl px-4 py-3 border border-white/25 border border-white/20 dark:border-white/10">
                 <i class="fas fa-robot text-white text-xl"></i>
                 <div class="flex-1">
                     <p class="text-white/80 text-xs font-semibold uppercase tracking-wide">AI Setting</p>
@@ -53,7 +53,7 @@
     </div>
 
     <!-- Main Form Card -->
-    <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
+    <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden border border-white/20 dark:border-white/10">
         <form action="{{ route('admin.line-bot.ai.knowledge.store', $setting->id) }}" method="POST" enctype="multipart/form-data" class="p-8 space-y-8">
             @csrf
 
@@ -72,7 +72,7 @@
                             class="group relative overflow-hidden border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                         <div class="relative z-10 flex flex-col items-center gap-3">
                             <div class="w-16 h-16 rounded-xl flex items-center justify-center"
-                                 :class="knowledgeType === 'text' ? 'glass-fusion' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-600 group-hover:bg-green-50 dark:group-hover:bg-green-900/30'" border border-white/20 dark:border-white/10>
+                                 :class="knowledgeType === 'text' ? 'glass-fusion' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-600 group-hover:bg-green-50 dark:group-hover:bg-green-900/30' border border-white/20 dark:border-white/10">
                                 <i class="fas fa-align-left text-3xl" :class="knowledgeType === 'text' ? 'text-white' : 'text-[#00B900]'"></i>
                             </div>
                             <div class="text-center">
@@ -82,7 +82,7 @@
                         </div>
                         <div x-show="knowledgeType === 'text'"
                              x-transition
-                             class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center" border border-white/20 dark:border-white/10>
+                             class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center border border-white/20 dark:border-white/10">
                             <i class="fas fa-check text-[#00B900] text-sm"></i>
                         </div>
                     </button>
@@ -93,7 +93,7 @@
                             class="group relative overflow-hidden border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                         <div class="relative z-10 flex flex-col items-center gap-3">
                             <div class="w-16 h-16 rounded-xl flex items-center justify-center"
-                                 :class="knowledgeType === 'url' ? 'glass-fusion' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-600 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30'" border border-white/20 dark:border-white/10>
+                                 :class="knowledgeType === 'url' ? 'glass-fusion' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-600 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30' border border-white/20 dark:border-white/10">
                                 <i class="fas fa-globe text-3xl" :class="knowledgeType === 'url' ? 'text-white' : 'text-blue-600'"></i>
                             </div>
                             <div class="text-center">
@@ -103,7 +103,7 @@
                         </div>
                         <div x-show="knowledgeType === 'url'"
                              x-transition
-                             class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center" border border-white/20 dark:border-white/10>
+                             class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center border border-white/20 dark:border-white/10">
                             <i class="fas fa-check text-blue-600 text-sm"></i>
                         </div>
                     </button>
@@ -114,7 +114,7 @@
                             class="group relative overflow-hidden border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                         <div class="relative z-10 flex flex-col items-center gap-3">
                             <div class="w-16 h-16 rounded-xl flex items-center justify-center"
-                                 :class="knowledgeType === 'file' ? 'glass-fusion' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-600 group-hover:bg-purple-50 dark:group-hover:bg-purple-900/30'" border border-white/20 dark:border-white/10>
+                                 :class="knowledgeType === 'file' ? 'glass-fusion' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-600 group-hover:bg-purple-50 dark:group-hover:bg-purple-900/30' border border-white/20 dark:border-white/10">
                                 <i class="fas fa-file-upload text-3xl" :class="knowledgeType === 'file' ? 'text-white' : 'text-purple-600'"></i>
                             </div>
                             <div class="text-center">
@@ -124,7 +124,7 @@
                         </div>
                         <div x-show="knowledgeType === 'file'"
                              x-transition
-                             class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center" border border-white/20 dark:border-white/10>
+                             class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center border border-white/20 dark:border-white/10">
                             <i class="fas fa-check text-purple-600 text-sm"></i>
                         </div>
                     </button>
@@ -135,7 +135,7 @@
                             class="group relative overflow-hidden border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105">
                         <div class="relative z-10 flex flex-col items-center gap-3">
                             <div class="w-16 h-16 rounded-xl flex items-center justify-center"
-                                 :class="knowledgeType === 'internal' ? 'glass-fusion' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-600 group-hover:bg-orange-50 dark:group-hover:bg-orange-900/30'" border border-white/20 dark:border-white/10>
+                                 :class="knowledgeType === 'internal' ? 'glass-fusion' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-600 group-hover:bg-orange-50 dark:group-hover:bg-orange-900/30' border border-white/20 dark:border-white/10">
                                 <i class="fas fa-database text-3xl" :class="knowledgeType === 'internal' ? 'text-white' : 'text-orange-600'"></i>
                             </div>
                             <div class="text-center">
@@ -145,7 +145,7 @@
                         </div>
                         <div x-show="knowledgeType === 'internal'"
                              x-transition
-                             class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center" border border-white/20 dark:border-white/10>
+                             class="absolute top-2 right-2 w-6 h-6 glass-fusion rounded-full flex items-center justify-center border border-white/20 dark:border-white/10">
                             <i class="fas fa-check text-orange-600 text-sm"></i>
                         </div>
                     </button>
@@ -276,7 +276,7 @@
                         <label class="relative cursor-pointer">
                             <input type="radio" name="priority" value="{{ $value }}" {{ $value === 0 ? 'checked' : '' }}
                                    class="peer sr-only">
-                            <div class="border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 peer-checked:border-[#00B900] peer-checked:bg-gradient-to-br peer-checked:from-[#00B900] peer-checked:to-[#00E600] glass-fusion dark:bg-slate-700 rounded-xl p-3 transition-all duration-300 peer-checked:shadow-lg peer-checked:shadow-green-500/40 peer-checked:scale-105" border border-white/20 dark:border-white/10>
+                            <div class="border-2 border-gray-200 dark:border-gray-700 dark:border-slate-600 peer-checked:border-[#00B900] peer-checked:bg-gradient-to-br peer-checked:from-[#00B900] peer-checked:to-[#00E600] glass-fusion dark:bg-slate-700 rounded-xl p-3 transition-all duration-300 peer-checked:shadow-lg peer-checked:shadow-green-500/40 peer-checked:scale-105 border border-white/20 dark:border-white/10">
                                 <div class="text-center">
                                     <div class="font-bold mb-1 peer-checked:text-white text-gray-700 dark:text-gray-300">
                                         @for($i = 0; $i <= $value; $i++)

@@ -105,10 +105,10 @@
             <div class="lg:col-span-2 space-y-6">
 
                 <!-- ข้อมูลพื้นฐาน -->
-                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden transition-all duration-300 hover:shadow-2xl" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden transition-all duration-300 hover:shadow-2xl border border-white/20 dark:border-white/10">
                     <div class="bg-gradient-to-r from-[#00B900] to-[#00E600] px-6 py-5">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center" border border-white/20 dark:border-white/10>
+                            <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
@@ -213,10 +213,10 @@
                 </div>
 
                 <!-- พารามิเตอร์ AI -->
-                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden border border-white/20 dark:border-white/10">
                     <div class="bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-5">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center" border border-white/20 dark:border-white/10>
+                            <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
                                 </svg>
@@ -281,17 +281,17 @@
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="enable_conversation_history" value="1" class="sr-only peer"
                                        {{ old('enable_conversation_history', true) ? 'checked' : '' }} x-model="enableHistory">
-                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:glass-fusion after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600" border border-white/20 dark:border-white/10></div>
+                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:glass-fusion after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600 border border-white/20 dark:border-white/10"></div>
                             </label>
                         </div>
                     </div>
                 </div>
 
                 <!-- System Prompt -->
-                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden border border-white/20 dark:border-white/10">
                     <div class="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-5">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center" border border-white/20 dark:border-white/10>
+                            <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
                                 </svg>
@@ -342,10 +342,10 @@
                 </div>
 
                 <!-- Fallback Message -->
-                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden border border-white/20 dark:border-white/10">
                     <div class="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-5">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center" border border-white/20 dark:border-white/10>
+                            <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                 </svg>
@@ -387,7 +387,7 @@
                 <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden sticky top-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                     <div class="bg-gradient-to-r from-[#00B900] to-[#00E600] px-6 py-5">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center" border border-white/20 dark:border-white/10>
+                            <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
@@ -404,7 +404,7 @@
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="is_active" value="1" class="sr-only peer"
                                        {{ old('is_active', false) ? 'checked' : '' }} x-model="isActive">
-                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:glass-fusion after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#00B900] peer-checked:to-[#00E600]" border border-white/20 dark:border-white/10></div>
+                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:glass-fusion after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#00B900] peer-checked:to-[#00E600] border border-white/20 dark:border-white/10"></div>
                             </label>
                         </div>
 
@@ -422,10 +422,10 @@
                 </div>
 
                 <!-- Chat Preview -->
-                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden border border-white/20 dark:border-white/10">
                     <div class="bg-gradient-to-r from-[#00B900] to-[#00E600] px-6 py-5">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center" border border-white/20 dark:border-white/10>
+                            <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -438,7 +438,7 @@
                         <div class="space-y-3">
                             <template x-for="(msg, index) in previewMessages" :key="index">
                                 <div :class="msg.type === 'user' ? 'flex justify-end' : 'flex justify-start'">
-                                    <div :class="msg.type === 'user' ? 'bg-[#00B900] text-white' : 'glass-fusion dark:bg-slate-800 text-gray-900 dark:text-white'" border border-white/20 dark:border-white/10
+                                    <div :class="msg.type === 'user' ? 'bg-[#00B900] text-white' : 'glass-fusion dark:bg-slate-800 text-gray-900 dark:text-white' border border-white/20 dark:border-white/10"
                                          class="max-w-[80%] rounded-2xl px-4 py-3 shadow-lg">
                                         <div class="flex items-start gap-2">
                                             <div x-show="msg.type === 'bot'" class="w-6 h-6 rounded-full bg-[#00B900] flex items-center justify-center flex-shrink-0">
@@ -457,7 +457,7 @@
                             </template>
                         </div>
                     </div>
-                    <div class="p-4 glass-fusion dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 dark:border-slate-700" border border-white/20 dark:border-white/10>
+                    <div class="p-4 glass-fusion dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 dark:border-slate-700 border border-white/20 dark:border-white/10">
                         <div class="flex gap-2">
                             <input type="text" x-model="testMessage" placeholder="พิมพ์ข้อความ..."
                                    @keyup.enter="addPreviewMessage('user', testMessage); testMessage = ''"

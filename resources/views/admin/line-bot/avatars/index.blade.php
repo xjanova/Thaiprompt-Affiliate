@@ -20,13 +20,13 @@
     <div class="mb-8 relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#00B900] via-[#00E600] to-[#00C900] p-8 shadow-2xl shadow-green-500/30">
         <!-- Decorative Background Pattern -->
         <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 left-0 w-64 h-64 glass-fusion rounded-full -translate-x-32 -translate-y-32" border border-white/20 dark:border-white/10></div>
-            <div class="absolute bottom-0 right-0 w-96 h-96 glass-fusion rounded-full translate-x-48 translate-y-48" border border-white/20 dark:border-white/10></div>
+            <div class="absolute top-0 left-0 w-64 h-64 glass-fusion rounded-full -translate-x-32 -translate-y-32 border border-white/20 dark:border-white/10"></div>
+            <div class="absolute bottom-0 right-0 w-96 h-96 glass-fusion rounded-full translate-x-48 translate-y-48 border border-white/20 dark:border-white/10"></div>
         </div>
 
         <div class="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-2xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-xl" border border-white/20 dark:border-white/10>
+                <div class="w-16 h-16 rounded-2xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-xl border border-white/20 dark:border-white/10">
                     <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
                     </svg>
@@ -65,7 +65,7 @@
     @endif
 
     <!-- Filter Tabs -->
-    <div class="mb-6 glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-2" border border-white/20 dark:border-white/10>
+    <div class="mb-6 glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-2 border border-white/20 dark:border-white/10">
         <div class="flex flex-wrap gap-2">
             <button @click="filterType = 'all'"
                     :class="filterType === 'all' ? 'bg-gradient-to-r from-[#00B900] to-[#00E600] text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-slate-700'"
@@ -215,7 +215,7 @@
         </div>
     @else
         <!-- Empty State -->
-        <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-700 p-12 text-center" border border-white/20 dark:border-white/10>
+        <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-700 p-12 text-center border border-white/20 dark:border-white/10">
             <div class="w-32 h-32 rounded-full bg-gradient-to-br from-[#00B900] to-[#00E600] opacity-20 flex items-center justify-center mx-auto mb-6">
                 <svg class="w-16 h-16 text-gray-400 dark:text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
@@ -238,13 +238,13 @@
          x-cloak
          @click.self="showUploadModal = false"
          class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-        <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all duration-300" border border-white/20 dark:border-white/10
+        <div class="glass-fusion dark:bg-slate-800 rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all duration-300 border border-white/20 dark:border-white/10"
              @click.away="showUploadModal = false">
             <!-- Modal Header -->
             <div class="bg-gradient-to-r from-[#00B900] to-[#00E600] px-6 py-5">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center" border border-white/20 dark:border-white/10>
+                        <div class="w-10 h-10 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                             </svg>

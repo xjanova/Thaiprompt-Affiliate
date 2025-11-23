@@ -58,7 +58,7 @@
     <!-- Knowledge Base List -->
     <div class="grid grid-cols-1 gap-4">
         @forelse($knowledgeBases as $kb)
-            <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition" border border-white/20 dark:border-white/10>
+            <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition border border-white/20 dark:border-white/10">
                 <div class="p-6">
                     <div class="flex items-start gap-4">
                         <!-- Icon -->
@@ -153,7 +153,7 @@
                 </div>
             </div>
         @empty
-            <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 p-12 text-center" border border-white/20 dark:border-white/10>
+            <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 p-12 text-center border border-white/20 dark:border-white/10">
                 <div class="w-24 h-24 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-6">
                     <i class="fas fa-book text-indigo-500 text-4xl"></i>
                 </div>
@@ -173,7 +173,7 @@
      x-cloak
      @click.self="showAddModal = false"
      class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="glass-fusion rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden transform transition-all" border border-white/20 dark:border-white/10>
+    <div class="glass-fusion rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden transform transition-all border border-white/20 dark:border-white/10">
         <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-white flex items-center">

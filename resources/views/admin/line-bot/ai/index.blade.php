@@ -11,7 +11,7 @@
 
         <!-- Floating Particles Effect -->
         <div class="absolute inset-0">
-            <div class="absolute top-10 left-10 w-2 h-2 glass-fusion rounded-full animate-ping" border border-white/20 dark:border-white/10></div>
+            <div class="absolute top-10 left-10 w-2 h-2 glass-fusion rounded-full animate-ping border border-white/20 dark:border-white/10"></div>
             <div class="absolute top-20 right-20 w-3 h-3 bg-purple-300/40 rounded-full animate-pulse"></div>
             <div class="absolute bottom-10 left-1/3 w-2 h-2 bg-indigo-300/30 rounded-full animate-bounce"></div>
         </div>
@@ -80,13 +80,13 @@
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="style="background: var(--arrow-x-primary-gradient)" rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+        <div style="background: var(--arrow-x-primary-gradient)" class="rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-blue-100 text-sm font-medium mb-1">การตั้งค่า AI ทั้งหมด</p>
                     <h3 class="text-3xl font-bold">{{ $aiSettings->count() }}</h3>
                 </div>
-                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center border border-white/20 dark:border-white/10">
                     <i class="fas fa-robot text-2xl"></i>
                 </div>
             </div>
@@ -98,19 +98,19 @@
                     <p class="text-green-100 text-sm font-medium mb-1">AI ที่เปิดใช้งาน</p>
                     <h3 class="text-3xl font-bold">{{ $aiSettings->where('is_active', true)->count() }}</h3>
                 </div>
-                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center border border-white/20 dark:border-white/10">
                     <i class="fas fa-check-circle text-2xl"></i>
                 </div>
             </div>
         </div>
 
-        <div class="style="background: var(--arrow-x-accent-gradient)" rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+        <div style="background: var(--arrow-x-accent-gradient)" class="rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-purple-100 text-sm font-medium mb-1">ฐานความรู้</p>
                     <h3 class="text-3xl font-bold">{{ $aiSettings->sum(fn($s) => $s->knowledgeBases->count()) }}</h3>
                 </div>
-                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center border border-white/20 dark:border-white/10">
                     <i class="fas fa-book text-2xl"></i>
                 </div>
             </div>
@@ -122,7 +122,7 @@
                     <p class="text-orange-100 text-sm font-medium mb-1">บทสนทนาวันนี้</p>
                     <h3 class="text-3xl font-bold">0</h3>
                 </div>
-                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center" border border-white/20 dark:border-white/10>
+                <div class="w-14 h-14 glass-fusion rounded-xl flex items-center justify-center border border-white/20 dark:border-white/10">
                     <i class="fas fa-comments text-2xl"></i>
                 </div>
             </div>
@@ -132,7 +132,7 @@
     <!-- AI Settings Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($aiSettings as $setting)
-            <div class="group glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border-2 border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-2xl hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-500 transform hover:-translate-y-2" border border-white/20 dark:border-white/10>
+            <div class="group glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border-2 border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-2xl hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-500 transform hover:-translate-y-2 border border-white/20 dark:border-white/10">
                 <!-- Premium Header with Provider Badge -->
                 <div class="relative bg-gradient-to-br
                     @if($setting->provider === 'openai') from-emerald-500 via-green-600 to-teal-700
@@ -143,12 +143,12 @@
                     @endif px-6 py-5 overflow-hidden">
 
                     <!-- Animated Background -->
-                    <div class="absolute inset-0 glass-fusion backdrop-blur-sm" border border-white/20 dark:border-white/10></div>
-                    <div class="absolute top-0 right-0 w-32 h-32 glass-fusion rounded-full -mr-16 -mt-16" border border-white/20 dark:border-white/10></div>
+                    <div class="absolute inset-0 glass-fusion backdrop-blur-sm border border-white/20 dark:border-white/10"></div>
+                    <div class="absolute top-0 right-0 w-32 h-32 glass-fusion rounded-full -mr-16 -mt-16 border border-white/20 dark:border-white/10"></div>
 
                     <div class="relative flex items-center justify-between">
                         <div class="flex items-center gap-3 flex-1">
-                            <div class="w-12 h-12 rounded-xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform border border-white/30" border border-white/20 dark:border-white/10>
+                            <div class="w-12 h-12 rounded-xl glass-fusion backdrop-blur-md flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform border border-white/30 border border-white/20 dark:border-white/10">
                                 @if($setting->provider === 'openai')
                                     <i class="fas fa-brain text-white text-xl"></i>
                                 @elseif($setting->provider === 'deepseek')
@@ -271,7 +271,7 @@
             </div>
         @empty
             <div class="col-span-3">
-                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-12 text-center" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-12 text-center border border-white/20 dark:border-white/10">
                     <div class="w-24 h-24 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mx-auto mb-6">
                         <i class="fas fa-robot text-purple-500 dark:text-purple-400 text-4xl"></i>
                     </div>
@@ -289,7 +289,7 @@
 
 <!-- Test AI Modal -->
 <div id="testModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700" border border-white/20 dark:border-white/10 x-data="{ testing: false, result: '', error: '' }">
+    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700 border border-white/20 dark:border-white/10" x-data="{ testing: false, result: '', error: '' }">
         <div class="bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-white flex items-center">

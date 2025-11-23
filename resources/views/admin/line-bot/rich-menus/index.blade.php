@@ -25,7 +25,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($richMenus as $menu)
-            <div class="glass-fusion rounded-2xl shadow-lg border overflow-hidden" border border-white/20 dark:border-white/10>
+            <div class="glass-fusion rounded-2xl shadow-lg border overflow-hidden border border-white/20 dark:border-white/10">
                 @if($menu->menu_image_url)
                     <img src="{{ $menu->menu_image_url }}" alt="{{ $menu->name }}" class="w-full h-48 object-cover">
                 @else
@@ -63,7 +63,7 @@
                 </div>
             </div>
         @empty
-            <div class="col-span-3 glass-fusion rounded-2xl shadow-lg p-12 text-center" border border-white/20 dark:border-white/10>
+            <div class="col-span-3 glass-fusion rounded-2xl shadow-lg p-12 text-center border border-white/20 dark:border-white/10">
                 <div class="w-24 h-24 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-6">
                     <i class="fas fa-th-large text-purple-500 text-4xl"></i>
                 </div>

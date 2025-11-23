@@ -10,7 +10,7 @@
         <div class="relative flex items-center justify-between">
             <div>
                 <div class="flex items-center gap-3 mb-2">
-                    <div class="w-14 h-14 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center" border border-white/20 dark:border-white/10>
+                    <div class="w-14 h-14 rounded-xl glass-fusion backdrop-blur-sm flex items-center justify-center border border-white/20 dark:border-white/10">
                         <i class="fas fa-layer-group text-white text-3xl"></i>
                     </div>
                     <div>
@@ -69,7 +69,7 @@
     <!-- Templates Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($templates as $template)
-            <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1" border border-white/20 dark:border-white/10>
+            <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-white/20 dark:border-white/10">
                 <!-- Header -->
                 <div class="bg-gradient-to-r from-pink-500 to-rose-600 px-6 py-4">
                     <div class="flex items-center justify-between">
@@ -120,7 +120,7 @@
             </div>
         @empty
             <div class="col-span-3">
-                <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 p-12 text-center" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 p-12 text-center border border-white/20 dark:border-white/10">
                     <div class="w-24 h-24 rounded-full bg-pink-100 flex items-center justify-center mx-auto mb-6">
                         <i class="fas fa-layer-group text-pink-500 text-4xl"></i>
                     </div>
@@ -145,7 +145,7 @@
 
 <!-- Preview Modal -->
 <div id="previewModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="glass-fusion rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all" border border-white/20 dark:border-white/10>
+    <div class="glass-fusion rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all border border-white/20 dark:border-white/10">
         <div class="bg-gradient-to-r from-pink-500 to-rose-600 px-6 py-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-white flex items-center">
@@ -168,7 +168,7 @@
 
 <!-- Test Send Modal -->
 <div id="testModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="glass-fusion rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all" border border-white/20 dark:border-white/10>
+    <div class="glass-fusion rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all border border-white/20 dark:border-white/10">
         <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-white flex items-center">
