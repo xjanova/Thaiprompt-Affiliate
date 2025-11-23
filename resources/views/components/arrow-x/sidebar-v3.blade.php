@@ -485,14 +485,6 @@
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Rich Menu</span>
                 </a>
 
-                {{-- Flex Messages --}}
-                <a href="{{ route('admin.line-bot.flex.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.flex.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-layer-group w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Flex Messages</span>
-                </a>
-
                 {{-- LINE Membership Signup 🆕 --}}
                 <a href="{{ route('admin.line-membership-signup.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
@@ -515,22 +507,6 @@
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.broadcast.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-bullseye w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Broadcast</span>
-                </a>
-
-                {{-- LINE Avatars --}}
-                <a href="{{ route('admin.line-bot.avatars.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.avatars.*') || request()->routeIs('admin.line-bot.avatar.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-user-circle w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Avatars</span>
-                </a>
-
-                {{-- Chat Widget --}}
-                <a href="{{ route('admin.line-bot.chat-widget.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.chat-widget.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-comment-dots w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Chat Widget</span>
                 </a>
 
                 {{-- Analytics --}}
