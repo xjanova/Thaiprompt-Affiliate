@@ -255,10 +255,8 @@ class OfficialShopProductsSeeder extends Seeder
      */
     protected function getOrCreateOfficialSeller(): User
     {
-        // ตรวจสอบว่ามี official seller อยู่แล้วหรือไม่
-        $seller = User::where('email', 'official-shop@thaiprompt.com')
-            ->orWhere('username', 'official-shop')
-            ->first();
+        // ตรวจสอบว่ามี official seller อยู่แล้วหรือไม่ (ใช้ email เป็นหลัก)
+        $seller = User::where('email', 'official-shop@thaiprompt.com')->first();
 
         if ($seller) {
             $this->command->info('   ✅ พบ Official Shop Seller: ' . $seller->name);
@@ -268,17 +266,14 @@ class OfficialShopProductsSeeder extends Seeder
         // สร้าง Official Shop Seller Account ใหม่
         $seller = User::create([
             'name' => 'Official Shop',
-            'username' => 'official-shop',
             'email' => 'official-shop@thaiprompt.com',
             'password' => Hash::make('OfficialShop@2024'), // Password แรงๆ
             'role' => 'seller', // หรือ admin ก็ได้
-            'is_active' => true,
             'email_verified_at' => now(),
-            'profile_complete' => true,
         ]);
 
         $this->command->info('   ✅ สร้าง Official Shop Seller: ' . $seller->name);
-        $this->command->warn('   ⚠️  Username: official-shop');
+        $this->command->warn('   ⚠️  Email: official-shop@thaiprompt.com');
         $this->command->warn('   ⚠️  Password: OfficialShop@2024');
 
         return $seller;
