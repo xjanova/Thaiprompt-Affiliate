@@ -11,11 +11,17 @@
 
     Features:
     - คำนวณ staking rewards ตามเวลา
-    - Lock period options (30, 60, 90, 180, 365 วัน)
-    - APY แตกต่างกันตาม lock period
+    - Lock period options (30, 90, 180, 365 วัน)
+    - APY แตกต่างกันตาม lock period (30% - 120%)
     - Auto-compound option
     - Real-time animation
     - Mobile responsive
+
+    APY Structure (ตามเอกสาร TPIX):
+    - 30 วัน → 30% APY
+    - 90 วัน → 60% APY
+    - 180 วัน → 90% APY
+    - 365 วัน → 120% APY (Max)
 --}}
 
 <div class="container-fluid px-4 py-6"
@@ -52,7 +58,7 @@
 
                 {{-- Sub Description --}}
                 <p class="text-white/80 text-lg">
-                    💰 Stake เหรียญ TPIX และรับผลตอบแทนสูงสุด 365% ต่อปี!
+                    💰 Stake เหรียญ TPIX และรับผลตอบแทนสูงสุด 120% ต่อปี!
                 </p>
             </div>
         </div>
@@ -113,11 +119,10 @@
                                focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500
                                text-gray-900 dark:text-white
                                transition-all">
-                    <option value="30">30 วัน (APY 36%)</option>
-                    <option value="60">60 วัน (APY 72%)</option>
-                    <option value="90">90 วัน (APY 120%)</option>
-                    <option value="180">180 วัน (APY 240%)</option>
-                    <option value="365">365 วัน (APY 365%)</option>
+                    <option value="30">30 วัน (APY 30%)</option>
+                    <option value="90">90 วัน (APY 60%)</option>
+                    <option value="180">180 วัน (APY 90%)</option>
+                    <option value="365">365 วัน (APY 120%)</option>
                 </select>
                 <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                     ระยะเวลาที่ล็อค TPIX
@@ -564,7 +569,7 @@
                         🎉 เริ่ม Stake TPIX วันนี้!
                     </h3>
                     <p class="text-xl text-white/90 mb-6">
-                        รับผลตอบแทนสูงสุด 365% ต่อปี ด้วยระบบ TPIX Staking
+                        รับผลตอบแทนสูงสุด 120% ต่อปี ด้วยระบบ TPIX Staking
                     </p>
                     <div class="flex gap-4 justify-center flex-wrap">
                         <button @click="window.location.href='{{ route('user.dashboard') }}'"
@@ -654,8 +659,8 @@
  * คำนวณผลตอบแทนจากการ Staking TPIX
  *
  * Features:
- * - รองรับ Lock Period 30, 60, 90, 180, 365 วัน
- * - APY แตกต่างกันตาม Lock Period
+ * - รองรับ Lock Period 30, 90, 180, 365 วัน
+ * - APY แตกต่างกันตาม Lock Period (30% - 120%)
  * - Auto-compound option
  * - Real-time animation
  * - Charts visualization
@@ -672,7 +677,7 @@ function tpixStakingCalculator() {
         config: {
             stakingAmount: 10000,    // จำนวน TPIX ที่ stake
             lockPeriod: 365,         // ระยะเวลา lock (วัน)
-            apy: 365,                // APY (%)
+            apy: 120,                // APY (%) - Max 120% สำหรับ 365 วัน
             autoCompound: true,      // auto-compound รางวัลหรือไม่
         },
 
@@ -725,17 +730,22 @@ function tpixStakingCalculator() {
 
         /**
          * อัพเดท APY ตาม Lock Period
+         *
+         * ตามเอกสาร TPIX:
+         * - 30 วัน = 30% APY
+         * - 90 วัน = 60% APY
+         * - 180 วัน = 90% APY
+         * - 365 วัน = 120% APY (Max)
          */
         updateAPY() {
             const apyMap = {
-                30: 36,      // 30 วัน = 36% APY
-                60: 72,      // 60 วัน = 72% APY
-                90: 120,     // 90 วัน = 120% APY
-                180: 240,    // 180 วัน = 240% APY
-                365: 365,    // 365 วัน = 365% APY
+                30: 30,      // 30 วัน = 30% APY
+                90: 60,      // 90 วัน = 60% APY
+                180: 90,     // 180 วัน = 90% APY
+                365: 120,    // 365 วัน = 120% APY (Max)
             };
 
-            this.config.apy = apyMap[this.config.lockPeriod] || 365;
+            this.config.apy = apyMap[this.config.lockPeriod] || 120;
         },
 
         /**
