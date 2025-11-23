@@ -96,6 +96,9 @@
     {{-- Theme Customizer --}}
     <x-arrow-x.theme-customizer />
 
+    {{-- LINE Quick Settings Panel --}}
+    <x-line.quick-settings-panel />
+
     {{-- Toast Notifications --}}
     <div class="fixed bottom-4 right-4 z-50 space-y-2"
          x-data="{ notifications: [] }"

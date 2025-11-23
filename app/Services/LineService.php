@@ -8,15 +8,44 @@ use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * LINE Service
+ *
+ * จัดการการเชื่อมต่อและส่งข้อความผ่าน LINE Official Account API
+ *
+ * Features:
+ * - LINE Login/OAuth integration
+ * - Push messaging (text, flex, template, image)
+ * - User profile management
+ * - Auto-retry on failure (integrated with LineAutoRetryService)
+ * - Connection testing
+ *
+ * @package App\Services
+ */
 class LineService
 {
     private ?LineOaSetting $settings;
     private const LINE_API_BASE = 'https://api.line.me';
     private const LINE_OAUTH_BASE = 'https://access.line.me/oauth2/v2.1';
 
-    public function __construct()
+    /**
+     * Auto-retry enabled flag
+     *
+     * เมื่อเป็น true จะบันทึกข้อความที่ล้มเหลวและทำ auto-retry
+     *
+     * @var bool
+     */
+    private bool $autoRetryEnabled;
+
+    /**
+     * Constructor
+     *
+     * @param bool $autoRetryEnabled เปิดใช้งาน auto-retry หรือไม่
+     */
+    public function __construct(bool $autoRetryEnabled = true)
     {
         $this->settings = LineOaSetting::getActive();
+        $this->autoRetryEnabled = $autoRetryEnabled;
     }
 
     /**
@@ -107,6 +136,14 @@ class LineService
 
     /**
      * Send push message to a user
+     *
+     * ส่งข้อความไปยัง LINE user
+     * รองรับ Auto-Retry เมื่อส่งล้มเหลว
+     *
+     * @param string $lineUserId LINE User ID
+     * @param string $message ข้อความที่จะส่ง
+     * @param array $additionalMessages ข้อความเพิ่มเติม
+     * @return bool สำเร็จหรือไม่
      */
     public function sendPushMessage(string $lineUserId, string $message, array $additionalMessages = []): bool
     {
@@ -129,28 +166,69 @@ class LineService
             $messages[] = $msg;
         }
 
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
-            'Content-Type' => 'application/json',
-        ])->post('https://api.line.me/v2/bot/message/push', [
-            'to' => $lineUserId,
-            'messages' => $messages,
-        ]);
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
+                'Content-Type' => 'application/json',
+            ])->post('https://api.line.me/v2/bot/message/push', [
+                'to' => $lineUserId,
+                'messages' => $messages,
+            ]);
 
-        if (!$response->successful()) {
-            Log::error('LINE push message failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
+            if (!$response->successful()) {
+                $errorMessage = 'LINE push message failed: ' . $response->status();
+
+                Log::error($errorMessage, [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'line_user_id' => $lineUserId,
+                ]);
+
+                // บันทึกความล้มเหลวและทำ auto-retry
+                if ($this->autoRetryEnabled) {
+                    $this->recordFailureAndRetry(
+                        $lineUserId,
+                        'text',
+                        ['text' => $message, 'additional_messages' => $additionalMessages],
+                        new Exception($errorMessage)
+                    );
+                }
+
+                return false;
+            }
+
+            return true;
+
+        } catch (Exception $e) {
+            Log::error('LINE push message exception', [
+                'error' => $e->getMessage(),
                 'line_user_id' => $lineUserId,
             ]);
+
+            // บันทึกความล้มเหลวและทำ auto-retry
+            if ($this->autoRetryEnabled) {
+                $this->recordFailureAndRetry(
+                    $lineUserId,
+                    'text',
+                    ['text' => $message, 'additional_messages' => $additionalMessages],
+                    $e
+                );
+            }
+
             return false;
         }
-
-        return true;
     }
 
     /**
      * Send Flex Message
+     *
+     * ส่ง Flex Message (Rich UI) ไปยัง LINE user
+     * รองรับ Auto-Retry เมื่อส่งล้มเหลว
+     *
+     * @param string $lineUserId LINE User ID
+     * @param array $flexMessage Flex Message payload
+     * @param array|null $quickReply Quick Reply payload
+     * @return bool สำเร็จหรือไม่
      */
     public function sendFlexMessage(string $lineUserId, array $flexMessage, ?array $quickReply = null): bool
     {
@@ -171,24 +249,63 @@ class LineService
             $message['quickReply'] = $quickReply;
         }
 
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
-            'Content-Type' => 'application/json',
-        ])->post('https://api.line.me/v2/bot/message/push', [
-            'to' => $lineUserId,
-            'messages' => [$message],
-        ]);
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
+                'Content-Type' => 'application/json',
+            ])->post('https://api.line.me/v2/bot/message/push', [
+                'to' => $lineUserId,
+                'messages' => [$message],
+            ]);
 
-        if (!$response->successful()) {
-            Log::error('LINE Flex message failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
+            if (!$response->successful()) {
+                $errorMessage = 'LINE Flex message failed: ' . $response->status();
+
+                Log::error($errorMessage, [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'line_user_id' => $lineUserId,
+                ]);
+
+                // บันทึกความล้มเหลวและทำ auto-retry
+                if ($this->autoRetryEnabled) {
+                    $this->recordFailureAndRetry(
+                        $lineUserId,
+                        'flex',
+                        [
+                            'flex_message' => $flexMessage,
+                            'quick_reply' => $quickReply,
+                        ],
+                        new Exception($errorMessage)
+                    );
+                }
+
+                return false;
+            }
+
+            return true;
+
+        } catch (Exception $e) {
+            Log::error('LINE Flex message exception', [
+                'error' => $e->getMessage(),
                 'line_user_id' => $lineUserId,
             ]);
+
+            // บันทึกความล้มเหลวและทำ auto-retry
+            if ($this->autoRetryEnabled) {
+                $this->recordFailureAndRetry(
+                    $lineUserId,
+                    'flex',
+                    [
+                        'flex_message' => $flexMessage,
+                        'quick_reply' => $quickReply,
+                    ],
+                    $e
+                );
+            }
+
             return false;
         }
-
-        return true;
     }
 
     /**
@@ -479,5 +596,214 @@ class LineService
         }
 
         return $results;
+    }
+
+    /**
+     * Send Template Message
+     *
+     * ส่ง Template Message (Buttons, Confirm, Carousel, Image Carousel)
+     * รองรับ Auto-Retry เมื่อส่งล้มเหลว
+     *
+     * @param string $lineUserId LINE User ID
+     * @param array $templateMessage Template payload
+     * @return bool สำเร็จหรือไม่
+     */
+    public function sendTemplateMessage(string $lineUserId, array $templateMessage): bool
+    {
+        if (!$this->settings || !$this->settings->enable_line_messaging) {
+            Log::warning('LINE messaging is disabled');
+            return false;
+        }
+
+        if (empty($this->settings->channel_access_token)) {
+            Log::error('LINE channel access token not configured');
+            return false;
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
+                'Content-Type' => 'application/json',
+            ])->post('https://api.line.me/v2/bot/message/push', [
+                'to' => $lineUserId,
+                'messages' => [$templateMessage],
+            ]);
+
+            if (!$response->successful()) {
+                $errorMessage = 'LINE Template message failed: ' . $response->status();
+
+                Log::error($errorMessage, [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'line_user_id' => $lineUserId,
+                ]);
+
+                // บันทึกความล้มเหลวและทำ auto-retry
+                if ($this->autoRetryEnabled) {
+                    $this->recordFailureAndRetry(
+                        $lineUserId,
+                        'template',
+                        $templateMessage,
+                        new Exception($errorMessage)
+                    );
+                }
+
+                return false;
+            }
+
+            return true;
+
+        } catch (Exception $e) {
+            Log::error('LINE Template message exception', [
+                'error' => $e->getMessage(),
+                'line_user_id' => $lineUserId,
+            ]);
+
+            // บันทึกความล้มเหลวและทำ auto-retry
+            if ($this->autoRetryEnabled) {
+                $this->recordFailureAndRetry(
+                    $lineUserId,
+                    'template',
+                    $templateMessage,
+                    $e
+                );
+            }
+
+            return false;
+        }
+    }
+
+    /**
+     * Send Image Message
+     *
+     * ส่งรูปภาพไปยัง LINE user
+     * รองรับ Auto-Retry เมื่อส่งล้มเหลว
+     *
+     * @param string $lineUserId LINE User ID
+     * @param string $originalContentUrl URL รูปภาพขนาดเต็ม
+     * @param string $previewImageUrl URL รูปภาพตัวอย่าง
+     * @return bool สำเร็จหรือไม่
+     */
+    public function sendImageMessage(string $lineUserId, string $originalContentUrl, string $previewImageUrl): bool
+    {
+        if (!$this->settings || !$this->settings->enable_line_messaging) {
+            Log::warning('LINE messaging is disabled');
+            return false;
+        }
+
+        if (empty($this->settings->channel_access_token)) {
+            Log::error('LINE channel access token not configured');
+            return false;
+        }
+
+        $imageMessage = [
+            'type' => 'image',
+            'originalContentUrl' => $originalContentUrl,
+            'previewImageUrl' => $previewImageUrl,
+        ];
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
+                'Content-Type' => 'application/json',
+            ])->post('https://api.line.me/v2/bot/message/push', [
+                'to' => $lineUserId,
+                'messages' => [$imageMessage],
+            ]);
+
+            if (!$response->successful()) {
+                $errorMessage = 'LINE Image message failed: ' . $response->status();
+
+                Log::error($errorMessage, [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'line_user_id' => $lineUserId,
+                ]);
+
+                // บันทึกความล้มเหลวและทำ auto-retry
+                if ($this->autoRetryEnabled) {
+                    $this->recordFailureAndRetry(
+                        $lineUserId,
+                        'image',
+                        [
+                            'originalContentUrl' => $originalContentUrl,
+                            'previewImageUrl' => $previewImageUrl,
+                        ],
+                        new Exception($errorMessage)
+                    );
+                }
+
+                return false;
+            }
+
+            return true;
+
+        } catch (Exception $e) {
+            Log::error('LINE Image message exception', [
+                'error' => $e->getMessage(),
+                'line_user_id' => $lineUserId,
+            ]);
+
+            // บันทึกความล้มเหลวและทำ auto-retry
+            if ($this->autoRetryEnabled) {
+                $this->recordFailureAndRetry(
+                    $lineUserId,
+                    'image',
+                    [
+                        'originalContentUrl' => $originalContentUrl,
+                        'previewImageUrl' => $previewImageUrl,
+                    ],
+                    $e
+                );
+            }
+
+            return false;
+        }
+    }
+
+    /**
+     * บันทึกความล้มเหลวและเริ่มกระบวนการ Auto-Retry
+     *
+     * Helper method สำหรับบันทึกข้อความที่ส่งล้มเหลว
+     * และ trigger auto-retry mechanism
+     *
+     * @param string $lineUserId LINE User ID
+     * @param string $messageType ประเภทข้อความ
+     * @param array $messagePayload ข้อมูลข้อความ
+     * @param Exception $exception Exception ที่เกิดขึ้น
+     * @return void
+     */
+    private function recordFailureAndRetry(
+        string $lineUserId,
+        string $messageType,
+        array $messagePayload,
+        Exception $exception
+    ): void {
+        try {
+            // สร้าง LineAutoRetryService instance
+            $retryService = app(\App\Services\LineAutoRetryService::class);
+
+            // บันทึกความล้มเหลว (service จะ schedule retry อัตโนมัติ)
+            $retryService->recordFailure(
+                $lineUserId,
+                $messageType,
+                $messagePayload,
+                $exception
+            );
+
+            Log::info('LINE message failure recorded for auto-retry', [
+                'line_user_id' => $lineUserId,
+                'message_type' => $messageType,
+            ]);
+
+        } catch (Exception $e) {
+            // ถ้าการบันทึกล้มเหลว ให้ log แต่ไม่ throw
+            // เพื่อไม่ให้กระทบกับ main application flow
+            Log::error('Failed to record LINE message failure', [
+                'error' => $e->getMessage(),
+                'line_user_id' => $lineUserId,
+                'message_type' => $messageType,
+            ]);
+        }
     }
 }
