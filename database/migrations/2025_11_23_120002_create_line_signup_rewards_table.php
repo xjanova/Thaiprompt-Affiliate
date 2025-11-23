@@ -19,7 +19,21 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ถ้าตารางมีอยู่แล้ว ให้ลบ user_id ถ้ามี (ไม่ควรมีใน template table)
         if (Schema::hasTable('line_signup_rewards')) {
+            // ลบ user_id ถ้ามี (คอลัมน์นี้ไม่ควรอยู่ใน reward template table)
+            if (Schema::hasColumn('line_signup_rewards', 'user_id')) {
+                Schema::table('line_signup_rewards', function (Blueprint $table) {
+                    // ลบ foreign key constraint ถ้ามี
+                    try {
+                        $table->dropForeign(['user_id']);
+                    } catch (\Exception $e) {
+                        // Ignore if constraint doesn't exist
+                    }
+
+                    $table->dropColumn('user_id');
+                });
+            }
             return;
         }
 
