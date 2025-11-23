@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.153.3] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1537 from xjanova/claude/fix-migration-error-01WsGtLVfvA5EW4Wi5UGWBEC (c11bba85)
+- fix: correct syntax errors in NFC and LINE signup migrations (9f53f58d)
+### 🔧 Other Changes
+
+
 ## [v3.153.2] - 2025-11-23
 
 ### ✨ Features
