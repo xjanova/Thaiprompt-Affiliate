@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.149.2] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1530 from xjanova/claude/fix-database-connection-01FHg5DcXtYfnSVzyKZig2vv (a08359ad)
+- fix: resolve PHP syntax error in ProcessLineRetries.php cron comment (17138f78)
+### 🔧 Other Changes
+
+
 ## [v3.149.1] - 2025-11-23
 
 ### ✨ Features
