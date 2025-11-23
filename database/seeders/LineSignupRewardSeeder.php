@@ -10,12 +10,12 @@ use Illuminate\Support\Facades\Schema;
 class LineSignupRewardSeeder extends Seeder
 {
     /**
-     * เช็คว่าตาราง line_signup_rewards มี column user_id หรือไม่
-     * (สำหรับรองรับทั้งก่อนและหลัง migration ลบ user_id)
+     * คอลัมน์พิเศษที่ไม่ควรมีใน template table
+     * แต่อาจจะมีอยู่ใน database (ก่อน migration)
      *
-     * @var bool|null
+     * @var array
      */
-    protected $hasUserIdColumn = null;
+    protected $extraColumns = [];
 
     /**
      * สร้างข้อมูลตัวอย่างสำหรับระบบรางวัลการสมัครสมาชิก
@@ -26,12 +26,15 @@ class LineSignupRewardSeeder extends Seeder
     {
         $this->command->info('🌱 กำลัง seed รางวัลการสมัครสมาชิก...');
 
-        // เช็คว่าตารางมี user_id column หรือไม่
-        $this->hasUserIdColumn = Schema::hasColumn('line_signup_rewards', 'user_id');
+        // เช็คว่าตารางมี columns พิเศษที่ไม่ควรมีหรือไม่
+        $this->detectExtraColumns();
 
-        if ($this->hasUserIdColumn) {
-            $this->command->warn('⚠️  ตาราง line_signup_rewards ยังมี column user_id อยู่');
-            $this->command->warn('   จะเพิ่ม user_id = null ในข้อมูล seed (ชั่วคราว)');
+        if (!empty($this->extraColumns)) {
+            $this->command->warn('⚠️  ตาราง line_signup_rewards มี columns พิเศษที่ไม่ควรมี:');
+            foreach ($this->extraColumns as $column) {
+                $this->command->warn("   - {$column}");
+            }
+            $this->command->warn('   จะเพิ่มค่า null สำหรับ columns เหล่านี้ (ชั่วคราว)');
         }
 
         // สร้าง Coupon Template ก่อน
@@ -47,15 +50,32 @@ class LineSignupRewardSeeder extends Seeder
     }
 
     /**
-     * เพิ่ม user_id ถ้าตารางยังมี column นี้อยู่
+     * ตรวจหา columns พิเศษที่ไม่ควรมีใน template table
+     *
+     * @return void
+     */
+    protected function detectExtraColumns(): void
+    {
+        // รายการ columns ที่ไม่ควรมีใน template table
+        $unwantedColumns = ['user_id', 'session_id', 'claim_id'];
+
+        foreach ($unwantedColumns as $column) {
+            if (Schema::hasColumn('line_signup_rewards', $column)) {
+                $this->extraColumns[] = $column;
+            }
+        }
+    }
+
+    /**
+     * เพิ่มค่า null สำหรับ columns พิเศษที่มีอยู่ในตาราง
      *
      * @param array $data
      * @return array
      */
-    protected function addUserIdIfExists(array $data): array
+    protected function addExtraColumnsIfExist(array $data): array
     {
-        if ($this->hasUserIdColumn) {
-            $data['user_id'] = null;
+        foreach ($this->extraColumns as $column) {
+            $data[$column] = null;
         }
 
         return $data;
@@ -117,7 +137,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'free',
                 'reward_type' => 'wallet_points',
             ],
-            $this->addUserIdIfExists([
+            $this->addExtraColumnsIfExist([
                 'description' => 'รับแต้มฟรีทันทีที่สมัครสมาชิก',
                 'amount' => 100,
                 'icon' => 'fa-wallet',
@@ -137,7 +157,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'free',
                 'reward_type' => 'tpix_tokens',
             ],
-            $this->addUserIdIfExists([
+            $this->addExtraColumnsIfExist([
                 'description' => 'เหรียญ TPIX สำหรับเริ่มต้น',
                 'amount' => 10,
                 'icon' => 'fa-coins',
@@ -159,7 +179,7 @@ class LineSignupRewardSeeder extends Seeder
                     'signup_type' => 'free',
                     'reward_type' => 'coupon',
                 ],
-                $this->addUserIdIfExists([
+                $this->addExtraColumnsIfExist([
                     'description' => 'ส่วนลด 10% สำหรับการซื้อครั้งแรก (ขั้นต่ำ 500 บาท)',
                     'coupon_template_id' => $template->id,
                     'icon' => 'fa-ticket-alt',
@@ -180,7 +200,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'free',
                 'reward_type' => 'experience_points',
             ],
-            $this->addUserIdIfExists([
+            $this->addExtraColumnsIfExist([
                 'description' => 'คะแนน XP สำหรับปลดล็อคความสามารถ',
                 'amount' => 50,
                 'icon' => 'fa-trophy',
@@ -205,7 +225,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'package',
                 'reward_type' => 'wallet_points',
             ],
-            $this->addUserIdIfExists([
+            $this->addExtraColumnsIfExist([
                 'description' => 'แต้มโบนัสพิเศษสำหรับสมาชิกแพคเกจ',
                 'amount' => 500,
                 'icon' => 'fa-wallet',
@@ -225,7 +245,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'package',
                 'reward_type' => 'tpix_tokens',
             ],
-            $this->addUserIdIfExists([
+            $this->addExtraColumnsIfExist([
                 'description' => 'เหรียญ TPIX จำนวนมากสำหรับสมาชิกแพคเกจ',
                 'amount' => 50,
                 'icon' => 'fa-coins',
@@ -247,7 +267,7 @@ class LineSignupRewardSeeder extends Seeder
                     'signup_type' => 'package',
                     'reward_type' => 'coupon',
                 ],
-                $this->addUserIdIfExists([
+                $this->addExtraColumnsIfExist([
                     'description' => 'ส่วนลด 20% ใช้ได้ 3 ครั้ง ไม่มีขั้นต่ำ',
                     'coupon_template_id' => $template->id,
                     'icon' => 'fa-ticket-alt',
@@ -268,7 +288,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'package',
                 'reward_type' => 'rank_points',
             ],
-            $this->addUserIdIfExists([
+            $this->addExtraColumnsIfExist([
                 'description' => 'คะแนนช่วยให้เลื่อนระดับเร็วขึ้น',
                 'amount' => 10,
                 'icon' => 'fa-star',
@@ -288,7 +308,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'package',
                 'reward_type' => 'experience_points',
             ],
-            $this->addUserIdIfExists([
+            $this->addExtraColumnsIfExist([
                 'description' => 'คะแนน XP เพิ่มเติมสำหรับสมาชิกแพคเกจ',
                 'amount' => 200,
                 'icon' => 'fa-trophy',
@@ -307,7 +327,7 @@ class LineSignupRewardSeeder extends Seeder
                 'signup_type' => 'package',
                 'reward_type' => 'free_downlines',
             ],
-            $this->addUserIdIfExists([
+            $this->addExtraColumnsIfExist([
                 'description' => 'รับดาวน์ไลน์ฟรีจากระบบ (เฉพาะแพคเกจระดับสูง)',
                 'amount' => 3,
                 'package_ids' => [4, 5], // Gold, Diamond (ตัวอย่าง)
