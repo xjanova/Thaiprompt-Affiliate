@@ -31,13 +31,22 @@ class MlmTeamTransferService
     protected NotificationService $notificationService;
 
     /**
+     * @var LineService
+     */
+    protected LineService $lineService;
+
+    /**
      * Constructor
      *
      * @param NotificationService $notificationService
+     * @param LineService $lineService
      */
-    public function __construct(NotificationService $notificationService)
-    {
+    public function __construct(
+        NotificationService $notificationService,
+        LineService $lineService
+    ) {
         $this->notificationService = $notificationService;
+        $this->lineService = $lineService;
     }
 
     /**
@@ -508,8 +517,17 @@ class MlmTeamTransferService
                 'notifiable_id' => $request->id,
             ]);
 
-            // TODO: ส่ง LINE direct message (ถ้ามี LINE token)
-            // $this->sendLineNotification($oldSponsor, $message);
+            // ส่ง LINE direct message (ถ้ามี LINE user ID)
+            $lineMessage = sprintf(
+                "🔔 มีคำขอย้ายทีมใหม่\n\n" .
+                "สมาชิก: %s (รหัส: %s)\n" .
+                "ขอย้ายไปยังแม่ทีมใหม่: %s\n\n" .
+                "กรุณาพิจารณาอนุมัติคำขอนี้",
+                $request->user->name,
+                $request->member->member_code,
+                $request->newSponsor->user->name ?? 'N/A'
+            );
+            $this->sendLineMessage($oldSponsor, $lineMessage);
 
         } catch (\Exception $e) {
             Log::error('Failed to send approval notification', [
@@ -541,7 +559,18 @@ class MlmTeamTransferService
                 'notifiable_id' => $request->id,
             ]);
 
-            // TODO: ส่ง LINE direct message
+            // ส่ง LINE direct message
+            $lineMessage = sprintf(
+                "✅ คำขอย้ายทีมได้รับการอนุมัติ\n\n" .
+                "แม่ทีมเก่า: %s\n" .
+                "แม่ทีมใหม่: %s\n" .
+                "ค่าธรรมเนียม: %s บาท\n\n" .
+                "กรุณาชำระค่าธรรมเนียมเพื่อดำเนินการต่อ",
+                $request->oldSponsor->user->name ?? 'N/A',
+                $request->newSponsor->user->name ?? 'N/A',
+                number_format($request->transfer_fee, 2)
+            );
+            $this->sendLineMessage($member, $lineMessage);
         } catch (\Exception $e) {
             Log::error('Failed to send approved notification', [
                 'request_id' => $request->id,
@@ -571,7 +600,16 @@ class MlmTeamTransferService
                 'notifiable_id' => $request->id,
             ]);
 
-            // TODO: ส่ง LINE direct message
+            // ส่ง LINE direct message
+            $lineMessage = sprintf(
+                "❌ คำขอย้ายทีมถูกปฏิเสธ\n\n" .
+                "แม่ทีมเก่า: %s\n" .
+                "เหตุผล: %s\n\n" .
+                "หากต้องการข้อมูลเพิ่มเติม กรุณาติดต่อแม่ทีมของคุณ",
+                $request->oldSponsor->user->name ?? 'N/A',
+                $request->rejection_reason ?? 'ไม่ระบุเหตุผล'
+            );
+            $this->sendLineMessage($member, $lineMessage);
         } catch (\Exception $e) {
             Log::error('Failed to send rejected notification', [
                 'request_id' => $request->id,
@@ -607,7 +645,21 @@ class MlmTeamTransferService
                 'notifiable_id' => $request->id,
             ]);
 
-            // TODO: ส่ง LINE direct message to admin
+            // ส่ง LINE direct message to admin
+            $lineMessage = sprintf(
+                "💰 การย้ายทีม - ชำระเงินแล้ว\n\n" .
+                "สมาชิก: %s (รหัส: %s)\n" .
+                "ค่าธรรมเนียม: %s บาท\n" .
+                "จาก: %s\n" .
+                "ไปยัง: %s\n\n" .
+                "กรุณาดำเนินการตรวจสอบและอนุมัติ",
+                $request->user->name,
+                $request->member->member_code,
+                number_format($request->transfer_fee, 2),
+                $request->oldSponsor->user->name ?? 'N/A',
+                $request->newSponsor->user->name ?? 'N/A'
+            );
+            $this->sendLineMessageToMultipleUsers($admins->all(), $lineMessage);
         } catch (\Exception $e) {
             Log::error('Failed to send paid notification to admin', [
                 'request_id' => $request->id,
@@ -649,12 +701,116 @@ class MlmTeamTransferService
             // แจ้งเตือนแม่ทีมใหม่
             $this->notificationService->notifyNewTeamMember($newSponsor, $requestData);
 
-            // TODO: ส่ง LINE direct messages to all parties
+            // ส่ง LINE direct messages to all parties
+
+            // 1. ข้อความสำหรับสมาชิก
+            $memberLineMessage = sprintf(
+                "🎉 การย้ายทีมเสร็จสมบูรณ์\n\n" .
+                "คุณได้ย้ายจากทีมของ %s\n" .
+                "ไปยังทีมของ %s เรียบร้อยแล้ว\n\n" .
+                "ขอบคุณที่ใช้บริการ!",
+                $oldSponsor->name,
+                $newSponsor->name
+            );
+            $this->sendLineMessage($member, $memberLineMessage);
+
+            // 2. ข้อความสำหรับแม่ทีมเก่า
+            $oldSponsorLineMessage = sprintf(
+                "👋 สมาชิกย้ายออกจากทีม\n\n" .
+                "สมาชิก: %s (รหัส: %s)\n" .
+                "ได้ย้ายไปยังทีมของ %s แล้ว\n\n" .
+                "ขอบคุณสำหรับการดูแล",
+                $member->name,
+                $request->member->member_code,
+                $newSponsor->name
+            );
+            $this->sendLineMessage($oldSponsor, $oldSponsorLineMessage);
+
+            // 3. ข้อความสำหรับแม่ทีมใหม่
+            $newSponsorLineMessage = sprintf(
+                "🎊 สมาชิกใหม่เข้าร่วมทีม\n\n" .
+                "สมาชิก: %s (รหัส: %s)\n" .
+                "ได้ย้ายจากทีมของ %s\n" .
+                "มาเป็นสมาชิกในทีมของคุณแล้ว\n\n" .
+                "ยินดีต้อนรับสู่ทีม!",
+                $member->name,
+                $request->member->member_code,
+                $oldSponsor->name
+            );
+            $this->sendLineMessage($newSponsor, $newSponsorLineMessage);
         } catch (\Exception $e) {
             Log::error('Failed to send completed notifications', [
                 'request_id' => $request->id,
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * ส่ง LINE message ไปยัง user (ถ้ามี LINE user ID)
+     *
+     * @param User $user ผู้ใช้ที่จะส่ง
+     * @param string $message ข้อความที่จะส่ง
+     * @return bool สำเร็จหรือไม่
+     */
+    protected function sendLineMessage(User $user, string $message): bool
+    {
+        // ตรวจสอบว่ามี LINE user ID หรือไม่
+        if (empty($user->line_user_id)) {
+            Log::debug('User does not have LINE user ID', [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+            ]);
+            return false;
+        }
+
+        try {
+            // ส่ง LINE push message
+            $sent = $this->lineService->sendPushMessage(
+                $user->line_user_id,
+                $message
+            );
+
+            if ($sent) {
+                Log::info('LINE message sent successfully', [
+                    'user_id' => $user->id,
+                    'line_user_id' => $user->line_user_id,
+                ]);
+            } else {
+                Log::warning('LINE message failed to send', [
+                    'user_id' => $user->id,
+                    'line_user_id' => $user->line_user_id,
+                ]);
+            }
+
+            return $sent;
+
+        } catch (\Exception $e) {
+            Log::error('LINE message exception', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * ส่ง LINE message ไปยังหลาย users
+     *
+     * @param array $users รายการผู้ใช้
+     * @param string $message ข้อความที่จะส่ง
+     * @return int จำนวนที่ส่งสำเร็จ
+     */
+    protected function sendLineMessageToMultipleUsers(array $users, string $message): int
+    {
+        $successCount = 0;
+
+        foreach ($users as $user) {
+            if ($this->sendLineMessage($user, $message)) {
+                $successCount++;
+            }
+        }
+
+        return $successCount;
     }
 }
