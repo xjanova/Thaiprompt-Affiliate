@@ -22,8 +22,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $this->command->info('🔧 Simplifying LINE Signup Flow...');
-
         // ลบขั้นตอนที่ไม่จำเป็น
         $stepsToDelete = ['phone', 'email', 'full_name', 'address', 'completion'];
 
@@ -31,7 +29,6 @@ return new class extends Migration
             $step = LineSignupFlow::where('step_key', $stepKey)->first();
             if ($step) {
                 $step->delete();
-                $this->command->info("✅ Deleted step: {$stepKey}");
             }
         }
 
@@ -58,7 +55,6 @@ return new class extends Migration
                     ['label' => '❌ ยกเลิก', 'value' => 'ยกเลิก'],
                 ],
             ]);
-            $this->command->info('✅ Updated welcome step');
         }
 
         // อัพเดท sponsor_code step
@@ -68,7 +64,6 @@ return new class extends Migration
                 'step_order' => 2,
                 'next_step_key' => 'consent',
             ]);
-            $this->command->info('✅ Updated sponsor_code step');
         }
 
         // อัพเดท consent step
@@ -94,7 +89,6 @@ return new class extends Migration
                     ],
                 ],
             ]);
-            $this->command->info('✅ Updated consent step');
         }
 
         // อัพเดท success step
@@ -121,18 +115,7 @@ return new class extends Migration
 • เพิ่มที่อยู่สำหรับจัดส่ง
 • เพิ่มข้อมูลธนาคารรับเงิน',
             ]);
-            $this->command->info('✅ Updated success step');
         }
-
-        $this->command->line('');
-        $this->command->info('📋 New Simplified Flow:');
-        $this->command->line('  1. welcome       - ยืนยันข้อมูล LINE + ยืนยันสมัคร');
-        $this->command->line('  2. sponsor_code  - รหัสผู้แนะนำ (optional)');
-        $this->command->line('  3. consent       - ยินยอม PDPA');
-        $this->command->line('  4. success       - สมัครสำเร็จ + ลิงก์ dashboard');
-        $this->command->line('');
-        $this->command->info('🎯 Total: 4 steps (reduced from 9!)');
-        $this->command->info('💡 All data from LINE is used automatically');
     }
 
     /**
@@ -142,8 +125,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        $this->command->info('🔧 Restoring original signup flow...');
-        $this->command->warn('⚠️  Manual restoration required - please run fresh seed');
-        $this->command->line('   php artisan migrate:fresh --seed');
+        // Manual restoration required - please run fresh seed
+        // php artisan migrate:fresh --seed
     }
 };

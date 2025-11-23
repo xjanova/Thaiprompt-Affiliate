@@ -56,7 +56,7 @@ return new class extends Migration
             $table->string('country', 2)->nullable();
             $table->string('city', 100)->nullable();
             $table->decimal('latitude', 10, 8)->nullable();
-            $table->decimal('longitude', 11, 8')->nullable();
+            $table->decimal('longitude', 11, 8)->nullable();
 
             // Metadata
             $table->json('metadata')->nullable();
