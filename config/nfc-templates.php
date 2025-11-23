@@ -41,8 +41,8 @@ return [
                     ['type' => 'text', 'data' => "RANK:" . ($data['rank'] ?? 'Member')],
                     ['type' => 'text', 'data' => "EXPIRE:" . ($data['expiry_date'] ?? 'N/A')],
                     ['type' => 'url', 'data' => url("/nfc/verify/{$data['card_number']}")],
-                ],
-            ],
+                ];
+            },
         ],
 
         /**
