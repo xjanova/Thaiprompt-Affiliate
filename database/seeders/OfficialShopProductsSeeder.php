@@ -4,14 +4,16 @@ namespace Database\Seeders;
 
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 
 /**
  * Official Shop Products Seeder
  *
  * สร้างข้อมูลสินค้าสำหรับร้านของระบบ (Official Shop)
- * - seller_id เป็น null (ไม่มี seller)
+ * - สร้าง official seller account สำหรับร้านของระบบ
  * - คุณภาพสูง พร้อมรูปภาพและรายละเอียดครบถ้วน
  * - คอมมิชชั่นสูงสุด 40%
  */
@@ -31,6 +33,9 @@ class OfficialShopProductsSeeder extends Seeder
             $this->command->warn('⚠️  ไม่พบ Product Category กรุณา seed ProductCategorySeeder ก่อน');
             return;
         }
+
+        // สร้าง/หา Official Shop Seller Account
+        $officialSeller = $this->getOrCreateOfficialSeller();
 
         // สินค้าตัวอย่างสำหรับร้านของระบบ
         $officialProducts = [
@@ -210,7 +215,7 @@ class OfficialShopProductsSeeder extends Seeder
 
             // สร้างสินค้า
             Product::create([
-                'seller_id' => null, // ⚠️ IMPORTANT: null = ร้านของระบบ
+                'seller_id' => $officialSeller->id, // ✅ ใช้ Official Shop Seller ID
                 'category_id' => $category->id,
                 'name' => $productData['name'],
                 'slug' => $productData['slug'],
@@ -241,5 +246,41 @@ class OfficialShopProductsSeeder extends Seeder
         }
 
         $this->command->info("✨ สร้างสินค้าของระบบสำเร็จ: {$createdCount} สินค้า");
+    }
+
+    /**
+     * สร้างหรือหา Official Shop Seller Account
+     *
+     * @return User
+     */
+    protected function getOrCreateOfficialSeller(): User
+    {
+        // ตรวจสอบว่ามี official seller อยู่แล้วหรือไม่
+        $seller = User::where('email', 'official-shop@thaiprompt.com')
+            ->orWhere('username', 'official-shop')
+            ->first();
+
+        if ($seller) {
+            $this->command->info('   ✅ พบ Official Shop Seller: ' . $seller->name);
+            return $seller;
+        }
+
+        // สร้าง Official Shop Seller Account ใหม่
+        $seller = User::create([
+            'name' => 'Official Shop',
+            'username' => 'official-shop',
+            'email' => 'official-shop@thaiprompt.com',
+            'password' => Hash::make('OfficialShop@2024'), // Password แรงๆ
+            'role' => 'seller', // หรือ admin ก็ได้
+            'is_active' => true,
+            'email_verified_at' => now(),
+            'profile_complete' => true,
+        ]);
+
+        $this->command->info('   ✅ สร้าง Official Shop Seller: ' . $seller->name);
+        $this->command->warn('   ⚠️  Username: official-shop');
+        $this->command->warn('   ⚠️  Password: OfficialShop@2024');
+
+        return $seller;
     }
 }
