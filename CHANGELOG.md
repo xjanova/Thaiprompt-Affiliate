@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.151.0] - 2025-11-23
+
+### ✨ Features
+- feat: add Auto-placement System (Phase 2B - Part 1) (1ef5385d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1532 from xjanova/claude/setup-line-chatbot-01FRiaWuhS9Dj63r8cBokkNj (03905fd2)
+- docs: add Phase 2A Completion Summary (479be9e2)
+- docs: add LINE Chatbot Registration Complete Setup Guide (Phase 2A) (b821f07a)
+
 ## [v3.150.0] - 2025-11-23
 
 ### ✨ Features
