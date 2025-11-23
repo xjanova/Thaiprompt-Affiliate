@@ -33,8 +33,15 @@ Alpine.store('language', {
      * เริ่มต้น language store
      */
     init() {
-        // โหลด Google Translate Element script
-        this.loadGoogleTranslate();
+        // ⚠️ ตรวจสอบว่าอยู่ในหน้า Admin หรือไม่
+        const isAdminPage = window.location.pathname.includes('/admin/');
+
+        if (!isAdminPage) {
+            // โหลด Google Translate Element script เฉพาะหน้าที่ไม่ใช่ Admin
+            this.loadGoogleTranslate();
+        } else {
+            console.log('🔧 Admin page detected - Google Translate disabled');
+        }
 
         // โหลดภาษาที่บันทึกไว้
         const savedLang = localStorage.getItem('app_language');
@@ -61,7 +68,7 @@ Alpine.store('language', {
             sessionStorage.removeItem('translation_triggered');
         }
 
-        console.log('🌐 Language Store initialized with Google Translate:', this.current);
+        console.log('🌐 Language Store initialized:', this.current, isAdminPage ? '(Admin - no Google Translate)' : '(with Google Translate)');
     },
 
     /**
@@ -215,6 +222,11 @@ Alpine.store('language', {
             console.log('🔧 Admin page detected - using session-based switch');
             this.current = langCode;
             localStorage.setItem('app_language', langCode);
+
+            // ✅ ลบ Google Translate cookies ที่อาจทำให้เกิด loop
+            document.cookie = 'googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=' + window.location.hostname;
+            document.cookie = 'googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC';
+            console.log('🧹 Cleared Google Translate cookies');
 
             // Redirect ไปยัง language switch route (จะกลับมาหน้าเดิมอัตโนมัติ)
             window.location.href = `/language/switch/${langCode}`;
