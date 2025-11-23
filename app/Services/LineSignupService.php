@@ -170,6 +170,24 @@ class LineSignupService
             return;
         }
 
+        // ✅ Smart skip sponsor_code step ถ้ามีแม่ทีมจาก invitation link อยู่แล้ว
+        if ($nextStep->step_key === 'sponsor_code' && $prospect->sponsorUser) {
+            // ข้าม sponsor_code เพราะรู้ผู้แนะนำจาก invitation link แล้ว
+            Log::info('Skipping sponsor_code step - sponsor already known from invitation link', [
+                'prospect_id' => $prospect->id,
+                'sponsor_name' => $prospect->sponsorUser->name,
+            ]);
+
+            // ไปที่ step ถัดไป (consent)
+            $nextStep = $nextStep->getNextStepFor([]);
+
+            if (!$nextStep) {
+                // ไม่น่าจะเกิด แต่ป้องกันกรณี edge case
+                $this->completeSignup($prospect);
+                return;
+            }
+        }
+
         // Move to next step
         $prospect->updateConversationStep($nextStep->step_key);
         $this->sendFlowMessage($prospect, $nextStep);
@@ -187,6 +205,19 @@ class LineSignupService
         ];
 
         $message = $flow->getFormattedMessage($variables);
+
+        // ✅ Smart sponsor detection - แสดงชื่อแม่ทีมถ้ามี invitation link
+        if ($flow->step_key === 'welcome' && $prospect->sponsorUser) {
+            $sponsorName = $prospect->sponsorUser->name;
+            $sponsorInfo = "\n\n🎉 คุณได้รับเชิญจาก: {$sponsorName}\n✅ ระบบรู้ผู้แนะนำของคุณแล้ว ไม่ต้องกรอกอีกครั้ง";
+
+            // แทรกข้อมูล sponsor ก่อนส่วน "📸 เราได้รับข้อมูลจาก LINE"
+            $message = str_replace(
+                "\n\n📸 เราได้รับข้อมูลจาก LINE",
+                $sponsorInfo . "\n\n📸 เราได้รับข้อมูลจาก LINE",
+                $message
+            );
+        }
 
         // Check if we should use Flex Message
         if ($flow->message_flex) {
