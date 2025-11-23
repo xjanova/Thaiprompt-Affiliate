@@ -52,18 +52,47 @@ class LineSignupRewardSeeder extends Seeder
     /**
      * ตรวจหา columns พิเศษที่ไม่ควรมีใน template table
      *
+     * เช็คโดยเปรียบเทียบกับ schema ที่ควรจะเป็น (ตาม migration)
+     *
      * @return void
      */
     protected function detectExtraColumns(): void
     {
-        // รายการ columns ที่ไม่ควรมีใน template table
-        $unwantedColumns = ['user_id', 'session_id', 'claim_id'];
+        // รายการ columns ที่ควรมีตาม migration definition
+        $expectedColumns = [
+            'id',
+            'name',
+            'description',
+            'signup_type',
+            'package_ids',
+            'reward_type',
+            'amount',
+            'coupon_code',
+            'coupon_template_id',
+            'benefit_data',
+            'product_id',
+            'icon',
+            'badge_color',
+            'display_order',
+            'is_time_limited',
+            'start_date',
+            'end_date',
+            'is_active',
+            'is_stackable',
+            'notify_user',
+            'notification_message',
+            'total_claimed',
+            'max_claims',
+            'created_at',
+            'updated_at',
+            'deleted_at',
+        ];
 
-        foreach ($unwantedColumns as $column) {
-            if (Schema::hasColumn('line_signup_rewards', $column)) {
-                $this->extraColumns[] = $column;
-            }
-        }
+        // ดึงรายการ columns ที่มีอยู่จริงในตาราง
+        $actualColumns = Schema::getColumnListing('line_signup_rewards');
+
+        // หา columns ที่มีอยู่แต่ไม่ควรมี
+        $this->extraColumns = array_diff($actualColumns, $expectedColumns);
     }
 
     /**
