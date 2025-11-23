@@ -78,6 +78,7 @@ class LineSignupRewardController extends Controller
     public function create()
     {
         return view('admin.line-membership-signup.rewards.create', [
+            'reward' => new LineSignupReward(),
             'pageTitle' => 'สร้างรางวัลใหม่',
             'couponTemplates' => CouponTemplate::where('is_active', true)->get(),
             'packages' => MlmPackage::where('is_active', true)->get(),
