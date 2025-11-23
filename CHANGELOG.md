@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.153.2] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: correct closure syntax in nfc-templates.php (7fcdda3e)
+- fix: escape cron syntax in comment to prevent PHP syntax error (f7044eaf)
+### 🔧 Other Changes
+- Merge pull request #1536 from xjanova/claude/setup-line-chatbot-01FRiaWuhS9Dj63r8cBokkNj (7f8c242c)
+
 ## [v3.153.1] - 2025-11-23
 
 ### ✨ Features
