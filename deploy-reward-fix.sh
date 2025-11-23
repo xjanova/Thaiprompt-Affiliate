@@ -62,9 +62,19 @@ rm -rf storage/framework/views/* 2>/dev/null && echo "✓ View cache directory c
 rm -rf storage/framework/cache/* 2>/dev/null && echo "✓ Application cache directory cleared"
 rm -rf bootstrap/cache/*.php 2>/dev/null && echo "✓ Bootstrap cache cleared"
 
-# Step 4: Clear OPcache (if available)
+# Step 4: Run migrations
 echo ""
-echo "Step 4: Attempting to clear OPcache..."
+echo "Step 4: Running database migrations..."
+php artisan migrate --force 2>&1
+if [ $? -eq 0 ]; then
+    echo "✓ Migrations completed successfully"
+else
+    echo "⚠ Warning: Some migrations may have failed (check output above)"
+fi
+
+# Step 5: Clear OPcache (if available)
+echo ""
+echo "Step 5: Attempting to clear OPcache..."
 if command -v php &> /dev/null; then
     php -r "if (function_exists('opcache_reset')) { opcache_reset(); echo '✓ OPcache cleared'; } else { echo '⚠ OPcache not available'; }" 2>/dev/null
 fi
@@ -77,6 +87,8 @@ echo ""
 echo "The following changes have been deployed:"
 echo "- Fixed undefined \$reward variable in create form"
 echo "- Added LineSignupReward instance to create() method"
+echo "- Fixed idx_user_status index constraint in migrations"
+echo "- Database migrations applied"
 echo "- All caches cleared"
 echo ""
 echo "Please test the LINE Signup Rewards create page now:"
