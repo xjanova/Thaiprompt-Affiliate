@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.144.0] - 2025-11-23
+
+### ✨ Features
+- feat: add admin interface for LINE signup rewards management (0266a302)
+- feat: add comprehensive LINE signup rewards system (719f5ae0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1505 from xjanova/claude/remove-line-oa-admin-01Q3p7xMeGZQcC4fRsa7o6M6 (8bc51f6f)
+
 ## [v3.143.5] - 2025-11-23
 
 ### ✨ Features
