@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.147.9] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1519 from xjanova/claude/fix-migration-line-rewards-01RGb1FksWiDdMXScakM64tv (91b01257)
+- fix: auto-detect ALL extra columns in LineSignupRewardSeeder (b34e8a34)
+### 🔧 Other Changes
+
+
 ## [v3.147.8] - 2025-11-23
 
 ### ✨ Features
