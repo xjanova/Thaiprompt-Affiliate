@@ -2,6 +2,74 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.152.0] - 2025-11-23
+
+### ✨ Features
+- feat: add comprehensive NFC card management system with templates and lock (30e58108)
+- feat: add public NFC card verification system (25bc75d2)
+- feat: add database migrations for NFC security system (4875cdd4)
+- feat: add NFC card read/write system with anti-counterfeit protection (5449d515)
+- feat: add missing NFC transactions views (f3118527)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1534 from xjanova/claude/fix-nfc-transactions-view-01AAD7BNBNovbMoJjaLhyNoJ (abea7012)
+- docs: add complete NFC card management system guide (19773a7c)
+
+## [v3.151.0] - 2025-11-23
+
+### ✨ Features
+- feat: add Auto-placement System (Phase 2B - Part 1) (1ef5385d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1532 from xjanova/claude/setup-line-chatbot-01FRiaWuhS9Dj63r8cBokkNj (03905fd2)
+- docs: add Phase 2A Completion Summary (479be9e2)
+- docs: add LINE Chatbot Registration Complete Setup Guide (Phase 2A) (b821f07a)
+
+## [v3.150.0] - 2025-11-23
+
+### ✨ Features
+- Merge pull request #1531 from xjanova/claude/setup-line-chatbot-01FRiaWuhS9Dj63r8cBokkNj (cfe6f084)
+- feat: add LINE Message Analytics Dashboard (Phase 2A) (85dd7b5d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.149.2] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1530 from xjanova/claude/fix-database-connection-01FHg5DcXtYfnSVzyKZig2vv (a08359ad)
+- fix: resolve PHP syntax error in ProcessLineRetries.php cron comment (17138f78)
+### 🔧 Other Changes
+
+
+## [v3.149.1] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1529 from xjanova/claude/setup-line-chatbot-01FRiaWuhS9Dj63r8cBokkNj (850abb52)
+- docs: add LINE Smart Chatbot Complete Guide (Phase 1.7) (f68fcf42)
+
+## [v3.149.0] - 2025-11-23
+
+### ✨ Features
+- feat: add LINE Auto-Retry deployment automation (Phase 1.6) (2ea9942a)
+- feat: implement LINE Auto-Retry & Error Recovery System (Phase 1.5) (64712af7)
+- feat: add Auto-Retry foundation (migrations & models) (9af613f7)
+- feat: add LINE Quick Settings Panel for easy system control (b5a3b244)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1528 from xjanova/claude/setup-line-chatbot-01FRiaWuhS9Dj63r8cBokkNj (85f5b1bc)
+- docs: add comprehensive LINE Smart Chatbot enhancement plan (b2d1472d)
+
 ## [v3.148.2] - 2025-11-23
 
 ### ✨ Features
