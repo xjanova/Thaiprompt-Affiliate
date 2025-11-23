@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.149.1] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1529 from xjanova/claude/setup-line-chatbot-01FRiaWuhS9Dj63r8cBokkNj (850abb52)
+- docs: add LINE Smart Chatbot Complete Guide (Phase 1.7) (f68fcf42)
+
 ## [v3.149.0] - 2025-11-23
 
 ### ✨ Features
