@@ -33,15 +33,8 @@ Alpine.store('language', {
      * เริ่มต้น language store
      */
     init() {
-        // ⚠️ ตรวจสอบว่าอยู่ในหน้า Admin หรือไม่
-        const isAdminPage = window.location.pathname.includes('/admin/');
-
-        if (!isAdminPage) {
-            // โหลด Google Translate Element script เฉพาะหน้าที่ไม่ใช่ Admin
-            this.loadGoogleTranslate();
-        } else {
-            console.log('🔧 Admin page detected - Google Translate disabled');
-        }
+        // โหลด Google Translate Element script
+        this.loadGoogleTranslate();
 
         // โหลดภาษาที่บันทึกไว้
         const savedLang = localStorage.getItem('app_language');
@@ -52,23 +45,7 @@ Alpine.store('language', {
             localStorage.setItem('app_language', 'th');
         }
 
-        // กลับไปตำแหน่ง scroll เดิมหลัง reload
-        const savedScroll = sessionStorage.getItem('tpix_scroll_position');
-        if (savedScroll) {
-            setTimeout(() => {
-                window.scrollTo(0, parseInt(savedScroll));
-                sessionStorage.removeItem('tpix_scroll_position');
-            }, 100);
-        }
-
-        // ✅ ลบ translation_triggered flag หลัง reload สำเร็จ
-        // เพื่อให้สามารถเปลี่ยนภาษาได้อีกครั้ง
-        if (sessionStorage.getItem('translation_triggered')) {
-            console.log('🔄 Translation completed, clearing flag');
-            sessionStorage.removeItem('translation_triggered');
-        }
-
-        console.log('🌐 Language Store initialized:', this.current, isAdminPage ? '(Admin - no Google Translate)' : '(with Google Translate)');
+        console.log('🌐 Language Store initialized:', this.current);
     },
 
     /**
@@ -114,7 +91,7 @@ Alpine.store('language', {
                 pageLanguage: 'th',
                 includedLanguages: 'th,en,zh-CN,ja,ko,vi,de,fr,es',
                 autoDisplay: false,
-                layout: window.google.translate.TranslateElement.InlineLayout.VERTICAL  // เปลี่ยนจาก SIMPLE เป็น VERTICAL
+                layout: window.google.translate.TranslateElement.InlineLayout.VERTICAL
             }, 'google_translate_element');
 
             this.isGoogleTranslateReady = true;
@@ -123,17 +100,11 @@ Alpine.store('language', {
             // ซ่อน Google Translate toolbar
             this.hideGoogleTranslateToolbar();
 
-            // ⚠️ CIRCUIT BREAKER: ป้องกัน infinite reload loop
-            // ถ้ามีภาษาที่บันทึกไว้ ให้แปลทันที (เฉพาะครั้งแรกที่ผู้ใช้เปลี่ยนภาษา)
-            // ไม่แปลซ้ำหลัง reload เพื่อหลีกเลี่ยง infinite loop
+            // ✅ แปลภาษาตาม saved language (ไม่ reload หน้า)
             const savedLang = localStorage.getItem('app_language');
-            const translationTriggered = sessionStorage.getItem('translation_triggered');
-
-            if (savedLang && savedLang !== 'th' && !translationTriggered) {
+            if (savedLang && savedLang !== 'th') {
                 console.log('🌐 Auto-translating to saved language:', savedLang);
                 setTimeout(() => this.translatePage(savedLang), 1000);
-            } else if (translationTriggered) {
-                console.log('⚠️ Translation already triggered, skipping auto-translate to prevent infinite loop');
             }
         } catch (error) {
             console.error('❌ เกิดข้อผิดพลาดใน Google Translate:', error);
@@ -208,35 +179,10 @@ Alpine.store('language', {
     },
 
     /**
-     * เปลี่ยนภาษาและแปลหน้าเว็บ
+     * เปลี่ยนภาษาและแปลหน้าเว็บ (ไม่ reload หน้า)
      */
     setLanguage(langCode) {
         console.log('🌐 setLanguage called:', langCode);
-
-        // ✅ ตรวจสอบว่าอยู่ในหน้า Admin หรือไม่
-        const isAdminPage = window.location.pathname.includes('/admin/');
-
-        if (isAdminPage) {
-            // 🔧 ใช้ session-based language switching สำหรับหน้า Admin
-            // ป้องกัน infinite reload loop จาก Google Translate
-            console.log('🔧 Admin page detected - using session-based switch');
-            this.current = langCode;
-            localStorage.setItem('app_language', langCode);
-
-            // ✅ ลบ Google Translate cookies ที่อาจทำให้เกิด loop
-            document.cookie = 'googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=' + window.location.hostname;
-            document.cookie = 'googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC';
-            console.log('🧹 Cleared Google Translate cookies');
-
-            // Redirect ไปยัง language switch route (จะกลับมาหน้าเดิมอัตโนมัติ)
-            window.location.href = `/language/switch/${langCode}`;
-            return;
-        }
-
-        // ✅ สำหรับหน้าอื่นๆ ใช้ Google Translate ตามปกติ
-        // ล้าง translation_triggered flag เมื่อผู้ใช้เปลี่ยนภาษาใหม่
-        // เพื่อให้ translatePage() สามารถทำงานได้
-        sessionStorage.removeItem('translation_triggered');
 
         this.current = langCode;
         localStorage.setItem('app_language', langCode);
@@ -251,7 +197,7 @@ Alpine.store('language', {
     },
 
     /**
-     * แปลหน้าเว็บด้วย Google Translate
+     * แปลหน้าเว็บด้วย Google Translate (ไม่ reload หน้า)
      */
     translatePage(targetLang) {
         if (!this.isGoogleTranslateReady) {
@@ -305,37 +251,20 @@ Alpine.store('language', {
             console.log('🌐 Select element value after:', selectElement.value);
             console.log('🌐 Value changed:', oldValue, '→', targetLang);
 
-            // Trigger หลาย events พร้อมกัน (บางครั้ง Google Translate ต้องการหลาย events)
-            const events = [
-                new Event('change', { bubbles: true, cancelable: true }),
-                new Event('input', { bubbles: true, cancelable: true }),
-                new Event('click', { bubbles: true, cancelable: true }),
-            ];
-
-            events.forEach(event => {
-                selectElement.dispatchEvent(event);
-            });
+            // Trigger change event (Google Translate จะจัดการแปลเอง)
+            const changeEvent = new Event('change', { bubbles: true, cancelable: true });
+            selectElement.dispatchEvent(changeEvent);
 
             // เรียก onchange handler ถ้ามี (fallback)
             if (typeof selectElement.onchange === 'function') {
                 selectElement.onchange.call(selectElement);
             }
 
-            // Google Translate Element มักจะไม่แปลทันทีด้วย events
-            // วิธีที่ดีที่สุดคือ reload หน้าเว็บทันที (เหมือน Chrome translate)
-            console.log('🔄 กำลัง reload หน้าเว็บเพื่อแปลภาษา...');
-
-            // ✅ ตั้ง flag เพื่อบอกว่าได้ trigger translation แล้ว
-            // ป้องกัน initGoogleTranslate() เรียก translatePage() ซ้ำหลัง reload
-            sessionStorage.setItem('translation_triggered', 'true');
-
-            // บันทึก scroll position
-            sessionStorage.setItem('tpix_scroll_position', window.scrollY.toString());
-
-            // Reload ทันทีเพื่อให้ Google Translate แปลภาษา
+            // ✅ ปิด isTranslating flag หลังจาก trigger event
             setTimeout(() => {
-                window.location.reload();
-            }, 300);
+                this.isTranslating = false;
+                console.log('✅ การแปลเสร็จสมบูรณ์');
+            }, 500);
         } else {
             if (this.translateRetryCount < this.maxTranslateRetries) {
                 this.translateRetryCount++;
