@@ -450,3 +450,18 @@ Route::prefix('marketing')->name('marketing.')->group(function () {
         Route::get('/analytics', [\App\Http\Controllers\User\RecruitPageController::class, 'analytics'])->name('analytics');
     });
 });
+
+// Team Transfer System (User - MLM)
+Route::prefix('team-transfer')->name('team-transfer.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\User\TeamTransferController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\User\TeamTransferController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\User\TeamTransferController::class, 'store'])->name('store');
+    Route::get('/{teamTransfer}', [\App\Http\Controllers\User\TeamTransferController::class, 'show'])->name('show');
+    Route::post('/{teamTransfer}/pay', [\App\Http\Controllers\User\TeamTransferController::class, 'pay'])->name('pay');
+    Route::post('/{teamTransfer}/cancel', [\App\Http\Controllers\User\TeamTransferController::class, 'cancel'])->name('cancel');
+    
+    // Approval routes (สำหรับแม่ทีมเก่า)
+    Route::get('/approvals/list', [\App\Http\Controllers\User\TeamTransferController::class, 'approvals'])->name('approvals');
+    Route::post('/{teamTransfer}/approve', [\App\Http\Controllers\User\TeamTransferController::class, 'approve'])->name('approve');
+    Route::post('/{teamTransfer}/reject', [\App\Http\Controllers\User\TeamTransferController::class, 'reject'])->name('reject');
+});

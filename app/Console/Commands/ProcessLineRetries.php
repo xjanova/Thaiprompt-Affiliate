@@ -17,8 +17,8 @@ use Illuminate\Console\Command;
  * - php artisan line:process-retries --cleanup  (ล้างข้อความเก่าด้วย)
  *
  * Cron Setup:
- * - Every minute: * * * * * php artisan line:process-retries >> /dev/null 2>&1
- * - Every 5 minutes: (star-slash-5) * * * * php artisan line:process-retries
+ * - ทุกนาที: * * * * * php artisan line:process-retries >> /dev/null 2>&1
+ * - ทุก 5 นาที: */5 * * * * php artisan line:process-retries
  *
  * @package App\Console\Commands
  */

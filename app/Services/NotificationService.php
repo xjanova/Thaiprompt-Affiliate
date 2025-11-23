@@ -539,6 +539,9 @@ class NotificationService
             'transfer' => '📤',
             'commission' => '💰',
             'wallet' => '👛',
+            'team_transfer', 'team_transfer_request' => '🔄',
+            'team_transfer_approval' => '✅',
+            'team_transfer_completed' => '🎉',
             'system' => '⚙️',
             'alert' => '⚠️',
             'announcement' => '📢',
@@ -557,6 +560,9 @@ class NotificationService
             'transfer' => 'blue',
             'commission' => 'green',
             'wallet' => 'purple',
+            'team_transfer_request' => 'yellow',
+            'team_transfer_approval', 'team_transfer_completed' => 'green',
+            'team_transfer' => 'blue',
             'system' => 'gray',
             'alert' => 'red',
             'announcement' => 'blue',
@@ -702,5 +708,257 @@ class NotificationService
     public function markAsShown(Notification $notification): void
     {
         $notification->markAsShown();
+    }
+
+    /* ================================
+     * Team Transfer Notifications
+     * ================================ */
+
+    /**
+     * แจ้งเตือน: มีคำขอย้ายทีมใหม่ (ถึงแม่ทีมเดิม)
+     *
+     * @param User $sponsor แม่ทีมเดิม
+     * @param array $requestData ข้อมูลคำขอ
+     * @return Notification
+     */
+    public function notifyTeamTransferRequest(User $sponsor, array $requestData): Notification
+    {
+        return $this->create(
+            $sponsor,
+            'team_transfer_request',
+            '🔔 มีคำขอย้ายทีมใหม่',
+            sprintf(
+                '%s ขอย้ายไปยังแม่ทีมใหม่ กรุณาพิจารณาอนุมัติ',
+                $requestData['member_name'] ?? 'สมาชิก'
+            ),
+            $requestData,
+            $requestData['action_url'] ?? route('user.team-transfer.approvals'),
+            'ดูคำขอ',
+            'high',
+            true,
+            false,
+            '🔄',
+            'yellow'
+        );
+    }
+
+    /**
+     * แจ้งเตือน: คำขออนุมัติแล้ว (ถึงสมาชิก)
+     *
+     * @param User $member สมาชิก
+     * @param array $requestData
+     * @return Notification
+     */
+    public function notifyTeamTransferApproved(User $member, array $requestData): Notification
+    {
+        return $this->create(
+            $member,
+            'team_transfer_approval',
+            '✅ คำขอย้ายทีมได้รับการอนุมัติ',
+            'แม่ทีมเดิมอนุมัติคำขอแล้ว กรุณาชำระค่าธรรมเนียม เพื่อดำเนินการต่อ',
+            $requestData,
+            $requestData['action_url'] ?? null,
+            'ชำระเงิน',
+            'high',
+            true,
+            false,
+            '✅',
+            'green'
+        );
+    }
+
+    /**
+     * แจ้งเตือน: คำขอถูกปฏิเสธ (ถึงสมาชิก)
+     *
+     * @param User $member สมาชิก
+     * @param array $requestData
+     * @return Notification
+     */
+    public function notifyTeamTransferRejected(User $member, array $requestData): Notification
+    {
+        return $this->create(
+            $member,
+            'team_transfer',
+            '❌ คำขอย้ายทีมถูกปฏิเสธ',
+            sprintf(
+                'แม่ทีมเดิมปฏิเสธคำขอของคุณ เหตุผล: %s',
+                $requestData['rejection_reason'] ?? 'ไม่ระบุ'
+            ),
+            $requestData,
+            $requestData['action_url'] ?? null,
+            'ดูรายละเอียด',
+            'normal',
+            false,
+            false,
+            '❌',
+            'red'
+        );
+    }
+
+    /**
+     * แจ้งเตือน: ชำระเงินแล้ว (ถึง Admin)
+     *
+     * @param array $admins รายการ admin users
+     * @param array $requestData
+     * @return int จำนวนการแจ้งเตือนที่ส่ง
+     */
+    public function notifyTeamTransferPaid(array $admins, array $requestData): int
+    {
+        $count = 0;
+        foreach ($admins as $admin) {
+            $this->create(
+                $admin,
+                'team_transfer',
+                '💰 มีคำขอย้ายทีมชำระเงินแล้ว',
+                sprintf(
+                    '%s ชำระค่าธรรมเนียมแล้ว กรุณาดำเนินการย้ายทีม',
+                    $requestData['member_name'] ?? 'สมาชิก'
+                ),
+                $requestData,
+                $requestData['action_url'] ?? null,
+                'ดำเนินการ',
+                'high',
+                true,
+                false,
+                '💰',
+                'blue'
+            );
+            $count++;
+        }
+        return $count;
+    }
+
+    /**
+     * แจ้งเตือน: ย้ายทีมสำเร็จ (ถึงสมาชิก)
+     *
+     * @param User $member สมาชิก
+     * @param array $requestData
+     * @return Notification
+     */
+    public function notifyTeamTransferCompletedToMember(User $member, array $requestData): Notification
+    {
+        return $this->create(
+            $member,
+            'team_transfer_completed',
+            '🎉 ย้ายทีมสำเร็จ!',
+            sprintf(
+                'คุณได้ย้ายไปยังแม่ทีม %s เรียบร้อยแล้ว',
+                $requestData['new_sponsor_name'] ?? 'แม่ทีมใหม่'
+            ),
+            $requestData,
+            $requestData['action_url'] ?? null,
+            'ดูรายละเอียด',
+            'normal',
+            true,
+            false,
+            '🎉',
+            'green'
+        );
+    }
+
+    /**
+     * แจ้งเตือน: ลูกทีมย้ายออก (ถึงแม่ทีมเดิม)
+     *
+     * @param User $oldSponsor แม่ทีมเดิม
+     * @param array $requestData
+     * @return Notification
+     */
+    public function notifyTeamMemberLeft(User $oldSponsor, array $requestData): Notification
+    {
+        return $this->create(
+            $oldSponsor,
+            'team_transfer',
+            '📤 ลูกทีมย้ายออก',
+            sprintf(
+                '%s ได้ย้ายไปยังแม่ทีมใหม่แล้ว',
+                $requestData['member_name'] ?? 'สมาชิก'
+            ),
+            $requestData,
+            null,
+            null,
+            'low',
+            false,
+            false,
+            '📤',
+            'gray'
+        );
+    }
+
+    /**
+     * แจ้งเตือน: ลูกทีมใหม่เข้าร่วม (ถึงแม่ทีมใหม่)
+     *
+     * @param User $newSponsor แม่ทีมใหม่
+     * @param array $requestData
+     * @return Notification
+     */
+    public function notifyNewTeamMember(User $newSponsor, array $requestData): Notification
+    {
+        return $this->create(
+            $newSponsor,
+            'team_transfer',
+            '📥 ลูกทีมใหม่เข้าร่วม',
+            sprintf(
+                '%s ได้ย้ายเข้ามาเป็นลูกทีมของคุณแล้ว',
+                $requestData['member_name'] ?? 'สมาชิก'
+            ),
+            $requestData,
+            null,
+            null,
+            'normal',
+            false,
+            false,
+            '📥',
+            'green'
+        );
+    }
+
+    /**
+     * แจ้งเตือน: คำขอถูกยกเลิก (ถึงสมาชิก + แม่ทีม)
+     *
+     * @param User $member สมาชิก
+     * @param User $sponsor แม่ทีมเดิม
+     * @param array $requestData
+     * @return array
+     */
+    public function notifyTeamTransferCancelled(User $member, User $sponsor, array $requestData): array
+    {
+        $notifications = [];
+
+        // แจ้งเตือนสมาชิก
+        $notifications['member'] = $this->create(
+            $member,
+            'team_transfer',
+            '🚫 คำขอย้ายทีมถูกยกเลิก',
+            'คำขอย้ายทีมของคุณถูกยกเลิกแล้ว',
+            $requestData,
+            $requestData['action_url'] ?? null,
+            null,
+            'low',
+            false,
+            false,
+            '🚫',
+            'gray'
+        );
+
+        // แจ้งเตือนแม่ทีมเดิม
+        $notifications['sponsor'] = $this->create(
+            $sponsor,
+            'team_transfer',
+            '🚫 คำขอย้ายทีมถูกยกเลิก',
+            sprintf(
+                '%s ยกเลิกคำขอย้ายทีมแล้ว',
+                $requestData['member_name'] ?? 'สมาชิก'
+            ),
+            $requestData,
+            null,
+            null,
+            'low',
+            false,
+            false,
+            '🚫',
+            'gray'
+        );
+
+        return $notifications;
     }
 }
