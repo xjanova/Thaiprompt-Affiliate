@@ -17,18 +17,24 @@ class ShopController extends Controller
      */
     public function index(Request $request)
     {
+        // ✨ REDIRECT: ถ้าเป็น shop_type=official ให้ redirect ไปยังร้านของระบบใหม่
+        if ($request->filled('shop_type') && $request->shop_type === 'official') {
+            // สร้าง query parameters ใหม่ (ยกเว้น shop_type)
+            $params = $request->except('shop_type');
+
+            // Redirect ไปยัง official shop พร้อม query parameters
+            return redirect()->route('official-shop.index', $params);
+        }
+
         $query = Product::with(['category', 'seller'])
             ->active()
             ->inStock();
 
-        // ตัวกรองประเภทร้าน (ใหม่ใน V3)
+        // ตัวกรองประเภทร้าน (สำหรับ premium หรืออื่นๆ)
         if ($request->filled('shop_type')) {
             $shopType = $request->shop_type;
 
-            if ($shopType === 'official') {
-                // ร้านของระบบ (seller_id เป็น null หรือเป็น admin)
-                $query->whereNull('seller_id');
-            } elseif ($shopType === 'premium') {
+            if ($shopType === 'premium') {
                 // ร้านผู้เช่า 5 ดาว (คะแนนเฉลี่ย >= 4.5 และมี seller)
                 $query->whereNotNull('seller_id')
                       ->where('rating_average', '>=', 4.5)
