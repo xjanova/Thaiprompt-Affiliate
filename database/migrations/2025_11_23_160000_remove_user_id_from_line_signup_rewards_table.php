@@ -19,16 +19,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('line_signup_rewards', function (Blueprint $table) {
-            // เช็คว่ามี column user_id หรือไม่
-            if (Schema::hasColumn('line_signup_rewards', 'user_id')) {
-                // ลบ foreign key constraint ถ้ามี
-                $this->safeDropForeignKey('line_signup_rewards', 'line_signup_rewards_user_id_foreign');
+        // เช็คว่ามี column user_id หรือไม่
+        if (Schema::hasColumn('line_signup_rewards', 'user_id')) {
+            // ลบ foreign key constraint ถ้ามี (ใช้ SafeMigration trait)
+            $this->safeDropForeignKey('line_signup_rewards', 'line_signup_rewards_user_id_foreign');
 
-                // ลบ column
+            // ลบ column
+            Schema::table('line_signup_rewards', function (Blueprint $table) {
                 $table->dropColumn('user_id');
-            }
-        });
+            });
+        }
     }
 
     /**
