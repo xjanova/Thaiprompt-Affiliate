@@ -24,11 +24,25 @@ return new class extends Migration
             // ลบ user_id ถ้ามี (คอลัมน์นี้ไม่ควรอยู่ใน reward template table)
             if (Schema::hasColumn('line_signup_rewards', 'user_id')) {
                 Schema::table('line_signup_rewards', function (Blueprint $table) {
+                    // ลบ composite index idx_user_status ถ้ามี
+                    try {
+                        $table->dropIndex('idx_user_status');
+                    } catch (\Exception $e) {
+                        // Ignore if index doesn't exist
+                    }
+
                     // ลบ foreign key constraint ถ้ามี
                     try {
                         $table->dropForeign(['user_id']);
                     } catch (\Exception $e) {
                         // Ignore if constraint doesn't exist
+                    }
+
+                    // ลบ index ที่อาจมี user_id
+                    try {
+                        $table->dropIndex(['user_id']);
+                    } catch (\Exception $e) {
+                        // Ignore if index doesn't exist
                     }
 
                     $table->dropColumn('user_id');

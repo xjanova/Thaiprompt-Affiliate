@@ -21,11 +21,37 @@ return new class extends Migration
     {
         // เช็คว่ามี column user_id หรือไม่
         if (Schema::hasColumn('line_signup_rewards', 'user_id')) {
-            // ลบ foreign key constraint ถ้ามี (ใช้ SafeMigration trait)
-            $this->safeDropForeign('line_signup_rewards', 'line_signup_rewards_user_id_foreign');
-
-            // ลบ column
             Schema::table('line_signup_rewards', function (Blueprint $table) {
+                // ลบ composite index idx_user_status ถ้ามี
+                try {
+                    $table->dropIndex('idx_user_status');
+                } catch (\Exception $e) {
+                    // Ignore if index doesn't exist
+                }
+
+                // ลบ foreign key constraint ด้วยหลายวิธี
+                // Method 1: ลบด้วยชื่อ constraint
+                try {
+                    $table->dropForeign('line_signup_rewards_user_id_foreign');
+                } catch (\Exception $e) {
+                    // Ignore if constraint doesn't exist
+                }
+
+                // Method 2: ลบด้วย column name (Laravel จะหาชื่อ constraint ให้เอง)
+                try {
+                    $table->dropForeign(['user_id']);
+                } catch (\Exception $e) {
+                    // Ignore if constraint doesn't exist
+                }
+
+                // ลบ index ทั่วไปที่อาจมี user_id
+                try {
+                    $table->dropIndex(['user_id']);
+                } catch (\Exception $e) {
+                    // Ignore if index doesn't exist
+                }
+
+                // ลบ column user_id
                 $table->dropColumn('user_id');
             });
         }
