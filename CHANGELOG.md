@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.147.0] - 2025-11-23
+
+### ✨ Features
+- Merge pull request #1510 from xjanova/claude/fix-nfc-readers-view-01KKmJft5cCo5BbK91ZB1WE5 (7394f427)
+- feat: add NFC readers views for admin panel (e156a044)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.146.0] - 2025-11-23
 
 ### ✨ Features
