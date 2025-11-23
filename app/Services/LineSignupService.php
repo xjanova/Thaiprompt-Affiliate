@@ -222,21 +222,23 @@ class LineSignupService
     }
 
     /**
-     * Complete signup process
+     * Complete signup process - Simplified (ใช้ LINE data)
+     *
+     * ไม่ต้อง validate name/phone เพราะ:
+     * - name มาจาก LINE displayName
+     * - phone เป็น optional (ค่อยเพิ่มภายหลัง)
      */
     private function completeSignup(MlmProspect $prospect): void
     {
         try {
             DB::beginTransaction();
 
-            $data = $prospect->conversation_data;
+            $data = $prospect->conversation_data ?? [];
 
-            // Validate required data
-            if (!isset($data['name']) || !isset($data['phone'])) {
-                throw new \Exception('Missing required data: name or phone');
-            }
+            // ไม่ต้อง validate แล้ว - ใช้ LINE data เป็นหลัก
+            // LINE displayName จะเป็น name อัตโนมัติ
 
-            // Create user
+            // Create user (ใช้ LINE data)
             $user = $this->createUser($prospect, $data);
 
             // Create MLM member
@@ -278,20 +280,33 @@ class LineSignupService
     }
 
     /**
-     * Create user account
+     * Create user account - ใช้ข้อมูล LINE เป็นหลัก
+     *
+     * ข้อมูลจาก LINE:
+     * - displayName → name
+     * - pictureUrl → profile picture
+     * - line_user_id → unique identifier
+     *
+     * ข้อมูลที่ generate:
+     * - email: line_{line_user_id}@thaiprompt.local
+     * - password: random 16 ตัวอักษร
+     *
+     * ข้อมูลที่เป็น optional:
+     * - phone (ค่อยกรอกภายหลัง)
+     * - address (ค่อยกรอกภายหลัง)
      */
     private function createUser(MlmProspect $prospect, array $data): User
     {
-        $email = $data['email'] ?? null;
-        $phone = $data['phone'];
-        $name = $data['name'];
+        // ใช้ชื่อจาก LINE displayName เป็นหลัก
+        $name = $prospect->line_display_name ?? $data['name'] ?? 'User';
 
-        // Generate email if not provided
-        if (!$email) {
-            $email = 'line_' . $prospect->line_user_id . '@thaiprompt.local';
-        }
+        // ใช้ email จาก conversation_data (ถ้ามี) หรือ generate
+        $email = $data['email'] ?? 'line_' . $prospect->line_user_id . '@thaiprompt.local';
 
-        // Generate password
+        // Phone เป็น optional (ค่อยเพิ่มภายหลัง)
+        $phone = $data['phone'] ?? null;
+
+        // Generate password สำหรับ login แบบปกติ (ถ้าไม่ใช้ LINE Login)
         $password = Str::random(16);
 
         $user = User::create([
@@ -299,16 +314,28 @@ class LineSignupService
             'email' => $email,
             'phone' => $phone,
             'password' => Hash::make($password),
+            // LINE data
             'line_user_id' => $prospect->line_user_id,
             'line_display_name' => $prospect->line_display_name,
-            'line_picture_url' => $prospect->line_picture_url,
+            'line_picture_url' => $prospect->line_picture_url, // Avatar จาก LINE
             'line_verified' => true,
             'line_linked_at' => now(),
         ]);
 
-        Log::info('User created via LINE signup', [
+        // บันทึก LINE pictureUrl เป็น profile picture (ถ้ามี)
+        if ($prospect->line_picture_url) {
+            // อัพเดท avatar_url field (ถ้า User model มี field นี้)
+            if (Schema::hasColumn('users', 'avatar_url')) {
+                $user->update(['avatar_url' => $prospect->line_picture_url]);
+            }
+        }
+
+        Log::info('User created via LINE signup (simplified flow)', [
             'user_id' => $user->id,
             'prospect_id' => $prospect->id,
+            'name_source' => $prospect->line_display_name ? 'LINE' : 'manual',
+            'has_phone' => $phone !== null,
+            'has_avatar' => $prospect->line_picture_url !== null,
         ]);
 
         return $user;
@@ -424,10 +451,17 @@ class LineSignupService
     }
 
     /**
-     * Send success message
+     * Send success message - พร้อมลิงก์ LINE Login dashboard
      */
     private function sendSuccessMessage(MlmProspect $prospect, User $user): void
     {
+        // ดึง MLM member
+        $member = $user->mlmMember;
+        $sponsor = $prospect->sponsorMember ?? MlmMember::where('user_id', 1)->first();
+
+        // สร้างลิงก์ LINE Login
+        $loginUrl = route('line.login');
+
         $flexMessage = [
             'type' => 'flex',
             'altText' => '🎉 สมัครสมาชิกสำเร็จ!',
@@ -444,7 +478,7 @@ class LineSignupService
                             'align' => 'center',
                         ],
                     ],
-                    'backgroundColor' => '#1DB446',
+                    'backgroundColor' => '#06C755',
                     'paddingAll' => 'xl',
                 ],
                 'body' => [
@@ -456,11 +490,11 @@ class LineSignupService
                             'text' => 'สมัครสมาชิกสำเร็จ!',
                             'weight' => 'bold',
                             'size' => 'xl',
-                            'color' => '#1DB446',
+                            'color' => '#06C755',
                         ],
                         [
                             'type' => 'text',
-                            'text' => 'ยินดีต้อนรับสู่ระบบ MLM ของเรา',
+                            'text' => 'ยินดีต้อนรับ ' . $user->name,
                             'size' => 'sm',
                             'color' => '#999999',
                             'margin' => 'md',
@@ -482,14 +516,13 @@ class LineSignupService
                                     'contents' => [
                                         [
                                             'type' => 'text',
-                                            'text' => 'ชื่อ',
-                                            'color' => '#aaaaaa',
+                                            'text' => '🆔',
                                             'size' => 'sm',
-                                            'flex' => 2,
+                                            'flex' => 1,
                                         ],
                                         [
                                             'type' => 'text',
-                                            'text' => $user->name,
+                                            'text' => $member->member_code ?? 'N/A',
                                             'wrap' => true,
                                             'color' => '#666666',
                                             'size' => 'sm',
@@ -504,36 +537,13 @@ class LineSignupService
                                     'contents' => [
                                         [
                                             'type' => 'text',
-                                            'text' => 'อีเมล',
-                                            'color' => '#aaaaaa',
+                                            'text' => '👥',
                                             'size' => 'sm',
-                                            'flex' => 2,
+                                            'flex' => 1,
                                         ],
                                         [
                                             'type' => 'text',
-                                            'text' => $user->email,
-                                            'wrap' => true,
-                                            'color' => '#666666',
-                                            'size' => 'sm',
-                                            'flex' => 5,
-                                        ],
-                                    ],
-                                ],
-                                [
-                                    'type' => 'box',
-                                    'layout' => 'baseline',
-                                    'spacing' => 'sm',
-                                    'contents' => [
-                                        [
-                                            'type' => 'text',
-                                            'text' => 'แม่ทีม',
-                                            'color' => '#aaaaaa',
-                                            'size' => 'sm',
-                                            'flex' => 2,
-                                        ],
-                                        [
-                                            'type' => 'text',
-                                            'text' => $prospect->sponsorUser->name ?? 'N/A',
+                                            'text' => $sponsor->user->name ?? 'Super Admin',
                                             'wrap' => true,
                                             'color' => '#666666',
                                             'size' => 'sm',
@@ -542,6 +552,25 @@ class LineSignupService
                                     ],
                                 ],
                             ],
+                        ],
+                        [
+                            'type' => 'separator',
+                            'margin' => 'xl',
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => '📝 อย่าลืมเพิ่มข้อมูล:',
+                            'size' => 'sm',
+                            'color' => '#aaaaaa',
+                            'margin' => 'lg',
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => '• เบอร์โทรศัพท์\n• ที่อยู่จัดส่ง\n• ข้อมูลธนาคาร',
+                            'size' => 'xs',
+                            'color' => '#999999',
+                            'margin' => 'sm',
+                            'wrap' => true,
                         ],
                     ],
                 ],
@@ -553,16 +582,16 @@ class LineSignupService
                         [
                             'type' => 'button',
                             'style' => 'primary',
-                            'color' => '#1DB446',
+                            'color' => '#06C755',
                             'action' => [
                                 'type' => 'uri',
-                                'label' => 'เข้าสู่ระบบ',
-                                'uri' => route('login'),
+                                'label' => '🚀 เข้าสู่ระบบด้วย LINE',
+                                'uri' => $loginUrl,
                             ],
                         ],
                         [
                             'type' => 'text',
-                            'text' => 'กรุณาเช็คอีเมลเพื่อรับข้อมูลการเข้าสู่ระบบ',
+                            'text' => '✅ เข้าได้ทันที ไม่ต้องรหัสผ่าน',
                             'size' => 'xxs',
                             'color' => '#999999',
                             'align' => 'center',
