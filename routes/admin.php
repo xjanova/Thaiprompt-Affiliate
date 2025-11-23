@@ -2257,3 +2257,16 @@ Route::prefix('tpix/deployment')->name('tpix.deployment.')->group(function () {
             ->name('check-prerequisites');
     });
 });
+
+// Team Transfer Management (Admin - MLM)
+Route::prefix('team-transfer')->name('team-transfer.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\TeamTransferController::class, 'index'])->name('index');
+    Route::get('/statistics', [\App\Http\Controllers\Admin\TeamTransferController::class, 'statistics'])->name('statistics');
+    Route::get('/export', [\App\Http\Controllers\Admin\TeamTransferController::class, 'export'])->name('export');
+    Route::get('/{teamTransfer}', [\App\Http\Controllers\Admin\TeamTransferController::class, 'show'])->name('show');
+    Route::get('/{teamTransfer}/edit', [\App\Http\Controllers\Admin\TeamTransferController::class, 'edit'])->name('edit');
+    Route::post('/{teamTransfer}/process', [\App\Http\Controllers\Admin\TeamTransferController::class, 'process'])->name('process');
+    Route::delete('/{teamTransfer}', [\App\Http\Controllers\Admin\TeamTransferController::class, 'destroy'])->name('destroy');
+    Route::post('/{id}/restore', [\App\Http\Controllers\Admin\TeamTransferController::class, 'restore'])->name('restore');
+    Route::get('/member/{memberId}/history', [\App\Http\Controllers\Admin\TeamTransferController::class, 'history'])->name('history');
+});
