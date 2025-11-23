@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.148.0] - 2025-11-23
+
+### ✨ Features
+- Merge pull request #1525 from xjanova/claude/enhance-shop-management-0164i8nZ58A7UNWKg9nYPrah (b9eb1a37)
+- feat: add automatic redirect from old official shop URL to new URL (2c2ebb08)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.147.14] - 2025-11-23
 
 ### ✨ Features
