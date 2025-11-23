@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.153.1] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1535 from xjanova/claude/fix-nfc-transactions-view-01AAD7BNBNovbMoJjaLhyNoJ (1ec31519)
+- fix: syntax error in nfc-templates.php (e5509926)
+### 🔧 Other Changes
+
+
 ## [v3.153.0] - 2025-11-23
 
 ### ✨ Features
