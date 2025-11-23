@@ -292,6 +292,14 @@
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Prospects</span>
                 </a>
 
+                {{-- รางวัลสมัครสมาชิก 🎁 --}}
+                <a href="{{ route('admin.line-membership-signup.rewards.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.rewards.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-gift w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">รางวัลสมัครสมาชิก</span>
+                </a>
+
                 {{-- เครื่องคิดเลข --}}
                 <a href="{{ route('admin.mlm.calculator') }}"
                    @click="$store.sidebar.closeOnMenuClick()"

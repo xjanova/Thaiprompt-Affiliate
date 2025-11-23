@@ -493,22 +493,51 @@ class LineMembershipSignupService
     }
 
     /**
-     * Grant signup rewards
+     * ให้รางวัลการสมัครสมาชิก
+     *
+     * ใช้ LineSignupRewardService เพื่อให้รางวัลอัตโนมัติ
+     * ตามที่กำหนดไว้ในระบบ
+     *
+     * @param LineSignupSession $session
+     * @param User $user
+     * @return void
      */
     protected function grantSignupRewards(LineSignupSession $session, User $user): void
     {
-        // Welcome bonus
-        LineSignupReward::create([
-            'user_id' => $user->id,
-            'session_id' => $session->id,
-            'reward_type' => LineSignupReward::TYPE_POINTS,
-            'reward_name' => 'Welcome Bonus',
-            'reward_amount' => 100,
-            'reward_description' => 'ยินดีต้อนรับสู่ระบบ! รับคะแนนสะสม 100 คะแนน',
-            'status' => LineSignupReward::STATUS_GRANTED,
-            'granted_at' => now(),
-            'expires_at' => now()->addDays(30),
-        ]);
+        try {
+            // ดึง package ID ถ้ามีการซื้อแพคเกจ
+            $packageId = $session->collected_data['package_id'] ?? null;
+
+            // เรียกใช้ LineSignupRewardService เพื่อให้รางวัลทั้งหมด
+            $rewardService = app(\App\Services\LineSignupRewardService::class);
+            $results = $rewardService->grantSignupRewards($user, $session, $packageId);
+
+            // Log ผลลัพธ์
+            if ($results['success']) {
+                Log::info('Signup rewards granted successfully', [
+                    'user_id' => $user->id,
+                    'session_id' => $session->id,
+                    'rewards_count' => count($results['rewards']),
+                    'package_id' => $packageId,
+                ]);
+            } else {
+                Log::warning('Some signup rewards failed', [
+                    'user_id' => $user->id,
+                    'session_id' => $session->id,
+                    'errors' => $results['errors'],
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Failed to grant signup rewards', [
+                'user_id' => $user->id,
+                'session_id' => $session->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            // ไม่ throw exception เพื่อไม่ให้การสมัครล้มเหลว
+            // แค่ log ไว้แล้วให้ admin จัดการทีหลัง
+        }
     }
 
     /**

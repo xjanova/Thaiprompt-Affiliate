@@ -85,6 +85,13 @@ Route::prefix('v1')->group(function () {
     // Ranks (public - for marketing tools)
     Route::get('/ranks', [RankController::class, 'index']);
 
+    // LINE Signup Rewards (public - for signup page)
+    Route::prefix('line-signup-rewards')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\V1\LineSignupRewardApiController::class, 'index']);
+        Route::get('/package/{packageId}', [\App\Http\Controllers\Api\V1\LineSignupRewardApiController::class, 'byPackage']);
+        Route::get('/compare', [\App\Http\Controllers\Api\V1\LineSignupRewardApiController::class, 'compare']);
+    });
+
     // App Configuration (public)
     Route::prefix('app')->group(function () {
         Route::get('/maintenance-status', [AppConfigController::class, 'maintenanceStatus']);

@@ -1,0 +1,196 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Models\LineSignupReward;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+/**
+ * LINE Signup Reward API Controller
+ *
+ * API สำหรับดึงข้อมูลรางวัลการสมัครสมาชิก
+ */
+class LineSignupRewardApiController extends Controller
+{
+    /**
+     * ดึงรายการรางวัลที่พร้อมให้
+     *
+     * @param Request $request
+     * @return JsonResponse
+     *
+     * @example GET /api/v1/line-signup-rewards?signup_type=free
+     * @example GET /api/v1/line-signup-rewards?package_id=3
+     */
+    public function index(Request $request): JsonResponse
+    {
+        try {
+            $signupType = $request->input('signup_type', 'free');
+            $packageId = $request->input('package_id');
+
+            // ดึงรางวัลที่สามารถให้ได้
+            $rewards = LineSignupReward::getAvailableRewards($packageId);
+
+            // กรองตามประเภทการสมัคร
+            if ($signupType) {
+                $rewards = $rewards->filter(function ($reward) use ($signupType) {
+                    return $reward->signup_type === $signupType || $reward->signup_type === 'both';
+                });
+            }
+
+            // จัดกลุ่มตามประเภทการสมัคร
+            $grouped = [
+                'free' => [],
+                'package' => [],
+            ];
+
+            foreach ($rewards as $reward) {
+                $rewardData = [
+                    'id' => $reward->id,
+                    'name' => $reward->name,
+                    'description' => $reward->description,
+                    'reward_type' => $reward->reward_type,
+                    'display_text' => $reward->getDisplayText(),
+                    'amount' => $reward->amount,
+                    'icon' => $reward->icon,
+                    'icon_html' => $reward->getIconHtml(),
+                    'badge_color' => $reward->badge_color,
+                    'display_order' => $reward->display_order,
+                ];
+
+                // เพิ่มข้อมูลเฉพาะประเภท
+                switch ($reward->reward_type) {
+                    case 'coupon':
+                        if ($reward->couponTemplate) {
+                            $rewardData['coupon'] = [
+                                'discount_type' => $reward->couponTemplate->discount_type,
+                                'discount_value' => $reward->couponTemplate->discount_value,
+                                'discount_text' => $reward->couponTemplate->getDiscountText(),
+                                'min_purchase' => $reward->couponTemplate->min_purchase,
+                            ];
+                        }
+                        break;
+
+                    case 'bonus_item':
+                        if ($reward->product) {
+                            $rewardData['product'] = [
+                                'id' => $reward->product->id,
+                                'name' => $reward->product->name,
+                                'image' => $reward->product->image_url ?? null,
+                            ];
+                        }
+                        break;
+                }
+
+                // จัดเข้ากลุ่ม
+                if ($reward->signup_type === 'free' || $reward->signup_type === 'both') {
+                    $grouped['free'][] = $rewardData;
+                }
+                if ($reward->signup_type === 'package' || $reward->signup_type === 'both') {
+                    $grouped['package'][] = $rewardData;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'all' => $rewards->values(),
+                    'grouped' => $grouped,
+                    'total_free' => count($grouped['free']),
+                    'total_package' => count($grouped['package']),
+                ],
+                'message' => 'ดึงข้อมูลรางวัลสำเร็จ',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงรางวัลสำหรับแพคเกจเฉพาะ
+     *
+     * @param int $packageId
+     * @return JsonResponse
+     */
+    public function byPackage(int $packageId): JsonResponse
+    {
+        try {
+            $rewards = LineSignupReward::getAvailableRewards($packageId);
+
+            return response()->json([
+                'success' => true,
+                'data' => $rewards->map(function ($reward) {
+                    return [
+                        'id' => $reward->id,
+                        'name' => $reward->name,
+                        'description' => $reward->description,
+                        'reward_type' => $reward->reward_type,
+                        'display_text' => $reward->getDisplayText(),
+                        'amount' => $reward->amount,
+                        'icon_html' => $reward->getIconHtml(),
+                        'badge_color' => $reward->badge_color,
+                    ];
+                }),
+                'message' => 'ดึงข้อมูลรางวัลสำหรับแพคเกจสำเร็จ',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * เปรียบเทียบรางวัลระหว่างฟรีและแพคเกจ
+     *
+     * @return JsonResponse
+     */
+    public function compare(): JsonResponse
+    {
+        try {
+            $freeRewards = LineSignupReward::getAvailableRewards(null);
+            $packageRewards = LineSignupReward::where('is_active', true)
+                ->where('signup_type', 'package')
+                ->orderBy('display_order')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'free' => $freeRewards->map(function ($reward) {
+                        return [
+                            'name' => $reward->name,
+                            'display_text' => $reward->getDisplayText(),
+                            'amount' => $reward->amount,
+                            'icon_html' => $reward->getIconHtml(),
+                            'badge_color' => $reward->badge_color,
+                        ];
+                    }),
+                    'package' => $packageRewards->map(function ($reward) {
+                        return [
+                            'name' => $reward->name,
+                            'display_text' => $reward->getDisplayText(),
+                            'amount' => $reward->amount,
+                            'icon_html' => $reward->getIconHtml(),
+                            'badge_color' => $reward->badge_color,
+                        ];
+                    }),
+                ],
+                'message' => 'เปรียบเทียบรางวัลสำเร็จ',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+}
