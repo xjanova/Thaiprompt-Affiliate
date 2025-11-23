@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.147.3] - 2025-11-23
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: use is_active instead of status for Product queries (475866c1)
+- fix: auto-remove user_id column from line_signup_rewards if exists (8ca170e8)
+### 🔧 Other Changes
+- Merge pull request #1513 from xjanova/claude/remove-line-oa-admin-01Q3p7xMeGZQcC4fRsa7o6M6 (46603ca8)
+
 ## [v3.147.2] - 2025-11-23
 
 ### ✨ Features
