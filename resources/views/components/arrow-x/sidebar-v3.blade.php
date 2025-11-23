@@ -316,6 +316,14 @@
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตัวอย่าง Placement</span>
                 </a>
 
+                {{-- การย้ายทีม --}}
+                <a href="{{ route('admin.team-transfer.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.team-transfer.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-exchange-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">การย้ายทีม</span>
+                </a>
+
                 {{-- ตั้งค่า MLM --}}
                 <a href="{{ route('admin.mlm.settings.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
