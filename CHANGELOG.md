@@ -2,6 +2,20 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.152.0] - 2025-11-23
+
+### ✨ Features
+- feat: add comprehensive NFC card management system with templates and lock (30e58108)
+- feat: add public NFC card verification system (25bc75d2)
+- feat: add database migrations for NFC security system (4875cdd4)
+- feat: add NFC card read/write system with anti-counterfeit protection (5449d515)
+- feat: add missing NFC transactions views (f3118527)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1534 from xjanova/claude/fix-nfc-transactions-view-01AAD7BNBNovbMoJjaLhyNoJ (abea7012)
+- docs: add complete NFC card management system guide (19773a7c)
+
 ## [v3.151.0] - 2025-11-23
 
 ### ✨ Features
