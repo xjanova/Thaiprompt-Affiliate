@@ -1,267 +1,633 @@
 @extends('layouts.user-arrow-x')
 
-@section('title', 'จำลองการปันผล')
+@section('title', 'เครื่องคำนวณ TPIX Staking')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8">
-    <div class="container mx-auto px-4">
-        <!-- Hero Section -->
-        <div class="text-center mb-8">
-            <h1 class="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-                💎 จำลองการปันผล
-            </h1>
-            <p class="text-xl text-gray-700 dark:text-gray-300 mb-2">คำนวณผลตอบแทนจากการปันผลบริษัท</p>
-            <p class="text-gray-600 dark:text-gray-400">เครื่องมือสำหรับนักธุรกิจและนักการตลาด</p>
-        </div>
+{{--
+    TPIX Staking Calculator
+    ======================
+    หน้าคำนวณผลตอบแทนจากการ Staking เหรียญ TPIX
+    รองรับ V3 Design System, Alpine.js, Dark Mode 100%
 
-        <!-- Control Panel -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 mb-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <!-- Initial Investment -->
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                        💵 เงินลงทุนเริ่มต้น (บาท)
-                    </label>
-                    <input type="number" id="initial_investment" value="100000" step="10000" min="0"
-                           class="w-full px-4 py-3 text-lg font-semibold border-2 border-blue-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500">
+    Features:
+    - คำนวณ staking rewards ตามเวลา
+    - Lock period options (30, 60, 90, 180, 365 วัน)
+    - APY แตกต่างกันตาม lock period
+    - Auto-compound option
+    - Real-time animation
+    - Mobile responsive
+--}}
+
+<div class="container-fluid px-4 py-6"
+     x-data="tpixStakingCalculator()"
+     x-init="init()">
+
+    {{-- Hero Header --}}
+    <div class="mb-8 relative overflow-hidden rounded-3xl">
+        {{-- Gradient Background with Pattern --}}
+        <div class="relative bg-gradient-to-br from-purple-600 via-pink-600 to-orange-600 rounded-3xl p-8 shadow-2xl">
+            {{-- Dots Pattern Overlay --}}
+            <div class="absolute inset-0 opacity-20"
+                 style="background-image: radial-gradient(circle, white 1px, transparent 1px);
+                        background-size: 20px 20px;"></div>
+
+            {{-- Content --}}
+            <div class="relative z-10">
+                <div class="flex items-center gap-6 mb-4">
+                    {{-- Icon --}}
+                    <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-xl">
+                        <i class="fas fa-coins text-4xl text-white"></i>
+                    </div>
+
+                    {{-- Title --}}
+                    <div>
+                        <h1 class="text-5xl font-black text-white drop-shadow-lg mb-2">
+                            🪙 เครื่องคำนวณ TPIX Staking
+                        </h1>
+                        <p class="text-white/90 text-xl">
+                            คำนวณผลตอบแทนจากการ Staking เหรียญ TPIX ของคุณ
+                        </p>
+                    </div>
                 </div>
 
-                <!-- Dividend Rate -->
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                        📈 อัตราปันผล (%/ปี)
-                    </label>
-                    <input type="number" id="dividend_rate" value="5" step="0.5" min="0" max="100"
-                           class="w-full px-4 py-3 text-lg font-semibold border-2 border-purple-300 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500">
-                </div>
-
-                <!-- Years -->
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                        📅 ระยะเวลา (ปี)
-                    </label>
-                    <input type="number" id="years" value="10" step="1" min="1" max="50"
-                           class="w-full px-4 py-3 text-lg font-semibold border-2 border-green-300 rounded-xl focus:ring-4 focus:ring-green-200 focus:border-green-500">
-                </div>
-
-                <!-- Reinvestment -->
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                        🔄 นำปันผลกลับไปลงทุน
-                    </label>
-                    <select id="reinvestment" class="w-full px-4 py-3 text-lg font-semibold border-2 border-indigo-300 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500">
-                        <option value="0">ไม่นำกลับไปลงทุน</option>
-                        <option value="25">นำกลับไปลงทุน 25%</option>
-                        <option value="50">นำกลับไปลงทุน 50%</option>
-                        <option value="75">นำกลับไปลงทุน 75%</option>
-                        <option value="100" selected>นำกลับไปลงทุนทั้งหมด</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="mt-6 flex gap-4">
-                <button onclick="startSimulation()"
-                        class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg font-bold py-4 rounded-xl shadow-lg transition-all duration-300 transition-transform hover:scale-[1.02]">
-                    ▶️ เริ่มจำลอง
-                </button>
-                <button onclick="resetSimulation()"
-                        class="px-8 bg-gray-600 hover:bg-gray-700 text-white text-lg font-bold py-4 rounded-xl shadow-lg transition-all duration-300">
-                    🔄 รีเซ็ต
-                </button>
-                <button onclick="printResults()"
-                        class="px-8 bg-green-600 hover:bg-green-700 text-white text-lg font-bold py-4 rounded-xl shadow-lg transition-all duration-300">
-                    🖨️ พิมพ์
-                </button>
+                {{-- Sub Description --}}
+                <p class="text-white/80 text-lg">
+                    💰 Stake เหรียญ TPIX และรับผลตอบแทนสูงสุด 365% ต่อปี!
+                </p>
             </div>
         </div>
+    </div>
 
-        <!-- Animation Area -->
-        <div id="animation-container" class="hidden">
-            <!-- Current Year Display -->
-            <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl shadow-2xl p-8 mb-6 text-center">
-                <h2 class="text-2xl font-bold mb-2">กำลังจำลอง...</h2>
-                <div class="text-6xl font-bold mb-2">ปีที่ <span id="current-year">1</span></div>
-                <div class="text-xl">จาก <span id="total-years">10</span> ปี</div>
+    {{-- Control Panel --}}
+    <div class="glass-fusion-card rounded-3xl shadow-2xl p-8 mb-8
+                backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
+                border border-white/20 dark:border-gray-700/30">
+
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+            <i class="fas fa-sliders-h text-purple-600"></i>
+            <span>ตั้งค่าการคำนวณ</span>
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            {{-- จำนวน TPIX ที่ Stake --}}
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    <i class="fas fa-coins text-purple-600 mr-2"></i>
+                    จำนวน TPIX ที่ Stake
+                </label>
+                <div class="relative">
+                    <input type="number"
+                           x-model.number="config.stakingAmount"
+                           @input="calculateRewards()"
+                           step="100"
+                           min="0"
+                           class="w-full pl-4 pr-16 py-4 text-lg font-bold
+                                  bg-white dark:bg-gray-700
+                                  border-2 border-purple-300 dark:border-purple-600
+                                  rounded-xl
+                                  focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500
+                                  text-gray-900 dark:text-white
+                                  transition-all">
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 text-purple-600 dark:text-purple-400 font-bold">
+                        TPIX
+                    </div>
+                </div>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    ขั้นต่ำ: 100 TPIX
+                </p>
             </div>
 
-            <!-- Investment Flow Animation -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 mb-6">
-                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 text-center">💰 การไหลของเงินปันผล</h3>
+            {{-- Lock Period --}}
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    <i class="fas fa-lock text-blue-600 mr-2"></i>
+                    ระยะเวลา Lock
+                </label>
+                <select x-model="config.lockPeriod"
+                        @change="updateAPY(); calculateRewards()"
+                        class="w-full px-4 py-4 text-lg font-bold
+                               bg-white dark:bg-gray-700
+                               border-2 border-blue-300 dark:border-blue-600
+                               rounded-xl
+                               focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500
+                               text-gray-900 dark:text-white
+                               transition-all">
+                    <option value="30">30 วัน (APY 36%)</option>
+                    <option value="60">60 วัน (APY 72%)</option>
+                    <option value="90">90 วัน (APY 120%)</option>
+                    <option value="180">180 วัน (APY 240%)</option>
+                    <option value="365">365 วัน (APY 365%)</option>
+                </select>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    ระยะเวลาที่ล็อค TPIX
+                </p>
+            </div>
 
-                <div class="relative" style="height: 400px;">
-                    <!-- Investment (Center) -->
-                    <div class="absolute" style="left: 50%; top: 50%; transform: translate(-50%, -50%);">
-                        <div class="text-center">
-                            <div class="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full shadow-2xl flex items-center justify-center mb-3 animate-pulse">
-                                <span class="text-5xl">💎</span>
+            {{-- APY (Auto-calculated) --}}
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    <i class="fas fa-chart-line text-green-600 mr-2"></i>
+                    อัตราผลตอบแทน (APY)
+                </label>
+                <div class="relative">
+                    <div class="w-full px-4 py-4 text-lg font-bold
+                                bg-gradient-to-r from-green-50 to-emerald-50
+                                dark:from-green-900/20 dark:to-emerald-900/20
+                                border-2 border-green-300 dark:border-green-600
+                                rounded-xl
+                                text-green-700 dark:text-green-400
+                                flex items-center justify-between">
+                        <span x-text="config.apy"></span>
+                        <span class="text-sm">%</span>
+                    </div>
+                </div>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    คำนวณอัตโนมัติตาม Lock Period
+                </p>
+            </div>
+
+            {{-- Auto Compound --}}
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    <i class="fas fa-sync-alt text-pink-600 mr-2"></i>
+                    Auto-Compound
+                </label>
+                <div class="relative">
+                    <label class="relative inline-flex items-center cursor-pointer w-full">
+                        <input type="checkbox"
+                               x-model="config.autoCompound"
+                               @change="calculateRewards()"
+                               class="sr-only peer">
+                        <div class="w-full h-14
+                                    bg-gray-300 dark:bg-gray-600
+                                    rounded-xl
+                                    peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-500/20
+                                    peer-checked:bg-gradient-to-r peer-checked:from-pink-500 peer-checked:to-purple-600
+                                    transition-all
+                                    relative
+                                    shadow-inner">
+                            <div class="absolute top-2 left-2
+                                        bg-white
+                                        w-10 h-10
+                                        rounded-lg
+                                        shadow-lg
+                                        peer-checked:translate-x-[calc(100%-2.5rem)]
+                                        transition-transform
+                                        flex items-center justify-center">
+                                <i class="fas"
+                                   :class="config.autoCompound ? 'fa-check text-pink-600' : 'fa-times text-gray-400'"></i>
                             </div>
-                            <div class="font-bold text-lg">เงินลงทุน</div>
-                            <div class="text-sm text-gray-600 dark:text-gray-400">฿<span id="current-principal">0</span></div>
+                            <div class="absolute inset-0 flex items-center justify-center text-white font-bold">
+                                <span x-show="config.autoCompound">เปิดใช้งาน</span>
+                                <span x-show="!config.autoCompound" class="text-gray-600">ปิดใช้งาน</span>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    นำรางวัลกลับไป stake อัตโนมัติ
+                </p>
+            </div>
+        </div>
+
+        {{-- Action Buttons --}}
+        <div class="mt-8 flex gap-4">
+            <button @click="startSimulation()"
+                    :disabled="isSimulating"
+                    class="flex-1 group relative overflow-hidden
+                           px-8 py-4
+                           bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600
+                           hover:from-purple-700 hover:via-pink-700 hover:to-orange-700
+                           text-white font-bold text-lg
+                           rounded-xl shadow-lg
+                           hover:shadow-2xl hover:scale-[1.02]
+                           disabled:opacity-50 disabled:cursor-not-allowed
+                           transition-all duration-300">
+
+                {{-- Shine Effect --}}
+                <div class="absolute inset-0
+                            bg-gradient-to-r from-transparent via-white/20 to-transparent
+                            -translate-x-full group-hover:translate-x-full
+                            transition-transform duration-1000"></div>
+
+                {{-- Button Content --}}
+                <span class="relative z-10 flex items-center justify-center gap-2">
+                    <i class="fas" :class="isSimulating ? 'fa-spinner fa-spin' : 'fa-play'"></i>
+                    <span x-text="isSimulating ? 'กำลังคำนวณ...' : '▶️ เริ่มคำนวณ'"></span>
+                </span>
+            </button>
+
+            <button @click="resetSimulation()"
+                    class="px-8 py-4
+                           bg-gray-600 hover:bg-gray-700
+                           dark:bg-gray-700 dark:hover:bg-gray-600
+                           text-white font-bold text-lg
+                           rounded-xl shadow-lg
+                           hover:shadow-xl
+                           transition-all duration-300">
+                <i class="fas fa-redo mr-2"></i>
+                รีเซ็ต
+            </button>
+        </div>
+    </div>
+
+    {{-- Animation Container --}}
+    <div x-show="isSimulating"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-cloak
+         class="mb-8">
+
+        {{-- Current Progress Card --}}
+        <div class="relative overflow-hidden rounded-3xl mb-6">
+            <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 p-8">
+                <div class="text-center text-white">
+                    <h2 class="text-2xl font-bold mb-4">กำลังคำนวณ...</h2>
+                    <div class="text-7xl font-black mb-3">
+                        วันที่ <span x-text="simulation.currentDay"></span>
+                    </div>
+                    <div class="text-xl opacity-90">
+                        จาก <span x-text="config.lockPeriod"></span> วัน
+                    </div>
+
+                    {{-- Progress Bar --}}
+                    <div class="mt-6 w-full bg-white/20 rounded-full h-4 overflow-hidden">
+                        <div class="h-full bg-white rounded-full transition-all duration-500"
+                             :style="`width: ${(simulation.currentDay / config.lockPeriod) * 100}%`"></div>
+                    </div>
+                    <div class="mt-2 text-sm opacity-75">
+                        ความคืบหน้า: <span x-text="Math.floor((simulation.currentDay / config.lockPeriod) * 100)"></span>%
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Real-time Stats Grid --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            {{-- TPIX ที่ Stake --}}
+            <div class="group perspective-1000">
+                <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
+                    {{-- Glow Effect --}}
+                    <div class="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-600
+                                rounded-2xl blur-xl opacity-50 group-hover:opacity-75
+                                transition-opacity"></div>
+
+                    {{-- Card --}}
+                    <div class="relative glass-fusion-card rounded-2xl p-6
+                                backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
+                                border border-white/20 dark:border-gray-700/30
+                                shadow-2xl">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600
+                                        rounded-xl flex items-center justify-center shadow-lg">
+                                <i class="fas fa-coins text-white text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                            <span x-text="formatNumber(simulation.currentStake)"></span>
+                        </div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            TPIX ที่ Stake
                         </div>
                     </div>
-
-                    <!-- Dividend Particles -->
-                    <div id="dividend-particles-container" class="absolute inset-0 pointer-events-none" style="z-index: 2;"></div>
                 </div>
             </div>
 
-            <!-- Real-time Calculation Display -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <!-- Annual Dividend -->
-                <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-[1.02]">
-                    <div class="text-sm font-semibold mb-2 opacity-90">📦 ปันผลปีนี้</div>
-                    <div class="text-4xl font-bold mb-2">฿<span id="annual-dividend">0</span></div>
-                    <div class="text-sm opacity-75">รับจากการปันผล</div>
-                </div>
+            {{-- รางวัลวันนี้ --}}
+            <div class="group perspective-1000">
+                <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
+                    <div class="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-600
+                                rounded-2xl blur-xl opacity-50 group-hover:opacity-75
+                                transition-opacity"></div>
 
-                <!-- Reinvested Amount -->
-                <div class="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-[1.02]">
-                    <div class="text-sm font-semibold mb-2 opacity-90">🔄 นำกลับไปลงทุน</div>
-                    <div class="text-4xl font-bold mb-2">฿<span id="reinvested-amount">0</span></div>
-                    <div class="text-sm opacity-75">เพิ่มเงินต้น</div>
-                </div>
-
-                <!-- Cash Out -->
-                <div class="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-[1.02]">
-                    <div class="text-sm font-semibold mb-2 opacity-90">💸 รับเข้ากระเป๋า</div>
-                    <div class="text-4xl font-bold mb-2">฿<span id="cash-out">0</span></div>
-                    <div class="text-sm opacity-75">เงินสดที่ได้รับ</div>
-                </div>
-
-                <!-- Total Principal -->
-                <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-[1.02] animate-pulse">
-                    <div class="text-sm font-semibold mb-2 opacity-90">💰 เงินต้นรวม</div>
-                    <div class="text-4xl font-bold mb-2">฿<span id="total-principal">0</span></div>
-                    <div class="text-sm opacity-75">ณ สิ้นปี</div>
+                    <div class="relative glass-fusion-card rounded-2xl p-6
+                                backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
+                                border border-white/20 dark:border-gray-700/30
+                                shadow-2xl">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600
+                                        rounded-xl flex items-center justify-center shadow-lg">
+                                <i class="fas fa-gift text-white text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                            <span x-text="formatNumber(simulation.dailyReward)"></span>
+                        </div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            รางวัลวันนี้
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Progress Bar -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 mb-6">
-                <div class="flex justify-between text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    <span>ความคืบหน้า</span>
-                    <span id="progress-percent">0%</span>
+            {{-- รางวัลสะสม --}}
+            <div class="group perspective-1000">
+                <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-600
+                                rounded-2xl blur-xl opacity-50 group-hover:opacity-75
+                                transition-opacity"></div>
+
+                    <div class="relative glass-fusion-card rounded-2xl p-6
+                                backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
+                                border border-white/20 dark:border-gray-700/30
+                                shadow-2xl">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600
+                                        rounded-xl flex items-center justify-center shadow-lg">
+                                <i class="fas fa-chart-line text-white text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                            <span x-text="formatNumber(simulation.totalRewards)"></span>
+                        </div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            รางวัลสะสมทั้งหมด
+                        </div>
+                    </div>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-6">
-                    <div id="progress-bar" class="h-6 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-500" style="width: 0%"></div>
+            </div>
+
+            {{-- TPIX รวม --}}
+            <div class="group perspective-1000">
+                <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
+                    <div class="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-600
+                                rounded-2xl blur-xl opacity-50 group-hover:opacity-75
+                                transition-opacity animate-pulse"></div>
+
+                    <div class="relative glass-fusion-card rounded-2xl p-6
+                                backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
+                                border border-white/20 dark:border-gray-700/30
+                                shadow-2xl">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600
+                                        rounded-xl flex items-center justify-center shadow-lg">
+                                <i class="fas fa-wallet text-white text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                            <span x-text="formatNumber(simulation.totalTPIX)"></span>
+                        </div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            TPIX รวมทั้งหมด
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Results Container --}}
+    <div x-show="showResults"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-cloak
+         class="space-y-8">
+
+        {{-- Summary Stats --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            {{-- เงินลงทุนเริ่มต้น --}}
+            <div class="text-center">
+                <div class="glass-fusion-card rounded-2xl p-6
+                            backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
+                            border border-white/20 dark:border-gray-700/30
+                            shadow-2xl">
+                    <div class="text-5xl mb-3">💰</div>
+                    <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+                        <span x-text="formatNumber(config.stakingAmount)"></span>
+                    </div>
+                    <div class="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                        TPIX ที่ Stake
+                    </div>
+                </div>
+            </div>
+
+            {{-- รางวัลทั้งหมด --}}
+            <div class="text-center">
+                <div class="glass-fusion-card rounded-2xl p-6
+                            backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
+                            border border-white/20 dark:border-gray-700/30
+                            shadow-2xl">
+                    <div class="text-5xl mb-3">🎁</div>
+                    <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
+                        <span x-text="formatNumber(results.totalRewards)"></span>
+                    </div>
+                    <div class="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                        รางวัลทั้งหมด
+                    </div>
+                </div>
+            </div>
+
+            {{-- ROI --}}
+            <div class="text-center">
+                <div class="glass-fusion-card rounded-2xl p-6
+                            backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
+                            border border-white/20 dark:border-gray-700/30
+                            shadow-2xl">
+                    <div class="text-5xl mb-3">📈</div>
+                    <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+                        <span x-text="formatNumber(results.roi)"></span>%
+                    </div>
+                    <div class="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                        ผลตอบแทน (ROI)
+                    </div>
+                </div>
+            </div>
+
+            {{-- TPIX ที่ได้รับ --}}
+            <div class="text-center">
+                <div class="glass-fusion-card rounded-2xl p-6
+                            backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
+                            border border-white/20 dark:border-gray-700/30
+                            shadow-2xl">
+                    <div class="text-5xl mb-3">🚀</div>
+                    <div class="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">
+                        <span x-text="formatNumber(results.finalTPIX)"></span>
+                    </div>
+                    <div class="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                        TPIX ทั้งหมดที่ได้
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Results Summary -->
-        <div id="results-container" class="hidden">
-            <!-- Yearly Breakdown Table -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 mb-6">
-                <h3 class="text-3xl font-bold text-gray-800 dark:text-white mb-6 text-center">📊 สรุปการปันผลแต่ละปี</h3>
+        {{-- Detailed Breakdown Table --}}
+        <div class="glass-fusion-card rounded-3xl shadow-2xl overflow-hidden
+                    backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
+                    border border-white/20 dark:border-gray-700/30">
 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead class="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                            <tr>
-                                <th class="px-4 py-4 text-left font-bold">ปีที่</th>
-                                <th class="px-4 py-4 text-right font-bold">เงินต้นต้นปี</th>
-                                <th class="px-4 py-4 text-right font-bold">ปันผลที่ได้รับ</th>
-                                <th class="px-4 py-4 text-right font-bold">นำกลับไปลงทุน</th>
-                                <th class="px-4 py-4 text-right font-bold">รับเข้ากระเป๋า</th>
-                                <th class="px-4 py-4 text-right font-bold">เงินต้นสิ้นปี</th>
-                                <th class="px-4 py-4 text-right font-bold">สะสมเงินสด</th>
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                    <i class="fas fa-table text-purple-600"></i>
+                    <span>รายละเอียดรางวัลแต่ละวัน</span>
+                </h3>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                                วันที่
+                            </th>
+                            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
+                                TPIX ที่ Stake
+                            </th>
+                            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
+                                รางวัลวันนี้
+                            </th>
+                            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
+                                รางวัลสะสม
+                            </th>
+                            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
+                                TPIX รวม
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <template x-for="(day, index) in results.dailyBreakdown" :key="index">
+                            <tr class="hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
+                                    วันที่ <span x-text="day.day"></span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-purple-600 dark:text-purple-400 font-semibold">
+                                    <span x-text="formatNumber(day.stake)"></span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600 dark:text-green-400 font-semibold">
+                                    <span x-text="formatNumber(day.dailyReward)"></span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-blue-600 dark:text-blue-400 font-semibold">
+                                    <span x-text="formatNumber(day.totalRewards)"></span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-orange-600 dark:text-orange-400 font-bold">
+                                    <span x-text="formatNumber(day.totalTPIX)"></span>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody id="yearly-breakdown" class="divide-y divide-gray-200 dark:divide-gray-700">
-                        </tbody>
-                        <tfoot class="bg-gradient-to-r from-green-100 to-blue-100 font-bold text-lg">
-                            <tr>
-                                <td colspan="4" class="px-4 py-4 text-right">รวมทั้งหมด:</td>
-                                <td id="total-cash-received" class="px-4 py-4 text-right text-green-600"></td>
-                                <td id="final-principal" class="px-4 py-4 text-right text-purple-600"></td>
-                                <td class="px-4 py-4"></td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                        </template>
+                    </tbody>
+                    <tfoot class="bg-gradient-to-r from-green-100 to-blue-100 dark:from-green-900/20 dark:to-blue-900/20">
+                        <tr>
+                            <td colspan="3" class="px-6 py-4 text-right text-sm font-bold text-gray-900 dark:text-white">
+                                รวมทั้งหมด:
+                            </td>
+                            <td class="px-6 py-4 text-right text-lg font-bold text-green-600 dark:text-green-400">
+                                <span x-text="formatNumber(results.totalRewards)"></span>
+                            </td>
+                            <td class="px-6 py-4 text-right text-lg font-bold text-orange-600 dark:text-orange-400">
+                                <span x-text="formatNumber(results.finalTPIX)"></span>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        {{-- Charts --}}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {{-- Growth Chart --}}
+            <div class="glass-fusion-card rounded-2xl p-6 shadow-2xl
+                        backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
+                        border border-white/20 dark:border-gray-700/30">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
+                    <i class="fas fa-chart-area text-purple-600"></i>
+                    <span>กราฟการเติบโตของ TPIX</span>
+                </h3>
+                <div style="position: relative; height: 300px;">
+                    <canvas id="growth-chart"></canvas>
                 </div>
             </div>
 
-            <!-- Charts -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <!-- Principal Growth Chart -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6">
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">📈 กราฟการเติบโตของเงินต้น</h3>
-                    <div style="position: relative; height: 300px;">
-                        <canvas id="principal-chart"></canvas>
+            {{-- Rewards Distribution --}}
+            <div class="glass-fusion-card rounded-2xl p-6 shadow-2xl
+                        backdrop-blur-xl bg-white/80 dark:bg-gray-800/80
+                        border border-white/20 dark:border-gray-700/30">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
+                    <i class="fas fa-chart-pie text-pink-600"></i>
+                    <span>สัดส่วนผลตอบแทน</span>
+                </h3>
+                <div style="position: relative; height: 300px;">
+                    <canvas id="distribution-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        {{-- Call to Action --}}
+        <div class="relative overflow-hidden rounded-3xl">
+            <div class="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 p-8 text-center">
+                <div class="relative z-10">
+                    <h3 class="text-4xl font-black text-white mb-4">
+                        🎉 เริ่ม Stake TPIX วันนี้!
+                    </h3>
+                    <p class="text-xl text-white/90 mb-6">
+                        รับผลตอบแทนสูงสุด 365% ต่อปี ด้วยระบบ TPIX Staking
+                    </p>
+                    <div class="flex gap-4 justify-center flex-wrap">
+                        <button @click="window.location.href='{{ route('user.dashboard') }}'"
+                                class="px-8 py-4
+                                       bg-white text-purple-600
+                                       font-bold text-lg
+                                       rounded-xl shadow-lg
+                                       hover:bg-gray-100 hover:scale-105
+                                       transition-all duration-300">
+                            <i class="fas fa-rocket mr-2"></i>
+                            เริ่มต้น Stake!
+                        </button>
+                        <button @click="resetSimulation(); startSimulation()"
+                                class="px-8 py-4
+                                       bg-purple-800 hover:bg-purple-900
+                                       text-white font-bold text-lg
+                                       rounded-xl shadow-lg
+                                       hover:scale-105
+                                       transition-all duration-300">
+                            <i class="fas fa-redo mr-2"></i>
+                            คำนวณอีกครั้ง
+                        </button>
                     </div>
-                </div>
-
-                <!-- Dividend Breakdown -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6">
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">🥧 สัดส่วนผลตอบแทน</h3>
-                    <div style="position: relative; height: 300px;">
-                        <canvas id="dividend-breakdown-chart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Key Insights -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div class="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl shadow-2xl p-6 text-white text-center">
-                    <div class="text-5xl mb-3">💰</div>
-                    <div class="text-3xl font-bold mb-2">฿<span id="total-dividends">0</span></div>
-                    <div class="text-sm font-semibold">รวมปันผลทั้งหมด</div>
-                </div>
-
-                <div class="bg-gradient-to-br from-green-400 to-teal-500 rounded-2xl shadow-2xl p-6 text-white text-center">
-                    <div class="text-5xl mb-3">🎯</div>
-                    <div class="text-3xl font-bold mb-2">฿<span id="total-cash-out">0</span></div>
-                    <div class="text-sm font-semibold">เงินสดรวมที่ได้รับ</div>
-                </div>
-
-                <div class="bg-gradient-to-br from-blue-400 to-indigo-500 rounded-2xl shadow-2xl p-6 text-white text-center">
-                    <div class="text-5xl mb-3">⚡</div>
-                    <div class="text-3xl font-bold mb-2"><span id="roi">0</span>%</div>
-                    <div class="text-sm font-semibold">ผลตอบแทนรวม (ROI)</div>
-                </div>
-
-                <div class="bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl shadow-2xl p-6 text-white text-center">
-                    <div class="text-5xl mb-3">🚀</div>
-                    <div class="text-3xl font-bold mb-2">฿<span id="avg-yearly-dividend">0</span></div>
-                    <div class="text-sm font-semibold">ปันผลเฉลี่ย/ปี</div>
-                </div>
-            </div>
-
-            <!-- Call to Action -->
-            <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl p-8 text-white text-center">
-                <h3 class="text-3xl font-bold mb-4">🎉 เริ่มลงทุนวันนี้!</h3>
-                <p class="text-xl mb-6 opacity-90">สร้างรายได้แบบ Passive Income ด้วยการปันผล</p>
-                <div class="flex gap-4 justify-center">
-                    <button onclick="window.location.href='{{ route('user.mlm.dashboard') }}'"
-                            class="bg-white dark:bg-gray-800 text-purple-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 dark:bg-gray-700 transition-all duration-300 transition-transform hover:scale-[1.02]">
-                        เริ่มต้นเลย!
-                    </button>
-                    <button onclick="startSimulation()"
-                            class="bg-purple-800 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-purple-900 transition-all duration-300 transition-transform hover:scale-[1.02]">
-                        จำลองอีกครั้ง
-                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+{{-- Custom Styles --}}
 <style>
-@keyframes float-up {
-    0% {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-    }
-    100% {
-        transform: translateY(-100px) scale(0.5);
-        opacity: 0;
-    }
+/**
+ * Custom Styles สำหรับ TPIX Staking Calculator
+ * รองรับ Dark Mode และ Animations
+ */
+
+/* Perspective สำหรับ 3D effects */
+.perspective-1000 {
+    perspective: 1000px;
 }
 
-.dividend-particle {
-    animation: float-up 2s ease-out forwards;
+/* Glass Fusion Card Effect */
+.glass-fusion-card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
+.dark .glass-fusion-card {
+    background: rgba(31, 41, 55, 0.8);
+}
+
+/* Hide elements with x-cloak until Alpine.js loads */
+[x-cloak] {
+    display: none !important;
+}
+
+/* Smooth number transitions */
+.number-transition {
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Print styles */
 @media print {
     .no-print {
         display: none !important;
@@ -270,268 +636,370 @@
     body {
         background: white !important;
     }
+
+    .glass-fusion-card {
+        background: white !important;
+        border: 1px solid #e5e7eb !important;
+    }
 }
 </style>
 
+{{-- JavaScript with Alpine.js --}}
+@push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-let simulationData = {
-    years: [],
-    isRunning: false,
-};
+/**
+ * TPIX Staking Calculator Component
+ * ===================================
+ * คำนวณผลตอบแทนจากการ Staking TPIX
+ *
+ * Features:
+ * - รองรับ Lock Period 30, 60, 90, 180, 365 วัน
+ * - APY แตกต่างกันตาม Lock Period
+ * - Auto-compound option
+ * - Real-time animation
+ * - Charts visualization
+ *
+ * @returns {object} Alpine.js component
+ */
+function tpixStakingCalculator() {
+    return {
+        // ===== State Management =====
 
-let principalChart, dividendBreakdownChart;
-
-async function startSimulation() {
-    if (simulationData.isRunning) return;
-
-    const initialInvestment = parseFloat(document.getElementById('initial_investment').value);
-    const dividendRate = parseFloat(document.getElementById('dividend_rate').value) / 100;
-    const years = parseInt(document.getElementById('years').value);
-    const reinvestmentRate = parseFloat(document.getElementById('reinvestment').value) / 100;
-
-    simulationData.isRunning = true;
-    simulationData.years = [];
-
-    document.getElementById('animation-container').classList.remove('hidden');
-    document.getElementById('results-container').classList.add('hidden');
-    document.getElementById('total-years').textContent = years;
-
-    let currentPrincipal = initialInvestment;
-
-    // Simulate each year
-    for (let year = 1; year <= years; year++) {
-        document.getElementById('current-year').textContent = year;
-
-        const startPrincipal = currentPrincipal;
-        const annualDividend = currentPrincipal * dividendRate;
-        const reinvestedAmount = annualDividend * reinvestmentRate;
-        const cashOut = annualDividend - reinvestedAmount;
-        currentPrincipal += reinvestedAmount;
-
-        // Animate displays
-        animateNumber('current-principal', currentPrincipal);
-        animateNumber('annual-dividend', annualDividend);
-        animateNumber('reinvested-amount', reinvestedAmount);
-        animateNumber('cash-out', cashOut);
-        animateNumber('total-principal', currentPrincipal);
-
-        // Create floating particles
-        createDividendParticles(annualDividend);
-
-        updateProgress(year, years);
-
-        // Store year data
-        const totalCashOut = simulationData.years.reduce((sum, y) => sum + y.cashOut, 0) + cashOut;
-
-        simulationData.years.push({
-            year,
-            startPrincipal,
-            annualDividend,
-            reinvestedAmount,
-            cashOut,
-            endPrincipal: currentPrincipal,
-            totalCashOut
-        });
-
-        // Wait for animation
-        await sleep(800);
-    }
-
-    simulationData.isRunning = false;
-    showResults();
-}
-
-function createDividendParticles(amount) {
-    const container = document.getElementById('dividend-particles-container');
-    const numParticles = Math.min(Math.floor(amount / 5000), 20); // Max 20 particles
-
-    for (let i = 0; i < numParticles; i++) {
-        setTimeout(() => {
-            const particle = document.createElement('div');
-            particle.className = 'dividend-particle absolute';
-            particle.style.left = `${50 + (Math.random() - 0.5) * 30}%`;
-            particle.style.top = `${50}%`;
-            particle.innerHTML = '💎';
-            particle.style.fontSize = '24px';
-            particle.style.zIndex = '10';
-
-            container.appendChild(particle);
-
-            setTimeout(() => particle.remove(), 2000);
-        }, i * 100);
-    }
-}
-
-function animateNumber(elementId, value) {
-    const element = document.getElementById(elementId);
-    const start = parseFloat(element.textContent.replace(/,/g, '')) || 0;
-    const end = value;
-    const duration = 500;
-    const startTime = performance.now();
-
-    function update(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-
-        const current = start + (end - start) * easeOutCubic(progress);
-        element.textContent = Math.floor(current).toLocaleString();
-
-        if (progress < 1) {
-            requestAnimationFrame(update);
-        }
-    }
-
-    requestAnimationFrame(update);
-}
-
-function easeOutCubic(t) {
-    return 1 - Math.pow(1 - t, 3);
-}
-
-function updateProgress(current, total) {
-    const percent = (current / total) * 100;
-    document.getElementById('progress-bar').style.width = `${percent}%`;
-    document.getElementById('progress-percent').textContent = `${Math.floor(percent)}%`;
-}
-
-function showResults() {
-    document.getElementById('animation-container').classList.add('hidden');
-    document.getElementById('results-container').classList.remove('hidden');
-
-    // Build yearly breakdown table
-    const tbody = document.getElementById('yearly-breakdown');
-    tbody.innerHTML = simulationData.years.map(year => `
-        <tr class="hover:bg-purple-50 transition-colors">
-            <td class="px-4 py-3 font-semibold">ปี ${year.year}</td>
-            <td class="px-4 py-3 text-right">฿${Math.floor(year.startPrincipal).toLocaleString()}</td>
-            <td class="px-4 py-3 text-right text-blue-600 font-semibold">฿${Math.floor(year.annualDividend).toLocaleString()}</td>
-            <td class="px-4 py-3 text-right text-purple-600">฿${Math.floor(year.reinvestedAmount).toLocaleString()}</td>
-            <td class="px-4 py-3 text-right text-green-600 font-semibold">฿${Math.floor(year.cashOut).toLocaleString()}</td>
-            <td class="px-4 py-3 text-right text-purple-600 font-bold text-lg">฿${Math.floor(year.endPrincipal).toLocaleString()}</td>
-            <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-400">฿${Math.floor(year.totalCashOut).toLocaleString()}</td>
-        </tr>
-    `).join('');
-
-    // Calculate totals
-    const totalDividends = simulationData.years.reduce((sum, y) => sum + y.annualDividend, 0);
-    const totalCashOut = simulationData.years.reduce((sum, y) => sum + y.cashOut, 0);
-    const finalPrincipal = simulationData.years[simulationData.years.length - 1].endPrincipal;
-    const initialInvestment = simulationData.years[0].startPrincipal;
-    const roi = ((totalCashOut + finalPrincipal - initialInvestment) / initialInvestment) * 100;
-    const avgYearlyDividend = totalDividends / simulationData.years.length;
-
-    document.getElementById('total-cash-received').textContent = `฿${Math.floor(totalCashOut).toLocaleString()}`;
-    document.getElementById('final-principal').textContent = `฿${Math.floor(finalPrincipal).toLocaleString()}`;
-    document.getElementById('total-dividends').textContent = Math.floor(totalDividends).toLocaleString();
-    document.getElementById('total-cash-out').textContent = Math.floor(totalCashOut).toLocaleString();
-    document.getElementById('roi').textContent = Math.floor(roi);
-    document.getElementById('avg-yearly-dividend').textContent = Math.floor(avgYearlyDividend).toLocaleString();
-
-    // Create charts
-    createCharts();
-}
-
-function createCharts() {
-    // Principal Growth Chart
-    const ctx1 = document.getElementById('principal-chart');
-    if (principalChart) principalChart.destroy();
-
-    principalChart = new Chart(ctx1, {
-        type: 'line',
-        data: {
-            labels: simulationData.years.map(y => `ปี ${y.year}`),
-            datasets: [
-                {
-                    label: 'เงินต้น',
-                    data: simulationData.years.map(y => y.endPrincipal),
-                    borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    tension: 0.4,
-                    fill: true,
-                },
-                {
-                    label: 'เงินสดสะสม',
-                    data: simulationData.years.map(y => y.totalCashOut),
-                    borderColor: 'rgb(34, 197, 94)',
-                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                    tension: 0.4,
-                    fill: true,
-                }
-            ]
+        /**
+         * การตั้งค่าการคำนวณ
+         */
+        config: {
+            stakingAmount: 10000,    // จำนวน TPIX ที่ stake
+            lockPeriod: 365,         // ระยะเวลา lock (วัน)
+            apy: 365,                // APY (%)
+            autoCompound: true,      // auto-compound รางวัลหรือไม่
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom'
+
+        /**
+         * ข้อมูลการจำลอง (ระหว่างคำนวณ)
+         */
+        simulation: {
+            currentDay: 0,           // วันที่กำลังคำนวณ
+            currentStake: 0,         // TPIX ที่ stake ปัจจุบัน
+            dailyReward: 0,          // รางวัลวันนี้
+            totalRewards: 0,         // รางวัลสะสม
+            totalTPIX: 0,            // TPIX รวมทั้งหมด
+        },
+
+        /**
+         * ผลลัพธ์การคำนวณ
+         */
+        results: {
+            totalRewards: 0,         // รางวัลทั้งหมด
+            roi: 0,                  // ผลตอบแทน (%)
+            finalTPIX: 0,            // TPIX ทั้งหมดที่ได้
+            dailyBreakdown: [],      // รายละเอียดแต่ละวัน
+        },
+
+        /**
+         * สถานะของ UI
+         */
+        isSimulating: false,         // กำลังจำลองหรือไม่
+        showResults: false,          // แสดงผลลัพธ์หรือไม่
+
+        /**
+         * Chart instances
+         */
+        growthChart: null,
+        distributionChart: null,
+
+        // ===== Lifecycle Methods =====
+
+        /**
+         * เริ่มต้น component
+         */
+        init() {
+            // อัพเดท APY ตาม lock period เริ่มต้น
+            this.updateAPY();
+
+            console.log('🪙 TPIX Staking Calculator initialized');
+        },
+
+        // ===== Methods =====
+
+        /**
+         * อัพเดท APY ตาม Lock Period
+         */
+        updateAPY() {
+            const apyMap = {
+                30: 36,      // 30 วัน = 36% APY
+                60: 72,      // 60 วัน = 72% APY
+                90: 120,     // 90 วัน = 120% APY
+                180: 240,    // 180 วัน = 240% APY
+                365: 365,    // 365 วัน = 365% APY
+            };
+
+            this.config.apy = apyMap[this.config.lockPeriod] || 365;
+        },
+
+        /**
+         * คำนวณรางวัลรายวัน
+         */
+        calculateDailyReward(currentStake) {
+            // Daily APY = APY / 365
+            const dailyAPY = this.config.apy / 365 / 100;
+            return currentStake * dailyAPY;
+        },
+
+        /**
+         * เริ่มการจำลอง
+         */
+        async startSimulation() {
+            // ป้องกันการกดซ้ำ
+            if (this.isSimulating) return;
+
+            // Validation
+            if (this.config.stakingAmount < 100) {
+                alert('กรุณากรอกจำนวน TPIX ขั้นต่ำ 100 TPIX');
+                return;
+            }
+
+            // เริ่มจำลอง
+            this.isSimulating = true;
+            this.showResults = false;
+
+            // Reset simulation data
+            this.simulation.currentDay = 0;
+            this.simulation.currentStake = this.config.stakingAmount;
+            this.simulation.dailyReward = 0;
+            this.simulation.totalRewards = 0;
+            this.simulation.totalTPIX = this.config.stakingAmount;
+
+            // Reset results
+            this.results.dailyBreakdown = [];
+
+            // จำลองแต่ละวัน
+            for (let day = 1; day <= this.config.lockPeriod; day++) {
+                this.simulation.currentDay = day;
+
+                // คำนวณรางวัลวันนี้
+                const dailyReward = this.calculateDailyReward(this.simulation.currentStake);
+                this.simulation.dailyReward = dailyReward;
+                this.simulation.totalRewards += dailyReward;
+
+                // Auto-compound: นำรางวัลกลับไป stake
+                if (this.config.autoCompound) {
+                    this.simulation.currentStake += dailyReward;
                 }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: value => '฿' + value.toLocaleString()
+
+                // คำนวณ TPIX รวม
+                this.simulation.totalTPIX = this.simulation.currentStake +
+                    (this.config.autoCompound ? 0 : this.simulation.totalRewards);
+
+                // บันทึกข้อมูลรายวัน (เฉพาะบางวันเพื่อประสิทธิภาพ)
+                if (day === 1 ||
+                    day === 7 ||
+                    day === 14 ||
+                    day === 30 ||
+                    day === 60 ||
+                    day === 90 ||
+                    day === 180 ||
+                    day === 365 ||
+                    day === this.config.lockPeriod) {
+
+                    this.results.dailyBreakdown.push({
+                        day: day,
+                        stake: this.simulation.currentStake,
+                        dailyReward: dailyReward,
+                        totalRewards: this.simulation.totalRewards,
+                        totalTPIX: this.simulation.totalTPIX,
+                    });
+                }
+
+                // หน่วงเวลาเพื่อให้เห็น animation (ปรับความเร็วตาม lock period)
+                const delay = this.config.lockPeriod > 90 ? 20 : 50;
+                await this.sleep(delay);
+            }
+
+            // คำนวณผลลัพธ์สุดท้าย
+            this.results.totalRewards = this.simulation.totalRewards;
+            this.results.finalTPIX = this.simulation.totalTPIX;
+            this.results.roi = ((this.results.finalTPIX - this.config.stakingAmount) /
+                                this.config.stakingAmount) * 100;
+
+            // แสดงผลลัพธ์
+            this.isSimulating = false;
+            this.showResults = true;
+
+            // สร้าง charts
+            await this.$nextTick();
+            this.createCharts();
+        },
+
+        /**
+         * สร้าง Charts
+         */
+        createCharts() {
+            // Growth Chart
+            const ctx1 = document.getElementById('growth-chart');
+            if (this.growthChart) {
+                this.growthChart.destroy();
+            }
+
+            this.growthChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: this.results.dailyBreakdown.map(d => `วันที่ ${d.day}`),
+                    datasets: [
+                        {
+                            label: 'TPIX ที่ Stake',
+                            data: this.results.dailyBreakdown.map(d => d.stake),
+                            borderColor: 'rgb(147, 51, 234)',
+                            backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                        },
+                        {
+                            label: 'รางวัลสะสม',
+                            data: this.results.dailyBreakdown.map(d => d.totalRewards),
+                            borderColor: 'rgb(34, 197, 94)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                        },
+                        {
+                            label: 'TPIX รวม',
+                            data: this.results.dailyBreakdown.map(d => d.totalTPIX),
+                            borderColor: 'rgb(249, 115, 22)',
+                            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: value => this.formatNumber(value) + ' TPIX'
+                            }
+                        }
                     }
                 }
+            });
+
+            // Distribution Chart
+            const ctx2 = document.getElementById('distribution-chart');
+            if (this.distributionChart) {
+                this.distributionChart.destroy();
             }
-        }
-    });
 
-    // Dividend Breakdown Chart
-    const ctx2 = document.getElementById('dividend-breakdown-chart');
-    if (dividendBreakdownChart) dividendBreakdownChart.destroy();
-
-    const totalReinvested = simulationData.years.reduce((sum, y) => sum + y.reinvestedAmount, 0);
-    const totalCashOut = simulationData.years.reduce((sum, y) => sum + y.cashOut, 0);
-
-    dividendBreakdownChart = new Chart(ctx2, {
-        type: 'doughnut',
-        data: {
-            labels: ['นำกลับไปลงทุน', 'รับเข้ากระเป๋า'],
-            datasets: [{
-                data: [totalReinvested, totalCashOut],
-                backgroundColor: [
-                    'rgb(147, 51, 234)',
-                    'rgb(34, 197, 94)'
-                ]
-            }]
+            this.distributionChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['TPIX เริ่มต้น', 'รางวัลที่ได้รับ'],
+                    datasets: [{
+                        data: [
+                            this.config.stakingAmount,
+                            this.results.totalRewards
+                        ],
+                        backgroundColor: [
+                            'rgb(147, 51, 234)',
+                            'rgb(34, 197, 94)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
+
+        /**
+         * รีเซ็ตการจำลอง
+         */
+        resetSimulation() {
+            this.isSimulating = false;
+            this.showResults = false;
+
+            this.simulation.currentDay = 0;
+            this.simulation.currentStake = 0;
+            this.simulation.dailyReward = 0;
+            this.simulation.totalRewards = 0;
+            this.simulation.totalTPIX = 0;
+
+            this.results.totalRewards = 0;
+            this.results.roi = 0;
+            this.results.finalTPIX = 0;
+            this.results.dailyBreakdown = [];
+
+            // ทำลาย charts
+            if (this.growthChart) {
+                this.growthChart.destroy();
+                this.growthChart = null;
+            }
+            if (this.distributionChart) {
+                this.distributionChart.destroy();
+                this.distributionChart = null;
+            }
+        },
+
+        /**
+         * คำนวณรางวัล (ไม่แสดง animation)
+         */
+        calculateRewards() {
+            // คำนวณแบบง่ายเพื่อแสดงตัวอย่าง
+            const dailyAPY = this.config.apy / 365 / 100;
+            let stake = this.config.stakingAmount;
+            let totalRewards = 0;
+
+            for (let day = 1; day <= this.config.lockPeriod; day++) {
+                const dailyReward = stake * dailyAPY;
+                totalRewards += dailyReward;
+
+                if (this.config.autoCompound) {
+                    stake += dailyReward;
                 }
             }
-        }
-    });
+
+            // อัพเดท simulation preview (ไม่แสดง animation)
+            this.simulation.totalRewards = totalRewards;
+            this.simulation.totalTPIX = stake + (this.config.autoCompound ? 0 : totalRewards);
+        },
+
+        // ===== Utility Methods =====
+
+        /**
+         * จัดรูปแบบตัวเลข (เพิ่ม comma)
+         */
+        formatNumber(num) {
+            return Math.floor(num).toLocaleString('en-US', {
+                maximumFractionDigits: 2
+            });
+        },
+
+        /**
+         * หน่วงเวลา (สำหรับ animation)
+         */
+        sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        },
+    };
 }
 
-function resetSimulation() {
-    simulationData.years = [];
-    simulationData.isRunning = false;
-
-    document.getElementById('animation-container').classList.add('hidden');
-    document.getElementById('results-container').classList.add('hidden');
-
-    document.getElementById('current-principal').textContent = '0';
-    document.getElementById('annual-dividend').textContent = '0';
-    document.getElementById('reinvested-amount').textContent = '0';
-    document.getElementById('cash-out').textContent = '0';
-    document.getElementById('total-principal').textContent = '0';
-    document.getElementById('progress-bar').style.width = '0%';
-}
-
-function printResults() {
-    window.print();
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
+// Export สำหรับใช้ใน Alpine.js
+window.tpixStakingCalculator = tpixStakingCalculator;
 </script>
+@endpush
 @endsection
