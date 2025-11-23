@@ -81,7 +81,7 @@ class LineSignupRewardController extends Controller
             'pageTitle' => 'สร้างรางวัลใหม่',
             'couponTemplates' => CouponTemplate::where('is_active', true)->get(),
             'packages' => MlmPackage::where('is_active', true)->get(),
-            'products' => Product::where('status', 'active')->get(),
+            'products' => Product::where('is_active', true)->get(),
         ]);
     }
 
@@ -188,7 +188,7 @@ class LineSignupRewardController extends Controller
             'pageTitle' => 'แก้ไขรางวัล: ' . $reward->name,
             'couponTemplates' => CouponTemplate::where('is_active', true)->get(),
             'packages' => MlmPackage::where('is_active', true)->get(),
-            'products' => Product::where('status', 'active')->get(),
+            'products' => Product::where('is_active', true)->get(),
         ]);
     }
 
