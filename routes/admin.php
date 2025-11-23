@@ -357,6 +357,20 @@ Route::prefix('nfc-cards')->name('nfc-cards.')->group(function () {
     Route::put('/{nfcCard}/auto-topup', [NFCCardController::class, 'configureAutoTopUp'])->name('auto-topup.configure');
     Route::post('/{nfcCard}/enable-tpix', [NFCCardController::class, 'enableTPIX'])->name('enable-tpix');
     Route::post('/{nfcCard}/disable-tpix', [NFCCardController::class, 'disableTPIX'])->name('disable-tpix');
+
+    // 🆕 V3: NFC Card Read/Write API
+    Route::post('/generate-anti-counterfeit', [NFCCardController::class, 'generateAntiCounterfeitCode'])->name('generate-anti-counterfeit');
+    Route::post('/verify-anti-counterfeit', [NFCCardController::class, 'verifyAntiCounterfeitCode'])->name('verify-anti-counterfeit');
+    Route::post('/{nfcCard}/save-nfc-uid', [NFCCardController::class, 'saveNFCUID'])->name('save-nfc-uid');
+
+    // 🆕 V3: NFC Card Lock/Unlock System (Admin Only)
+    Route::post('/{nfcCard}/lock', [NFCCardController::class, 'lockCard'])->name('lock');
+    Route::post('/{nfcCard}/unlock', [NFCCardController::class, 'unlockCard'])->name('unlock');
+
+    // 🆕 V3: NFC Card Info & Templates
+    Route::post('/{nfcCard}/save-card-info', [NFCCardController::class, 'saveCardInfo'])->name('save-card-info');
+    Route::get('/templates', [NFCCardController::class, 'getTemplates'])->name('templates');
+    Route::post('/build-template-records', [NFCCardController::class, 'buildTemplateRecords'])->name('build-template-records');
 });
 
 // 🆕 NFC System Dashboard & Analytics
