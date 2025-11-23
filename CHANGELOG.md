@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.143.0] - 2025-11-23
+
+### ✨ Features
+- Merge pull request #1499 from xjanova/claude/tpix-staking-calculator-01S8ciC45QNPhpStx4VBu9ac (883b3b36)
+- feat: upgrade dividend simulator to TPIX Staking Calculator with V3 design (7c54ec32)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.142.2] - 2025-11-23
 
 ### ✨ Features
