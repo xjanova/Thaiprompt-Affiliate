@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.154.0] - 2025-11-23
+
+### ✨ Features
+- Merge pull request #1538 from xjanova/claude/setup-line-chatbot-01FRiaWuhS9Dj63r8cBokkNj (45d7b00e)
+- feat: add Team Transfer menu to admin sidebar (Phase 2C - Part 7) (aad964ff)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.153.3] - 2025-11-23
 
 ### ✨ Features
