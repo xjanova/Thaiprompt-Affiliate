@@ -30,11 +30,23 @@ class LineSignupRewardSeeder extends Seeder
         $this->detectExtraColumns();
 
         if (!empty($this->extraColumns)) {
-            $this->command->warn('⚠️  ตาราง line_signup_rewards มี columns พิเศษที่ไม่ควรมี:');
+            $this->command->error('❌ ตาราง line_signup_rewards มี columns พิเศษที่ไม่ควรมี:');
             foreach ($this->extraColumns as $column) {
-                $this->command->warn("   - {$column}");
+                $this->command->error("   - {$column}");
             }
-            $this->command->warn('   จะเพิ่มค่า null สำหรับ columns เหล่านี้ (ชั่วคราว)');
+            $this->command->error('');
+            $this->command->error('⚠️  CRITICAL: Columns เหล่านี้ต้องถูกลบออกก่อน seed!');
+            $this->command->error('');
+            $this->command->warn('💡 วิธีแก้:');
+            $this->command->warn('   1. Run: php artisan migrate --force');
+            $this->command->warn('   2. หรือลบ columns ด้วยตัวเอง:');
+            $this->command->warn('      ALTER TABLE line_signup_rewards');
+            foreach ($this->extraColumns as $column) {
+                $this->command->warn("        DROP COLUMN IF EXISTS {$column},");
+            }
+            $this->command->warn('');
+            $this->command->error('⛔ Seed ถูกยกเลิกเพื่อความปลอดภัย!');
+            return;
         }
 
         // สร้าง Coupon Template ก่อน
@@ -96,28 +108,18 @@ class LineSignupRewardSeeder extends Seeder
     }
 
     /**
-     * เพิ่มค่า dummy สำหรับ columns พิเศษที่มีอยู่ในตาราง
-     * (จะถูกลบทิ้งโดย migration ภายหลัง)
+     * ⚠️ ไม่เพิ่มค่า null สำหรับ columns พิเศษอีกต่อไป!
+     *
+     * Columns พิเศษ (user_id, session_id, etc.) ไม่ควรมีในตาราง template
+     * ถ้ามีอยู่ ต้องถูกลบออกด้วย migration ก่อน seed
      *
      * @param array $data
      * @return array
      */
     protected function addExtraColumnsIfExist(array $data): array
     {
-        foreach ($this->extraColumns as $column) {
-            // ใส่ค่า dummy ตามประเภทของคอลัมน์
-            $data[$column] = match($column) {
-                'user_id' => 1,  // user_id - ใส่ ID 1 (admin) เพราะอาจเป็น NOT NULL
-                'session_id', 'claim_id' => null,  // Foreign keys อื่น - ใส่ null
-                'status' => 'pending',                         // Status - ใส่ค่า default
-                'reward_name' => $data['name'] ?? 'Reward',    // String - copy จาก name
-                'reward_amount' => $data['amount'] ?? 0,       // Decimal - copy จาก amount
-                'reward_description' => $data['description'] ?? '', // Text - copy จาก description
-                'granted_at', 'claimed_at', 'expires_at' => null,  // Timestamps - ใส่ null
-                default => '?',  // Unknown - ใส่ placeholder
-            };
-        }
-
+        // ❌ ไม่เพิ่มค่า null อีกต่อไป - ให้ migration ลบ columns พิเศษแทน
+        // ถ้ามี extraColumns seeder จะถูก skip (ดูใน run() method)
         return $data;
     }
 

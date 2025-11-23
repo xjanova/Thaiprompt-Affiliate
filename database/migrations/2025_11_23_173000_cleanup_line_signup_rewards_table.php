@@ -19,14 +19,34 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // รายการ columns ที่ไม่ควรมีใน template table
-        $unwantedColumns = ['user_id', 'session_id', 'reward_name', 'claim_id'];
+        // รายการ columns ที่ไม่ควรมีใน template table (ต้องตรงกับ seeder)
+        $unwantedColumns = [
+            'user_id',
+            'session_id',
+            'reward_name',
+            'reward_amount',
+            'reward_description',
+            'status',
+            'granted_at',
+            'claimed_at',
+            'expires_at',
+            'claim_id',
+        ];
 
         foreach ($unwantedColumns as $column) {
             if (Schema::hasColumn('line_signup_rewards', $column)) {
                 // พยายามลบ foreign key ถ้ามี
                 $foreignKeyName = "line_signup_rewards_{$column}_foreign";
                 $this->safeDropForeign('line_signup_rewards', $foreignKeyName);
+
+                // พยายามลบ index ถ้ามี
+                try {
+                    Schema::table('line_signup_rewards', function (Blueprint $table) use ($column) {
+                        $table->dropIndex(["$column"]);
+                    });
+                } catch (\Exception $e) {
+                    // Ignore if index doesn't exist
+                }
 
                 // ลบ column
                 Schema::table('line_signup_rewards', function (Blueprint $table) use ($column) {
