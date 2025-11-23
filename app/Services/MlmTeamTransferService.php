@@ -26,6 +26,21 @@ use Illuminate\Support\Facades\Notification;
 class MlmTeamTransferService
 {
     /**
+     * @var NotificationService
+     */
+    protected NotificationService $notificationService;
+
+    /**
+     * Constructor
+     *
+     * @param NotificationService $notificationService
+     */
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
+    /**
      * สร้างคำขอย้ายทีมใหม่
      *
      * @param MlmMember $member สมาชิกที่ขอย้าย
@@ -479,9 +494,29 @@ class MlmTeamTransferService
      */
     protected function sendApprovalNotification(MlmTeamTransferRequest $request): void
     {
-        // TODO: ใช้ Notification system ส่งแจ้งเตือนไปยังแม่ทีมเก่า
-        // - Bell notification (in-app)
-        // - LINE direct message (ถ้ามี LINE token)
+        try {
+            $oldSponsor = $request->oldSponsor->user;
+
+            // ส่ง Bell notification (in-app)
+            $this->notificationService->notifyTeamTransferRequest($oldSponsor, [
+                'request_id' => $request->id,
+                'member_name' => $request->user->name,
+                'member_code' => $request->member->member_code,
+                'new_sponsor_name' => $request->newSponsor->user->name ?? 'N/A',
+                'action_url' => route('user.team-transfer.approvals'),
+                'notifiable_type' => get_class($request),
+                'notifiable_id' => $request->id,
+            ]);
+
+            // TODO: ส่ง LINE direct message (ถ้ามี LINE token)
+            // $this->sendLineNotification($oldSponsor, $message);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to send approval notification', [
+                'request_id' => $request->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -492,7 +527,27 @@ class MlmTeamTransferService
      */
     protected function sendApprovedNotification(MlmTeamTransferRequest $request): void
     {
-        // TODO: ส่งแจ้งเตือนไปยังสมาชิกที่ขอย้าย
+        try {
+            $member = $request->user;
+
+            // ส่ง Bell notification (in-app)
+            $this->notificationService->notifyTeamTransferApproved($member, [
+                'request_id' => $request->id,
+                'old_sponsor_name' => $request->oldSponsor->user->name ?? 'N/A',
+                'new_sponsor_name' => $request->newSponsor->user->name ?? 'N/A',
+                'transfer_fee' => $request->transfer_fee,
+                'action_url' => route('user.team-transfer.show', $request->id),
+                'notifiable_type' => get_class($request),
+                'notifiable_id' => $request->id,
+            ]);
+
+            // TODO: ส่ง LINE direct message
+        } catch (\Exception $e) {
+            Log::error('Failed to send approved notification', [
+                'request_id' => $request->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -503,7 +558,26 @@ class MlmTeamTransferService
      */
     protected function sendRejectedNotification(MlmTeamTransferRequest $request): void
     {
-        // TODO: ส่งแจ้งเตือนไปยังสมาชิกที่ขอย้าย
+        try {
+            $member = $request->user;
+
+            // ส่ง Bell notification (in-app)
+            $this->notificationService->notifyTeamTransferRejected($member, [
+                'request_id' => $request->id,
+                'rejection_reason' => $request->rejection_reason ?? 'ไม่ระบุเหตุผล',
+                'old_sponsor_name' => $request->oldSponsor->user->name ?? 'N/A',
+                'action_url' => route('user.team-transfer.show', $request->id),
+                'notifiable_type' => get_class($request),
+                'notifiable_id' => $request->id,
+            ]);
+
+            // TODO: ส่ง LINE direct message
+        } catch (\Exception $e) {
+            Log::error('Failed to send rejected notification', [
+                'request_id' => $request->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -514,7 +588,32 @@ class MlmTeamTransferService
      */
     protected function sendPaidNotificationToAdmin(MlmTeamTransferRequest $request): void
     {
-        // TODO: ส่งแจ้งเตือนไปยัง Admin
+        try {
+            // ดึงรายการ Admin users
+            $admins = User::role('admin')->get();
+
+            if ($admins->isEmpty()) {
+                return;
+            }
+
+            // ส่ง Bell notification (in-app) ให้ทุก Admin
+            $this->notificationService->notifyTeamTransferPaid($admins->all(), [
+                'request_id' => $request->id,
+                'member_name' => $request->user->name,
+                'member_code' => $request->member->member_code,
+                'transfer_fee' => $request->transfer_fee,
+                'action_url' => route('admin.team-transfer.edit', $request->id),
+                'notifiable_type' => get_class($request),
+                'notifiable_id' => $request->id,
+            ]);
+
+            // TODO: ส่ง LINE direct message to admin
+        } catch (\Exception $e) {
+            Log::error('Failed to send paid notification to admin', [
+                'request_id' => $request->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -525,9 +624,37 @@ class MlmTeamTransferService
      */
     protected function sendCompletedNotifications(MlmTeamTransferRequest $request): void
     {
-        // TODO: ส่งแจ้งเตือนไปยัง:
-        // - สมาชิกที่ขอย้าย
-        // - แม่ทีมเก่า
-        // - แม่ทีมใหม่
+        try {
+            $member = $request->user;
+            $oldSponsor = $request->oldSponsor->user;
+            $newSponsor = $request->newSponsor->user;
+
+            $requestData = [
+                'request_id' => $request->id,
+                'member_name' => $member->name,
+                'member_code' => $request->member->member_code,
+                'old_sponsor_name' => $oldSponsor->name,
+                'new_sponsor_name' => $newSponsor->name,
+                'action_url' => route('user.team-transfer.show', $request->id),
+                'notifiable_type' => get_class($request),
+                'notifiable_id' => $request->id,
+            ];
+
+            // แจ้งเตือนสมาชิกที่ขอย้าย
+            $this->notificationService->notifyTeamTransferCompletedToMember($member, $requestData);
+
+            // แจ้งเตือนแม่ทีมเก่า
+            $this->notificationService->notifyTeamMemberLeft($oldSponsor, $requestData);
+
+            // แจ้งเตือนแม่ทีมใหม่
+            $this->notificationService->notifyNewTeamMember($newSponsor, $requestData);
+
+            // TODO: ส่ง LINE direct messages to all parties
+        } catch (\Exception $e) {
+            Log::error('Failed to send completed notifications', [
+                'request_id' => $request->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }
