@@ -293,8 +293,8 @@
  *
  * จัดการ UI และ API calls สำหรับ Quick Settings Panel
  */
-function lineQuickSettings() {
-    return {
+document.addEventListener('alpine:init', () => {
+    Alpine.data('lineQuickSettings', () => ({
         // สถานะ
         isOpen: false,
         loading: false,
@@ -479,7 +479,7 @@ function lineQuickSettings() {
                 }
             });
         }
-    };
-}
+    }));
+});
 </script>
 @endpush
