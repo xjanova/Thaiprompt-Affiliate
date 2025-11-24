@@ -2398,11 +2398,28 @@ Route::prefix('ai-rental')->name('ai-rental.')->group(function () {
             ->name('update-order');
     });
 
-    // My Configurations (เร็วๆนี้)
+    // My Configurations ✅ พร้อมใช้งาน!
     Route::prefix('configs')->name('configs.')->group(function () {
-        Route::get('/', function () {
-            return view('admin.ai-rental.coming-soon', ['feature' => 'Cloud Configurations']);
-        })->name('index');
+        Route::get('/', [\App\Http\Controllers\Admin\AiRentalConfigController::class, 'index'])
+            ->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\AiRentalConfigController::class, 'create'])
+            ->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\AiRentalConfigController::class, 'store'])
+            ->name('store');
+        Route::get('/{config}', [\App\Http\Controllers\Admin\AiRentalConfigController::class, 'show'])
+            ->name('show');
+        Route::get('/{config}/edit', [\App\Http\Controllers\Admin\AiRentalConfigController::class, 'edit'])
+            ->name('edit');
+        Route::patch('/{config}', [\App\Http\Controllers\Admin\AiRentalConfigController::class, 'update'])
+            ->name('update');
+        Route::delete('/{config}', [\App\Http\Controllers\Admin\AiRentalConfigController::class, 'destroy'])
+            ->name('destroy');
+
+        // Actions
+        Route::post('/{config}/test', [\App\Http\Controllers\Admin\AiRentalConfigController::class, 'testConnection'])
+            ->name('test');
+        Route::patch('/{config}/set-default', [\App\Http\Controllers\Admin\AiRentalConfigController::class, 'setDefault'])
+            ->name('set-default');
     });
 
     // Deployments (เร็วๆนี้)
