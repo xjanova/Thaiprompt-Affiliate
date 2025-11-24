@@ -60,6 +60,13 @@ class Product extends Model
         'sales_count',
         'rating_average',
         'rating_count',
+        // Block fields
+        'is_blocked',
+        'blocked_at',
+        'blocked_by',
+        'block_reason',
+        'unblocked_at',
+        'unblocked_by',
     ];
 
     protected $casts = [
@@ -91,6 +98,10 @@ class Product extends Model
         'sales_count' => 'integer',
         'rating_average' => 'decimal:2',
         'rating_count' => 'integer',
+        // Block casts
+        'is_blocked' => 'boolean',
+        'blocked_at' => 'datetime',
+        'unblocked_at' => 'datetime',
     ];
 
     /**
@@ -183,6 +194,26 @@ class Product extends Model
     }
 
     /**
+     * ผู้ที่บล็อกสินค้า (Admin)
+     *
+     * @return BelongsTo
+     */
+    public function blockedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'blocked_by');
+    }
+
+    /**
+     * ผู้ที่ปลดบล็อกสินค้า (Admin)
+     *
+     * @return BelongsTo
+     */
+    public function unblockedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'unblocked_by');
+    }
+
+    /**
      * Scope: Only active products
      */
     public function scopeActive($query)
@@ -190,6 +221,22 @@ class Product extends Model
         return $query->where('is_active', true)
                      ->whereNotNull('published_at')
                      ->where('published_at', '<=', now());
+    }
+
+    /**
+     * Scope: สินค้าที่ไม่ถูกบล็อก
+     */
+    public function scopeNotBlocked($query)
+    {
+        return $query->where('is_blocked', false);
+    }
+
+    /**
+     * Scope: สินค้าที่ถูกบล็อก
+     */
+    public function scopeBlocked($query)
+    {
+        return $query->where('is_blocked', true);
     }
 
     /**
