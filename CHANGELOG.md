@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.178.1] - 2025-11-24
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(ai-rental): แก้ route name สำหรับ Setup Guide ให้แสดงได้ ✅ (bfaff7b7)
+- fix(ai-rental): แก้ไข Missing AiRentalModel Class ⚡🔧 (956766ad)
+### 🔧 Other Changes
+- Merge pull request #1582 from xjanova/claude/explore-ai-rental-project-01MLbqCHHMj6A4uMdjCyKcfD (4270a0d9)
+
 ## [v3.178.0] - 2025-11-24
 
 ### ✨ Features
