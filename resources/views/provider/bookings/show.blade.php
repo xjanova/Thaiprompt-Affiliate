@@ -112,23 +112,71 @@
         </div>
         @endif
 
-        {{-- Pricing --}}
+        {{-- Provider Earnings Breakdown --}}
         <div class="md:col-span-2 backdrop-blur-xl bg-gradient-to-br from-green-50/90 to-emerald-50/90 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl shadow-lg p-6 border border-green-200 dark:border-green-800">
-            <h3 class="font-bold text-green-900 dark:text-green-300 mb-4">รายได้ของคุณ</h3>
+            <h3 class="font-bold text-green-900 dark:text-green-300 mb-4 flex items-center gap-2">
+                <i class="fas fa-coins"></i>
+                รายได้ของคุณ
+            </h3>
             <div class="space-y-2 text-sm mb-4">
+                {{-- ราคารวม --}}
                 <div class="flex justify-between">
                     <span class="text-gray-600 dark:text-gray-400">ราคารวมทั้งหมด:</span>
-                    <span>฿{{ number_format($booking->total_price, 2) }}</span>
+                    <span class="font-semibold text-gray-900 dark:text-gray-100">
+                        ฿{{ number_format($booking->total_amount, 2) }}
+                    </span>
                 </div>
+
+                {{-- ค่าแพลตฟอร์ม --}}
                 <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">ค่าแพลตฟอร์ม ({{ $booking->platform_fee_percent ?? 15 }}%):</span>
-                    <span class="text-red-600">-฿{{ number_format($booking->platform_fee, 2) }}</span>
+                    <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                        ค่าแพลตฟอร์ม
+                        <span class="text-xs opacity-70">({{ number_format($booking->platform_fee_percentage, 2) }}%)</span>
+                    </span>
+                    <span class="text-red-600 dark:text-red-400">
+                        -฿{{ number_format($booking->platform_fee_amount, 2) }}
+                    </span>
+                </div>
+
+                {{-- ค่า PV/การตลาด --}}
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                        ค่า PV/การตลาด
+                        <span class="text-xs opacity-70">({{ number_format($booking->provider_pv_percentage, 2) }}%)</span>
+                        <i class="fas fa-info-circle text-xs cursor-help"
+                           title="ค่าการตลาดที่คุณตั้งไว้เพื่อเพิ่มโอกาสถูกแนะนำ"></i>
+                    </span>
+                    <span class="text-orange-600 dark:text-orange-400">
+                        -฿{{ number_format($booking->provider_pv_amount, 2) }}
+                    </span>
                 </div>
             </div>
+
+            {{-- รายได้สุทธิ --}}
             <div class="pt-3 border-t border-green-300 dark:border-green-700 flex justify-between text-xl font-bold text-green-600 dark:text-green-400">
                 <span>คุณจะได้รับ:</span>
-                <span>฿{{ number_format($booking->provider_fee, 2) }}</span>
+                <span>฿{{ number_format($booking->provider_earnings, 2) }}</span>
             </div>
+
+            {{-- เปอร์เซ็นต์รายได้ --}}
+            <div class="text-center mt-3">
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                    คุณได้รับ {{ number_format(100 - $booking->platform_fee_percentage - $booking->provider_pv_percentage, 2) }}% จากยอดขาย
+                </span>
+            </div>
+
+            {{-- Tip: ปรับ PV --}}
+            @if($booking->status === 'completed')
+            <div class="mt-4 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-900/20 border border-blue-200/50 dark:border-blue-700/30">
+                <p class="text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
+                    <i class="fas fa-lightbulb mt-0.5"></i>
+                    <span>
+                        <strong>💡 เคล็ดลับ:</strong> คุณสามารถปรับค่า PV ในบริการของคุณได้
+                        ยิ่ง PV สูง = โอกาสถูกแนะนำมากขึ้น แต่กำไรลดลง
+                    </span>
+                </p>
+            </div>
+            @endif
         </div>
 
         {{-- Customer Notes --}}
