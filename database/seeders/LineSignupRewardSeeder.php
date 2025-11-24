@@ -30,23 +30,16 @@ class LineSignupRewardSeeder extends Seeder
         $this->detectExtraColumns();
 
         if (!empty($this->extraColumns)) {
-            $this->command->error('❌ ตาราง line_signup_rewards มี columns พิเศษที่ไม่ควรมี:');
+            $this->command->warn('⚠️  WARNING: ตาราง line_signup_rewards มี columns พิเศษที่ไม่ควรมี:');
             foreach ($this->extraColumns as $column) {
-                $this->command->error("   - {$column}");
-            }
-            $this->command->error('');
-            $this->command->error('⚠️  CRITICAL: Columns เหล่านี้ต้องถูกลบออกก่อน seed!');
-            $this->command->error('');
-            $this->command->warn('💡 วิธีแก้:');
-            $this->command->warn('   1. Run: php artisan migrate --force');
-            $this->command->warn('   2. หรือลบ columns ด้วยตัวเอง:');
-            $this->command->warn('      ALTER TABLE line_signup_rewards');
-            foreach ($this->extraColumns as $column) {
-                $this->command->warn("        DROP COLUMN IF EXISTS {$column},");
+                $this->command->warn("   - {$column}");
             }
             $this->command->warn('');
-            $this->command->error('⛔ Seed ถูกยกเลิกเพื่อความปลอดภัย!');
-            return;
+            $this->command->info('ℹ️  Seeder จะเพิ่มค่า NULL ชั่วคราวสำหรับ columns เหล่านี้');
+            $this->command->warn('💡 แนะนำให้ลบ columns พิเศษหลังจาก seed เสร็จ:');
+            $this->command->warn('   1. Run: php artisan migrate --force');
+            $this->command->warn('   2. หรือใช้: mysql < database/sql/cleanup_line_signup_rewards_table.sql');
+            $this->command->warn('');
         }
 
         // สร้าง Coupon Template ก่อน
@@ -108,18 +101,36 @@ class LineSignupRewardSeeder extends Seeder
     }
 
     /**
-     * ⚠️ ไม่เพิ่มค่า null สำหรับ columns พิเศษอีกต่อไป!
+     * เพิ่มค่า NULL ชั่วคราวสำหรับ columns พิเศษที่มีอยู่
      *
      * Columns พิเศษ (user_id, session_id, etc.) ไม่ควรมีในตาราง template
-     * ถ้ามีอยู่ ต้องถูกลบออกด้วย migration ก่อน seed
+     * แต่ถ้ายังมีอยู่ (ก่อน migration) จะเพิ่มค่า NULL ชั่วคราว
+     *
+     * ⚠️ แนะนำให้ run migration เพื่อลบ columns พิเศษหลังจาก seed
      *
      * @param array $data
      * @return array
      */
     protected function addExtraColumnsIfExist(array $data): array
     {
-        // ❌ ไม่เพิ่มค่า null อีกต่อไป - ให้ migration ลบ columns พิเศษแทน
-        // ถ้ามี extraColumns seeder จะถูก skip (ดูใน run() method)
+        // ถ้าไม่มี columns พิเศษ ให้คืนค่าเดิม
+        if (empty($this->extraColumns)) {
+            return $data;
+        }
+
+        // เพิ่มค่า NULL สำหรับ columns พิเศษที่มีอยู่
+        foreach ($this->extraColumns as $column) {
+            // กำหนดค่า default ตามประเภท column
+            $data[$column] = match($column) {
+                'user_id', 'session_id' => null,
+                'reward_name', 'reward_description' => null,
+                'reward_amount' => null,
+                'status' => 'template', // ค่าพิเศษเพื่อบอกว่าเป็น template
+                'granted_at', 'claimed_at', 'expires_at' => null,
+                default => null,
+            };
+        }
+
         return $data;
     }
 
