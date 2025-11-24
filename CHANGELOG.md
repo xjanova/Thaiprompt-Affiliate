@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.168.1] - 2025-11-24
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1556 from xjanova/claude/add-line-quick-share-01HxFBjCRhcvwAdPTY1ysqZW (6fb550ae)
+- fix: แก้ไข Alpine.js registration สำหรับ LINE Quick Settings Panel (5f5a9594)
+### 🔧 Other Changes
+
+
 ## [v3.168.0] - 2025-11-24
 
 ### ✨ Features
