@@ -11,10 +11,26 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง commissions มีอยู่แล้วหรือยัง
+        if (Schema::hasTable('commissions')) {
+            return;
+        }
+
         Schema::create('commissions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('affiliate_id')->constrained()->onDelete('cascade');
-            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
+
+            // ⚠️ IMPORTANT: เช็คว่า affiliates table มีอยู่แล้วหรือยัง
+            // ถ้ายังไม่มี → ใช้ unsignedBigInteger แทน foreignId
+            if (Schema::hasTable('affiliates')) {
+                $table->foreignId('affiliate_id')->constrained('affiliates')->onDelete('cascade');
+            } else {
+                // ถ้ายังไม่มี affiliates table → สร้างเป็น column ธรรมดาไปก่อน
+                // Foreign key จะถูกเพิ่มโดย migration อื่นภายหลัง
+                $table->unsignedBigInteger('affiliate_id');
+                $table->index('affiliate_id');
+            }
+
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
             $table->string('order_id')->nullable();
             $table->decimal('amount', 10, 2);
             $table->decimal('percentage', 5, 2);
