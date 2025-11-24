@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.177.1] - 2025-11-24
+
+### ✨ Features
+- Merge pull request #1573 from xjanova/claude/explore-ai-rental-project-01MLbqCHHMj6A4uMdjCyKcfD (60a42aba)
+- feat(ai-rental): Phase 3 Part 1 - Complete Cloud Providers CRUD Management 🔧 (65d28391)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.177.0] - 2025-11-24
 
 ### ✨ Features
