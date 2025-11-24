@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\GameController as AdminGameController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LineLoginController;
+use App\Http\Controllers\Auth\SetupController;
 use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\SitemapController;
@@ -182,6 +183,13 @@ Route::prefix('api/translate')->name('api.translate.')->middleware('throttle:60,
 Route::prefix('certificate')->name('certificate.')->group(function () {
     Route::match(['GET', 'HEAD'], '/verify/{verificationCode}', [\App\Http\Controllers\Admin\CertificateController::class, 'verify'])->name('verify');
     Route::match(['GET', 'HEAD'], '/share/{id}', [\App\Http\Controllers\Admin\CertificateController::class, 'share'])->name('share');
+});
+
+// Setup Routes
+// ⚠️ Setup: ระบบติดตั้งครั้งแรก - สร้าง Super Admin
+Route::prefix('setup')->name('setup.')->group(function () {
+    Route::get('/', [SetupController::class, 'index'])->name('index');
+    Route::post('/', [SetupController::class, 'store'])->name('store');
 });
 
 // Authentication Routes
