@@ -465,3 +465,25 @@ Route::prefix('team-transfer')->name('team-transfer.')->group(function () {
     Route::post('/{teamTransfer}/approve', [\App\Http\Controllers\User\TeamTransferController::class, 'approve'])->name('approve');
     Route::post('/{teamTransfer}/reject', [\App\Http\Controllers\User\TeamTransferController::class, 'reject'])->name('reject');
 });
+
+// ============================================
+// Service Booking System Routes (User/Customer)
+// ============================================
+
+// Browse Services
+Route::prefix('services')->name('services.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\User\ServiceBookingController::class, 'index'])->name('index');
+    Route::get('/category/{category}', [\App\Http\Controllers\User\ServiceBookingController::class, 'category'])->name('category');
+    Route::get('/{service}', [\App\Http\Controllers\User\ServiceBookingController::class, 'show'])->name('show');
+    Route::get('/{service}/book', [\App\Http\Controllers\User\ServiceBookingController::class, 'book'])->name('book');
+    Route::post('/{service}/book', [\App\Http\Controllers\User\ServiceBookingController::class, 'storeBooking'])->name('store-booking');
+    Route::post('/calculate-price', [\App\Http\Controllers\User\ServiceBookingController::class, 'calculatePrice'])->name('calculate-price');
+});
+
+// My Bookings
+Route::prefix('bookings')->name('bookings.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\User\ServiceBookingController::class, 'myBookings'])->name('index');
+    Route::get('/{booking}', [\App\Http\Controllers\User\ServiceBookingController::class, 'showBooking'])->name('show');
+    Route::get('/{booking}/track', [\App\Http\Controllers\User\ServiceBookingController::class, 'trackBooking'])->name('track');
+    Route::post('/{booking}/cancel', [\App\Http\Controllers\User\ServiceBookingController::class, 'cancelBooking'])->name('cancel');
+});

@@ -2284,3 +2284,36 @@ Route::prefix('team-transfer')->name('team-transfer.')->group(function () {
     Route::post('/{id}/restore', [\App\Http\Controllers\Admin\TeamTransferController::class, 'restore'])->name('restore');
     Route::get('/member/{memberId}/history', [\App\Http\Controllers\Admin\TeamTransferController::class, 'history'])->name('history');
 });
+
+// ============================================
+// Service Booking System Routes
+// ============================================
+
+// Service Categories Management
+Route::resource('service-categories', \App\Http\Controllers\Admin\ServiceCategoryController::class);
+Route::post('service-categories/{serviceCategory}/toggle-active', [\App\Http\Controllers\Admin\ServiceCategoryController::class, 'toggleActive'])
+    ->name('service-categories.toggle-active');
+Route::post('service-categories/{serviceCategory}/toggle-featured', [\App\Http\Controllers\Admin\ServiceCategoryController::class, 'toggleFeatured'])
+    ->name('service-categories.toggle-featured');
+Route::post('service-categories/reorder', [\App\Http\Controllers\Admin\ServiceCategoryController::class, 'reorder'])
+    ->name('service-categories.reorder');
+
+// Services Management
+Route::resource('services', \App\Http\Controllers\Admin\ServiceController::class);
+Route::post('services/{service}/toggle-active', [\App\Http\Controllers\Admin\ServiceController::class, 'toggleActive'])
+    ->name('services.toggle-active');
+Route::post('services/{service}/toggle-featured', [\App\Http\Controllers\Admin\ServiceController::class, 'toggleFeatured'])
+    ->name('services.toggle-featured');
+Route::post('services/{service}/calculate-price', [\App\Http\Controllers\Admin\ServiceController::class, 'calculatePrice'])
+    ->name('services.calculate-price');
+
+// Service Bookings Management
+Route::prefix('service-bookings')->name('service-bookings.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'index'])->name('index');
+    Route::get('/{serviceBooking}', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'show'])->name('show');
+    Route::post('/{serviceBooking}/assign-provider', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'assignProvider'])->name('assign-provider');
+    Route::post('/{serviceBooking}/cancel', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'cancel'])->name('cancel');
+    Route::post('/{serviceBooking}/update-status', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'updateStatus'])->name('update-status');
+    Route::get('/available-providers', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'availableProviders'])->name('available-providers');
+    Route::get('/export', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'export'])->name('export');
+});
