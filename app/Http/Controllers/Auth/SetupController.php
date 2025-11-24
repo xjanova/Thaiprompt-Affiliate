@@ -67,14 +67,20 @@ class SetupController extends Controller
 
         try {
             // สร้างบัญชี Super Admin
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'role' => 'super_admin',
-                'is_super_admin' => true,
-                'email_verified_at' => now(),
-            ]);
+            // ⚠️ IMPORTANT: ใช้ new User() แล้ว assign แบบ direct
+            // เพราะ 'role' และ 'is_super_admin' อยู่ใน $guarded array
+            $user = new User();
+            $user->name = $request->name;
+            $user->email = $request->email;
+            $user->password = Hash::make($request->password);
+            $user->email_verified_at = now();
+
+            // ✅ กำหนด sensitive fields แบบ direct assignment
+            $user->role = 'super_admin';
+            $user->is_super_admin = true;
+
+            // บันทึกข้อมูล
+            $user->save();
 
             // สร้างไฟล์ flag เพื่อบอกว่าติดตั้งเสร็จแล้ว
             $this->createSetupCompletedFlag();
