@@ -72,7 +72,17 @@ class ServiceBookingService
                 'discount_amount' => $data['discount_amount'] ?? 0,
             ]);
 
-            // สร้างการจอง
+            // คำนวณค่าธรรมเนียม (Platform Fee + Provider PV)
+            $totalAmount = $pricing['total_amount'];
+            $platformFeePercentage = $service->platform_fee_percentage ?? 10.00;
+            $providerPvPercentage = $service->provider_pv_percentage ?? 5.00;
+
+            $platformFeeAmount = $totalAmount * ($platformFeePercentage / 100);
+            $providerPvAmount = $totalAmount * ($providerPvPercentage / 100);
+            $providerEarnings = $totalAmount - $platformFeeAmount - $providerPvAmount;
+            $systemRevenue = $platformFeeAmount + $providerPvAmount;
+
+            // สร้างการจอง (พร้อม snapshot ค่าธรรมเนียม)
             $booking = ServiceBooking::create([
                 'user_id' => $user->id,
                 'service_id' => $service->id,
@@ -86,6 +96,14 @@ class ServiceBookingService
                 'tax_amount' => $pricing['tax_amount'],
                 'discount_amount' => $pricing['discount_amount'],
                 'total_amount' => $pricing['total_amount'],
+                // Platform Fee & Provider PV (snapshot ณ เวลาจอง)
+                'platform_fee_percentage' => $platformFeePercentage,
+                'platform_fee_amount' => round($platformFeeAmount, 2),
+                'provider_pv_percentage' => $providerPvPercentage,
+                'provider_pv_amount' => round($providerPvAmount, 2),
+                'provider_earnings' => round($providerEarnings, 2),
+                'system_revenue' => round($systemRevenue, 2),
+                // อื่นๆ
                 'payment_method' => $data['payment_method'] ?? 'wallet',
                 'payment_status' => 'pending',
                 'status' => 'pending',
@@ -93,6 +111,12 @@ class ServiceBookingService
                 'metadata' => [
                     'selected_options' => $data['selected_options'] ?? [],
                     'pricing_breakdown' => $pricing,
+                    'fee_breakdown' => [
+                        'platform_fee' => round($platformFeeAmount, 2),
+                        'provider_pv' => round($providerPvAmount, 2),
+                        'provider_earnings' => round($providerEarnings, 2),
+                        'system_revenue' => round($systemRevenue, 2),
+                    ],
                 ],
             ]);
 
