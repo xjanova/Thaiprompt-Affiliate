@@ -51,6 +51,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Carbon\Carbon|null $started_at เวลาเริ่ม
  * @property \Carbon\Carbon|null $completed_at เวลาเสร็จ
  * @property float $commission_amount คอมมิชชั่น MLM
+ * @property float $platform_fee_percentage ค่าแพลตฟอร์ม (%)
+ * @property float $platform_fee_amount ค่าแพลตฟอร์ม (บาท)
+ * @property float $provider_pv_percentage ค่า PV (%)
+ * @property float $provider_pv_amount ค่า PV (บาท)
+ * @property float $provider_earnings รายได้สุทธิของ Provider
+ * @property float $system_revenue รายได้รวมของระบบ
  * @property int|null $mlm_member_id สมาชิก MLM
  * @property array|null $metadata ข้อมูลเพิ่มเติม
  */
@@ -97,6 +103,12 @@ class ServiceBooking extends Model
         'started_at',
         'completed_at',
         'commission_amount',
+        'platform_fee_percentage',
+        'platform_fee_amount',
+        'provider_pv_percentage',
+        'provider_pv_amount',
+        'provider_earnings',
+        'system_revenue',
         'mlm_member_id',
         'metadata',
     ];
@@ -113,6 +125,12 @@ class ServiceBooking extends Model
         'discount_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'commission_amount' => 'decimal:2',
+        'platform_fee_percentage' => 'decimal:2',
+        'platform_fee_amount' => 'decimal:2',
+        'provider_pv_percentage' => 'decimal:2',
+        'provider_pv_amount' => 'decimal:2',
+        'provider_earnings' => 'decimal:2',
+        'system_revenue' => 'decimal:2',
         'provider_notified_at' => 'datetime',
         'provider_response_deadline' => 'datetime',
         'provider_viewed_at' => 'datetime',
@@ -590,6 +608,64 @@ class ServiceBooking extends Model
         $this->tax_amount = $this->subtotal * 0.07; // VAT 7%
         $this->total_amount = $this->subtotal + $this->tax_amount - $this->discount_amount;
         $this->save();
+    }
+
+    /**
+     * คำนวณค่าธรรมเนียมทั้งหมด (Platform Fee + PV + Provider Earnings)
+     *
+     * ใช้ค่าจากบริการเป็น snapshot ณ เวลาจอง
+     *
+     * @return void
+     */
+    public function calculateFees(): void
+    {
+        // คำนวณค่า Platform Fee
+        $this->platform_fee_amount = $this->total_amount * ($this->platform_fee_percentage / 100);
+
+        // คำนวณค่า Provider PV
+        $this->provider_pv_amount = $this->total_amount * ($this->provider_pv_percentage / 100);
+
+        // คำนวณรายได้สุทธิของ Provider
+        $this->provider_earnings = $this->total_amount - $this->platform_fee_amount - $this->provider_pv_amount;
+
+        // คำนวณรายได้รวมของระบบ
+        $this->system_revenue = $this->platform_fee_amount + $this->provider_pv_amount;
+
+        $this->save();
+    }
+
+    /**
+     * คำนวณทั้งหมด (ราคา + ค่าธรรมเนียม)
+     *
+     * @return void
+     */
+    public function calculateAll(): void
+    {
+        $this->calculateTotalPrice();
+        $this->calculateFees();
+    }
+
+    /**
+     * ได้ข้อมูลสรุปค่าธรรมเนียม
+     *
+     * @return array
+     */
+    public function getFeeBreakdown(): array
+    {
+        return [
+            'total_amount' => (float) $this->total_amount,
+            'platform_fee' => [
+                'percentage' => (float) $this->platform_fee_percentage,
+                'amount' => (float) $this->platform_fee_amount,
+            ],
+            'provider_pv' => [
+                'percentage' => (float) $this->provider_pv_percentage,
+                'amount' => (float) $this->provider_pv_amount,
+            ],
+            'provider_earnings' => (float) $this->provider_earnings,
+            'system_revenue' => (float) $this->system_revenue,
+            'provider_percentage' => 100 - $this->platform_fee_percentage - $this->provider_pv_percentage,
+        ];
     }
 
     //===========================================

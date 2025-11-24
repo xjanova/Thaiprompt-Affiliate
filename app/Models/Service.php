@@ -32,6 +32,10 @@ use Illuminate\Support\Str;
  * @property int|null $max_bookings_per_day
  * @property int $cancellation_hours
  * @property float $commission_rate
+ * @property float $platform_fee_percentage ค่าบริการแพลตฟอร์ม (%)
+ * @property float $provider_pv_percentage ค่า PV/การตลาด (%)
+ * @property float $min_pv_percentage ค่า PV ต่ำสุด
+ * @property float $max_pv_percentage ค่า PV สูงสุด
  * @property int $view_count
  * @property int $booking_count
  * @property float $average_rating
@@ -60,6 +64,10 @@ class Service extends Model
         'max_bookings_per_day',
         'cancellation_hours',
         'commission_rate',
+        'platform_fee_percentage',
+        'provider_pv_percentage',
+        'min_pv_percentage',
+        'max_pv_percentage',
         'meta_title',
         'meta_description',
         'meta_keywords',
@@ -73,6 +81,10 @@ class Service extends Model
         'options' => 'array',
         'base_price' => 'decimal:2',
         'commission_rate' => 'decimal:2',
+        'platform_fee_percentage' => 'decimal:2',
+        'provider_pv_percentage' => 'decimal:2',
+        'min_pv_percentage' => 'decimal:2',
+        'max_pv_percentage' => 'decimal:2',
         'average_rating' => 'decimal:2',
         'requires_location' => 'boolean',
         'is_active' => 'boolean',
@@ -275,6 +287,48 @@ class Service extends Model
     {
         $distancePrice = $this->calculateDistancePrice($distanceKm);
         return $this->base_price + $distancePrice;
+    }
+
+    /**
+     * คำนวณรายได้สุทธิของ Provider (หักค่าธรรมเนียมทั้งหมด)
+     *
+     * @param float $totalAmount ราคารวมสุทธิ
+     * @return array ['platform_fee' => float, 'pv' => float, 'earnings' => float]
+     */
+    public function calculateProviderEarnings(float $totalAmount): array
+    {
+        $platformFee = $totalAmount * ($this->platform_fee_percentage / 100);
+        $providerPv = $totalAmount * ($this->provider_pv_percentage / 100);
+        $earnings = $totalAmount - $platformFee - $providerPv;
+
+        return [
+            'platform_fee' => round($platformFee, 2),
+            'provider_pv' => round($providerPv, 2),
+            'earnings' => round($earnings, 2),
+            'system_revenue' => round($platformFee + $providerPv, 2),
+        ];
+    }
+
+    /**
+     * คำนวณเปอร์เซ็นต์รายได้ของ Provider
+     *
+     * @return float เปอร์เซ็นต์ที่ Provider จะได้รับ (0-100)
+     */
+    public function getProviderEarningsPercentage(): float
+    {
+        return 100 - $this->platform_fee_percentage - $this->provider_pv_percentage;
+    }
+
+    /**
+     * ตรวจสอบว่า PV ที่ตั้งอยู่ในช่วงที่กำหนดหรือไม่
+     *
+     * @param float $pvPercentage
+     * @return bool
+     */
+    public function isValidPvPercentage(float $pvPercentage): bool
+    {
+        return $pvPercentage >= $this->min_pv_percentage
+            && $pvPercentage <= $this->max_pv_percentage;
     }
 
     /**
