@@ -2366,11 +2366,36 @@ Route::prefix('ai-rental')->name('ai-rental.')->group(function () {
             ->name('stats');
     });
 
-    // Cloud Providers Management (เร็วๆนี้)
+    // Cloud Providers Management ✅ พร้อมใช้งาน!
     Route::prefix('cloud-providers')->name('cloud-providers.')->group(function () {
-        Route::get('/', function () {
-            return view('admin.ai-rental.coming-soon', ['feature' => 'Cloud GPU Providers Management']);
-        })->name('index');
+        Route::get('/', [\App\Http\Controllers\Admin\AiRentalCloudProviderController::class, 'index'])
+            ->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\AiRentalCloudProviderController::class, 'create'])
+            ->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\AiRentalCloudProviderController::class, 'store'])
+            ->name('store');
+        Route::get('/{cloudProvider}', [\App\Http\Controllers\Admin\AiRentalCloudProviderController::class, 'show'])
+            ->name('show');
+        Route::get('/{cloudProvider}/edit', [\App\Http\Controllers\Admin\AiRentalCloudProviderController::class, 'edit'])
+            ->name('edit');
+        Route::patch('/{cloudProvider}', [\App\Http\Controllers\Admin\AiRentalCloudProviderController::class, 'update'])
+            ->name('update');
+        Route::delete('/{cloudProvider}', [\App\Http\Controllers\Admin\AiRentalCloudProviderController::class, 'destroy'])
+            ->name('destroy');
+
+        // Status Management
+        Route::patch('/{cloudProvider}/activate', [\App\Http\Controllers\Admin\AiRentalCloudProviderController::class, 'activate'])
+            ->name('activate');
+        Route::patch('/{cloudProvider}/deactivate', [\App\Http\Controllers\Admin\AiRentalCloudProviderController::class, 'deactivate'])
+            ->name('deactivate');
+
+        // Rating
+        Route::post('/{cloudProvider}/rating', [\App\Http\Controllers\Admin\AiRentalCloudProviderController::class, 'updateRating'])
+            ->name('rating');
+
+        // Order (for drag & drop)
+        Route::post('/update-order', [\App\Http\Controllers\Admin\AiRentalCloudProviderController::class, 'updateOrder'])
+            ->name('update-order');
     });
 
     // My Configurations (เร็วๆนี้)
