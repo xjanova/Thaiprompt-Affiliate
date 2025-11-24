@@ -1106,3 +1106,31 @@ Route::prefix('snake-sync')->name('api.snake-sync.')->group(function () {
     Route::get('/stats', [$controller, 'stats'])
         ->name('stats');
 });
+
+// ============================================
+// Service Booking System API (V1)
+// ============================================
+
+Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+    // Service Categories & Services (Public with auth)
+    Route::get('/service-categories', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'categories']);
+    Route::get('/service-categories/{category}/services', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'categoryServices']);
+    Route::get('/services/{service}', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'showService']);
+    Route::post('/services/calculate-price', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'calculatePrice']);
+    
+    // Customer Bookings
+    Route::prefix('bookings')->group(function () {
+        Route::post('/', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'createBooking']);
+        Route::get('/', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'myBookings']);
+        Route::get('/{booking}', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'showBooking']);
+        Route::get('/{booking}/track', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'trackBooking']);
+        Route::post('/{booking}/cancel', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'cancelBooking']);
+    });
+    
+    // Provider APIs
+    Route::prefix('provider/bookings')->group(function () {
+        Route::post('/{booking}/accept', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'providerAccept']);
+        Route::post('/{booking}/reject', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'providerReject']);
+        Route::post('/{booking}/update-location', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'providerUpdateLocation']);
+    });
+});

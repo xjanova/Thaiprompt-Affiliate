@@ -166,6 +166,26 @@ return [
         ],
 
         [
+            'id' => 'service-booking',
+            'label' => 'จองบริการ (Service)',
+            'icon' => '🔧',
+            'route' => null,
+            'order' => 5.5,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500',
+            'submenu' => [
+                ['label' => '📊 Dashboard', 'route' => 'admin.service-bookings.index'],
+                ['label' => '🗂️ หมวดหมู่บริการ', 'route' => 'admin.service-categories.index'],
+                ['label' => '🔧 จัดการบริการ', 'route' => 'admin.services.index'],
+                ['label' => '📅 การจองทั้งหมด', 'route' => 'admin.service-bookings.index'],
+                ['label' => '👷 ผู้ให้บริการ', 'route' => 'admin.service-providers.index', 'description' => 'จัดการผู้ให้บริการ'],
+                ['label' => '💰 กฎการคิดราคา', 'route' => 'admin.service-pricing-rules.index', 'description' => 'ตั้งค่าราคาตามระยะทาง'],
+                ['label' => '📈 รายงานและสถิติ', 'route' => 'admin.service-bookings.analytics'],
+            ],
+        ],
+
+        [
             'id' => 'ecommerce',
             'label' => 'อีคอมเมิร์ซ',
             'icon' => '🛒',
@@ -779,6 +799,43 @@ return [
             'submenu' => [
                 ['label' => 'จองโรงแรม', 'route' => 'hotels.index'],
                 ['label' => 'การจองของฉัน', 'route' => 'hotels.bookings.index'],
+            ],
+        ],
+
+        [
+            'id' => 'service-booking',
+            'label' => 'จองบริการ',
+            'icon' => '🔧',
+            'route' => null,
+            'order' => 5.5,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500',
+            'submenu' => [
+                ['label' => '🔍 ค้นหาบริการ', 'route' => 'user.services.index', 'description' => 'เลือกบริการที่ต้องการ'],
+                ['label' => '📅 การจองของฉัน', 'route' => 'user.bookings.index', 'description' => 'ดูประวัติการจอง'],
+                ['label' => '⭐ รีวิวบริการ', 'route' => 'user.service-reviews.index', 'description' => 'รีวิวและให้คะแนน'],
+                ['label' => '👷 สมัครเป็นผู้ให้บริการ', 'route' => 'provider.register', 'description' => 'ลงทะเบียนเป็น Provider', 'badge' => '💼', 'badge_color' => 'bg-gradient-to-r from-green-500 to-emerald-500'],
+            ],
+        ],
+
+        [
+            'id' => 'provider-panel',
+            'label' => 'งานของฉัน (Provider)',
+            'icon' => '👷',
+            'route' => null,
+            'order' => 5.7,
+            'permissions' => [],
+            'badge' => 'PRO',
+            'badge_color' => 'bg-gradient-to-r from-orange-500 to-red-500',
+            'condition' => 'hasProviderAccess', // ต้องเป็น Provider ถึงจะเห็น
+            'submenu' => [
+                ['label' => '📊 Dashboard งาน', 'route' => 'provider.bookings.index'],
+                ['label' => '🔔 งานใหม่ที่รอ', 'route' => 'provider.bookings.pending', 'badge' => 'count', 'badge_color' => 'bg-red-500'],
+                ['label' => '✅ งานที่รับแล้ว', 'route' => 'provider.bookings.index'],
+                ['label' => '💰 รายได้ของฉัน', 'route' => 'provider.earnings.index'],
+                ['label' => '📈 สถิติและรีวิว', 'route' => 'provider.stats.index'],
+                ['label' => '⚙️ ตั้งค่า Provider', 'route' => 'provider.settings.index'],
             ],
         ],
 
