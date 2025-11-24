@@ -264,4 +264,87 @@ class ServiceController extends Controller
             'total_price' => $totalPrice,
         ]);
     }
+
+    /**
+     * บล็อกบริการ (Admin)
+     *
+     * @param Request $request
+     * @param Service $service
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function blockService(Request $request, Service $service)
+    {
+        $validated = $request->validate([
+            'block_reason' => 'required|string|max:1000',
+        ]);
+
+        try {
+            // อัปเดตสถานะบล็อก
+            $service->update([
+                'is_blocked' => true,
+                'blocked_at' => now(),
+                'blocked_by' => auth()->id(),
+                'block_reason' => $validated['block_reason'],
+                'is_active' => false, // ปิดการแสดงบริการอัตโนมัติ
+            ]);
+
+            // ส่งการแจ้งเตือนให้ผู้ให้บริการ
+            if ($service->owner) {
+                $service->owner->notify(new \App\Notifications\ServiceBlockedNotification($service));
+            }
+
+            // บันทึก Activity Log
+            activity()
+                ->performedOn($service)
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'reason' => $validated['block_reason'],
+                    'owner_id' => $service->owner_id,
+                ])
+                ->log('บล็อกบริการ');
+
+            return redirect()->back()->with('success', 'บล็อกบริการเรียบร้อยแล้ว และแจ้งเตือนผู้ให้บริการแล้ว');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ปลดบล็อกบริการ (Admin)
+     *
+     * @param Service $service
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function unblockService(Service $service)
+    {
+        try {
+            // อัปเดตสถานะปลดบล็อก
+            $service->update([
+                'is_blocked' => false,
+                'unblocked_at' => now(),
+                'unblocked_by' => auth()->id(),
+                // หมายเหตุ: ไม่ต้องเปิด is_active อัตโนมัติ ให้ผู้ให้บริการเปิดเอง
+            ]);
+
+            // ส่งการแจ้งเตือนให้ผู้ให้บริการ
+            if ($service->owner) {
+                $service->owner->notify(new \App\Notifications\ServiceUnblockedNotification($service));
+            }
+
+            // บันทึก Activity Log
+            activity()
+                ->performedOn($service)
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'owner_id' => $service->owner_id,
+                ])
+                ->log('ปลดบล็อกบริการ');
+
+            return redirect()->back()->with('success', 'ปลดบล็อกบริการเรียบร้อยแล้ว และแจ้งเตือนผู้ให้บริการแล้ว');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
 }

@@ -1110,6 +1110,9 @@ Route::prefix('ecommerce')->name('ecommerce.')->group(function () {
         Route::get('/{product}/edit', [ECommerceController::class, 'editProduct'])->name('edit');
         Route::put('/{product}', [ECommerceController::class, 'updateProduct'])->name('update');
         Route::delete('/{product}', [ECommerceController::class, 'deleteProduct'])->name('delete');
+        // Block/Unblock สินค้า
+        Route::post('/{product}/block', [ECommerceController::class, 'blockProduct'])->name('block');
+        Route::post('/{product}/unblock', [ECommerceController::class, 'unblockProduct'])->name('unblock');
     });
 
     // Orders Management
@@ -2306,6 +2309,11 @@ Route::post('services/{service}/toggle-featured', [\App\Http\Controllers\Admin\S
     ->name('services.toggle-featured');
 Route::post('services/{service}/calculate-price', [\App\Http\Controllers\Admin\ServiceController::class, 'calculatePrice'])
     ->name('services.calculate-price');
+// Block/Unblock บริการ
+Route::post('services/{service}/block', [\App\Http\Controllers\Admin\ServiceController::class, 'blockService'])
+    ->name('services.block');
+Route::post('services/{service}/unblock', [\App\Http\Controllers\Admin\ServiceController::class, 'unblockService'])
+    ->name('services.unblock');
 
 // Service Bookings Management
 Route::prefix('service-bookings')->name('service-bookings.')->group(function () {
