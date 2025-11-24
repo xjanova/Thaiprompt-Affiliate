@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.166.0] - 2025-11-24
+
+### ✨ Features
+- feat: add Admin Menu items for Blocked Products and Services (ac26c356)
+- feat: add Block/Unblock UI enhancements to Admin Product & Service Edit Views (Part 3) (14ba5aa2)
+- feat: add Block/Unblock functionality for Products & Services (Part 2: Controllers, Notifications & Routes) (193f9a1f)
+- feat: add Block/Unblock functionality for Products & Services (Part 1: Models & Migration) (bea02039)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1553 from xjanova/claude/add-service-booking-01HwUCywLcxHdkdwEvwprmAW (6e076b59)
+
 ## [v3.165.0] - 2025-11-24
 
 ### ✨ Features
