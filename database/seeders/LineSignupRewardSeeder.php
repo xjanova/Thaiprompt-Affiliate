@@ -292,7 +292,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_stackable' => true,
                 'notify_user' => true,
                 'notification_message' => '🪙 คุณได้รับเหรียญ TPIX 10 เหรียญ',
-            ])
+            ]
         );
 
         // 3. คูปองส่วนลด
@@ -314,7 +314,7 @@ class LineSignupRewardSeeder extends Seeder
                     'is_stackable' => true,
                     'notify_user' => true,
                     'notification_message' => '🎫 คุณได้รับคูปองส่วนลด 10%',
-                ])
+                ]
             );
         }
 
@@ -334,7 +334,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_active' => true,
                 'is_stackable' => true,
                 'notify_user' => false,
-            ])
+            ]
         );
     }
 
@@ -360,7 +360,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_stackable' => true,
                 'notify_user' => true,
                 'notification_message' => '💎 คุณได้รับแต้มโบนัส 500 แต้ม',
-            ])
+            ]
         );
 
         // 2. เหรียญ TPIX (แพคเกจ)
@@ -380,7 +380,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_stackable' => true,
                 'notify_user' => true,
                 'notification_message' => '🪙 คุณได้รับเหรียญ TPIX 50 เหรียญ',
-            ])
+            ]
         );
 
         // 3. คูปองพรีเมี่ยม
@@ -402,7 +402,7 @@ class LineSignupRewardSeeder extends Seeder
                     'is_stackable' => true,
                     'notify_user' => true,
                     'notification_message' => '🎫 คุณได้รับคูปองพรีเมี่ยม 20%',
-                ])
+                ]
             );
         }
 
@@ -423,7 +423,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_stackable' => true,
                 'notify_user' => true,
                 'notification_message' => '⭐ คุณได้รับคะแนน Rank +10',
-            ])
+            ]
         );
 
         // 5. คะแนน XP (แพคเกจ)
@@ -442,7 +442,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_active' => true,
                 'is_stackable' => true,
                 'notify_user' => false,
-            ])
+            ]
         );
 
         // 6. ลูกทีมฟรี (สำหรับแพคเกจระดับสูง)
@@ -463,7 +463,7 @@ class LineSignupRewardSeeder extends Seeder
                 'is_stackable' => false,
                 'notify_user' => true,
                 'notification_message' => '👥 คุณได้รับสิทธิ์ดาวน์ไลน์ฟรี 3 คน',
-            ])
+            ]
         );
     }
 }
