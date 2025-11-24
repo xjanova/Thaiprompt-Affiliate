@@ -153,7 +153,152 @@
                 </div>
             </div>
 
-            {{-- Tab 2: Delivery Settings --}}
+            {{-- Tab 2: API Capabilities --}}
+            <div x-show="currentTab === 'capabilities'" x-transition class="space-y-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-white">
+                        <i class="fas fa-list-check mr-2"></i>
+                        API Capabilities - รายการ APIs ที่รองรับ
+                    </h3>
+                    <button @click="checkCapabilities"
+                            class="btn-accent"
+                            :disabled="checkingCapabilities">
+                        <i class="fas fa-sync-alt mr-2" :class="{'fa-spin': checkingCapabilities}"></i>
+                        <span x-text="checkingCapabilities ? 'กำลังตรวจสอบ...' : 'ตรวจสอบสถานะ APIs'"></span>
+                    </button>
+                </div>
+
+                <div x-show="!capabilities" class="text-center py-12">
+                    <i class="fas fa-info-circle text-white/40 text-5xl mb-4"></i>
+                    <p class="text-white/60 text-lg">คลิกปุ่ม "ตรวจสอบสถานะ APIs" เพื่อดูรายการ APIs ที่รองรับ</p>
+                </div>
+
+                <div x-show="capabilities" class="space-y-6">
+                    {{-- Summary Cards --}}
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" x-show="capabilities?.summary">
+                        <div class="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4 text-center">
+                            <div class="text-3xl font-bold text-blue-300" x-text="capabilities?.summary?.total || 0"></div>
+                            <div class="text-white/70 text-sm mt-1">APIs ทั้งหมด</div>
+                        </div>
+                        <div class="bg-green-500/20 border border-green-500/50 rounded-lg p-4 text-center">
+                            <div class="text-3xl font-bold text-green-300" x-text="capabilities?.summary?.enabled || 0"></div>
+                            <div class="text-white/70 text-sm mt-1">เปิดใช้งานแล้ว</div>
+                        </div>
+                        <div class="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 text-center">
+                            <div class="text-3xl font-bold text-yellow-300" x-text="capabilities?.summary?.available || 0"></div>
+                            <div class="text-white/70 text-sm mt-1">พร้อมใช้งาน</div>
+                        </div>
+                        <div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-center">
+                            <div class="text-3xl font-bold text-red-300" x-text="capabilities?.summary?.disabled || 0"></div>
+                            <div class="text-white/70 text-sm mt-1">ปิดใช้งาน</div>
+                        </div>
+                    </div>
+
+                    {{-- Core APIs --}}
+                    <div>
+                        <h4 class="text-lg font-bold text-white mb-3">
+                            <i class="fas fa-star mr-2 text-yellow-400"></i>
+                            Core APIs - APIs หลักที่ใช้งานปัจจุบัน
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <template x-for="(api, key) in getApisByCategory('core')" :key="key">
+                                <div class="bg-white/10 rounded-lg p-4 hover:bg-white/15 transition">
+                                    <div class="flex items-start justify-between mb-2">
+                                        <div class="flex items-center gap-3">
+                                            <i :class="'fas ' + api.icon + ' text-2xl text-blue-400'"></i>
+                                            <div>
+                                                <div class="font-bold text-white" x-text="api.name"></div>
+                                                <div class="text-white/60 text-sm" x-text="api.description"></div>
+                                            </div>
+                                        </div>
+                                        <span :class="{
+                                            'bg-green-500': api.status === 'enabled',
+                                            'bg-yellow-500': api.status === 'available',
+                                            'bg-red-500': api.status === 'disabled',
+                                            'bg-gray-500': api.status === 'unknown' || api.status === 'error'
+                                        }" class="px-3 py-1 rounded-full text-white text-xs font-medium">
+                                            <span x-text="getStatusText(api.status)"></span>
+                                        </span>
+                                    </div>
+                                    <div class="text-white/50 text-xs mt-2">
+                                        <strong>ใช้งานใน:</strong>
+                                        <span x-text="api.used_by?.join(', ') || 'N/A'"></span>
+                                    </div>
+                                    <div x-show="api.error" class="text-red-300 text-xs mt-2">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        <span x-text="api.error"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Display APIs --}}
+                    <div>
+                        <h4 class="text-lg font-bold text-white mb-3">
+                            <i class="fas fa-desktop mr-2 text-purple-400"></i>
+                            Display APIs - แสดงผลแผนที่
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <template x-for="(api, key) in getApisByCategory('display')" :key="key">
+                                <div class="bg-white/10 rounded-lg p-4 hover:bg-white/15 transition">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <i :class="'fas ' + api.icon + ' text-xl text-purple-400'"></i>
+                                        <span :class="{
+                                            'bg-green-500': api.status === 'enabled',
+                                            'bg-yellow-500': api.status === 'available',
+                                            'bg-gray-500': api.status === 'unknown'
+                                        }" class="px-2 py-1 rounded-full text-white text-xs">
+                                            <span x-text="getStatusText(api.status)"></span>
+                                        </span>
+                                    </div>
+                                    <div class="font-bold text-white text-sm mb-1" x-text="api.name"></div>
+                                    <div class="text-white/60 text-xs" x-text="api.description"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Advanced APIs --}}
+                    <div>
+                        <h4 class="text-lg font-bold text-white mb-3">
+                            <i class="fas fa-rocket mr-2 text-cyan-400"></i>
+                            Advanced APIs - เตรียมไว้ใช้ในอนาคต
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <template x-for="(api, key) in getApisByCategory('advanced')" :key="key">
+                                <div class="bg-white/10 rounded-lg p-3 hover:bg-white/15 transition">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <i :class="'fas ' + api.icon + ' text-lg text-cyan-400'"></i>
+                                        <span class="bg-yellow-500 px-2 py-1 rounded-full text-white text-xs">
+                                            <span x-text="getStatusText(api.status)"></span>
+                                        </span>
+                                    </div>
+                                    <div class="font-bold text-white text-xs mb-1" x-text="api.name"></div>
+                                    <div class="text-white/60 text-xs" x-text="api.description"></div>
+                                    <div class="text-white/40 text-xs mt-2" x-text="api.used_by?.[0] || 'TBD'"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Info Box --}}
+                    <div class="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4">
+                        <h4 class="text-white font-bold mb-2">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            หมายเหตุ
+                        </h4>
+                        <ul class="text-white/80 text-sm space-y-1 list-disc list-inside">
+                            <li><strong class="text-green-400">เปิดใช้งานแล้ว:</strong> API ถูกเปิดใช้งานและทดสอบผ่านแล้ว</li>
+                            <li><strong class="text-yellow-400">พร้อมใช้งาน:</strong> API พร้อมใช้งาน แต่ยังไม่ได้ทดสอบ</li>
+                            <li><strong class="text-red-400">ปิดใช้งาน:</strong> API ยังไม่ได้เปิดใช้งานใน Google Cloud Console</li>
+                            <li><strong>Future:</strong> เตรียมไว้สำหรับฟีเจอร์ในอนาคต</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Tab 3: Delivery Settings --}}
             <div x-show="currentTab === 'delivery'" x-transition class="space-y-6">
                 <h3 class="text-xl font-bold text-white mb-4">
                     <i class="fas fa-shipping-fast mr-2"></i>
@@ -392,10 +537,13 @@ function googleMapsSettings() {
         saving: false,
         testing: false,
         calculating: false,
+        checkingCapabilities: false,
         calculatorResult: null,
+        capabilities: null,
 
         tabs: [
             { id: 'api', label: 'API Configuration', icon: 'fas fa-key' },
+            { id: 'capabilities', label: 'API Capabilities', icon: 'fas fa-list-check' },
             { id: 'delivery', label: 'Delivery Settings', icon: 'fas fa-shipping-fast' },
             { id: 'cache', label: 'Cache & Performance', icon: 'fas fa-tachometer-alt' },
             { id: 'advanced', label: 'Advanced', icon: 'fas fa-cog' },
@@ -530,6 +678,52 @@ function googleMapsSettings() {
             } finally {
                 this.calculating = false;
             }
+        },
+
+        async checkCapabilities() {
+            this.checkingCapabilities = true;
+
+            try {
+                const response = await fetch('{{ route("admin.settings.google-maps.capabilities") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.capabilities = data.data;
+                    this.showToast('success', 'ตรวจสอบ API Capabilities สำเร็จ');
+                } else {
+                    this.showToast('error', data.message);
+                }
+            } catch (error) {
+                console.error('Check capabilities error:', error);
+                this.showToast('error', 'เกิดข้อผิดพลาดในการตรวจสอบ');
+            } finally {
+                this.checkingCapabilities = false;
+            }
+        },
+
+        getApisByCategory(category) {
+            if (!this.capabilities?.apis) return {};
+            return Object.fromEntries(
+                Object.entries(this.capabilities.apis).filter(([key, api]) => api.category === category)
+            );
+        },
+
+        getStatusText(status) {
+            const statusMap = {
+                'enabled': '✓ เปิดใช้งาน',
+                'available': '⚡ พร้อมใช้',
+                'disabled': '✗ ปิดใช้งาน',
+                'unknown': '? ไม่ทราบ',
+                'error': '⚠ ข้อผิดพลาด',
+            };
+            return statusMap[status] || status;
         },
 
         showToast(type, message) {

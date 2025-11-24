@@ -446,4 +446,237 @@ class GoogleMapsService
             'user_ratings_total' => $place['user_ratings_total'] ?? null,
         ])->toArray();
     }
+
+    /**
+     * ตรวจสอบ API capabilities - ว่า API Key นี้เปิดใช้งาน APIs อะไรบ้าง
+     *
+     * @return array รายการ APIs ที่พร้อมใช้งานและสถานะ
+     */
+    public function checkApiCapabilities(): array
+    {
+        if (empty($this->apiKey)) {
+            return [
+                'has_key' => false,
+                'message' => 'ไม่พบ API Key',
+                'apis' => [],
+            ];
+        }
+
+        $apis = [
+            'geocoding' => [
+                'name' => 'Geocoding API',
+                'description' => 'แปลงที่อยู่ ⇔ พิกัด GPS',
+                'icon' => 'fa-map-marker-alt',
+                'category' => 'core',
+                'status' => 'unknown',
+                'used_by' => ['Delivery Module', 'Service Booking', 'Store Locator'],
+            ],
+            'directions' => [
+                'name' => 'Directions API',
+                'description' => 'คำนวณเส้นทางและระยะทาง',
+                'icon' => 'fa-route',
+                'category' => 'core',
+                'status' => 'unknown',
+                'used_by' => ['Delivery Module', 'Service Booking', 'Route Planning'],
+            ],
+            'distance_matrix' => [
+                'name' => 'Distance Matrix API',
+                'description' => 'คำนวณระยะทางหลายจุดพร้อมกัน',
+                'icon' => 'fa-table',
+                'category' => 'core',
+                'status' => 'unknown',
+                'used_by' => ['Delivery Optimization', 'Multi-point Route'],
+            ],
+            'places' => [
+                'name' => 'Places API',
+                'description' => 'ค้นหาสถานที่และรายละเอียด',
+                'icon' => 'fa-search-location',
+                'category' => 'core',
+                'status' => 'unknown',
+                'used_by' => ['Store Locator', 'POI Search'],
+            ],
+            'maps_javascript' => [
+                'name' => 'Maps JavaScript API',
+                'description' => 'แสดงแผนที่แบบ Interactive',
+                'icon' => 'fa-map',
+                'category' => 'display',
+                'status' => 'available',
+                'used_by' => ['Frontend Map Display'],
+            ],
+            'static_maps' => [
+                'name' => 'Maps Static API',
+                'description' => 'สร้างรูปภาพแผนที่',
+                'icon' => 'fa-image',
+                'category' => 'display',
+                'status' => 'available',
+                'used_by' => ['Email Templates', 'PDF Reports'],
+            ],
+            'street_view' => [
+                'name' => 'Street View Static API',
+                'description' => 'แสดง Street View แบบรูปภาพ',
+                'icon' => 'fa-street-view',
+                'category' => 'display',
+                'status' => 'available',
+                'used_by' => ['Property Listings'],
+            ],
+            'elevation' => [
+                'name' => 'Elevation API',
+                'description' => 'ดึงข้อมูลความสูงจากพิกัด',
+                'icon' => 'fa-mountain',
+                'category' => 'advanced',
+                'status' => 'available',
+                'used_by' => ['Future: Terrain Analysis'],
+            ],
+            'timezone' => [
+                'name' => 'Time Zone API',
+                'description' => 'ดึงข้อมูล timezone จากพิกัด',
+                'icon' => 'fa-clock',
+                'category' => 'advanced',
+                'status' => 'available',
+                'used_by' => ['Future: Multi-timezone Booking'],
+            ],
+            'roads' => [
+                'name' => 'Roads API',
+                'description' => 'Snap to roads, Speed limits',
+                'icon' => 'fa-road',
+                'category' => 'advanced',
+                'status' => 'available',
+                'used_by' => ['Future: GPS Tracking'],
+            ],
+        ];
+
+        // ทดสอบ APIs หลักที่ใช้งานจริง
+        $testResults = $this->testMainApis();
+
+        foreach ($testResults as $apiKey => $result) {
+            if (isset($apis[$apiKey])) {
+                $apis[$apiKey]['status'] = $result['status'];
+                $apis[$apiKey]['error'] = $result['error'] ?? null;
+            }
+        }
+
+        return [
+            'has_key' => true,
+            'api_key_preview' => substr($this->apiKey, 0, 10) . '...',
+            'apis' => $apis,
+            'summary' => [
+                'total' => count($apis),
+                'enabled' => collect($apis)->where('status', 'enabled')->count(),
+                'available' => collect($apis)->where('status', 'available')->count(),
+                'disabled' => collect($apis)->where('status', 'disabled')->count(),
+            ],
+        ];
+    }
+
+    /**
+     * ทดสอบ APIs หลักที่ใช้งานจริง
+     *
+     * @return array ผลการทดสอบแต่ละ API
+     */
+    protected function testMainApis(): array
+    {
+        $results = [];
+
+        // Test Geocoding API
+        try {
+            $response = Http::timeout(5)->get("{$this->baseUrl}/geocode/json", [
+                'address' => 'Bangkok',
+                'key' => $this->apiKey,
+            ]);
+            $data = $response->json();
+            $results['geocoding'] = [
+                'status' => $data['status'] === 'OK' ? 'enabled' : 'disabled',
+                'error' => $data['status'] !== 'OK' ? $data['error_message'] ?? $data['status'] : null,
+            ];
+        } catch (\Exception $e) {
+            $results['geocoding'] = ['status' => 'error', 'error' => $e->getMessage()];
+        }
+
+        // Test Directions API
+        try {
+            $response = Http::timeout(5)->get("{$this->baseUrl}/directions/json", [
+                'origin' => '13.7563,100.5018',
+                'destination' => '13.7308,100.5418',
+                'key' => $this->apiKey,
+            ]);
+            $data = $response->json();
+            $results['directions'] = [
+                'status' => $data['status'] === 'OK' ? 'enabled' : 'disabled',
+                'error' => $data['status'] !== 'OK' ? $data['error_message'] ?? $data['status'] : null,
+            ];
+        } catch (\Exception $e) {
+            $results['directions'] = ['status' => 'error', 'error' => $e->getMessage()];
+        }
+
+        // Test Distance Matrix API
+        try {
+            $response = Http::timeout(5)->get("{$this->baseUrl}/distancematrix/json", [
+                'origins' => '13.7563,100.5018',
+                'destinations' => '13.7308,100.5418',
+                'key' => $this->apiKey,
+            ]);
+            $data = $response->json();
+            $results['distance_matrix'] = [
+                'status' => $data['status'] === 'OK' ? 'enabled' : 'disabled',
+                'error' => $data['status'] !== 'OK' ? $data['error_message'] ?? $data['status'] : null,
+            ];
+        } catch (\Exception $e) {
+            $results['distance_matrix'] = ['status' => 'error', 'error' => $e->getMessage()];
+        }
+
+        // Test Places API
+        try {
+            $response = Http::timeout(5)->get("{$this->baseUrl}/place/nearbysearch/json", [
+                'location' => '13.7563,100.5018',
+                'radius' => 1000,
+                'key' => $this->apiKey,
+            ]);
+            $data = $response->json();
+            $results['places'] = [
+                'status' => $data['status'] === 'OK' || $data['status'] === 'ZERO_RESULTS' ? 'enabled' : 'disabled',
+                'error' => !in_array($data['status'], ['OK', 'ZERO_RESULTS']) ? $data['error_message'] ?? $data['status'] : null,
+            ];
+        } catch (\Exception $e) {
+            $results['places'] = ['status' => 'error', 'error' => $e->getMessage()];
+        }
+
+        return $results;
+    }
+
+    /**
+     * รับรายการ APIs ทั้งหมดที่รองรับ
+     *
+     * @return array รายการ APIs แยกตามหมวดหมู่
+     */
+    public static function getSupportedApis(): array
+    {
+        return [
+            'core' => [
+                'label' => 'Core APIs (ใช้งานหลัก)',
+                'apis' => [
+                    'geocoding' => 'Geocoding API - แปลงที่อยู่ ⇔ พิกัด',
+                    'directions' => 'Directions API - คำนวณเส้นทาง',
+                    'distance_matrix' => 'Distance Matrix API - ระยะทางหลายจุด',
+                    'places' => 'Places API - ค้นหาสถานที่',
+                ],
+            ],
+            'display' => [
+                'label' => 'Display APIs (แสดงผล)',
+                'apis' => [
+                    'maps_javascript' => 'Maps JavaScript API - แผนที่แบบ Interactive',
+                    'static_maps' => 'Maps Static API - รูปภาพแผนที่',
+                    'street_view' => 'Street View Static API - Street View',
+                ],
+            ],
+            'advanced' => [
+                'label' => 'Advanced APIs (ขั้นสูง - เตรียมไว้ใช้อนาคต)',
+                'apis' => [
+                    'elevation' => 'Elevation API - ข้อมูลความสูง',
+                    'timezone' => 'Time Zone API - เขตเวลา',
+                    'roads' => 'Roads API - Snap to roads',
+                    'geolocation' => 'Geolocation API - หาตำแหน่งจาก IP/WiFi',
+                ],
+            ],
+        ];
+    }
 }

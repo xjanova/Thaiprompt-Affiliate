@@ -815,4 +815,27 @@ class SettingsController extends Controller
     {
         return view('admin.settings.google-maps-guide');
     }
+
+    /**
+     * ตรวจสอบ API capabilities - ว่า API Key เปิดใช้งาน APIs อะไรบ้าง
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkGoogleMapsCapabilities()
+    {
+        try {
+            $service = app(\App\Services\GoogleMapsService::class);
+            $capabilities = $service->checkApiCapabilities();
+
+            return response()->json([
+                'success' => true,
+                'data' => $capabilities,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการตรวจสอบ: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }
