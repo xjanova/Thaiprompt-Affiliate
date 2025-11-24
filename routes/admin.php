@@ -1987,16 +1987,21 @@ Route::prefix('page-builder')->name('page-builder.')->group(function () {
 
 // Hotel Owner Management (Super Admin)
 Route::prefix('hotel-owners')->name('hotel-owners.')->group(function () {
+    // Web routes (return views)
     Route::get('/', [HotelOwnerController::class, 'index'])->name('index');
-    Route::get('/statistics', [HotelOwnerController::class, 'statistics'])->name('statistics');
+    Route::get('/create', [HotelOwnerController::class, 'create'])->name('create');
     Route::post('/', [HotelOwnerController::class, 'store'])->name('store');
     Route::get('/{id}', [HotelOwnerController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [HotelOwnerController::class, 'edit'])->name('edit');
     Route::put('/{id}', [HotelOwnerController::class, 'update'])->name('update');
     Route::delete('/{id}', [HotelOwnerController::class, 'destroy'])->name('destroy');
+
+    // API routes (return JSON for AJAX)
     Route::post('/{id}/block', [HotelOwnerController::class, 'block'])->name('block');
     Route::post('/{id}/unblock', [HotelOwnerController::class, 'unblock'])->name('unblock');
     Route::post('/{id}/assign-hotel', [HotelOwnerController::class, 'assignHotel'])->name('assign-hotel');
     Route::delete('/{id}/unassign-hotel', [HotelOwnerController::class, 'unassignHotel'])->name('unassign-hotel');
+    Route::get('/api/statistics', [HotelOwnerController::class, 'statistics'])->name('api.statistics');
 });
 
 // Hotel Management API (Super Admin) - Provides additional endpoints for hotel management
