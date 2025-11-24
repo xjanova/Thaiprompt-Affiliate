@@ -88,7 +88,6 @@ return [
                 ['label' => '---', 'route' => null], // Divider
                 ['label' => '🤖 AI Bot Marketplace', 'route' => 'admin.ai-bots.index', 'description' => 'ตลาด AI Bots'],
                 ['label' => '🎨 AI Generation', 'route' => 'admin.ai-gen.dashboard', 'description' => 'สร้างภาพและวิดีโอ'],
-                ['label' => '💬 LINE Bot AI', 'route' => 'admin.line-bot.ai.index', 'description' => 'LINE OA Integration'],
                 ['label' => '🔄 Bot Automation', 'route' => 'admin.bot-automation.index', 'description' => 'ระบบอัตโนมัติ'],
                 ['label' => '🔌 AI Providers', 'route' => 'admin.ai-providers.index', 'description' => 'จัดการผู้ให้บริการ AI'],
                 ['label' => '📊 AI Analytics', 'route' => 'admin.ai-analytics.index', 'description' => 'วิเคราะห์การใช้งาน'],
@@ -306,18 +305,56 @@ return [
             'route' => null,
             'order' => 12,
             'permissions' => [],
+            'badge' => 'PRO',
+            'badge_color' => 'bg-gradient-to-r from-green-500 to-emerald-500',
             'submenu' => [
-                ['label' => 'ตั้งค่า LINE OA', 'route' => 'admin.line-oa.index'],
-                ['label' => '📊 LINE Analytics', 'route' => 'admin.line-oa.analytics'],
-                ['label' => 'AI Chat Bot', 'route' => 'admin.line-bot.ai.index'],
-                ['label' => '🤖 Hybrid Bot Keywords', 'route' => 'admin.line-bot.keywords.index', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500'],
-                ['label' => '📊 Activity Logs', 'route' => 'admin.line-bot.keywords.activity.index'],
-                ['label' => '⭐ Performance Dashboard', 'route' => 'admin.line-bot.keywords.performance.index'],
-                ['label' => '💡 Keyword Suggestions', 'route' => 'admin.line-bot.keywords.suggestions.index'],
-                ['label' => '🧪 A/B Testing', 'route' => 'admin.line-bot.keywords.ab-tests.index'],
-                ['label' => '😊 Sentiment Analysis', 'route' => 'admin.line-bot.keywords.sentiment-analysis.index'],
-                ['label' => '🧠 NLP Analysis', 'route' => 'admin.line-bot.keywords.nlp-analysis.index', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-cyan-500 to-blue-500'],
-                ['label' => 'Broadcast', 'route' => 'admin.line-bot.broadcast.index'],
+                // ═══════════════════════════════════════
+                // 🎯 Dashboard & Settings
+                // ═══════════════════════════════════════
+                ['label' => '🎯 ภาพรวม Dashboard', 'route' => 'admin.line-oa.analytics', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-blue-500 to-cyan-500'],
+                ['label' => '⚙️ ตั้งค่า LINE OA', 'route' => 'admin.line-oa.index', 'description' => 'Access Token, Webhook, Config'],
+                ['label' => '---', 'route' => null], // Divider
+
+                // ═══════════════════════════════════════
+                // 💬 AI Chat Bot
+                // ═══════════════════════════════════════
+                ['label' => '💬 AI Chat Bot', 'route' => 'admin.line-bot.ai.index', 'description' => 'AI Settings & Conversations'],
+                ['label' => '🎨 Rich Menus', 'route' => 'admin.line-bot.rich-menu.index', 'description' => 'จัดการเมนูด่วน LINE'],
+                ['label' => '---', 'route' => null], // Divider
+
+                // ═══════════════════════════════════════
+                // 👥 Membership Signup System
+                // ═══════════════════════════════════════
+                ['label' => '👥 ระบบสมัครสมาชิก', 'route' => 'admin.line-membership-signup.index', 'badge' => '⭐', 'badge_color' => 'bg-gradient-to-r from-yellow-500 to-orange-500', 'description' => 'LINE Chatbot Registration'],
+                ['label' => '   ├─ 📊 Sessions', 'route' => 'admin.line-membership-signup.sessions', 'description' => 'ดู Session การสมัคร'],
+                ['label' => '   ├─ 🎨 Templates', 'route' => 'admin.line-membership-signup.templates', 'description' => 'Flex Message Templates'],
+                ['label' => '   ├─ 🎁 Rewards', 'route' => 'admin.line-membership-signup.rewards', 'description' => 'จัดการรางวัล'],
+                ['label' => '   ├─ 🔧 Signup Flows', 'route' => 'admin.line-bot.signup-flow.index', 'description' => 'ตั้งค่า Flow'],
+                ['label' => '   └─ 📈 Analytics', 'route' => 'admin.line-membership-signup.analytics', 'description' => 'วิเคราะห์ Funnel'],
+                ['label' => '---', 'route' => null], // Divider
+
+                // ═══════════════════════════════════════
+                // 🤖 Keywords & Automation
+                // ═══════════════════════════════════════
+                ['label' => '🤖 Hybrid Bot Keywords', 'route' => 'admin.line-bot.keywords.index', 'description' => 'คีย์เวิร์ดอัตโนมัติ'],
+                ['label' => '   ├─ 📊 Activity Logs', 'route' => 'admin.line-bot.keywords.activity.index'],
+                ['label' => '   ├─ ⭐ Performance', 'route' => 'admin.line-bot.keywords.performance.index'],
+                ['label' => '   └─ 💡 Suggestions', 'route' => 'admin.line-bot.keywords.suggestions.index'],
+                ['label' => '---', 'route' => null], // Divider
+
+                // ═══════════════════════════════════════
+                // 🔬 Advanced Analysis
+                // ═══════════════════════════════════════
+                ['label' => '🔬 การวิเคราะห์ขั้นสูง', 'route' => null, 'description' => 'Advanced Analytics'],
+                ['label' => '   ├─ 🧪 A/B Testing', 'route' => 'admin.line-bot.keywords.ab-tests.index'],
+                ['label' => '   ├─ 😊 Sentiment Analysis', 'route' => 'admin.line-bot.keywords.sentiment-analysis.index'],
+                ['label' => '   └─ 🧠 NLP Analysis', 'route' => 'admin.line-bot.keywords.nlp-analysis.index', 'badge' => 'AI', 'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500'],
+                ['label' => '---', 'route' => null], // Divider
+
+                // ═══════════════════════════════════════
+                // 📢 Broadcast
+                // ═══════════════════════════════════════
+                ['label' => '📢 Broadcast', 'route' => 'admin.line-bot.broadcast.index', 'description' => 'ส่งข้อความแบบรอบ'],
             ],
         ],
 
