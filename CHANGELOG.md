@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.172.0] - 2025-11-24
+
+### ✨ Features
+- Merge pull request #1561 from xjanova/claude/add-google-maps-settings-01CYTukGNiS649TGxVq8rwVt (96f92eeb)
+- feat: เพิ่ม API Capabilities Check สำหรับ Google Maps (5feeddad)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.171.0] - 2025-11-24
 
 ### ✨ Features
