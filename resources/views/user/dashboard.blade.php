@@ -34,7 +34,7 @@
             <p class="text-gray-700 dark:text-gray-300">
                 ทำการยืนยันตัวตน (KYC) เพื่อถอนเงิน และใช้งานฟีเจอร์เต็มรูปแบบ
             </p>
-            <a href="{{ route('user.kyc.create') }}"
+            <a href="{{ route('user.kyc.index') }}"
                class="inline-flex items-center gap-2 px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02]">
                 <i class="fas fa-id-card"></i>
                 <span>ยืนยันตัวตนตอนนี้</span>
