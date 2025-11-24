@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.177.0] - 2025-11-24
+
+### ✨ Features
+- feat(ai-rental): Phase 2 - Complete Setup Guide, Cost Calculator, Trending Models & News Feed 🚀 (06e33a92)
+- feat: add AI Rental with Cloud GPU system (9e7e5766)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1572 from xjanova/claude/explore-ai-rental-project-01MLbqCHHMj6A4uMdjCyKcfD (401781ca)
+
 ## [v3.176.4] - 2025-11-24
 
 ### ✨ Features
