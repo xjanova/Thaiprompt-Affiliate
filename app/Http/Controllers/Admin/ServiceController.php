@@ -58,6 +58,42 @@ class ServiceController extends Controller
     }
 
     /**
+     * แสดงรายการบริการที่ถูกบล็อก
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function blocked(Request $request)
+    {
+        $query = Service::with(['category', 'owner', 'blockedByUser'])
+            ->blocked(); // ใช้ scope blocked()
+
+        // ค้นหา
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('block_reason', 'like', "%{$search}%");
+            });
+        }
+
+        // กรองตามหมวดหมู่
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        $services = $query->latest('blocked_at')->paginate(15);
+        $categories = ServiceCategory::active()->ordered()->get();
+
+        return view('admin.services.blocked', [
+            'services' => $services,
+            'categories' => $categories,
+            'pageTitle' => 'บริการที่ถูกบล็อก',
+        ]);
+    }
+
+    /**
      * แสดงฟอร์มสร้างบริการใหม่
      *
      * @return \Illuminate\View\View

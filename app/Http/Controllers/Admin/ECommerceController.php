@@ -158,6 +158,43 @@ class ECommerceController extends Controller
     }
 
     /**
+     * แสดงรายการสินค้าที่ถูกบล็อก
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function blockedProducts(Request $request)
+    {
+        $query = Product::with(['category', 'seller', 'images', 'blockedByUser'])
+            ->blocked(); // ใช้ scope blocked()
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%")
+                  ->orWhere('block_reason', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by category
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        // Sort
+        $sortBy = $request->get('sort_by', 'blocked_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $query->orderBy($sortBy, $sortOrder);
+
+        $products = $query->paginate(20);
+        $categories = ProductCategory::orderBy('name')->get();
+
+        return view('admin.ecommerce.products.blocked', compact('products', 'categories'));
+    }
+
+    /**
      * Store new product
      */
     public function storeProduct(Request $request)

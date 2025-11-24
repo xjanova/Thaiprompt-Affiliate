@@ -1105,6 +1105,7 @@ Route::prefix('ecommerce')->name('ecommerce.')->group(function () {
     // Products Management
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/', [ECommerceController::class, 'products'])->name('index');
+        Route::get('/blocked', [ECommerceController::class, 'blockedProducts'])->name('blocked');
         Route::post('/', [ECommerceController::class, 'storeProduct'])->name('store');
         Route::get('/{product}', [ECommerceController::class, 'showProduct'])->name('show');
         Route::get('/{product}/edit', [ECommerceController::class, 'editProduct'])->name('edit');
@@ -2303,6 +2304,8 @@ Route::post('service-categories/reorder', [\App\Http\Controllers\Admin\ServiceCa
 
 // Services Management
 Route::resource('services', \App\Http\Controllers\Admin\ServiceController::class);
+Route::get('services-blocked', [\App\Http\Controllers\Admin\ServiceController::class, 'blocked'])
+    ->name('services.blocked');
 Route::post('services/{service}/toggle-active', [\App\Http\Controllers\Admin\ServiceController::class, 'toggleActive'])
     ->name('services.toggle-active');
 Route::post('services/{service}/toggle-featured', [\App\Http\Controllers\Admin\ServiceController::class, 'toggleFeatured'])
