@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.177.8] - 2025-11-24
+
+### ✨ Features
+- feat(ai-rental): Phase 6 Part 2 - Events, Listeners & Observers 🎭📡 (7eeb2af8)
+- feat(ai-rental): Phase 6 Part 1 - Automation & Orchestration Commands 🤖⚡ (85b0fc44)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1580 from xjanova/claude/explore-ai-rental-project-01MLbqCHHMj6A4uMdjCyKcfD (7fae1b8c)
+
 ## [v3.177.7] - 2025-11-24
 
 ### ✨ Features
