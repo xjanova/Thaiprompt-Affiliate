@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.179.7] - 2025-11-24
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1590 from xjanova/claude/remove-unused-settings-01F4CNFgructRg5YfcYFkhsj (4b6b8c0a)
+- refactor: remove unused commission and API settings from system settings (e4fbd8b0)
+
 ## [v3.179.6] - 2025-11-24
 
 ### ✨ Features
