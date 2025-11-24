@@ -47,6 +47,7 @@ class DatabaseSeeder extends Seeder
             LineSignupTemplateSeeder::class,    // LINE Signup Templates (AI-Powered Membership Signup)
             LineSignupFlowSeeder::class,        // 🆕 LINE Signup Flow Steps (Complete signup conversation flow)
             LineSignupRewardSeeder::class,      // 🆕 LINE Signup Rewards (รางวัลการสมัครสมาชิก: แต้ม, TPIX, คูปอง, ฯลฯ)
+            LineSignupSettingSeeder::class,     // 🆕 LINE Signup Settings (การตั้งค่าระบบสมัครสมาชิก: OTP, Validation, Rewards, Gamification)
             LineBotAiSeeder::class,             // 🆕 LINE Bot AI Profiles (Demo bots: Affiliate, Support, Sales)
             LineBotKeywordSeeder::class,        // 🆕 LINE Hybrid Bot Keywords (Keyword-based responses + AI fallback)
 
