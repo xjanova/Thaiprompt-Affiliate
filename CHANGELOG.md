@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.173.0] - 2025-11-24
+
+### ✨ Features
+- Merge pull request #1563 from xjanova/claude/hide-mlm-settings-menu-01TPT5wDNGV5VoxHh7Y82WDo (db053cd8)
+- feat: hide MLM settings menu from non-admin users (96efd520)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.172.1] - 2025-11-24
 
 ### ✨ Features
