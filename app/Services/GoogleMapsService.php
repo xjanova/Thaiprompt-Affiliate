@@ -2,17 +2,80 @@
 
 namespace App\Services;
 
+use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 
+/**
+ * Google Maps Service
+ *
+ * บริการจัดการ Google Maps API สำหรับระบบ
+ * รองรับการตั้งค่าจาก database และ .env file
+ *
+ * @version 2.0 - เพิ่มการรองรับ database settings
+ */
 class GoogleMapsService
 {
     protected ?string $apiKey = null;
     protected string $baseUrl = 'https://maps.googleapis.com/maps/api';
+    protected array $settings = [];
 
+    /**
+     * Constructor - โหลดการตั้งค่าจาก database และ config
+     */
     public function __construct()
     {
-        $this->apiKey = config('services.google_maps.api_key') ?: null;
+        // โหลดการตั้งค่าจาก database ก่อน ถ้าไม่มีใช้ค่าจาก config
+        $this->apiKey = Setting::get('google_maps_api_key')
+                        ?: config('services.google_maps.api_key')
+                        ?: null;
+
+        // โหลดการตั้งค่าอื่นๆ จาก database
+        $this->loadSettings();
+    }
+
+    /**
+     * โหลดการตั้งค่าทั้งหมดจาก database
+     *
+     * @return void
+     */
+    protected function loadSettings(): void
+    {
+        $this->settings = [
+            'enabled' => Setting::get('google_maps_enabled', true),
+            'geocoding_enabled' => Setting::get('google_maps_geocoding_enabled', true),
+            'directions_enabled' => Setting::get('google_maps_directions_enabled', true),
+            'distance_matrix_enabled' => Setting::get('google_maps_distance_matrix_enabled', true),
+            'places_enabled' => Setting::get('google_maps_places_enabled', true),
+            'cache_enabled' => Setting::get('google_maps_cache_enabled', true),
+            'cache_ttl' => Setting::get('google_maps_cache_ttl', 86400),
+            'language' => Setting::get('google_maps_geocoding_language', 'th'),
+            'region' => Setting::get('google_maps_geocoding_region', 'TH'),
+            'default_mode' => Setting::get('google_maps_default_mode', 'driving'),
+            'avoid_tolls' => Setting::get('google_maps_avoid_tolls', false),
+            'avoid_highways' => Setting::get('google_maps_avoid_highways', false),
+            'avoid_ferries' => Setting::get('google_maps_avoid_ferries', false),
+            'distance_unit' => Setting::get('google_maps_distance_unit', 'metric'),
+            'places_default_radius' => Setting::get('google_maps_places_default_radius', 1000),
+            'places_max_results' => Setting::get('google_maps_places_max_results', 20),
+            'fallback_enabled' => Setting::get('google_maps_fallback_enabled', true),
+        ];
+    }
+
+    /**
+     * ตรวจสอบว่าฟีเจอร์เปิดใช้งานหรือไม่
+     *
+     * @param string $feature ชื่อฟีเจอร์ (geocoding, directions, distance_matrix, places)
+     * @return bool
+     */
+    protected function isFeatureEnabled(string $feature): bool
+    {
+        if (!$this->settings['enabled']) {
+            return false;
+        }
+
+        $key = "{$feature}_enabled";
+        return $this->settings[$key] ?? true;
     }
 
     /**
@@ -22,25 +85,62 @@ class GoogleMapsService
      */
     protected function ensureApiKey(): void
     {
+        // ตรวจสอบว่าระบบเปิดใช้งานหรือไม่
+        if (!$this->settings['enabled']) {
+            throw new \Exception('Google Maps service is disabled. Please enable it in settings.');
+        }
+
         if (empty($this->apiKey)) {
-            throw new \Exception('Google Maps API key is not configured. Please set GOOGLE_MAPS_API_KEY in your .env file.');
+            throw new \Exception('Google Maps API key is not configured. Please set it in Admin > Settings > Google Maps or in your .env file.');
         }
     }
 
     /**
+     * ตรวจสอบว่า cache เปิดใช้งานหรือไม่
+     *
+     * @return bool
+     */
+    protected function isCacheEnabled(): bool
+    {
+        return $this->settings['cache_enabled'] ?? true;
+    }
+
+    /**
+     * รับค่า cache TTL
+     *
+     * @return int จำนวนวินาที
+     */
+    protected function getCacheTTL(): int
+    {
+        return $this->settings['cache_ttl'] ?? 86400;
+    }
+
+    /**
      * Reverse geocode: Convert coordinates to address
+     *
+     * @param float $lat ละติจูด
+     * @param float $lng ลองจิจูด
+     * @return array ข้อมูลที่อยู่และพิกัด
+     * @throws \Exception
      */
     public function reverseGeocode(float $lat, float $lng): array
     {
         $this->ensureApiKey();
 
-        $cacheKey = "geocode:reverse:{$lat}:{$lng}";
+        // ตรวจสอบว่าฟีเจอร์เปิดใช้งานหรือไม่
+        if (!$this->isFeatureEnabled('geocoding')) {
+            throw new \Exception('Geocoding feature is disabled. Please enable it in settings.');
+        }
 
-        return Cache::remember($cacheKey, 86400, function () use ($lat, $lng) {
+        $cacheKey = "geocode:reverse:{$lat}:{$lng}";
+        $cacheTTL = $this->isCacheEnabled() ? $this->getCacheTTL() : 0;
+
+        $callback = function () use ($lat, $lng) {
             $response = Http::get("{$this->baseUrl}/geocode/json", [
                 'latlng' => "{$lat},{$lng}",
                 'key' => $this->apiKey,
-                'language' => 'th',
+                'language' => $this->settings['language'] ?? 'th',
+                'region' => $this->settings['region'] ?? 'TH',
             ]);
 
             if (!$response->successful()) {
@@ -73,18 +173,29 @@ class GoogleMapsService
 
     /**
      * Geocode: Convert address to coordinates
+     *
+     * @param string $address ที่อยู่
+     * @return array ข้อมูลพิกัดและที่อยู่
+     * @throws \Exception
      */
     public function geocode(string $address): array
     {
         $this->ensureApiKey();
 
-        $cacheKey = "geocode:forward:" . md5($address);
+        // ตรวจสอบว่าฟีเจอร์เปิดใช้งานหรือไม่
+        if (!$this->isFeatureEnabled('geocoding')) {
+            throw new \Exception('Geocoding feature is disabled. Please enable it in settings.');
+        }
 
-        return Cache::remember($cacheKey, 86400, function () use ($address) {
+        $cacheKey = "geocode:forward:" . md5($address);
+        $cacheTTL = $this->isCacheEnabled() ? $this->getCacheTTL() : 0;
+
+        $callback = function () use ($address) {
             $response = Http::get("{$this->baseUrl}/geocode/json", [
                 'address' => $address,
                 'key' => $this->apiKey,
-                'language' => 'th',
+                'language' => $this->settings['language'] ?? 'th',
+                'region' => $this->settings['region'] ?? 'TH',
             ]);
 
             if (!$response->successful()) {
@@ -112,15 +223,34 @@ class GoogleMapsService
                     'lng' => $result['geometry']['location']['lng'],
                 ],
             ];
-        });
+        };
+
+        // ใช้ cache ถ้าเปิดใช้งาน
+        return $this->isCacheEnabled()
+            ? Cache::remember($cacheKey, $cacheTTL, $callback)
+            : $callback();
     }
 
     /**
      * Get distance and duration between two points
+     *
+     * @param array $origin จุดเริ่มต้น ['lat' => float, 'lng' => float]
+     * @param array $destination จุดหมาย ['lat' => float, 'lng' => float]
+     * @param string $mode โหมดการเดินทาง (driving, walking, bicycling, transit)
+     * @return array ข้อมูลระยะทาง เวลา และเส้นทาง
+     * @throws \Exception
      */
-    public function getDirections(array $origin, array $destination, string $mode = 'driving'): array
+    public function getDirections(array $origin, array $destination, string $mode = null): array
     {
         $this->ensureApiKey();
+
+        // ตรวจสอบว่าฟีเจอร์เปิดใช้งานหรือไม่
+        if (!$this->isFeatureEnabled('directions')) {
+            throw new \Exception('Directions feature is disabled. Please enable it in settings.');
+        }
+
+        // ใช้ mode จากการตั้งค่าถ้าไม่ได้ระบุ
+        $mode = $mode ?? $this->settings['default_mode'] ?? 'driving';
 
         $originStr = "{$origin['lat']},{$origin['lng']}";
         $destStr = "{$destination['lat']},{$destination['lng']}";

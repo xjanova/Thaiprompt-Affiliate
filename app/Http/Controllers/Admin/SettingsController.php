@@ -549,4 +549,270 @@ class SettingsController extends Controller
     {
         return view('admin.settings.setup-guide');
     }
+
+    /**
+     * แสดงหน้าการตั้งค่า Google Maps (V3)
+     *
+     * @return \Illuminate\View\View
+     */
+    public function googleMaps()
+    {
+        // ดึงการตั้งค่า Google Maps ทั้งหมด
+        $settings = Setting::where('group', 'google_maps')->get()->keyBy('key');
+
+        return view('admin.settings.google-maps', compact('settings'));
+    }
+
+    /**
+     * อัพเดทการตั้งค่า Google Maps
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    public function updateGoogleMaps(Request $request)
+    {
+        // ตรวจสอบว่าเป็น JSON request หรือ form request
+        $isJsonRequest = $request->isJson() || $request->header('Content-Type') === 'application/json';
+
+        // Validation rules
+        $validated = $request->validate([
+            // API Key
+            'google_maps_api_key' => ['nullable', 'string', 'max:500'],
+
+            // Enable/Disable Features
+            'google_maps_enabled' => ['nullable', 'boolean'],
+            'google_maps_geocoding_enabled' => ['nullable', 'boolean'],
+            'google_maps_directions_enabled' => ['nullable', 'boolean'],
+            'google_maps_distance_matrix_enabled' => ['nullable', 'boolean'],
+            'google_maps_places_enabled' => ['nullable', 'boolean'],
+
+            // Cache Settings
+            'google_maps_cache_enabled' => ['nullable', 'boolean'],
+            'google_maps_cache_ttl' => ['nullable', 'integer', 'min:0', 'max:604800'], // สูงสุด 7 วัน
+
+            // Geocoding Settings
+            'google_maps_geocoding_language' => ['nullable', 'string', 'in:th,en'],
+            'google_maps_geocoding_region' => ['nullable', 'string', 'in:TH,US,GB'],
+
+            // Directions Settings
+            'google_maps_default_mode' => ['nullable', 'string', 'in:driving,walking,bicycling,transit'],
+            'google_maps_avoid_tolls' => ['nullable', 'boolean'],
+            'google_maps_avoid_highways' => ['nullable', 'boolean'],
+            'google_maps_avoid_ferries' => ['nullable', 'boolean'],
+
+            // Distance Settings
+            'google_maps_distance_unit' => ['nullable', 'string', 'in:metric,imperial'],
+
+            // Places Settings
+            'google_maps_places_default_radius' => ['nullable', 'integer', 'min:100', 'max:50000'],
+            'google_maps_places_max_results' => ['nullable', 'integer', 'min:1', 'max:60'],
+
+            // Map Display Settings
+            'google_maps_default_zoom' => ['nullable', 'integer', 'min:1', 'max:21'],
+            'google_maps_default_center_lat' => ['nullable', 'string', 'regex:/^-?\d+\.?\d*$/'],
+            'google_maps_default_center_lng' => ['nullable', 'string', 'regex:/^-?\d+\.?\d*$/'],
+            'google_maps_map_type' => ['nullable', 'string', 'in:roadmap,satellite,hybrid,terrain'],
+
+            // Delivery Settings
+            'google_maps_delivery_max_distance' => ['nullable', 'integer', 'min:1', 'max:500'],
+            'google_maps_delivery_cost_per_km' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+            'google_maps_delivery_base_fee' => ['nullable', 'numeric', 'min:0', 'max:10000'],
+
+            // Rate Limiting
+            'google_maps_rate_limit_enabled' => ['nullable', 'boolean'],
+            'google_maps_rate_limit_per_minute' => ['nullable', 'integer', 'min:1', 'max:1000'],
+
+            // Error Handling
+            'google_maps_fallback_enabled' => ['nullable', 'boolean'],
+            'google_maps_fallback_calculation' => ['nullable', 'string', 'in:haversine'],
+        ]);
+
+        // จัดการ checkbox values
+        $booleanFields = [
+            'google_maps_enabled',
+            'google_maps_geocoding_enabled',
+            'google_maps_directions_enabled',
+            'google_maps_distance_matrix_enabled',
+            'google_maps_places_enabled',
+            'google_maps_cache_enabled',
+            'google_maps_avoid_tolls',
+            'google_maps_avoid_highways',
+            'google_maps_avoid_ferries',
+            'google_maps_rate_limit_enabled',
+            'google_maps_fallback_enabled',
+        ];
+
+        if ($isJsonRequest) {
+            // JSON: ใช้ค่าที่ส่งมาโดยตรง (true/false)
+            foreach ($booleanFields as $field) {
+                $validated[$field] = (bool) ($validated[$field] ?? false);
+            }
+        } else {
+            // Form Data: ใช้ $request->has()
+            foreach ($booleanFields as $field) {
+                $validated[$field] = $request->has($field);
+            }
+        }
+
+        // บันทึกการตั้งค่าลง database
+        foreach ($validated as $key => $value) {
+            if ($value !== null) {
+                // กำหนดประเภทข้อมูล
+                $type = 'string';
+                if (in_array($key, $booleanFields)) {
+                    $type = 'boolean';
+                } elseif (in_array($key, ['google_maps_cache_ttl', 'google_maps_places_default_radius', 'google_maps_places_max_results', 'google_maps_default_zoom', 'google_maps_delivery_max_distance', 'google_maps_rate_limit_per_minute'])) {
+                    $type = 'integer';
+                } elseif (in_array($key, ['google_maps_delivery_cost_per_km', 'google_maps_delivery_base_fee'])) {
+                    $type = 'float';
+                }
+
+                Setting::set($key, $value, $type, 'google_maps');
+            }
+        }
+
+        // อัพเดท .env file สำหรับ API Key
+        if (isset($validated['google_maps_api_key'])) {
+            $this->updateGoogleMapsEnv($validated);
+        }
+
+        // Clear cache เพื่อให้ GoogleMapsService โหลดค่าใหม่
+        \Artisan::call('cache:clear');
+
+        if ($isJsonRequest) {
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกการตั้งค่า Google Maps เรียบร้อยแล้ว',
+            ]);
+        }
+
+        return back()->with('success', 'บันทึกการตั้งค่า Google Maps เรียบร้อยแล้ว');
+    }
+
+    /**
+     * ทดสอบการเชื่อมต่อ Google Maps API
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function testGoogleMapsConnection()
+    {
+        try {
+            $service = app(\App\Services\GoogleMapsService::class);
+
+            // ทดสอบ geocoding ด้วยที่อยู่กรุงเทพฯ
+            $result = $service->geocode('กรุงเทพมหานคร');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'เชื่อมต่อ Google Maps API สำเร็จ!',
+                'data' => [
+                    'address' => $result['formatted_address'] ?? 'N/A',
+                    'location' => $result['location'] ?? null,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เชื่อมต่อ Google Maps API ไม่สำเร็จ: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * คำนวณระยะทางระหว่าง 2 จุด (สำหรับทดสอบ)
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function calculateDistance(Request $request)
+    {
+        $validated = $request->validate([
+            'origin_lat' => ['required', 'numeric'],
+            'origin_lng' => ['required', 'numeric'],
+            'dest_lat' => ['required', 'numeric'],
+            'dest_lng' => ['required', 'numeric'],
+            'mode' => ['nullable', 'string', 'in:driving,walking,bicycling,transit'],
+        ]);
+
+        try {
+            $service = app(\App\Services\GoogleMapsService::class);
+
+            $origin = [
+                'lat' => $validated['origin_lat'],
+                'lng' => $validated['origin_lng'],
+            ];
+
+            $destination = [
+                'lat' => $validated['dest_lat'],
+                'lng' => $validated['dest_lng'],
+            ];
+
+            $result = $service->getDirections($origin, $destination, $validated['mode'] ?? 'driving');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'คำนวณระยะทางสำเร็จ',
+                'data' => [
+                    'distance' => $result['distance'],
+                    'duration' => $result['duration'],
+                    'start_address' => $result['start_address'],
+                    'end_address' => $result['end_address'],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'คำนวณระยะทางไม่สำเร็จ: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * อัพเดท .env file สำหรับ Google Maps settings
+     *
+     * @param array $validated ข้อมูลที่ validated แล้ว
+     * @return void
+     */
+    protected function updateGoogleMapsEnv(array $validated): void
+    {
+        $envPath = base_path('.env');
+
+        if (!file_exists($envPath)) {
+            return;
+        }
+
+        $envContent = file_get_contents($envPath);
+
+        // Google Maps settings to update
+        $envSettings = [
+            'GOOGLE_MAPS_API_KEY' => $validated['google_maps_api_key'] ?? '',
+        ];
+
+        foreach ($envSettings as $key => $value) {
+            // ตรวจสอบว่า key มีอยู่ใน .env หรือไม่
+            if (preg_match("/^{$key}=/m", $envContent)) {
+                // อัพเดทค่าเดิม
+                $envContent = preg_replace(
+                    "/^{$key}=.*/m",
+                    "{$key}={$value}",
+                    $envContent
+                );
+            } else {
+                // เพิ่ม key ใหม่
+                $envContent .= "\n{$key}={$value}";
+            }
+        }
+
+        file_put_contents($envPath, $envContent);
+    }
+
+    /**
+     * แสดงหน้าคำแนะนำการตั้งค่า Google Maps API
+     *
+     * @return \Illuminate\View\View
+     */
+    public function googleMapsGuide()
+    {
+        return view('admin.settings.google-maps-guide');
+    }
 }

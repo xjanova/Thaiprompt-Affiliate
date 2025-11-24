@@ -118,6 +118,9 @@ class DatabaseSeeder extends Seeder
             ServiceCategorySeeder::class,       // หมวดหมู่บริการ (นวด, สปา, ทำความสะอาด, จัดส่ง)
             ServicePricingRuleSeeder::class,    // กฎคำนวณราคาตามระยะทาง (0-5km, 5-10km, 10-20km, 20+km)
             ServiceSeeder::class,                // บริการตัวอย่าง (นวดแผนไทย, ทำความสะอาด, จัดส่งด่วน)
+
+            // 16. Google Maps Integration
+            GoogleMapsSettingsSeeder::class,    // การตั้งค่า Google Maps API (Geocoding, Directions, Distance Matrix, Places)
         ]);
 
         $this->command->info('');

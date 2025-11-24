@@ -419,6 +419,13 @@ Route::prefix('settings')->name('settings.')->group(function () {
     Route::post('ocr', [SettingsController::class, 'updateOcr'])->name('ocr.update');
     Route::post('ocr/test', [SettingsController::class, 'testOcrConnection'])->name('ocr.test');
     Route::get('ocr/setup-guide', [SettingsController::class, 'setupGuide'])->name('ocr.setup-guide');
+
+    // Google Maps Settings
+    Route::get('google-maps', [SettingsController::class, 'googleMaps'])->name('google-maps');
+    Route::post('google-maps', [SettingsController::class, 'updateGoogleMaps'])->name('google-maps.update');
+    Route::post('google-maps/test', [SettingsController::class, 'testGoogleMapsConnection'])->name('google-maps.test');
+    Route::post('google-maps/calculate-distance', [SettingsController::class, 'calculateDistance'])->name('google-maps.calculate-distance');
+    Route::get('google-maps/guide', [SettingsController::class, 'googleMapsGuide'])->name('google-maps.guide');
 });
 
 // Notification Bell API (for notification bell component)
