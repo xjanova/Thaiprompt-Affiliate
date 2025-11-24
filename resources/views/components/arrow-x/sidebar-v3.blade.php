@@ -206,7 +206,8 @@
             </div>
         </div>
 
-        {{-- MLM System (Collapsible Menu) --}}
+        {{-- MLM System (Collapsible Menu) - เฉพาะแอดมิน --}}
+        @if($type === 'admin')
         <div class="space-y-1">
             {{-- MLM Header Button --}}
             <button @click="mlmOpen = !mlmOpen"
@@ -325,6 +326,7 @@
                 </a>
             </div>
         </div>
+        @endif
 
         {{-- LINE Membership Signup (Collapsible Menu) 🤖 --}}
         <div class="space-y-1"
