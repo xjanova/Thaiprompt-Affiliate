@@ -12,14 +12,17 @@ use Illuminate\Validation\Rule;
 class HotelOwnerController extends Controller
 {
     /**
-     * List all hotel owners
+     * แสดงรายการเจ้าของโรงแรมทั้งหมด
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
      */
     public function index(Request $request)
     {
         $query = User::where('is_hotel_admin', true)
             ->with(['managedHotel']);
 
-        // Search
+        // ค้นหา
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -29,7 +32,7 @@ class HotelOwnerController extends Controller
             });
         }
 
-        // Filter by status
+        // กรองตามสถานะ
         if ($request->has('status')) {
             switch ($request->status) {
                 case 'active':
@@ -47,7 +50,7 @@ class HotelOwnerController extends Controller
             }
         }
 
-        // Filter by hotel status
+        // กรองตามสถานะโรงแรม
         if ($request->has('hotel_status')) {
             $query->whereHas('managedHotel', function($q) use ($request) {
                 if ($request->hotel_status === 'active') {
@@ -58,7 +61,7 @@ class HotelOwnerController extends Controller
             });
         }
 
-        // Sort
+        // เรียงลำดับ
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
 
@@ -66,7 +69,7 @@ class HotelOwnerController extends Controller
 
         $hotelOwners = $query->paginate($request->get('per_page', 20));
 
-        // Add statistics for each owner
+        // เพิ่มสถิติสำหรับแต่ละเจ้าของ
         $hotelOwners->getCollection()->transform(function($owner) {
             $hotel = $owner->managedHotel;
 
@@ -87,14 +90,22 @@ class HotelOwnerController extends Controller
             return $owner;
         });
 
-        return response()->json([
-            'success' => true,
-            'hotel_owners' => $hotelOwners,
-        ]);
+        // คำนวณสถิติรวม
+        $stats = [
+            'total' => User::where('is_hotel_admin', true)->count(),
+            'active' => User::where('is_hotel_admin', true)->whereNull('blocked_at')->count(),
+            'blocked' => User::where('is_hotel_admin', true)->whereNotNull('blocked_at')->count(),
+            'with_hotel' => User::where('is_hotel_admin', true)->whereNotNull('managed_hotel_id')->count(),
+        ];
+
+        return view('admin.hotel-owners.index', compact('hotelOwners', 'stats'));
     }
 
     /**
-     * Get hotel owner details
+     * แสดงรายละเอียดเจ้าของโรงแรม
+     *
+     * @param int $id
+     * @return \Illuminate\View\View
      */
     public function show($id)
     {
@@ -122,15 +133,48 @@ class HotelOwnerController extends Controller
             ];
         }
 
-        return response()->json([
-            'success' => true,
-            'hotel_owner' => $hotelOwner,
-            'statistics' => $statistics,
-        ]);
+        return view('admin.hotel-owners.show', compact('hotelOwner', 'statistics'));
     }
 
     /**
-     * Create new hotel owner
+     * แสดงฟอร์มสร้างเจ้าของโรงแรมใหม่
+     *
+     * @return \Illuminate\View\View
+     */
+    public function create()
+    {
+        // ดึงรายการโรงแรมที่ยังไม่มีเจ้าของ
+        $availableHotels = Hotel::whereNull('owner_id')->get();
+
+        return view('admin.hotel-owners.create', compact('availableHotels'));
+    }
+
+    /**
+     * แสดงฟอร์มแก้ไขเจ้าของโรงแรม
+     *
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
+    public function edit($id)
+    {
+        $hotelOwner = User::where('is_hotel_admin', true)
+            ->with('managedHotel')
+            ->findOrFail($id);
+
+        // ดึงรายการโรงแรมที่ยังไม่มีเจ้าของ หรือเป็นโรงแรมที่เจ้าของคนนี้จัดการอยู่
+        $availableHotels = Hotel::where(function($query) use ($hotelOwner) {
+            $query->whereNull('owner_id')
+                  ->orWhere('owner_id', $hotelOwner->id);
+        })->get();
+
+        return view('admin.hotel-owners.edit', compact('hotelOwner', 'availableHotels'));
+    }
+
+    /**
+     * บันทึกเจ้าของโรงแรมใหม่
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
@@ -147,15 +191,23 @@ class HotelOwnerController extends Controller
 
         $hotelOwner = User::create($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Hotel owner created successfully',
-            'hotel_owner' => $hotelOwner->load('managedHotel'),
-        ], 201);
+        // อัพเดท hotel owner_id ถ้ามีการกำหนดโรงแรม
+        if (isset($validated['managed_hotel_id'])) {
+            Hotel::where('id', $validated['managed_hotel_id'])
+                ->update(['owner_id' => $hotelOwner->id]);
+        }
+
+        return redirect()
+            ->route('admin.hotel-owners.index')
+            ->with('success', 'สร้างเจ้าของโรงแรมสำเร็จ');
     }
 
     /**
-     * Update hotel owner
+     * อัพเดทเจ้าของโรงแรม
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, $id)
     {
@@ -170,7 +222,10 @@ class HotelOwnerController extends Controller
             'managed_hotel_id' => 'nullable|exists:hotels,id',
         ]);
 
-        // Only hash password if provided
+        // เก็บ managed_hotel_id เดิมไว้เปรียบเทียบ
+        $oldManagedHotelId = $hotelOwner->managed_hotel_id;
+
+        // hash password ถ้ามีการกรอก
         if (isset($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
@@ -179,11 +234,24 @@ class HotelOwnerController extends Controller
 
         $hotelOwner->update($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Hotel owner updated successfully',
-            'hotel_owner' => $hotelOwner->load('managedHotel'),
-        ]);
+        // อัพเดท hotel owner_id
+        if ($oldManagedHotelId != $validated['managed_hotel_id']) {
+            // ลบ owner_id เดิม (ถ้ามี)
+            if ($oldManagedHotelId) {
+                Hotel::where('id', $oldManagedHotelId)
+                    ->update(['owner_id' => null]);
+            }
+
+            // เพิ่ม owner_id ใหม่
+            if (isset($validated['managed_hotel_id'])) {
+                Hotel::where('id', $validated['managed_hotel_id'])
+                    ->update(['owner_id' => $hotelOwner->id]);
+            }
+        }
+
+        return redirect()
+            ->route('admin.hotel-owners.index')
+            ->with('success', 'อัพเดทเจ้าของโรงแรมสำเร็จ');
     }
 
     /**
@@ -244,27 +312,28 @@ class HotelOwnerController extends Controller
     }
 
     /**
-     * Delete hotel owner
+     * ลบเจ้าของโรงแรม
+     *
+     * @param int $id
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy($id)
     {
         $hotelOwner = User::where('is_hotel_admin', true)
             ->findOrFail($id);
 
-        // Check if has managed hotel
+        // ตรวจสอบว่ามีโรงแรมที่จัดการอยู่หรือไม่
         if ($hotelOwner->managedHotel) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cannot delete hotel owner with active hotel. Please reassign or delete the hotel first.',
-            ], 422);
+            return redirect()
+                ->route('admin.hotel-owners.index')
+                ->with('error', 'ไม่สามารถลบเจ้าของโรงแรมที่มีโรงแรมในการดูแลได้ กรุณาถอดโรงแรมออกก่อน');
         }
 
         $hotelOwner->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Hotel owner deleted successfully',
-        ]);
+        return redirect()
+            ->route('admin.hotel-owners.index')
+            ->with('success', 'ลบเจ้าของโรงแรมสำเร็จ');
     }
 
     /**
