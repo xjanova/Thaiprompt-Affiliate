@@ -81,11 +81,11 @@
          x-transition:leave-start="translate-x-0 opacity-100"
          x-transition:leave-end="translate-x-full opacity-0"
          @click.away="isOpen = false"
-         class="fixed top-0 right-0 h-full w-full md:w-[450px] glass-fusion backdrop-blur-2xl border-l-2 border-white/20 shadow-2xl overflow-y-auto"
+         class="fixed top-0 right-0 h-full w-full md:w-[450px] glass-fusion backdrop-blur-sm border-l-2 border-white/20 shadow-2xl overflow-y-auto"
          style="display: none;">
 
         {{-- Panel Header --}}
-        <div class="sticky top-0 z-10 glass-fusion backdrop-blur-xl border-b border-white/20 p-6">
+        <div class="sticky top-0 z-10 glass-fusion border-b border-white/20 p-6">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-3">
                     <div class="w-12 h-12 rounded-xl flex items-center justify-center"
@@ -281,7 +281,7 @@
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
          @click="isOpen = false"
-         class="fixed inset-0 bg-black/50 backdrop-blur-sm z-30"
+         class="fixed inset-0 bg-black/30 z-30"
          style="display: none;">
     </div>
 </div>
