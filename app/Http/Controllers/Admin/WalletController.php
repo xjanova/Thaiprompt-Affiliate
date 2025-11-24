@@ -65,15 +65,17 @@ class WalletController extends Controller
     }
 
     /**
-     * Show specific user's wallet
+     * แสดง wallet ของ user ที่ระบุ
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ด้วย Policy
      */
     public function showWallet($id)
     {
-        if (!auth()->user()->hasPermission('view_all_wallets')) {
-            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
-        }
-
         $wallet = Wallet::with(['user', 'transactions', 'logs'])->findOrFail($id);
+
+        // ✅ ใช้ Policy แทน manual check
+        $this->authorize('view', $wallet);
+
         $statistics = $this->walletService->getWalletStatistics($wallet);
 
         $recentTransactions = $wallet->transactions()
@@ -91,12 +93,19 @@ class WalletController extends Controller
     }
 
     /**
-     * Adjust wallet balance (Admin only)
+     * ปรับยอด wallet balance (Super Admin เท่านั้น)
+     *
+     * ⚠️ SECURITY: การกระทำที่อันตราย ต้องตรวจสอบ Policy
      */
     public function adjustBalance(Request $request, $id)
     {
-        if (!auth()->user()->isSuperAdmin()) {
-            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
+        $wallet = Wallet::findOrFail($id);
+
+        // ✅ ใช้ Policy - deposit/withdraw methods
+        if ($request->amount > 0) {
+            $this->authorize('deposit', $wallet);
+        } else {
+            $this->authorize('withdraw', $wallet);
         }
 
         $request->validate([
@@ -105,8 +114,6 @@ class WalletController extends Controller
         ]);
 
         try {
-            $wallet = Wallet::findOrFail($id);
-
             $transaction = $this->walletService->adjustBalance(
                 $wallet,
                 $request->amount,
@@ -122,16 +129,18 @@ class WalletController extends Controller
     }
 
     /**
-     * Lock user's wallet (Admin only)
+     * ล็อ็ก wallet ของ user (Admin เท่านั้น)
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ด้วย Policy
      */
     public function lockUserWallet($id)
     {
-        if (!auth()->user()->hasPermission('manage_wallets')) {
-            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
-        }
+        $wallet = Wallet::findOrFail($id);
+
+        // ✅ ใช้ Policy แทน manual check
+        $this->authorize('delete', $wallet);  // ใช้ delete เพราะเป็นการกระทำที่รุนแรง
 
         try {
-            $wallet = Wallet::findOrFail($id);
             $wallet->lockPermanent();
             $this->walletService->logAction($wallet, 'wallet_locked', 'Wallet locked by admin: ' . auth()->user()->name, 'critical');
 
@@ -142,16 +151,18 @@ class WalletController extends Controller
     }
 
     /**
-     * Unlock user's wallet (Admin only)
+     * ปลดล็อก wallet ของ user (Admin เท่านั้น)
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ด้วย Policy
      */
     public function unlockUserWallet($id)
     {
-        if (!auth()->user()->hasPermission('manage_wallets')) {
-            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
-        }
+        $wallet = Wallet::findOrFail($id);
+
+        // ✅ ใช้ Policy แทน manual check
+        $this->authorize('restore', $wallet);
 
         try {
-            $wallet = Wallet::findOrFail($id);
             $wallet->unlock();
             $this->walletService->logAction($wallet, 'wallet_unlocked', 'Wallet unlocked by admin: ' . auth()->user()->name, 'info');
 
