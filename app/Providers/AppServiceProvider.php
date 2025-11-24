@@ -53,5 +53,9 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\ProductJourney::observe(\App\Observers\ProductJourneyObserver::class);
         \App\Models\QualityCheckpoint::observe(\App\Observers\QualityCheckpointObserver::class);
         \App\Models\CarbonCredit::observe(\App\Observers\CarbonCreditObserver::class);
+
+        // Register AI Rental GPU System Observers
+        \App\Models\AiRentalDeployment::observe(\App\Observers\AiRentalDeploymentObserver::class);
+        \App\Models\AiRentalBudgetLimit::observe(\App\Observers\AiRentalBudgetLimitObserver::class);
     }
 }

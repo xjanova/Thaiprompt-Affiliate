@@ -153,6 +153,58 @@ class Kernel extends ConsoleKernel
             ->onFailure(function () {
                 \Log::error('[Snake Game] Item spawning failed');
             });
+
+        // ========================================
+        // AI Rental GPU System - Automation Tasks
+        // ========================================
+
+        // Health Check - ตรวจสอบสุขภาพ deployments ทุก 5 นาที
+        $schedule->command('ai-rental:check-health --frequency=5min')
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[AI Rental] Health check completed successfully');
+            })
+            ->onFailure(function () {
+                \Log::error('[AI Rental] Health check failed');
+            });
+
+        // Reset Budgets - รีเซ็ต budget limits ทุกวันเวลา 00:00
+        $schedule->command('ai-rental:reset-budgets')
+            ->dailyAt('00:00')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[AI Rental] Budget reset completed successfully');
+            })
+            ->onFailure(function () {
+                \Log::error('[AI Rental] Budget reset failed');
+            });
+
+        // Cleanup Alerts - Auto-resolve alerts ที่หมดอายุทุก 1 ชั่วโมง
+        $schedule->command('ai-rental:cleanup-alerts')
+            ->hourly()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[AI Rental] Alert cleanup completed successfully');
+            })
+            ->onFailure(function () {
+                \Log::error('[AI Rental] Alert cleanup failed');
+            });
+
+        // Cleanup Audit Logs - ลบ audit logs เก่าทุกวันเวลา 02:00
+        $schedule->command('ai-rental:cleanup-logs --days=90')
+            ->dailyAt('02:00')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[AI Rental] Audit log cleanup completed successfully');
+            })
+            ->onFailure(function () {
+                \Log::error('[AI Rental] Audit log cleanup failed');
+            });
     }
 
     /**
