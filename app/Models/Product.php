@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\CalculatesEarnings;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,7 +12,7 @@ use Illuminate\Support\Str;
 
 class Product extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, CalculatesEarnings;
 
     protected $fillable = [
         'seller_id',
@@ -40,6 +41,9 @@ class Product extends Model
         'commission_rate',
         'customer_cashback',
         'cashback_percentage',
+        'vat_percentage',
+        'pv_value',
+        'platform_fee_percentage',
         'requires_rental',
         'linked_bot_rental_id',
         'meta_title',
@@ -72,6 +76,9 @@ class Product extends Model
         'commission_rate' => 'decimal:2',
         'customer_cashback' => 'decimal:2',
         'cashback_percentage' => 'decimal:2',
+        'vat_percentage' => 'decimal:2',
+        'pv_value' => 'decimal:2',
+        'platform_fee_percentage' => 'decimal:2',
         'requires_rental' => 'boolean',
         'tags' => 'array',
         'is_active' => 'boolean',

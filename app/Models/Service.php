@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\CalculatesEarnings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,7 +43,7 @@ use Illuminate\Support\Str;
  */
 class Service extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, CalculatesEarnings;
 
     protected $table = 'services';
 
@@ -68,6 +69,9 @@ class Service extends Model
         'provider_pv_percentage',
         'min_pv_percentage',
         'max_pv_percentage',
+        'vat_percentage',
+        'cashback_percentage',
+        'pv_value',
         'meta_title',
         'meta_description',
         'meta_keywords',
@@ -85,6 +89,9 @@ class Service extends Model
         'provider_pv_percentage' => 'decimal:2',
         'min_pv_percentage' => 'decimal:2',
         'max_pv_percentage' => 'decimal:2',
+        'vat_percentage' => 'decimal:2',
+        'cashback_percentage' => 'decimal:2',
+        'pv_value' => 'decimal:2',
         'average_rating' => 'decimal:2',
         'requires_location' => 'boolean',
         'is_active' => 'boolean',

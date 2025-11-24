@@ -3,9 +3,9 @@
 @section('title', 'เพิ่มสินค้าใหม่')
 
 @section('content')
-<div class="max-w-6xl mx-auto space-y-6">
+<div class="max-w-7xl mx-auto">
     <!-- Header -->
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-4 mb-6">
         <a href="{{ route('seller.products.index') }}"
            class="flex items-center justify-center w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -18,6 +18,10 @@
         </div>
     </div>
 
+    {{-- Grid Layout: Form + Calculator --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" x-data="productForm()">
+        {{-- Left Column: Form (2/3 width on desktop) --}}
+        <div class="lg:col-span-2 space-y-6">
     <!-- Form -->
     <form action="{{ route('seller.products.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
         @csrf
@@ -74,13 +78,14 @@
                     label="ราคาขาย"
                     name="price"
                     type="number"
-                    :value="old('price')"
+                    :value="old('price', 1000)"
                     placeholder="0.00"
                     :required="true"
                     step="0.01"
                     min="0"
                     helpText="ราคาที่ลูกค้าจะจ่าย (บาท)"
                     tooltip="ราคาขายควรคำนึงถึงต้นทุน, ค่าคอมมิชชั่น, และกำไรที่ต้องการ"
+                    x-model.number="price"
                 />
 
                 <x-form-field
@@ -105,30 +110,52 @@
                     min="0"
                     helpText="สำหรับคำนวณกำไร"
                     tooltip="ใช้ภายในเท่านั้น ลูกค้าจะไม่เห็นข้อมูลนี้"
+                    x-model.number="costPrice"
                 />
             </div>
 
-            <!-- Profit Calculator -->
-            <div x-data="{
-                price: {{ old('price', 0) }},
-                costPrice: {{ old('cost_price', 0) }},
-                commissionRate: {{ old('commission_rate', 10) }},
-                get profit() {
-                    const commission = this.price * (this.commissionRate / 100);
-                    return this.price - this.costPrice - commission;
-                },
-                get profitMargin() {
-                    return this.price > 0 ? ((this.profit / this.price) * 100).toFixed(2) : 0;
-                }
-            }" class="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">กำไรโดยประมาณ</p>
-                        <p class="text-2xl font-bold text-green-600 dark:text-green-400" x-text="'฿' + profit.toFixed(2)"></p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm text-gray-600 dark:text-gray-400">อัตรากำไร</p>
-                        <p class="text-xl font-semibold text-green-600 dark:text-green-400" x-text="profitMargin + '%'"></p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
+                <x-form-field
+                    label="ค่าแพลตฟอร์ม (%)"
+                    name="platform_fee_percentage"
+                    type="number"
+                    :value="old('platform_fee_percentage', 10)"
+                    placeholder="10.00"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    helpText="ค่าธรรมเนียมแพลตฟอร์ม (default: 10%)"
+                    tooltip="ค่าธรรมเนียมที่แพลตฟอร์มจะหักจากราคาขาย"
+                    x-model.number="platformFee"
+                />
+
+                <x-form-field
+                    label="VAT (%)"
+                    name="vat_percentage"
+                    type="number"
+                    :value="old('vat_percentage', 7)"
+                    placeholder="7.00"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    helpText="ภาษีมูลค่าเพิ่ม (default: 7%)"
+                    tooltip="VAT จะถูกหักจากรายได้สุทธิของผู้ขาย"
+                    x-model.number="vat"
+                />
+            </div>
+
+            <!-- Info Banner -->
+            <div class="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-1">คำนวณรายได้สุทธิ</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            ตรวจสอบรายได้สุทธิแบบเรียลไทม์ในตัวคำนวณด้านขวา →<br>
+                            รวมการหัก: ค่าแพลตฟอร์ม, Cashback, VAT, และ MLM Commission
+                        </p>
                     </div>
                 </div>
             </div>
@@ -137,7 +164,7 @@
         <!-- 3. MLM & Commissions -->
         <x-modern-card
             title="MLM & คอมมิชชั่น"
-            description="กำหนด PV และอัตราคอมมิชชั่นสำหรับระบบ MLM"
+            description="กำหนด PV และ Cashback สำหรับระบบ MLM"
             :icon="'<svg class=\'w-6 h-6\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z\'/></svg>'"
         >
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -149,35 +176,9 @@
                     placeholder="0.00"
                     step="0.01"
                     min="0"
-                    helpText="คะแนน PV ที่ลูกค้าจะได้รับเมื่อซื้อสินค้านี้"
-                    tooltip="PV จะถูกใช้คำนวณค่าคอมมิชชั่นในระบบ MLM - ยิ่ง PV สูง ค่าคอมมิชชั่นยิ่งมาก"
-                />
-
-                <x-form-field
-                    label="% คอมมิชชั่นแพลตฟอร์ม"
-                    name="commission_rate"
-                    type="number"
-                    :value="old('commission_rate', 10)"
-                    placeholder="10.00"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    helpText="เปอร์เซ็นต์ที่แพลตฟอร์มจะหักจากราคาขาย"
-                    tooltip="คอมมิชชั่นนี้จะถูกแจกจ่ายในระบบ MLM ตามสายงาน"
-                />
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <x-form-field
-                    label="Cashback สำหรับลูกค้า"
-                    name="customer_cashback"
-                    type="number"
-                    :value="old('customer_cashback', 0)"
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                    helpText="จำนวนเงินที่ลูกค้าจะได้รับกลับ (บาท)"
-                    tooltip="Cashback จะคืนให้ลูกค้าหลังจากสั่งซื้อสำเร็จ เป็นเงินที่สามารถใช้จ่ายได้"
+                    helpText="คะแนน PV สำหรับคำนวณ MLM Commission"
+                    tooltip="PV จะถูกใช้คำนวณค่าคอมมิชชั่นในระบบ MLM - ยิ่ง PV สูง ค่าคอมมิชชั่นยิ่งมาก (0 = ใช้ราคาเป็น PV)"
+                    x-model.number="pvValue"
                 />
 
                 <x-form-field
@@ -189,8 +190,9 @@
                     step="0.01"
                     min="0"
                     max="100"
-                    helpText="หรือกำหนดเป็น % ของราคาขาย"
-                    tooltip="ถ้าไม่กำหนด Cashback แบบ Fixed จะใช้ % นี้คำนวณแทน"
+                    helpText="เปอร์เซ็นต์ Cashback ให้ลูกค้า"
+                    tooltip="Cashback จะคืนให้ลูกค้าหลังสั่งซื้อ (ผู้ขายจ่าย)"
+                    x-model.number="cashback"
                 />
             </div>
 
@@ -368,24 +370,47 @@
             </a>
         </div>
     </form>
+        </div>
+        {{-- End Left Column --}}
+
+        {{-- Right Column: Earnings Calculator (1/3 width on desktop, sticky) --}}
+        <div class="lg:col-span-1">
+            <div class="lg:sticky lg:top-6">
+                <x-earnings-calculator
+                    itemType="product"
+                    :price="old('price', 1000)"
+                    :costPrice="old('cost_price', 0)"
+                    :platformFee="old('platform_fee_percentage', 10)"
+                    :cashback="old('cashback_percentage', 0)"
+                    :vat="old('vat_percentage', 7)"
+                    :pvValue="old('pv_value', 0)"
+                    x-bind:price="price"
+                    x-bind:costPrice="costPrice"
+                    x-bind:platformFee="platformFee"
+                    x-bind:cashback="cashback"
+                    x-bind:vat="vat"
+                    x-bind:pvValue="pvValue"
+                />
+            </div>
+        </div>
+        {{-- End Right Column --}}
+    </div>
+    {{-- End Grid Layout --}}
 </div>
 
 @push('scripts')
 <script>
-// Auto-calculate profit
-document.querySelectorAll('[name="price"], [name="cost_price"], [name="commission_rate"]').forEach(input => {
-    input.addEventListener('input', function() {
-        const price = parseFloat(document.querySelector('[name="price"]').value) || 0;
-        const costPrice = parseFloat(document.querySelector('[name="cost_price"]').value) || 0;
-        const commissionRate = parseFloat(document.querySelector('[name="commission_rate"]').value) || 0;
-
-        const commission = price * (commissionRate / 100);
-        const profit = price - costPrice - commission;
-        const profitMargin = price > 0 ? ((profit / price) * 100).toFixed(2) : 0;
-
-        console.log('Profit:', profit, 'Margin:', profitMargin + '%');
-    });
-});
+function productForm() {
+    return {
+        // Pricing data (reactive for calculator)
+        price: {{ old('price', 1000) }},
+        costPrice: {{ old('cost_price', 0) }},
+        platformFee: {{ old('platform_fee_percentage', 10) }},
+        cashback: {{ old('cashback_percentage', 0) }},
+        vat: {{ old('vat_percentage', 7) }},
+        pvValue: {{ old('pv_value', 0) }},
+    }
+}
 </script>
 @endpush
 @endsection

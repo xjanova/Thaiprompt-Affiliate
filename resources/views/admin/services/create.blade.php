@@ -3,7 +3,7 @@
 @section('title', 'เพิ่มบริการใหม่')
 
 @section('content')
-<div class="max-w-5xl mx-auto" x-data="serviceForm()">
+<div class="max-w-7xl mx-auto" x-data="serviceForm()">
     {{-- Header --}}
     <div class="mb-6">
         <a href="{{ route('admin.services.index') }}"
@@ -22,6 +22,10 @@
         </div>
     </div>
 
+    {{-- Grid Layout: Form + Calculator --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {{-- Left Column: Form (2/3 width on desktop) --}}
+        <div class="lg:col-span-2">
     {{-- Form --}}
     <form action="{{ route('admin.services.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
@@ -110,7 +114,7 @@
                 <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white">
                         <i class="fas fa-dollar-sign mr-2 text-purple-600 dark:text-purple-400"></i>
-                        ราคาและระยะเวลา
+                        ราคาและค่าธรรมเนียม
                     </h2>
                 </div>
 
@@ -121,7 +125,7 @@
                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                 ราคาพื้นฐาน (บาท) <span class="text-red-500">*</span>
                             </label>
-                            <input type="number" name="base_price" value="{{ old('base_price') }}" required min="0" step="0.01"
+                            <input type="number" name="base_price" x-model.number="price" value="{{ old('base_price', 1000) }}" required min="0" step="0.01"
                                    class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white">
                             @error('base_price')
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -135,6 +139,56 @@
                             </label>
                             <input type="number" name="estimated_duration_minutes" value="{{ old('estimated_duration_minutes', 60) }}" min="15" step="15"
                                    class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white">
+                        </div>
+
+                        {{-- Platform Fee --}}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-percentage text-blue-500"></i> ค่าแพลตฟอร์ม (%)
+                            </label>
+                            <input type="number" name="platform_fee_percentage" x-model.number="platformFee" value="{{ old('platform_fee_percentage', 10) }}" min="0" max="100" step="0.01"
+                                   class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">ค่าธรรมเนียมแพลตฟอร์ม (default: 10%)</p>
+                        </div>
+
+                        {{-- Provider PV --}}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-chart-line text-purple-500"></i> Provider PV (%)
+                            </label>
+                            <input type="number" name="provider_pv_percentage" x-model.number="providerPv" value="{{ old('provider_pv_percentage', 5) }}" min="0" max="100" step="0.01"
+                                   class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">ค่าการตลาดของ Provider (ส่วนเสริมสำหรับบริการ)</p>
+                        </div>
+
+                        {{-- Cashback --}}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-gift text-green-500"></i> Cashback (%)
+                            </label>
+                            <input type="number" name="cashback_percentage" x-model.number="cashback" value="{{ old('cashback_percentage', 0) }}" min="0" max="100" step="0.01"
+                                   class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">คืนเงินลูกค้า (Provider จ่าย)</p>
+                        </div>
+
+                        {{-- VAT --}}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-receipt text-orange-500"></i> VAT (%)
+                            </label>
+                            <input type="number" name="vat_percentage" x-model.number="vat" value="{{ old('vat_percentage', 7) }}" min="0" max="100" step="0.01"
+                                   class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">ภาษีมูลค่าเพิ่ม (default: 7%)</p>
+                        </div>
+
+                        {{-- PV Value --}}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-star text-yellow-500"></i> PV Value (คะแนน)
+                            </label>
+                            <input type="number" name="pv_value" x-model.number="pvValue" value="{{ old('pv_value', 0) }}" min="0" step="0.01"
+                                   class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">PV สำหรับคำนวณค่าคอมมิชชั่น MLM (0 = ไม่มีคอม, หรือใช้ราคาเป็น PV)</p>
                         </div>
                     </div>
                 </div>
@@ -200,6 +254,32 @@
             </div>
         </div>
     </form>
+        </div>
+        {{-- End Left Column --}}
+
+        {{-- Right Column: Earnings Calculator (1/3 width on desktop, sticky) --}}
+        <div class="lg:col-span-1">
+            <div class="lg:sticky lg:top-6">
+                <x-earnings-calculator
+                    itemType="service"
+                    :price="old('base_price', 1000)"
+                    :platformFee="old('platform_fee_percentage', 10)"
+                    :providerPv="old('provider_pv_percentage', 5)"
+                    :cashback="old('cashback_percentage', 0)"
+                    :vat="old('vat_percentage', 7)"
+                    :pvValue="old('pv_value', 0)"
+                    x-bind:price="price"
+                    x-bind:platformFee="platformFee"
+                    x-bind:providerPv="providerPv"
+                    x-bind:cashback="cashback"
+                    x-bind:vat="vat"
+                    x-bind:pvValue="pvValue"
+                />
+            </div>
+        </div>
+        {{-- End Right Column --}}
+    </div>
+    {{-- End Grid Layout --}}
 </div>
 @endsection
 
@@ -207,7 +287,16 @@
 <script>
 function serviceForm() {
     return {
+        // Image preview
         imagePreview: null,
+
+        // Pricing data (reactive for calculator)
+        price: {{ old('base_price', 1000) }},
+        platformFee: {{ old('platform_fee_percentage', 10) }},
+        providerPv: {{ old('provider_pv_percentage', 5) }},
+        cashback: {{ old('cashback_percentage', 0) }},
+        vat: {{ old('vat_percentage', 7) }},
+        pvValue: {{ old('pv_value', 0) }},
 
         previewImage(event) {
             const file = event.target.files[0];
