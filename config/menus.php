@@ -326,6 +326,7 @@ return [
                 // 👥 Membership Signup System
                 // ═══════════════════════════════════════
                 ['label' => '👥 ระบบสมัครสมาชิก', 'route' => 'admin.line-membership-signup.index', 'badge' => '⭐', 'badge_color' => 'bg-gradient-to-r from-yellow-500 to-orange-500', 'description' => 'LINE Chatbot Registration'],
+                ['label' => '   ├─ ⚙️ ตั้งค่าระบบ', 'route' => 'admin.line-membership-signup.settings', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-green-500 to-emerald-500', 'description' => 'ตั้งค่า OTP, Validation, Rewards, Gamification'],
                 ['label' => '   ├─ 📊 Sessions', 'route' => 'admin.line-membership-signup.sessions', 'description' => 'ดู Session การสมัคร'],
                 ['label' => '   ├─ 🎨 Templates', 'route' => 'admin.line-membership-signup.templates', 'description' => 'Flex Message Templates'],
                 ['label' => '   ├─ 🎁 Rewards', 'route' => 'admin.line-membership-signup.rewards', 'description' => 'จัดการรางวัล'],

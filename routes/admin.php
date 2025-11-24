@@ -798,6 +798,12 @@ Route::prefix('line-membership-signup')->name('line-membership-signup.')->group(
     // Dashboard
     Route::get('/', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'index'])->name('index');
 
+    // Settings Management
+    Route::get('/settings', [\App\Http\Controllers\Admin\LineSignupSettingsController::class, 'index'])->name('settings');
+    Route::post('/settings', [\App\Http\Controllers\Admin\LineSignupSettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/reset', [\App\Http\Controllers\Admin\LineSignupSettingsController::class, 'reset'])->name('settings.reset');
+    Route::post('/settings/test-connection', [\App\Http\Controllers\Admin\LineSignupSettingsController::class, 'testConnection'])->name('settings.test-connection');
+
     // Sessions Management
     Route::get('/sessions', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'sessions'])->name('sessions');
     Route::get('/sessions/{session}', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'showSession'])->name('sessions.show');
