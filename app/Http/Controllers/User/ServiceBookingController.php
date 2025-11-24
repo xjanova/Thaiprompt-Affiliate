@@ -73,9 +73,13 @@ class ServiceBookingController extends Controller
         $service->loadCount(['reviews']);
         $service->incrementViewCount();
 
+        // คำนวณ PV และ Cashback ที่ลูกค้าจะได้รับ
+        $earningsSummary = $this->calculateEarningsPreview($service);
+
         return view('user.services.show', [
             'service' => $service,
             'pageTitle' => $service->name,
+            'earningsSummary' => $earningsSummary,
         ]);
     }
 
@@ -308,5 +312,38 @@ class ServiceBookingController extends Controller
             'latest_tracking' => $latestTracking,
             'provider_location' => $providerLocation,
         ]);
+    }
+
+    /**
+     * คำนวณ PV และ Cashback ที่ลูกค้าจะได้รับจากบริการ
+     *
+     * @param Service $service
+     * @return array
+     */
+    private function calculateEarningsPreview(Service $service): array
+    {
+        // คำนวณ PV (ใช้ pv_value ถ้ามี ไม่งั้นใช้ base_price)
+        $pvValue = $service->pv_value && $service->pv_value > 0
+            ? (float) $service->pv_value
+            : (float) $service->base_price;
+
+        // คำนวณ Cashback (ถ้ามี)
+        $cashbackPercentage = $service->cashback_percentage ?? 0;
+        $cashbackAmount = ($cashbackPercentage > 0)
+            ? ($service->base_price * $cashbackPercentage / 100)
+            : 0;
+
+        return [
+            'pv_total' => $pvValue,
+            'pv_breakdown' => [
+                [
+                    'service_name' => $service->name,
+                    'pv_value' => $pvValue,
+                    'base_price' => $service->base_price,
+                ],
+            ],
+            'cashback_total' => $cashbackAmount,
+            'cashback_percentage' => $cashbackPercentage,
+        ];
     }
 }
