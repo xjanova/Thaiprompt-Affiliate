@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.179.6] - 2025-11-24
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1589 from xjanova/claude/fix-kyc-column-error-01D8pEt6FbNcnEZgLnQwW9wJ (458abfa6)
+- fix: add missing extracted_data column to kyc_verifications table (099cd033)
+### 🔧 Other Changes
+
+
 ## [v3.179.5] - 2025-11-24
 
 ### ✨ Features
