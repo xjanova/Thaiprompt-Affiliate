@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.178.0] - 2025-11-24
+
+### ✨ Features
+- Merge pull request #1581 from xjanova/claude/fix-line-chatbot-registration-01ENtf8Jd4LHLmN6ZkKAdLiY (e30ecb2a)
+- feat: เพิ่ม Social Proof + Gamification ให้ LINE Chatbot สมัครสมาชิก (5299da85)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.177.8] - 2025-11-24
 
 ### ✨ Features
