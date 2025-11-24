@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.177.6] - 2025-11-24
+
+### ✨ Features
+- feat(ai-rental): Phase 5 Part 2 - Enterprise Services Layer 🛠️💎 (3e2d211a)
+- feat(ai-rental): Phase 5 Part 1 - Enterprise Database Layer 🔥💎 (5c17e9c4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1578 from xjanova/claude/explore-ai-rental-project-01MLbqCHHMj6A4uMdjCyKcfD (5f6113c3)
+- docs(ai-rental): Phase 5 Complete - 100% Production Ready! 🎉 (4dc02251)
+
 ## [v3.177.5] - 2025-11-24
 
 ### ✨ Features
