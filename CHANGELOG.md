@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.163.1] - 2025-11-24
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1550 from xjanova/claude/fix-booking-status-badge-018pWWgFVo4Tjs8uSzbuzrJL (5e7a1417)
+- merge: resolve conflicts with claude/Main for booking status badge (ba4ba7fa)
+
 ## [v3.163.0] - 2025-11-24
 
 ### ✨ Features
