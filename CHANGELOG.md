@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.172.1] - 2025-11-24
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1562 from xjanova/claude/add-line-quick-share-01HxFBjCRhcvwAdPTY1ysqZW (d1d3d8a0)
+- fix: แก้ไข z-index ของ LINE Quick Settings Panel (1a83bad5)
+### 🔧 Other Changes
+
+
 ## [v3.172.0] - 2025-11-24
 
 ### ✨ Features
