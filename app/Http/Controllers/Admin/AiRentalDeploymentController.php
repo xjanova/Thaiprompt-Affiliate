@@ -440,6 +440,23 @@ class AiRentalDeploymentController extends Controller
     }
 
     /**
+     * แสดงหน้า Test Deployment
+     *
+     * @param AiRentalDeployment $deployment
+     * @return View
+     */
+    public function test(AiRentalDeployment $deployment): View
+    {
+        // เช็คสิทธิ์
+        $this->authorize('view', $deployment);
+
+        // โหลด relationships
+        $deployment->load(['cloudConfig.cloudProvider', 'model']);
+
+        return view('admin.ai-rental.deployments.test', compact('deployment'));
+    }
+
+    /**
      * ดึงสีสำหรับ status
      *
      * @param string $status

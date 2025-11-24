@@ -2449,6 +2449,10 @@ Route::prefix('ai-rental')->name('ai-rental.')->group(function () {
         Route::get('/{deployment}/logs/fetch', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'fetchLogs'])
             ->name('logs.fetch');
 
+        // Test Deployment
+        Route::get('/{deployment}/test', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'test'])
+            ->name('test');
+
         // Status Update (for callbacks)
         Route::post('/{deployment}/status', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'updateStatus'])
             ->name('update-status');
