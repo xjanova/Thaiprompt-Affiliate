@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.171.0] - 2025-11-24
+
+### ✨ Features
+- Merge pull request #1560 from xjanova/claude/remove-line-oa-admin-01Q3p7xMeGZQcC4fRsa7o6M6 (477f4dd4)
+- feat: add LINE Membership Signup menu in admin sidebar (63da403d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.170.0] - 2025-11-24
 
 ### ✨ Features
