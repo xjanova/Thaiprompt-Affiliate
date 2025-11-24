@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.157.0] - 2025-11-24
+
+### ✨ Features
+- feat: add service booking seeders (8c5a9d93)
+- feat: add service booking system models (15 models) (45ac1d67)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1543 from xjanova/claude/add-service-booking-01HwUCywLcxHdkdwEvwprmAW (ec06fc81)
+
 ## [v3.156.1] - 2025-11-24
 
 ### ✨ Features
