@@ -127,10 +127,15 @@ class NFCCardController extends Controller
     }
 
     /**
-     * Display the specified card
+     * แสดงรายละเอียดบัตร NFC
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนดูข้อมูล
      */
     public function show(NFCCard $nfcCard)
     {
+        // ✅ ตรวจสอบสิทธิ์ก่อนดู
+        $this->authorize('view', $nfcCard);
+
         $nfcCard->load(['user', 'issuer', 'pairer']);
 
         // Get statistics
@@ -147,10 +152,15 @@ class NFCCardController extends Controller
     }
 
     /**
-     * Show the form for editing the card
+     * แสดงฟอร์มแก้ไขบัตร
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนแก้ไข
      */
     public function edit(NFCCard $nfcCard)
     {
+        // ✅ ตรวจสอบสิทธิ์ก่อนแก้ไข
+        $this->authorize('update', $nfcCard);
+
         $cardTypes = [
             NFCCard::TYPE_STANDARD => 'มาตรฐาน',
             NFCCard::TYPE_PREMIUM => 'พรีเมียม',
@@ -161,10 +171,15 @@ class NFCCardController extends Controller
     }
 
     /**
-     * Update the card
+     * อัพเดทข้อมูลบัตร
+     *
+     * ⚠️ SECURITY: ป้องกัน IDOR - ตรวจสอบสิทธิ์ก่อนแก้ไข
      */
     public function update(Request $request, NFCCard $nfcCard)
     {
+        // ✅ ตรวจสอบสิทธิ์ก่อนอัพเดท
+        $this->authorize('update', $nfcCard);
+
         $validated = $request->validate([
             'card_name' => 'nullable|string|max:255',
             'card_type' => 'required|in:' . implode(',', [
@@ -191,10 +206,15 @@ class NFCCardController extends Controller
     }
 
     /**
-     * Delete the card
+     * ลบบัตร NFC
+     *
+     * ⚠️ SECURITY: ป้องกัน IDOR - ตรวจสอบสิทธิ์ก่อนลบ
      */
     public function destroy(NFCCard $nfcCard)
     {
+        // ✅ ตรวจสอบสิทธิ์ก่อนลบ
+        $this->authorize('delete', $nfcCard);
+
         try {
             $nfcCard->delete();
 
