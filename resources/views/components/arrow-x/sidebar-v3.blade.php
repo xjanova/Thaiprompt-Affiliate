@@ -384,9 +384,9 @@
                 </a>
 
                 {{-- Settings ⚙️ --}}
-                <a href="{{ route('admin.line-bots.settings') }}"
+                <a href="{{ route('admin.line-oa.index', ['tab' => 'membership']) }}"
                    @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bots.settings') && request()->query('tab') === 'membership' ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-oa.index') && request()->query('tab') === 'membership' ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cog w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Settings</span>
                 </a>
