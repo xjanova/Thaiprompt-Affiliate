@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.177.5] - 2025-11-24
+
+### ✨ Features
+- feat(ai-rental): Phase 4 Final Polish - Analytics Dashboard Integration & Real-time APIs ✨ (f720de01)
+- feat(ai-rental): Phase 4 Part 2 - API Integration Framework, Testing Tools & Analytics 🎯📊 (365ba0f8)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1577 from xjanova/claude/explore-ai-rental-project-01MLbqCHHMj6A4uMdjCyKcfD (737a6bd2)
+
 ## [v3.177.4] - 2025-11-24
 
 ### ✨ Features
