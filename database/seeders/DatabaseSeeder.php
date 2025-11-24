@@ -55,6 +55,7 @@ class DatabaseSeeder extends Seeder
             AiProvidersSeeder::class,           // AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini)
             AiGenSeeder::class,                 // AI Generation System (Image & Video Generation)
             AiRentalCloudProvidersSeeder::class, // 🆕 AI Rental Cloud GPU Providers (Google Colab, RunPod, Vast.ai, etc.)
+            AiRentalModelSeeder::class,         // 🆕 AI Rental Models (Stable Diffusion, LLaMA, Whisper, CodeLlama, etc.)
             HuggingFaceTrendingModelsSeeder::class, // 🆕 Hugging Face Trending Models (FLUX, Llama, Whisper, etc.)
             HuggingFaceModelNewsSeeder::class,  // 🆕 Hugging Face Model News (Updates, Tutorials, Best Practices)
 
