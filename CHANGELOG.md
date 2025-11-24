@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.164.0] - 2025-11-24
+
+### ✨ Features
+- Merge pull request #1551 from xjanova/claude/add-service-booking-01HwUCywLcxHdkdwEvwprmAW (c2d81678)
+- feat: integrate MLM Commission system with universal earnings calculator (23e4e748)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.163.1] - 2025-11-24
 
 ### ✨ Features
