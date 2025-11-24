@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.179.2] - 2025-11-24
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1585 from xjanova/claude/explore-ai-rental-project-01MLbqCHHMj6A4uMdjCyKcfD (7ddf70f9)
+- fix(migrations): แก้ Foreign Key Constraint Error ใน commissions table 🔧 (c9124d83)
+### 🔧 Other Changes
+
+
 ## [v3.179.1] - 2025-11-24
 
 ### ✨ Features
