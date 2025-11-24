@@ -141,15 +141,60 @@ class ServiceBookingService
     /**
      * คำนวณระยะทางระหว่าง 2 จุด (km)
      *
+     * ใช้ Google Maps Directions API เพื่อคำนวณระยะทางจริงตามถนน
+     * ถ้า Google Maps API ไม่พร้อมใช้งาน จะ fallback เป็น Haversine formula
+     *
+     * @param float $lat1 ละติจูดจุดเริ่มต้น
+     * @param float $lng1 ลองจิจูดจุดเริ่มต้น
+     * @param float $lat2 ละติจูดจุดปลายทาง
+     * @param float $lng2 ลองจิจูดจุดปลายทาง
+     * @param string $mode โหมดการเดินทาง (driving, walking, bicycling, transit)
+     * @return float ระยะทาง (กิโลเมตร)
+     */
+    public function calculateDistance(
+        float $lat1,
+        float $lng1,
+        float $lat2,
+        float $lng2,
+        string $mode = 'driving'
+    ): float {
+        try {
+            // ใช้ Google Maps API เพื่อคำนวณระยะทางจริงตามถนน
+            $directions = $this->mapsService->getDirections(
+                ['lat' => $lat1, 'lng' => $lng1],
+                ['lat' => $lat2, 'lng' => $lng2],
+                $mode
+            );
+
+            // แปลงจาก meters เป็น kilometers
+            $distanceKm = $directions['distance']['value'] / 1000;
+
+            return round($distanceKm, 2);
+        } catch (\Exception $e) {
+            // Fallback: ใช้ Haversine formula ถ้า Google Maps API ไม่พร้อมใช้งาน
+            \Log::warning('Google Maps API failed in ServiceBookingService, using Haversine fallback', [
+                'error' => $e->getMessage(),
+                'coordinates' => compact('lat1', 'lng1', 'lat2', 'lng2'),
+            ]);
+
+            return $this->calculateDistanceHaversine($lat1, $lng1, $lat2, $lng2);
+        }
+    }
+
+    /**
+     * คำนวณระยะทางแบบเส้นตรงด้วย Haversine formula (km)
+     *
+     * ⚠️ หมายเหตุ: ใช้เป็น fallback เท่านั้น ไม่ใช่ระยะทางจริงตามถนน
+     * ระยะทางจริงตามถนนอาจมากกว่า 20-50% ขึ้นอยู่กับภูมิประเทศ
+     *
      * @param float $lat1
      * @param float $lng1
      * @param float $lat2
      * @param float $lng2
      * @return float
      */
-    public function calculateDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
+    protected function calculateDistanceHaversine(float $lat1, float $lng1, float $lat2, float $lng2): float
     {
-        // ใช้ Haversine formula
         $earthRadius = 6371; // km
 
         $latFrom = deg2rad($lat1);
