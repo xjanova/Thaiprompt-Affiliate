@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.156.1] - 2025-11-24
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1542 from xjanova/claude/cleanup-rewards-table-012TCRvUg3rjTeDdopvAshN8 (82e2298c)
+- refactor: auto-cleanup extra columns in LineSignupRewardSeeder (f65fc1a2)
+
 ## [v3.156.0] - 2025-11-24
 
 ### ✨ Features
