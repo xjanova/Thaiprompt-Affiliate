@@ -53,14 +53,14 @@ class AiRentalController extends Controller
 
         // สถานะการพัฒนาโครงการ (%)
         $project_status = [
-            'database' => 100,           // Migrations & Models เสร็จ 100%
-            'menu' => 100,               // เมนู Admin เสร็จ 100%
-            'cloud_providers' => 30,     // ฟีเจอร์ Cloud Providers กำลังทำ
-            'huggingface_integration' => 0, // ยังไม่เริ่มทำ
-            'deployment_system' => 10,   // เริ่มออกแบบ
-            'news_system' => 20,         // เริ่มออกแบบ
-            'setup_guide' => 0,          // ยังไม่เริ่มทำ
-            'testing' => 0,              // ยังไม่เริ่มทำ
+            'database' => 100,           // ✅ Migrations & Models เสร็จ 100%
+            'menu' => 100,               // ✅ เมนู Admin เสร็จ 100%
+            'cloud_providers' => 100,    // ✅ Seeder + UI Dashboard
+            'huggingface_integration' => 80, // ✅ Trending Models + News (ยังไม่มี API integration)
+            'deployment_system' => 10,   // 🔄 เริ่มออกแบบ (Coming Soon)
+            'news_system' => 100,        // ✅ News Feed System เสร็จสมบูรณ์!
+            'setup_guide' => 100,        // ✅ Setup Guide พร้อม Cost Calculator!
+            'testing' => 0,              // ⏳ ยังไม่เริ่มทำ
         ];
 
         // คำนวณความสมบูรณ์โดยรวม
@@ -206,5 +206,139 @@ class AiRentalController extends Controller
             'success' => true,
             'data' => $stats,
         ]);
+    }
+
+    /**
+     * แสดงรายการ Trending Models จาก Hugging Face
+     *
+     * รองรับการค้นหา, กรอง, และเรียงลำดับ
+     *
+     * @param Request $request
+     * @return View
+     */
+    public function trendingModels(Request $request): View
+    {
+        // เริ่มต้น query
+        $query = HuggingFaceTrendingModel::query();
+
+        // ค้นหา
+        if ($search = $request->input('search')) {
+            $query->search($search);
+        }
+
+        // กรองตามหมวดหมู่
+        if ($category = $request->input('category')) {
+            $query->where('category', $category);
+        }
+
+        // กรองตามคุณสมบัติเพิ่มเติม
+        if ($request->input('featured')) {
+            $query->featured();
+        }
+
+        if ($request->input('recommended')) {
+            $query->recommended();
+        }
+
+        if ($request->input('production')) {
+            $query->productionReady();
+        }
+
+        if ($request->input('freeTier')) {
+            // Models ที่สามารถรันบน free tier clouds (< $0.50/hr)
+            $query->where('estimated_cost_per_hour', '<=', 0.50);
+        }
+
+        // เรียงลำดับ
+        $sortBy = $request->input('sort', 'trending');
+        switch ($sortBy) {
+            case 'popular':
+                $query->popular();
+                break;
+            case 'likes':
+                $query->orderBy('likes', 'desc');
+                break;
+            case 'new':
+                $query->orderBy('first_seen_at', 'desc');
+                break;
+            case 'cost_low':
+                $query->orderBy('estimated_cost_per_hour', 'asc');
+                break;
+            case 'cost_high':
+                $query->orderBy('estimated_cost_per_hour', 'desc');
+                break;
+            default: // trending
+                $query->trending();
+                break;
+        }
+
+        // Pagination
+        $models = $query->paginate(12)->withQueryString();
+
+        return view('admin.ai-rental.trending-models.index', compact('models'));
+    }
+
+    /**
+     * แสดงข่าวสาร Hugging Face Models
+     *
+     * รองรับการค้นหา, กรอง, และเรียงลำดับ
+     *
+     * @param Request $request
+     * @return View
+     */
+    public function news(Request $request): View
+    {
+        // เริ่มต้น query สำหรับข่าวที่เผยแพร่แล้ว
+        $query = HuggingFaceModelNews::published();
+
+        // ค้นหา
+        if ($search = $request->input('search')) {
+            $query->search($search);
+        }
+
+        // กรองตามหมวดหมู่
+        if ($category = $request->input('category')) {
+            $query->where('categories', 'like', "%{$category}%");
+        }
+
+        // กรองตามประเภทข่าว
+        if ($type = $request->input('type')) {
+            $query->ofType($type);
+        }
+
+        // ดึงข่าวเด่น/ปักหมุด (สูงสุด 2 ข่าว)
+        $featured_news = HuggingFaceModelNews::published()
+            ->where(function ($q) {
+                $q->where('is_featured', true)
+                  ->orWhere('is_pinned', true);
+            })
+            ->latest('published_at')
+            ->take(2)
+            ->get();
+
+        // ดึงข่าวทั้งหมด (ไม่รวมข่าวที่แสดงใน featured)
+        $news = $query
+            ->whereNotIn('id', $featured_news->pluck('id'))
+            ->latest('published_at')
+            ->paginate(12)
+            ->withQueryString();
+
+        return view('admin.ai-rental.news.index', compact('news', 'featured_news'));
+    }
+
+    /**
+     * แสดงรายละเอียดข่าว
+     *
+     * พร้อมนับ view count
+     *
+     * @param HuggingFaceModelNews $news
+     * @return View
+     */
+    public function showNews(HuggingFaceModelNews $news): View
+    {
+        // เพิ่ม view count
+        $news->incrementViews();
+
+        return view('admin.ai-rental.news.show', compact('news'));
     }
 }

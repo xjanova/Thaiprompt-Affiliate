@@ -2387,17 +2387,17 @@ Route::prefix('ai-rental')->name('ai-rental.')->group(function () {
         })->name('index');
     });
 
-    // Hugging Face News (เร็วๆนี้)
+    // Hugging Face News ✅ พร้อมใช้งาน!
     Route::prefix('news')->name('news.')->group(function () {
-        Route::get('/', function () {
-            return view('admin.ai-rental.coming-soon', ['feature' => 'Hugging Face Model News']);
-        })->name('index');
+        Route::get('/', [\App\Http\Controllers\Admin\AiRentalController::class, 'news'])
+            ->name('index');
+        Route::get('/{news}', [\App\Http\Controllers\Admin\AiRentalController::class, 'showNews'])
+            ->name('show');
     });
 
-    // Trending Models (เร็วๆนี้)
+    // Trending Models ✅ พร้อมใช้งาน!
     Route::prefix('trending-models')->name('trending-models.')->group(function () {
-        Route::get('/', function () {
-            return view('admin.ai-rental.coming-soon', ['feature' => 'Trending Hugging Face Models']);
-        })->name('index');
+        Route::get('/', [\App\Http\Controllers\Admin\AiRentalController::class, 'trendingModels'])
+            ->name('index');
     });
 });

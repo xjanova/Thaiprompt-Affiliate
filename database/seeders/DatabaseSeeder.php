@@ -55,6 +55,8 @@ class DatabaseSeeder extends Seeder
             AiProvidersSeeder::class,           // AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini)
             AiGenSeeder::class,                 // AI Generation System (Image & Video Generation)
             AiRentalCloudProvidersSeeder::class, // 🆕 AI Rental Cloud GPU Providers (Google Colab, RunPod, Vast.ai, etc.)
+            HuggingFaceTrendingModelsSeeder::class, // 🆕 Hugging Face Trending Models (FLUX, Llama, Whisper, etc.)
+            HuggingFaceModelNewsSeeder::class,  // 🆕 Hugging Face Model News (Updates, Tutorials, Best Practices)
 
             // 6. Payment Systems
             PaymentGatewaySeeder::class,        // Payment Gateways (PromptPay, Bank, TrueMoney, Omise, Stripe, PayPal, etc.)
