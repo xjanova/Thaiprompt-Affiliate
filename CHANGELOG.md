@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.176.3] - 2025-11-24
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1570 from xjanova/claude/admin-access-control-015vr6editbGK7wY2bWCZJtg (4c261288)
+- security: add authorization checks to RankController (efc68e95)
+
 ## [v3.176.2] - 2025-11-24
 
 ### ✨ Features
