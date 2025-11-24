@@ -48,24 +48,7 @@ return new class extends Migration
         ];
 
         Schema::table('line_signup_rewards', function (Blueprint $table) use ($columnsToRemove) {
-            // 1. ลบ indexes ที่เกี่ยวข้องก่อน
-            $indexesToDrop = [
-                'idx_user_status',           // composite index (user_id, status)
-                'idx_session_status',         // อาจมี composite index
-                'line_signup_rewards_user_id_index',
-                'line_signup_rewards_session_id_index',
-                'line_signup_rewards_status_index',
-            ];
-
-            foreach ($indexesToDrop as $indexName) {
-                try {
-                    $table->dropIndex($indexName);
-                } catch (\Exception $e) {
-                    // Ignore if index doesn't exist
-                }
-            }
-
-            // 2. ลบ foreign key constraints
+            // 1. ลบ foreign key constraints ก่อนเสมอ (ต้องลบก่อน indexes!)
             $foreignKeys = [
                 'line_signup_rewards_user_id_foreign',
                 'line_signup_rewards_session_id_foreign',
@@ -85,6 +68,23 @@ return new class extends Migration
                     $table->dropForeign([$column]);
                 } catch (\Exception $e) {
                     // Ignore if FK doesn't exist
+                }
+            }
+
+            // 2. ลบ composite indexes และ named indexes
+            $indexesToDrop = [
+                'idx_user_status',           // composite index (user_id, status)
+                'idx_session_status',         // อาจมี composite index
+                'line_signup_rewards_user_id_index',
+                'line_signup_rewards_session_id_index',
+                'line_signup_rewards_status_index',
+            ];
+
+            foreach ($indexesToDrop as $indexName) {
+                try {
+                    $table->dropIndex($indexName);
+                } catch (\Exception $e) {
+                    // Ignore if index doesn't exist
                 }
             }
 

@@ -22,14 +22,7 @@ return new class extends Migration
         // เช็คว่ามี column user_id หรือไม่
         if (Schema::hasColumn('line_signup_rewards', 'user_id')) {
             Schema::table('line_signup_rewards', function (Blueprint $table) {
-                // ลบ composite index idx_user_status ถ้ามี
-                try {
-                    $table->dropIndex('idx_user_status');
-                } catch (\Exception $e) {
-                    // Ignore if index doesn't exist
-                }
-
-                // ลบ foreign key constraint ด้วยหลายวิธี
+                // ลบ foreign key constraint ก่อนเสมอ (ต้องลบก่อน indexes!)
                 // Method 1: ลบด้วยชื่อ constraint
                 try {
                     $table->dropForeign('line_signup_rewards_user_id_foreign');
@@ -42,6 +35,13 @@ return new class extends Migration
                     $table->dropForeign(['user_id']);
                 } catch (\Exception $e) {
                     // Ignore if constraint doesn't exist
+                }
+
+                // ลบ composite index idx_user_status ถ้ามี
+                try {
+                    $table->dropIndex('idx_user_status');
+                } catch (\Exception $e) {
+                    // Ignore if index doesn't exist
                 }
 
                 // ลบ index ทั่วไปที่อาจมี user_id
