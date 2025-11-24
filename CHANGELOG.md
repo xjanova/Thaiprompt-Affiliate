@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.175.0] - 2025-11-24
+
+### ✨ Features
+- Merge pull request #1565 from xjanova/claude/admin-hotel-owners-01SgC2n8kjnimQLFE8Cc9v4h (c75474b8)
+- feat: add missing routes for hotel-owners CRUD operations (34c78188)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.174.0] - 2025-11-24
 
 ### ✨ Features
