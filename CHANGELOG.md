@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.168.0] - 2025-11-24
+
+### ✨ Features
+- feat: add complete admin hotel owners management system (2cd7475a)
+### 🐛 Bug Fixes
+- fix: resolve GoogleMapsService null API key error (7868e5d6)
+### 🔧 Other Changes
+- Merge pull request #1555 from xjanova/claude/admin-hotel-owners-01SgC2n8kjnimQLFE8Cc9v4h (8866def2)
+
 ## [v3.167.0] - 2025-11-24
 
 ### ✨ Features
