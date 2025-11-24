@@ -12,7 +12,9 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasApiTokens;
 
     /**
-     * The attributes that are mass assignable.
+     * ฟิลด์ที่อนุญาตให้ mass assignment (ปลอดภัย)
+     *
+     * ⚠️ หมายเหตุ: ลบ sensitive fields ออกแล้วเพื่อป้องกัน privilege escalation
      *
      * @var array<int, string>
      */
@@ -22,16 +24,13 @@ class User extends Authenticatable
         'password',
         'member_number',
         'profile_picture',
-        'role',
-        'role_id',
-        'is_super_admin',
-        'is_hotel_admin',
+        // ✅ ลบ 'role', 'role_id', 'is_super_admin', 'is_hotel_admin' ออกแล้ว
         'managed_hotel_id',
-        'blocked_at',
+        // ✅ ลบ 'blocked_at' ออกแล้ว
         'current_rank_id',
         'rank_points',
         'rank_updated_at',
-        'permissions',
+        // ✅ ลบ 'permissions' ออกแล้ว
         'preferred_language',
         'menu_theme_preference',
         'game_preferences',
@@ -62,9 +61,7 @@ class User extends Authenticatable
         // Additional profile
         'date_of_birth',
         'gender',
-        // KYC fields
-        'kyc_status',
-        'kyc_verified_at',
+        // ✅ ลบ 'kyc_status', 'kyc_verified_at' ออกแล้ว
         // Thai ID Card fields
         'id_card_number',
         'thai_first_name',
@@ -79,7 +76,27 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * ฟิลด์ที่ป้องกันไม่ให้ mass assignment (Sensitive Fields)
+     *
+     * ⚠️ SECURITY: ฟิลด์เหล่านี้ต้องแก้ไขผ่านการตรวจสอบสิทธิ์เท่านั้น
+     *
+     * @var array<int, string>
+     */
+    protected $guarded = [
+        'role',              // ป้องกัน role manipulation
+        'role_id',           // ป้องกัน role manipulation
+        'is_super_admin',    // ป้องกัน privilege escalation
+        'is_hotel_admin',    // ป้องกัน privilege escalation
+        'blocked_at',        // เฉพาะ admin เท่านั้น
+        'permissions',       // ป้องกัน permission bypass
+        'kyc_status',        // เฉพาะ admin/system เท่านั้น
+        'kyc_verified_at',   // เฉพาะ admin/system เท่านั้น
+    ];
+
+    /**
+     * ฟิลด์ที่ซ่อนไม่ให้แสดงใน API response (Sensitive Data)
+     *
+     * ⚠️ SECURITY: เพิ่มฟิลด์ sensitive เพื่อป้องกัน data exposure
      *
      * @var array<int, string>
      */
@@ -87,6 +104,11 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'line_access_token',
+        // ✅ เพิ่ม sensitive fields
+        'permissions',           // ข้อมูลสิทธิ์ภายใน
+        'id_card_number',        // เลขบัตรประชาชน (PII)
+        'kyc_verified_at',       // ข้อมูล KYC ภายใน
+        'blocked_at',            // ข้อมูล moderation ภายใน
     ];
 
     /**

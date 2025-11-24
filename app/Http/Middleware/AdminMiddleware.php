@@ -9,19 +9,23 @@ use Symfony\Component\HttpFoundation\Response;
 class AdminMiddleware
 {
     /**
-     * Handle an incoming request.
+     * ตรวจสอบสิทธิ์การเข้าถึงสำหรับ Admin
+     *
+     * เฉพาะ Super Admin หรือ ผู้ใช้ที่มี role = 'admin' เท่านั้น
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // ตรวจสอบว่า user ล็อกอินหรือยัง
         if (!auth()->check()) {
             return redirect()->route('login');
         }
 
         $user = auth()->user();
 
-        // Check if user is admin or super admin
-        if (!$user->is_admin && !$user->is_super_admin) {
-            abort(403, 'Unauthorized access. Admin privileges required.');
+        // ตรวจสอบว่าเป็น super admin หรือ admin role
+        // ✅ แก้ไข: ใช้ role field แทน is_admin ที่ไม่มีอยู่จริง
+        if (!$user->is_super_admin && $user->role !== 'admin') {
+            abort(403, 'ไม่มีสิทธิ์เข้าถึง ต้องเป็น Admin เท่านั้น');
         }
 
         return $next($request);
