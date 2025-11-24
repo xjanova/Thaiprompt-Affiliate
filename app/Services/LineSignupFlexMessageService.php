@@ -9,9 +9,17 @@ class LineSignupFlexMessageService
 {
     /**
      * Build name input message
+     *
+     * เพิ่ม Social Proof และ Gamification เข้าไปในข้อความ
      */
     public function buildNameInputMessage(string $displayName): array
     {
+        // ⭐ Social Proof: ดึงจำนวนสมาชิกที่สมัครแล้ว
+        $totalMembers = User::count();
+        $todaySignups = LineSignupSession::where('status', LineSignupSession::STATUS_COMPLETED)
+            ->whereDate('created_at', today())
+            ->count();
+
         return [
             'type' => 'flex',
             'altText' => 'กรอกชื่อของคุณ',
@@ -41,6 +49,33 @@ class LineSignupFlexMessageService
                             'size' => 'lg',
                             'weight' => 'bold',
                             'margin' => 'md',
+                        ],
+                        // ⭐ Social Proof Box
+                        [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'contents' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => "🎉 " . number_format($totalMembers) . " คนเป็นสมาชิกแล้ว!",
+                                    'size' => 'sm',
+                                    'color' => '#FF6B35',
+                                    'weight' => 'bold',
+                                    'align' => 'center',
+                                ],
+                                [
+                                    'type' => 'text',
+                                    'text' => "⚡ วันนี้มี " . number_format($todaySignups) . " คนสมัครใหม่",
+                                    'size' => 'xs',
+                                    'color' => '#666666',
+                                    'align' => 'center',
+                                    'margin' => 'xs',
+                                ],
+                            ],
+                            'backgroundColor' => '#FFF9E6',
+                            'cornerRadius' => '8px',
+                            'margin' => 'md',
+                            'paddingAll' => '12px',
                         ],
                         [
                             'type' => 'separator',
@@ -865,9 +900,15 @@ class LineSignupFlexMessageService
 
     /**
      * Build success message
+     *
+     * เพิ่ม Gamification Milestone
      */
     public function buildSuccessMessage(User $user): array
     {
+        // 🎯 Gamification: คำนวณ milestone
+        $memberNumber = User::count();
+        $milestone = $this->getMilestone($memberNumber);
+
         return [
             'type' => 'flex',
             'altText' => 'สมัครสมาชิกสำเร็จ!',
@@ -899,6 +940,34 @@ class LineSignupFlexMessageService
                             'color' => '#666666',
                             'align' => 'center',
                             'margin' => 'md',
+                        ],
+                        // 🎯 Gamification Milestone Box
+                        [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'contents' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => $milestone['icon'] . " คุณเป็นสมาชิกคนที่ " . number_format($memberNumber) . "!",
+                                    'size' => 'md',
+                                    'color' => $milestone['color'],
+                                    'weight' => 'bold',
+                                    'align' => 'center',
+                                ],
+                                [
+                                    'type' => 'text',
+                                    'text' => $milestone['message'],
+                                    'size' => 'xs',
+                                    'color' => '#666666',
+                                    'align' => 'center',
+                                    'margin' => 'xs',
+                                    'wrap' => true,
+                                ],
+                            ],
+                            'backgroundColor' => $milestone['bg'],
+                            'cornerRadius' => '8px',
+                            'margin' => 'md',
+                            'paddingAll' => '12px',
                         ],
                         [
                             'type' => 'separator',
@@ -1165,5 +1234,89 @@ class LineSignupFlexMessageService
                 ],
             ],
         ];
+    }
+
+    /**
+     * คำนวณ Gamification Milestone
+     *
+     * @param int $memberNumber หมายเลขสมาชิก
+     * @return array milestone data
+     */
+    protected function getMilestone(int $memberNumber): array
+    {
+        // 🎯 Milestone Tiers
+        $milestones = [
+            1 => [
+                'icon' => '🥇',
+                'message' => 'คุณคือสมาชิกคนแรก! ยินดีด้วย!',
+                'color' => '#FFD700',
+                'bg' => '#FFFBEA',
+            ],
+            10 => [
+                'icon' => '🎖️',
+                'message' => 'Top 10! คุณอยู่ในกลุ่มผู้นำ!',
+                'color' => '#FF6B35',
+                'bg' => '#FFF3E0',
+            ],
+            50 => [
+                'icon' => '⭐',
+                'message' => 'Top 50! คุณเป็น Early Adopter!',
+                'color' => '#FF6B35',
+                'bg' => '#FFF3E0',
+            ],
+            100 => [
+                'icon' => '🎯',
+                'message' => 'สมาชิก 100 คนแรก! พิเศษสุด!',
+                'color' => '#1DB446',
+                'bg' => '#E8F5E9',
+            ],
+            500 => [
+                'icon' => '🚀',
+                'message' => 'ครบ 500 คนแล้ว! กำลังเติบโต!',
+                'color' => '#2196F3',
+                'bg' => '#E3F2FD',
+            ],
+            1000 => [
+                'icon' => '💎',
+                'message' => 'สมาชิก 1,000 คน! เป็นส่วนหนึ่งของความสำเร็จ!',
+                'color' => '#9C27B0',
+                'bg' => '#F3E5F5',
+            ],
+            5000 => [
+                'icon' => '🏆',
+                'message' => 'ครบ 5,000 คน! คอมมูนิตี้ใหญ่!',
+                'color' => '#FF9800',
+                'bg' => '#FFF3E0',
+            ],
+            10000 => [
+                'icon' => '👑',
+                'message' => '10,000 คน! ระดับ Legend!',
+                'color' => '#E91E63',
+                'bg' => '#FCE4EC',
+            ],
+        ];
+
+        // หา milestone ที่ใกล้เคียงที่สุด
+        $foundMilestone = null;
+        foreach ($milestones as $threshold => $data) {
+            if ($memberNumber === $threshold) {
+                return $data;
+            } elseif ($memberNumber < $threshold) {
+                break;
+            }
+            $foundMilestone = $data;
+        }
+
+        // ถ้าไม่เจอ milestone พิเศษ ให้ใช้ default
+        if (!$foundMilestone) {
+            return [
+                'icon' => '✨',
+                'message' => 'ยินดีต้อนรับเข้าสู่ครอบครัว!',
+                'color' => '#1DB446',
+                'bg' => '#E8F5E9',
+            ];
+        }
+
+        return $foundMilestone;
     }
 }
