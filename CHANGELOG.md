@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.179.8] - 2025-11-24
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: add missing membership_retention_settings table migration (5f486ff3)
+- fix: add missing cookie_settings table migration (ed46f82c)
+### 🔧 Other Changes
+- Merge pull request #1591 from xjanova/claude/fix-kyc-column-error-01D8pEt6FbNcnEZgLnQwW9wJ (a88274df)
+
 ## [v3.179.7] - 2025-11-24
 
 ### ✨ Features
