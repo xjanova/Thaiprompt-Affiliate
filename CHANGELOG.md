@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.180.0] - 2025-11-24
+
+### ✨ Features
+- Merge pull request #1593 from xjanova/claude/admin-wallet-management-01GnKPvFn8qRYkVNvkTkiUPv (cd86d89d)
+- feat: add comprehensive admin wallet management system (35fd949f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.179.9] - 2025-11-24
 
 ### ✨ Features
