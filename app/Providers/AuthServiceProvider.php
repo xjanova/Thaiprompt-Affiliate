@@ -38,6 +38,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Wallet::class => \App\Policies\WalletPolicy::class,
         \App\Models\NFCCard::class => \App\Policies\NFCCardPolicy::class,
         \App\Models\NFCReader::class => \App\Policies\NFCReaderPolicy::class,
+        \App\Models\KycVerification::class => \App\Policies\KycVerificationPolicy::class,
     ];
 
     /**

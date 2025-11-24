@@ -18,9 +18,14 @@ class SecurityController extends Controller
 {
     /**
      * Display security dashboard
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนดู dashboard
      */
     public function index()
     {
+        // ✅ ตรวจสอบสิทธิ์ในการจัดการ settings
+        $this->authorize('manage-settings');
+
         $settings = Setting::whereIn('group', ['security'])->get()->groupBy('group');
 
         // Get blocked IPs
@@ -54,9 +59,14 @@ class SecurityController extends Controller
 
     /**
      * Update Turnstile settings
+     *
+     * ⚠️ SECURITY: ป้องกันการเปลี่ยนแปลงการตั้งค่าความปลอดภัย
      */
     public function updateTurnstile(Request $request)
     {
+        // ✅ ตรวจสอบสิทธิ์ในการจัดการ settings
+        $this->authorize('manage-settings');
+
         $validated = $request->validate([
             'turnstile_enabled' => ['nullable'],
             'turnstile_site_key' => ['nullable', 'string'],
@@ -97,9 +107,14 @@ class SecurityController extends Controller
 
     /**
      * Update Rate Limiting settings
+     *
+     * ⚠️ SECURITY: ป้องกันการเปลี่ยนแปลงการตั้งค่าความปลอดภัย
      */
     public function updateRateLimiting(Request $request)
     {
+        // ✅ ตรวจสอบสิทธิ์ในการจัดการ settings
+        $this->authorize('manage-settings');
+
         $validated = $request->validate([
             'rate_limiting_enabled' => ['nullable'],
             'rate_limit_login_max_attempts' => ['nullable', 'integer', 'min:1', 'max:50'],
@@ -197,9 +212,14 @@ class SecurityController extends Controller
 
     /**
      * Block an IP address
+     *
+     * ⚠️ CRITICAL: การ block IP เป็นการกระทำที่มีผลกระทบสูง
      */
     public function blockIp(Request $request)
     {
+        // ✅ ตรวจสอบสิทธิ์ในการจัดการ settings
+        $this->authorize('manage-settings');
+
         $validated = $request->validate([
             'ip_type' => ['required', 'in:single,range,cidr'],
             'ip_address' => ['required_if:ip_type,single', 'nullable'],
@@ -303,9 +323,14 @@ class SecurityController extends Controller
 
     /**
      * Unblock an IP address
+     *
+     * ⚠️ CRITICAL: การ unblock IP ต้องระวัง
      */
     public function unblockIp($id)
     {
+        // ✅ ตรวจสอบสิทธิ์ในการจัดการ settings
+        $this->authorize('manage-settings');
+
         $blockedIp = BlockedIp::findOrFail($id);
         $ipAddress = $blockedIp->ip_address;
 
@@ -326,9 +351,14 @@ class SecurityController extends Controller
 
     /**
      * Analytics Dashboard
+     *
+     * ⚠️ SECURITY: ข้อมูล analytics มีความอ่อนไหว
      */
     public function analytics(Request $request)
     {
+        // ✅ ตรวจสอบสิทธิ์ในการดู analytics
+        $this->authorize('manage-analytics');
+
         $days = $request->input('days', 30);
 
         $analytics = SecurityLog::getAnalytics($days);
@@ -353,9 +383,14 @@ class SecurityController extends Controller
 
     /**
      * Get analytics data as JSON (for AJAX requests)
+     *
+     * ⚠️ SECURITY: ข้อมูล analytics มีความอ่อนไหว
      */
     public function getAnalyticsData(Request $request)
     {
+        // ✅ ตรวจสอบสิทธิ์ในการดู analytics
+        $this->authorize('manage-analytics');
+
         $days = $request->input('days', 30);
         $analytics = SecurityLog::getAnalytics($days);
 
@@ -364,9 +399,14 @@ class SecurityController extends Controller
 
     /**
      * Update Auto-Ban settings
+     *
+     * ⚠️ SECURITY: ป้องกันการเปลี่ยนแปลงการตั้งค่าความปลอดภัย
      */
     public function updateAutoBan(Request $request)
     {
+        // ✅ ตรวจสอบสิทธิ์ในการจัดการ settings
+        $this->authorize('manage-settings');
+
         $validated = $request->validate([
             'auto_ban_enabled' => ['nullable'],
             // Failed Login
@@ -445,9 +485,14 @@ class SecurityController extends Controller
 
     /**
      * Export security logs as CSV
+     *
+     * ⚠️ SECURITY: การ export logs มีข้อมูลอ่อนไหว
      */
     public function exportLogs(Request $request)
     {
+        // ✅ ตรวจสอบสิทธิ์ในการ export
+        $this->authorize('manage-analytics');
+
         $query = SecurityLog::with('user')->orderBy('created_at', 'desc');
 
         // Apply filters
@@ -527,9 +572,14 @@ class SecurityController extends Controller
 
     /**
      * Export analytics as PDF
+     *
+     * ⚠️ SECURITY: การ export analytics มีข้อมูลอ่อนไหว
      */
     public function exportAnalytics(Request $request)
     {
+        // ✅ ตรวจสอบสิทธิ์ในการ export
+        $this->authorize('manage-analytics');
+
         $days = $request->input('days', 30);
         $analytics = SecurityLog::getAnalytics($days);
         $autoBanStats = AutoBanService::getStatistics();
@@ -551,9 +601,14 @@ class SecurityController extends Controller
 
     /**
      * Threat Intelligence Dashboard
+     *
+     * ⚠️ SECURITY: Threat Intelligence มีข้อมูลความปลอดภัยที่อ่อนไหว
      */
     public function threatIntelligence(Request $request, ThreatIntelligenceService $service)
     {
+        // ✅ ตรวจสอบสิทธิ์ในการดู threat intelligence
+        $this->authorize('manage-settings');
+
         $stats = $service->getStatistics();
 
         // Build query with filters
@@ -641,9 +696,14 @@ class SecurityController extends Controller
 
     /**
      * Update threat intelligence manually
+     *
+     * ⚠️ CRITICAL: การอัปเดต threat intelligence มีผลกระทบต่อความปลอดภัย
      */
     public function updateThreatIntelligence(Request $request, ThreatIntelligenceService $service)
     {
+        // ✅ ตรวจสอบสิทธิ์ในการอัปเดต threat intelligence
+        $this->authorize('manage-settings');
+
         // If this is an AJAX request, run in foreground and return JSON
         if ($request->ajax()) {
             try {
@@ -672,9 +732,14 @@ class SecurityController extends Controller
 
     /**
      * Get threat intelligence update progress
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนดูความคืบหน้า
      */
     public function getThreatUpdateProgress(ThreatIntelligenceService $service)
     {
+        // ✅ ตรวจสอบสิทธิ์
+        $this->authorize('manage-settings');
+
         $progress = $service->getProgress();
 
         if (!$progress) {
@@ -696,9 +761,14 @@ class SecurityController extends Controller
 
     /**
      * Check IP against threat databases
+     *
+     * ⚠️ SECURITY: การเช็ค IP threat ต้องมีสิทธิ์
      */
     public function checkIpThreat(Request $request, ThreatIntelligenceService $service)
     {
+        // ✅ ตรวจสอบสิทธิ์
+        $this->authorize('manage-settings');
+
         $validated = $request->validate([
             'ip_address' => ['required', 'ip'],
         ]);
@@ -723,9 +793,14 @@ class SecurityController extends Controller
 
     /**
      * Update threat intelligence settings
+     *
+     * ⚠️ SECURITY: ป้องกันการเปลี่ยนแปลงการตั้งค่าความปลอดภัย
      */
     public function updateThreatSettings(Request $request)
     {
+        // ✅ ตรวจสอบสิทธิ์ในการจัดการ settings
+        $this->authorize('manage-settings');
+
         $validated = $request->validate([
             'threat_intelligence_enabled' => ['nullable'],
             'threat_block_proxy' => ['nullable'],

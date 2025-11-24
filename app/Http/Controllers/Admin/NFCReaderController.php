@@ -11,9 +11,14 @@ class NFCReaderController extends Controller
 {
     /**
      * Display a listing of NFC readers
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนดูรายการ
      */
     public function index(Request $request)
     {
+        // ✅ ตรวจสอบสิทธิ์ในการดูรายการ
+        $this->authorize('viewAny', NFCReader::class);
+
         $query = NFCReader::with('creator')->latest();
 
         // Search
@@ -52,17 +57,27 @@ class NFCReaderController extends Controller
 
     /**
      * Show the form for creating a new reader
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนสร้าง
      */
     public function create()
     {
+        // ✅ ตรวจสอบสิทธิ์ในการสร้าง
+        $this->authorize('create', NFCReader::class);
+
         return view('admin.nfc-readers.create');
     }
 
     /**
      * Store a newly created reader
+     *
+     * ⚠️ SECURITY: ป้องกัน unauthorized creation
      */
     public function store(Request $request)
     {
+        // ✅ ตรวจสอบสิทธิ์ในการสร้าง
+        $this->authorize('create', NFCReader::class);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'reader_id' => 'required|string|unique:nfc_readers,reader_id',
@@ -93,9 +108,14 @@ class NFCReaderController extends Controller
 
     /**
      * Display the specified reader
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนดูข้อมูล
      */
     public function show(NFCReader $nfcReader)
     {
+        // ✅ ตรวจสอบสิทธิ์ก่อนดู
+        $this->authorize('view', $nfcReader);
+
         $nfcReader->load('creator');
 
         // Get recent transactions
@@ -123,17 +143,27 @@ class NFCReaderController extends Controller
 
     /**
      * Show the form for editing the reader
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนแก้ไข
      */
     public function edit(NFCReader $nfcReader)
     {
+        // ✅ ตรวจสอบสิทธิ์ก่อนแก้ไข
+        $this->authorize('update', $nfcReader);
+
         return view('admin.nfc-readers.edit', compact('nfcReader'));
     }
 
     /**
      * Update the reader
+     *
+     * ⚠️ SECURITY: ป้องกัน IDOR - ตรวจสอบสิทธิ์ก่อนแก้ไข
      */
     public function update(Request $request, NFCReader $nfcReader)
     {
+        // ✅ ตรวจสอบสิทธิ์ก่อนอัพเดท
+        $this->authorize('update', $nfcReader);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'location' => 'required|string|max:255',
@@ -158,9 +188,14 @@ class NFCReaderController extends Controller
 
     /**
      * Delete the reader
+     *
+     * ⚠️ SECURITY: ป้องกัน IDOR - ตรวจสอบสิทธิ์ก่อนลบ
      */
     public function destroy(NFCReader $nfcReader)
     {
+        // ✅ ตรวจสอบสิทธิ์ก่อนลบ
+        $this->authorize('delete', $nfcReader);
+
         try {
             $nfcReader->delete();
 
@@ -174,9 +209,14 @@ class NFCReaderController extends Controller
 
     /**
      * Activate reader
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนเปลี่ยนสถานะ
      */
     public function activate(NFCReader $nfcReader)
     {
+        // ✅ ตรวจสอบสิทธิ์ก่อนเปลี่ยนสถานะ
+        $this->authorize('update', $nfcReader);
+
         try {
             $nfcReader->activate();
 
@@ -188,9 +228,14 @@ class NFCReaderController extends Controller
 
     /**
      * Deactivate reader
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนเปลี่ยนสถานะ
      */
     public function deactivate(NFCReader $nfcReader)
     {
+        // ✅ ตรวจสอบสิทธิ์ก่อนเปลี่ยนสถานะ
+        $this->authorize('update', $nfcReader);
+
         try {
             $nfcReader->deactivate();
 
@@ -202,9 +247,14 @@ class NFCReaderController extends Controller
 
     /**
      * Set reader to maintenance mode
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนเปลี่ยนสถานะ
      */
     public function maintenance(NFCReader $nfcReader)
     {
+        // ✅ ตรวจสอบสิทธิ์ก่อนเปลี่ยนสถานะ
+        $this->authorize('update', $nfcReader);
+
         try {
             $nfcReader->setMaintenance();
 
@@ -237,9 +287,14 @@ class NFCReaderController extends Controller
 
     /**
      * Get reader status
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนดูข้อมูล
      */
     public function status(NFCReader $nfcReader)
     {
+        // ✅ ตรวจสอบสิทธิ์ก่อนดู status
+        $this->authorize('view', $nfcReader);
+
         return response()->json([
             'reader_id' => $nfcReader->reader_id,
             'name' => $nfcReader->name,

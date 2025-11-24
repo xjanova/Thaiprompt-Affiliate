@@ -11,13 +11,13 @@ class KycController extends Controller
 {
     /**
      * Display a listing of KYC verifications
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนดูรายการ
      */
     public function index(Request $request)
     {
-        // Check permission
-        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasPermission('view_kyc_verifications')) {
-            abort(403, 'คุณไม่มีสิทธิ์ในการดูข้อมูลการยืนยันตัวตน');
-        }
+        // ✅ ตรวจสอบสิทธิ์ในการดูรายการ (ใช้ Policy แทน manual check)
+        $this->authorize('viewAny', KycVerification::class);
 
         $query = KycVerification::with(['user', 'reviewer']);
 
@@ -52,13 +52,13 @@ class KycController extends Controller
 
     /**
      * Display the specified KYC verification
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนดูข้อมูล
      */
     public function show(KycVerification $kycVerification)
     {
-        // Check permission
-        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasPermission('view_kyc_verifications')) {
-            abort(403, 'คุณไม่มีสิทธิ์ในการดูข้อมูลการยืนยันตัวตน');
-        }
+        // ✅ ตรวจสอบสิทธิ์ก่อนดู (ใช้ Policy แทน manual check)
+        $this->authorize('view', $kycVerification);
 
         $kycVerification->load(['user', 'reviewer']);
 
@@ -67,13 +67,13 @@ class KycController extends Controller
 
     /**
      * Approve KYC verification
+     *
+     * ⚠️ CRITICAL: การอนุมัติ KYC เป็นเรื่องสำคัญมาก
      */
     public function approve(Request $request, KycVerification $kycVerification)
     {
-        // Check permission
-        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasPermission('approve_kyc')) {
-            abort(403, 'คุณไม่มีสิทธิ์ในการอนุมัติการยืนยันตัวตน');
-        }
+        // ✅ ตรวจสอบสิทธิ์ในการอนุมัติ (ใช้ Policy แทน manual check)
+        $this->authorize('approve', $kycVerification);
 
         // Check if already processed
         if ($kycVerification->status !== 'pending') {
@@ -141,13 +141,13 @@ class KycController extends Controller
 
     /**
      * Reject KYC verification
+     *
+     * ⚠️ CRITICAL: การปฏิเสธ KYC ต้องมีเหตุผล
      */
     public function reject(Request $request, KycVerification $kycVerification)
     {
-        // Check permission
-        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasPermission('approve_kyc')) {
-            abort(403, 'คุณไม่มีสิทธิ์ในการปฏิเสธการยืนยันตัวตน');
-        }
+        // ✅ ตรวจสอบสิทธิ์ในการปฏิเสธ (ใช้ Policy แทน manual check)
+        $this->authorize('reject', $kycVerification);
 
         // Check if already processed
         if ($kycVerification->status !== 'pending') {
@@ -180,13 +180,13 @@ class KycController extends Controller
 
     /**
      * Delete KYC verification
+     *
+     * ⚠️ SECURITY: ป้องกัน IDOR - ตรวจสอบสิทธิ์ก่อนลบ
      */
     public function destroy(KycVerification $kycVerification)
     {
-        // Check permission
-        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasPermission('manage_kyc')) {
-            abort(403, 'คุณไม่มีสิทธิ์ในการลบข้อมูลการยืนยันตัวตน');
-        }
+        // ✅ ตรวจสอบสิทธิ์ก่อนลบ (ใช้ Policy แทน manual check)
+        $this->authorize('delete', $kycVerification);
 
         // Delete KYC verification
         $kycVerification->delete();
