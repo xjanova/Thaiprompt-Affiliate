@@ -2341,3 +2341,63 @@ Route::prefix('service-bookings')->name('service-bookings.')->group(function () 
     Route::get('/available-providers', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'availableProviders'])->name('available-providers');
     Route::get('/export', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'export'])->name('export');
 });
+
+
+// ============================================
+// AI Rental with Cloud GPU Routes 🚀🤖
+// ============================================
+
+Route::prefix('ai-rental')->name('ai-rental.')->group(function () {
+    // Dashboard
+    Route::get('/', [\App\Http\Controllers\Admin\AiRentalController::class, 'dashboard'])
+        ->name('dashboard');
+
+    // Setup Guide & Tools
+    Route::get('/setup-guide', [\App\Http\Controllers\Admin\AiRentalController::class, 'setupGuide'])
+        ->name('setup-guide');
+    Route::get('/cost-calculator', [\App\Http\Controllers\Admin\AiRentalController::class, 'costCalculator'])
+        ->name('cost-calculator');
+
+    // API Endpoints
+    Route::prefix('api')->name('api.')->group(function () {
+        Route::post('/calculate-cost', [\App\Http\Controllers\Admin\AiRentalController::class, 'calculateCost'])
+            ->name('calculate-cost');
+        Route::get('/stats', [\App\Http\Controllers\Admin\AiRentalController::class, 'getStats'])
+            ->name('stats');
+    });
+
+    // Cloud Providers Management (เร็วๆนี้)
+    Route::prefix('cloud-providers')->name('cloud-providers.')->group(function () {
+        Route::get('/', function () {
+            return view('admin.ai-rental.coming-soon', ['feature' => 'Cloud GPU Providers Management']);
+        })->name('index');
+    });
+
+    // My Configurations (เร็วๆนี้)
+    Route::prefix('configs')->name('configs.')->group(function () {
+        Route::get('/', function () {
+            return view('admin.ai-rental.coming-soon', ['feature' => 'Cloud Configurations']);
+        })->name('index');
+    });
+
+    // Deployments (เร็วๆนี้)
+    Route::prefix('deployments')->name('deployments.')->group(function () {
+        Route::get('/', function () {
+            return view('admin.ai-rental.coming-soon', ['feature' => 'AI Model Deployments']);
+        })->name('index');
+    });
+
+    // Hugging Face News ✅ พร้อมใช้งาน!
+    Route::prefix('news')->name('news.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AiRentalController::class, 'news'])
+            ->name('index');
+        Route::get('/{news}', [\App\Http\Controllers\Admin\AiRentalController::class, 'showNews'])
+            ->name('show');
+    });
+
+    // Trending Models ✅ พร้อมใช้งาน!
+    Route::prefix('trending-models')->name('trending-models.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AiRentalController::class, 'trendingModels'])
+            ->name('index');
+    });
+});

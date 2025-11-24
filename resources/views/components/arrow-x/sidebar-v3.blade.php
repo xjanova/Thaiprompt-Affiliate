@@ -675,6 +675,89 @@
             </div>
         </div>
 
+        {{-- AI Rental with Cloud GPU 🚀🤖 --}}
+        <div class="space-y-1"
+             x-data="{ aiRentalOpen: {{ request()->routeIs('admin.ai-rental.*') ? 'true' : 'false' }} }">
+            {{-- AI Rental Header Button --}}
+            <button @click="aiRentalOpen = !aiRentalOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ai-rental.*') ? 'bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-server w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">AI Rental GPU</span>
+                <i x-show="$store.sidebar.shouldExpand && aiRentalOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !aiRentalOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- AI Rental Submenu --}}
+            <div x-show="aiRentalOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Dashboard --}}
+                <a href="{{ route('admin.ai-rental.dashboard') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
+                </a>
+
+                {{-- Cloud GPU Providers 🆕 แนะนำ Cloud ฟรี + ราคาถูก --}}
+                <a href="{{ route('admin.ai-rental.cloud-providers.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.cloud-providers.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-cloud w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Cloud Providers</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="ml-auto px-1.5 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full shadow-lg">FREE</span>
+                </a>
+
+                {{-- My Configurations --}}
+                <a href="{{ route('admin.ai-rental.configs.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.configs.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-cog w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">My Configurations</span>
+                </a>
+
+                {{-- Deployments --}}
+                <a href="{{ route('admin.ai-rental.deployments.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.deployments.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-rocket w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Deployments</span>
+                </a>
+
+                {{-- Hugging Face News 🆕 ข่าว models ที่น่าสนใจ --}}
+                <a href="{{ route('admin.ai-rental.news.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.news.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-newspaper w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">HF News</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="ml-auto px-1.5 py-0.5 bg-orange-500 text-white text-[10px] font-bold rounded-full shadow-lg">HOT</span>
+                </a>
+
+                {{-- Trending Models 🔥 Models ที่กำลังมาแรง --}}
+                <a href="{{ route('admin.ai-rental.trending-models.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.trending-models.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-fire w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Trending Models</span>
+                </a>
+
+                {{-- Setup Guide 📖 คู่มือการตั้งค่า Cloud --}}
+                <a href="{{ route('admin.ai-rental.setup-guide') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.setup-guide') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-book-open w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Setup Guide</span>
+                </a>
+
+                {{-- Cost Calculator 💰 คำนวณค่าใช้จ่าย --}}
+                <a href="{{ route('admin.ai-rental.cost-calculator') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.cost-calculator') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-calculator w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Cost Calculator</span>
+                </a>
+            </div>
+        </div>
+
         {{-- Security & Monitoring 🔒 --}}
         <div class="space-y-1"
              x-data="{ securityOpen: {{ request()->routeIs('admin.security.*') || request()->routeIs('admin.analytics.*') || request()->routeIs('admin.advanced-analytics.*') ? 'true' : 'false' }} }">
