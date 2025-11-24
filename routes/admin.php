@@ -424,6 +424,7 @@ Route::prefix('settings')->name('settings.')->group(function () {
     Route::get('google-maps', [SettingsController::class, 'googleMaps'])->name('google-maps');
     Route::post('google-maps', [SettingsController::class, 'updateGoogleMaps'])->name('google-maps.update');
     Route::post('google-maps/test', [SettingsController::class, 'testGoogleMapsConnection'])->name('google-maps.test');
+    Route::post('google-maps/capabilities', [SettingsController::class, 'checkGoogleMapsCapabilities'])->name('google-maps.capabilities');
     Route::post('google-maps/calculate-distance', [SettingsController::class, 'calculateDistance'])->name('google-maps.calculate-distance');
     Route::get('google-maps/guide', [SettingsController::class, 'googleMapsGuide'])->name('google-maps.guide');
 });
