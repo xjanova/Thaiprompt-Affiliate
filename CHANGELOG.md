@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.179.0] - 2025-11-24
+
+### ✨ Features
+- feat: เพิ่ม Settings Dashboard สำหรับระบบสมัครสมาชิก LINE (2e4e4eeb)
+- feat: ปรับปรุง AI validation ให้ชาญฉลาดขึ้น - 8 เกณฑ์การตรวจสอบ (c3c1835d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1583 from xjanova/claude/fix-line-chatbot-registration-01ENtf8Jd4LHLmN6ZkKAdLiY (8e9eadd3)
+
 ## [v3.178.1] - 2025-11-24
 
 ### ✨ Features
