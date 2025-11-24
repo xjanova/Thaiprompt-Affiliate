@@ -2422,6 +2422,10 @@ Route::prefix('ai-rental')->name('ai-rental.')->group(function () {
             ->name('set-default');
     });
 
+    // Analytics ✅ พร้อมใช้งาน!
+    Route::get('/analytics', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'analytics'])
+        ->name('analytics');
+
     // Deployments ✅ พร้อมใช้งาน!
     Route::prefix('deployments')->name('deployments.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'index'])
@@ -2456,6 +2460,14 @@ Route::prefix('ai-rental')->name('ai-rental.')->group(function () {
         // Status Update (for callbacks)
         Route::post('/{deployment}/status', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'updateStatus'])
             ->name('update-status');
+    });
+
+    // API Endpoints ✅ พร้อมใช้งาน!
+    Route::prefix('api')->name('api.')->group(function () {
+        Route::get('/stats', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'getStats'])
+            ->name('stats');
+        Route::get('/chart-data', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'getChartData'])
+            ->name('chart-data');
     });
 
     // Hugging Face News ✅ พร้อมใช้งาน!
