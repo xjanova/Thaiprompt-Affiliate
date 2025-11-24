@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.160.0] - 2025-11-24
+
+### ✨ Features
+- Merge pull request #1546 from xjanova/claude/add-service-booking-01HwUCywLcxHdkdwEvwprmAW (c5e0144c)
+- feat: add Platform Fee & Provider PV system (e761904e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.159.0] - 2025-11-24
 
 ### ✨ Features
