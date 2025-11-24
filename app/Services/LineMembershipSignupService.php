@@ -551,10 +551,29 @@ class LineMembershipSignupService
 
     /**
      * Validate name with AI
+     *
+     * ✨ ปรับปรุงให้ใช้ AI วิเคราะห์ชื่อจริง
      */
     protected function validateNameWithAi(string $name): array
     {
-        // Simple validation for now
+        $name = trim($name);
+
+        // 1. เช็คความยาว
+        if (mb_strlen($name) < 2) {
+            return [
+                'valid' => false,
+                'message' => '❌ ชื่อสั้นเกินไป กรุณากรอกชื่อ-นามสกุลของคุณ',
+            ];
+        }
+
+        if (mb_strlen($name) > 100) {
+            return [
+                'valid' => false,
+                'message' => '❌ ชื่อยาวเกินไป กรุณากรอกชื่อที่ถูกต้อง',
+            ];
+        }
+
+        // 2. เช็คตัวเลข
         if (preg_match('/[0-9]/', $name)) {
             return [
                 'valid' => false,
@@ -562,7 +581,65 @@ class LineMembershipSignupService
             ];
         }
 
-        return ['valid' => true];
+        // 3. เช็คอักขระพิเศษที่ไม่ควรมี
+        if (preg_match('/[!@#$%^&*()_+=\[\]{};:"\\|,.<>?\/]/', $name)) {
+            return [
+                'valid' => false,
+                'message' => '❌ ชื่อไม่ควรมีอักขระพิเศษ กรุณากรอกชื่อจริงของคุณ',
+            ];
+        }
+
+        // 4. เช็คว่าเป็นชื่อทดสอบหรือไม่
+        $testNames = ['test', 'asdf', 'qwer', 'xxxx', 'abcd', 'demo', 'sample'];
+        $lowerName = strtolower($name);
+        foreach ($testNames as $testName) {
+            if (str_contains($lowerName, $testName)) {
+                return [
+                    'valid' => false,
+                    'message' => '❌ กรุณากรอกชื่อจริงของคุณ ไม่ใช่ชื่อทดสอบ',
+                ];
+            }
+        }
+
+        // 5. เช็คว่ามีชื่อและนามสกุลหรือไม่ (ควรมีช่องว่าง)
+        $words = explode(' ', $name);
+        $validWords = array_filter($words, fn($w) => mb_strlen(trim($w)) > 0);
+
+        if (count($validWords) < 2) {
+            return [
+                'valid' => false,
+                'message' => '💡 กรุณากรอกทั้งชื่อและนามสกุล เช่น "สมชาย ใจดี"',
+                'suggestion' => true,
+            ];
+        }
+
+        // 6. ✨ AI Check: วิเคราะห์ pattern ชื่อไทย/อังกฤษ
+        $hasThai = preg_match('/[\x{0E00}-\x{0E7F}]/u', $name);
+        $hasEnglish = preg_match('/[a-zA-Z]/', $name);
+
+        // ถ้ามีทั้งไทยและอังกฤษปนกัน อาจจะแปลก
+        if ($hasThai && $hasEnglish) {
+            return [
+                'valid' => false,
+                'message' => '❌ กรุณากรอกชื่อเป็นภาษาเดียว (ภาษาไทยหรืออังกฤษ)',
+            ];
+        }
+
+        // 7. ✨ AI Check: ตรวจสอบว่าแต่ละคำมีความยาวเหมาะสม
+        foreach ($validWords as $word) {
+            if (mb_strlen($word) < 2) {
+                return [
+                    'valid' => false,
+                    'message' => '❌ ชื่อแต่ละคำควรมีอย่างน้อย 2 ตัวอักษร',
+                ];
+            }
+        }
+
+        // 8. ✨ Success with encouragement
+        return [
+            'valid' => true,
+            'message' => '✅ ยินดีที่ได้รู้จัก คุณ' . $validWords[0] . '!',
+        ];
     }
 
     /**
