@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.169.0] - 2025-11-24
+
+### ✨ Features
+- Merge pull request #1558 from xjanova/claude/update-admin-tokens-v3-01DYJmVXVww3VjP54mEPtoqF (f408f351)
+- feat: upgrade admin/tokens pages to V3 design system (29cb3491)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.168.2] - 2025-11-24
 
 ### ✨ Features
