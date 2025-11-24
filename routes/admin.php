@@ -2353,7 +2353,7 @@ Route::prefix('service-bookings')->name('service-bookings.')->group(function () 
 // AI Rental with Cloud GPU Routes 🚀🤖
 // ============================================
 
-Route::prefix('ai-rental')->name('admin.ai-rental.')->group(function () {
+Route::prefix('ai-rental')->name('ai-rental.')->group(function () {
     // Dashboard
     Route::get('/', [\App\Http\Controllers\Admin\AiRentalController::class, 'dashboard'])
         ->name('dashboard');
