@@ -84,122 +84,17 @@
                                 placeholder="TP-Affiliate"
                             >
                         </div>
-
-                        {{-- Commission Rate --}}
-                        <div>
-                            <label class="block text-white/90 font-medium mb-2">
-                                <i class="fas fa-percentage mr-1"></i>
-                                อัตราคอมมิชชั่น (%)
-                            </label>
-                            <input
-                                type="number"
-                                x-model="form.commission_rate"
-                                class="input-glass w-full"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                placeholder="10.00"
-                            >
-                        </div>
-
-                        {{-- Multi-Level Enabled --}}
-                        <div class="md:col-span-2">
-                            <label class="flex items-center gap-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    x-model="form.multi_level_enabled"
-                                    class="checkbox-glass"
-                                >
-                                <span class="text-white/90 font-medium">
-                                    <i class="fas fa-network-wired mr-1"></i>
-                                    เปิดใช้งานระบบ Multi-Level Marketing
-                                </span>
-                            </label>
-                        </div>
-
-                        {{-- Commission Depth --}}
-                        <div x-show="form.multi_level_enabled" x-transition>
-                            <label class="block text-white/90 font-medium mb-2">
-                                <i class="fas fa-layer-group mr-1"></i>
-                                ความลึกของคอมมิชชั่น (Levels)
-                            </label>
-                            <input
-                                type="number"
-                                x-model="form.commission_depth"
-                                class="input-glass w-full"
-                                min="1"
-                                max="100"
-                                placeholder="5"
-                            >
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- API Settings Tab --}}
-            <div x-show="currentTab === 'api'" x-transition>
-                <div class="space-y-6">
-                    <h3 class="text-xl font-bold text-white mb-4">
-                        <i class="fas fa-plug mr-2"></i>
-                        การตั้งค่า API
-                    </h3>
-
-                    {{-- Google Translate --}}
-                    <div class="card-glass p-6">
-                        <h4 class="text-lg font-semibold text-white mb-4">
-                            <i class="fab fa-google mr-2"></i>
-                            Google Translate API
-                        </h4>
-
-                        <div class="space-y-4">
-                            <label class="flex items-center gap-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    x-model="form.google_translate_enabled"
-                                    class="checkbox-glass"
-                                >
-                                <span class="text-white/90">เปิดใช้งาน Google Translate API</span>
-                            </label>
-
-                            <div x-show="form.google_translate_enabled" x-transition class="space-y-4">
-                                <div>
-                                    <label class="block text-white/90 mb-2">API Key</label>
-                                    <input
-                                        type="text"
-                                        x-model="form.google_translate_api_key"
-                                        class="input-glass w-full"
-                                        placeholder="AIza..."
-                                    >
-                                </div>
-                                <div>
-                                    <label class="block text-white/90 mb-2">Project ID</label>
-                                    <input
-                                        type="text"
-                                        x-model="form.google_translate_project_id"
-                                        class="input-glass w-full"
-                                        placeholder="my-project-123"
-                                    >
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
-                    {{-- TinyMCE --}}
-                    <div class="card-glass p-6">
-                        <h4 class="text-lg font-semibold text-white mb-4">
-                            <i class="fas fa-edit mr-2"></i>
-                            TinyMCE Editor
-                        </h4>
-
-                        <div>
-                            <label class="block text-white/90 mb-2">API Key</label>
-                            <input
-                                type="text"
-                                x-model="form.tinymce_api_key"
-                                class="input-glass w-full"
-                                placeholder="tiny-api-key..."
-                            >
-                        </div>
+                    {{-- หมายเหตุ: การตั้งค่าคอมมิชชั่นย้ายไปที่ MLM Settings --}}
+                    <div class="mt-4 p-4 bg-blue-500/20 rounded-lg border border-blue-400/30">
+                        <p class="text-white/80 text-sm">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            การตั้งค่าคอมมิชชั่นและ MLM ได้ย้ายไปที่
+                            <a href="{{ route('admin.mlm.settings.index') }}" class="text-blue-300 hover:text-blue-200 underline">
+                                การตั้งค่า MLM
+                            </a>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -279,18 +174,10 @@ function settingsManager() {
         saving: false,
         tabs: [
             { id: 'general', label: 'ทั่วไป', icon: 'fas fa-sliders-h' },
-            { id: 'api', label: 'API', icon: 'fas fa-plug' },
             { id: 'security', label: 'ความปลอดภัย', icon: 'fas fa-shield-alt' }
         ],
         form: {
             app_name: '{{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}',
-            commission_rate: {{ \App\Models\Setting::get('commission_rate', 10) }},
-            multi_level_enabled: {{ \App\Models\Setting::get('multi_level_enabled', true) ? 'true' : 'false' }},
-            commission_depth: {{ \App\Models\Setting::get('commission_depth', 5) }},
-            google_translate_enabled: {{ \App\Models\Setting::get('google_translate_enabled', false) ? 'true' : 'false' }},
-            google_translate_api_key: '{{ \App\Models\Setting::get('google_translate_api_key', '') }}',
-            google_translate_project_id: '{{ \App\Models\Setting::get('google_translate_project_id', '') }}',
-            tinymce_api_key: '{{ \App\Models\Setting::get('tinymce_api_key', '') }}',
             turnstile_enabled: {{ \App\Models\Setting::get('turnstile_enabled', false) ? 'true' : 'false' }},
             turnstile_site_key: '{{ \App\Models\Setting::get('turnstile_site_key', '') }}',
             turnstile_secret_key: '{{ \App\Models\Setting::get('turnstile_secret_key', '') }}',

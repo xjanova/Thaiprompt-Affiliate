@@ -91,17 +91,6 @@ class SettingsController extends Controller
     {
         $validated = $request->validate([
             'app_name' => ['nullable', 'string', 'max:255'],
-            'commission_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'multi_level_enabled' => ['nullable', 'boolean'],
-            'commission_depth' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'default_sponsor_referral_code' => ['nullable', 'string', 'exists:affiliates,referral_code'],
-            // API Settings
-            'google_translate_enabled' => ['nullable', 'boolean'],
-            'google_translate_api_key' => ['nullable', 'string'],
-            'google_translate_project_id' => ['nullable', 'string'],
-            'translate_source_language' => ['nullable', 'string', 'in:th,en'],
-            'translate_cache_enabled' => ['nullable', 'boolean'],
-            'tinymce_api_key' => ['nullable', 'string'],
             // Cloudflare Turnstile Settings
             'turnstile_enabled' => ['nullable', 'boolean'],
             'turnstile_site_key' => ['nullable', 'string'],
@@ -139,9 +128,6 @@ class SettingsController extends Controller
         // สำหรับ form request ใช้ $request->has()
         if ($isJsonRequest) {
             // JSON: ใช้ค่าที่ส่งมาโดยตรง (true/false)
-            $validated['google_translate_enabled'] = (bool) ($validated['google_translate_enabled'] ?? false);
-            $validated['translate_cache_enabled'] = (bool) ($validated['translate_cache_enabled'] ?? false);
-
             // Turnstile checkboxes
             $validated['turnstile_enabled'] = (bool) ($validated['turnstile_enabled'] ?? false);
             $validated['turnstile_bypass_admin'] = (bool) ($validated['turnstile_bypass_admin'] ?? false);
@@ -156,9 +142,6 @@ class SettingsController extends Controller
             $validated['page_loader_enabled'] = (bool) ($validated['page_loader_enabled'] ?? false);
         } else {
             // Form Data: ใช้ $request->has()
-            $validated['google_translate_enabled'] = $request->has('google_translate_enabled');
-            $validated['translate_cache_enabled'] = $request->has('translate_cache_enabled');
-
             // Handle Turnstile checkbox values
             $validated['turnstile_enabled'] = $request->has('turnstile_enabled');
             $validated['turnstile_bypass_admin'] = $request->has('turnstile_bypass_admin');
@@ -206,9 +189,7 @@ class SettingsController extends Controller
                 $type = is_bool($value) ? 'boolean' : (is_numeric($value) ? 'integer' : 'string');
 
                 // Determine group
-                if (in_array($key, ['commission_rate', 'multi_level_enabled', 'commission_depth', 'default_sponsor_referral_code'])) {
-                    $group = 'affiliate';
-                } elseif (str_starts_with($key, 'turnstile_')) {
+                if (str_starts_with($key, 'turnstile_')) {
                     $group = 'security';
                 } elseif (str_starts_with($key, 'page_loader_')) {
                     $group = 'appearance';
