@@ -2422,11 +2422,36 @@ Route::prefix('ai-rental')->name('ai-rental.')->group(function () {
             ->name('set-default');
     });
 
-    // Deployments (เร็วๆนี้)
+    // Deployments ✅ พร้อมใช้งาน!
     Route::prefix('deployments')->name('deployments.')->group(function () {
-        Route::get('/', function () {
-            return view('admin.ai-rental.coming-soon', ['feature' => 'AI Model Deployments']);
-        })->name('index');
+        Route::get('/', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'index'])
+            ->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'create'])
+            ->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'store'])
+            ->name('store');
+        Route::get('/{deployment}', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'show'])
+            ->name('show');
+        Route::delete('/{deployment}', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'destroy'])
+            ->name('destroy');
+
+        // Control Actions
+        Route::patch('/{deployment}/start', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'start'])
+            ->name('start');
+        Route::patch('/{deployment}/stop', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'stop'])
+            ->name('stop');
+        Route::patch('/{deployment}/restart', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'restart'])
+            ->name('restart');
+
+        // Logs
+        Route::get('/{deployment}/logs', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'logs'])
+            ->name('logs');
+        Route::get('/{deployment}/logs/fetch', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'fetchLogs'])
+            ->name('logs.fetch');
+
+        // Status Update (for callbacks)
+        Route::post('/{deployment}/status', [\App\Http\Controllers\Admin\AiRentalDeploymentController::class, 'updateStatus'])
+            ->name('update-status');
     });
 
     // Hugging Face News ✅ พร้อมใช้งาน!
