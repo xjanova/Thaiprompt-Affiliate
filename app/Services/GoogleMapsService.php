@@ -7,12 +7,24 @@ use Illuminate\Support\Facades\Cache;
 
 class GoogleMapsService
 {
-    protected string $apiKey;
+    protected ?string $apiKey = null;
     protected string $baseUrl = 'https://maps.googleapis.com/maps/api';
 
     public function __construct()
     {
-        $this->apiKey = config('services.google_maps.api_key');
+        $this->apiKey = config('services.google_maps.api_key') ?: null;
+    }
+
+    /**
+     * ตรวจสอบว่ามี API key หรือไม่
+     *
+     * @throws \Exception
+     */
+    protected function ensureApiKey(): void
+    {
+        if (empty($this->apiKey)) {
+            throw new \Exception('Google Maps API key is not configured. Please set GOOGLE_MAPS_API_KEY in your .env file.');
+        }
     }
 
     /**
@@ -20,6 +32,8 @@ class GoogleMapsService
      */
     public function reverseGeocode(float $lat, float $lng): array
     {
+        $this->ensureApiKey();
+
         $cacheKey = "geocode:reverse:{$lat}:{$lng}";
 
         return Cache::remember($cacheKey, 86400, function () use ($lat, $lng) {
@@ -62,6 +76,8 @@ class GoogleMapsService
      */
     public function geocode(string $address): array
     {
+        $this->ensureApiKey();
+
         $cacheKey = "geocode:forward:" . md5($address);
 
         return Cache::remember($cacheKey, 86400, function () use ($address) {
@@ -104,6 +120,8 @@ class GoogleMapsService
      */
     public function getDirections(array $origin, array $destination, string $mode = 'driving'): array
     {
+        $this->ensureApiKey();
+
         $originStr = "{$origin['lat']},{$origin['lng']}";
         $destStr = "{$destination['lat']},{$destination['lng']}";
 
@@ -162,6 +180,8 @@ class GoogleMapsService
      */
     public function getDistanceMatrix(array $origins, array $destinations, string $mode = 'driving'): array
     {
+        $this->ensureApiKey();
+
         $originsStr = collect($origins)->map(fn($o) => "{$o['lat']},{$o['lng']}")->implode('|');
         $destsStr = collect($destinations)->map(fn($d) => "{$d['lat']},{$d['lng']}")->implode('|');
 
@@ -201,6 +221,8 @@ class GoogleMapsService
      */
     public function getPlaceDetails(string $placeId): array
     {
+        $this->ensureApiKey();
+
         $cacheKey = "place:details:{$placeId}";
 
         return Cache::remember($cacheKey, 86400, function () use ($placeId) {
@@ -265,6 +287,8 @@ class GoogleMapsService
      */
     public function searchNearby(float $lat, float $lng, string $type, int $radius = 1000): array
     {
+        $this->ensureApiKey();
+
         $response = Http::get("{$this->baseUrl}/place/nearbysearch/json", [
             'location' => "{$lat},{$lng}",
             'radius' => $radius,
