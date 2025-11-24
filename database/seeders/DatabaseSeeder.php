@@ -113,6 +113,11 @@ class DatabaseSeeder extends Seeder
             // 14. Bot Automation System
             BotPlatformSeeder::class,           // Social Media Platforms (Facebook, LINE, Instagram, Twitter)
             BotMarketplaceCategorySeeder::class, // Bot Marketplace Categories (Sales, Support, Marketing, etc.)
+
+            // 15. Service Booking System
+            ServiceCategorySeeder::class,       // หมวดหมู่บริการ (นวด, สปา, ทำความสะอาด, จัดส่ง)
+            ServicePricingRuleSeeder::class,    // กฎคำนวณราคาตามระยะทาง (0-5km, 5-10km, 10-20km, 20+km)
+            ServiceSeeder::class,                // บริการตัวอย่าง (นวดแผนไทย, ทำความสะอาด, จัดส่งด่วน)
         ]);
 
         $this->command->info('');
