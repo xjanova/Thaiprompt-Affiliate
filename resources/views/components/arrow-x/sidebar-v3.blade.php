@@ -1255,6 +1255,14 @@
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่าเว็บไซต์</span>
         </a>
 
+        {{-- Google Maps Settings 🗺️ NEW --}}
+        <a href="{{ route('admin.settings.google-maps') }}"
+           @click="$store.sidebar.closeOnMenuClick()"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.settings.google-maps*') ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+            <i class="fas fa-map-marked-alt w-5 text-center drop-shadow"></i>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">Google Maps API</span>
+        </a>
+
         {{-- Cache Settings 🚀 NEW --}}
         <a href="{{ route('admin.cache.index') }}"
            @click="$store.sidebar.closeOnMenuClick()"
