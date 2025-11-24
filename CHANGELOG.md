@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.179.1] - 2025-11-24
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1584 from xjanova/claude/explore-ai-rental-project-01MLbqCHHMj6A4uMdjCyKcfD (22e778b1)
+- fix(routes): แก้ route name prefix ซ้ำซ้อนใน AI Rental routes 🔧 (1b60836d)
+### 🔧 Other Changes
+
+
 ## [v3.179.0] - 2025-11-24
 
 ### ✨ Features
