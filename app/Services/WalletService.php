@@ -643,4 +643,310 @@ class WalletService
             });
         }
     }
+
+    /**
+     * โอนเงินระหว่างกระเป๋าโดย Admin (ไม่ต้องใช้ PIN)
+     *
+     * @param Wallet $fromWallet กระเป๋าต้นทาง
+     * @param Wallet $toWallet กระเป๋าปลายทาง
+     * @param float $amount จำนวนเงิน
+     * @param string $reason เหตุผลในการโอน
+     * @param User $admin แอดมินที่ทำรายการ
+     * @return array
+     * @throws Exception
+     */
+    public function adminTransfer(
+        Wallet $fromWallet,
+        Wallet $toWallet,
+        float $amount,
+        string $reason,
+        User $admin
+    ): array {
+        if ($amount <= 0) {
+            throw new Exception('จำนวนเงินต้องมากกว่า 0');
+        }
+
+        if ($fromWallet->id === $toWallet->id) {
+            throw new Exception('ไม่สามารถโอนเงินให้ตัวเองได้');
+        }
+
+        if ($fromWallet->balance < $amount) {
+            throw new Exception('ยอดเงินในกระเป๋าต้นทางไม่เพียงพอ');
+        }
+
+        return DB::transaction(function () use ($fromWallet, $toWallet, $amount, $reason, $admin) {
+            // หักเงินจากกระเป๋าต้นทาง
+            $fromBalanceBefore = $fromWallet->balance;
+            $fromBalanceAfter = $fromBalanceBefore - $amount;
+
+            $outTransaction = WalletTransaction::create([
+                'wallet_id' => $fromWallet->id,
+                'user_id' => $fromWallet->user_id,
+                'type' => 'transfer_out',
+                'amount' => $amount,
+                'balance_before' => $fromBalanceBefore,
+                'balance_after' => $fromBalanceAfter,
+                'currency' => $fromWallet->currency,
+                'description' => "โอนเงินโดยแอดมิน: {$reason}",
+                'related_wallet_id' => $toWallet->id,
+                'reference_type' => 'admin_transfer',
+                'reference_id' => $admin->id,
+                'status' => 'completed',
+                'metadata' => [
+                    'admin_id' => $admin->id,
+                    'admin_name' => $admin->name,
+                    'reason' => $reason,
+                ],
+                'completed_at' => now(),
+            ]);
+
+            $fromWallet->update([
+                'balance' => $fromBalanceAfter,
+                'total_expense' => $fromWallet->total_expense + $amount,
+                'last_transaction_at' => now(),
+            ]);
+
+            // เพิ่มเงินให้กระเป๋าปลายทาง
+            $toBalanceBefore = $toWallet->balance;
+            $toBalanceAfter = $toBalanceBefore + $amount;
+
+            $inTransaction = WalletTransaction::create([
+                'wallet_id' => $toWallet->id,
+                'user_id' => $toWallet->user_id,
+                'type' => 'transfer_in',
+                'amount' => $amount,
+                'balance_before' => $toBalanceBefore,
+                'balance_after' => $toBalanceAfter,
+                'currency' => $toWallet->currency,
+                'description' => "รับโอนเงินโดยแอดมิน: {$reason}",
+                'related_wallet_id' => $fromWallet->id,
+                'reference_type' => 'admin_transfer',
+                'reference_id' => $admin->id,
+                'status' => 'completed',
+                'metadata' => [
+                    'admin_id' => $admin->id,
+                    'admin_name' => $admin->name,
+                    'reason' => $reason,
+                ],
+                'completed_at' => now(),
+            ]);
+
+            $toWallet->update([
+                'balance' => $toBalanceAfter,
+                'total_income' => $toWallet->total_income + $amount,
+                'last_transaction_at' => now(),
+            ]);
+
+            // บันทึก log
+            $this->logAction(
+                $fromWallet,
+                'transaction_success',
+                "Admin transfer out: {$amount} {$fromWallet->currency} - {$reason}",
+                'info',
+                ['transaction_id' => $outTransaction->id, 'admin_id' => $admin->id]
+            );
+
+            $this->logAction(
+                $toWallet,
+                'transaction_success',
+                "Admin transfer in: {$amount} {$toWallet->currency} - {$reason}",
+                'info',
+                ['transaction_id' => $inTransaction->id, 'admin_id' => $admin->id]
+            );
+
+            return [
+                'out_transaction' => $outTransaction,
+                'in_transaction' => $inTransaction,
+                'from_wallet' => $fromWallet->fresh(),
+                'to_wallet' => $toWallet->fresh(),
+            ];
+        });
+    }
+
+    /**
+     * ระงับการใช้งานกระเป๋า (Suspend)
+     *
+     * @param Wallet $wallet กระเป๋าที่ต้องการระงับ
+     * @param string $reason เหตุผล
+     * @param User $admin แอดมินที่ทำรายการ
+     * @return Wallet
+     */
+    public function suspendWallet(Wallet $wallet, string $reason, User $admin): Wallet
+    {
+        $wallet->update([
+            'status' => 'suspended',
+            'locked_until' => null,
+        ]);
+
+        $this->logAction(
+            $wallet,
+            'wallet_locked',
+            "กระเป๋าถูกระงับโดยแอดมิน: {$reason}",
+            'critical',
+            ['admin_id' => $admin->id, 'reason' => $reason]
+        );
+
+        return $wallet->fresh();
+    }
+
+    /**
+     * ยกเลิกการระงับกระเป๋า (Unsuspend)
+     *
+     * @param Wallet $wallet กระเป๋าที่ต้องการยกเลิกการระงับ
+     * @param string $reason เหตุผล
+     * @param User $admin แอดมินที่ทำรายการ
+     * @return Wallet
+     */
+    public function unsuspendWallet(Wallet $wallet, string $reason, User $admin): Wallet
+    {
+        $wallet->update([
+            'status' => 'active',
+            'locked_until' => null,
+            'failed_attempts' => 0,
+        ]);
+
+        $this->logAction(
+            $wallet,
+            'wallet_unlocked',
+            "ยกเลิกการระงับกระเป๋าโดยแอดมิน: {$reason}",
+            'info',
+            ['admin_id' => $admin->id, 'reason' => $reason]
+        );
+
+        return $wallet->fresh();
+    }
+
+    /**
+     * ดึงธุรกรรมทั้งหมดในระบบ
+     *
+     * @param array $filters ตัวกรอง
+     * @param int $perPage จำนวนต่อหน้า
+     * @return \Illuminate\Pagination\LengthAwarePaginator
+     */
+    public function getAllTransactions(array $filters = [], int $perPage = 20)
+    {
+        $query = WalletTransaction::with(['wallet.user', 'relatedWallet.user']);
+
+        // กรองตาม wallet_id
+        if (!empty($filters['wallet_id'])) {
+            $query->where('wallet_id', $filters['wallet_id']);
+        }
+
+        // กรองตาม user_id
+        if (!empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
+        }
+
+        // กรองตามประเภท
+        if (!empty($filters['type'])) {
+            $query->where('type', $filters['type']);
+        }
+
+        // กรองตามสถานะ
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        // กรองตามวันที่
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        // กรองตามจำนวนเงิน
+        if (!empty($filters['min_amount'])) {
+            $query->where('amount', '>=', $filters['min_amount']);
+        }
+
+        if (!empty($filters['max_amount'])) {
+            $query->where('amount', '<=', $filters['max_amount']);
+        }
+
+        // ค้นหา
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function($q) use ($search) {
+                $q->where('transaction_id', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('wallet.user', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        return $query->orderBy('created_at', 'desc')->paginate($perPage);
+    }
+
+    /**
+     * ดึง logs ทั้งหมดในระบบ
+     *
+     * @param array $filters ตัวกรอง
+     * @param int $perPage จำนวนต่อหน้า
+     * @return \Illuminate\Pagination\LengthAwarePaginator
+     */
+    public function getAllLogs(array $filters = [], int $perPage = 20)
+    {
+        $query = WalletLog::with(['wallet.user']);
+
+        // กรองตาม wallet_id
+        if (!empty($filters['wallet_id'])) {
+            $query->where('wallet_id', $filters['wallet_id']);
+        }
+
+        // กรองตาม action
+        if (!empty($filters['action'])) {
+            $query->where('action', $filters['action']);
+        }
+
+        // กรองตาม severity
+        if (!empty($filters['severity'])) {
+            $query->where('severity', $filters['severity']);
+        }
+
+        // กรองตามวันที่
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        // ค้นหา
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                  ->orWhereHas('wallet.user', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        return $query->orderBy('created_at', 'desc')->paginate($perPage);
+    }
+
+    /**
+     * ดึงรายการกระเป๋าสำหรับ dropdown
+     *
+     * @param string|null $exclude Wallet ID ที่ต้องการยกเว้น
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getWalletsForDropdown(?int $excludeId = null)
+    {
+        $query = Wallet::with('user:id,name,email')
+            ->where('status', 'active')
+            ->select(['id', 'user_id', 'wallet_address', 'balance', 'currency']);
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->orderBy('created_at', 'desc')->get();
+    }
 }

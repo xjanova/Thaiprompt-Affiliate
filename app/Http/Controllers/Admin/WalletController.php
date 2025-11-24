@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use App\Models\User;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
@@ -459,5 +460,357 @@ class WalletController extends Controller
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * โอนเงินระหว่างกระเป๋าโดย Admin
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function adminTransfer(Request $request)
+    {
+        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasRole('admin')) {
+            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
+        }
+
+        $request->validate([
+            'from_wallet_id' => 'required|exists:wallets,id',
+            'to_wallet_id' => 'required|exists:wallets,id|different:from_wallet_id',
+            'amount' => 'required|numeric|min:0.01',
+            'reason' => 'required|string|max:500',
+        ]);
+
+        try {
+            $fromWallet = Wallet::findOrFail($request->from_wallet_id);
+            $toWallet = Wallet::findOrFail($request->to_wallet_id);
+            $admin = auth()->user();
+
+            $result = $this->walletService->adminTransfer(
+                $fromWallet,
+                $toWallet,
+                $request->amount,
+                $request->reason,
+                $admin
+            );
+
+            return redirect()->back()->with('success',
+                'โอนเงินสำเร็จ: ' . number_format($request->amount, 2) . ' บาท จาก ' .
+                $fromWallet->user->name . ' ไปยัง ' . $toWallet->user->name
+            );
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ระงับการใช้งานกระเป๋า (Suspend)
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function suspendUserWallet(Request $request, $id)
+    {
+        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasRole('admin')) {
+            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
+        }
+
+        $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        try {
+            $wallet = Wallet::findOrFail($id);
+            $admin = auth()->user();
+
+            $this->walletService->suspendWallet($wallet, $request->reason, $admin);
+
+            return redirect()->back()->with('success', 'ระงับกระเป๋าเงินเรียบร้อยแล้ว');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ยกเลิกการระงับกระเป๋า (Unsuspend)
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function unsuspendUserWallet(Request $request, $id)
+    {
+        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasRole('admin')) {
+            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
+        }
+
+        try {
+            $wallet = Wallet::findOrFail($id);
+            $admin = auth()->user();
+
+            $this->walletService->unsuspendWallet(
+                $wallet,
+                $request->input('reason', 'ยกเลิกการระงับโดยแอดมิน'),
+                $admin
+            );
+
+            return redirect()->back()->with('success', 'ยกเลิกการระงับกระเป๋าเงินเรียบร้อยแล้ว');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * แสดงธุรกรรมทั้งหมดในระบบ
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function allTransactions(Request $request)
+    {
+        if (!auth()->user()->hasPermission('view_all_wallets')) {
+            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
+        }
+
+        $filters = [
+            'wallet_id' => $request->input('wallet_id'),
+            'user_id' => $request->input('user_id'),
+            'type' => $request->input('type'),
+            'status' => $request->input('status'),
+            'date_from' => $request->input('date_from'),
+            'date_to' => $request->input('date_to'),
+            'min_amount' => $request->input('min_amount'),
+            'max_amount' => $request->input('max_amount'),
+            'search' => $request->input('search'),
+        ];
+
+        $transactions = $this->walletService->getAllTransactions($filters, 25);
+
+        // สถิติธุรกรรม
+        $stats = [
+            'total_today' => WalletTransaction::whereDate('created_at', today())->count(),
+            'volume_today' => WalletTransaction::whereDate('created_at', today())->where('status', 'completed')->sum('amount'),
+            'total_pending' => WalletTransaction::where('status', 'pending')->count(),
+            'total_failed' => WalletTransaction::where('status', 'failed')->count(),
+        ];
+
+        // ประเภทธุรกรรมสำหรับ dropdown
+        $transactionTypes = [
+            'deposit' => 'ฝากเงิน',
+            'withdrawal' => 'ถอนเงิน',
+            'transfer_in' => 'รับโอน',
+            'transfer_out' => 'โอนออก',
+            'commission' => 'คอมมิชชั่น',
+            'refund' => 'คืนเงิน',
+            'fee' => 'ค่าธรรมเนียม',
+            'bonus' => 'โบนัส',
+        ];
+
+        return view('admin.wallet.all-transactions', compact('transactions', 'filters', 'stats', 'transactionTypes'));
+    }
+
+    /**
+     * แสดง logs ทั้งหมดในระบบ
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function allLogs(Request $request)
+    {
+        if (!auth()->user()->hasPermission('view_all_wallets')) {
+            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
+        }
+
+        $filters = [
+            'wallet_id' => $request->input('wallet_id'),
+            'action' => $request->input('action'),
+            'severity' => $request->input('severity'),
+            'date_from' => $request->input('date_from'),
+            'date_to' => $request->input('date_to'),
+            'search' => $request->input('search'),
+        ];
+
+        $logs = $this->walletService->getAllLogs($filters, 25);
+
+        // ประเภท action สำหรับ dropdown
+        $actionTypes = [
+            'login' => 'เข้าสู่ระบบ',
+            'logout' => 'ออกจากระบบ',
+            'transaction_attempt' => 'พยายามทำธุรกรรม',
+            'transaction_success' => 'ธุรกรรมสำเร็จ',
+            'transaction_failed' => 'ธุรกรรมล้มเหลว',
+            'pin_changed' => 'เปลี่ยน PIN',
+            'pin_failed' => 'PIN ผิด',
+            'two_factor_enabled' => 'เปิด 2FA',
+            'two_factor_disabled' => 'ปิด 2FA',
+            'wallet_locked' => 'ล็อกกระเป๋า',
+            'wallet_unlocked' => 'ปลดล็อกกระเป๋า',
+            'suspicious_activity' => 'กิจกรรมน่าสงสัย',
+            'settings_changed' => 'เปลี่ยนการตั้งค่า',
+        ];
+
+        // สถิติ logs
+        $stats = [
+            'total_today' => \App\Models\WalletLog::whereDate('created_at', today())->count(),
+            'critical_today' => \App\Models\WalletLog::whereDate('created_at', today())->where('severity', 'critical')->count(),
+            'warning_today' => \App\Models\WalletLog::whereDate('created_at', today())->where('severity', 'warning')->count(),
+        ];
+
+        return view('admin.wallet.all-logs', compact('logs', 'filters', 'actionTypes', 'stats'));
+    }
+
+    /**
+     * ดึงรายการกระเป๋าสำหรับ dropdown (AJAX)
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getWalletsDropdown(Request $request)
+    {
+        $excludeId = $request->input('exclude');
+        $wallets = $this->walletService->getWalletsForDropdown($excludeId);
+
+        return response()->json([
+            'success' => true,
+            'data' => $wallets->map(function($wallet) {
+                return [
+                    'id' => $wallet->id,
+                    'wallet_address' => $wallet->wallet_address,
+                    'user_name' => $wallet->user->name ?? 'N/A',
+                    'user_email' => $wallet->user->email ?? 'N/A',
+                    'balance' => number_format($wallet->balance, 2),
+                    'label' => $wallet->user->name . ' (' . $wallet->wallet_address . ') - ' . number_format($wallet->balance, 2) . ' THB',
+                ];
+            }),
+        ]);
+    }
+
+    /**
+     * รีเซ็ต PIN ของกระเป๋า (Admin only)
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function resetUserPin(Request $request, $id)
+    {
+        if (!auth()->user()->isSuperAdmin()) {
+            return redirect()->back()->with('error', 'เฉพาะ Super Admin เท่านั้นที่สามารถรีเซ็ต PIN ได้');
+        }
+
+        try {
+            $wallet = Wallet::findOrFail($id);
+
+            // รีเซ็ต PIN
+            $wallet->update([
+                'pin_hash' => null,
+                'failed_attempts' => 0,
+                'locked_until' => null,
+            ]);
+
+            $this->walletService->logAction(
+                $wallet,
+                'pin_changed',
+                'PIN ถูกรีเซ็ตโดยแอดมิน: ' . auth()->user()->name,
+                'warning'
+            );
+
+            return redirect()->back()->with('success', 'รีเซ็ต PIN สำเร็จ ผู้ใช้สามารถตั้ง PIN ใหม่ได้');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export ธุรกรรมเป็น CSV
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function exportTransactions(Request $request)
+    {
+        if (!auth()->user()->hasPermission('view_all_wallets')) {
+            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงฟีเจอร์นี้');
+        }
+
+        $filters = [
+            'wallet_id' => $request->input('wallet_id'),
+            'type' => $request->input('type'),
+            'status' => $request->input('status'),
+            'date_from' => $request->input('date_from'),
+            'date_to' => $request->input('date_to'),
+        ];
+
+        $filename = 'wallet_transactions_' . date('Y-m-d_His') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($filters) {
+            $file = fopen('php://output', 'w');
+
+            // BOM for UTF-8
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            // Header row
+            fputcsv($file, [
+                'รหัสธุรกรรม',
+                'ผู้ใช้',
+                'อีเมล',
+                'Wallet Address',
+                'ประเภท',
+                'จำนวนเงิน',
+                'ยอดก่อน',
+                'ยอดหลัง',
+                'สถานะ',
+                'รายละเอียด',
+                'วันที่',
+            ]);
+
+            // Query transactions
+            $query = WalletTransaction::with(['wallet.user']);
+
+            if (!empty($filters['wallet_id'])) {
+                $query->where('wallet_id', $filters['wallet_id']);
+            }
+            if (!empty($filters['type'])) {
+                $query->where('type', $filters['type']);
+            }
+            if (!empty($filters['status'])) {
+                $query->where('status', $filters['status']);
+            }
+            if (!empty($filters['date_from'])) {
+                $query->whereDate('created_at', '>=', $filters['date_from']);
+            }
+            if (!empty($filters['date_to'])) {
+                $query->whereDate('created_at', '<=', $filters['date_to']);
+            }
+
+            $query->orderBy('created_at', 'desc')
+                ->chunk(500, function ($transactions) use ($file) {
+                    foreach ($transactions as $tx) {
+                        fputcsv($file, [
+                            $tx->transaction_id,
+                            $tx->wallet->user->name ?? 'N/A',
+                            $tx->wallet->user->email ?? 'N/A',
+                            $tx->wallet->wallet_address ?? 'N/A',
+                            $tx->type_label ?? $tx->type,
+                            number_format($tx->amount, 2),
+                            number_format($tx->balance_before, 2),
+                            number_format($tx->balance_after, 2),
+                            $tx->status_label ?? $tx->status,
+                            $tx->description,
+                            $tx->created_at->format('Y-m-d H:i:s'),
+                        ]);
+                    }
+                });
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }
