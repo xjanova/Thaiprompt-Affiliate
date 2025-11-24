@@ -78,6 +78,13 @@ class Service extends Model
         'view_count',
         'booking_count',
         'average_rating',
+        // Block fields
+        'is_blocked',
+        'blocked_at',
+        'blocked_by',
+        'block_reason',
+        'unblocked_at',
+        'unblocked_by',
     ];
 
     protected $casts = [
@@ -98,6 +105,10 @@ class Service extends Model
         'is_featured' => 'boolean',
         'duration_minutes' => 'integer',
         'min_booking_hours' => 'integer',
+        // Block casts
+        'is_blocked' => 'boolean',
+        'blocked_at' => 'datetime',
+        'unblocked_at' => 'datetime',
         'max_bookings_per_day' => 'integer',
         'cancellation_hours' => 'integer',
         'view_count' => 'integer',
@@ -170,6 +181,26 @@ class Service extends Model
             ->orderBy('priority');
     }
 
+    /**
+     * ผู้ที่บล็อกบริการ (Admin)
+     *
+     * @return BelongsTo
+     */
+    public function blockedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'blocked_by');
+    }
+
+    /**
+     * ผู้ที่ปลดบล็อกบริการ (Admin)
+     *
+     * @return BelongsTo
+     */
+    public function unblockedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'unblocked_by');
+    }
+
     //===========================================
     // Scopes
     //===========================================
@@ -180,6 +211,22 @@ class Service extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope: บริการที่ไม่ถูกบล็อก
+     */
+    public function scopeNotBlocked($query)
+    {
+        return $query->where('is_blocked', false);
+    }
+
+    /**
+     * Scope: บริการที่ถูกบล็อก
+     */
+    public function scopeBlocked($query)
+    {
+        return $query->where('is_blocked', true);
     }
 
     /**

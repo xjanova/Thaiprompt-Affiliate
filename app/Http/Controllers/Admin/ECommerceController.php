@@ -158,6 +158,43 @@ class ECommerceController extends Controller
     }
 
     /**
+     * แสดงรายการสินค้าที่ถูกบล็อก
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function blockedProducts(Request $request)
+    {
+        $query = Product::with(['category', 'seller', 'images', 'blockedByUser'])
+            ->blocked(); // ใช้ scope blocked()
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%")
+                  ->orWhere('block_reason', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by category
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        // Sort
+        $sortBy = $request->get('sort_by', 'blocked_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $query->orderBy($sortBy, $sortOrder);
+
+        $products = $query->paginate(20);
+        $categories = ProductCategory::orderBy('name')->get();
+
+        return view('admin.ecommerce.products.blocked', compact('products', 'categories'));
+    }
+
+    /**
      * Store new product
      */
     public function storeProduct(Request $request)
@@ -802,5 +839,98 @@ class ECommerceController extends Controller
             'dateFrom',
             'dateTo'
         ));
+    }
+
+    /**
+     * บล็อกสินค้า (Admin)
+     *
+     * @param Request $request
+     * @param Product $product
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function blockProduct(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'block_reason' => 'required|string|max:1000',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // อัปเดตสถานะบล็อก
+            $product->update([
+                'is_blocked' => true,
+                'blocked_at' => now(),
+                'blocked_by' => auth()->id(),
+                'block_reason' => $validated['block_reason'],
+                'is_active' => false, // ปิดการแสดงสินค้าอัตโนมัติ
+            ]);
+
+            // ส่งการแจ้งเตือนให้ร้านค้า
+            if ($product->seller) {
+                $product->seller->notify(new \App\Notifications\ProductBlockedNotification($product));
+            }
+
+            // บันทึก Activity Log
+            activity()
+                ->performedOn($product)
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'reason' => $validated['block_reason'],
+                    'seller_id' => $product->seller_id,
+                ])
+                ->log('บล็อกสินค้า');
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'บล็อกสินค้าเรียบร้อยแล้ว และแจ้งเตือนร้านค้าแล้ว');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ปลดบล็อกสินค้า (Admin)
+     *
+     * @param Product $product
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function unblockProduct(Product $product)
+    {
+        DB::beginTransaction();
+
+        try {
+            // อัปเดตสถานะปลดบล็อก
+            $product->update([
+                'is_blocked' => false,
+                'unblocked_at' => now(),
+                'unblocked_by' => auth()->id(),
+                // หมายเหตุ: ไม่ต้องเปิด is_active อัตโนมัติ ให้ร้านค้าเปิดเอง
+            ]);
+
+            // ส่งการแจ้งเตือนให้ร้านค้า
+            if ($product->seller) {
+                $product->seller->notify(new \App\Notifications\ProductUnblockedNotification($product));
+            }
+
+            // บันทึก Activity Log
+            activity()
+                ->performedOn($product)
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'seller_id' => $product->seller_id,
+                ])
+                ->log('ปลดบล็อกสินค้า');
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'ปลดบล็อกสินค้าเรียบร้อยแล้ว และแจ้งเตือนร้านค้าแล้ว');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
     }
 }

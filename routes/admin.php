@@ -1105,11 +1105,15 @@ Route::prefix('ecommerce')->name('ecommerce.')->group(function () {
     // Products Management
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/', [ECommerceController::class, 'products'])->name('index');
+        Route::get('/blocked', [ECommerceController::class, 'blockedProducts'])->name('blocked');
         Route::post('/', [ECommerceController::class, 'storeProduct'])->name('store');
         Route::get('/{product}', [ECommerceController::class, 'showProduct'])->name('show');
         Route::get('/{product}/edit', [ECommerceController::class, 'editProduct'])->name('edit');
         Route::put('/{product}', [ECommerceController::class, 'updateProduct'])->name('update');
         Route::delete('/{product}', [ECommerceController::class, 'deleteProduct'])->name('delete');
+        // Block/Unblock สินค้า
+        Route::post('/{product}/block', [ECommerceController::class, 'blockProduct'])->name('block');
+        Route::post('/{product}/unblock', [ECommerceController::class, 'unblockProduct'])->name('unblock');
     });
 
     // Orders Management
@@ -2300,12 +2304,19 @@ Route::post('service-categories/reorder', [\App\Http\Controllers\Admin\ServiceCa
 
 // Services Management
 Route::resource('services', \App\Http\Controllers\Admin\ServiceController::class);
+Route::get('services-blocked', [\App\Http\Controllers\Admin\ServiceController::class, 'blocked'])
+    ->name('services.blocked');
 Route::post('services/{service}/toggle-active', [\App\Http\Controllers\Admin\ServiceController::class, 'toggleActive'])
     ->name('services.toggle-active');
 Route::post('services/{service}/toggle-featured', [\App\Http\Controllers\Admin\ServiceController::class, 'toggleFeatured'])
     ->name('services.toggle-featured');
 Route::post('services/{service}/calculate-price', [\App\Http\Controllers\Admin\ServiceController::class, 'calculatePrice'])
     ->name('services.calculate-price');
+// Block/Unblock บริการ
+Route::post('services/{service}/block', [\App\Http\Controllers\Admin\ServiceController::class, 'blockService'])
+    ->name('services.block');
+Route::post('services/{service}/unblock', [\App\Http\Controllers\Admin\ServiceController::class, 'unblockService'])
+    ->name('services.unblock');
 
 // Service Bookings Management
 Route::prefix('service-bookings')->name('service-bookings.')->group(function () {

@@ -22,6 +22,65 @@
         </div>
     </div>
 
+    {{-- Provider Information Card --}}
+    <div class="backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50 rounded-2xl shadow-xl p-6 mb-6">
+        <div class="flex items-start gap-4">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-bold text-lg">
+                    {{ substr($service->provider->name ?? 'N', 0, 1) }}
+                </div>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                    ข้อมูลผู้ให้บริการ (Provider)
+                </h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        <span><strong>ชื่อ:</strong> {{ $service->provider->name ?? 'N/A' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        <span><strong>Email:</strong> {{ $service->provider->email ?? 'N/A' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                        </svg>
+                        <span><strong>Provider ID:</strong> #{{ $service->provider_id }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Block Status Alert (ถ้าถูกบล็อก) --}}
+    @if($service->is_blocked)
+    <div class="backdrop-blur-xl bg-red-50/80 dark:bg-red-900/20 border border-red-300 dark:border-red-500 rounded-2xl shadow-xl p-6 mb-6">
+        <div class="flex items-start gap-4">
+            <div class="flex-shrink-0">
+                <svg class="w-12 h-12 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-red-800 dark:text-red-200 mb-2">
+                    ⚠️ บริการนี้ถูกบล็อกแล้ว
+                </h3>
+                <div class="space-y-2 text-sm text-red-700 dark:text-red-300">
+                    <p><strong>เหตุผล:</strong> {{ $service->block_reason }}</p>
+                    <p><strong>บล็อกเมื่อ:</strong> {{ $service->blocked_at?->format('d/m/Y H:i') ?? 'N/A' }}</p>
+                    <p><strong>บล็อกโดย:</strong> {{ $service->blockedByUser->name ?? 'N/A' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     {{-- Grid Layout: Form + Calculator --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {{-- Left Column: Form (2/3 width on desktop) --}}
@@ -261,6 +320,106 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {{-- Block/Unblock Section --}}
+            <div class="backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50 rounded-2xl shadow-xl overflow-hidden">
+                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+                        <i class="fas fa-lock mr-2 text-red-600 dark:text-red-400"></i>
+                        การจัดการสถานะบริการ (Admin)
+                    </h2>
+                </div>
+
+                <div class="p-6">
+                    @if($service->is_blocked)
+                        {{-- Unblock Button --}}
+                        <form action="{{ route('admin.services.unblock', $service) }}" method="POST"
+                              onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการปลดบล็อกบริการนี้?')">
+                            @csrf
+                            <button type="submit"
+                                    class="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 inline-flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                                </svg>
+                                ปลดบล็อกบริการ
+                            </button>
+                        </form>
+                    @else
+                        {{-- Block Button with Modal --}}
+                        <div x-data="{ showBlockModal: false }">
+                            <button @click="showBlockModal = true"
+                                    type="button"
+                                    class="w-full px-6 py-3 bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 inline-flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                </svg>
+                                บล็อกบริการนี้
+                            </button>
+
+                            {{-- Block Modal --}}
+                            <div x-show="showBlockModal"
+                                 x-transition:enter="transition ease-out duration-300"
+                                 x-transition:enter-start="opacity-0"
+                                 x-transition:enter-end="opacity-100"
+                                 x-transition:leave="transition ease-in duration-200"
+                                 x-transition:leave-start="opacity-100"
+                                 x-transition:leave-end="opacity-0"
+                                 class="fixed inset-0 z-50 overflow-y-auto"
+                                 style="display: none;">
+
+                                {{-- Backdrop --}}
+                                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showBlockModal = false"></div>
+
+                                {{-- Modal Content --}}
+                                <div class="flex min-h-screen items-center justify-center p-4">
+                                    <div class="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6"
+                                         @click.away="showBlockModal = false">
+
+                                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                                            🚫 บล็อกบริการ
+                                        </h3>
+
+                                        <p class="text-gray-600 dark:text-gray-300 mb-4">
+                                            กรุณาระบุเหตุผลในการบล็อกบริการนี้ ระบบจะส่งการแจ้งเตือนให้ผู้ให้บริการทราบทันที
+                                        </p>
+
+                                        <form action="{{ route('admin.services.block', $service) }}" method="POST">
+                                            @csrf
+
+                                            <div class="mb-4">
+                                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                    เหตุผล <span class="text-red-500">*</span>
+                                                </label>
+                                                <textarea name="block_reason"
+                                                          required
+                                                          rows="4"
+                                                          class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-red-500 dark:focus:border-red-400 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900/30 transition-all"
+                                                          placeholder="เช่น: ข้อมูลไม่ถูกต้อง, บริการไม่เหมาะสม, ละเมิดข้อกำหนด..."></textarea>
+                                            </div>
+
+                                            <div class="flex gap-3">
+                                                <button type="button"
+                                                        @click="showBlockModal = false"
+                                                        class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                                                    ยกเลิก
+                                                </button>
+                                                <button type="submit"
+                                                        class="flex-1 px-4 py-2 bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-bold rounded-xl transition-all">
+                                                    ยืนยันการบล็อก
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                        ⚠️ <strong>หมายเหตุ:</strong> เมื่อบล็อกบริการ ระบบจะปิดการแสดงบริการอัตโนมัติและแจ้งเตือนผู้ให้บริการทันที
+                    </p>
                 </div>
             </div>
 

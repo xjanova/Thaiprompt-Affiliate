@@ -178,6 +178,7 @@ return [
                 ['label' => '📊 Dashboard', 'route' => 'admin.service-bookings.index'],
                 ['label' => '🗂️ หมวดหมู่บริการ', 'route' => 'admin.service-categories.index'],
                 ['label' => '🔧 จัดการบริการ', 'route' => 'admin.services.index'],
+                ['label' => '🚫 บริการที่ถูกบล็อก', 'route' => 'admin.services.blocked', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-red-500 to-orange-500'],
                 ['label' => '📅 การจองทั้งหมด', 'route' => 'admin.service-bookings.index'],
                 ['label' => '👷 ผู้ให้บริการ', 'route' => 'admin.service-providers.index', 'description' => 'จัดการผู้ให้บริการ'],
                 ['label' => '💰 กฎการคิดราคา', 'route' => 'admin.service-pricing-rules.index', 'description' => 'ตั้งค่าราคาตามระยะทาง'],
@@ -195,6 +196,7 @@ return [
             'submenu' => [
                 ['label' => 'แดชบอร์ด', 'route' => 'admin.ecommerce.dashboard'],
                 ['label' => 'สินค้าทั้งหมด', 'route' => 'admin.ecommerce.products.index'],
+                ['label' => '🚫 สินค้าที่ถูกบล็อก', 'route' => 'admin.ecommerce.products.blocked', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-red-500 to-orange-500'],
                 ['label' => 'คำสั่งซื้อ', 'route' => 'admin.ecommerce.orders.index'],
                 ['label' => 'หมวดหมู่', 'route' => 'admin.ecommerce.categories.index'],
                 ['label' => 'รีวิวสินค้า', 'route' => 'admin.ecommerce.reviews.index'],
