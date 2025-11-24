@@ -89,19 +89,29 @@ class UserController extends Controller
     }
 
     /**
-     * Show the form for editing the specified user
+     * แสดงฟอร์มแก้ไข user
+     *
+     * ⚠️ SECURITY: ตรวจสอบสิทธิ์ด้วย Policy
      */
     public function edit(User $user)
     {
+        // ✅ ตรวจสอบสิทธิ์ก่อนแก้ไข
+        $this->authorize('update', $user);
+
         $roles = Role::all();
         return view('admin.users.edit', compact('user', 'roles'));
     }
 
     /**
-     * Update the specified user
+     * อัพเดท user
+     *
+     * ⚠️ SECURITY: ป้องกัน unauthorized update
      */
     public function update(Request $request, User $user)
     {
+        // ✅ ตรวจสอบสิทธิ์ก่อนอัพเดท
+        $this->authorize('update', $user);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
@@ -114,6 +124,11 @@ class UserController extends Controller
                 'password' => ['confirmed', Password::defaults()],
             ]);
             $validated['password'] = Hash::make($request->password);
+        }
+
+        // ⚠️ CRITICAL: การเปลี่ยน role ต้องมีสิทธิ์พิเศษ
+        if ($validated['role_id'] != $user->role_id) {
+            $this->authorize('changeRole', $user);
         }
 
         // Get role to set the old role field for backward compatibility
@@ -132,34 +147,46 @@ class UserController extends Controller
     }
 
     /**
-     * Remove the specified user
+     * ลบ user
+     *
+     * ⚠️ SECURITY: ป้องกัน unauthorized delete
      */
     public function destroy(User $user)
     {
-        if ($user->is_super_admin) {
-            return back()->with('error', 'Cannot delete super admin user.');
-        }
+        // ✅ ตรวจสอบสิทธิ์ก่อนลบ
+        $this->authorize('delete', $user);
 
+        // Policy จะ block การลบตัวเองและ super admin อยู่แล้ว
         $user->delete();
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'User deleted successfully.');
+            ->with('success', 'ลบผู้ใช้สำเร็จ');
     }
 
     /**
-     * Show permissions page for user
+     * แสดงหน้าจัดการ permissions
+     *
+     * ⚠️ SECURITY: เฉพาะ Super Admin เท่านั้น
      */
     public function permissions(User $user)
     {
+        // ✅ ตรวจสอบสิทธิ์การเปลี่ยน permissions
+        $this->authorize('changePermissions', $user);
+
         $availablePermissions = User::availablePermissions();
         return view('admin.users.permissions', compact('user', 'availablePermissions'));
     }
 
     /**
-     * Update user permissions
+     * อัพเดท permissions ของ user
+     *
+     * ⚠️ SECURITY: เฉพาะ Super Admin เท่านั้น
      */
     public function updatePermissions(Request $request, User $user)
     {
+        // ✅ ตรวจสอบสิทธิ์การเปลี่ยน permissions
+        $this->authorize('changePermissions', $user);
+
         $validated = $request->validate([
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string', 'in:' . implode(',', User::availablePermissions())],
@@ -169,7 +196,7 @@ class UserController extends Controller
         $user->save();
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'User permissions updated successfully.');
+            ->with('success', 'อัพเดท permissions สำเร็จ');
     }
 
     /**
