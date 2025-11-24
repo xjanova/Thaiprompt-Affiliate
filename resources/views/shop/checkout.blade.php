@@ -307,6 +307,46 @@
                         </div>
                         @endif
 
+                        <!-- PV (Point Value) ที่จะได้รับ -->
+                        @if(isset($pvPreview) && $pvPreview['total_pv'] > 0)
+                        <div class="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl">
+                            <div class="flex items-start mb-3">
+                                <span class="text-2xl mr-2">⭐</span>
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-purple-800 mb-1">PV ที่จะได้รับ</h3>
+                                    <p class="text-xs text-purple-700">คะแนน PV สำหรับระบบ MLM (ใช้สำหรับคำนวณค่าคอมมิชชั่น)</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-2xl font-black text-purple-600">{{ number_format($pvPreview['total_pv'], 0) }}</p>
+                                    <p class="text-xs text-purple-700">PV</p>
+                                </div>
+                            </div>
+
+                            @if(isset($pvPreview['breakdown']) && count($pvPreview['breakdown']) > 0)
+                            <div class="space-y-2">
+                                @foreach($pvPreview['breakdown'] as $item)
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-700">
+                                        📦 {{ \Illuminate\Support\Str::limit($item['product_name'], 30) }}
+                                        @if($item['quantity'] > 1)
+                                            <span class="text-purple-600 font-semibold"> x{{ $item['quantity'] }}</span>
+                                        @endif
+                                    </span>
+                                    <span class="font-semibold text-purple-600">{{ number_format($item['total_pv'], 0) }} PV</span>
+                                </div>
+                                @endforeach
+                            </div>
+                            @endif
+
+                            <div class="mt-3 pt-3 border-t border-purple-200">
+                                <p class="text-xs text-purple-700">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    PV จะถูกบันทึกในบัญชีของคุณทันทีหลังชำระเงิน และจะถูกใช้สำหรับคำนวณค่าคอมมิชชั่น MLM ให้กับสายงานของคุณ
+                                </p>
+                            </div>
+                        </div>
+                        @endif
+
                         <!-- Grand Total -->
                         <div class="pt-4 border-t-2 border-gray-200 mb-6">
                             <div class="flex justify-between items-center">

@@ -293,6 +293,56 @@
                             </div>
                         </div>
 
+                        {{-- ผลตอบแทนที่จะได้รับ --}}
+                        @if(isset($earningsSummary))
+                            <div class="space-y-3">
+                                {{-- Cashback --}}
+                                @if($earningsSummary['cashback_total'] > 0)
+                                    <div class="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                                        <div class="flex items-start justify-between mb-2">
+                                            <div class="flex items-start gap-2">
+                                                <span class="text-2xl">🎁</span>
+                                                <div>
+                                                    <h4 class="font-bold text-green-800 dark:text-green-300">Cashback ที่จะได้รับ</h4>
+                                                    <p class="text-xs text-green-700 dark:text-green-400">เงินคืนจากผู้ให้บริการ {{ number_format($earningsSummary['cashback_percentage'], 1) }}%</p>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-2xl font-black text-green-600 dark:text-green-400">฿{{ number_format($earningsSummary['cashback_total'], 2) }}</p>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-green-700 dark:text-green-400">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            Cashback จะถูกโอนเข้ากระเป๋าเงินของคุณหลังใช้บริการเสร็จสิ้น
+                                        </p>
+                                    </div>
+                                @endif
+
+                                {{-- PV (Point Value) --}}
+                                @if($earningsSummary['pv_total'] > 0)
+                                    <div class="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800 rounded-xl">
+                                        <div class="flex items-start justify-between mb-2">
+                                            <div class="flex items-start gap-2">
+                                                <span class="text-2xl">⭐</span>
+                                                <div>
+                                                    <h4 class="font-bold text-purple-800 dark:text-purple-300">PV ที่จะได้รับ</h4>
+                                                    <p class="text-xs text-purple-700 dark:text-purple-400">คะแนน PV สำหรับระบบ MLM</p>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-2xl font-black text-purple-600 dark:text-purple-400">{{ number_format($earningsSummary['pv_total'], 0) }}</p>
+                                                <p class="text-xs text-purple-700 dark:text-purple-400">PV</p>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-purple-700 dark:text-purple-400">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            PV จะถูกบันทึกในบัญชีของคุณทันทีหลังชำระเงิน และจะถูกใช้สำหรับคำนวณค่าคอมมิชชั่น MLM
+                                        </p>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+
                         {{-- Submit Button --}}
                         <button type="submit"
                                 :disabled="!canSubmit()"

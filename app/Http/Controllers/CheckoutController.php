@@ -69,6 +69,16 @@ class CheckoutController extends Controller
         // Calculate cashback preview
         $cashbackPreview = $this->cashbackService->getCashbackPreview($cartItems, $total);
 
+        // Calculate PV and earnings preview
+        $pvPreview = $this->calculatePvPreview($cartItems);
+
+        // Calculate earnings summary (สำหรับลูกค้า - เฉพาะสิ่งที่จะได้รับ)
+        $earningsSummary = [
+            'cashback_total' => $cashbackPreview['total_cashback'] ?? 0,
+            'pv_total' => $pvPreview['total_pv'],
+            'pv_breakdown' => $pvPreview['breakdown'],
+        ];
+
         // Get available payment methods
         $paymentMethods = $this->paymentService->getAvailablePaymentMethods();
 
@@ -83,6 +93,8 @@ class CheckoutController extends Controller
             'shippingFee',
             'total',
             'cashbackPreview',
+            'pvPreview',
+            'earningsSummary',
             'paymentMethods',
             'walletBalance'
         ));
@@ -366,6 +378,44 @@ class CheckoutController extends Controller
             ->firstOrFail();
 
         return view('shop.order-success', compact('order'));
+    }
+
+    /**
+     * คำนวณ PV ที่ลูกค้าจะได้รับ
+     *
+     * @param \Illuminate\Support\Collection $cartItems
+     * @return array
+     */
+    private function calculatePvPreview($cartItems): array
+    {
+        $totalPv = 0;
+        $breakdown = [];
+
+        foreach ($cartItems as $item) {
+            $product = $item->product;
+            $quantity = $item->quantity;
+
+            // ดึง PV จาก product (ใช้ method จาก CalculatesEarnings trait)
+            $pvValue = $product->pv_value && $product->pv_value > 0
+                ? (float) $product->pv_value
+                : (float) $product->price; // ถ้าไม่มี PV ให้ใช้ราคาเป็น PV
+
+            $itemPv = $pvValue * $quantity;
+            $totalPv += $itemPv;
+
+            $breakdown[] = [
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'pv_value' => $pvValue,
+                'quantity' => $quantity,
+                'total_pv' => $itemPv,
+            ];
+        }
+
+        return [
+            'total_pv' => $totalPv,
+            'breakdown' => $breakdown,
+        ];
     }
 
     /**
