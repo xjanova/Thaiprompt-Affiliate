@@ -85,6 +85,11 @@
                             <i class="fas fa-terminal mr-2"></i>View Logs
                         </a>
 
+                        <a href="{{ route('admin.ai-rental.deployments.test', $deployment) }}"
+                           class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-semibold transition shadow-lg hover:shadow-green-500/50">
+                            <i class="fas fa-flask mr-2"></i>Test API
+                        </a>
+
                         @if($deployment->endpoint_url)
                             <a href="{{ $deployment->endpoint_url }}"
                                target="_blank"

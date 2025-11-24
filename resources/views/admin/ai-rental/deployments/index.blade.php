@@ -14,11 +14,18 @@
                 </h1>
                 <p class="text-white/60">จัดการ AI Model Deployments ของคุณ</p>
             </div>
-            <a href="{{ route('admin.ai-rental.deployments.create') }}"
-               class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-cyan-500/50 flex items-center gap-2">
-                <i class="fas fa-plus"></i>
-                New Deployment
-            </a>
+            <div class="flex gap-3">
+                <a href="{{ route('admin.ai-rental.analytics') }}"
+                   class="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-purple-500/50 flex items-center gap-2">
+                    <i class="fas fa-chart-line"></i>
+                    Analytics
+                </a>
+                <a href="{{ route('admin.ai-rental.deployments.create') }}"
+                   class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-cyan-500/50 flex items-center gap-2">
+                    <i class="fas fa-plus"></i>
+                    New Deployment
+                </a>
+            </div>
         </div>
 
         {{-- Stats Cards --}}

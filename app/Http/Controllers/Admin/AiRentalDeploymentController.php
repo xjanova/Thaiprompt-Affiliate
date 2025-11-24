@@ -440,6 +440,180 @@ class AiRentalDeploymentController extends Controller
     }
 
     /**
+     * แสดงหน้า Test Deployment
+     *
+     * @param AiRentalDeployment $deployment
+     * @return View
+     */
+    public function test(AiRentalDeployment $deployment): View
+    {
+        // เช็คสิทธิ์
+        $this->authorize('view', $deployment);
+
+        // โหลด relationships
+        $deployment->load(['cloudConfig.cloudProvider', 'model']);
+
+        return view('admin.ai-rental.deployments.test', compact('deployment'));
+    }
+
+    /**
+     * แสดงหน้า Analytics Dashboard
+     *
+     * @param Request $request
+     * @return View
+     */
+    public function analytics(Request $request): View
+    {
+        $user = Auth::user();
+
+        // ดึงข้อมูลสถิติ
+        $stats = [
+            'total_deployments' => AiRentalDeployment::where('user_id', $user->id)->count(),
+            'running_now' => AiRentalDeployment::where('user_id', $user->id)->running()->count(),
+            'total_hours' => AiRentalDeployment::where('user_id', $user->id)->sum('total_hours'),
+            'total_cost' => AiRentalDeployment::where('user_id', $user->id)->sum('total_cost'),
+        ];
+
+        // Top Models (Top 5)
+        $stats['top_models'] = AiRentalDeployment::where('user_id', $user->id)
+            ->selectRaw('model_id, COUNT(*) as deployments, SUM(total_hours) as hours')
+            ->groupBy('model_id')
+            ->orderByDesc('deployments')
+            ->limit(5)
+            ->with('model')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'name' => $item->model->name ?? 'Unknown',
+                    'deployments' => $item->deployments,
+                    'hours' => round($item->hours, 1),
+                ];
+            });
+
+        // Top Providers (Top 3)
+        $stats['top_providers'] = AiRentalDeployment::where('user_id', $user->id)
+            ->selectRaw('cloud_config_id, COUNT(*) as deployments, SUM(total_cost) as cost')
+            ->groupBy('cloud_config_id')
+            ->orderByDesc('cost')
+            ->limit(3)
+            ->with('cloudConfig.cloudProvider')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'name' => $item->cloudConfig->cloudProvider->name ?? 'Unknown',
+                    'deployments' => $item->deployments,
+                    'cost' => round($item->cost, 2),
+                ];
+            });
+
+        // Recent Activities (Last 10)
+        $stats['recent_activities'] = AiRentalDeployment::where('user_id', $user->id)
+            ->latest()
+            ->limit(10)
+            ->get()
+            ->map(function ($deployment) {
+                $statusMessages = [
+                    'running' => "Deployment '{$deployment->name}' is running",
+                    'stopped' => "Deployment '{$deployment->name}' was stopped",
+                    'failed' => "Deployment '{$deployment->name}' failed",
+                ];
+                return [
+                    'message' => $statusMessages[$deployment->status] ?? "Deployment '{$deployment->name}' created",
+                    'time' => $deployment->updated_at->diffForHumans(),
+                ];
+            });
+
+        // ดึงรายการ deployments สำหรับตาราง (Latest 20)
+        $deployments = AiRentalDeployment::where('user_id', $user->id)
+            ->with(['model', 'cloudConfig.cloudProvider'])
+            ->latest()
+            ->limit(20)
+            ->get();
+
+        return view('admin.ai-rental.analytics', compact('stats', 'deployments'));
+    }
+
+    /**
+     * ดึงสถิติแบบ Real-time (API)
+     *
+     * @return JsonResponse
+     */
+    public function getStats(): JsonResponse
+    {
+        $user = Auth::user();
+
+        $stats = [
+            'total_deployments' => AiRentalDeployment::where('user_id', $user->id)->count(),
+            'running_now' => AiRentalDeployment::where('user_id', $user->id)->running()->count(),
+            'stopped' => AiRentalDeployment::where('user_id', $user->id)->stopped()->count(),
+            'failed' => AiRentalDeployment::where('user_id', $user->id)->failed()->count(),
+            'total_hours' => AiRentalDeployment::where('user_id', $user->id)->sum('total_hours'),
+            'total_cost' => AiRentalDeployment::where('user_id', $user->id)->sum('total_cost'),
+            'total_requests' => AiRentalDeployment::where('user_id', $user->id)->sum('total_requests'),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'stats' => $stats,
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * ดึงข้อมูล Chart แบบ Real-time (API)
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getChartData(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $days = $request->input('days', 7);
+
+        // Cost Over Time (Last N days)
+        $costData = [];
+        $labels = [];
+
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $labels[] = $date->format('M d');
+
+            $cost = AiRentalDeployment::where('user_id', $user->id)
+                ->whereDate('created_at', $date->toDateString())
+                ->sum('total_cost');
+
+            $costData[] = round($cost, 2);
+        }
+
+        // GPU Usage Distribution
+        $gpuUsage = AiRentalDeployment::where('user_id', $user->id)
+            ->selectRaw('instance_type, COUNT(*) as count, SUM(total_hours) as hours')
+            ->groupBy('instance_type')
+            ->orderByDesc('count')
+            ->limit(5)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'name' => $item->instance_type,
+                    'count' => $item->count,
+                    'hours' => round($item->hours, 1),
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'cost_over_time' => [
+                    'labels' => $labels,
+                    'data' => $costData,
+                ],
+                'gpu_usage' => $gpuUsage,
+            ],
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    }
+
+    /**
      * ดึงสีสำหรับ status
      *
      * @param string $status
