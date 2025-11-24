@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.175.1] - 2025-11-24
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1566 from xjanova/claude/admin-hotel-owners-01SgC2n8kjnimQLFE8Cc9v4h (0f0ea096)
+- docs: add comprehensive Google Maps API integration guide (fd0021e3)
+
 ## [v3.175.0] - 2025-11-24
 
 ### ✨ Features
