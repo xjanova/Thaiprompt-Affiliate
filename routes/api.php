@@ -1108,6 +1108,40 @@ Route::prefix('snake-sync')->name('api.snake-sync.')->group(function () {
 });
 
 // ============================================
+// Google Maps API (V1)
+// ============================================
+
+Route::prefix('v1/maps')->middleware('auth:sanctum')->name('api.maps.')->group(function () {
+    // Reverse Geocode: พิกัด → ที่อยู่
+    Route::post('/reverse-geocode', [\App\Http\Controllers\Api\GoogleMapsController::class, 'reverseGeocode'])
+        ->name('reverse-geocode');
+
+    // Forward Geocode: ที่อยู่ → พิกัด
+    Route::post('/geocode', [\App\Http\Controllers\Api\GoogleMapsController::class, 'geocode'])
+        ->name('geocode');
+
+    // คำนวณเส้นทางและระยะทาง
+    Route::post('/directions', [\App\Http\Controllers\Api\GoogleMapsController::class, 'getDirections'])
+        ->name('directions');
+
+    // คำนวณระยะทางหลายจุดพร้อมกัน
+    Route::post('/distance-matrix', [\App\Http\Controllers\Api\GoogleMapsController::class, 'getDistanceMatrix'])
+        ->name('distance-matrix');
+
+    // ค้นหาสถานที่ใกล้เคียง
+    Route::post('/search-nearby', [\App\Http\Controllers\Api\GoogleMapsController::class, 'searchNearby'])
+        ->name('search-nearby');
+
+    // รายละเอียดสถานที่
+    Route::get('/place/{placeId}', [\App\Http\Controllers\Api\GoogleMapsController::class, 'getPlaceDetails'])
+        ->name('place.details');
+
+    // สถานะ API
+    Route::get('/status', [\App\Http\Controllers\Api\GoogleMapsController::class, 'getStatus'])
+        ->name('status');
+});
+
+// ============================================
 // Service Booking System API (V1)
 // ============================================
 

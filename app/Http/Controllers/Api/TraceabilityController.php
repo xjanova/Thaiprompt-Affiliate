@@ -316,6 +316,9 @@ class TraceabilityController extends Controller
     /**
      * Calculate distance between two points
      * POST /api/v1/food-passport/journey/calculate-distance
+     *
+     * ใช้ Google Maps Directions API เพื่อคำนวณระยะทางจริงตามถนน
+     * และเวลาเดินทางโดยประมาณ
      */
     public function calculateDistance(Request $request): JsonResponse
     {
@@ -326,29 +329,65 @@ class TraceabilityController extends Controller
             'to' => 'required|array',
             'to.lat' => 'required|numeric',
             'to.lng' => 'required|numeric',
+            'mode' => 'nullable|string|in:driving,walking,bicycling,transit',
         ]);
 
         $from = $request->input('from');
         $to = $request->input('to');
+        $mode = $request->input('mode', 'driving');
 
-        $distance = $this->calculateDistanceInKm(
-            $from['lat'],
-            $from['lng'],
-            $to['lat'],
-            $to['lng']
-        );
+        try {
+            // ใช้ Google Maps API เพื่อคำนวณระยะทางจริง
+            $directions = app(\App\Services\GoogleMapsService::class)->getDirections(
+                $from,
+                $to,
+                $mode
+            );
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'distance_km' => round($distance, 2),
-                'distance_m' => round($distance * 1000, 0),
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'distance_km' => round($directions['distance']['value'] / 1000, 2),
+                    'distance_m' => $directions['distance']['value'],
+                    'distance_text' => $directions['distance']['text'],
+                    'duration_seconds' => $directions['duration']['value'],
+                    'duration_text' => $directions['duration']['text'],
+                    'start_address' => $directions['start_address'],
+                    'end_address' => $directions['end_address'],
+                    'mode' => $mode,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            // Fallback: ใช้ Haversine formula ถ้า Google Maps API ไม่พร้อมใช้งาน
+            \Log::warning('Google Maps API failed, using Haversine fallback', [
+                'error' => $e->getMessage(),
+                'from' => $from,
+                'to' => $to,
+            ]);
+
+            $distance = $this->calculateDistanceInKm(
+                $from['lat'],
+                $from['lng'],
+                $to['lat'],
+                $to['lng']
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'distance_km' => round($distance, 2),
+                    'distance_m' => round($distance * 1000, 0),
+                    'mode' => 'haversine_fallback',
+                    'warning' => 'ใช้การคำนวณแบบเส้นตรง (Google Maps API ไม่พร้อมใช้งาน)',
+                ],
+            ]);
+        }
     }
 
     /**
-     * Calculate distance using Haversine formula
+     * Calculate distance using Haversine formula (ระยะทางเส้นตรง)
+     *
+     * ⚠️ หมายเหตุ: ใช้เป็น fallback เท่านั้น ไม่ใช่ระยะทางจริงตามถนน
      */
     protected function calculateDistanceInKm(float $lat1, float $lon1, float $lat2, float $lon2): float
     {
