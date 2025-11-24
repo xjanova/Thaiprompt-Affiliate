@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.168.2] - 2025-11-24
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: ลด backdrop-blur ของ LINE Quick Settings Panel (abd3c75a)
+- fix: แก้ไขปัญหาหน้าเบลอและ BadMethodCallException ฝั่ง user (f35628f3)
+### 🔧 Other Changes
+- Merge pull request #1557 from xjanova/claude/add-line-quick-share-01HxFBjCRhcvwAdPTY1ysqZW (405ce4cc)
+
 ## [v3.168.1] - 2025-11-24
 
 ### ✨ Features
