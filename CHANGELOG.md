@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.167.0] - 2025-11-24
+
+### ✨ Features
+- Merge pull request #1554 from xjanova/claude/create-daily-reward-claims-table-01Gs8CM67KUYn2sUAtwJEN9R (a8dd7d13)
+- feat: create daily_reward_claims table migration (f2aff80d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.166.0] - 2025-11-24
 
 ### ✨ Features
