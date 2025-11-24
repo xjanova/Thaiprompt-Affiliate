@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.165.0] - 2025-11-24
+
+### ✨ Features
+- Merge pull request #1552 from xjanova/claude/add-service-booking-01HwUCywLcxHdkdwEvwprmAW (8a8c8002)
+- feat: add customer earnings preview at checkout (PV & Cashback) (4f8a29d7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.164.0] - 2025-11-24
 
 ### ✨ Features
