@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.174.0] - 2025-11-24
+
+### ✨ Features
+- feat: เพิ่มเมนู Google Maps API ในแถบด้านข้างแอดมิน (6ec2ec5a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1564 from xjanova/claude/add-google-maps-settings-01CYTukGNiS649TGxVq8rwVt (291ae821)
+- docs: เพิ่มเอกสาร Google Maps Integration แบบครบถ้วน (bf6c509e)
+
 ## [v3.173.0] - 2025-11-24
 
 ### ✨ Features
