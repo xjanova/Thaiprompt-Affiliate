@@ -277,12 +277,20 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
 
     // Manage all wallets (Admin only)
     Route::get('/all', [WalletController::class, 'allWallets'])->name('all');
+    Route::get('/all-transactions', [WalletController::class, 'allTransactions'])->name('all-transactions');
+    Route::get('/all-logs', [WalletController::class, 'allLogs'])->name('all-logs');
+    Route::get('/wallets-dropdown', [WalletController::class, 'getWalletsDropdown'])->name('wallets-dropdown');
+    Route::get('/export-transactions', [WalletController::class, 'exportTransactions'])->name('export-transactions');
+    Route::post('/admin-transfer', [WalletController::class, 'adminTransfer'])->name('admin-transfer');
     Route::get('/{id}/show', [WalletController::class, 'showWallet'])->name('show');
     Route::post('/{id}/adjust-balance', [WalletController::class, 'adjustBalance'])->name('adjust-balance');
     Route::post('/{id}/refund', [WalletController::class, 'refund'])->name('refund');
     Route::post('/{id}/rollback-transaction', [WalletController::class, 'rollbackTransaction'])->name('rollback-transaction');
     Route::post('/{id}/lock', [WalletController::class, 'lockUserWallet'])->name('lock-user');
     Route::post('/{id}/unlock', [WalletController::class, 'unlockUserWallet'])->name('unlock-user');
+    Route::post('/{id}/suspend', [WalletController::class, 'suspendUserWallet'])->name('suspend-user');
+    Route::post('/{id}/unsuspend', [WalletController::class, 'unsuspendUserWallet'])->name('unsuspend-user');
+    Route::post('/{id}/reset-pin', [WalletController::class, 'resetUserPin'])->name('reset-pin');
 });
 
 // Withdrawal Management (Admin)
