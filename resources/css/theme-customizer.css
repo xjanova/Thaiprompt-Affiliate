@@ -6,7 +6,7 @@
 :root {
     /* Glass Effects */
     --glass-opacity: 0.15;
-    --glass-blur: 12px;
+    --glass-blur: 4px; /* ลดจาก 12px เป็น 4px เพื่อลดความเบลอ */
     --border-opacity: 0.3;
 
     /* Shadows & Glow */

@@ -31,7 +31,10 @@ class ServiceBookingController extends Controller
      */
     public function index(Request $request)
     {
-        $categories = ServiceCategory::active()->featured()->ordered()->get();
+        // ดึงหมวดหมู่ที่เปิดใช้งานทั้งหมด (เรียงตามลำดับ)
+        $categories = ServiceCategory::active()->ordered()->get();
+
+        // ดึงบริการแนะนำ (featured services)
         $featuredServices = Service::active()->featured()->limit(6)->get();
 
         return view('user.services.index', [
