@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.176.0] - 2025-11-24
+
+### ✨ Features
+- Merge pull request #1567 from xjanova/claude/fix-google-maps-api-01JfxvkAB84K5AmiYZHQNDYi (231bf617)
+- feat: integrate Google Maps API for distance calculation (12121c57)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.175.1] - 2025-11-24
 
 ### ✨ Features
