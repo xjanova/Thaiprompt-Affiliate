@@ -81,7 +81,7 @@
          x-transition:leave-start="translate-x-0 opacity-100"
          x-transition:leave-end="translate-x-full opacity-0"
          @click.away="isOpen = false"
-         class="fixed top-0 right-0 h-full w-full md:w-[450px] glass-fusion backdrop-blur-sm border-l-2 border-white/20 shadow-2xl overflow-y-auto"
+         class="fixed top-0 right-0 h-full w-full md:w-[450px] glass-fusion backdrop-blur-sm border-l-2 border-white/20 shadow-2xl overflow-y-auto z-50"
          style="display: none;">
 
         {{-- Panel Header --}}
