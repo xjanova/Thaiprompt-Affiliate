@@ -292,14 +292,6 @@
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Prospects</span>
                 </a>
 
-                {{-- รางวัลสมัครสมาชิก 🎁 --}}
-                <a href="{{ route('admin.line-membership-signup.rewards.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.rewards.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-gift w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">รางวัลสมัครสมาชิก</span>
-                </a>
-
                 {{-- เครื่องคิดเลข --}}
                 <a href="{{ route('admin.mlm.calculator') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
@@ -322,6 +314,71 @@
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.settings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cogs w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- LINE Membership Signup (Collapsible Menu) 🤖 --}}
+        <div class="space-y-1"
+             x-data="{ lineSignupOpen: {{ request()->routeIs('admin.line-membership-signup.*') ? 'true' : 'false' }} }">
+            {{-- LINE Signup Header Button --}}
+            <button @click="lineSignupOpen = !lineSignupOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.line-membership-signup.*') ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fab fa-line w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">LINE Membership</span>
+                <i x-show="$store.sidebar.shouldExpand && lineSignupOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !lineSignupOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- LINE Signup Submenu --}}
+            <div x-show="lineSignupOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Dashboard 📊 --}}
+                <a href="{{ route('admin.line-membership-signup.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
+                </a>
+
+                {{-- Sessions 💬 --}}
+                <a href="{{ route('admin.line-membership-signup.sessions') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.sessions*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-comments w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Sessions</span>
+                </a>
+
+                {{-- Templates 📝 --}}
+                <a href="{{ route('admin.line-membership-signup.templates') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.templates*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-file-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Templates</span>
+                </a>
+
+                {{-- Rewards 🎁 --}}
+                <a href="{{ route('admin.line-membership-signup.rewards.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.rewards.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-gift w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Rewards</span>
+                </a>
+
+                {{-- Invitations 📧 --}}
+                <a href="{{ route('admin.line-membership-signup.invitations') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.invitations') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-envelope-open-text w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Invitations</span>
+                </a>
+
+                {{-- Settings ⚙️ --}}
+                <a href="{{ route('admin.line-bots.settings') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bots.settings') && request()->query('tab') === 'membership' ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-cog w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Settings</span>
                 </a>
             </div>
         </div>
