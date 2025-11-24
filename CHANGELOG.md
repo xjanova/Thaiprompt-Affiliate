@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.162.0] - 2025-11-24
+
+### ✨ Features
+- Merge pull request #1547 from xjanova/claude/consolidate-install-script-01AZCDfCPA4aMeksu7GZXmfE (c5be1827)
+- feat: consolidate install.sh into ultimate all-in-one installer (9a3bb337)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.161.0] - 2025-11-24
 
 ### ✨ Features
