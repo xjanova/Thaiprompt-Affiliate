@@ -89,6 +89,9 @@ class WalletTopupPackagesSeeder extends Seeder
             ],
         ];
 
+        // ✅ เช็คว่ามี cashback columns หรือไม่
+        $hasCashbackColumns = \Schema::hasColumn('products', 'customer_cashback');
+
         foreach ($packages as $packageData) {
             // ตรวจสอบว่ามีอยู่แล้วหรือไม่
             $existing = Product::where('slug', $packageData['slug'])->first();
@@ -97,8 +100,8 @@ class WalletTopupPackagesSeeder extends Seeder
                 continue;
             }
 
-            // สร้างแพ็คเกจ
-            Product::create([
+            // ข้อมูลพื้นฐานของแพ็คเกจ
+            $productData = [
                 'seller_id' => $adminUser->id,
                 'category_id' => $category->id,
                 'name' => $packageData['name'],
@@ -120,9 +123,16 @@ class WalletTopupPackagesSeeder extends Seeder
                 'public_approved_by' => $adminUser->id,
                 'published_at' => now(),
                 'commission_rate' => 0, // ไม่มี commission
-                'customer_cashback' => 0, // ไม่มี cashback
-                'cashback_percentage' => 0,
-            ]);
+            ];
+
+            // ✅ เพิ่ม cashback fields ถ้ามีคอลัมน์ในฐานข้อมูล
+            if ($hasCashbackColumns) {
+                $productData['customer_cashback'] = 0;
+                $productData['cashback_percentage'] = 0;
+            }
+
+            // สร้างแพ็คเกจ
+            Product::create($productData);
 
             $this->command->info("  ✓ สร้าง {$packageData['name']}");
         }
