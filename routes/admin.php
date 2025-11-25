@@ -2381,12 +2381,39 @@ Route::post('services/{service}/unblock', [\App\Http\Controllers\Admin\ServiceCo
 // Service Bookings Management
 Route::prefix('service-bookings')->name('service-bookings.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'index'])->name('index');
+    Route::get('/analytics', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'analytics'])->name('analytics');
+    Route::get('/available-providers', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'availableProviders'])->name('available-providers');
+    Route::get('/export', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'export'])->name('export');
     Route::get('/{serviceBooking}', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'show'])->name('show');
     Route::post('/{serviceBooking}/assign-provider', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'assignProvider'])->name('assign-provider');
     Route::post('/{serviceBooking}/cancel', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'cancel'])->name('cancel');
     Route::post('/{serviceBooking}/update-status', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'updateStatus'])->name('update-status');
-    Route::get('/available-providers', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'availableProviders'])->name('available-providers');
-    Route::get('/export', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'export'])->name('export');
+});
+
+// Service Providers Management (Admin)
+Route::prefix('service-providers')->name('service-providers.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\ServiceProviderController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Admin\ServiceProviderController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Admin\ServiceProviderController::class, 'store'])->name('store');
+    Route::get('/{serviceProvider}', [\App\Http\Controllers\Admin\ServiceProviderController::class, 'show'])->name('show');
+    Route::get('/{serviceProvider}/edit', [\App\Http\Controllers\Admin\ServiceProviderController::class, 'edit'])->name('edit');
+    Route::put('/{serviceProvider}', [\App\Http\Controllers\Admin\ServiceProviderController::class, 'update'])->name('update');
+    Route::delete('/{serviceProvider}', [\App\Http\Controllers\Admin\ServiceProviderController::class, 'destroy'])->name('destroy');
+    Route::post('/{serviceProvider}/verify', [\App\Http\Controllers\Admin\ServiceProviderController::class, 'verify'])->name('verify');
+    Route::post('/{serviceProvider}/reject', [\App\Http\Controllers\Admin\ServiceProviderController::class, 'reject'])->name('reject');
+    Route::post('/{serviceProvider}/toggle-active', [\App\Http\Controllers\Admin\ServiceProviderController::class, 'toggleActive'])->name('toggle-active');
+});
+
+// Service Pricing Rules Management
+Route::prefix('service-pricing-rules')->name('service-pricing-rules.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\ServicePricingRuleController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Admin\ServicePricingRuleController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Admin\ServicePricingRuleController::class, 'store'])->name('store');
+    Route::get('/{pricingRule}', [\App\Http\Controllers\Admin\ServicePricingRuleController::class, 'show'])->name('show');
+    Route::get('/{pricingRule}/edit', [\App\Http\Controllers\Admin\ServicePricingRuleController::class, 'edit'])->name('edit');
+    Route::put('/{pricingRule}', [\App\Http\Controllers\Admin\ServicePricingRuleController::class, 'update'])->name('update');
+    Route::delete('/{pricingRule}', [\App\Http\Controllers\Admin\ServicePricingRuleController::class, 'destroy'])->name('destroy');
+    Route::post('/{pricingRule}/toggle-active', [\App\Http\Controllers\Admin\ServicePricingRuleController::class, 'toggleActive'])->name('toggle-active');
 });
 
 

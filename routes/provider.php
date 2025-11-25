@@ -71,4 +71,21 @@ Route::middleware(['auth', 'verified'])->prefix('provider')->name('provider.')->
 
     // Provider Status Management
     Route::post('/toggle-availability', [ServiceBookingController::class, 'toggleAvailability'])->name('toggle-availability');
+
+    // Provider Earnings
+    Route::prefix('earnings')->name('earnings.')->group(function () {
+        Route::get('/', [ServiceBookingController::class, 'earnings'])->name('index');
+        Route::get('/export', [ServiceBookingController::class, 'exportEarnings'])->name('export');
+    });
+
+    // Provider Statistics & Reviews
+    Route::prefix('stats')->name('stats.')->group(function () {
+        Route::get('/', [ServiceBookingController::class, 'stats'])->name('index');
+    });
+
+    // Provider Settings
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', [RegistrationController::class, 'settings'])->name('index');
+        Route::put('/', [RegistrationController::class, 'updateSettings'])->name('update');
+    });
 });

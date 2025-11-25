@@ -487,3 +487,12 @@ Route::prefix('bookings')->name('bookings.')->group(function () {
     Route::get('/{booking}/track', [\App\Http\Controllers\User\ServiceBookingController::class, 'trackBooking'])->name('track');
     Route::post('/{booking}/cancel', [\App\Http\Controllers\User\ServiceBookingController::class, 'cancelBooking'])->name('cancel');
 });
+
+// Service Reviews (User's reviews)
+Route::prefix('service-reviews')->name('service-reviews.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\User\ServiceBookingController::class, 'myReviews'])->name('index');
+    Route::post('/{booking}', [\App\Http\Controllers\User\ServiceBookingController::class, 'storeReview'])->name('store');
+    Route::get('/{review}/edit', [\App\Http\Controllers\User\ServiceBookingController::class, 'editReview'])->name('edit');
+    Route::put('/{review}', [\App\Http\Controllers\User\ServiceBookingController::class, 'updateReview'])->name('update');
+    Route::delete('/{review}', [\App\Http\Controllers\User\ServiceBookingController::class, 'deleteReview'])->name('destroy');
+});

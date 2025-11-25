@@ -218,4 +218,92 @@ class ServiceBookingController extends Controller
         // TODO: Implement export to Excel/PDF
         return response()->download(/* file path */);
     }
+
+    /**
+     * แสดงหน้า Analytics การจองบริการ
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function analytics(Request $request)
+    {
+        // ช่วงเวลาเริ่มต้น: 30 วันย้อนหลัง
+        $startDate = $request->get('start_date', now()->subDays(30)->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+
+        // สถิติภาพรวม
+        $stats = [
+            'total_bookings' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])->count(),
+            'total_revenue' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+                ->where('payment_status', 'paid')
+                ->sum('final_price'),
+            'completed_bookings' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+                ->where('status', 'completed')
+                ->count(),
+            'cancelled_bookings' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+                ->where('status', 'cancelled')
+                ->count(),
+            'average_rating' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+                ->whereNotNull('rating')
+                ->avg('rating') ?? 0,
+        ];
+
+        // กราฟการจองรายวัน
+        $dailyBookings = ServiceBooking::selectRaw('DATE(created_at) as date, COUNT(*) as count')
+            ->whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->pluck('count', 'date')
+            ->toArray();
+
+        // รายได้รายวัน
+        $dailyRevenue = ServiceBooking::selectRaw('DATE(created_at) as date, SUM(final_price) as total')
+            ->whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+            ->where('payment_status', 'paid')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->pluck('total', 'date')
+            ->toArray();
+
+        // สถิติตามสถานะ
+        $statusStats = ServiceBooking::selectRaw('status, COUNT(*) as count')
+            ->whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+            ->groupBy('status')
+            ->get()
+            ->pluck('count', 'status')
+            ->toArray();
+
+        // Top Services
+        $topServices = ServiceBooking::selectRaw('service_id, COUNT(*) as count, SUM(final_price) as revenue')
+            ->whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+            ->with('service')
+            ->groupBy('service_id')
+            ->orderByDesc('count')
+            ->limit(10)
+            ->get();
+
+        // Top Providers
+        $topProviders = ServiceBooking::selectRaw('provider_id, COUNT(*) as count, AVG(rating) as avg_rating')
+            ->whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+            ->whereNotNull('provider_id')
+            ->with('provider')
+            ->groupBy('provider_id')
+            ->orderByDesc('count')
+            ->limit(10)
+            ->get();
+
+        return view('admin.service-bookings.analytics', [
+            'stats' => $stats,
+            'dailyBookings' => $dailyBookings,
+            'dailyRevenue' => $dailyRevenue,
+            'statusStats' => $statusStats,
+            'topServices' => $topServices,
+            'topProviders' => $topProviders,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'pageTitle' => 'รายงานและสถิติการจองบริการ',
+        ]);
+    }
 }
