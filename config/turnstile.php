@@ -12,7 +12,20 @@ return [
     |
     */
 
-    'enabled' => env('CLOUDFLARE_TURNSTILE_ENABLED', true),
+    /*
+    |--------------------------------------------------------------------------
+    | Enable/Disable Turnstile
+    |--------------------------------------------------------------------------
+    |
+    | ⚠️ IMPORTANT: Default เป็น false เพื่อความปลอดภัย
+    | Turnstile จะทำงานจริงก็ต่อเมื่อ:
+    | 1. enabled = true
+    | 2. site_key และ secret_key ถูกตั้งค่าแล้ว
+    |
+    | ถ้า enabled=true แต่ไม่มี keys จะ BYPASS โดยอัตโนมัติ (ไม่ปลอดภัย!)
+    |
+    */
+    'enabled' => env('CLOUDFLARE_TURNSTILE_ENABLED', false),
 
     'site_key' => env('CLOUDFLARE_TURNSTILE_SITE_KEY', ''),
     'secret_key' => env('CLOUDFLARE_TURNSTILE_SECRET_KEY', ''),

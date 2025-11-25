@@ -288,6 +288,62 @@
                     <div class="space-y-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">ตั้งค่า Cloudflare Turnstile</h3>
 
+                        {{-- ⚠️ Turnstile Status Warning --}}
+                        @php
+                            $turnstileStatus = \App\Helpers\TurnstileHelper::getStatusInfo();
+                        @endphp
+
+                        @if($turnstileStatus['status'] === 'misconfigured')
+                        {{-- 🚨 DANGER: Misconfigured Warning --}}
+                        <div class="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 rounded-r-xl mb-6">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="text-sm font-bold text-red-800 dark:text-red-200">
+                                        🚨 SECURITY WARNING: Turnstile ตั้งค่าไม่ครบ!
+                                    </h4>
+                                    <p class="mt-1 text-sm text-red-700 dark:text-red-300">
+                                        Turnstile <strong>เปิดใช้งาน</strong> แต่ไม่มี Site Key หรือ Secret Key ตั้งค่าไว้
+                                    </p>
+                                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                        ⚠️ <strong>ผลลัพธ์:</strong> ระบบจะ <strong>BYPASS</strong> การตรวจสอบทั้งหมด - ไม่มีการป้องกัน bot จริง!
+                                    </p>
+                                    <p class="mt-2 text-sm text-red-700 dark:text-red-300">
+                                        <strong>วิธีแก้ไข:</strong> ตั้งค่า Site Key และ Secret Key จาก Cloudflare Dashboard หรือ ปิดใช้งาน Turnstile
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        @elseif($turnstileStatus['status'] === 'active')
+                        {{-- ✅ SUCCESS: Properly Configured --}}
+                        <div class="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 p-4 rounded-r-xl mb-6">
+                            <div class="flex items-center">
+                                <svg class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="ml-2 text-sm font-medium text-green-800 dark:text-green-200">
+                                    ✅ Turnstile ทำงานปกติ - Bot protection เปิดใช้งานและตั้งค่าครบถ้วน
+                                </span>
+                            </div>
+                        </div>
+                        @else
+                        {{-- ℹ️ INFO: Disabled --}}
+                        <div class="bg-gray-50 dark:bg-gray-800/50 border-l-4 border-gray-400 p-4 rounded-r-xl mb-6">
+                            <div class="flex items-center">
+                                <svg class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    ℹ️ Turnstile ปิดใช้งาน - Bot protection ไม่ได้เปิดใช้งาน
+                                </span>
+                            </div>
+                        </div>
+                        @endif
+
                         <!-- Enable Turnstile -->
                         <div class="flex items-center">
                             <input type="checkbox" name="turnstile_enabled" id="turnstile_enabled"
