@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.181.5] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1603 from xjanova/claude/fix-turnstile-setup-01Lcy5VKWtUPLvqyGX8y3e6L (069c9593)
+- fix: prevent false sense of security in Turnstile configuration (5e511d3a)
+### 🔧 Other Changes
+
+
 ## [v3.181.4] - 2025-11-25
 
 ### ✨ Features
