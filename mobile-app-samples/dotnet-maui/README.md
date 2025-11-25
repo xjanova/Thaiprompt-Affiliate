@@ -1,81 +1,288 @@
-# .NET MAUI Sample Code for Thaiprompt Affiliate
+# 🚀 Thaiprompt Ultra App - .NET MAUI
 
-## Overview
-ไฟล์ตัวอย่างสำหรับการพัฒนา Mobile App ด้วย .NET MAUI สำหรับ Thai Prompt Affiliate Platform
+> **Ultra App ระดับเทพ** - แอพเดียวที่รวมทุกบริการไว้ในที่เดียว
 
-## โครงสร้าง
+## 📱 Overview
+
+**Thaiprompt Ultra App** คือแอพพลิเคชัน .NET MAUI ที่พัฒนาขึ้นเพื่อเป็น **Super App** ครบวงจร รองรับทุกความต้องการของผู้ใช้งาน ไม่ว่าจะเป็น:
+
+- 🛒 **ช้อปปิ้ง & บริการ** - E-commerce, สั่งอาหาร, จองโรงแรม
+- 💰 **กระเป๋าเงิน** - Wallet, เติมเงิน, โอนเงิน
+- 📈 **ลงทุน & Trade** - Crypto, Bot Trading, TPIX Token
+- 🤝 **MLM & Affiliate** - Commission, Referral, Team Building
+- 🚴 **เป็นไรเดอร์** - รับงาน, Service Provider
+- 🤖 **AI Bot** - LINE Bot, Automation
+- 🎓 **Academy** - หลักสูตร, Certificate
+- 🎮 **Gaming & Rewards** - เกม, Quest, Achievement
+
+## ✨ Features
+
+### 🆕 Modern Splash Screen
+- **3D Animated Logo** พร้อม Glow Effect
+- **Gradient Background** สีเข้มสวยงาม
+- **Loading Animation** แบบ pulse dots
+- **Auto-navigation** ตรวจสอบ authentication
+
+### 🎯 Hub Selection Page
+- **8 บริการหลัก** ในรูปแบบ Grid Cards
+- **Modern Glassmorphism Design**
+- **Quick Actions** สำหรับการดำเนินการด่วน
+- **User Info Bar** แสดงข้อมูลและยอดเงิน
+
+### 🎨 Ultra Theme
+- **Glassmorphism + 3D Effects**
+- **Dark Mode เป็นหลัก** (สวยกว่า)
+- **Gradient Backgrounds**
+- **Smooth Animations**
+
+## 📁 Project Structure
+
 ```
 dotnet-maui/
-├── Models/              # Data models สำหรับ API responses
-├── Services/            # API services และ business logic
-├── ViewModels/          # MVVM ViewModels
-├── Views/               # XAML UI pages
-├── Helpers/             # Utility classes และ constants
-└── README.md           # เอกสารนี้
+├── 📂 Models/
+│   ├── User.cs              # ข้อมูลผู้ใช้
+│   ├── Dashboard.cs         # ข้อมูล Dashboard
+│   ├── Referral.cs          # ข้อมูล Referral
+│   ├── ThemeConfig.cs       # การตั้งค่า Theme
+│   └── HubItem.cs           # 🆕 รายการ Hub
+│
+├── 📂 Services/
+│   ├── ApiService.cs        # HTTP API client
+│   └── ThemeService.cs      # จัดการ Theme
+│
+├── 📂 ViewModels/
+│   ├── BaseViewModel.cs     # Base class
+│   ├── SplashViewModel.cs   # 🆕 Splash logic
+│   ├── HubSelectionViewModel.cs  # 🆕 Hub logic
+│   ├── LoginViewModel.cs    # Login logic
+│   └── DashboardViewModel.cs # Dashboard logic
+│
+├── 📂 Views/
+│   ├── SplashPage.xaml      # 🆕 หน้า Splash
+│   ├── HubSelectionPage.xaml # 🆕 หน้าเลือกบริการ
+│   ├── LoginPage.xaml       # หน้า Login
+│   └── DashboardPage.xaml   # หน้า Dashboard
+│
+├── 📂 Resources/
+│   └── Styles/
+│       ├── UltraTheme.xaml  # 🆕 Ultra Theme
+│       └── ThemeResources.xaml
+│
+├── 📂 Converters/
+│   └── BoolConverters.cs    # 🆕 Value Converters
+│
+├── 📂 Helpers/
+│   └── Constants.cs         # ค่าคงที่
+│
+├── App.xaml                 # 🆕 Main App
+├── AppShell.xaml            # 🆕 Navigation Shell
+├── MauiProgram.cs           # 🆕 DI Setup
+└── ThaipromptAffiliate.csproj # 🆕 Project File
 ```
 
-## วิธีใช้งาน
+## 🚀 Getting Started
 
-1. **สร้างโปรเจค .NET MAUI ใหม่** ตามขั้นตอนใน [MOBILE-APP-VISUAL-STUDIO-SETUP.md](../../MOBILE-APP-VISUAL-STUDIO-SETUP.md)
+### Prerequisites
 
-2. **คัดลอกไฟล์ตัวอย่าง** ไปยังโปรเจคของคุณ:
-   - Models → โปรเจค/Models/
-   - Services → โปรเจค/Services/
-   - ViewModels → โปรเจค/ViewModels/
-   - Views → โปรเจค/Views/
-   - Helpers → โปรเจค/Helpers/
+- **.NET 8.0 SDK** หรือใหม่กว่า
+- **Visual Studio 2022** (with MAUI workload)
+- **Android SDK** (API 21+)
+- **Xcode** (สำหรับ iOS)
 
-3. **ปรับแต่ง namespace** ให้ตรงกับโปรเจคของคุณ
+### Installation
 
-4. **ติดตั้ง NuGet packages** ที่จำเป็น:
-   ```
-   CommunityToolkit.Mvvm
-   System.Net.Http.Json
-   Newtonsoft.Json
-   ```
+```bash
+# 1. Clone repository
+git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
 
-5. **อัปเดต API URL** ใน `Helpers/Constants.cs`
+# 2. เข้าไปที่โฟลเดอร์ mobile app
+cd Thaiprompt-Affiliate/mobile-app-samples/dotnet-maui
 
-## Features ที่รวมไว้
+# 3. Restore packages
+dotnet restore
 
-### Models
-- ✅ User model
-- ✅ LoginResponse model
-- ✅ DashboardStats model
-- ✅ Commission model
-- ✅ Referral model
+# 4. Build
+dotnet build
 
-### Services
-- ✅ ApiService - HTTP client wrapper
-- ✅ AuthService - Authentication management
-- ✅ Secure storage integration
+# 5. Run (Android)
+dotnet build -t:Run -f net8.0-android
 
-### ViewModels
-- ✅ BaseViewModel - Base class with IsBusy
-- ✅ LoginViewModel - Login logic
-- ✅ DashboardViewModel - Dashboard data
+# 6. Run (iOS - Mac only)
+dotnet build -t:Run -f net8.0-ios
+```
 
-### Views
-- ✅ LoginPage - Login UI
-- ✅ DashboardPage - Dashboard UI
-- ✅ Sample XAML layouts
+### Configuration
 
-## การทดสอบ
+1. **อัพเดท API URL** ใน `Helpers/Constants.cs`:
 
-1. รัน Laravel backend ที่ `http://localhost:8000`
-2. อัปเดต API URL ใน Constants.cs
-3. Run แอปบน emulator/simulator
-4. ทดสอบการ login ด้วย credentials ที่มีอยู่
+```csharp
+// For Production
+public const string ApiBaseUrl = "https://your-domain.com/api/v1";
+```
 
-## หมายเหตุ
+2. **สร้าง App Icons** ใน `Resources/AppIcon/`
 
-- ไฟล์เหล่านี้เป็น **ตัวอย่าง** เท่านั้น
-- ควรปรับแต่งให้เหมาะกับความต้องการของโปรเจค
-- อย่าลืม implement error handling และ validation
-- ทดสอบให้ครบทุก platform (Android, iOS)
+3. **สร้าง Splash Image** ใน `Resources/Splash/`
 
-## เอกสารเพิ่มเติม
+## 📚 Architecture
 
-- [Installation Guide](../../MOBILE-APP-VISUAL-STUDIO-SETUP.md)
-- [API Documentation](../../MOBILE-APP-API.md)
-- [.NET MAUI Docs](https://docs.microsoft.com/dotnet/maui/)
+### MVVM Pattern
+
+```
+┌─────────────────┐
+│     View        │  ← XAML UI
+├─────────────────┤
+│   ViewModel     │  ← Business Logic
+├─────────────────┤
+│    Service      │  ← API Calls
+├─────────────────┤
+│     Model       │  ← Data Objects
+└─────────────────┘
+```
+
+### Navigation Flow
+
+```
+Splash Screen
+      │
+      ▼
+Hub Selection ──────────────────┐
+      │                         │
+      ├── 🛒 Shopping          │
+      ├── 💰 Wallet            │
+      ├── 📈 Invest            │
+      ├── 🤝 MLM ◄─────────────┤
+      ├── 🚴 Rider             │
+      ├── 🤖 AI Bot            │
+      ├── 🎓 Academy           │
+      └── 🎮 Gaming            │
+                               │
+                      Need Login?
+                         │
+                         ▼
+                   Login Page
+                         │
+                         ▼
+                     Dashboard
+```
+
+## 🎨 Design System
+
+### Colors
+
+| Color | Hex | Usage |
+|-------|-----|-------|
+| Primary | `#6366F1` | ปุ่มหลัก, Accent |
+| Secondary | `#8B5CF6` | ปุ่มรอง |
+| Accent | `#06B6D4` | เน้น |
+| Success | `#10B981` | สำเร็จ |
+| Warning | `#F59E0B` | เตือน |
+| Error | `#EF4444` | ผิดพลาด |
+| Dark BG | `#0F0F23` | พื้นหลังหลัก |
+| Dark Card | `#16213E` | พื้นหลังการ์ด |
+
+### Typography
+
+- **Display**: 40px Bold
+- **H1**: 32px Bold
+- **H2**: 28px Semibold
+- **H3**: 24px Semibold
+- **Body**: 16px Regular
+- **Caption**: 12px Regular
+
+### Spacing
+
+- **XS**: 4px
+- **SM**: 8px
+- **MD**: 16px
+- **LG**: 24px
+- **XL**: 32px
+- **XXL**: 48px
+
+## 📱 Screenshots
+
+```
+┌─────────────────────────────────┐
+│                                 │
+│         ✨ 🚀 ✨                │
+│                                 │
+│        THAIPROMPT               │
+│       ━━━━━━━━━━━━              │
+│      Ultra Ecosystem            │
+│                                 │
+│         ◉ ◉ ◉                   │
+│                                 │
+│  "Powered by AI & Blockchain"  │
+│                                 │
+└─────────────────────────────────┘
+        Splash Screen
+
+┌─────────────────────────────────┐
+│  สวัสดีตอนเช้า ☀️        👤    │
+│  ยินดีต้อนรับ                   │
+├─────────────────────────────────┤
+│  ┌───────┐  ┌───────┐          │
+│  │ 🛒    │  │ 💰    │          │
+│  │ช้อปปิ้ง│  │กระเป๋า │          │
+│  └───────┘  └───────┘          │
+│  ┌───────┐  ┌───────┐          │
+│  │ 📈    │  │ 🤝    │          │
+│  │ลงทุน  │  │ MLM   │          │
+│  └───────┘  └───────┘          │
+│        ...more...               │
+├─────────────────────────────────┤
+│ [เข้าสู่ระบบ] [สมัครสมาชิก]      │
+└─────────────────────────────────┘
+       Hub Selection
+```
+
+## 🔧 Development
+
+### Adding New Hub
+
+1. เพิ่ม route ใน `AppShell.xaml.cs`:
+```csharp
+Routing.RegisterRoute("new-hub", typeof(Views.NewHubPage));
+```
+
+2. เพิ่ม HubItem ใน `HubSelectionViewModel.cs`:
+```csharp
+new HubItem
+{
+    Id = "new-hub",
+    Icon = "🆕",
+    Title = "New Service",
+    Subtitle = "Description",
+    Route = "new-hub",
+    GradientStart = "#Color1",
+    GradientEnd = "#Color2"
+}
+```
+
+3. สร้าง Page และ ViewModel
+
+### Testing
+
+```bash
+# Unit Tests
+dotnet test
+
+# UI Tests (Appium)
+# Coming soon...
+```
+
+## 📄 License
+
+Private - Thaiprompt Team
+
+## 📞 Support
+
+- **Documentation**: [CLAUDE.md](../../CLAUDE.md)
+- **API Docs**: [MOBILE-APP-API.md](../../MOBILE-APP-API.md)
+- **Setup Guide**: [MOBILE-APP-VISUAL-STUDIO-SETUP.md](../../MOBILE-APP-VISUAL-STUDIO-SETUP.md)
+
+---
+
+**Made with ❤️ by Thaiprompt Team**
+
+*"Ultra App ระดับเทพของโลก"*

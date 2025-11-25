@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Thaiprompt Ultra App Icon - Foreground -->
+  <defs>
+    <linearGradient id="fgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF"/>
+      <stop offset="100%" style="stop-color:#E0E7FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- T Letter -->
+  <path d="M 150 160 L 362 160 L 362 200 L 276 200 L 276 360 L 236 360 L 236 200 L 150 200 Z"
+        fill="url(#fgGrad)"/>
+</svg>

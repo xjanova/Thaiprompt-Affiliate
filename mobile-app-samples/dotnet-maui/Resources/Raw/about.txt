@@ -1,0 +1,6 @@
+Thaiprompt Ultra App
+Version: 1.0.0
+Copyright (c) 2024 Thaiprompt
+
+This is the official Thaiprompt mobile application.
+A World-Class Ultra App for affiliate marketing and services.
