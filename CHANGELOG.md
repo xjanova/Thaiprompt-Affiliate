@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.180.2] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1595 from xjanova/claude/fix-deployments-relationship-011QtNin8H1qu7SfkbRKdCEj (063b39fc)
+- fix: add missing deployments relationship to AiRentalCloudProvider model (6a00a864)
+### 🔧 Other Changes
+
+
 ## [v3.180.1] - 2025-11-25
 
 ### ✨ Features
