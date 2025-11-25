@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.181.1] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1598 from xjanova/claude/fix-deployments-relationship-011QtNin8H1qu7SfkbRKdCEj (654f74a9)
+- fix: change model_size_bytes column from integer to bigInteger (d29dd0a5)
+### 🔧 Other Changes
+
+
 ## [v3.181.0] - 2025-11-25
 
 ### ✨ Features
