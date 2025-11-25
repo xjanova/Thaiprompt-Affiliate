@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\LineBotAiController;
 use App\Http\Controllers\Admin\LineRichMenuController;
 use App\Http\Controllers\Admin\LineBroadcastController;
 use App\Http\Controllers\Admin\LineSignupRewardController;
+use App\Http\Controllers\Admin\LineRecruitmentController;
 use App\Http\Controllers\Admin\OtpSettingsController;
 use App\Http\Controllers\Admin\TwoFactorSettingsController;
 use App\Http\Controllers\Admin\AiInstallationController;
@@ -848,6 +849,38 @@ Route::prefix('line-membership-signup')->name('line-membership-signup.')->group(
 
     // Export
     Route::get('/export/sessions', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'exportSessions'])->name('export.sessions');
+});
+
+// LINE Recruitment Management (AI-Powered Recruitment System)
+Route::prefix('line-recruitment')->name('line-recruitment.')->group(function () {
+    // Dashboard
+    Route::get('/', [LineRecruitmentController::class, 'index'])->name('index');
+
+    // Settings Management
+    Route::get('/settings', [LineRecruitmentController::class, 'settings'])->name('settings');
+    Route::put('/settings/{id}', [LineRecruitmentController::class, 'updateSettings'])->name('settings.update');
+
+    // Conversations Management
+    Route::get('/conversations', [LineRecruitmentController::class, 'conversations'])->name('conversations');
+    Route::get('/conversations/{id}', [LineRecruitmentController::class, 'conversationDetail'])->name('conversations.show');
+    Route::delete('/conversations/{id}', [LineRecruitmentController::class, 'deleteConversation'])->name('conversations.delete');
+    Route::get('/export-conversations', [LineRecruitmentController::class, 'exportConversations'])->name('conversations.export');
+
+    // Topic Boundaries Management
+    Route::get('/{aiSettingId}/topic-boundaries', [LineRecruitmentController::class, 'topicBoundaries'])->name('topic-boundaries');
+    Route::post('/{aiSettingId}/topic-boundaries', [LineRecruitmentController::class, 'storeTopicBoundary'])->name('topic-boundaries.store');
+    Route::put('/{aiSettingId}/topic-boundaries/{topicId}', [LineRecruitmentController::class, 'updateTopicBoundary'])->name('topic-boundaries.update');
+    Route::delete('/{aiSettingId}/topic-boundaries/{topicId}', [LineRecruitmentController::class, 'deleteTopicBoundary'])->name('topic-boundaries.delete');
+
+    // Knowledge Base Management
+    Route::get('/{aiSettingId}/knowledge-base', [LineRecruitmentController::class, 'knowledgeBase'])->name('knowledge-base');
+    Route::post('/{aiSettingId}/knowledge-base', [LineRecruitmentController::class, 'storeKnowledgeBase'])->name('knowledge-base.store');
+    Route::put('/{aiSettingId}/knowledge-base/{knowledgeId}', [LineRecruitmentController::class, 'updateKnowledgeBase'])->name('knowledge-base.update');
+    Route::delete('/{aiSettingId}/knowledge-base/{knowledgeId}', [LineRecruitmentController::class, 'deleteKnowledgeBase'])->name('knowledge-base.delete');
+
+    // AI Testing
+    Route::post('/test-ai/{id}', [LineRecruitmentController::class, 'testAi'])->name('test-ai');
+    Route::post('/test-topic-filter/{id}', [LineRecruitmentController::class, 'testTopicFilter'])->name('test-topic-filter');
 });
 
 // MLM Prospects Management
