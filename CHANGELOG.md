@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.181.4] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1602 from xjanova/claude/fix-registration-rewards-01GQA5cLiZimbVQcpih1V2Gs (408f9e68)
+- fix: display active registration rewards on register page (ea6ffcd5)
+### 🔧 Other Changes
+
+
 ## [v3.181.3] - 2025-11-25
 
 ### ✨ Features
