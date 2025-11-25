@@ -797,6 +797,7 @@ return [
             'route' => 'user.kyc.index',
             'order' => 2,
             'permissions' => [],
+            'hide_if_kyc_verified' => true, // ซ่อนเมนูเมื่อ KYC approved แล้ว
         ],
 
         [

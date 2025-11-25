@@ -144,10 +144,10 @@ class KycController extends Controller
             'extracted_data' => $extractedData,
         ]);
 
-        // Update user's KYC status
-        $user->update([
+        // Update user's KYC status (kyc_status is guarded, use forceFill)
+        $user->forceFill([
             'kyc_status' => 'pending',
-        ]);
+        ])->save();
 
         // Prepare success message with OCR warning if applicable
         $successMessage = 'ส่งคำขอยืนยันตัวตนเรียบร้อยแล้ว กรุณารอแอดมินตรวจสอบและอนุมัติ';
