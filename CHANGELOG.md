@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.180.3] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1596 from xjanova/claude/fix-missing-setup-guides-view-017rnn7mu6sKNMSdohGUSnSW (edad6549)
+- fix: add missing banana.blade.php setup guide view (3e798a44)
+### 🔧 Other Changes
+
+
 ## [v3.180.2] - 2025-11-25
 
 ### ✨ Features
