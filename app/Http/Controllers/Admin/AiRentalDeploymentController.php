@@ -96,9 +96,9 @@ class AiRentalDeploymentController extends Controller
     /**
      * แสดงฟอร์มสร้าง Deployment ใหม่
      *
-     * @return View
+     * @return View|RedirectResponse
      */
-    public function create(): View
+    public function create(): View|RedirectResponse
     {
         $user = Auth::user();
 
