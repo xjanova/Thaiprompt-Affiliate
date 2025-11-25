@@ -379,6 +379,17 @@ class AiRentalDeployment extends Model
     }
 
     /**
+     * Scope: เฉพาะ deployments ที่ล้มเหลว
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeFailed($query)
+    {
+        return $query->whereIn('status', ['failed', 'error']);
+    }
+
+    /**
      * Scope: ของ user ที่ระบุ
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
