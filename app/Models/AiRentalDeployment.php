@@ -359,34 +359,43 @@ class AiRentalDeployment extends Model
     /**
      * Scope: เฉพาะ deployments ที่กำลัง running
      *
+     * ใช้ qualified table name เพื่อหลีกเลี่ยง ambiguous column
+     * เมื่อใช้ร่วมกับ HasManyThrough relationship
+     *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRunning($query)
     {
-        return $query->where('status', 'running');
+        return $query->where('ai_rental_deployments.status', 'running');
     }
 
     /**
      * Scope: เฉพาะ deployments ที่หยุดแล้ว
+     *
+     * ใช้ qualified table name เพื่อหลีกเลี่ยง ambiguous column
+     * เมื่อใช้ร่วมกับ HasManyThrough relationship
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeStopped($query)
     {
-        return $query->where('status', 'stopped');
+        return $query->where('ai_rental_deployments.status', 'stopped');
     }
 
     /**
      * Scope: เฉพาะ deployments ที่ล้มเหลว
+     *
+     * ใช้ qualified table name เพื่อหลีกเลี่ยง ambiguous column
+     * เมื่อใช้ร่วมกับ HasManyThrough relationship
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFailed($query)
     {
-        return $query->whereIn('status', ['failed', 'error']);
+        return $query->whereIn('ai_rental_deployments.status', ['failed', 'error']);
     }
 
     /**
