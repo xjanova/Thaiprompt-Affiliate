@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.183.0] - 2025-11-25
+
+### ✨ Features
+- Merge pull request #1608 from xjanova/claude/enhance-line-recruitment-01AuiukVCYuHENJV1JiKbXpW (7108eee3)
+- feat: implement LINE Recruitment AI system with topic filtering (6279e671)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.182.0] - 2025-11-25
 
 ### ✨ Features
