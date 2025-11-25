@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.184.0] - 2025-11-25
+
+### ✨ Features
+- Merge pull request #1609 from xjanova/claude/redesign-wallet-settings-01MFPiJAhkBWESc7tWVkyEuG (e2001a31)
+- feat: redesign wallet settings page with modern V3 UI and user wallets view (61c454a9)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.183.0] - 2025-11-25
 
 ### ✨ Features
