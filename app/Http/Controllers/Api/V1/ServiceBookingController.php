@@ -428,4 +428,180 @@ class ServiceBookingController extends Controller
             'message' => 'อัพเดทตำแหน่งสำเร็จ',
         ]);
     }
+
+    /**
+     * Provider: ดึงข้อมูล Live Tracking (ดูตำแหน่งลูกค้า)
+     *
+     * GET /api/v1/provider/bookings/{booking}/track
+     *
+     * @param ServiceBooking $booking
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function providerTrackBooking(ServiceBooking $booking)
+    {
+        $provider = ServiceProvider::where('user_id', auth()->id())->first();
+
+        if (!$provider || $booking->provider_id !== $provider->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่มีสิทธิ์เข้าถึง',
+            ], 403);
+        }
+
+        // ดึงตำแหน่งลูกค้า
+        $serviceLocation = $booking->locations()->where('type', 'service')->first();
+        $customerLocation = null;
+
+        if ($serviceLocation) {
+            $customerLocation = [
+                'latitude' => $serviceLocation->latitude,
+                'longitude' => $serviceLocation->longitude,
+                'address' => $serviceLocation->address,
+                'updated_at' => $serviceLocation->updated_at,
+            ];
+        }
+
+        // ดึงตำแหน่ง live ของลูกค้า (ถ้ามี)
+        $userLiveLocation = $booking->user_live_latitude && $booking->user_live_longitude
+            ? [
+                'latitude' => $booking->user_live_latitude,
+                'longitude' => $booking->user_live_longitude,
+                'updated_at' => $booking->user_location_updated_at,
+            ]
+            : null;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'booking' => [
+                    'id' => $booking->id,
+                    'booking_number' => $booking->booking_number,
+                    'status' => $booking->status,
+                    'status_label' => $booking->getStatusLabel(),
+                ],
+                'customer' => [
+                    'name' => $booking->user->name,
+                    'phone' => $booking->user->phone ?? null,
+                    'service_location' => $customerLocation,
+                    'live_location' => $userLiveLocation,
+                ],
+                'provider_location' => [
+                    'latitude' => $provider->current_latitude,
+                    'longitude' => $provider->current_longitude,
+                    'updated_at' => $provider->last_location_update,
+                ],
+            ],
+        ]);
+    }
+
+    //===========================================
+    // User Live Location APIs
+    //===========================================
+
+    /**
+     * User: อัพเดทตำแหน่ง GPS ของตัวเอง
+     *
+     * POST /api/v1/bookings/{booking}/update-location
+     *
+     * @param Request $request
+     * @param ServiceBooking $booking
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function userUpdateLocation(Request $request, ServiceBooking $booking)
+    {
+        if ($booking->user_id !== auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่มีสิทธิ์เข้าถึง',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+        ]);
+
+        // อัพเดทตำแหน่ง live ของลูกค้า
+        $booking->update([
+            'user_live_latitude' => $validated['latitude'],
+            'user_live_longitude' => $validated['longitude'],
+            'user_location_updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'อัพเดทตำแหน่งสำเร็จ',
+        ]);
+    }
+
+    /**
+     * Live Tracking - ดึงตำแหน่งทั้งสองฝ่าย (User & Provider)
+     *
+     * GET /api/v1/bookings/{booking}/live-tracking
+     *
+     * @param ServiceBooking $booking
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function liveTracking(ServiceBooking $booking)
+    {
+        // ตรวจสอบสิทธิ์ (ทั้ง User และ Provider สามารถเข้าถึงได้)
+        $provider = ServiceProvider::where('user_id', auth()->id())->first();
+        $isProvider = $provider && $booking->provider_id === $provider->id;
+        $isUser = $booking->user_id === auth()->id();
+
+        if (!$isProvider && !$isUser) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่มีสิทธิ์เข้าถึง',
+            ], 403);
+        }
+
+        // ดึงตำแหน่งสถานที่ให้บริการ
+        $serviceLocation = $booking->locations()->where('type', 'service')->first();
+
+        // ดึงตำแหน่ง Provider
+        $providerLocation = null;
+        if ($booking->provider) {
+            $providerLocation = [
+                'latitude' => $booking->provider->current_latitude,
+                'longitude' => $booking->provider->current_longitude,
+                'updated_at' => $booking->provider->last_location_update,
+                'name' => $booking->provider->display_name,
+                'phone' => $booking->provider->phone,
+            ];
+        }
+
+        // ดึงตำแหน่ง Live ของลูกค้า
+        $userLiveLocation = null;
+        if ($booking->user_live_latitude && $booking->user_live_longitude) {
+            $userLiveLocation = [
+                'latitude' => $booking->user_live_latitude,
+                'longitude' => $booking->user_live_longitude,
+                'updated_at' => $booking->user_location_updated_at,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'booking' => [
+                    'id' => $booking->id,
+                    'booking_number' => $booking->booking_number,
+                    'status' => $booking->status,
+                    'status_label' => $booking->getStatusLabel(),
+                ],
+                'service_location' => $serviceLocation ? [
+                    'latitude' => $serviceLocation->latitude,
+                    'longitude' => $serviceLocation->longitude,
+                    'address' => $serviceLocation->address,
+                ] : null,
+                'provider_location' => $providerLocation,
+                'user_live_location' => $userLiveLocation,
+                'user' => [
+                    'name' => $booking->user->name,
+                    'phone' => $booking->user->phone ?? null,
+                ],
+            ],
+        ]);
+    }
 }

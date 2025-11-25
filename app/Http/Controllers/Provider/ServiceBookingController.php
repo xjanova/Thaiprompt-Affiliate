@@ -463,6 +463,52 @@ class ServiceBookingController extends Controller
     }
 
     /**
+     * หน้า Live Tracking - ดูตำแหน่งลูกค้าและเส้นทาง
+     *
+     * @param ServiceBooking $booking
+     * @return \Illuminate\View\View
+     */
+    public function track(ServiceBooking $booking)
+    {
+        $provider = $this->getCurrentProvider();
+
+        // ตรวจสอบว่าเป็นงานของ provider นี้
+        if ($booking->provider_id !== $provider->id) {
+            abort(403);
+        }
+
+        // ต้องเป็นสถานะที่กำลังเดินทางหรือให้บริการอยู่
+        if (!in_array($booking->status, ['provider_accepted', 'provider_on_way', 'in_progress'])) {
+            return redirect()
+                ->route('provider.bookings.show', $booking)
+                ->with('info', 'ไม่สามารถติดตามได้ในสถานะนี้');
+        }
+
+        $booking->load(['service', 'service.category', 'user', 'locations']);
+
+        // หาตำแหน่งให้บริการ
+        $serviceLocation = $booking->locations()
+            ->where('location_type', 'service_location')
+            ->first();
+
+        // ถ้าไม่มี ใช้ customer_latitude/longitude
+        if (!$serviceLocation && $booking->customer_latitude && $booking->customer_longitude) {
+            $serviceLocation = (object) [
+                'latitude' => $booking->customer_latitude,
+                'longitude' => $booking->customer_longitude,
+                'address' => $booking->customer_address,
+            ];
+        }
+
+        return view('provider.bookings.track', [
+            'booking' => $booking,
+            'provider' => $provider,
+            'serviceLocation' => $serviceLocation,
+            'pageTitle' => 'ติดตามตำแหน่ง - #' . $booking->booking_number,
+        ]);
+    }
+
+    /**
      * หา Provider ปัจจุบัน
      *
      * @return ServiceProvider|null

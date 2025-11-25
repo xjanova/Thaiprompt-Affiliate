@@ -65,6 +65,15 @@
                     <i class="fas fa-phone mr-2"></i>โทรหาลูกค้า
                 </a>
             @endif
+
+            {{-- Live Tracking Button --}}
+            @if(in_array($booking->status, ['provider_accepted', 'provider_on_way', 'in_progress']))
+                <a href="{{ route('provider.bookings.track', $booking) }}"
+                   class="px-6 py-3 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white rounded-xl font-semibold shadow-lg transition-all flex items-center gap-2">
+                    <i class="fas fa-satellite-dish animate-pulse"></i>
+                    <span>Live Tracking</span>
+                </a>
+            @endif
         </div>
     </div>
 

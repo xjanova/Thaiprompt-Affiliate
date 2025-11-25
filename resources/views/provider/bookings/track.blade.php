@@ -1,29 +1,29 @@
 {{--
-    หน้าติดตามการจอง (Real-time GPS Tracking)
-    แสดงตำแหน่งทั้งผู้ให้บริการและผู้ใช้บน Google Maps พร้อม real-time updates
+    หน้าติดตามตำแหน่งลูกค้า (Provider Live Tracking)
+    แสดงตำแหน่งลูกค้า, ตำแหน่งตัวเอง, และสถานที่ให้บริการบน Google Maps
 --}}
 @extends('layouts.app')
 
-@section('title', 'ติดตามการจอง #' . $booking->booking_number)
+@section('title', 'ติดตามตำแหน่ง #' . $booking->booking_number)
 
 @section('content')
-<div class="min-h-screen bg-gray-100 dark:bg-gray-900" x-data="liveTracker()">
+<div class="min-h-screen bg-gray-100 dark:bg-gray-900" x-data="providerLiveTracker()">
     {{-- Header (Fixed) --}}
     <div class="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-white/90 dark:bg-gray-800/90 border-b border-gray-200 dark:border-gray-700 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <a href="{{ route('user.bookings.show', $booking) }}"
+                    <a href="{{ route('provider.bookings.show', $booking) }}"
                        class="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                         <i class="fas fa-arrow-left text-lg"></i>
                     </a>
                     <div>
                         <h1 class="text-lg font-bold text-gray-900 dark:text-white">
-                            <i class="fas fa-satellite-dish text-purple-500 mr-2 animate-pulse"></i>
+                            <i class="fas fa-satellite-dish text-green-500 mr-2 animate-pulse"></i>
                             Live Tracking
                         </h1>
                         <p class="text-xs text-gray-600 dark:text-gray-400">
-                            #{{ $booking->booking_number }}
+                            #{{ $booking->booking_number }} - {{ $booking->service->name }}
                         </p>
                     </div>
                 </div>
@@ -31,10 +31,10 @@
                 {{-- Status Badge --}}
                 <div class="px-4 py-2 rounded-full font-semibold text-sm"
                     :class="{
+                        'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400': status === 'provider_accepted',
                         'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400': status === 'provider_on_way',
                         'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400': status === 'in_progress',
-                        'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400': status === 'completed',
-                        'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': !['provider_on_way', 'in_progress', 'completed'].includes(status)
+                        'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400': status === 'completed'
                     }">
                     <i class="fas fa-circle text-xs mr-1 animate-pulse"></i>
                     <span x-text="statusLabel">{{ $booking->getStatusLabel() ?? $booking->status }}</span>
@@ -51,12 +51,12 @@
     {{-- Legend (Floating) --}}
     <div class="fixed top-24 left-4 z-30 p-3 rounded-xl backdrop-blur-xl bg-white/90 dark:bg-gray-800/90 shadow-xl text-sm">
         <div class="flex items-center gap-2 mb-2">
-            <div class="w-4 h-4 rounded-full bg-purple-500"></div>
-            <span class="text-gray-700 dark:text-gray-300">ผู้ให้บริการ</span>
+            <div class="w-4 h-4 rounded-full bg-green-500"></div>
+            <span class="text-gray-700 dark:text-gray-300">ตำแหน่งของคุณ</span>
         </div>
         <div class="flex items-center gap-2 mb-2">
             <div class="w-4 h-4 rounded-full bg-blue-500"></div>
-            <span class="text-gray-700 dark:text-gray-300">ตำแหน่งของคุณ</span>
+            <span class="text-gray-700 dark:text-gray-300">ตำแหน่งลูกค้า</span>
         </div>
         <div class="flex items-center gap-2">
             <div class="w-4 h-4 bg-red-500" style="clip-path: polygon(50% 0%, 100% 100%, 0% 100%);"></div>
@@ -77,7 +77,7 @@
              :class="panelExpanded ? 'h-96' : 'h-56'">
             <div class="max-w-lg mx-auto px-4 py-4 h-full overflow-y-auto">
                 {{-- ETA Card --}}
-                <div class="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-4 mb-4 text-white">
+                <div class="bg-gradient-to-r from-green-600 to-teal-600 rounded-xl p-4 mb-4 text-white">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-white/80">เวลาถึงโดยประมาณ</p>
@@ -96,8 +96,8 @@
                                  :style="{ width: progress + '%' }"></div>
                         </div>
                         <div class="flex justify-between mt-1 text-xs text-white/70">
-                            <span>ผู้ให้บริการ</span>
-                            <span>ที่หมาย</span>
+                            <span>ตำแหน่งคุณ</span>
+                            <span>สถานที่ให้บริการ</span>
                         </div>
                     </div>
                 </div>
@@ -108,7 +108,7 @@
                     <div class="flex items-center gap-2">
                         <i class="fas" :class="sharingLocation ? 'fa-broadcast-tower text-green-500 animate-pulse' : 'fa-exclamation-triangle text-yellow-500'"></i>
                         <span class="text-sm" :class="sharingLocation ? 'text-green-700 dark:text-green-400' : 'text-yellow-700 dark:text-yellow-400'"
-                              x-text="sharingLocation ? 'กำลังแชร์ตำแหน่งของคุณ' : 'ยังไม่ได้แชร์ตำแหน่ง'"></span>
+                              x-text="sharingLocation ? 'กำลังแชร์ตำแหน่งให้ลูกค้า' : 'ยังไม่ได้แชร์ตำแหน่ง'"></span>
                     </div>
                     <button @click="toggleLocationSharing()"
                             class="px-3 py-1 rounded-lg text-sm font-medium transition-colors"
@@ -117,54 +117,61 @@
                     </button>
                 </div>
 
-                {{-- Provider Info --}}
-                @if($booking->provider)
-                    <div class="flex items-center gap-4 mb-4">
-                        <div class="flex-shrink-0">
-                            @if($booking->provider->profile_image)
-                                <img src="{{ asset('storage/' . $booking->provider->profile_image) }}"
-                                     alt="{{ $booking->provider->display_name }}"
-                                     class="w-14 h-14 rounded-full object-cover ring-2 ring-purple-500">
-                            @else
-                                <div class="w-14 h-14 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center ring-2 ring-purple-500">
-                                    <i class="fas fa-user text-white text-xl"></i>
-                                </div>
-                            @endif
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="font-bold text-gray-900 dark:text-white">
-                                {{ $booking->provider->display_name }}
-                            </h3>
-                            @if($booking->provider->average_rating)
-                                <div class="flex items-center gap-1">
-                                    <i class="fas fa-star text-yellow-400 text-sm"></i>
-                                    <span class="text-sm text-gray-600 dark:text-gray-400">
-                                        {{ number_format($booking->provider->average_rating, 1) }}
-                                    </span>
-                                </div>
-                            @endif
-                        </div>
-
-                        {{-- Contact Actions --}}
-                        <div class="flex gap-2">
-                            @if($booking->provider->phone)
-                                <a href="tel:{{ $booking->provider->phone }}"
-                                   class="p-3 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
-                                    <i class="fas fa-phone"></i>
-                                </a>
-                            @endif
-                            <button @click="openChat()"
-                                    class="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
-                                <i class="fas fa-comment"></i>
-                            </button>
-                        </div>
+                {{-- Customer Location Status --}}
+                <div class="flex items-center justify-between p-3 rounded-lg mb-4"
+                     :class="customerLocationAvailable ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-gray-50 dark:bg-gray-700/30'">
+                    <div class="flex items-center gap-2">
+                        <i class="fas" :class="customerLocationAvailable ? 'fa-map-marker-alt text-blue-500' : 'fa-map-marker-alt text-gray-400'"></i>
+                        <span class="text-sm" :class="customerLocationAvailable ? 'text-blue-700 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'"
+                              x-text="customerLocationAvailable ? 'ลูกค้ากำลังแชร์ตำแหน่ง' : 'ลูกค้ายังไม่ได้แชร์ตำแหน่ง'"></span>
                     </div>
-                @endif
+                    <span x-show="customerLocationUpdatedAt" class="text-xs text-gray-500 dark:text-gray-400" x-text="'อัพเดท: ' + customerLocationUpdatedAt"></span>
+                </div>
+
+                {{-- Customer Info --}}
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="flex-shrink-0">
+                        @if($booking->user->profile_image)
+                            <img src="{{ asset('storage/' . $booking->user->profile_image) }}"
+                                 alt="{{ $booking->user->name }}"
+                                 class="w-14 h-14 rounded-full object-cover ring-2 ring-blue-500">
+                        @else
+                            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center ring-2 ring-blue-500">
+                                <i class="fas fa-user text-white text-xl"></i>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-gray-900 dark:text-white">
+                            {{ $booking->user->name }}
+                        </h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">ลูกค้า</p>
+                    </div>
+
+                    {{-- Contact Actions --}}
+                    <div class="flex gap-2">
+                        @if($booking->contact_phone ?? $booking->user->phone)
+                            <a href="tel:{{ $booking->contact_phone ?? $booking->user->phone }}"
+                               class="p-3 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                                <i class="fas fa-phone"></i>
+                            </a>
+                        @endif
+                        <button @click="openChat()"
+                                class="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                            <i class="fas fa-comment"></i>
+                        </button>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination={{ $serviceLocation->latitude ?? '' }},{{ $serviceLocation->longitude ?? '' }}"
+                           target="_blank"
+                           class="p-3 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors">
+                            <i class="fas fa-directions"></i>
+                        </a>
+                    </div>
+                </div>
 
                 {{-- Service Info (Expanded) --}}
                 <div x-show="panelExpanded" x-collapse>
                     <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3">ข้อมูลบริการ</h4>
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-3">ข้อมูลงาน</h4>
 
                         <div class="space-y-2 text-sm">
                             <div class="flex items-center justify-between">
@@ -180,9 +187,9 @@
                                 </span>
                             </div>
                             <div class="flex items-center justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">ราคา</span>
-                                <span class="font-bold text-purple-600 dark:text-purple-400">
-                                    ฿{{ number_format($booking->total_amount, 2) }}
+                                <span class="text-gray-600 dark:text-gray-400">รายได้ของคุณ</span>
+                                <span class="font-bold text-green-600 dark:text-green-400">
+                                    ฿{{ number_format($booking->provider_earnings ?? 0, 2) }}
                                 </span>
                             </div>
                         </div>
@@ -196,10 +203,38 @@
                                 สถานที่ให้บริการ
                             </h4>
                             <p class="text-sm text-gray-600 dark:text-gray-400">
-                                {{ $serviceLocation->address }}
+                                {{ $serviceLocation->address ?? $booking->customer_address ?? 'ไม่ระบุที่อยู่' }}
                             </p>
                         </div>
                     @endif
+
+                    {{-- Quick Actions --}}
+                    <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex gap-3">
+                            @if($booking->status === 'provider_accepted')
+                                <form action="{{ route('provider.bookings.start-journey', $booking) }}" method="POST" class="flex-1">
+                                    @csrf
+                                    <button type="submit" class="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition-all">
+                                        <i class="fas fa-route mr-2"></i>เริ่มเดินทาง
+                                    </button>
+                                </form>
+                            @elseif($booking->status === 'provider_on_way')
+                                <form action="{{ route('provider.bookings.start-service', $booking) }}" method="POST" class="flex-1">
+                                    @csrf
+                                    <button type="submit" class="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-all">
+                                        <i class="fas fa-play mr-2"></i>เริ่มบริการ
+                                    </button>
+                                </form>
+                            @elseif($booking->status === 'in_progress')
+                                <form action="{{ route('provider.bookings.complete', $booking) }}" method="POST" class="flex-1">
+                                    @csrf
+                                    <button type="submit" class="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition-all">
+                                        <i class="fas fa-check-double mr-2"></i>เสร็จสิ้นบริการ
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    </div>
 
                     {{-- Last Update --}}
                     <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700 text-center">
@@ -219,24 +254,31 @@
         <button @click="refreshLocation()"
                 class="p-4 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 :class="{ 'animate-spin': loading }">
-            <i class="fas fa-sync-alt text-purple-600 dark:text-purple-400"></i>
-        </button>
-
-        {{-- Center on Provider --}}
-        <button @click="centerOnProvider()"
-                class="p-4 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                title="ตำแหน่งผู้ให้บริการ">
-            <i class="fas fa-motorcycle text-purple-600 dark:text-purple-400"></i>
+            <i class="fas fa-sync-alt text-green-600 dark:text-green-400"></i>
         </button>
 
         {{-- Center on Me --}}
         <button @click="centerOnMe()"
                 class="p-4 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 title="ตำแหน่งของฉัน">
+            <i class="fas fa-motorcycle text-green-600 dark:text-green-400"></i>
+        </button>
+
+        {{-- Center on Customer --}}
+        <button @click="centerOnCustomer()"
+                class="p-4 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                title="ตำแหน่งลูกค้า">
             <i class="fas fa-user text-blue-600 dark:text-blue-400"></i>
         </button>
 
-        {{-- Show Both --}}
+        {{-- Center on Destination --}}
+        <button @click="centerOnDestination()"
+                class="p-4 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                title="สถานที่ให้บริการ">
+            <i class="fas fa-map-pin text-red-600 dark:text-red-400"></i>
+        </button>
+
+        {{-- Show All --}}
         <button @click="fitAllMarkers()"
                 class="p-4 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 title="แสดงทั้งหมด">
@@ -248,14 +290,14 @@
 
 @push('scripts')
 <script>
-function liveTracker() {
+function providerLiveTracker() {
     return {
         panelExpanded: false,
         loading: false,
         map: null,
         providerMarker: null,
+        customerMarker: null,
         serviceMarker: null,
-        userMarker: null,
         directionsRenderer: null,
         directionsService: null,
 
@@ -265,12 +307,16 @@ function liveTracker() {
         statusLabel: '{{ $booking->getStatusLabel() ?? $booking->status }}',
 
         // ข้อมูล Location
-        providerLat: {{ $booking->provider->current_latitude ?? 'null' }},
-        providerLng: {{ $booking->provider->current_longitude ?? 'null' }},
+        providerLat: {{ $provider->current_latitude ?? 'null' }},
+        providerLng: {{ $provider->current_longitude ?? 'null' }},
+        customerLat: {{ $booking->user_live_latitude ?? 'null' }},
+        customerLng: {{ $booking->user_live_longitude ?? 'null' }},
         serviceLat: {{ $serviceLocation->latitude ?? 'null' }},
         serviceLng: {{ $serviceLocation->longitude ?? 'null' }},
-        userLat: null,
-        userLng: null,
+
+        // Customer location status
+        customerLocationAvailable: {{ $booking->user_live_latitude ? 'true' : 'false' }},
+        customerLocationUpdatedAt: null,
 
         // ข้อมูล ETA
         eta: 'กำลังคำนวณ...',
@@ -288,6 +334,10 @@ function liveTracker() {
         init() {
             this.loadGoogleMaps();
             this.startAutoRefresh();
+            // เริ่ม share ตำแหน่งอัตโนมัติสำหรับ provider ที่กำลังเดินทาง
+            if (this.status === 'provider_on_way') {
+                this.startLocationSharing();
+            }
         },
 
         loadGoogleMaps() {
@@ -295,15 +345,16 @@ function liveTracker() {
                 this.initMap();
             } else {
                 const script = document.createElement('script');
-                script.src = `https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}&callback=initTrackingMap`;
+                script.src = `https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}&callback=initProviderTrackingMap`;
                 script.async = true;
                 script.defer = true;
                 document.head.appendChild(script);
-                window.initTrackingMap = () => this.initMap();
+                window.initProviderTrackingMap = () => this.initMap();
             }
         },
 
         initMap() {
+            // ศูนย์กลางแผนที่: สถานที่ให้บริการ หรือ กรุงเทพ
             const center = this.serviceLat && this.serviceLng
                 ? { lat: this.serviceLat, lng: this.serviceLng }
                 : { lat: 13.7563, lng: 100.5018 };
@@ -322,7 +373,7 @@ function liveTracker() {
                 map: this.map,
                 suppressMarkers: true,
                 polylineOptions: {
-                    strokeColor: '#8B5CF6',
+                    strokeColor: '#10B981',
                     strokeWeight: 5,
                     strokeOpacity: 0.8,
                 }
@@ -347,18 +398,30 @@ function liveTracker() {
                 });
             }
 
-            // Provider Marker (Purple Circle)
+            // Provider Marker (Green - ตำแหน่งของเรา)
             if (this.providerLat && this.providerLng) {
                 this.providerMarker = new google.maps.Marker({
                     position: { lat: this.providerLat, lng: this.providerLng },
                     map: this.map,
                     icon: this.getProviderIcon(),
-                    title: 'ผู้ให้บริการ',
+                    title: 'ตำแหน่งของคุณ',
                 });
-                this.calculateRoute();
             }
 
-            // Get user location initially
+            // Customer Marker (Blue)
+            if (this.customerLat && this.customerLng) {
+                this.customerMarker = new google.maps.Marker({
+                    position: { lat: this.customerLat, lng: this.customerLng },
+                    map: this.map,
+                    icon: this.getCustomerIcon(),
+                    title: 'ตำแหน่งลูกค้า',
+                });
+            }
+
+            // คำนวณเส้นทาง
+            this.calculateRoute();
+
+            // ดึงตำแหน่งปัจจุบัน
             this.getCurrentLocation();
         },
 
@@ -366,9 +429,9 @@ function liveTracker() {
             return {
                 url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
                     <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50">
-                        <circle cx="25" cy="25" r="22" fill="#8B5CF6" stroke="white" stroke-width="3"/>
+                        <circle cx="25" cy="25" r="22" fill="#10B981" stroke="white" stroke-width="3"/>
                         <circle cx="25" cy="25" r="8" fill="white"/>
-                        <circle cx="25" cy="25" r="4" fill="#8B5CF6"/>
+                        <circle cx="25" cy="25" r="4" fill="#10B981"/>
                     </svg>
                 `),
                 anchor: new google.maps.Point(25, 25),
@@ -376,7 +439,7 @@ function liveTracker() {
             };
         },
 
-        getUserIcon() {
+        getCustomerIcon() {
             return {
                 url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
@@ -393,9 +456,10 @@ function liveTracker() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        this.userLat = position.coords.latitude;
-                        this.userLng = position.coords.longitude;
-                        this.updateUserMarker();
+                        this.providerLat = position.coords.latitude;
+                        this.providerLng = position.coords.longitude;
+                        this.updateProviderMarker();
+                        this.calculateRoute();
                     },
                     (error) => console.log('Location error:', error),
                     { enableHighAccuracy: true }
@@ -421,21 +485,22 @@ function liveTracker() {
 
             this.watchId = navigator.geolocation.watchPosition(
                 async (position) => {
-                    this.userLat = position.coords.latitude;
-                    this.userLng = position.coords.longitude;
-                    this.updateUserMarker();
+                    this.providerLat = position.coords.latitude;
+                    this.providerLng = position.coords.longitude;
+                    this.updateProviderMarker();
+                    this.calculateRoute();
 
-                    // Send to server
+                    // ส่งตำแหน่งไปเซิร์ฟเวอร์
                     try {
-                        await fetch(`/api/v1/bookings/${this.bookingId}/update-location`, {
+                        await fetch(`/provider/bookings/${this.bookingId}/update-location`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                             },
                             body: JSON.stringify({
-                                latitude: this.userLat,
-                                longitude: this.userLng,
+                                latitude: this.providerLat,
+                                longitude: this.providerLng,
                             }),
                         });
                     } catch (error) {
@@ -462,17 +527,32 @@ function liveTracker() {
             this.sharingLocation = false;
         },
 
-        updateUserMarker() {
-            if (!this.userLat || !this.userLng || !this.map) return;
+        updateProviderMarker() {
+            if (!this.providerLat || !this.providerLng || !this.map) return;
 
-            if (this.userMarker) {
-                this.userMarker.setPosition({ lat: this.userLat, lng: this.userLng });
+            if (this.providerMarker) {
+                this.providerMarker.setPosition({ lat: this.providerLat, lng: this.providerLng });
             } else {
-                this.userMarker = new google.maps.Marker({
-                    position: { lat: this.userLat, lng: this.userLng },
+                this.providerMarker = new google.maps.Marker({
+                    position: { lat: this.providerLat, lng: this.providerLng },
                     map: this.map,
-                    icon: this.getUserIcon(),
+                    icon: this.getProviderIcon(),
                     title: 'ตำแหน่งของคุณ',
+                });
+            }
+        },
+
+        updateCustomerMarker() {
+            if (!this.customerLat || !this.customerLng || !this.map) return;
+
+            if (this.customerMarker) {
+                this.customerMarker.setPosition({ lat: this.customerLat, lng: this.customerLng });
+            } else {
+                this.customerMarker = new google.maps.Marker({
+                    position: { lat: this.customerLat, lng: this.customerLng },
+                    map: this.map,
+                    icon: this.getCustomerIcon(),
+                    title: 'ตำแหน่งลูกค้า',
                 });
             }
         },
@@ -494,6 +574,7 @@ function liveTracker() {
                     this.distance = (leg.distance.value / 1000).toFixed(1);
                     this.eta = leg.duration.text;
 
+                    // คำนวณ progress (สมมติเดินทางไม่เกิน 10 km)
                     const maxDistance = 10;
                     const currentDistance = leg.distance.value / 1000;
                     this.progress = Math.min(100, Math.max(0, (1 - currentDistance / maxDistance) * 100));
@@ -506,7 +587,8 @@ function liveTracker() {
             this.loading = true;
 
             try {
-                const response = await fetch(`/api/v1/bookings/${this.bookingId}/live-tracking`, {
+                // ดึงข้อมูลตำแหน่งลูกค้าจาก API
+                const response = await fetch(`/api/v1/provider/bookings/${this.bookingId}/track`, {
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -518,27 +600,23 @@ function liveTracker() {
                     this.status = data.data.booking.status;
                     this.statusLabel = data.data.booking.status_label;
 
-                    if (data.data.provider_location) {
-                        this.providerLat = parseFloat(data.data.provider_location.latitude);
-                        this.providerLng = parseFloat(data.data.provider_location.longitude);
-
-                        if (this.providerMarker) {
-                            this.providerMarker.setPosition({
-                                lat: this.providerLat,
-                                lng: this.providerLng
-                            });
-                        }
-
-                        this.calculateRoute();
+                    // อัพเดทตำแหน่งลูกค้า
+                    if (data.data.customer_location) {
+                        this.customerLat = parseFloat(data.data.customer_location.latitude);
+                        this.customerLng = parseFloat(data.data.customer_location.longitude);
+                        this.customerLocationAvailable = true;
+                        this.customerLocationUpdatedAt = data.data.customer_location.updated_at || new Date().toLocaleTimeString('th-TH');
+                        this.updateCustomerMarker();
                     }
 
                     this.lastUpdate = new Date().toLocaleTimeString('th-TH');
 
+                    // ถ้างานเสร็จหรือยกเลิก redirect กลับ
                     if (['completed', 'cancelled'].includes(this.status)) {
                         this.stopAutoRefresh();
                         this.stopLocationSharing();
                         setTimeout(() => {
-                            window.location.href = `/user/bookings/${this.bookingId}`;
+                            window.location.href = `/provider/bookings/${this.bookingId}`;
                         }, 2000);
                     }
                 }
@@ -550,6 +628,7 @@ function liveTracker() {
         },
 
         startAutoRefresh() {
+            // รีเฟรชทุก 10 วินาที
             this.refreshInterval = setInterval(() => this.refreshLocation(), 10000);
         },
 
@@ -559,19 +638,28 @@ function liveTracker() {
             }
         },
 
-        centerOnProvider() {
+        centerOnMe() {
             if (this.map && this.providerLat && this.providerLng) {
                 this.map.setCenter({ lat: this.providerLat, lng: this.providerLng });
                 this.map.setZoom(16);
+            } else {
+                this.getCurrentLocation();
             }
         },
 
-        centerOnMe() {
-            if (this.map && this.userLat && this.userLng) {
-                this.map.setCenter({ lat: this.userLat, lng: this.userLng });
+        centerOnCustomer() {
+            if (this.map && this.customerLat && this.customerLng) {
+                this.map.setCenter({ lat: this.customerLat, lng: this.customerLng });
                 this.map.setZoom(16);
             } else {
-                this.getCurrentLocation();
+                alert('ลูกค้ายังไม่ได้แชร์ตำแหน่ง');
+            }
+        },
+
+        centerOnDestination() {
+            if (this.map && this.serviceLat && this.serviceLng) {
+                this.map.setCenter({ lat: this.serviceLat, lng: this.serviceLng });
+                this.map.setZoom(16);
             }
         },
 
@@ -585,12 +673,12 @@ function liveTracker() {
                 bounds.extend({ lat: this.providerLat, lng: this.providerLng });
                 hasMarkers = true;
             }
-            if (this.serviceLat && this.serviceLng) {
-                bounds.extend({ lat: this.serviceLat, lng: this.serviceLng });
+            if (this.customerLat && this.customerLng) {
+                bounds.extend({ lat: this.customerLat, lng: this.customerLng });
                 hasMarkers = true;
             }
-            if (this.userLat && this.userLng) {
-                bounds.extend({ lat: this.userLat, lng: this.userLng });
+            if (this.serviceLat && this.serviceLng) {
+                bounds.extend({ lat: this.serviceLat, lng: this.serviceLng });
                 hasMarkers = true;
             }
 

@@ -1163,12 +1163,18 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('/{booking}', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'showBooking']);
         Route::get('/{booking}/track', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'trackBooking']);
         Route::post('/{booking}/cancel', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'cancelBooking']);
+        // Live Tracking - User อัพเดทตำแหน่งตัวเอง
+        Route::post('/{booking}/update-location', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'userUpdateLocation']);
+        // Live Tracking - ดึงตำแหน่งทั้งสองฝ่าย
+        Route::get('/{booking}/live-tracking', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'liveTracking']);
     });
-    
+
     // Provider APIs
     Route::prefix('provider/bookings')->group(function () {
         Route::post('/{booking}/accept', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'providerAccept']);
         Route::post('/{booking}/reject', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'providerReject']);
         Route::post('/{booking}/update-location', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'providerUpdateLocation']);
+        // Provider tracking - ดูตำแหน่งลูกค้า
+        Route::get('/{booking}/track', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'providerTrackBooking']);
     });
 });
