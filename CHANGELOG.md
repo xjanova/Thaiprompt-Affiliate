@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.184.1] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1610 from xjanova/claude/seed-nfc-cards-01Bmb5VRqZTaYoaVY6MCoXXp (c6eb226c)
+- fix: safely drop indexes/foreign keys in LineSignupRewardSeeder (7a87cd7d)
+### 🔧 Other Changes
+
+
 ## [v3.184.0] - 2025-11-25
 
 ### ✨ Features
