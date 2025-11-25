@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.186.2] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1619 from xjanova/claude/fix-php-syntax-error-01C6hvwaBm8joMimA5pjFzSU (c0eb4f04)
+- fix: correct PHP syntax error in GoogleMapsService::reverseGeocode (15a1da92)
+### 🔧 Other Changes
+
+
 ## [v3.186.1] - 2025-11-25
 
 ### ✨ Features
