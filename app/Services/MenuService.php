@@ -115,6 +115,14 @@ class MenuService
                 }
             }
 
+            // ตรวจสอบเงื่อนไขพิเศษ: hide_if_kyc_verified
+            // ซ่อนเมนูเมื่อ user ยืนยัน KYC แล้ว
+            if (!empty($menu['hide_if_kyc_verified']) && $user) {
+                if (method_exists($user, 'isKycVerified') && $user->isKycVerified()) {
+                    return false;
+                }
+            }
+
             // กรอง submenu ด้วย
             if (!empty($menu['submenu'])) {
                 $menu['submenu'] = $this->filterByPermissions($menu['submenu'], $user);
