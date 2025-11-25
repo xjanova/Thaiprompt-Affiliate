@@ -25,6 +25,7 @@ Route::get('/', function () {
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('/marketing', [DashboardController::class, 'marketing'])->name('marketing');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
+Route::put('/profile', [DashboardController::class, 'updateProfile'])->name('profile.update');
 Route::get('/commissions', [DashboardController::class, 'commissions'])->name('commissions');
 Route::get('/settings', [DashboardController::class, 'settings'])->name('settings');
 

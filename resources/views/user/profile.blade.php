@@ -67,7 +67,7 @@
                                 <div class="absolute inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-full blur-lg opacity-60 group-hover:opacity-80 transition"></div>
                                 <div class="relative w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 rounded-full p-1 shadow-2xl">
                                     <div class="w-full h-full bg-white dark:bg-gray-800 rounded-full p-1">
-                                        <img :src="avatarPreview || '{{ $user->profile_picture ? asset('storage/' . $user->profile_picture) : asset('images/default-avatar.png') }}'"
+                                        <img :src="avatarPreview || '{{ $user->profile_picture_url }}'"
                                              alt="{{ $user->name }}"
                                              class="w-full h-full object-cover rounded-full ring-4 ring-white dark:ring-gray-700">
                                     </div>

@@ -7,9 +7,12 @@ use App\Models\Product;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\VendorStore;
+use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class DashboardController extends Controller
 {
@@ -179,6 +182,66 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         return view('seller.profile', compact('user'));
+    }
+
+    /**
+     * อัพเดทโปรไฟล์ผู้ขาย
+     *
+     * รองรับการอัพโหลด avatar และข้อมูลส่วนตัว
+     *
+     * @param Request $request
+     * @param ImageUploadService $imageUploadService
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateProfile(Request $request, ImageUploadService $imageUploadService)
+    {
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,gif,webp', 'max:5120'], // 5MB max
+            'current_password' => ['nullable', 'string'],
+            'new_password' => ['nullable', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
+        ]);
+
+        // Handle profile picture upload
+        if ($request->hasFile('profile_picture')) {
+            // ลบรูปเดิมถ้ามี
+            if ($user->profile_picture) {
+                $imageUploadService->deleteImage($user->profile_picture);
+            }
+
+            // อัพโหลดรูปใหม่ (แปลงเป็น WebP อัตโนมัติ)
+            $validated['profile_picture'] = $imageUploadService->uploadImage(
+                $request->file('profile_picture'),
+                'avatars',
+                800,
+                800,
+                90
+            );
+        }
+
+        // Handle password change
+        if ($request->filled('current_password') && $request->filled('new_password')) {
+            if (!Hash::check($request->current_password, $user->password)) {
+                return back()->with('error', 'รหัสผ่านปัจจุบันไม่ถูกต้อง');
+            }
+
+            if (Hash::check($request->new_password, $user->password)) {
+                return back()->with('error', 'รหัสผ่านใหม่ต้องไม่เหมือนกับรหัสผ่านเดิม');
+            }
+
+            $validated['password'] = Hash::make($request->new_password);
+        }
+
+        // Remove password fields from validated array
+        unset($validated['current_password'], $validated['new_password']);
+
+        $user->update($validated);
+
+        return redirect()->route('seller.profile')->with('success', 'อัพเดทโปรไฟล์สำเร็จ');
     }
 
     /**
