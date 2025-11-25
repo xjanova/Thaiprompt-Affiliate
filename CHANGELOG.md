@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.186.10] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1627 from xjanova/claude/fix-admin-menu-links-01QgCuMgpSSChv9kiLBtt69r (b658ce3d)
+- fix: add rating columns to service_bookings table (47dea732)
+### 🔧 Other Changes
+
+
 ## [v3.186.9] - 2025-11-25
 
 ### ✨ Features
