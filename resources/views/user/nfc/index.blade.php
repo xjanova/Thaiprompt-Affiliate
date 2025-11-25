@@ -249,7 +249,7 @@
                 <p class="text-gray-600 dark:text-gray-400 mb-6">
                     คุณยังไม่มีการ์ด NFC ในระบบ กรุณาติดต่อแอดมินเพื่อขอรับการ์ด
                 </p>
-                <a href="{{ route('user.support') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl">
+                <a href="{{ route('user.tickets.index') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl">
                     <i class="fas fa-headset"></i>
                     <span>ติดต่อฝ่ายสนับสนุน</span>
                 </a>

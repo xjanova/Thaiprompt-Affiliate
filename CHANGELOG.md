@@ -2,6 +2,66 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.188.0] - 2025-11-25
+
+### ✨ Features
+- Merge pull request #1630 from xjanova/claude/fix-user-support-route-01LgUPtrZnP76875eso7hFBE (9e65b5b1)
+- feat: add missing chatbot views for user-facing bot management (1a13929f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.187.1] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1629 from xjanova/claude/fix-user-support-route-01LgUPtrZnP76875eso7hFBE (fc0969db)
+- fix: replace undefined user.support route with user.tickets.index (00ebe8d9)
+### 🔧 Other Changes
+
+
+## [v3.187.0] - 2025-11-25
+
+### ✨ Features
+- Merge pull request #1628 from xjanova/claude/fix-admin-menu-links-01QgCuMgpSSChv9kiLBtt69r (899322a8)
+- feat: add complete views for admin service menus and provider/user panels (56e420f6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.186.10] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1627 from xjanova/claude/fix-admin-menu-links-01QgCuMgpSSChv9kiLBtt69r (b658ce3d)
+- fix: add rating columns to service_bookings table (47dea732)
+### 🔧 Other Changes
+
+
+## [v3.186.9] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1626 from xjanova/claude/fix-undefined-services-variable-01QhkKDhQMcpqFuiTwTws6YU (f6f2a434)
+- fix: pass $services variable to user.services.index view (52edd8f3)
+### 🔧 Other Changes
+
+
+## [v3.186.8] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1625 from xjanova/claude/fix-admin-menu-links-01QgCuMgpSSChv9kiLBtt69r (d240c529)
+- fix: add missing routes and controllers for admin menu links (6f5ac224)
+### 🔧 Other Changes
+
+
 ## [v3.186.7] - 2025-11-25
 
 ### ✨ Features
