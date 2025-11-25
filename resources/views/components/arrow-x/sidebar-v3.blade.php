@@ -1328,6 +1328,71 @@
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">รายงาน</span>
         </a>
 
+        {{-- Anti-Abuse Protection System (Collapsible Menu) 🛡️ --}}
+        <div class="space-y-1"
+             x-data="{ antiAbuseOpen: {{ request()->routeIs('admin.anti-abuse.*') ? 'true' : 'false' }} }">
+            {{-- Anti-Abuse Header Button --}}
+            <button @click="antiAbuseOpen = !antiAbuseOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.anti-abuse.*') ? 'bg-gradient-to-r from-red-500 to-orange-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-shield-alt w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Anti-Abuse</span>
+                <i x-show="$store.sidebar.shouldExpand && antiAbuseOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !antiAbuseOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Anti-Abuse Submenu --}}
+            <div x-show="antiAbuseOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Dashboard --}}
+                <a href="{{ route('admin.anti-abuse.dashboard') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.anti-abuse.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
+                </a>
+
+                {{-- Disputes --}}
+                <a href="{{ route('admin.anti-abuse.disputes') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.anti-abuse.disputes*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-exclamation-triangle w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ข้อพิพาท</span>
+                </a>
+
+                {{-- Trust Scores --}}
+                <a href="{{ route('admin.anti-abuse.trust-scores') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.anti-abuse.trust-scores*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-star w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Trust Score</span>
+                </a>
+
+                {{-- Penalties --}}
+                <a href="{{ route('admin.anti-abuse.penalties') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.anti-abuse.penalties*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-gavel w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ค่าปรับ</span>
+                </a>
+
+                {{-- Blocks --}}
+                <a href="{{ route('admin.anti-abuse.blocks') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.anti-abuse.blocks*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-user-slash w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">การ Block</span>
+                </a>
+
+                {{-- Location History --}}
+                <a href="{{ route('admin.anti-abuse.location-history') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.anti-abuse.location-history*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-map-marked-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ประวัติ GPS</span>
+                </a>
+            </div>
+        </div>
+
         {{-- Divider --}}
         <div x-show="$store.sidebar.shouldExpand" x-transition class="border-t border-white/30 my-4"></div>
 
