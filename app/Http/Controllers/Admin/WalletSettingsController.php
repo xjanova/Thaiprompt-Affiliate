@@ -40,7 +40,7 @@ class WalletSettingsController extends Controller
         ];
 
         // ดึงข้อมูลกระเป๋าเงินผู้ใช้ทุกคน พร้อม Filter และ Search
-        $walletsQuery = Wallet::with(['user:id,name,email,avatar,phone'])
+        $walletsQuery = Wallet::with(['user:id,name,email,profile_picture,phone'])
             ->select([
                 'wallets.*',
                 DB::raw('(SELECT COUNT(*) FROM wallet_transactions WHERE wallet_transactions.wallet_id = wallets.id) as transaction_count'),
