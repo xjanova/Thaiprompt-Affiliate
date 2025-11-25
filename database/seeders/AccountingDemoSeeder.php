@@ -17,14 +17,26 @@ use App\Models\AccountingBankAccount;
 use App\Models\AccountingTaxRate;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AccountingDemoSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * สร้างข้อมูลทดสอบสำหรับระบบบัญชี
+     * จะข้ามการทำงานถ้าตาราง accounting ยังไม่ถูกสร้าง
      */
     public function run(): void
     {
+        // ✅ ตรวจสอบว่าตาราง accounting ถูกสร้างแล้วหรือไม่
+        // ถ้ายังไม่ได้ run migration ของระบบบัญชี จะข้ามการ seed
+        if (!Schema::hasTable('accounting_companies')) {
+            $this->command->info('⏭️  ข้ามการ seed AccountingDemoSeeder - ตาราง accounting ยังไม่ถูกสร้าง');
+            $this->command->info('   กรุณา run migration ก่อน: php artisan migrate');
+            return;
+        }
+
         DB::beginTransaction();
 
         try {
