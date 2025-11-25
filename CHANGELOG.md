@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.184.5] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1614 from xjanova/claude/redesign-wallet-settings-01MFPiJAhkBWESc7tWVkyEuG (c1b4fc59)
+- fix: use correct route admin.wallet.all-transactions for transaction link (304658e4)
+### 🔧 Other Changes
+
+
 ## [v3.184.4] - 2025-11-25
 
 ### ✨ Features
