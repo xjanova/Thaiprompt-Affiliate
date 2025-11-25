@@ -21,6 +21,7 @@ use Illuminate\Support\Str;
  * @property string|null $image URL รูปภาพ
  * @property string|null $color สีประจำหมวดหมู่
  * @property bool $is_active เปิดใช้งาน
+ * @property bool $is_featured หมวดหมู่ที่แนะนำ
  * @property int $sort_order ลำดับการแสดงผล
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
@@ -50,6 +51,7 @@ class ServiceCategory extends Model
         'image',
         'color',
         'is_active',
+        'is_featured',
         'sort_order',
     ];
 
@@ -60,6 +62,7 @@ class ServiceCategory extends Model
      */
     protected $casts = [
         'is_active' => 'boolean',
+        'is_featured' => 'boolean',
         'sort_order' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -127,6 +130,17 @@ class ServiceCategory extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope: เฉพาะหมวดหมู่ที่แนะนำ
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', true);
     }
 
     /**
