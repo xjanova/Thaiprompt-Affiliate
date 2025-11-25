@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.181.8] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1606 from xjanova/claude/fix-ambiguous-column-01FoP2KM45ejaLiQMUCnWymt (b6059815)
+- fix: use qualified table name in AiRentalDeployment status scopes (be38d794)
+### 🔧 Other Changes
+
+
 ## [v3.181.7] - 2025-11-25
 
 ### ✨ Features
