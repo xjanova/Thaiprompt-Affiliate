@@ -168,7 +168,12 @@ class GoogleMapsService
                     'lng' => $result['geometry']['location']['lng'],
                 ],
             ];
-        });
+        };
+
+        // ใช้ cache ถ้าเปิดใช้งาน
+        return $this->isCacheEnabled()
+            ? Cache::remember($cacheKey, $cacheTTL, $callback)
+            : $callback();
     }
 
     /**
