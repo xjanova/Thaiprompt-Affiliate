@@ -188,7 +188,7 @@ class HuggingFaceTrendingModelsSeeder extends Seeder
                 'is_featured' => true,
                 'is_recommended' => false,
                 'is_production_ready' => true,
-                'difficulty_level' => 'expert',
+                'difficulty_level' => 'advanced',
                 'first_seen_at' => now()->subDays(90),
                 'last_updated_at' => now()->subDays(7),
                 'featured_at' => now()->subDays(75),
