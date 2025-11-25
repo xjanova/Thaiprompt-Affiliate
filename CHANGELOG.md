@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.186.7] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1624 from xjanova/claude/accounting-demo-seeder-01TfGXHniqNDw8gpb5oWxrRV (55cf23f5)
+- fix(seeder): add table existence check in AccountingDemoSeeder (089531e7)
+### 🔧 Other Changes
+
+
 ## [v3.186.6] - 2025-11-25
 
 ### ✨ Features
