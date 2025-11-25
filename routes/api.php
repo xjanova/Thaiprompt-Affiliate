@@ -1167,7 +1167,23 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('/{booking}/update-location', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'userUpdateLocation']);
         // Live Tracking - ดึงตำแหน่งทั้งสองฝ่าย
         Route::get('/{booking}/live-tracking', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'liveTracking']);
+
+        // Anti-Abuse APIs
+        // Background Location Logging (Service Worker)
+        Route::post('/{booking}/log-location', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'logLocation']);
+        // ยกเลิกพร้อมค่าปรับ
+        Route::post('/{booking}/cancel-with-penalty', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'cancelWithPenalty']);
+        // ดูค่าปรับก่อนยกเลิก
+        Route::get('/{booking}/cancellation-fee', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'previewCancellationFee']);
+        // รายงานปัญหา/ร้องเรียน
+        Route::post('/{booking}/report', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'reportIssue']);
+        // ดูประวัติตำแหน่ง (หลักฐาน)
+        Route::get('/{booking}/location-history', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'getLocationHistory']);
     });
+
+    // User Trust Score & Protection
+    Route::get('/user/trust-score', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'getUserTrustScore']);
+    Route::post('/providers/{provider}/block', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'blockProvider']);
 
     // Provider APIs
     Route::prefix('provider/bookings')->group(function () {
