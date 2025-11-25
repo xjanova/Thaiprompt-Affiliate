@@ -434,9 +434,13 @@ class MembershipRetentionService
     }
 
     /**
-     * Get setting value
+     * ดึงค่า setting จากฐานข้อมูล
+     *
+     * @param string $key คีย์ของ setting
+     * @param mixed $default ค่าเริ่มต้น
+     * @return mixed
      */
-    private function getSetting(string $key, $default = null)
+    public function getSetting(string $key, $default = null)
     {
         return MembershipRetentionSetting::get($key, $default);
     }
