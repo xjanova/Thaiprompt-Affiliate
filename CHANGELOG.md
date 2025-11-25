@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.186.0] - 2025-11-25
+
+### ✨ Features
+- feat: add Visual Studio solution file and complete resource structure (23d85cc4)
+- feat: enhance splash screen and hub selection with premium animations V2 (777cace5)
+- feat: add modern Ultra App splash screen and hub selection (7b4b26b5)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1617 from xjanova/claude/modernize-splash-screen-016BDuVLkzKGZJJiDaW4M8sc (2e4dc363)
+
 ## [v3.185.1] - 2025-11-25
 
 ### ✨ Features
