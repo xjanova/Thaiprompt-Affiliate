@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ThaipromptAffiliate.App">
+
+    <!--
+        แอพพลิเคชันหลัก Thaiprompt Ultra App
+
+        สร้างโดย: Thaiprompt Development Team
+        เวอร์ชัน: 1.0.0
+
+        คำอธิบาย:
+        - Ultra App ที่รวมทุกบริการไว้ในแอพเดียว
+        - รองรับ Dark/Light Mode
+        - ออกแบบแบบ Glassmorphism + 3D
+    -->
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Ultra Theme - สไตล์หลักของแอพ -->
+                <ResourceDictionary Source="Resources/Styles/UltraTheme.xaml" />
+                <!-- Theme Resources - สีและ typography -->
+                <ResourceDictionary Source="Resources/Styles/ThemeResources.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
+</Application>

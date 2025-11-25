@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:ThaipromptAffiliate.ViewModels"
+             x:Class="ThaipromptAffiliate.Views.SplashPage"
+             x:DataType="viewmodels:SplashViewModel"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False"
+             NavigationPage.HasNavigationBar="False">
+
+    <!--
+        ╔══════════════════════════════════════════════════════════════════╗
+        ║              THAIPROMPT ULTRA SPLASH SCREEN                      ║
+        ║              Modern 3D Animated Splash                           ║
+        ╚══════════════════════════════════════════════════════════════════╝
+
+        ฟีเจอร์:
+        - Gradient Background แบบ Dynamic
+        - Logo พร้อม Glow Effect
+        - Loading Animation
+        - Auto-navigate หลังโหลดเสร็จ
+        - Dark Mode เท่านั้น (สวยกว่า)
+    -->
+
+    <ContentPage.Background>
+        <!-- Gradient Background สีเข้มสวยงาม -->
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#0F0F23" Offset="0.0"/>
+            <GradientStop Color="#1A1A2E" Offset="0.3"/>
+            <GradientStop Color="#16213E" Offset="0.6"/>
+            <GradientStop Color="#0F0F23" Offset="1.0"/>
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <Grid>
+        <!-- Main Content -->
+        <VerticalStackLayout
+            VerticalOptions="Center"
+            HorizontalOptions="Center"
+            Spacing="32"
+            Padding="32">
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 LOGO SECTION - โลโก้และ Glow Effect
+                 ═══════════════════════════════════════════════════════════════ -->
+
+            <!-- Logo Container with Glow -->
+            <Frame
+                x:Name="LogoFrame"
+                Style="{StaticResource SplashLogoContainer}"
+                Opacity="0">
+
+                <Grid>
+                    <!-- Glow Ring Animation Background -->
+                    <BoxView
+                        x:Name="GlowRing1"
+                        CornerRadius="80"
+                        WidthRequest="160"
+                        HeightRequest="160"
+                        Color="#6366F1"
+                        Opacity="0.3"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"/>
+
+                    <BoxView
+                        x:Name="GlowRing2"
+                        CornerRadius="70"
+                        WidthRequest="140"
+                        HeightRequest="140"
+                        Color="#8B5CF6"
+                        Opacity="0.5"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"/>
+
+                    <!-- Logo Icon หรือ Image -->
+                    <Label
+                        Text="🚀"
+                        FontSize="72"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"/>
+                </Grid>
+            </Frame>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 TITLE SECTION - ชื่อแอพและ tagline
+                 ═══════════════════════════════════════════════════════════════ -->
+
+            <VerticalStackLayout
+                x:Name="TitleSection"
+                Spacing="8"
+                Opacity="0">
+
+                <!-- App Name -->
+                <Label
+                    Text="THAIPROMPT"
+                    Style="{StaticResource SplashTitle}"
+                    FontSize="36"/>
+
+                <!-- Divider Line with Gradient -->
+                <BoxView
+                    x:Name="DividerLine"
+                    HeightRequest="3"
+                    WidthRequest="0"
+                    CornerRadius="2"
+                    HorizontalOptions="Center"
+                    Color="{StaticResource UltraPrimary}"/>
+
+                <!-- Tagline -->
+                <Label
+                    Text="Ultra Ecosystem"
+                    Style="{StaticResource SplashSubtitle}"
+                    FontSize="20"/>
+
+            </VerticalStackLayout>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 LOADING SECTION - แสดงสถานะการโหลด
+                 ═══════════════════════════════════════════════════════════════ -->
+
+            <VerticalStackLayout
+                x:Name="LoadingSection"
+                Spacing="16"
+                Opacity="0">
+
+                <!-- Loading Dots Animation -->
+                <HorizontalStackLayout
+                    HorizontalOptions="Center"
+                    Spacing="12">
+
+                    <BoxView
+                        x:Name="LoadingDot1"
+                        WidthRequest="12"
+                        HeightRequest="12"
+                        CornerRadius="6"
+                        Color="{StaticResource UltraPrimary}"
+                        Opacity="0.3"/>
+
+                    <BoxView
+                        x:Name="LoadingDot2"
+                        WidthRequest="12"
+                        HeightRequest="12"
+                        CornerRadius="6"
+                        Color="{StaticResource UltraSecondary}"
+                        Opacity="0.3"/>
+
+                    <BoxView
+                        x:Name="LoadingDot3"
+                        WidthRequest="12"
+                        HeightRequest="12"
+                        CornerRadius="6"
+                        Color="{StaticResource UltraAccent}"
+                        Opacity="0.3"/>
+
+                </HorizontalStackLayout>
+
+                <!-- Loading Status Text -->
+                <Label
+                    Text="{Binding LoadingStatus}"
+                    TextColor="#94A3B8"
+                    FontSize="14"
+                    HorizontalOptions="Center"/>
+
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             FOOTER SECTION - ด้านล่างหน้าจอ
+             ═══════════════════════════════════════════════════════════════ -->
+
+        <VerticalStackLayout
+            x:Name="FooterSection"
+            VerticalOptions="End"
+            HorizontalOptions="Center"
+            Padding="32"
+            Spacing="8"
+            Opacity="0">
+
+            <!-- Powered By -->
+            <Label
+                Text="Powered by AI &amp; Blockchain"
+                TextColor="#64748B"
+                FontSize="12"
+                HorizontalOptions="Center"/>
+
+            <!-- Version -->
+            <Label
+                Text="{Binding AppVersion}"
+                TextColor="#475569"
+                FontSize="10"
+                HorizontalOptions="Center"/>
+
+        </VerticalStackLayout>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             DECORATIVE ELEMENTS - องค์ประกอบตกแต่ง
+             ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- Top Right Glow -->
+        <BoxView
+            x:Name="TopGlow"
+            WidthRequest="200"
+            HeightRequest="200"
+            CornerRadius="100"
+            Color="{StaticResource UltraPrimary}"
+            Opacity="0.1"
+            HorizontalOptions="End"
+            VerticalOptions="Start"
+            TranslationX="50"
+            TranslationY="-50"/>
+
+        <!-- Bottom Left Glow -->
+        <BoxView
+            x:Name="BottomGlow"
+            WidthRequest="250"
+            HeightRequest="250"
+            CornerRadius="125"
+            Color="{StaticResource UltraSecondary}"
+            Opacity="0.08"
+            HorizontalOptions="Start"
+            VerticalOptions="End"
+            TranslationX="-80"
+            TranslationY="80"/>
+
+        <!-- Middle Accent Glow -->
+        <BoxView
+            x:Name="MiddleGlow"
+            WidthRequest="150"
+            HeightRequest="150"
+            CornerRadius="75"
+            Color="{StaticResource UltraAccent}"
+            Opacity="0.05"
+            HorizontalOptions="Center"
+            VerticalOptions="Center"
+            TranslationX="100"
+            TranslationY="150"/>
+
+    </Grid>
+
+</ContentPage>

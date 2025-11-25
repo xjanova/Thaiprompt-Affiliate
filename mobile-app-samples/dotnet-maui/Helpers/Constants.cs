@@ -2,11 +2,12 @@ namespace ThaipromptAffiliate.Helpers
 {
     /// <summary>
     /// Constants and configuration values for the application
+    /// ค่าคงที่และการตั้งค่าต่างๆ ของแอพพลิเคชัน
     /// </summary>
     public static class Constants
     {
         // ============================================================
-        // API Configuration
+        // API Configuration - การตั้งค่า API
         // ============================================================
 
 #if DEBUG
@@ -24,9 +25,27 @@ namespace ThaipromptAffiliate.Helpers
 #endif
 
         // ============================================================
-        // Secure Storage Keys
+        // Secure Storage Keys - คีย์สำหรับ Secure Storage
         // ============================================================
 
+        /// <summary>
+        /// คลาสรวม Storage Keys ทั้งหมด
+        /// </summary>
+        public static class StorageKeys
+        {
+            public const string AuthToken = "auth_token";
+            public const string UserData = "user_data";
+            public const string UserId = "user_id";
+            public const string UserEmail = "user_email";
+            public const string UserName = "user_name";
+            public const string ReferralCode = "referral_code";
+            public const string ThemeCache = "theme_cache";
+            public const string LastHubSelected = "last_hub_selected";
+            public const string AppLanguage = "app_language";
+            public const string RememberMe = "remember_me";
+        }
+
+        // Legacy keys (for backwards compatibility)
         public const string AuthTokenKey = "auth_token";
         public const string UserDataKey = "user_data";
         public const string UserIdKey = "user_id";

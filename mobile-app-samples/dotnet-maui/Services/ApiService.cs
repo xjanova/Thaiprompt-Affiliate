@@ -9,6 +9,7 @@ namespace ThaipromptAffiliate.Services
 {
     /// <summary>
     /// Main API service for communicating with the backend
+    /// บริการหลักสำหรับติดต่อกับ Backend API
     /// </summary>
     public interface IApiService
     {
@@ -18,6 +19,7 @@ namespace ThaipromptAffiliate.Services
         Task<DashboardStats?> GetDashboardStatsAsync();
         Task<PaginatedCommissions?> GetCommissionsAsync(int page = 1);
         Task<ReferralsData?> GetReferralsAsync();
+        Task<bool> ValidateTokenAsync();
         bool IsAuthenticated { get; }
     }
 
@@ -155,6 +157,32 @@ namespace ThaipromptAffiliate.Services
             {
                 Console.WriteLine($"Get user error: {ex.Message}");
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// ตรวจสอบว่า token ยังใช้งานได้หรือไม่
+        /// </summary>
+        public async Task<bool> ValidateTokenAsync()
+        {
+            try
+            {
+                await LoadAuthTokenAsync();
+
+                if (string.IsNullOrEmpty(_authToken))
+                {
+                    return false;
+                }
+
+                // เรียก /me endpoint เพื่อตรวจสอบ token
+                var response = await _httpClient.GetAsync(Constants.MeEndpoint);
+
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Token validation error: {ex.Message}");
+                return false;
             }
         }
 

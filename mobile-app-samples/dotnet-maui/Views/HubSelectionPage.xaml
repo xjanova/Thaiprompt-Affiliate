@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:ThaipromptAffiliate.ViewModels"
+             xmlns:models="clr-namespace:ThaipromptAffiliate.Models"
+             x:Class="ThaipromptAffiliate.Views.HubSelectionPage"
+             x:DataType="viewmodels:HubSelectionViewModel"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False"
+             NavigationPage.HasNavigationBar="False">
+
+    <!--
+        ╔══════════════════════════════════════════════════════════════════╗
+        ║              THAIPROMPT HUB SELECTION PAGE                       ║
+        ║              Ultra App - เลือกบริการที่ต้องการ                     ║
+        ╚══════════════════════════════════════════════════════════════════╝
+
+        8 บริการหลัก:
+        1. 🛒 ช้อปปิ้ง & บริการ - E-commerce, อาหาร, โรงแรม, หมอนวด
+        2. 💰 กระเป๋าเงิน - Wallet, เติม/ถอน/โอน
+        3. 📈 ลงทุน & Trade - Crypto, Bot Trading, TPIX
+        4. 🤝 MLM & Affiliate - Commission, Referral, Team
+        5. 🚴 เป็นไรเดอร์ - Service Provider, รับงาน
+        6. 🤖 AI Bot - LINE Bot, Automation
+        7. 🎓 Academy - เรียนรู้, หลักสูตร
+        8. 🎮 Gaming & Rewards - เกม, Quest, Rewards
+    -->
+
+    <ContentPage.Background>
+        <!-- Dark Gradient Background -->
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#0F0F23" Offset="0.0"/>
+            <GradientStop Color="#1A1A2E" Offset="0.5"/>
+            <GradientStop Color="#0F0F23" Offset="1.0"/>
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             HEADER SECTION - ส่วนหัวพร้อมข้อมูล User
+             ═══════════════════════════════════════════════════════════════ -->
+
+        <Grid Grid.Row="0" Padding="20,50,20,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Welcome Message -->
+            <VerticalStackLayout Grid.Column="0" Spacing="4">
+
+                <!-- Greeting -->
+                <Label
+                    Text="{Binding GreetingText}"
+                    TextColor="#94A3B8"
+                    FontSize="14"
+                    FontFamily="OpenSansRegular"/>
+
+                <!-- User Name or Welcome -->
+                <Label
+                    Text="{Binding WelcomeTitle}"
+                    TextColor="White"
+                    FontSize="24"
+                    FontFamily="OpenSansBold"/>
+
+                <!-- Subtitle -->
+                <Label
+                    Text="เลือกบริการที่คุณต้องการ"
+                    TextColor="#64748B"
+                    FontSize="14"
+                    FontFamily="OpenSansRegular"/>
+
+            </VerticalStackLayout>
+
+            <!-- User Avatar / Login Button -->
+            <Border
+                Grid.Column="1"
+                StrokeThickness="2"
+                Stroke="{StaticResource UltraPrimary}"
+                HeightRequest="50"
+                WidthRequest="50"
+                StrokeShape="RoundRectangle 25">
+
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding ProfileOrLoginCommand}"/>
+                </Border.GestureRecognizers>
+
+                <Grid>
+                    <!-- Avatar (if logged in) -->
+                    <Label
+                        Text="{Binding UserInitial}"
+                        TextColor="White"
+                        FontSize="20"
+                        FontFamily="OpenSansBold"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
+                        IsVisible="{Binding IsLoggedIn}"/>
+
+                    <!-- Login Icon (if not logged in) -->
+                    <Label
+                        Text="👤"
+                        FontSize="24"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"
+                        IsVisible="{Binding IsNotLoggedIn}"/>
+                </Grid>
+            </Border>
+
+        </Grid>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             MAIN CONTENT - Grid ของ Hub Cards
+             ═══════════════════════════════════════════════════════════════ -->
+
+        <ScrollView Grid.Row="1" Padding="16,0">
+            <VerticalStackLayout Spacing="16">
+
+                <!-- Hub Cards Grid - 2 columns -->
+                <CollectionView
+                    ItemsSource="{Binding HubItems}"
+                    ItemsLayout="VerticalGrid, 2"
+                    SelectionMode="None">
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:HubItem">
+                            <Grid Padding="6">
+
+                                <!-- Hub Card -->
+                                <Frame
+                                    x:Name="HubCard"
+                                    BackgroundColor="#16213E"
+                                    BorderColor="#334155"
+                                    CornerRadius="20"
+                                    Padding="16"
+                                    HeightRequest="160"
+                                    HasShadow="True">
+
+                                    <Frame.Shadow>
+                                        <Shadow
+                                            Brush="#20000000"
+                                            Offset="0,4"
+                                            Radius="12"
+                                            Opacity="0.3"/>
+                                    </Frame.Shadow>
+
+                                    <Frame.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:HubSelectionViewModel}}, Path=SelectHubCommand}"
+                                            CommandParameter="{Binding .}"/>
+                                    </Frame.GestureRecognizers>
+
+                                    <Grid RowDefinitions="Auto,*,Auto,Auto">
+
+                                        <!-- Icon Badge with Gradient -->
+                                        <Border
+                                            Grid.Row="0"
+                                            HeightRequest="56"
+                                            WidthRequest="56"
+                                            StrokeThickness="0"
+                                            HorizontalOptions="Start"
+                                            StrokeShape="RoundRectangle 16">
+
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                    <GradientStop Color="{Binding GradientStart}" Offset="0.0"/>
+                                                    <GradientStop Color="{Binding GradientEnd}" Offset="1.0"/>
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+
+                                            <Label
+                                                Text="{Binding Icon}"
+                                                FontSize="28"
+                                                HorizontalOptions="Center"
+                                                VerticalOptions="Center"/>
+
+                                        </Border>
+
+                                        <!-- Spacer -->
+                                        <BoxView Grid.Row="1" HeightRequest="8"/>
+
+                                        <!-- Title -->
+                                        <Label
+                                            Grid.Row="2"
+                                            Text="{Binding Title}"
+                                            TextColor="White"
+                                            FontSize="16"
+                                            FontFamily="OpenSansSemibold"
+                                            LineBreakMode="TailTruncation"
+                                            MaxLines="1"/>
+
+                                        <!-- Subtitle -->
+                                        <Label
+                                            Grid.Row="3"
+                                            Text="{Binding Subtitle}"
+                                            TextColor="#94A3B8"
+                                            FontSize="11"
+                                            FontFamily="OpenSansRegular"
+                                            LineBreakMode="TailTruncation"
+                                            MaxLines="2"/>
+
+                                        <!-- Badge (if any) -->
+                                        <Border
+                                            Grid.Row="0"
+                                            IsVisible="{Binding HasBadge}"
+                                            BackgroundColor="{StaticResource UltraError}"
+                                            HeightRequest="20"
+                                            MinimumWidthRequest="20"
+                                            Padding="6,2"
+                                            StrokeThickness="0"
+                                            HorizontalOptions="End"
+                                            VerticalOptions="Start"
+                                            StrokeShape="RoundRectangle 10">
+
+                                            <Label
+                                                Text="{Binding BadgeText}"
+                                                TextColor="White"
+                                                FontSize="10"
+                                                FontFamily="OpenSansSemibold"
+                                                HorizontalOptions="Center"
+                                                VerticalOptions="Center"/>
+
+                                        </Border>
+
+                                    </Grid>
+
+                                </Frame>
+
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+
+                </CollectionView>
+
+                <!-- Quick Actions Section -->
+                <Frame
+                    BackgroundColor="#1A1A2E"
+                    BorderColor="#334155"
+                    CornerRadius="16"
+                    Padding="16"
+                    Margin="0,8,0,0"
+                    HasShadow="False">
+
+                    <VerticalStackLayout Spacing="12">
+
+                        <Label
+                            Text="การดำเนินการด่วน"
+                            TextColor="#94A3B8"
+                            FontSize="12"
+                            FontFamily="OpenSansSemibold"/>
+
+                        <FlexLayout
+                            Wrap="Wrap"
+                            JustifyContent="SpaceEvenly"
+                            AlignItems="Center">
+
+                            <!-- Quick Action: QR Scan -->
+                            <VerticalStackLayout Spacing="4" Margin="8">
+                                <Border
+                                    HeightRequest="48"
+                                    WidthRequest="48"
+                                    BackgroundColor="#334155"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 12">
+                                    <Label
+                                        Text="📷"
+                                        FontSize="22"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center"/>
+                                </Border>
+                                <Label
+                                    Text="สแกน QR"
+                                    TextColor="#94A3B8"
+                                    FontSize="10"
+                                    HorizontalOptions="Center"/>
+                            </VerticalStackLayout>
+
+                            <!-- Quick Action: Transfer -->
+                            <VerticalStackLayout Spacing="4" Margin="8">
+                                <Border
+                                    HeightRequest="48"
+                                    WidthRequest="48"
+                                    BackgroundColor="#334155"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 12">
+                                    <Label
+                                        Text="💸"
+                                        FontSize="22"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center"/>
+                                </Border>
+                                <Label
+                                    Text="โอนเงิน"
+                                    TextColor="#94A3B8"
+                                    FontSize="10"
+                                    HorizontalOptions="Center"/>
+                            </VerticalStackLayout>
+
+                            <!-- Quick Action: Top Up -->
+                            <VerticalStackLayout Spacing="4" Margin="8">
+                                <Border
+                                    HeightRequest="48"
+                                    WidthRequest="48"
+                                    BackgroundColor="#334155"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 12">
+                                    <Label
+                                        Text="➕"
+                                        FontSize="22"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center"/>
+                                </Border>
+                                <Label
+                                    Text="เติมเงิน"
+                                    TextColor="#94A3B8"
+                                    FontSize="10"
+                                    HorizontalOptions="Center"/>
+                            </VerticalStackLayout>
+
+                            <!-- Quick Action: History -->
+                            <VerticalStackLayout Spacing="4" Margin="8">
+                                <Border
+                                    HeightRequest="48"
+                                    WidthRequest="48"
+                                    BackgroundColor="#334155"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 12">
+                                    <Label
+                                        Text="📋"
+                                        FontSize="22"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center"/>
+                                </Border>
+                                <Label
+                                    Text="ประวัติ"
+                                    TextColor="#94A3B8"
+                                    FontSize="10"
+                                    HorizontalOptions="Center"/>
+                            </VerticalStackLayout>
+
+                        </FlexLayout>
+
+                    </VerticalStackLayout>
+
+                </Frame>
+
+                <!-- Bottom Padding -->
+                <BoxView HeightRequest="20"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             FOOTER - Login/Register หรือ Balance Info
+             ═══════════════════════════════════════════════════════════════ -->
+
+        <Grid Grid.Row="2" Padding="16,12" BackgroundColor="#0F0F23">
+
+            <!-- If Not Logged In - Show Login/Register Buttons -->
+            <Grid IsVisible="{Binding IsNotLoggedIn}" ColumnDefinitions="*,16,*">
+
+                <Button
+                    Grid.Column="0"
+                    Text="เข้าสู่ระบบ"
+                    Style="{StaticResource UltraPrimaryButton}"
+                    HeightRequest="50"
+                    Command="{Binding LoginCommand}"/>
+
+                <Button
+                    Grid.Column="2"
+                    Text="สมัครสมาชิก"
+                    Style="{StaticResource UltraOutlineButton}"
+                    HeightRequest="50"
+                    Command="{Binding RegisterCommand}"/>
+
+            </Grid>
+
+            <!-- If Logged In - Show Balance Bar -->
+            <Frame
+                IsVisible="{Binding IsLoggedIn}"
+                BackgroundColor="#16213E"
+                BorderColor="#334155"
+                CornerRadius="12"
+                Padding="16,12"
+                HasShadow="False">
+
+                <Grid ColumnDefinitions="Auto,*,Auto">
+
+                    <!-- Wallet Icon -->
+                    <Label
+                        Grid.Column="0"
+                        Text="💳"
+                        FontSize="24"
+                        VerticalOptions="Center"/>
+
+                    <!-- Balance Info -->
+                    <VerticalStackLayout Grid.Column="1" Margin="12,0" VerticalOptions="Center">
+                        <Label
+                            Text="ยอดเงินคงเหลือ"
+                            TextColor="#94A3B8"
+                            FontSize="11"/>
+                        <Label
+                            Text="{Binding BalanceDisplay}"
+                            TextColor="White"
+                            FontSize="18"
+                            FontFamily="OpenSansBold"/>
+                    </VerticalStackLayout>
+
+                    <!-- Top Up Button -->
+                    <Button
+                        Grid.Column="2"
+                        Text="เติมเงิน"
+                        BackgroundColor="{StaticResource UltraSuccess}"
+                        TextColor="White"
+                        FontSize="14"
+                        CornerRadius="8"
+                        Padding="16,8"
+                        HeightRequest="40"
+                        Command="{Binding TopUpCommand}"/>
+
+                </Grid>
+
+            </Frame>
+
+        </Grid>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             DECORATIVE ELEMENTS - องค์ประกอบตกแต่ง
+             ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- Top Right Glow -->
+        <BoxView
+            Grid.Row="0"
+            Grid.RowSpan="3"
+            WidthRequest="200"
+            HeightRequest="200"
+            CornerRadius="100"
+            Color="{StaticResource UltraPrimary}"
+            Opacity="0.05"
+            HorizontalOptions="End"
+            VerticalOptions="Start"
+            TranslationX="80"
+            TranslationY="-50"
+            InputTransparent="True"/>
+
+        <!-- Bottom Left Glow -->
+        <BoxView
+            Grid.Row="0"
+            Grid.RowSpan="3"
+            WidthRequest="250"
+            HeightRequest="250"
+            CornerRadius="125"
+            Color="{StaticResource UltraSecondary}"
+            Opacity="0.03"
+            HorizontalOptions="Start"
+            VerticalOptions="End"
+            TranslationX="-100"
+            TranslationY="50"
+            InputTransparent="True"/>
+
+    </Grid>
+
+</ContentPage>
