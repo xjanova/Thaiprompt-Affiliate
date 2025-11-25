@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.184.2] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1611 from xjanova/claude/redesign-wallet-settings-01MFPiJAhkBWESc7tWVkyEuG (1379dbaf)
+- fix: use profile_picture instead of avatar column in wallet settings (7f0bde94)
+### 🔧 Other Changes
+
+
 ## [v3.184.1] - 2025-11-25
 
 ### ✨ Features
