@@ -67,14 +67,11 @@ class LineSignupRewardSeeder extends Seeder
         $this->command->info('');
         $this->command->info('🔧 กำลังลบ columns พิเศษอัตโนมัติ...');
 
-        // ลบ columns พิเศษทีละตัว
-        Schema::table('line_signup_rewards', function (Blueprint $table) {
-            // 1. ลบ indexes ที่เกี่ยวข้องก่อน
-            $this->dropRelatedIndexes($table);
+        // 1. ลบ indexes ที่เกี่ยวข้องก่อน (ทำแยกต่างหาก)
+        $this->dropIndexesSafely();
 
-            // 2. ลบ foreign keys
-            $this->dropRelatedForeignKeys($table);
-        });
+        // 2. ลบ foreign keys (ทำแยกต่างหาก)
+        $this->dropForeignKeysSafely();
 
         // 3. ลบ columns
         foreach ($this->extraColumns as $column) {
@@ -96,11 +93,26 @@ class LineSignupRewardSeeder extends Seeder
     /**
      * ลบ indexes ที่เกี่ยวข้องกับ columns พิเศษ
      *
+     * ใช้ raw SQL เพื่อตรวจสอบว่า index มีอยู่ก่อนลบ
+     * เพราะ Schema::table() ไม่รองรับ try-catch สำหรับ dropIndex
+     *
      * @param Blueprint $table
      * @return void
      */
     protected function dropRelatedIndexes(Blueprint $table): void
     {
+        // ไม่ทำอะไรใน Blueprint callback
+        // การลบ indexes จะทำแยกต่างหากใน dropIndexesSafely()
+    }
+
+    /**
+     * ลบ indexes อย่างปลอดภัย (เรียกแยกจาก Schema::table)
+     *
+     * @return void
+     */
+    protected function dropIndexesSafely(): void
+    {
+        $tableName = 'line_signup_rewards';
         $indexesToDrop = [
             'idx_user_status',
             'idx_session_status',
@@ -109,55 +121,107 @@ class LineSignupRewardSeeder extends Seeder
             'line_signup_rewards_status_index',
         ];
 
+        // ดึงรายการ indexes ที่มีอยู่จริง
+        $existingIndexes = $this->getExistingIndexes($tableName);
+
         foreach ($indexesToDrop as $indexName) {
-            try {
-                $table->dropIndex($indexName);
-            } catch (\Exception $e) {
-                // Ignore if index doesn't exist
+            if (in_array($indexName, $existingIndexes)) {
+                Schema::table($tableName, function (Blueprint $table) use ($indexName) {
+                    $table->dropIndex($indexName);
+                });
+                $this->command->info("   ✓ ลบ index: {$indexName}");
             }
         }
 
         // ลบ single column indexes
         foreach ($this->extraColumns as $column) {
-            try {
-                $table->dropIndex([$column]);
-            } catch (\Exception $e) {
-                // Ignore if index doesn't exist
+            $indexName = "{$tableName}_{$column}_index";
+            if (in_array($indexName, $existingIndexes)) {
+                Schema::table($tableName, function (Blueprint $table) use ($indexName) {
+                    $table->dropIndex($indexName);
+                });
+                $this->command->info("   ✓ ลบ index: {$indexName}");
             }
         }
     }
 
     /**
-     * ลบ foreign keys ที่เกี่ยวข้องกับ columns พิเศษ
+     * ดึงรายการ indexes ที่มีอยู่ในตาราง
+     *
+     * @param string $tableName
+     * @return array
+     */
+    protected function getExistingIndexes(string $tableName): array
+    {
+        $database = config('database.connections.mysql.database');
+
+        $indexes = \DB::select("
+            SELECT DISTINCT INDEX_NAME
+            FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+        ", [$database, $tableName]);
+
+        return array_map(fn($index) => $index->INDEX_NAME, $indexes);
+    }
+
+    /**
+     * ลบ foreign keys ที่เกี่ยวข้องกับ columns พิเศษ (legacy - ไม่ใช้แล้ว)
      *
      * @param Blueprint $table
      * @return void
+     * @deprecated ใช้ dropForeignKeysSafely() แทน
      */
     protected function dropRelatedForeignKeys(Blueprint $table): void
     {
+        // ไม่ทำอะไรใน Blueprint callback
+        // การลบ foreign keys จะทำแยกต่างหากใน dropForeignKeysSafely()
+    }
+
+    /**
+     * ลบ foreign keys อย่างปลอดภัย (เรียกแยกจาก Schema::table)
+     *
+     * @return void
+     */
+    protected function dropForeignKeysSafely(): void
+    {
+        $tableName = 'line_signup_rewards';
         $foreignKeys = [
             'line_signup_rewards_user_id_foreign',
             'line_signup_rewards_session_id_foreign',
         ];
 
-        foreach ($foreignKeys as $fkName) {
-            try {
-                $table->dropForeign($fkName);
-            } catch (\Exception $e) {
-                // Ignore if FK doesn't exist
-            }
-        }
+        // ดึงรายการ foreign keys ที่มีอยู่จริง
+        $existingFks = $this->getExistingForeignKeys($tableName);
 
-        // ลบ foreign keys โดยใช้ column names
-        foreach (['user_id', 'session_id'] as $column) {
-            if (in_array($column, $this->extraColumns)) {
-                try {
-                    $table->dropForeign([$column]);
-                } catch (\Exception $e) {
-                    // Ignore if FK doesn't exist
-                }
+        foreach ($foreignKeys as $fkName) {
+            if (in_array($fkName, $existingFks)) {
+                Schema::table($tableName, function (Blueprint $table) use ($fkName) {
+                    $table->dropForeign($fkName);
+                });
+                $this->command->info("   ✓ ลบ foreign key: {$fkName}");
             }
         }
+    }
+
+    /**
+     * ดึงรายการ foreign keys ที่มีอยู่ในตาราง
+     *
+     * @param string $tableName
+     * @return array
+     */
+    protected function getExistingForeignKeys(string $tableName): array
+    {
+        $database = config('database.connections.mysql.database');
+
+        $fks = \DB::select("
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.TABLE_CONSTRAINTS
+            WHERE TABLE_SCHEMA = ?
+              AND TABLE_NAME = ?
+              AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+        ", [$database, $tableName]);
+
+        return array_map(fn($fk) => $fk->CONSTRAINT_NAME, $fks);
     }
 
     /**
