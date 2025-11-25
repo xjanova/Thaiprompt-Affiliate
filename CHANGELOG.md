@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.186.9] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1626 from xjanova/claude/fix-undefined-services-variable-01QhkKDhQMcpqFuiTwTws6YU (f6f2a434)
+- fix: pass $services variable to user.services.index view (52edd8f3)
+### 🔧 Other Changes
+
+
 ## [v3.186.8] - 2025-11-25
 
 ### ✨ Features
