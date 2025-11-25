@@ -1393,6 +1393,20 @@
             </div>
         </div>
 
+        {{-- GPS Monitoring Center 📡 --}}
+        <a href="{{ route('admin.gps-monitoring.index') }}"
+           @click="$store.sidebar.closeOnMenuClick()"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.gps-monitoring.*') ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+            <div class="relative">
+                <i class="fas fa-satellite w-5 text-center drop-shadow"></i>
+                @if(request()->routeIs('admin.gps-monitoring.*'))
+                    <span class="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-ping"></span>
+                @endif
+            </div>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">GPS Monitor</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="ml-auto px-1.5 py-0.5 text-[10px] rounded bg-green-500/30 text-green-300 font-bold">LIVE</span>
+        </a>
+
         {{-- Divider --}}
         <div x-show="$store.sidebar.shouldExpand" x-transition class="border-t border-white/30 my-4"></div>
 
