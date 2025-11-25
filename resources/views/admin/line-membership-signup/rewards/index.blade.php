@@ -178,18 +178,54 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    @if($reward->is_active)
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                                            <i class="fas fa-check-circle mr-1"></i>
-                                            เปิดใช้งาน
+                                <td class="px-6 py-4 whitespace-nowrap"
+                                    x-data="{
+                                        isActive: {{ $reward->is_active ? 'true' : 'false' }},
+                                        loading: false,
+                                        async toggle() {
+                                            this.loading = true;
+                                            try {
+                                                const response = await fetch('{{ route('admin.line-membership-signup.rewards.toggle-active', $reward) }}', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                                        'Content-Type': 'application/json',
+                                                        'Accept': 'application/json'
+                                                    }
+                                                });
+                                                const data = await response.json();
+                                                if (data.success) {
+                                                    this.isActive = data.is_active;
+                                                }
+                                            } catch (e) {
+                                                console.error(e);
+                                            }
+                                            this.loading = false;
+                                        }
+                                    }">
+                                    {{-- Toggle Switch --}}
+                                    <button type="button"
+                                            @click="toggle()"
+                                            :disabled="loading"
+                                            :class="isActive ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
+                                            class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">
+                                        <span class="sr-only">เปิด/ปิดใช้งาน</span>
+                                        <span :class="isActive ? 'translate-x-5' : 'translate-x-0'"
+                                              class="pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out">
+                                            {{-- Loading spinner --}}
+                                            <span x-show="loading" class="absolute inset-0 flex items-center justify-center">
+                                                <i class="fas fa-spinner fa-spin text-xs text-gray-400"></i>
+                                            </span>
+                                            {{-- Check icon --}}
+                                            <span x-show="!loading && isActive" class="absolute inset-0 flex items-center justify-center text-green-500">
+                                                <i class="fas fa-check text-xs"></i>
+                                            </span>
+                                            {{-- X icon --}}
+                                            <span x-show="!loading && !isActive" class="absolute inset-0 flex items-center justify-center text-gray-400">
+                                                <i class="fas fa-times text-xs"></i>
+                                            </span>
                                         </span>
-                                    @else
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
-                                            <i class="fas fa-times-circle mr-1"></i>
-                                            ปิดใช้งาน
-                                        </span>
-                                    @endif
+                                    </button>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex justify-end gap-2">
