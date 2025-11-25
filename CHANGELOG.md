@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.182.0] - 2025-11-25
+
+### ✨ Features
+- feat: add referrer requirement condition for signup rewards (e1269c8c)
+- feat: add toggle switch for rewards active status (60ec11c7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1607 from xjanova/claude/simplify-rewards-toggle-01VPJDw26QWBG1eTBia2ubFW (6df7297a)
+
 ## [v3.181.8] - 2025-11-25
 
 ### ✨ Features
