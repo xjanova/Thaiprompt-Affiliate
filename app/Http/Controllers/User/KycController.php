@@ -20,6 +20,12 @@ class KycController extends Controller
         $user = auth()->user();
         $kycVerification = $user->latestKycVerification;
 
+        // Sync kyc_status จาก KycVerification (แก้ไขข้อมูลเก่าที่ไม่ได้ถูก sync)
+        if ($kycVerification && $user->kyc_status !== $kycVerification->status) {
+            $user->forceFill(['kyc_status' => $kycVerification->status])->save();
+            $user->refresh(); // รีเฟรชข้อมูล user
+        }
+
         return view('user.kyc.index', compact('kycVerification'));
     }
 
