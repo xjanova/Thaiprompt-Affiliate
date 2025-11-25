@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.181.6] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1604 from xjanova/claude/fix-failed-method-error-01G9p1KcZc6MbMwGGGnawhgJ (c539b012)
+- fix: update create() return type to allow RedirectResponse (b7770aa6)
+### 🔧 Other Changes
+
+
 ## [v3.181.5] - 2025-11-25
 
 ### ✨ Features
