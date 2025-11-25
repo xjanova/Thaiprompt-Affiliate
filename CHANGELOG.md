@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.189.0] - 2025-11-25
+
+### ✨ Features
+- feat: upgrade Service Discovery page to enterprise-grade (a2e6d387)
+- feat: enhance service booking seeders with comprehensive data (ecdac98e)
+### 🐛 Bug Fixes
+- fix: resolve merge conflict in ServiceBookingController (ffab9622)
+### 🔧 Other Changes
+- Merge pull request #1631 from xjanova/claude/fix-admin-menu-links-01QgCuMgpSSChv9kiLBtt69r (f7b2da5d)
+
 ## [v3.188.0] - 2025-11-25
 
 ### ✨ Features
