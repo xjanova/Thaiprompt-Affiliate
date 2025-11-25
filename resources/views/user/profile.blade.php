@@ -98,6 +98,31 @@
                         <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                             <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $user->name }}</h3>
                             <p class="text-sm text-gray-600 dark:text-gray-400">{{ $user->email }}</p>
+
+                            {{-- KYC Status Badge --}}
+                            <div class="mt-4 space-y-2">
+                                @if($user->isKycVerified())
+                                    <a href="{{ route('user.kyc.index') }}"
+                                       class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-all group">
+                                        <i class="fas fa-shield-check mr-2 group-hover:scale-110 transition-transform"></i>
+                                        <span>ยืนยันตัวตนแล้ว</span>
+                                        <i class="fas fa-check-circle ml-2 text-green-200"></i>
+                                    </a>
+                                @elseif($user->isKycPending())
+                                    <a href="{{ route('user.kyc.index') }}"
+                                       class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-all animate-pulse group">
+                                        <i class="fas fa-hourglass-half mr-2 group-hover:scale-110 transition-transform"></i>
+                                        <span>รอตรวจสอบ KYC</span>
+                                    </a>
+                                @else
+                                    <a href="{{ route('user.kyc.index') }}"
+                                       class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-all group">
+                                        <i class="fas fa-exclamation-triangle mr-2 group-hover:scale-110 transition-transform"></i>
+                                        <span>ยังไม่ได้ยืนยันตัวตน</span>
+                                    </a>
+                                @endif
+                            </div>
+
                             @if($user->member_number)
                                 <div class="mt-3 inline-flex items-center px-3 py-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg text-xs font-bold shadow-lg">
                                     <i class="fas fa-id-card mr-2"></i>{{ $user->member_number }}

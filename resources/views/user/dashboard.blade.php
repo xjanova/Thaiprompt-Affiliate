@@ -66,14 +66,42 @@
             {{-- Welcome Text --}}
             <div class="flex-1 text-center md:text-left text-white">
                 <div class="text-white/80 text-sm mb-1">ยินดีต้อนรับกลับมา</div>
-                <h1 class="text-3xl md:text-4xl font-bold mb-2 drop-shadow-lg">{{ $user->name }}</h1>
-                @if($currentRank)
-                <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-lg rounded-full px-4 py-2 shadow-lg">
-                    <i class="fas fa-trophy text-yellow-300"></i>
-                    <span class="text-white/80 text-sm">Rank:</span>
-                    <span class="font-bold">{{ $currentRank->name_th ?? $currentRank->name }}</span>
+                <h1 class="text-3xl md:text-4xl font-bold mb-2 drop-shadow-lg flex items-center justify-center md:justify-start gap-3 flex-wrap">
+                    {{ $user->name }}
+                    {{-- KYC Verified Badge --}}
+                    @if($user->isKycVerified())
+                        <a href="{{ route('user.kyc.index') }}"
+                           class="inline-flex items-center px-3 py-1 bg-green-500/90 backdrop-blur-sm text-white text-sm rounded-full shadow-lg hover:bg-green-600 transition-all"
+                           title="บัญชียืนยันตัวตนแล้ว">
+                            <i class="fas fa-shield-check mr-1"></i>
+                            <span class="text-xs font-semibold">KYC ✓</span>
+                        </a>
+                    @endif
+                </h1>
+                <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                    @if($currentRank)
+                    <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-lg rounded-full px-4 py-2 shadow-lg">
+                        <i class="fas fa-trophy text-yellow-300"></i>
+                        <span class="text-white/80 text-sm">Rank:</span>
+                        <span class="font-bold">{{ $currentRank->name_th ?? $currentRank->name }}</span>
+                    </div>
+                    @endif
+
+                    {{-- KYC Status Badge (if not verified) --}}
+                    @if($user->isKycPending())
+                        <a href="{{ route('user.kyc.index') }}"
+                           class="inline-flex items-center gap-2 bg-yellow-500/90 backdrop-blur-lg rounded-full px-4 py-2 shadow-lg hover:bg-yellow-600 transition-all animate-pulse">
+                            <i class="fas fa-hourglass-half text-white"></i>
+                            <span class="text-white text-sm font-semibold">KYC รอตรวจสอบ</span>
+                        </a>
+                    @elseif(!$user->isKycVerified() && $kycStatus === 'not_submitted')
+                        <a href="{{ route('user.kyc.index') }}"
+                           class="inline-flex items-center gap-2 bg-red-500/80 backdrop-blur-lg rounded-full px-4 py-2 shadow-lg hover:bg-red-600 transition-all">
+                            <i class="fas fa-exclamation-triangle text-white"></i>
+                            <span class="text-white text-sm font-semibold">ยังไม่ยืนยันตัวตน</span>
+                        </a>
+                    @endif
                 </div>
-                @endif
             </div>
 
             {{-- Member Number --}}
