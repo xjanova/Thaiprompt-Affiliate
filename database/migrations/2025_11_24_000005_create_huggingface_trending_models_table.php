@@ -57,7 +57,7 @@ return new class extends Migration
             // Model Info
             $table->string('model_size')->nullable()
                 ->comment('ขนาด model (เช่น 7B, 13B)');
-            $table->integer('model_size_bytes')->nullable()
+            $table->unsignedBigInteger('model_size_bytes')->nullable()
                 ->comment('ขนาด model (bytes)');
             $table->json('supported_languages')->nullable()
                 ->comment('ภาษาที่รองรับ');
