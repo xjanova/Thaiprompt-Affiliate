@@ -338,4 +338,92 @@ class RegistrationController extends Controller
             'pageTitle' => 'Dashboard ผู้ให้บริการ',
         ]);
     }
+
+    /**
+     * หน้าตั้งค่า Provider
+     *
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     */
+    public function settings()
+    {
+        $user = auth()->user();
+        $provider = ServiceProvider::where('user_id', $user->id)->first();
+
+        if (!$provider) {
+            return redirect()->route('provider.register')
+                ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
+        }
+
+        $categories = ServiceCategory::active()->ordered()->get();
+        $areas = ServiceArea::active()->orderBy('province')->get();
+
+        return view('provider.settings.index', [
+            'provider' => $provider,
+            'categories' => $categories,
+            'areas' => $areas,
+            'pageTitle' => 'ตั้งค่า Provider',
+        ]);
+    }
+
+    /**
+     * อัพเดทตั้งค่า Provider
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateSettings(Request $request)
+    {
+        $user = auth()->user();
+        $provider = ServiceProvider::where('user_id', $user->id)->first();
+
+        if (!$provider) {
+            return redirect()->route('provider.register');
+        }
+
+        $validated = $request->validate([
+            'auto_accept' => 'boolean',
+            'notification_email' => 'boolean',
+            'notification_line' => 'boolean',
+            'notification_sms' => 'boolean',
+            'max_distance_km' => 'nullable|numeric|min:1|max:100',
+            'working_hours_start' => 'nullable|date_format:H:i',
+            'working_hours_end' => 'nullable|date_format:H:i',
+            'categories' => 'nullable|array',
+            'categories.*' => 'exists:service_categories,id',
+            'service_areas' => 'nullable|array',
+            'service_areas.*' => 'exists:service_areas,id',
+        ]);
+
+        try {
+            return DB::transaction(function () use ($validated, $provider) {
+                // อัพเดทการตั้งค่าพื้นฐาน
+                $provider->update([
+                    'auto_accept' => $validated['auto_accept'] ?? false,
+                    'notification_email' => $validated['notification_email'] ?? true,
+                    'notification_line' => $validated['notification_line'] ?? true,
+                    'notification_sms' => $validated['notification_sms'] ?? false,
+                    'max_distance_km' => $validated['max_distance_km'] ?? null,
+                    'working_hours_start' => $validated['working_hours_start'] ?? null,
+                    'working_hours_end' => $validated['working_hours_end'] ?? null,
+                ]);
+
+                // อัพเดทหมวดหมู่ถ้ามีการส่งมา
+                if (isset($validated['categories'])) {
+                    $provider->categories()->sync($validated['categories']);
+                }
+
+                // อัพเดทพื้นที่ถ้ามีการส่งมา
+                if (isset($validated['service_areas'])) {
+                    $provider->areas()->sync($validated['service_areas']);
+                }
+
+                return redirect()->route('provider.settings.index')
+                    ->with('success', 'บันทึกการตั้งค่าสำเร็จ');
+            });
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
 }

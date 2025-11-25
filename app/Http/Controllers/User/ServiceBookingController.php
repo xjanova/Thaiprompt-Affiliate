@@ -349,4 +349,181 @@ class ServiceBookingController extends Controller
             'cashback_percentage' => $cashbackPercentage,
         ];
     }
+
+    /**
+     * แสดงรีวิวบริการของผู้ใช้
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function myReviews(Request $request)
+    {
+        $user = auth()->user();
+
+        $reviews = ServiceBooking::where('user_id', $user->id)
+            ->whereNotNull('rating')
+            ->with(['service', 'provider'])
+            ->latest('rated_at')
+            ->paginate(10);
+
+        return view('user.service-reviews.index', [
+            'reviews' => $reviews,
+            'pageTitle' => 'รีวิวบริการของฉัน',
+        ]);
+    }
+
+    /**
+     * บันทึกรีวิวสำหรับการจอง
+     *
+     * @param Request $request
+     * @param ServiceBooking $booking
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function storeReview(Request $request, ServiceBooking $booking)
+    {
+        $user = auth()->user();
+
+        // ตรวจสอบว่าเป็นการจองของผู้ใช้นี้
+        if ($booking->user_id !== $user->id) {
+            abort(403);
+        }
+
+        // ตรวจสอบว่าเสร็จสิ้นแล้ว
+        if ($booking->status !== 'completed') {
+            return redirect()->back()
+                ->with('error', 'ไม่สามารถรีวิวการจองที่ยังไม่เสร็จสิ้น');
+        }
+
+        // ตรวจสอบว่ารีวิวแล้วหรือยัง
+        if ($booking->rating) {
+            return redirect()->back()
+                ->with('error', 'คุณได้รีวิวการจองนี้แล้ว');
+        }
+
+        $validated = $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'review' => 'nullable|string|max:1000',
+        ]);
+
+        $booking->update([
+            'rating' => $validated['rating'],
+            'review' => $validated['review'] ?? null,
+            'rated_at' => now(),
+        ]);
+
+        // อัพเดทคะแนนเฉลี่ยของ Provider
+        if ($booking->provider_id) {
+            $this->updateProviderRating($booking->provider_id);
+        }
+
+        return redirect()->back()
+            ->with('success', 'ขอบคุณสำหรับรีวิว!');
+    }
+
+    /**
+     * แก้ไขรีวิว
+     *
+     * @param ServiceBooking $review
+     * @return \Illuminate\View\View
+     */
+    public function editReview(ServiceBooking $review)
+    {
+        $user = auth()->user();
+
+        if ($review->user_id !== $user->id) {
+            abort(403);
+        }
+
+        return view('user.service-reviews.edit', [
+            'booking' => $review,
+            'pageTitle' => 'แก้ไขรีวิว',
+        ]);
+    }
+
+    /**
+     * อัพเดทรีวิว
+     *
+     * @param Request $request
+     * @param ServiceBooking $review
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateReview(Request $request, ServiceBooking $review)
+    {
+        $user = auth()->user();
+
+        if ($review->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'review' => 'nullable|string|max:1000',
+        ]);
+
+        $review->update([
+            'rating' => $validated['rating'],
+            'review' => $validated['review'] ?? null,
+        ]);
+
+        // อัพเดทคะแนนเฉลี่ยของ Provider
+        if ($review->provider_id) {
+            $this->updateProviderRating($review->provider_id);
+        }
+
+        return redirect()->route('user.service-reviews.index')
+            ->with('success', 'อัพเดทรีวิวสำเร็จ');
+    }
+
+    /**
+     * ลบรีวิว
+     *
+     * @param ServiceBooking $review
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function deleteReview(ServiceBooking $review)
+    {
+        $user = auth()->user();
+
+        if ($review->user_id !== $user->id) {
+            abort(403);
+        }
+
+        $providerId = $review->provider_id;
+
+        $review->update([
+            'rating' => null,
+            'review' => null,
+            'rated_at' => null,
+        ]);
+
+        // อัพเดทคะแนนเฉลี่ยของ Provider
+        if ($providerId) {
+            $this->updateProviderRating($providerId);
+        }
+
+        return redirect()->route('user.service-reviews.index')
+            ->with('success', 'ลบรีวิวสำเร็จ');
+    }
+
+    /**
+     * อัพเดทคะแนนเฉลี่ยของ Provider
+     *
+     * @param int $providerId
+     * @return void
+     */
+    private function updateProviderRating(int $providerId): void
+    {
+        $avgRating = ServiceBooking::where('provider_id', $providerId)
+            ->whereNotNull('rating')
+            ->avg('rating');
+
+        $totalReviews = ServiceBooking::where('provider_id', $providerId)
+            ->whereNotNull('rating')
+            ->count();
+
+        \App\Models\ServiceProvider::where('id', $providerId)->update([
+            'average_rating' => round($avgRating ?? 0, 2),
+            'total_reviews' => $totalReviews,
+        ]);
+    }
 }

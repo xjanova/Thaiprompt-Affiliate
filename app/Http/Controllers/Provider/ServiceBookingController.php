@@ -331,6 +331,138 @@ class ServiceBookingController extends Controller
     }
 
     /**
+     * แสดงรายได้ของ Provider
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function earnings(Request $request)
+    {
+        $provider = $this->getCurrentProvider();
+
+        if (!$provider) {
+            return redirect()->route('provider.register')
+                ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
+        }
+
+        // ช่วงเวลาเริ่มต้น: 30 วันย้อนหลัง
+        $startDate = $request->get('start_date', now()->subDays(30)->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+
+        // รายได้รวม
+        $totalEarnings = ServiceBooking::where('provider_id', $provider->id)
+            ->where('status', 'completed')
+            ->whereBetween('completed_at', [$startDate, $endDate . ' 23:59:59'])
+            ->sum('provider_earnings');
+
+        // รายได้รายวัน
+        $dailyEarnings = ServiceBooking::selectRaw('DATE(completed_at) as date, SUM(provider_earnings) as total, COUNT(*) as jobs')
+            ->where('provider_id', $provider->id)
+            ->where('status', 'completed')
+            ->whereBetween('completed_at', [$startDate, $endDate . ' 23:59:59'])
+            ->groupBy('date')
+            ->orderBy('date', 'desc')
+            ->get();
+
+        // รายการงานที่เสร็จสิ้น
+        $completedBookings = ServiceBooking::where('provider_id', $provider->id)
+            ->where('status', 'completed')
+            ->whereBetween('completed_at', [$startDate, $endDate . ' 23:59:59'])
+            ->with('service')
+            ->latest('completed_at')
+            ->paginate(20);
+
+        // สถิติรายเดือน
+        $monthlyStats = ServiceBooking::selectRaw('YEAR(completed_at) as year, MONTH(completed_at) as month, SUM(provider_earnings) as total, COUNT(*) as jobs')
+            ->where('provider_id', $provider->id)
+            ->where('status', 'completed')
+            ->whereYear('completed_at', now()->year)
+            ->groupBy('year', 'month')
+            ->orderBy('month')
+            ->get();
+
+        return view('provider.earnings.index', [
+            'provider' => $provider,
+            'totalEarnings' => $totalEarnings,
+            'dailyEarnings' => $dailyEarnings,
+            'completedBookings' => $completedBookings,
+            'monthlyStats' => $monthlyStats,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'pageTitle' => 'รายได้ของฉัน',
+        ]);
+    }
+
+    /**
+     * Export รายได้
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function exportEarnings(Request $request)
+    {
+        // TODO: Implement export to Excel/PDF
+        return redirect()->back()->with('info', 'ฟีเจอร์ export กำลังพัฒนา');
+    }
+
+    /**
+     * แสดงสถิติและรีวิวของ Provider
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function stats(Request $request)
+    {
+        $provider = $this->getCurrentProvider();
+
+        if (!$provider) {
+            return redirect()->route('provider.register')
+                ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
+        }
+
+        // สถิติภาพรวม
+        $stats = [
+            'total_bookings' => $provider->total_bookings,
+            'completed_bookings' => ServiceBooking::where('provider_id', $provider->id)
+                ->where('status', 'completed')
+                ->count(),
+            'cancelled_bookings' => ServiceBooking::where('provider_id', $provider->id)
+                ->where('status', 'cancelled')
+                ->count(),
+            'total_earnings' => $provider->total_earnings ?? 0,
+            'average_rating' => $provider->average_rating ?? 0,
+            'total_reviews' => $provider->total_reviews ?? 0,
+            'acceptance_rate' => $provider->acceptance_rate ?? 0,
+            'completion_rate' => $provider->completion_rate ?? 0,
+        ];
+
+        // รีวิวล่าสุด
+        $reviews = ServiceBooking::where('provider_id', $provider->id)
+            ->whereNotNull('rating')
+            ->with(['user', 'service'])
+            ->latest('rated_at')
+            ->paginate(10);
+
+        // การกระจายคะแนน
+        $ratingDistribution = ServiceBooking::selectRaw('rating, COUNT(*) as count')
+            ->where('provider_id', $provider->id)
+            ->whereNotNull('rating')
+            ->groupBy('rating')
+            ->orderBy('rating', 'desc')
+            ->get()
+            ->pluck('count', 'rating')
+            ->toArray();
+
+        return view('provider.stats.index', [
+            'provider' => $provider,
+            'stats' => $stats,
+            'reviews' => $reviews,
+            'ratingDistribution' => $ratingDistribution,
+            'pageTitle' => 'สถิติและรีวิว',
+        ]);
+    }
+
+    /**
      * หา Provider ปัจจุบัน
      *
      * @return ServiceProvider|null
