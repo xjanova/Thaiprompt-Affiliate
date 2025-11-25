@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.192.0] - 2025-11-25
+
+### ✨ Features
+- feat: add Admin GPS Monitoring Center with futuristic UI (7d3a9995)
+- feat: add Web GPS support for browser-based location tracking (9c177b95)
+### 🐛 Bug Fixes
+- fix: complete GPS Monitoring verification and fixes (e01574f5)
+### 🔧 Other Changes
+- Merge pull request #1635 from xjanova/claude/fix-admin-menu-links-01QgCuMgpSSChv9kiLBtt69r (0f663189)
+
 ## [v3.191.0] - 2025-11-25
 
 ### ✨ Features
