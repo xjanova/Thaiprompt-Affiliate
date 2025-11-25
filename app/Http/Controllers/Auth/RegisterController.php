@@ -8,6 +8,7 @@ use App\Models\MlmMember;
 use App\Models\LeadLock;
 use App\Models\LineLoginLog;
 use App\Models\LineOaSetting;
+use App\Models\LineSignupReward;
 use App\Models\RecruitCustomization;
 use App\Models\Setting;
 use App\Services\LineService;
@@ -21,13 +22,16 @@ use Illuminate\Validation\Rules\Password;
 class RegisterController extends Controller
 {
     /**
-     * Show the registration form
+     * แสดงฟอร์มสมัครสมาชิก
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
      */
     public function showRegistrationForm(Request $request)
     {
         $referralCode = $request->query('ref');
 
-        // Get default sponsor info (MLM)
+        // ดึงข้อมูลผู้แนะนำเริ่มต้น (MLM)
         $defaultSponsorName = null;
         if (empty($referralCode)) {
             $defaultSponsorCode = Setting::get('default_sponsor_member_code');
@@ -39,10 +43,13 @@ class RegisterController extends Controller
             }
         }
 
-        // Check if LINE profile exists in session (for LINE registration flow)
+        // ตรวจสอบ LINE profile ใน session (สำหรับการสมัครผ่าน LINE)
         $lineProfile = Session::get('line_temp_profile');
 
-        return view('auth.register', compact('referralCode', 'defaultSponsorName', 'lineProfile'));
+        // ดึงรางวัลการสมัครสมาชิกที่ active สำหรับสมัครฟรี
+        $signupRewards = LineSignupReward::getAvailableRewards(null);
+
+        return view('auth.register', compact('referralCode', 'defaultSponsorName', 'lineProfile', 'signupRewards'));
     }
 
     /**
