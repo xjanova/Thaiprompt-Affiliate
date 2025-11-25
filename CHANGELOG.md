@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.186.6] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1623 from xjanova/claude/fix-seeder-column-error-01Br6jgdetx32dcGNPPt81e5 (824a35e1)
+- fix(database): add missing is_featured column to service_categories table (7abfffdc)
+### 🔧 Other Changes
+
+
 ## [v3.186.5] - 2025-11-25
 
 ### ✨ Features
