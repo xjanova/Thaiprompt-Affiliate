@@ -92,7 +92,7 @@ class GpsMonitoringController extends Controller
                 'id' => $booking->id,
                 'booking_number' => $booking->booking_number,
                 'status' => $booking->status,
-                'status_label' => $booking->getStatusLabel() ?? $booking->status,
+                'status_label' => $booking->status_text ?? $booking->status,
                 'service_name' => $booking->service->name ?? 'ไม่ระบุ',
                 'user_id' => $booking->user_id,
                 'user_name' => $booking->user->name ?? 'ไม่ระบุ',
@@ -303,7 +303,7 @@ class GpsMonitoringController extends Controller
         $query = ServiceBookingLocationLog::where('service_booking_id', $booking->id);
 
         if ($entityType !== 'all') {
-            $query->where('entity_type', $entityType);
+            $query->where('actor_type', $entityType);
         }
 
         $logs = $query->orderBy('recorded_at', 'asc')->get();
@@ -320,7 +320,7 @@ class GpsMonitoringController extends Controller
                 'accuracy' => $log->accuracy,
             ];
 
-            if ($log->entity_type === 'user') {
+            if ($log->actor_type === 'user') {
                 $userPath[] = $point;
             } else {
                 $providerPath[] = $point;

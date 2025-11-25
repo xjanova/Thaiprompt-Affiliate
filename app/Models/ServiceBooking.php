@@ -111,6 +111,10 @@ class ServiceBooking extends Model
         'system_revenue',
         'mlm_member_id',
         'metadata',
+        // User Live Location (สำหรับ real-time tracking)
+        'user_live_latitude',
+        'user_live_longitude',
+        'user_location_updated_at',
     ];
 
     protected $casts = [
@@ -142,6 +146,10 @@ class ServiceBooking extends Model
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
         'metadata' => 'array',
+        // User Live Location
+        'user_live_latitude' => 'decimal:8',
+        'user_live_longitude' => 'decimal:8',
+        'user_location_updated_at' => 'datetime',
     ];
 
     //===========================================
