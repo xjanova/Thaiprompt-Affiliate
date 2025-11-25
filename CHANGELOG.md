@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.180.1] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1594 from xjanova/claude/fix-seeder-numeric-error-01JMxPJr1f2JTNSANj4WJ5B8 (394b685d)
+- fix: change model_size_bytes column to bigInteger to fix numeric overflow (a0de9f32)
+### 🔧 Other Changes
+
+
 ## [v3.180.0] - 2025-11-24
 
 ### ✨ Features
