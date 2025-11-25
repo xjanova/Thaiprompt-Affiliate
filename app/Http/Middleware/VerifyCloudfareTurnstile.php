@@ -29,10 +29,15 @@ class VerifyCloudfareTurnstile
         $secretKey = config('turnstile.secret_key');
 
         if (empty($siteKey) || empty($secretKey)) {
-            // Turnstile not configured yet, bypass verification
-            Log::info('Cloudflare Turnstile bypassed: Not configured yet', [
+            // ⚠️ WARNING: Turnstile เปิดใช้งานแต่ไม่ได้ตั้งค่า keys!
+            // นี่คือ False Sense of Security - ระบบจะ BYPASS ทั้งหมด
+            Log::warning('🚨 Cloudflare Turnstile SECURITY WARNING: enabled=true แต่ไม่มี keys!', [
                 'ip' => $request->ip(),
                 'point' => $point,
+                'site_key_empty' => empty($siteKey),
+                'secret_key_empty' => empty($secretKey),
+                'warning' => 'Turnstile is BYPASSED - no actual protection!',
+                'solution' => 'ตั้งค่า CLOUDFLARE_TURNSTILE_SITE_KEY และ CLOUDFLARE_TURNSTILE_SECRET_KEY ใน .env หรือปิด CLOUDFLARE_TURNSTILE_ENABLED=false',
             ]);
             return $next($request);
         }
