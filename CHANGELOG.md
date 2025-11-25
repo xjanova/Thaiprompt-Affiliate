@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.184.4] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1613 from xjanova/claude/seed-nfc-cards-01Bmb5VRqZTaYoaVY6MCoXXp (d3ca9e69)
+- fix: add idempotent checks for cashback columns in products table (bd7d8f52)
+### 🔧 Other Changes
+
+
 ## [v3.184.3] - 2025-11-25
 
 ### ✨ Features
