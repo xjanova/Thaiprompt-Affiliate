@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.185.1] - 2025-11-25
+
+### ✨ Features
+- Merge pull request #1616 from xjanova/claude/fix-kyc-document-reading-017WPKygSYwRQ6nxedsMUFru (c9346bf4)
+- feat(kyc): improve KYC status display and add verification badges (4c532d54)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.185.0] - 2025-11-25
 
 ### ✨ Features
