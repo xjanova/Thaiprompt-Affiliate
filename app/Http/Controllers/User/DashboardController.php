@@ -246,7 +246,24 @@ class DashboardController extends Controller
         // 11. ข้อมูล KYC สำหรับแจ้งเตือน
         // ===============================================
 
-        $kycStatus = $user->kyc_status ?? 'not_submitted';
+        // ตรวจสอบ KYC status จาก KycVerification record (ข้อมูลที่ถูกต้องที่สุด)
+        $latestKyc = \App\Models\KycVerification::where('user_id', $user->id)
+            ->latest()
+            ->first();
+
+        // กำหนด kycStatus จาก KycVerification หรือ User
+        if ($latestKyc) {
+            $kycStatus = $latestKyc->status; // pending, approved, rejected
+
+            // Sync kyc_status ถ้าไม่ตรงกัน (แก้ไขข้อมูลเก่าที่ไม่ได้ถูก sync)
+            if ($user->kyc_status !== $kycStatus) {
+                $user->forceFill(['kyc_status' => $kycStatus])->save();
+            }
+        } else {
+            $kycStatus = $user->kyc_status ?? 'not_submitted';
+        }
+
+        // แสดง KYC Alert เฉพาะเมื่อยังไม่ได้ส่งเอกสาร หรือถูกปฏิเสธ
         $showKycAlert = in_array($kycStatus, ['not_submitted', 'rejected']);
 
         // ===============================================

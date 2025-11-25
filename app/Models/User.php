@@ -504,18 +504,36 @@ class User extends Authenticatable
 
     /**
      * Check if user has KYC verified
+     *
+     * ตรวจสอบจาก kyc_status หรือ KycVerification record
      */
     public function isKycVerified(): bool
     {
-        return $this->kyc_status === 'approved';
+        // ตรวจสอบ kyc_status ก่อน
+        if ($this->kyc_status === 'approved') {
+            return true;
+        }
+
+        // ถ้า kyc_status ยังไม่ถูก sync ให้ตรวจสอบจาก KycVerification record
+        $latestKyc = $this->latestKycVerification;
+        return $latestKyc && $latestKyc->status === 'approved';
     }
 
     /**
      * Check if user has KYC pending
+     *
+     * ตรวจสอบจาก kyc_status หรือ KycVerification record
      */
     public function isKycPending(): bool
     {
-        return $this->kyc_status === 'pending';
+        // ตรวจสอบ kyc_status ก่อน
+        if ($this->kyc_status === 'pending') {
+            return true;
+        }
+
+        // ถ้า kyc_status ยังไม่ถูก sync ให้ตรวจสอบจาก KycVerification record
+        $latestKyc = $this->latestKycVerification;
+        return $latestKyc && $latestKyc->status === 'pending';
     }
 
     /**
