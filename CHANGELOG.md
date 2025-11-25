@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.181.7] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1605 from xjanova/claude/seed-nfc-cards-01Bmb5VRqZTaYoaVY6MCoXXp (32afafb0)
+- fix: add card_data_hash field to NFCCardSeeder (0604d80e)
+### 🔧 Other Changes
+
+
 ## [v3.181.6] - 2025-11-25
 
 ### ✨ Features
