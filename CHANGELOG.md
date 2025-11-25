@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.189.1] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1632 from xjanova/claude/fix-prospects-user-menu-01XG6ymmtF3qEkfgYt8BFTrz (b9691302)
+- fix: แก้ไขระบบผู้มุ่งหวัง (Prospects) ให้ใช้งานได้ครบครัน (ec64b3e5)
+### 🔧 Other Changes
+
+
 ## [v3.189.0] - 2025-11-25
 
 ### ✨ Features
