@@ -402,14 +402,17 @@ class SettingsController extends Controller
     }
 
     /**
-     * Show OCR settings page
+     * Show OCR settings page (V3)
+     *
+     * รองรับทั้ง API Key และ Service Account credentials
      */
     public function ocr()
     {
-        $ocrSettings = Setting::all()->where('group', 'ocr');
+        $ocrSettings = Setting::all()->where('group', 'ocr')->keyBy('key');
 
-        // Check if credentials file exists
-        $credentialsPath = Setting::get('google_vision_credentials_path');
+        // Check credentials file
+        $credentialsPath = Setting::get('google_vision_credentials_path')
+            ?: config('services.google.credentials_path');
         $credentialsExists = !empty($credentialsPath) && file_exists($credentialsPath);
 
         // Get credentials info if file exists
@@ -430,26 +433,54 @@ class SettingsController extends Controller
             }
         }
 
-        return view('admin.settings.ocr', compact('ocrSettings', 'credentialsExists', 'credentialsInfo'));
+        // Get API status from OCR Service
+        $apiStatus = null;
+        try {
+            $ocrService = new \App\Services\OCR\ThaiIdCardOcrService();
+            $apiStatus = $ocrService->getApiStatus();
+        } catch (\Exception $e) {
+            $apiStatus = [
+                'configured' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+
+        return view('admin.settings.ocr', compact(
+            'ocrSettings',
+            'credentialsExists',
+            'credentialsInfo',
+            'apiStatus'
+        ));
     }
 
     /**
-     * Update OCR settings
+     * Update OCR settings (V3)
+     *
+     * รองรับทั้ง API Key และ Service Account credentials
      */
     public function updateOcr(Request $request)
     {
+        // รองรับทั้ง JSON และ form request
+        $isJsonRequest = $request->isJson() || $request->header('Content-Type') === 'application/json';
+
         $validated = $request->validate([
             'google_vision_enabled' => 'nullable|boolean',
             'google_vision_project_id' => 'nullable|string|max:255',
+            'cloud_vision_api_key' => 'nullable|string|max:500',
             'credentials_file' => 'nullable|file|mimes:json|max:1024', // Max 1MB
         ]);
 
         // Update enabled status
-        Setting::set('google_vision_enabled', $request->has('google_vision_enabled') ? '1' : '0', 'boolean', 'ocr');
+        Setting::set('google_vision_enabled', $request->has('google_vision_enabled') || $request->boolean('google_vision_enabled') ? '1' : '0', 'boolean', 'ocr');
 
         // Update project ID
         if ($request->filled('google_vision_project_id')) {
             Setting::set('google_vision_project_id', $request->google_vision_project_id, 'string', 'ocr');
+        }
+
+        // Update Cloud Vision API Key (ใหม่)
+        if ($request->has('cloud_vision_api_key')) {
+            Setting::set('cloud_vision_api_key', $request->cloud_vision_api_key, 'string', 'ocr');
         }
 
         // Upload credentials file if provided
@@ -461,12 +492,18 @@ class SettingsController extends Controller
             $json = json_decode($content, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                return back()->with('error', 'ไฟล์ JSON ไม่ถูกต้อง กรุณาตรวจสอบไฟล์อีกครั้ง');
+                $errorMsg = 'ไฟล์ JSON ไม่ถูกต้อง กรุณาตรวจสอบไฟล์อีกครั้ง';
+                return $isJsonRequest
+                    ? response()->json(['success' => false, 'message' => $errorMsg], 400)
+                    : back()->with('error', $errorMsg);
             }
 
             // Check if it's a valid service account key
             if (!isset($json['type']) || $json['type'] !== 'service_account') {
-                return back()->with('error', 'ไฟล์นี้ไม่ใช่ Service Account Key ที่ถูกต้อง');
+                $errorMsg = 'ไฟล์นี้ไม่ใช่ Service Account Key ที่ถูกต้อง';
+                return $isJsonRequest
+                    ? response()->json(['success' => false, 'message' => $errorMsg], 400)
+                    : back()->with('error', $errorMsg);
             }
 
             // Save the file
@@ -485,64 +522,87 @@ class SettingsController extends Controller
             // Update setting
             Setting::set('google_vision_credentials_path', $path, 'string', 'ocr');
 
-            return back()->with('success', 'บันทึกการตั้งค่า OCR เรียบร้อยแล้ว และอัปโหลดไฟล์ credentials สำเร็จ');
+            $successMsg = 'บันทึกการตั้งค่า OCR เรียบร้อยแล้ว และอัปโหลดไฟล์ credentials สำเร็จ';
+            return $isJsonRequest
+                ? response()->json(['success' => true, 'message' => $successMsg])
+                : back()->with('success', $successMsg);
         }
 
-        return back()->with('success', 'บันทึกการตั้งค่า OCR เรียบร้อยแล้ว');
+        $successMsg = 'บันทึกการตั้งค่า OCR เรียบร้อยแล้ว';
+        return $isJsonRequest
+            ? response()->json(['success' => true, 'message' => $successMsg])
+            : back()->with('success', $successMsg);
     }
 
     /**
-     * Test Google Cloud Vision API connection
+     * Test Google Cloud Vision API connection (V3)
+     *
+     * รองรับทั้ง REST API + API Key และ SDK + Service Account
      */
     public function testOcrConnection()
     {
         try {
-            // Check if Google Cloud Vision library is installed
-            if (!class_exists('\Google\Cloud\Vision\V1\ImageAnnotatorClient')) {
+            // ใช้ ThaiIdCardOcrService ในการทดสอบ
+            $ocrService = new \App\Services\OCR\ThaiIdCardOcrService();
+            $apiStatus = $ocrService->getApiStatus();
+
+            if (!$apiStatus['configured']) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ไม่พบ Google Cloud Vision library กรุณาติดตั้งด้วย: composer require google/cloud-vision',
-                ], 500);
-            }
-
-            $credentialsPath = Setting::get('google_vision_credentials_path');
-
-            if (empty($credentialsPath) || !file_exists($credentialsPath)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ไม่พบไฟล์ credentials กรุณาอัปโหลดไฟล์ก่อน',
+                    'message' => $apiStatus['error'] ?? 'ไม่พบการตั้งค่า API Key หรือ Service Account credentials',
+                    'data' => $apiStatus,
                 ], 400);
             }
 
-            // Validate JSON file
-            $jsonContent = file_get_contents($credentialsPath);
-            $credentials = json_decode($jsonContent, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ไฟล์ credentials ไม่ใช่ JSON ที่ถูกต้อง',
-                ], 400);
+            // ถ้ามี connection_test ให้ใช้ผลลัพธ์นั้น
+            if (isset($apiStatus['connection_test'])) {
+                if ($apiStatus['connection_test']['success']) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'เชื่อมต่อ Google Cloud Vision API สำเร็จ! (' . $apiStatus['method'] . ')',
+                        'data' => $apiStatus,
+                    ]);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'เชื่อมต่อ API ไม่สำเร็จ: ' . ($apiStatus['connection_test']['error'] ?? 'Unknown error'),
+                        'data' => $apiStatus,
+                    ], 500);
+                }
             }
 
-            if (!isset($credentials['type']) || $credentials['type'] !== 'service_account') {
+            // สำหรับ SDK method ให้ทดสอบแบบเดิม
+            if ($apiStatus['method'] === 'SDK + Service Account') {
+                $credentialsPath = $apiStatus['credentials_file'];
+
+                if (empty($credentialsPath) || !file_exists($credentialsPath)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'ไม่พบไฟล์ credentials กรุณาอัปโหลดไฟล์ก่อน',
+                    ], 400);
+                }
+
+                // Try to initialize client
+                $client = new \Google\Cloud\Vision\V1\ImageAnnotatorClient([
+                    'credentials' => $credentialsPath
+                ]);
+                $client->close();
+
+                // Get project info
+                $jsonContent = file_get_contents($credentialsPath);
+                $credentials = json_decode($jsonContent, true);
+
                 return response()->json([
-                    'success' => false,
-                    'message' => 'ไฟล์นี้ไม่ใช่ Service Account Key ที่ถูกต้อง',
-                ], 400);
+                    'success' => true,
+                    'message' => 'เชื่อมต่อ Google Cloud Vision API สำเร็จ! Project: ' . ($credentials['project_id'] ?? 'N/A'),
+                    'data' => $apiStatus,
+                ]);
             }
-
-            // Try to initialize Google Cloud Vision client
-            $client = new \Google\Cloud\Vision\V1\ImageAnnotatorClient([
-                'credentials' => $credentialsPath
-            ]);
-
-            // Close the client
-            $client->close();
 
             return response()->json([
                 'success' => true,
-                'message' => 'เชื่อมต่อ Google Cloud Vision API สำเร็จ! Project: ' . ($credentials['project_id'] ?? 'N/A'),
+                'message' => 'การตั้งค่าถูกต้อง (' . $apiStatus['method'] . ')',
+                'data' => $apiStatus,
             ]);
         } catch (\Exception $e) {
             return response()->json([

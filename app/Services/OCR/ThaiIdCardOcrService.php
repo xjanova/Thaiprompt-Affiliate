@@ -2,27 +2,147 @@
 
 namespace App\Services\OCR;
 
+use App\Models\Setting;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Google\Cloud\Vision\V1\ImageAnnotatorClient;
 use Google\Cloud\Vision\V1\Image;
 
+/**
+ * Thai ID Card OCR Service
+ *
+ * รองรับ 2 วิธีในการเชื่อมต่อ Google Cloud Vision:
+ * 1. Service Account Credentials (JSON file) - สำหรับ SDK
+ * 2. API Key (REST API) - สำหรับใช้งานร่วมกับ Google Maps API Key
+ *
+ * @version 2.0.0
+ */
 class ThaiIdCardOcrService
 {
     protected $client;
+    protected ?string $apiKey = null;
+    protected bool $useRestApi = false;
+
+    /**
+     * Vision API REST endpoint
+     */
+    protected const VISION_API_URL = 'https://vision.googleapis.com/v1/images:annotate';
 
     public function __construct()
     {
-        // Initialize Google Cloud Vision client if credentials are available
-        if ($this->hasGoogleCredentials()) {
+        // ลำดับการตรวจสอบ credentials:
+        // 1. ตรวจสอบ API Key จาก settings (สำหรับ REST API)
+        // 2. ตรวจสอบ Service Account credentials (สำหรับ SDK)
+
+        // ลองใช้ API Key ก่อน (ถ้าตั้งค่า cloud_vision_api_key)
+        $this->apiKey = Setting::get('cloud_vision_api_key')
+                        ?: Setting::get('google_maps_api_key') // Fallback ใช้ Maps API Key
+                        ?: config('services.google_maps.api_key')
+                        ?: null;
+
+        // ถ้ามี API Key ให้ใช้ REST API
+        if ($this->apiKey) {
+            $this->useRestApi = true;
+            Log::info('ThaiIdCardOcrService: ใช้ REST API + API Key');
+        }
+        // ถ้าไม่มี API Key ลองใช้ Service Account credentials
+        elseif ($this->hasGoogleCredentials()) {
             try {
                 $this->client = new ImageAnnotatorClient([
                     'credentials' => config('services.google.credentials_path')
                 ]);
+                Log::info('ThaiIdCardOcrService: ใช้ SDK + Service Account');
             } catch (\Exception $e) {
                 Log::warning('Failed to initialize Google Vision API: ' . $e->getMessage());
                 $this->client = null;
             }
+        }
+    }
+
+    /**
+     * ตรวจสอบสถานะการเชื่อมต่อ API
+     *
+     * @return array ข้อมูลสถานะและ capabilities
+     */
+    public function getApiStatus(): array
+    {
+        $status = [
+            'configured' => false,
+            'method' => null,
+            'api_key_masked' => null,
+            'credentials_file' => null,
+            'capabilities' => [],
+            'error' => null,
+        ];
+
+        if ($this->useRestApi && $this->apiKey) {
+            $status['configured'] = true;
+            $status['method'] = 'REST API + API Key';
+            $status['api_key_masked'] = substr($this->apiKey, 0, 8) . '...' . substr($this->apiKey, -4);
+            $status['capabilities'] = [
+                'text_detection' => true,
+                'document_text_detection' => true,
+                'label_detection' => true,
+                'face_detection' => true,
+            ];
+
+            // ทดสอบการเชื่อมต่อ
+            try {
+                $testResult = $this->testApiConnection();
+                $status['connection_test'] = $testResult;
+            } catch (\Exception $e) {
+                $status['error'] = $e->getMessage();
+            }
+        } elseif ($this->client) {
+            $status['configured'] = true;
+            $status['method'] = 'SDK + Service Account';
+            $status['credentials_file'] = config('services.google.credentials_path');
+            $status['capabilities'] = [
+                'text_detection' => true,
+                'document_text_detection' => true,
+                'label_detection' => true,
+                'face_detection' => true,
+                'object_localization' => true,
+                'product_search' => true,
+            ];
+        } else {
+            $status['error'] = 'ไม่พบการตั้งค่า API Key หรือ Service Account credentials';
+        }
+
+        return $status;
+    }
+
+    /**
+     * ทดสอบการเชื่อมต่อ API
+     */
+    protected function testApiConnection(): array
+    {
+        if (!$this->useRestApi || !$this->apiKey) {
+            return ['success' => false, 'error' => 'ไม่ได้ใช้ REST API'];
+        }
+
+        try {
+            // สร้างรูปขนาดเล็กสำหรับทดสอบ (1x1 pixel transparent PNG)
+            $testImage = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+            $response = Http::timeout(10)->post(self::VISION_API_URL . '?key=' . $this->apiKey, [
+                'requests' => [
+                    [
+                        'image' => ['content' => $testImage],
+                        'features' => [['type' => 'TEXT_DETECTION', 'maxResults' => 1]],
+                    ]
+                ]
+            ]);
+
+            if ($response->successful()) {
+                return ['success' => true, 'message' => 'เชื่อมต่อสำเร็จ'];
+            }
+
+            $error = $response->json('error.message') ?? 'Unknown error';
+            return ['success' => false, 'error' => $error];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 
@@ -62,41 +182,51 @@ class ThaiIdCardOcrService
             // Preprocess image for better OCR results
             $processedContent = $this->preprocessImage($imageContent);
 
-            // Try Google Cloud Vision API first
-            if ($this->client) {
+            // เลือกวิธีการ OCR
+            $result = null;
+
+            // วิธี 1: ใช้ REST API + API Key
+            if ($this->useRestApi && $this->apiKey) {
+                $result = $this->extractWithRestApi($processedContent);
+            }
+            // วิธี 2: ใช้ SDK + Service Account
+            elseif ($this->client) {
                 $result = $this->extractWithGoogleVision($processedContent);
-
-                if ($result === null) {
-                    return [
-                        'success' => false,
-                        'error' => 'ไม่สามารถตรวจจับข้อความจากรูปภาพได้',
-                        'error_code' => 'NO_TEXT_DETECTED',
-                        'suggestion' => 'กรุณาถ่ายรูปบัตรให้ชัดเจน มีแสงสว่างเพียงพอ และข้อความบนบัตรสามารถอ่านได้ชัดเจน'
-                    ];
-                }
-
-                // Check if we got meaningful data
-                if ($this->hasMinimumData($result)) {
-                    $result['success'] = true;
-                    return $result;
-                } else {
-                    return [
-                        'success' => false,
-                        'error' => 'ตรวจพบข้อความบางส่วน แต่ไม่สามารถระบุข้อมูลสำคัญได้',
-                        'error_code' => 'INSUFFICIENT_DATA',
-                        'suggestion' => 'กรุณาตรวจสอบว่ารูปบัตรมีความชัดเจน ไม่เบลอ และถ่ายบัตรทั้งใบให้เห็นชัดเจน',
-                        'partial_data' => $result
-                    ];
-                }
             }
 
-            // No Google Vision API available
-            return [
-                'success' => false,
-                'error' => 'ระบบ OCR ยังไม่พร้อมใช้งาน',
-                'error_code' => 'OCR_NOT_CONFIGURED',
-                'suggestion' => 'กรุณาติดต่อผู้ดูแลระบบเพื่อตั้งค่า Google Cloud Vision API'
-            ];
+            if ($result === null) {
+                // ตรวจสอบว่ามี API ใดเลยหรือไม่
+                if (!$this->useRestApi && !$this->client) {
+                    return [
+                        'success' => false,
+                        'error' => 'ระบบ OCR ยังไม่พร้อมใช้งาน',
+                        'error_code' => 'OCR_NOT_CONFIGURED',
+                        'suggestion' => 'กรุณาตั้งค่า Google Cloud Vision API Key ในหน้าตั้งค่าระบบ หรือติดตั้ง Service Account credentials'
+                    ];
+                }
+
+                return [
+                    'success' => false,
+                    'error' => 'ไม่สามารถตรวจจับข้อความจากรูปภาพได้',
+                    'error_code' => 'NO_TEXT_DETECTED',
+                    'suggestion' => 'กรุณาถ่ายรูปบัตรให้ชัดเจน มีแสงสว่างเพียงพอ และข้อความบนบัตรสามารถอ่านได้ชัดเจน'
+                ];
+            }
+
+            // Check if we got meaningful data
+            if ($this->hasMinimumData($result)) {
+                $result['success'] = true;
+                $result['ocr_method'] = $this->useRestApi ? 'REST_API' : 'SDK';
+                return $result;
+            } else {
+                return [
+                    'success' => false,
+                    'error' => 'ตรวจพบข้อความบางส่วน แต่ไม่สามารถระบุข้อมูลสำคัญได้',
+                    'error_code' => 'INSUFFICIENT_DATA',
+                    'suggestion' => 'กรุณาตรวจสอบว่ารูปบัตรมีความชัดเจน ไม่เบลอ และถ่ายบัตรทั้งใบให้เห็นชัดเจน',
+                    'partial_data' => $result
+                ];
+            }
         } catch (\Exception $e) {
             Log::error('Thai ID Card OCR Error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
@@ -109,6 +239,71 @@ class ThaiIdCardOcrService
                 'suggestion' => 'กรุณาลองอัพโหลดรูปภาพใหม่อีกครั้ง หรือใช้รูปภาพอื่น',
                 'technical_error' => $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * Extract text using REST API + API Key
+     *
+     * @param string $imageContent Base64 encoded image content
+     * @return array|null Extracted data or null if failed
+     */
+    protected function extractWithRestApi(string $imageContent): ?array
+    {
+        try {
+            $base64Image = base64_encode($imageContent);
+
+            $response = Http::timeout(30)->post(self::VISION_API_URL . '?key=' . $this->apiKey, [
+                'requests' => [
+                    [
+                        'image' => ['content' => $base64Image],
+                        'features' => [
+                            ['type' => 'TEXT_DETECTION'],
+                            ['type' => 'DOCUMENT_TEXT_DETECTION'],
+                        ],
+                        'imageContext' => [
+                            'languageHints' => ['th', 'en'],
+                        ],
+                    ]
+                ]
+            ]);
+
+            if (!$response->successful()) {
+                $error = $response->json('error.message') ?? 'Unknown API error';
+                Log::error('Vision API REST Error: ' . $error);
+                return null;
+            }
+
+            $data = $response->json();
+
+            // ตรวจสอบผลลัพธ์
+            $textAnnotations = $data['responses'][0]['textAnnotations'] ?? [];
+
+            if (empty($textAnnotations)) {
+                return null;
+            }
+
+            // ดึงข้อความทั้งหมด
+            $fullText = $textAnnotations[0]['description'] ?? '';
+
+            if (empty($fullText)) {
+                return null;
+            }
+
+            // Detect document type
+            $documentType = $this->detectDocumentType($fullText);
+
+            Log::info('OCR (REST API) detected document type: ' . $documentType);
+
+            // Parse based on document type
+            if ($documentType === 'driver_license') {
+                return $this->parseThaiDriverLicense($fullText);
+            } else {
+                return $this->parseThaiIdCardText($fullText);
+            }
+        } catch (\Exception $e) {
+            Log::error('Vision API REST Exception: ' . $e->getMessage());
+            return null;
         }
     }
 
@@ -212,7 +407,7 @@ class ThaiIdCardOcrService
     }
 
     /**
-     * Extract data using Google Cloud Vision API
+     * Extract data using Google Cloud Vision API (SDK)
      */
     protected function extractWithGoogleVision(string $imageContent): ?array
     {
@@ -234,7 +429,7 @@ class ThaiIdCardOcrService
             // Detect document type
             $documentType = $this->detectDocumentType($fullText);
 
-            Log::info('OCR detected document type: ' . $documentType);
+            Log::info('OCR (SDK) detected document type: ' . $documentType);
 
             // Parse based on document type
             if ($documentType === 'driver_license') {
@@ -246,17 +441,6 @@ class ThaiIdCardOcrService
             Log::error('Google Vision API Error: ' . $e->getMessage());
             return null;
         }
-    }
-
-    /**
-     * Extract data using pattern matching (fallback method)
-     */
-    protected function extractWithPatternMatching(string $imageContent): ?array
-    {
-        // This is a placeholder for fallback OCR using Tesseract or other methods
-        // For now, we'll return null and rely on Google Vision API
-        Log::warning('Pattern matching OCR not implemented, Google Vision API required');
-        return null;
     }
 
     /**
