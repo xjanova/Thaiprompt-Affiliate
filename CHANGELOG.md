@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.186.1] - 2025-11-25
+
+### ✨ Features
+- Merge pull request #1618 from xjanova/claude/fix-kyc-document-reading-017WPKygSYwRQ6nxedsMUFru (f8c2c7c6)
+- feat(ocr): add API Key support and admin settings for Cloud Vision OCR (fa81c339)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.186.0] - 2025-11-25
 
 ### ✨ Features
