@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.187.1] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1629 from xjanova/claude/fix-user-support-route-01LgUPtrZnP76875eso7hFBE (fc0969db)
+- fix: replace undefined user.support route with user.tickets.index (00ebe8d9)
+### 🔧 Other Changes
+
+
 ## [v3.187.0] - 2025-11-25
 
 ### ✨ Features
