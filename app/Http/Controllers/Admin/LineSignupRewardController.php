@@ -49,6 +49,11 @@ class LineSignupRewardController extends Controller
             $query->where('signup_type', $request->signup_type);
         }
 
+        // กรองตามเงื่อนไขผู้แนะนำ
+        if ($request->filled('referrer_requirement')) {
+            $query->where('referrer_requirement', $request->referrer_requirement);
+        }
+
         // กรองตามประเภทรางวัล
         if ($request->filled('reward_type')) {
             $query->where('reward_type', $request->reward_type);
@@ -98,6 +103,7 @@ class LineSignupRewardController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'signup_type' => 'required|in:free,package,both',
+            'referrer_requirement' => 'required|in:any,required,none',
             'package_ids' => 'nullable|array',
             'package_ids.*' => 'exists:mlm_packages,id',
             'reward_type' => 'required|in:wallet_points,tpix_tokens,coupon,rank_points,special_benefit,bonus_item,free_downlines,experience_points',
@@ -136,7 +142,7 @@ class LineSignupRewardController extends Controller
             DB::beginTransaction();
 
             $data = $request->only([
-                'name', 'description', 'signup_type', 'package_ids',
+                'name', 'description', 'signup_type', 'referrer_requirement', 'package_ids',
                 'reward_type', 'amount', 'coupon_template_id', 'product_id',
                 'benefit_data', 'icon', 'badge_color', 'display_order',
                 'is_time_limited', 'start_date', 'end_date', 'is_active',
@@ -206,6 +212,7 @@ class LineSignupRewardController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'signup_type' => 'required|in:free,package,both',
+            'referrer_requirement' => 'required|in:any,required,none',
             'package_ids' => 'nullable|array',
             'package_ids.*' => 'exists:mlm_packages,id',
             'reward_type' => 'required|in:wallet_points,tpix_tokens,coupon,rank_points,special_benefit,bonus_item,free_downlines,experience_points',
@@ -236,7 +243,7 @@ class LineSignupRewardController extends Controller
             DB::beginTransaction();
 
             $data = $request->only([
-                'name', 'description', 'signup_type', 'package_ids',
+                'name', 'description', 'signup_type', 'referrer_requirement', 'package_ids',
                 'reward_type', 'amount', 'coupon_template_id', 'product_id',
                 'benefit_data', 'icon', 'badge_color', 'display_order',
                 'is_time_limited', 'start_date', 'end_date', 'is_active',

@@ -42,7 +42,7 @@
 
     {{-- Filters --}}
     <div class="mb-6 p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <form method="GET" action="{{ route('admin.line-membership-signup.rewards.index') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <form method="GET" action="{{ route('admin.line-membership-signup.rewards.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             {{-- Signup Type Filter --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -53,6 +53,19 @@
                     <option value="free" {{ request('signup_type') == 'free' ? 'selected' : '' }}>ฟรี</option>
                     <option value="package" {{ request('signup_type') == 'package' ? 'selected' : '' }}>แพคเกจ</option>
                     <option value="both" {{ request('signup_type') == 'both' ? 'selected' : '' }}>ทั้งสอง</option>
+                </select>
+            </div>
+
+            {{-- Referrer Requirement Filter --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    เงื่อนไขผู้แนะนำ
+                </label>
+                <select name="referrer_requirement" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
+                    <option value="">ทั้งหมด</option>
+                    <option value="any" {{ request('referrer_requirement') == 'any' ? 'selected' : '' }}>ไม่กำหนด</option>
+                    <option value="required" {{ request('referrer_requirement') == 'required' ? 'selected' : '' }}>ต้องมีผู้แนะนำ</option>
+                    <option value="none" {{ request('referrer_requirement') == 'none' ? 'selected' : '' }}>ไม่มีผู้แนะนำ</option>
                 </select>
             </div>
 
@@ -107,7 +120,7 @@
                                 รางวัล
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                ประเภทการสมัคร
+                                เงื่อนไข
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 ประเภทรางวัล
@@ -149,20 +162,38 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    @if($reward->signup_type == 'free')
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                                            ฟรี
-                                        </span>
-                                    @elseif($reward->signup_type == 'package')
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
-                                            แพคเกจ
-                                        </span>
-                                    @else
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-                                            ทั้งสอง
-                                        </span>
-                                    @endif
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col gap-1">
+                                        {{-- Signup Type --}}
+                                        @if($reward->signup_type == 'free')
+                                            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                                                <i class="fas fa-user-plus mr-1"></i> ฟรี
+                                            </span>
+                                        @elseif($reward->signup_type == 'package')
+                                            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
+                                                <i class="fas fa-box mr-1"></i> แพคเกจ
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                                                <i class="fas fa-users mr-1"></i> ทั้งสอง
+                                            </span>
+                                        @endif
+
+                                        {{-- Referrer Requirement --}}
+                                        @if($reward->referrer_requirement == 'required')
+                                            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
+                                                <i class="fas fa-user-friends mr-1"></i> ต้องมีผู้แนะนำ
+                                            </span>
+                                        @elseif($reward->referrer_requirement == 'none')
+                                            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300">
+                                                <i class="fas fa-user mr-1"></i> ไม่มีผู้แนะนำ
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                                                <i class="fas fa-globe mr-1"></i> ไม่กำหนด
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                                     {{ $reward->getDisplayText() }}
@@ -178,18 +209,54 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    @if($reward->is_active)
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                                            <i class="fas fa-check-circle mr-1"></i>
-                                            เปิดใช้งาน
+                                <td class="px-6 py-4 whitespace-nowrap"
+                                    x-data="{
+                                        isActive: {{ $reward->is_active ? 'true' : 'false' }},
+                                        loading: false,
+                                        async toggle() {
+                                            this.loading = true;
+                                            try {
+                                                const response = await fetch('{{ route('admin.line-membership-signup.rewards.toggle-active', $reward) }}', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                                        'Content-Type': 'application/json',
+                                                        'Accept': 'application/json'
+                                                    }
+                                                });
+                                                const data = await response.json();
+                                                if (data.success) {
+                                                    this.isActive = data.is_active;
+                                                }
+                                            } catch (e) {
+                                                console.error(e);
+                                            }
+                                            this.loading = false;
+                                        }
+                                    }">
+                                    {{-- Toggle Switch --}}
+                                    <button type="button"
+                                            @click="toggle()"
+                                            :disabled="loading"
+                                            :class="isActive ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
+                                            class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50">
+                                        <span class="sr-only">เปิด/ปิดใช้งาน</span>
+                                        <span :class="isActive ? 'translate-x-5' : 'translate-x-0'"
+                                              class="pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out">
+                                            {{-- Loading spinner --}}
+                                            <span x-show="loading" class="absolute inset-0 flex items-center justify-center">
+                                                <i class="fas fa-spinner fa-spin text-xs text-gray-400"></i>
+                                            </span>
+                                            {{-- Check icon --}}
+                                            <span x-show="!loading && isActive" class="absolute inset-0 flex items-center justify-center text-green-500">
+                                                <i class="fas fa-check text-xs"></i>
+                                            </span>
+                                            {{-- X icon --}}
+                                            <span x-show="!loading && !isActive" class="absolute inset-0 flex items-center justify-center text-gray-400">
+                                                <i class="fas fa-times text-xs"></i>
+                                            </span>
                                         </span>
-                                    @else
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
-                                            <i class="fas fa-times-circle mr-1"></i>
-                                            ปิดใช้งาน
-                                        </span>
-                                    @endif
+                                    </button>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex justify-end gap-2">
