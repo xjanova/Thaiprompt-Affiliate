@@ -121,9 +121,11 @@ class DatabaseSeeder extends Seeder
             BotMarketplaceCategorySeeder::class, // Bot Marketplace Categories (Sales, Support, Marketing, etc.)
 
             // 15. Service Booking System
-            ServiceCategorySeeder::class,       // หมวดหมู่บริการ (นวด, สปา, ทำความสะอาด, จัดส่ง)
+            ServiceCategorySeeder::class,       // หมวดหมู่บริการ (นวด, สปา, ทำความสะอาด, จัดส่ง, ช่างไฟ, ซ่อมแอร์ ฯลฯ)
             ServicePricingRuleSeeder::class,    // กฎคำนวณราคาตามระยะทาง (0-5km, 5-10km, 10-20km, 20+km)
-            ServiceSeeder::class,                // บริการตัวอย่าง (นวดแผนไทย, ทำความสะอาด, จัดส่งด่วน)
+            ServiceAreaSeeder::class,           // พื้นที่ให้บริการ (กรุงเทพฯ, นนทบุรี, สมุทรปราการ, เชียงใหม่ ฯลฯ)
+            ServiceSeeder::class,               // บริการตัวอย่าง 70+ บริการครบทุกหมวดหมู่
+            ServiceProviderSeeder::class,       // ผู้ให้บริการตัวอย่าง 20 คนพร้อมข้อมูลจริง
 
             // 16. Google Maps Integration
             GoogleMapsSettingsSeeder::class,    // การตั้งค่า Google Maps API (Geocoding, Directions, Distance Matrix, Places)
