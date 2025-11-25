@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.190.0] - 2025-11-25
+
+### ✨ Features
+- feat: add comprehensive Admin UI for Anti-Abuse Protection System (333c01a5)
+- feat: add comprehensive Anti-Abuse Protection System (e9fb9d24)
+- feat: add bidirectional live tracking for Service Booking (e34e3fc1)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1633 from xjanova/claude/fix-admin-menu-links-01QgCuMgpSSChv9kiLBtt69r (1cc557c2)
+
 ## [v3.189.1] - 2025-11-25
 
 ### ✨ Features
