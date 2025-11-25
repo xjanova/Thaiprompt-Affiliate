@@ -1,6 +1,7 @@
 {{--
     หน้าติดตามการจอง (Real-time GPS Tracking)
     แสดงตำแหน่งทั้งผู้ให้บริการและผู้ใช้บน Google Maps พร้อม real-time updates
+    รองรับการใช้งานผ่าน Web Browser บนมือถือโดยไม่ต้องลงแอพ
 --}}
 @extends('layouts.app')
 
@@ -8,8 +9,55 @@
 
 @section('content')
 <div class="min-h-screen bg-gray-100 dark:bg-gray-900" x-data="liveTracker()">
+    {{-- GPS Permission Banner (แสดงเมื่อยังไม่ได้ให้สิทธิ์) --}}
+    <div x-show="!gpsPermissionGranted && !gpsPermissionDenied"
+         x-cloak
+         class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 shadow-lg">
+        <div class="max-w-lg mx-auto">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 pt-1">
+                    <i class="fas fa-location-arrow text-2xl animate-bounce"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-semibold">อนุญาตให้เข้าถึง GPS</p>
+                    <p class="text-sm text-white/80 mt-1">
+                        เพื่อให้ผู้ให้บริการเห็นตำแหน่งของคุณ และคำนวณเวลาถึงได้แม่นยำ
+                    </p>
+                </div>
+                <button @click="requestGpsPermission()"
+                        class="flex-shrink-0 px-4 py-2 bg-white text-purple-600 rounded-lg font-semibold hover:bg-gray-100 transition">
+                    อนุญาต
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- GPS Permission Denied Banner --}}
+    <div x-show="gpsPermissionDenied"
+         x-cloak
+         class="fixed top-0 left-0 right-0 z-50 bg-red-500 text-white p-4 shadow-lg">
+        <div class="max-w-lg mx-auto">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 pt-1">
+                    <i class="fas fa-exclamation-triangle text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-semibold">ไม่ได้รับอนุญาตให้เข้าถึง GPS</p>
+                    <p class="text-sm text-white/80 mt-1">
+                        กรุณาเปิดการอนุญาตในการตั้งค่า Browser หรือคลิกไอคอนกุญแจข้างๆ URL
+                    </p>
+                </div>
+                <button @click="retryGpsPermission()"
+                        class="flex-shrink-0 px-4 py-2 bg-white text-red-600 rounded-lg font-semibold hover:bg-gray-100 transition">
+                    ลองใหม่
+                </button>
+            </div>
+        </div>
+    </div>
+
     {{-- Header (Fixed) --}}
-    <div class="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-white/90 dark:bg-gray-800/90 border-b border-gray-200 dark:border-gray-700 shadow-lg">
+    <div class="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-white/90 dark:bg-gray-800/90 border-b border-gray-200 dark:border-gray-700 shadow-lg"
+         :class="{ 'mt-16': !gpsPermissionGranted || gpsPermissionDenied }">
         <div class="max-w-7xl mx-auto px-4 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
@@ -44,12 +92,15 @@
     </div>
 
     {{-- Map Container --}}
-    <div class="pt-20 pb-72 md:pb-48">
+    <div class="pb-72 md:pb-48"
+         :class="{ 'pt-36': !gpsPermissionGranted || gpsPermissionDenied, 'pt-20': gpsPermissionGranted && !gpsPermissionDenied }">
         <div id="tracking-map" class="w-full h-[calc(100vh-320px)] md:h-[calc(100vh-250px)]"></div>
     </div>
 
     {{-- Legend (Floating) --}}
-    <div class="fixed top-24 left-4 z-30 p-3 rounded-xl backdrop-blur-xl bg-white/90 dark:bg-gray-800/90 shadow-xl text-sm">
+    <div class="fixed z-30 p-3 rounded-xl backdrop-blur-xl bg-white/90 dark:bg-gray-800/90 shadow-xl text-sm"
+         :class="{ 'top-40': !gpsPermissionGranted || gpsPermissionDenied, 'top-24': gpsPermissionGranted && !gpsPermissionDenied }"
+         style="left: 1rem;">
         <div class="flex items-center gap-2 mb-2">
             <div class="w-4 h-4 rounded-full bg-purple-500"></div>
             <span class="text-gray-700 dark:text-gray-300">ผู้ให้บริการ</span>
@@ -61,6 +112,23 @@
         <div class="flex items-center gap-2">
             <div class="w-4 h-4 bg-red-500" style="clip-path: polygon(50% 0%, 100% 100%, 0% 100%);"></div>
             <span class="text-gray-700 dark:text-gray-300">สถานที่ให้บริการ</span>
+        </div>
+    </div>
+
+    {{-- GPS Accuracy Indicator (Mobile Friendly) --}}
+    <div x-show="sharingLocation"
+         x-cloak
+         class="fixed z-30 right-4 p-3 rounded-xl backdrop-blur-xl bg-green-500/90 text-white shadow-xl text-sm"
+         :class="{ 'top-40': !gpsPermissionGranted || gpsPermissionDenied, 'top-24': gpsPermissionGranted && !gpsPermissionDenied }">
+        <div class="flex items-center gap-2">
+            <div class="relative">
+                <i class="fas fa-broadcast-tower animate-pulse"></i>
+                <span class="absolute -top-1 -right-1 w-2 h-2 bg-white rounded-full animate-ping"></span>
+            </div>
+            <div>
+                <p class="font-semibold text-xs">กำลังแชร์ GPS</p>
+                <p class="text-xs text-white/80" x-text="'±' + (gpsAccuracy ? Math.round(gpsAccuracy) : '--') + 'm'"></p>
+            </div>
         </div>
     </div>
 
@@ -282,12 +350,85 @@ function liveTracker() {
         sharingLocation: false,
         watchId: null,
 
+        // GPS Permission State
+        gpsPermissionGranted: false,
+        gpsPermissionDenied: false,
+        gpsAccuracy: null,
+
         // Refresh interval
         refreshInterval: null,
 
         init() {
             this.loadGoogleMaps();
             this.startAutoRefresh();
+            this.checkGpsPermission();
+        },
+
+        // ตรวจสอบสถานะ GPS Permission
+        async checkGpsPermission() {
+            if (!navigator.geolocation) {
+                this.gpsPermissionDenied = true;
+                return;
+            }
+
+            // ลองตรวจสอบผ่าน Permissions API (ถ้ารองรับ)
+            if ('permissions' in navigator) {
+                try {
+                    const result = await navigator.permissions.query({ name: 'geolocation' });
+                    if (result.state === 'granted') {
+                        this.gpsPermissionGranted = true;
+                        this.gpsPermissionDenied = false;
+                        // เริ่มแชร์ตำแหน่งอัตโนมัติถ้าได้สิทธิ์แล้ว
+                        this.startLocationSharing();
+                    } else if (result.state === 'denied') {
+                        this.gpsPermissionDenied = true;
+                        this.gpsPermissionGranted = false;
+                    }
+                    // Listen การเปลี่ยนแปลง
+                    result.onchange = () => {
+                        this.gpsPermissionGranted = result.state === 'granted';
+                        this.gpsPermissionDenied = result.state === 'denied';
+                        if (this.gpsPermissionGranted) {
+                            this.startLocationSharing();
+                        }
+                    };
+                } catch (e) {
+                    console.log('Permissions API not fully supported');
+                }
+            }
+        },
+
+        // ขอ Permission GPS
+        requestGpsPermission() {
+            if (!navigator.geolocation) {
+                this.gpsPermissionDenied = true;
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    this.gpsPermissionGranted = true;
+                    this.gpsPermissionDenied = false;
+                    this.userLat = position.coords.latitude;
+                    this.userLng = position.coords.longitude;
+                    this.gpsAccuracy = position.coords.accuracy;
+                    this.updateUserMarker();
+                    this.startLocationSharing();
+                },
+                (error) => {
+                    if (error.code === error.PERMISSION_DENIED) {
+                        this.gpsPermissionDenied = true;
+                    }
+                    console.error('GPS permission error:', error);
+                },
+                { enableHighAccuracy: true, timeout: 15000 }
+            );
+        },
+
+        // ลองขอ Permission ใหม่
+        retryGpsPermission() {
+            this.gpsPermissionDenied = false;
+            this.requestGpsPermission();
         },
 
         loadGoogleMaps() {

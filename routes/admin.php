@@ -2424,6 +2424,23 @@ Route::prefix('anti-abuse')->name('anti-abuse.')->group(function () {
     Route::get('/location-history', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'locationHistory'])->name('location-history');
 });
 
+// ============================================
+// GPS Monitoring Center 📡
+// ============================================
+Route::prefix('gps-monitoring')->name('gps-monitoring.')->group(function () {
+    // Dashboard หลัก
+    Route::get('/', [\App\Http\Controllers\Admin\GpsMonitoringController::class, 'index'])->name('index');
+
+    // API สำหรับดึงข้อมูล GPS
+    Route::get('/data', [\App\Http\Controllers\Admin\GpsMonitoringController::class, 'getData'])->name('data');
+
+    // ดูประวัติ GPS ของ booking
+    Route::get('/booking/{booking}/history', [\App\Http\Controllers\Admin\GpsMonitoringController::class, 'getBookingHistory'])->name('booking.history');
+
+    // Playback การเดินทาง
+    Route::get('/booking/{booking}/playback', [\App\Http\Controllers\Admin\GpsMonitoringController::class, 'playback'])->name('booking.playback');
+});
+
 // Service Providers Management (Admin)
 Route::prefix('service-providers')->name('service-providers.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\ServiceProviderController::class, 'index'])->name('index');
