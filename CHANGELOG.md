@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.185.0] - 2025-11-25
+
+### ✨ Features
+- Merge pull request #1615 from xjanova/claude/unify-user-avatars-01PTNKrkZeLDiFjqKGhHwfWF (803977bc)
+- feat: unify user avatars across admin, seller, and user profiles (6dcb6ba5)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.184.5] - 2025-11-25
 
 ### ✨ Features
