@@ -96,86 +96,182 @@
             </div>
         @elseif(auth()->user()->kyc_status === 'pending')
             <div class="text-center py-8">
-                <div class="w-24 h-24 mx-auto mb-4 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-clock text-4xl text-yellow-600"></i>
+                {{-- สถานะ Badge ที่ชัดเจน --}}
+                <div class="mb-6">
+                    <span class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full text-lg font-bold shadow-lg animate-pulse">
+                        <i class="fas fa-hourglass-half mr-3 text-2xl"></i>
+                        กำลังรอตรวจสอบเอกสาร
+                    </span>
                 </div>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">กำลังรอการตรวจสอบ</h2>
-                <p class="text-gray-600 dark:text-gray-400 mb-4">เอกสารของคุณกำลังอยู่ระหว่างการตรวจสอบโดยแอดมิน</p>
+
+                <div class="w-24 h-24 mx-auto mb-4 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center ring-4 ring-yellow-300 dark:ring-yellow-700">
+                    <i class="fas fa-clock text-4xl text-yellow-600 dark:text-yellow-400 animate-spin" style="animation-duration: 3s;"></i>
+                </div>
+
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    <i class="fas fa-file-alt text-yellow-500 mr-2"></i>
+                    เอกสารอยู่ระหว่างการตรวจสอบ
+                </h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">
+                    ทีมงานกำลังตรวจสอบเอกสารของคุณ โปรดรอผลการตรวจสอบภายใน <strong class="text-yellow-600">1-3 วันทำการ</strong>
+                </p>
 
                 @if($kycVerification)
-                    <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 max-w-md mx-auto text-left">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm text-gray-600 dark:text-gray-400">วันที่ส่ง:</span>
-                            <span class="text-sm font-medium text-gray-900 dark:text-white">
-                                {{ $kycVerification->submitted_at ? $kycVerification->submitted_at->format('d/m/Y H:i') : '-' }}
-                            </span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-600 dark:text-gray-400">สถานะ:</span>
-                            <span class="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
-                                รอการตรวจสอบ
-                            </span>
+                    <div class="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl p-6 max-w-md mx-auto text-left shadow-md">
+                        <h3 class="font-bold text-yellow-800 dark:text-yellow-300 mb-4 text-center">
+                            <i class="fas fa-clipboard-list mr-2"></i>รายละเอียดการส่งเอกสาร
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                                <span class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
+                                    <i class="fas fa-calendar-alt mr-2 text-yellow-500"></i>วันที่ส่ง:
+                                </span>
+                                <span class="text-sm font-bold text-gray-900 dark:text-white">
+                                    {{ $kycVerification->submitted_at ? $kycVerification->submitted_at->format('d/m/Y H:i') : '-' }}
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                                <span class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
+                                    <i class="fas fa-info-circle mr-2 text-yellow-500"></i>สถานะ:
+                                </span>
+                                <span class="inline-flex items-center px-3 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 rounded-full text-xs font-bold">
+                                    <i class="fas fa-spinner fa-spin mr-1"></i>
+                                    รอการตรวจสอบ
+                                </span>
+                            </div>
                         </div>
                     </div>
 
                     <a href="{{ route('user.kyc.show', $kycVerification) }}"
-                       class="inline-flex items-center px-4 py-2 mt-4 bg-gray-200 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 transition">
+                       class="inline-flex items-center px-6 py-3 mt-6 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all">
                         <i class="fas fa-eye mr-2"></i>
-                        ดูรายละเอียด
+                        ดูเอกสารที่ส่ง
                     </a>
                 @endif
+
+                {{-- คำแนะนำขณะรอ --}}
+                <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl max-w-md mx-auto">
+                    <p class="text-sm text-blue-800 dark:text-blue-300">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>หมายเหตุ:</strong> คุณจะได้รับการแจ้งเตือนเมื่อการตรวจสอบเสร็จสิ้น
+                    </p>
+                </div>
             </div>
         @elseif(auth()->user()->kyc_status === 'approved')
             <div class="text-center py-8">
-                <div class="w-24 h-24 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-check-circle text-4xl text-green-600"></i>
+                {{-- สถานะ Badge ที่ชัดเจน --}}
+                <div class="mb-6">
+                    <span class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-lg font-bold shadow-lg">
+                        <i class="fas fa-shield-check mr-3 text-2xl"></i>
+                        ยืนยันตัวตนเรียบร้อยแล้ว
+                    </span>
                 </div>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ยืนยันตัวตนสำเร็จ</h2>
-                <p class="text-gray-600 dark:text-gray-400 mb-4">บัญชีของคุณได้รับการยืนยันตัวตนเรียบร้อยแล้ว</p>
+
+                <div class="w-24 h-24 mx-auto mb-4 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center ring-4 ring-green-300 dark:ring-green-700">
+                    <i class="fas fa-check-circle text-4xl text-green-600 dark:text-green-400"></i>
+                </div>
+
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    <i class="fas fa-user-check text-green-500 mr-2"></i>
+                    บัญชีได้รับการยืนยันแล้ว
+                </h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">
+                    คุณสามารถใช้งานฟีเจอร์ทั้งหมดได้อย่างเต็มรูปแบบ รวมถึงการถอนเงิน
+                </p>
 
                 @if($kycVerification)
-                    <div class="bg-green-50 rounded-lg p-4 max-w-md mx-auto text-left">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm text-gray-600 dark:text-gray-400">วันที่อนุมัติ:</span>
-                            <span class="text-sm font-medium text-gray-900 dark:text-white">
-                                {{ auth()->user()->kyc_verified_at ? auth()->user()->kyc_verified_at->format('d/m/Y H:i') : '-' }}
-                            </span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-600 dark:text-gray-400">สถานะ:</span>
-                            <span class="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                                <i class="fas fa-check mr-1"></i>อนุมัติแล้ว
-                            </span>
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl p-6 max-w-md mx-auto text-left shadow-md">
+                        <h3 class="font-bold text-green-800 dark:text-green-300 mb-4 text-center">
+                            <i class="fas fa-certificate mr-2"></i>ข้อมูลการยืนยัน
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                                <span class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
+                                    <i class="fas fa-calendar-check mr-2 text-green-500"></i>วันที่อนุมัติ:
+                                </span>
+                                <span class="text-sm font-bold text-gray-900 dark:text-white">
+                                    {{ auth()->user()->kyc_verified_at ? auth()->user()->kyc_verified_at->format('d/m/Y H:i') : '-' }}
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                                <span class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
+                                    <i class="fas fa-award mr-2 text-green-500"></i>สถานะ:
+                                </span>
+                                <span class="inline-flex items-center px-3 py-1 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 rounded-full text-xs font-bold">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    อนุมัติแล้ว
+                                </span>
+                            </div>
                         </div>
                     </div>
 
                     <a href="{{ route('user.kyc.show', $kycVerification) }}"
-                       class="inline-flex items-center px-4 py-2 mt-4 bg-gray-200 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 transition">
+                       class="inline-flex items-center px-6 py-3 mt-6 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all">
                         <i class="fas fa-eye mr-2"></i>
                         ดูรายละเอียด
                     </a>
                 @endif
+
+                {{-- สิทธิพิเศษที่ได้รับ --}}
+                <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto">
+                    <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
+                        <i class="fas fa-money-bill-wave text-green-500 text-xl mb-1"></i>
+                        <p class="text-xs text-green-700 dark:text-green-400 font-semibold">ถอนเงินได้</p>
+                    </div>
+                    <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
+                        <i class="fas fa-shield-alt text-green-500 text-xl mb-1"></i>
+                        <p class="text-xs text-green-700 dark:text-green-400 font-semibold">บัญชีปลอดภัย</p>
+                    </div>
+                    <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
+                        <i class="fas fa-star text-green-500 text-xl mb-1"></i>
+                        <p class="text-xs text-green-700 dark:text-green-400 font-semibold">ฟีเจอร์ครบ</p>
+                    </div>
+                </div>
             </div>
         @elseif(auth()->user()->kyc_status === 'rejected')
             <div class="text-center py-8">
-                <div class="w-24 h-24 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-times-circle text-4xl text-red-600"></i>
+                {{-- สถานะ Badge ที่ชัดเจน --}}
+                <div class="mb-6">
+                    <span class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-full text-lg font-bold shadow-lg">
+                        <i class="fas fa-exclamation-triangle mr-3 text-2xl"></i>
+                        ไม่ผ่านการตรวจสอบ
+                    </span>
                 </div>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ไม่ผ่านการยืนยัน</h2>
-                <p class="text-gray-600 dark:text-gray-400 mb-4">เอกสารของคุณไม่ผ่านการตรวจสอบ</p>
+
+                <div class="w-24 h-24 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center ring-4 ring-red-300 dark:ring-red-700">
+                    <i class="fas fa-times-circle text-4xl text-red-600 dark:text-red-400"></i>
+                </div>
+
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    <i class="fas fa-file-times text-red-500 mr-2"></i>
+                    เอกสารไม่ผ่านการตรวจสอบ
+                </h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">กรุณาตรวจสอบเหตุผลด้านล่าง และส่งเอกสารใหม่</p>
 
                 @if($kycVerification && $kycVerification->rejection_reason)
-                    <div class="bg-red-50 rounded-lg p-4 max-w-md mx-auto text-left mb-4">
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">เหตุผลในการปฏิเสธ:</p>
-                        <p class="text-sm text-red-800">{{ $kycVerification->rejection_reason }}</p>
+                    <div class="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-2 border-red-300 dark:border-red-800 rounded-xl p-6 max-w-md mx-auto text-left mb-6 shadow-md">
+                        <h3 class="font-bold text-red-800 dark:text-red-300 mb-3 flex items-center">
+                            <i class="fas fa-exclamation-circle mr-2"></i>เหตุผลในการปฏิเสธ
+                        </h3>
+                        <p class="text-red-700 dark:text-red-400 bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg">
+                            {{ $kycVerification->rejection_reason }}
+                        </p>
                     </div>
                 @endif
 
                 <a href="{{ route('user.kyc.create') }}"
-                   class="inline-flex items-center px-6 py-3 bg-gradient-primary text-white rounded-lg hover:opacity-90 transition">
-                    <i class="fas fa-redo mr-2"></i>
-                    ส่งคำขอใหม่
+                   class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all font-bold text-lg">
+                    <i class="fas fa-redo mr-3"></i>
+                    ส่งเอกสารใหม่
                 </a>
+
+                {{-- คำแนะนำ --}}
+                <div class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl max-w-md mx-auto">
+                    <p class="text-sm text-yellow-800 dark:text-yellow-300">
+                        <i class="fas fa-lightbulb mr-2"></i>
+                        <strong>คำแนะนำ:</strong> ถ่ายรูปบัตรให้ชัดเจน มีแสงสว่างเพียงพอ และเห็นข้อมูลครบถ้วน
+                    </p>
+                </div>
             </div>
         @endif
     </div>
