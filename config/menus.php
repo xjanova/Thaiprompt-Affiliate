@@ -988,12 +988,13 @@ return [
             'id' => 'team',
             'label' => 'ทีมงาน',
             'icon' => '👥',
-            'route' => 'user.team',
+            'route' => 'user.prospects.index',
             'order' => 11,
             'permissions' => [],
             'submenu' => [
-                ['label' => 'ผู้มุ่งหวัง', 'route' => 'user.prospects.index'],
-                ['label' => 'ลีดเดอร์บอร์ด', 'route' => 'user.ranks.leaderboard'],
+                ['label' => 'ผู้มุ่งหวัง', 'route' => 'user.prospects.index', 'icon' => '🎯'],
+                ['label' => 'ทีมของฉัน', 'route' => 'user.mlm.team', 'icon' => '👥'],
+                ['label' => 'ลีดเดอร์บอร์ด', 'route' => 'user.ranks.leaderboard', 'icon' => '🏆'],
             ],
         ],
 
