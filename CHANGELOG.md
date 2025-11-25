@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.188.0] - 2025-11-25
+
+### ✨ Features
+- Merge pull request #1630 from xjanova/claude/fix-user-support-route-01LgUPtrZnP76875eso7hFBE (9e65b5b1)
+- feat: add missing chatbot views for user-facing bot management (1a13929f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.187.1] - 2025-11-25
 
 ### ✨ Features
