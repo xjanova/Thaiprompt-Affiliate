@@ -276,6 +276,8 @@ class ServiceBookingController extends Controller
     /**
      * อัพเดทตำแหน่ง GPS
      *
+     * รองรับทั้ง Mobile App และ Web Browser GPS
+     *
      * @param Request $request
      * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
@@ -291,6 +293,8 @@ class ServiceBookingController extends Controller
         $validated = $request->validate([
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
+            'accuracy' => 'nullable|numeric|min:0',
+            'source' => 'nullable|in:gps,network,web_browser,mobile_app',
         ]);
 
         $this->bookingService->updateProviderLocation(
@@ -298,6 +302,26 @@ class ServiceBookingController extends Controller
             $validated['latitude'],
             $validated['longitude']
         );
+
+        // บันทึก log ถ้ามาจาก Web Browser (สำหรับ Anti-Abuse tracking)
+        if (isset($validated['source']) && $validated['source'] === 'web_browser') {
+            try {
+                $antiAbuseService = app(\App\Services\AntiAbuseService::class);
+                $antiAbuseService->logLocation($booking, 'provider', [
+                    'latitude' => $validated['latitude'],
+                    'longitude' => $validated['longitude'],
+                    'accuracy' => $validated['accuracy'] ?? null,
+                    'source' => 'web_browser',
+                ]);
+            } catch (\Exception $e) {
+                // ไม่ block การอัพเดทตำแหน่ง แม้ log ล้มเหลว
+                \Log::warning('Failed to log provider web GPS location', [
+                    'booking_id' => $booking->id,
+                    'provider_id' => $provider->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         return response()->json([
             'success' => true,
