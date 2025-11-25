@@ -207,6 +207,15 @@ class NFCCardSeeder extends Seeder
                 $balanceAfter = $balance + $amount;
             }
 
+            // สร้าง transaction data สำหรับ hash
+            $transactionData = [
+                'card_id' => $card->id,
+                'card_number' => $card->card_number,
+                'type' => $type,
+                'amount' => $amount,
+                'timestamp' => now()->timestamp,
+            ];
+
             // สร้าง transaction
             NFCTransaction::create([
                 'nfc_card_id' => $card->id,
@@ -225,6 +234,10 @@ class NFCCardSeeder extends Seeder
                     'category' => $this->randomCategory(),
                 ],
                 'created_at' => now()->subDays(rand(1, 30)),
+                // ✅ เพิ่ม encryption verification fields ที่จำเป็น
+                'card_data_hash' => hash('sha256', json_encode($transactionData) . config('app.key')),
+                'encryption_verified' => true,
+                'verification_signature' => hash_hmac('sha256', json_encode($transactionData), config('app.key')),
             ]);
 
             $balance = $balanceAfter;
