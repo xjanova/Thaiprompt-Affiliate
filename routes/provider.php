@@ -50,6 +50,9 @@ Route::middleware(['auth', 'verified'])->prefix('provider')->name('provider.')->
         // รายละเอียดงาน
         Route::get('/{booking}', [ServiceBookingController::class, 'show'])->name('show');
 
+        // Live Tracking - ดูตำแหน่งลูกค้า
+        Route::get('/{booking}/track', [ServiceBookingController::class, 'track'])->name('track');
+
         // รับงาน
         Route::post('/{booking}/accept', [ServiceBookingController::class, 'accept'])->name('accept');
 

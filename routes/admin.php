@@ -2390,6 +2390,40 @@ Route::prefix('service-bookings')->name('service-bookings.')->group(function () 
     Route::post('/{serviceBooking}/update-status', [\App\Http\Controllers\Admin\ServiceBookingController::class, 'updateStatus'])->name('update-status');
 });
 
+// ============================================
+// Anti-Abuse Protection System 🛡️
+// ============================================
+Route::prefix('anti-abuse')->name('anti-abuse.')->group(function () {
+    // Dashboard
+    Route::get('/', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'dashboard'])->name('dashboard');
+
+    // Disputes Management
+    Route::get('/disputes', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'disputes'])->name('disputes');
+    Route::get('/disputes/{dispute}', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'showDispute'])->name('disputes.show');
+    Route::post('/disputes/{dispute}/status', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'updateDisputeStatus'])->name('disputes.status');
+    Route::post('/disputes/{dispute}/resolve', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'resolveDispute'])->name('disputes.resolve');
+
+    // Trust Scores Management
+    Route::get('/trust-scores', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'trustScores'])->name('trust-scores');
+    Route::get('/trust-scores/{trustScore}', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'showTrustScore'])->name('trust-scores.show');
+    Route::post('/trust-scores/{trustScore}/adjust', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'adjustTrustScore'])->name('trust-scores.adjust');
+    Route::post('/trust-scores/{trustScore}/suspend', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'suspendUser'])->name('trust-scores.suspend');
+    Route::post('/trust-scores/{trustScore}/ban', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'banUser'])->name('trust-scores.ban');
+    Route::post('/trust-scores/{trustScore}/unban', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'unbanUser'])->name('trust-scores.unban');
+
+    // Penalties Management
+    Route::get('/penalties', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'penalties'])->name('penalties');
+    Route::post('/penalties/{penalty}/charge', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'chargePenalty'])->name('penalties.charge');
+    Route::post('/penalties/{penalty}/waive', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'waivePenalty'])->name('penalties.waive');
+
+    // Blocks Management
+    Route::get('/blocks', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'blocks'])->name('blocks');
+    Route::delete('/blocks/{block}', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'removeBlock'])->name('blocks.remove');
+
+    // Location History
+    Route::get('/location-history', [\App\Http\Controllers\Admin\AntiAbuseController::class, 'locationHistory'])->name('location-history');
+});
+
 // Service Providers Management (Admin)
 Route::prefix('service-providers')->name('service-providers.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\ServiceProviderController::class, 'index'])->name('index');

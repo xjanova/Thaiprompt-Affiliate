@@ -428,4 +428,499 @@ class ServiceBookingController extends Controller
             'message' => 'อัพเดทตำแหน่งสำเร็จ',
         ]);
     }
+
+    /**
+     * Provider: ดึงข้อมูล Live Tracking (ดูตำแหน่งลูกค้า)
+     *
+     * GET /api/v1/provider/bookings/{booking}/track
+     *
+     * @param ServiceBooking $booking
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function providerTrackBooking(ServiceBooking $booking)
+    {
+        $provider = ServiceProvider::where('user_id', auth()->id())->first();
+
+        if (!$provider || $booking->provider_id !== $provider->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่มีสิทธิ์เข้าถึง',
+            ], 403);
+        }
+
+        // ดึงตำแหน่งลูกค้า
+        $serviceLocation = $booking->locations()->where('type', 'service')->first();
+        $customerLocation = null;
+
+        if ($serviceLocation) {
+            $customerLocation = [
+                'latitude' => $serviceLocation->latitude,
+                'longitude' => $serviceLocation->longitude,
+                'address' => $serviceLocation->address,
+                'updated_at' => $serviceLocation->updated_at,
+            ];
+        }
+
+        // ดึงตำแหน่ง live ของลูกค้า (ถ้ามี)
+        $userLiveLocation = $booking->user_live_latitude && $booking->user_live_longitude
+            ? [
+                'latitude' => $booking->user_live_latitude,
+                'longitude' => $booking->user_live_longitude,
+                'updated_at' => $booking->user_location_updated_at,
+            ]
+            : null;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'booking' => [
+                    'id' => $booking->id,
+                    'booking_number' => $booking->booking_number,
+                    'status' => $booking->status,
+                    'status_label' => $booking->getStatusLabel(),
+                ],
+                'customer' => [
+                    'name' => $booking->user->name,
+                    'phone' => $booking->user->phone ?? null,
+                    'service_location' => $customerLocation,
+                    'live_location' => $userLiveLocation,
+                ],
+                'provider_location' => [
+                    'latitude' => $provider->current_latitude,
+                    'longitude' => $provider->current_longitude,
+                    'updated_at' => $provider->last_location_update,
+                ],
+            ],
+        ]);
+    }
+
+    //===========================================
+    // User Live Location APIs
+    //===========================================
+
+    /**
+     * User: อัพเดทตำแหน่ง GPS ของตัวเอง
+     *
+     * POST /api/v1/bookings/{booking}/update-location
+     *
+     * @param Request $request
+     * @param ServiceBooking $booking
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function userUpdateLocation(Request $request, ServiceBooking $booking)
+    {
+        if ($booking->user_id !== auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่มีสิทธิ์เข้าถึง',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+        ]);
+
+        // อัพเดทตำแหน่ง live ของลูกค้า
+        $booking->update([
+            'user_live_latitude' => $validated['latitude'],
+            'user_live_longitude' => $validated['longitude'],
+            'user_location_updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'อัพเดทตำแหน่งสำเร็จ',
+        ]);
+    }
+
+    /**
+     * Live Tracking - ดึงตำแหน่งทั้งสองฝ่าย (User & Provider)
+     *
+     * GET /api/v1/bookings/{booking}/live-tracking
+     *
+     * @param ServiceBooking $booking
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function liveTracking(ServiceBooking $booking)
+    {
+        // ตรวจสอบสิทธิ์ (ทั้ง User และ Provider สามารถเข้าถึงได้)
+        $provider = ServiceProvider::where('user_id', auth()->id())->first();
+        $isProvider = $provider && $booking->provider_id === $provider->id;
+        $isUser = $booking->user_id === auth()->id();
+
+        if (!$isProvider && !$isUser) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่มีสิทธิ์เข้าถึง',
+            ], 403);
+        }
+
+        // ดึงตำแหน่งสถานที่ให้บริการ
+        $serviceLocation = $booking->locations()->where('type', 'service')->first();
+
+        // ดึงตำแหน่ง Provider
+        $providerLocation = null;
+        if ($booking->provider) {
+            $providerLocation = [
+                'latitude' => $booking->provider->current_latitude,
+                'longitude' => $booking->provider->current_longitude,
+                'updated_at' => $booking->provider->last_location_update,
+                'name' => $booking->provider->display_name,
+                'phone' => $booking->provider->phone,
+            ];
+        }
+
+        // ดึงตำแหน่ง Live ของลูกค้า
+        $userLiveLocation = null;
+        if ($booking->user_live_latitude && $booking->user_live_longitude) {
+            $userLiveLocation = [
+                'latitude' => $booking->user_live_latitude,
+                'longitude' => $booking->user_live_longitude,
+                'updated_at' => $booking->user_location_updated_at,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'booking' => [
+                    'id' => $booking->id,
+                    'booking_number' => $booking->booking_number,
+                    'status' => $booking->status,
+                    'status_label' => $booking->getStatusLabel(),
+                ],
+                'service_location' => $serviceLocation ? [
+                    'latitude' => $serviceLocation->latitude,
+                    'longitude' => $serviceLocation->longitude,
+                    'address' => $serviceLocation->address,
+                ] : null,
+                'provider_location' => $providerLocation,
+                'user_live_location' => $userLiveLocation,
+                'user' => [
+                    'name' => $booking->user->name,
+                    'phone' => $booking->user->phone ?? null,
+                ],
+            ],
+        ]);
+    }
+
+    // ============================================
+    // Anti-Abuse & Protection APIs
+    // ============================================
+
+    /**
+     * บันทึกประวัติตำแหน่ง (Background Location Logging)
+     *
+     * POST /api/v1/bookings/{booking}/log-location
+     *
+     * สำหรับ Service Worker ส่งตำแหน่งแม้ปิดแอพ
+     *
+     * @param Request $request
+     * @param ServiceBooking $booking
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function logLocation(Request $request, ServiceBooking $booking)
+    {
+        $user = $request->user();
+
+        // ตรวจสอบสิทธิ์
+        if ($booking->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่มีสิทธิ์เข้าถึงการจองนี้',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'accuracy' => 'nullable|numeric|min:0',
+            'speed' => 'nullable|numeric|min:0',
+            'heading' => 'nullable|numeric|between:0,360',
+            'altitude' => 'nullable|numeric',
+            'app_state' => 'nullable|in:foreground,background,terminated',
+            'source' => 'nullable|in:gps,network,passive,fused,manual',
+            'battery_level' => 'nullable|integer|between:0,100',
+            'is_charging' => 'nullable|boolean',
+        ]);
+
+        // บันทึกลง location logs
+        $antiAbuseService = app(\App\Services\AntiAbuseService::class);
+        $log = $antiAbuseService->logLocation($booking, 'user', $validated);
+
+        // อัพเดทตำแหน่ง live ด้วย
+        $booking->update([
+            'user_live_latitude' => $validated['latitude'],
+            'user_live_longitude' => $validated['longitude'],
+            'user_location_updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'บันทึกตำแหน่งสำเร็จ',
+            'data' => [
+                'log_id' => $log->id,
+                'recorded_at' => $log->recorded_at,
+            ],
+        ]);
+    }
+
+    /**
+     * ยกเลิก booking พร้อมคำนวณค่าปรับ
+     *
+     * POST /api/v1/bookings/{booking}/cancel-with-penalty
+     *
+     * @param Request $request
+     * @param ServiceBooking $booking
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function cancelWithPenalty(Request $request, ServiceBooking $booking)
+    {
+        $user = $request->user();
+
+        // ตรวจสอบสิทธิ์
+        if ($booking->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่มีสิทธิ์ยกเลิกการจองนี้',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $antiAbuseService = app(\App\Services\AntiAbuseService::class);
+        $result = $antiAbuseService->cancelBooking($booking, 'user', $validated['reason']);
+
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'],
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['message'],
+            'data' => [
+                'cancellation_fee' => $result['fee'],
+                'booking_status' => 'cancelled',
+            ],
+        ]);
+    }
+
+    /**
+     * ดูค่าปรับก่อนยกเลิก (Preview)
+     *
+     * GET /api/v1/bookings/{booking}/cancellation-fee
+     *
+     * @param ServiceBooking $booking
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function previewCancellationFee(Request $request, ServiceBooking $booking)
+    {
+        $user = $request->user();
+
+        // ตรวจสอบสิทธิ์
+        if ($booking->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่มีสิทธิ์เข้าถึงการจองนี้',
+            ], 403);
+        }
+
+        $antiAbuseService = app(\App\Services\AntiAbuseService::class);
+        $feeInfo = $antiAbuseService->calculateCancellationFee($booking);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'fee' => $feeInfo['fee'],
+                'percentage' => $feeInfo['percentage'],
+                'reason' => $feeInfo['reason'],
+                'is_late' => $feeInfo['is_late'],
+                'total_amount' => $booking->total_amount,
+            ],
+        ]);
+    }
+
+    /**
+     * ดู Trust Score ของตัวเอง
+     *
+     * GET /api/v1/user/trust-score
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getUserTrustScore(Request $request)
+    {
+        $user = $request->user();
+        $trustScore = \App\Models\UserTrustScore::getOrCreateForUser($user);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'trust_score' => $trustScore->trust_score,
+                'trust_level' => $trustScore->trust_level,
+                'trust_level_label' => $trustScore->getTrustLevelLabel(),
+                'scores' => [
+                    'payment' => $trustScore->payment_score,
+                    'cancellation' => $trustScore->cancellation_score,
+                    'punctuality' => $trustScore->punctuality_score,
+                    'behavior' => $trustScore->behavior_score,
+                    'verification' => $trustScore->verification_score,
+                ],
+                'stats' => [
+                    'total_bookings' => $trustScore->total_bookings,
+                    'completed_bookings' => $trustScore->completed_bookings,
+                    'cancelled_bookings' => $trustScore->cancelled_bookings,
+                ],
+                'restrictions' => [
+                    'requires_prepayment' => $trustScore->requires_prepayment,
+                    'requires_deposit' => $trustScore->requires_deposit,
+                    'max_booking_value' => $trustScore->max_booking_value,
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * ร้องเรียน/รายงานปัญหา
+     *
+     * POST /api/v1/bookings/{booking}/report
+     *
+     * @param Request $request
+     * @param ServiceBooking $booking
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function reportIssue(Request $request, ServiceBooking $booking)
+    {
+        $user = $request->user();
+
+        // ตรวจสอบสิทธิ์
+        if ($booking->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่มีสิทธิ์รายงานการจองนี้',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'dispute_type' => 'required|in:no_show,late_cancellation,payment_issue,service_quality,fraud,harassment,safety_concern,property_damage,overcharge,fake_location,other',
+            'title' => 'required|string|max:255',
+            'description' => 'required|string|max:2000',
+            'evidence_files' => 'nullable|array',
+            'evidence_files.*' => 'file|max:10240', // 10MB per file
+        ]);
+
+        // อัพโหลดหลักฐาน
+        $evidenceFiles = [];
+        if ($request->hasFile('evidence_files')) {
+            foreach ($request->file('evidence_files') as $file) {
+                $path = $file->store('disputes/evidence', 'public');
+                $evidenceFiles[] = $path;
+            }
+        }
+
+        $dispute = \App\Models\ServiceBookingDispute::create([
+            'service_booking_id' => $booking->id,
+            'reporter_user_id' => $user->id,
+            'reporter_type' => 'user',
+            'accused_provider_id' => $booking->provider_id,
+            'accused_type' => 'provider',
+            'dispute_type' => $validated['dispute_type'],
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'evidence_files' => $evidenceFiles,
+            'status' => 'pending',
+            'priority' => in_array($validated['dispute_type'], ['fraud', 'harassment', 'safety_concern']) ? 'high' : 'medium',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ส่งรายงานเรียบร้อยแล้ว ทีมงานจะตรวจสอบภายใน 24 ชั่วโมง',
+            'data' => [
+                'dispute_id' => $dispute->id,
+                'dispute_number' => $dispute->dispute_number,
+                'status' => $dispute->status,
+            ],
+        ]);
+    }
+
+    /**
+     * Block ผู้ให้บริการ
+     *
+     * POST /api/v1/providers/{provider}/block
+     *
+     * @param Request $request
+     * @param ServiceProvider $provider
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function blockProvider(Request $request, ServiceProvider $provider)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        // ตรวจสอบว่า block อยู่แล้วหรือไม่
+        if (\App\Models\UserBlock::isProviderBlockedByUser($provider->id, $user->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'คุณ block ผู้ให้บริการนี้อยู่แล้ว',
+            ], 400);
+        }
+
+        $antiAbuseService = app(\App\Services\AntiAbuseService::class);
+        $block = $antiAbuseService->blockUser(
+            'user',
+            $user->id,
+            null,
+            'provider',
+            null,
+            $provider->id,
+            $validated['reason'] ?? 'ไม่ระบุเหตุผล',
+            'personal'
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Block ผู้ให้บริการเรียบร้อยแล้ว',
+            'data' => [
+                'block_id' => $block->id,
+            ],
+        ]);
+    }
+
+    /**
+     * ดึงประวัติตำแหน่งของ booking (สำหรับหลักฐาน)
+     *
+     * GET /api/v1/bookings/{booking}/location-history
+     *
+     * @param ServiceBooking $booking
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getLocationHistory(Request $request, ServiceBooking $booking)
+    {
+        $user = $request->user();
+
+        // ตรวจสอบสิทธิ์
+        if ($booking->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่มีสิทธิ์เข้าถึงการจองนี้',
+            ], 403);
+        }
+
+        $antiAbuseService = app(\App\Services\AntiAbuseService::class);
+        $history = $antiAbuseService->getLocationHistory($booking);
+
+        return response()->json([
+            'success' => true,
+            'data' => $history,
+        ]);
+    }
 }
