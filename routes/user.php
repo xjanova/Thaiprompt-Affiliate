@@ -50,6 +50,9 @@ Route::prefix('prospects')->name('prospects.')->group(function () {
     Route::get('/create', [\App\Http\Controllers\User\MlmProspectController::class, 'create'])->name('create');
     Route::post('/', [\App\Http\Controllers\User\MlmProspectController::class, 'store'])->name('store');
     Route::get('/{id}', [\App\Http\Controllers\User\MlmProspectController::class, 'show'])->name('show');
+    Route::delete('/{id}', [\App\Http\Controllers\User\MlmProspectController::class, 'destroy'])->name('destroy');
+    Route::post('/{id}/renew', [\App\Http\Controllers\User\MlmProspectController::class, 'renew'])->name('renew');
+    Route::post('/{id}/resend', [\App\Http\Controllers\User\MlmProspectController::class, 'resend'])->name('resend');
 });
 
 // KYC Verification

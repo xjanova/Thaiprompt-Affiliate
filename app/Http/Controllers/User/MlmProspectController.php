@@ -73,6 +73,7 @@ class MlmProspectController extends Controller
 
     /**
      * Show prospect details
+     * แสดงรายละเอียดผู้มุ่งหวัง
      */
     public function show($id)
     {
@@ -90,5 +91,102 @@ class MlmProspectController extends Controller
             ->firstOrFail();
 
         return view('user.prospects.show', compact('prospect'));
+    }
+
+    /**
+     * Delete prospect invitation
+     * ลบลิงก์เชิญที่ยังไม่ได้ใช้งาน
+     */
+    public function destroy($id)
+    {
+        $user = auth()->user();
+        $mlmMember = $user->mlmMember;
+
+        if (!$mlmMember) {
+            return redirect()->route('user.dashboard')
+                ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
+        }
+
+        $prospect = \App\Models\MlmProspect::where('id', $id)
+            ->where('sponsor_mlm_member_id', $mlmMember->id)
+            ->firstOrFail();
+
+        // ตรวจสอบว่าสามารถลบได้หรือไม่ (เฉพาะ pending หรือ expired)
+        if (!in_array($prospect->status, ['pending', 'expired'])) {
+            return redirect()->route('user.prospects.index')
+                ->with('error', 'ไม่สามารถลบลิงก์เชิญที่มีการใช้งานแล้ว');
+        }
+
+        $prospect->delete();
+
+        return redirect()->route('user.prospects.index')
+            ->with('success', 'ลบลิงก์เชิญเรียบร้อยแล้ว');
+    }
+
+    /**
+     * Renew expired prospect invitation
+     * ต่ออายุลิงก์เชิญที่หมดอายุ
+     */
+    public function renew($id)
+    {
+        $user = auth()->user();
+        $mlmMember = $user->mlmMember;
+
+        if (!$mlmMember) {
+            return redirect()->route('user.dashboard')
+                ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
+        }
+
+        $prospect = \App\Models\MlmProspect::where('id', $id)
+            ->where('sponsor_mlm_member_id', $mlmMember->id)
+            ->firstOrFail();
+
+        // ตรวจสอบว่าสามารถต่ออายุได้หรือไม่ (เฉพาะ pending หรือ expired)
+        if (!in_array($prospect->status, ['pending', 'expired'])) {
+            return redirect()->route('user.prospects.show', $id)
+                ->with('error', 'ไม่สามารถต่ออายุลิงก์เชิญที่มีการใช้งานแล้ว');
+        }
+
+        // ต่ออายุลิงก์เพิ่มอีก 7 วัน
+        $prospect->update([
+            'status' => 'pending',
+            'expires_at' => now()->addDays(7),
+        ]);
+
+        return redirect()->route('user.prospects.show', $id)
+            ->with('success', 'ต่ออายุลิงก์เชิญเรียบร้อยแล้ว (เพิ่มอีก 7 วัน)');
+    }
+
+    /**
+     * Resend invitation link notification
+     * ส่งลิงก์เชิญอีกครั้ง (สำหรับติดตาม)
+     */
+    public function resend($id)
+    {
+        $user = auth()->user();
+        $mlmMember = $user->mlmMember;
+
+        if (!$mlmMember) {
+            return redirect()->route('user.dashboard')
+                ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
+        }
+
+        $prospect = \App\Models\MlmProspect::where('id', $id)
+            ->where('sponsor_mlm_member_id', $mlmMember->id)
+            ->firstOrFail();
+
+        // ตรวจสอบว่ายังไม่ completed
+        if ($prospect->status === 'completed') {
+            return redirect()->route('user.prospects.show', $id)
+                ->with('error', 'ผู้มุ่งหวังนี้สมัครสมาชิกแล้ว ไม่จำเป็นต้องส่งลิงก์อีก');
+        }
+
+        // อัพเดท last_reminded_at
+        $prospect->update([
+            'last_reminded_at' => now(),
+        ]);
+
+        return redirect()->route('user.prospects.show', $id)
+            ->with('success', 'บันทึกการติดตามเรียบร้อยแล้ว');
     }
 }
