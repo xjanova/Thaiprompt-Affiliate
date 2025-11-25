@@ -255,6 +255,11 @@ PROMPT;
     /**
      * สร้าง Knowledge Base
      *
+     * ใช้ columns ที่ถูกต้องตาม migration:
+     * - name (ไม่ใช่ title)
+     * - type (ไม่ใช่ source_type)
+     * - source (ไม่ใช่ source_url)
+     *
      * @param LineBotAiSetting $aiSetting
      * @return void
      */
@@ -264,8 +269,9 @@ PROMPT;
 
         $knowledgeBases = [
             [
-                'title' => 'ข้อมูลโปรแกรม Affiliate',
-                'description' => 'ข้อมูลพื้นฐานเกี่ยวกับโปรแกรม Affiliate ของเรา',
+                'name' => 'ข้อมูลโปรแกรม Affiliate',
+                'type' => 'text',
+                'source' => null,
                 'content' => <<<CONTENT
 # โปรแกรม Affiliate
 
@@ -288,13 +294,12 @@ PROMPT;
 - โอนเข้าบัญชีธนาคารภายใน 3 วันทำการ
 - รองรับทุกธนาคาร
 CONTENT,
-                'source_type' => 'text',
-                'source_url' => null,
                 'priority' => 100,
             ],
             [
-                'title' => 'คำถามที่พบบ่อย (FAQ)',
-                'description' => 'คำตอบสำหรับคำถามที่พบบ่อย',
+                'name' => 'คำถามที่พบบ่อย (FAQ)',
+                'type' => 'text',
+                'source' => null,
                 'content' => <<<CONTENT
 # คำถามที่พบบ่อย
 
@@ -319,13 +324,12 @@ A: มีการอบรมออนไลน์ฟรีทุกสัป�
 ## Q: ทำเป็นอาชีพหลักได้ไหม?
 A: ได้ค่ะ มีสมาชิกหลายคนทำเป็นอาชีพหลักและมีรายได้หลักแสนต่อเดือน
 CONTENT,
-                'source_type' => 'text',
-                'source_url' => null,
                 'priority' => 90,
             ],
             [
-                'title' => 'ข้อมูลการติดต่อ',
-                'description' => 'ช่องทางการติดต่อทีมงาน',
+                'name' => 'ข้อมูลการติดต่อ',
+                'type' => 'text',
+                'source' => null,
                 'content' => <<<CONTENT
 # ช่องทางติดต่อ
 
@@ -347,8 +351,6 @@ CONTENT,
 - เสาร์: 10:00-16:00
 - อาทิตย์และวันหยุด: ปิดทำการ
 CONTENT,
-                'source_type' => 'text',
-                'source_url' => null,
                 'priority' => 80,
             ],
         ];
@@ -356,11 +358,10 @@ CONTENT,
         foreach ($knowledgeBases as $kb) {
             LineBotKnowledgeBase::create([
                 'ai_setting_id' => $aiSetting->id,
-                'title' => $kb['title'],
-                'description' => $kb['description'],
+                'name' => $kb['name'],
+                'type' => $kb['type'],
+                'source' => $kb['source'],
                 'content' => $kb['content'],
-                'source_type' => $kb['source_type'],
-                'source_url' => $kb['source_url'],
                 'is_active' => true,
                 'priority' => $kb['priority'],
             ]);
