@@ -5,21 +5,64 @@ namespace App\Services;
 use App\Models\LineBotAiSetting;
 use App\Models\LineBotConversation;
 use App\Models\LineBotKnowledgeBase;
+use App\Models\LineRecruitmentTopicBoundary;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * LINE Bot AI Service
+ *
+ * บริการจัดการ AI สำหรับ LINE Bot
+ * รองรับหลาย provider: OpenAI, DeepSeek, Anthropic, Gemini
+ * รองรับ Topic Filtering สำหรับการรับสมัคร
+ */
 class LineBotAiService
 {
+    /**
+     * การตั้งค่า AI
+     *
+     * @var LineBotAiSetting|null
+     */
     private ?LineBotAiSetting $settings;
 
-    public function __construct(?LineBotAiSetting $settings = null)
+    /**
+     * โหมดการรับสมัคร
+     *
+     * @var bool
+     */
+    private bool $recruitmentMode = false;
+
+    /**
+     * สร้าง instance ใหม่
+     *
+     * @param LineBotAiSetting|null $settings
+     * @param bool $recruitmentMode
+     */
+    public function __construct(?LineBotAiSetting $settings = null, bool $recruitmentMode = false)
     {
         $this->settings = $settings ?? LineBotAiSetting::getActive();
+        $this->recruitmentMode = $recruitmentMode;
     }
 
     /**
-     * Generate AI response
+     * สร้าง instance สำหรับโหมดรับสมัคร
+     *
+     * @return self
+     */
+    public static function forRecruitment(): self
+    {
+        $settings = LineBotAiSetting::getActiveRecruitment();
+        return new self($settings, true);
+    }
+
+    /**
+     * สร้างคำตอบจาก AI
+     *
+     * @param string $userMessage ข้อความจากผู้ใช้
+     * @param LineBotConversation|null $conversation ประวัติการสนทนา
+     * @param array $additionalContext บริบทเพิ่มเติม
+     * @return array
      */
     public function generateResponse(
         string $userMessage,
@@ -33,6 +76,28 @@ class LineBotAiService
         $startTime = microtime(true);
 
         try {
+            // ตรวจสอบ Topic Filtering ก่อน (ถ้าเปิดใช้งาน)
+            if ($this->settings->hasTopicFiltering()) {
+                $topicCheck = $this->checkTopicBoundaries($userMessage);
+
+                if (!$topicCheck['allowed']) {
+                    Log::info('Topic filtered', [
+                        'message' => $userMessage,
+                        'blocked_topic' => $topicCheck['topic_name'] ?? 'unknown',
+                    ]);
+
+                    return [
+                        'success' => true,
+                        'message' => $topicCheck['response'],
+                        'tokens_used' => 0,
+                        'response_time' => microtime(true) - $startTime,
+                        'provider' => $this->settings->provider,
+                        'filtered' => true,
+                        'filter_reason' => $topicCheck['topic_name'] ?? 'off_topic',
+                    ];
+                }
+            }
+
             // Build context
             $context = $this->buildContext($conversation, $additionalContext);
 
@@ -50,6 +115,7 @@ class LineBotAiService
                 'tokens_used' => $response['tokens_used'] ?? null,
                 'response_time' => $responseTime,
                 'provider' => $this->settings->provider,
+                'filtered' => false,
             ];
         } catch (Exception $e) {
             Log::error('AI generation failed', [
@@ -68,6 +134,82 @@ class LineBotAiService
 
             throw $e;
         }
+    }
+
+    /**
+     * ตรวจสอบ Topic Boundaries
+     *
+     * @param string $message ข้อความที่ต้องการตรวจสอบ
+     * @return array ['allowed' => bool, 'response' => string|null, 'topic_name' => string|null]
+     */
+    public function checkTopicBoundaries(string $message): array
+    {
+        if (!$this->settings) {
+            return ['allowed' => true, 'response' => null, 'topic_name' => null];
+        }
+
+        // ดึง blocked topics ที่ใช้งาน
+        $blockedTopics = $this->settings->blockedTopicBoundaries()->get();
+
+        foreach ($blockedTopics as $topic) {
+            if ($topic->matchesMessage($message)) {
+                // เพิ่ม hit count
+                $topic->incrementHitCount();
+
+                return [
+                    'allowed' => false,
+                    'response' => $topic->getResponseOrDefault(),
+                    'topic_name' => $topic->name,
+                    'topic_id' => $topic->id,
+                ];
+            }
+        }
+
+        return ['allowed' => true, 'response' => null, 'topic_name' => null];
+    }
+
+    /**
+     * สร้างคำตอบสำหรับการรับสมัคร
+     *
+     * @param string $userMessage ข้อความจากผู้ใช้
+     * @param LineBotConversation|null $conversation ประวัติการสนทนา
+     * @param array $userInfo ข้อมูลผู้ใช้ที่เก็บแล้ว
+     * @return array
+     */
+    public function generateRecruitmentResponse(
+        string $userMessage,
+        ?LineBotConversation $conversation = null,
+        array $userInfo = []
+    ): array {
+        if (!$this->settings) {
+            throw new Exception('AI settings not configured');
+        }
+
+        // ตรวจสอบว่าถึง max turns หรือยัง
+        if ($conversation && $conversation->message_count >= $this->settings->max_conversation_turns) {
+            return [
+                'success' => true,
+                'message' => $this->settings->getMaxTurnsMessage(),
+                'tokens_used' => 0,
+                'max_turns_reached' => true,
+            ];
+        }
+
+        // สร้าง context พิเศษสำหรับรับสมัคร
+        $recruitmentContext = [];
+
+        if (!empty($userInfo)) {
+            $recruitmentContext[] = "ข้อมูลผู้ใช้ที่เก็บแล้ว:\n" . json_encode($userInfo, JSON_UNESCAPED_UNICODE);
+        }
+
+        if ($this->settings->required_fields) {
+            $missing = array_diff($this->settings->required_fields, array_keys($userInfo));
+            if (!empty($missing)) {
+                $recruitmentContext[] = "ข้อมูลที่ยังต้องการ: " . implode(', ', $missing);
+            }
+        }
+
+        return $this->generateResponse($userMessage, $conversation, $recruitmentContext);
     }
 
     /**
@@ -95,7 +237,12 @@ class LineBotAiService
     }
 
     /**
-     * Build messages for AI
+     * สร้างข้อความสำหรับส่งให้ AI
+     *
+     * @param string $userMessage ข้อความจากผู้ใช้
+     * @param LineBotConversation|null $conversation ประวัติการสนทนา
+     * @param string $context บริบทเพิ่มเติม
+     * @return array
      */
     private function buildMessages(
         string $userMessage,
@@ -104,8 +251,18 @@ class LineBotAiService
     ): array {
         $messages = [];
 
-        // Add system prompt
-        $systemPrompt = $this->settings->system_prompt ?? 'You are a helpful assistant.';
+        // เลือก system prompt ตามโหมด
+        if ($this->recruitmentMode && $this->settings->use_for_recruitment) {
+            $systemPrompt = $this->settings->getRecruitmentSystemPrompt();
+
+            // เพิ่มคำแนะนำเกี่ยวกับสไตล์การตอบ
+            $styleGuide = $this->getResponseStyleGuide();
+            if ($styleGuide) {
+                $systemPrompt .= "\n\n" . $styleGuide;
+            }
+        } else {
+            $systemPrompt = $this->settings->system_prompt ?? 'You are a helpful assistant.';
+        }
 
         // Add context to system prompt
         if (!empty($context)) {
@@ -135,6 +292,26 @@ class LineBotAiService
         ];
 
         return $messages;
+    }
+
+    /**
+     * รับคำแนะนำสไตล์การตอบ
+     *
+     * @return string|null
+     */
+    private function getResponseStyleGuide(): ?string
+    {
+        if (!$this->settings->response_style) {
+            return null;
+        }
+
+        $guides = [
+            'friendly' => 'ตอบแบบเป็นกันเอง ใช้คำว่า "ค่ะ/ครับ" และแสดงความเป็นมิตร อาจใช้ emoji เล็กน้อย',
+            'professional' => 'ตอบแบบมืออาชีพ เป็นทางการ ใช้ภาษาสุภาพ หลีกเลี่ยง emoji',
+            'casual' => 'ตอบแบบสบายๆ เหมือนเพื่อนคุยกัน แต่ยังคงความสุภาพ',
+        ];
+
+        return $guides[$this->settings->response_style] ?? null;
     }
 
     /**

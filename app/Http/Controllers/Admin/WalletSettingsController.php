@@ -3,22 +3,28 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Wallet;
 use App\Models\WalletSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Exception;
 
 class WalletSettingsController extends Controller
 {
     /**
-     * Display wallet settings
+     * แสดงหน้าตั้งค่า Wallet พร้อมข้อมูลกระเป๋าเงินทุกคน
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(Request $request)
     {
         if (!auth()->user()->hasPermission('manage_wallet_settings')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         }
 
+        // ดึงการตั้งค่า Wallet แบ่งตามกลุ่ม
         $settings = WalletSetting::active()
             ->orderBy('group')
             ->orderBy('sort_order')
@@ -33,7 +39,58 @@ class WalletSettingsController extends Controller
             'general' => 'ทั่วไป',
         ];
 
-        return view('admin.wallet.wallet-settings', compact('settings', 'groups'));
+        // ดึงข้อมูลกระเป๋าเงินผู้ใช้ทุกคน พร้อม Filter และ Search
+        $walletsQuery = Wallet::with(['user:id,name,email,profile_picture,phone'])
+            ->select([
+                'wallets.*',
+                DB::raw('(SELECT COUNT(*) FROM wallet_transactions WHERE wallet_transactions.wallet_id = wallets.id) as transaction_count'),
+            ]);
+
+        // กรองตามสถานะ
+        if ($request->filled('status')) {
+            $walletsQuery->where('status', $request->status);
+        }
+
+        // ค้นหาตามชื่อ/อีเมล/wallet address
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $walletsQuery->where(function ($q) use ($search) {
+                $q->where('wallet_address', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // กรองตามยอดเงิน
+        if ($request->filled('balance_min')) {
+            $walletsQuery->where('balance', '>=', $request->balance_min);
+        }
+        if ($request->filled('balance_max')) {
+            $walletsQuery->where('balance', '<=', $request->balance_max);
+        }
+
+        // เรียงลำดับ
+        $sortBy = $request->get('sort_by', 'balance');
+        $sortDir = $request->get('sort_dir', 'desc');
+        $walletsQuery->orderBy($sortBy, $sortDir);
+
+        // Pagination
+        $wallets = $walletsQuery->paginate(20)->withQueryString();
+
+        // สถิติรวม
+        $walletStats = [
+            'total_wallets' => Wallet::count(),
+            'active_wallets' => Wallet::where('status', 'active')->count(),
+            'locked_wallets' => Wallet::where('status', 'locked')->count(),
+            'total_balance' => Wallet::sum('balance'),
+            'total_income' => Wallet::sum('total_income'),
+            'total_expense' => Wallet::sum('total_expense'),
+        ];
+
+        return view('admin.wallet.wallet-settings', compact('settings', 'groups', 'wallets', 'walletStats'));
     }
 
     /**

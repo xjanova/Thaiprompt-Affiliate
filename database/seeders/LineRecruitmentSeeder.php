@@ -4,22 +4,23 @@ namespace Database\Seeders;
 
 use App\Models\LineBotAiSetting;
 use App\Models\LineBotKnowledgeBase;
+use App\Models\LineRecruitmentTopicBoundary;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Log;
 
 /**
- * Seeder สำหรับระบบ LINE Recruitment
+ * Line Recruitment Seeder
  *
- * สร้างข้อมูลตัวอย่างสำหรับ:
- * - AI Settings สำหรับ Recruitment Bot
- * - Knowledge Base (ฐานความรู้สำหรับ AI)
- *
- * @version 1.0.0
- * @since 2025-11-25
+ * สร้างข้อมูลเริ่มต้นสำหรับระบบ LINE Recruitment
+ * ประกอบด้วย:
+ * - AI Settings สำหรับการรับสมัคร
+ * - Topic Boundaries (ขอบเขตหัวข้อที่คุยได้/ไม่ได้)
+ * - Knowledge Base (ฐานความรู้)
  */
 class LineRecruitmentSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * รัน seeder
      *
      * @return void
      */
@@ -27,62 +28,228 @@ class LineRecruitmentSeeder extends Seeder
     {
         $this->command->info('🌱 กำลัง seed ข้อมูล LINE Recruitment...');
 
-        // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่
-        if (LineBotAiSetting::where('name', 'Recruitment Bot')->exists()) {
-            $this->command->warn('⚠️  มีข้อมูล LINE Recruitment อยู่แล้ว ข้าม...');
+        // ตรวจสอบว่ามี AI Setting สำหรับ recruitment อยู่แล้วหรือไม่
+        $existingSetting = LineBotAiSetting::where('use_for_recruitment', true)->first();
+
+        if ($existingSetting) {
+            $this->command->info('⚠️ มี AI Setting สำหรับ recruitment อยู่แล้ว ข้าม...');
             return;
         }
 
-        // 1. สร้าง AI Setting
-        $this->command->info('📝 กำลังสร้าง AI Setting...');
+        // สร้าง AI Setting สำหรับการรับสมัคร
         $aiSetting = $this->createAiSetting();
 
-        if (!$aiSetting) {
-            $this->command->error('❌ ไม่สามารถสร้าง AI Setting ได้');
-            return;
-        }
+        // สร้าง Topic Boundaries
+        $this->createTopicBoundaries($aiSetting);
 
-        // 2. สร้าง Knowledge Base
-        $this->command->info('📚 กำลังสร้าง Knowledge Base...');
+        // สร้าง Knowledge Base
         $this->createKnowledgeBase($aiSetting);
 
         $this->command->info('✅ Seed ข้อมูล LINE Recruitment สำเร็จ!');
     }
 
     /**
-     * สร้าง AI Setting สำหรับ Recruitment Bot
+     * สร้าง AI Setting สำหรับการรับสมัคร
      *
-     * @return LineBotAiSetting|null
+     * @return LineBotAiSetting
      */
-    protected function createAiSetting(): ?LineBotAiSetting
+    private function createAiSetting(): LineBotAiSetting
     {
+        $this->command->info('📝 กำลังสร้าง AI Setting...');
+
+        $systemPrompt = <<<PROMPT
+คุณเป็นผู้ช่วยรับสมัครสมาชิกที่เป็นกันเองและช่วยเหลือดี
+
+หน้าที่หลัก:
+1. ต้อนรับผู้สมัครใหม่อย่างอบอุ่น
+2. อธิบายโปรแกรม Affiliate อย่างชัดเจน
+3. ช่วยเหลือในขั้นตอนการสมัคร
+4. ตอบคำถามเกี่ยวกับรายได้และสิทธิประโยชน์
+
+กฎสำคัญ:
+- พูดภาษาไทยเท่านั้น
+- ใช้คำสุภาพ ค่ะ/ครับ
+- ไม่พูดเรื่องการเมือง ศาสนา หรือเรื่องละเอียดอ่อน
+- ไม่รับประกันรายได้แน่นอน แต่อธิบายโอกาสที่มี
+- แนะนำให้ติดต่อทีมงานถ้าคำถามซับซ้อน
+
+สไตล์การตอบ:
+- กระชับ ชัดเจน
+- เป็นกันเอง แต่มืออาชีพ
+- ใช้ emoji เล็กน้อยเพื่อความเป็นมิตร
+PROMPT;
+
+        $recruitmentPrompt = <<<PROMPT
+คุณเป็นผู้ช่วยรับสมัครสมาชิก Affiliate สำหรับธุรกิจออนไลน์
+
+เป้าหมาย:
+1. เก็บข้อมูลพื้นฐานของผู้สมัคร (ชื่อ, เบอร์โทร, อีเมล)
+2. อธิบายรูปแบบรายได้และโบนัส
+3. ตอบคำถามเกี่ยวกับการสมัคร
+4. แนะนำขั้นตอนถัดไป
+
+ข้อมูลที่ต้องเก็บ:
+- ชื่อ-นามสกุล
+- เบอร์โทรศัพท์
+- อีเมล (ถ้ามี)
+- LINE ID
+- สนใจสินค้า/บริการอะไร
+
+วิธีเก็บข้อมูล:
+- ถามทีละอย่าง ไม่ถามรวดเดียว
+- ยืนยันข้อมูลก่อนบันทึก
+- ถ้าผู้สมัครลังเล ให้ข้อมูลเพิ่มเติม
+
+เมื่อได้ข้อมูลครบ:
+- สรุปข้อมูลให้ผู้สมัครตรวจสอบ
+- แจ้งว่าทีมงานจะติดต่อกลับ
+- ขอบคุณที่สนใจ
+PROMPT;
+
         return LineBotAiSetting::create([
-            'name' => 'Recruitment Bot',
+            'name' => 'LINE Recruitment Bot',
             'provider' => 'openai',
-            'model' => 'gpt-4',
+            'api_key' => null, // ต้องตั้งค่าจริงจากหน้า admin
+            'api_endpoint' => null,
+            'model' => 'gpt-3.5-turbo',
             'temperature' => 0.7,
-            'max_tokens' => 500,
-            'system_prompt' => <<<'PROMPT'
-คุณเป็น AI Assistant สำหรับระบบรับสมัคร Affiliate
-
-ความรับผิดชอบ:
-1. ตอบคำถามเกี่ยวกับการสมัครสมาชิก
-2. อธิบายสิทธิประโยชน์และรายได้
-3. แนะนำขั้นตอนการสมัคร
-4. ช่วยแก้ปัญหาเบื้องต้น
-
-กฎการตอบ:
-- ตอบเป็นภาษาไทย
-- ตอบสั้นกระชับ ไม่เกิน 300 ตัวอักษร
-- ใช้ emoji ให้เหมาะสม
-- ถ้าไม่รู้คำตอบให้แนะนำติดต่อ Support
-PROMPT,
+            'max_tokens' => 1000,
+            'system_prompt' => $systemPrompt,
             'enable_conversation_history' => true,
-            'conversation_memory_limit' => 10,
-            'is_active' => true,
+            'conversation_memory_limit' => 20,
+            'knowledge_base_sources' => [],
+            'is_active' => false, // ต้องเปิดใช้งานเองหลังตั้งค่า API Key
             'enable_fallback' => true,
-            'fallback_message' => 'ขออภัยค่ะ ไม่สามารถตอบคำถามได้ในขณะนี้ กรุณาติดต่อ Support',
+            'fallback_message' => 'ขออภัยค่ะ ขณะนี้ระบบไม่สามารถตอบกลับได้ กรุณาติดต่อทีมงานโดยตรงนะคะ',
+
+            // ฟิลด์สำหรับ Recruitment
+            'use_for_recruitment' => true,
+            'recruitment_system_prompt' => $recruitmentPrompt,
+            'allowed_topics' => [
+                'การสมัครสมาชิก',
+                'รายได้และโบนัส',
+                'สินค้าและบริการ',
+                'วิธีการทำงาน',
+                'คำถามทั่วไป',
+            ],
+            'blocked_topics' => [
+                'การเมือง',
+                'ศาสนา',
+                'เรื่องส่วนตัว',
+                'การพนัน',
+                'สิ่งผิดกฎหมาย',
+            ],
+            'response_style' => 'friendly',
+            'greeting_message' => 'สวัสดีค่ะ! 🎉 ยินดีต้อนรับสู่โปรแกรม Affiliate ของเรา คุณสนใจสร้างรายได้เสริมไหมคะ? มีอะไรให้ช่วยเหลือได้บ้างคะ',
+            'max_conversation_turns' => 50,
+            'collect_user_info' => true,
+            'required_fields' => ['name', 'phone'],
+            'max_turns_message' => 'ขอบคุณสำหรับการสนทนาค่ะ 🙏 หากต้องการข้อมูลเพิ่มเติม กรุณาติดต่อทีมงานโดยตรงได้เลยนะคะ',
+            'enable_topic_filtering' => true,
+            'off_topic_message' => 'ขออภัยค่ะ หัวข้อนี้อยู่นอกเหนือขอบเขตที่ดิฉันสามารถให้ข้อมูลได้ค่ะ 😊 กรุณาสอบถามเรื่องการสมัครสมาชิกหรือโปรแกรม Affiliate ได้เลยนะคะ',
         ]);
+    }
+
+    /**
+     * สร้าง Topic Boundaries
+     *
+     * @param LineBotAiSetting $aiSetting
+     * @return void
+     */
+    private function createTopicBoundaries(LineBotAiSetting $aiSetting): void
+    {
+        $this->command->info('🚧 กำลังสร้าง Topic Boundaries...');
+
+        // Blocked Topics
+        $blockedTopics = [
+            [
+                'name' => 'การเมือง',
+                'description' => 'หัวข้อเกี่ยวกับการเมือง พรรคการเมือง หรือนักการเมือง',
+                'keywords' => ['การเมือง', 'เลือกตั้ง', 'พรรค', 'นายก', 'รัฐบาล', 'ประท้วง', 'ม็อบ'],
+                'response_message' => 'ขออภัยค่ะ ดิฉันไม่สามารถพูดคุยเรื่องการเมืองได้ 😊 แต่ยินดีตอบคำถามเกี่ยวกับโปรแกรมสมาชิกของเราค่ะ',
+                'priority' => 100,
+            ],
+            [
+                'name' => 'ศาสนา',
+                'description' => 'หัวข้อเกี่ยวกับศาสนาและความเชื่อ',
+                'keywords' => ['ศาสนา', 'พระ', 'เจ้า', 'พุทธ', 'คริสต์', 'อิสลาม', 'มุสลิม'],
+                'response_message' => 'ขออภัยค่ะ หัวข้อเรื่องศาสนาอยู่นอกเหนือขอบเขตที่ดิฉันสามารถตอบได้ค่ะ 🙏',
+                'priority' => 100,
+            ],
+            [
+                'name' => 'การพนัน',
+                'description' => 'หัวข้อเกี่ยวกับการพนันและเกมเสี่ยงโชค',
+                'keywords' => ['พนัน', 'หวย', 'ล็อตเตอรี่', 'คาสิโน', 'แทงบอล', 'บาคาร่า', 'สล็อต'],
+                'response_message' => 'ขออภัยค่ะ เราไม่เกี่ยวข้องกับการพนันใดๆ ทั้งสิ้นค่ะ 🚫 โปรแกรมของเราเป็นธุรกิจ Affiliate ที่ถูกกฎหมายค่ะ',
+                'priority' => 100,
+            ],
+            [
+                'name' => 'สิ่งผิดกฎหมาย',
+                'description' => 'หัวข้อเกี่ยวกับกิจกรรมผิดกฎหมาย',
+                'keywords' => ['ยาเสพติด', 'ขโมย', 'ปล้น', 'ฆ่า', 'ปืน', 'ระเบิด', 'แฮก', 'hack'],
+                'response_message' => 'ขออภัยค่ะ ดิฉันไม่สามารถช่วยเหลือในเรื่องที่ผิดกฎหมายได้ค่ะ 🚫',
+                'priority' => 100,
+            ],
+            [
+                'name' => 'เนื้อหาผู้ใหญ่',
+                'description' => 'เนื้อหาสำหรับผู้ใหญ่หรือไม่เหมาะสม',
+                'keywords' => ['โป๊', 'เซ็กส์', 'sex', 'porn', 'xxx', 'เสียว', 'หนังโป๊'],
+                'response_message' => 'ขออภัยค่ะ ดิฉันไม่สามารถพูดคุยเรื่องนี้ได้ค่ะ 😊',
+                'priority' => 100,
+            ],
+        ];
+
+        foreach ($blockedTopics as $topic) {
+            LineRecruitmentTopicBoundary::create([
+                'ai_setting_id' => $aiSetting->id,
+                'name' => $topic['name'],
+                'description' => $topic['description'],
+                'type' => 'blocked',
+                'keywords' => $topic['keywords'],
+                'response_message' => $topic['response_message'],
+                'priority' => $topic['priority'],
+                'is_active' => true,
+                'example_phrases' => [],
+                'hit_count' => 0,
+            ]);
+        }
+
+        // Allowed Topics (สำหรับเป็นแนวทาง แต่ไม่บังคับใช้)
+        $allowedTopics = [
+            [
+                'name' => 'การสมัครสมาชิก',
+                'description' => 'คำถามเกี่ยวกับขั้นตอนการสมัคร',
+                'keywords' => ['สมัคร', 'ลงทะเบียน', 'เป็นสมาชิก', 'register', 'signup'],
+                'priority' => 50,
+            ],
+            [
+                'name' => 'รายได้และโบนัส',
+                'description' => 'คำถามเกี่ยวกับรายได้ คอมมิชชั่น และโบนัส',
+                'keywords' => ['รายได้', 'เงิน', 'โบนัส', 'คอมมิชชั่น', 'commission', 'income'],
+                'priority' => 50,
+            ],
+            [
+                'name' => 'สินค้าและบริการ',
+                'description' => 'คำถามเกี่ยวกับสินค้าและบริการที่เราจำหน่าย',
+                'keywords' => ['สินค้า', 'ผลิตภัณฑ์', 'บริการ', 'product', 'service'],
+                'priority' => 50,
+            ],
+        ];
+
+        foreach ($allowedTopics as $topic) {
+            LineRecruitmentTopicBoundary::create([
+                'ai_setting_id' => $aiSetting->id,
+                'name' => $topic['name'],
+                'description' => $topic['description'],
+                'type' => 'allowed',
+                'keywords' => $topic['keywords'],
+                'response_message' => null,
+                'priority' => $topic['priority'],
+                'is_active' => true,
+                'example_phrases' => [],
+                'hit_count' => 0,
+            ]);
+        }
     }
 
     /**
@@ -96,14 +263,16 @@ PROMPT,
      * @param LineBotAiSetting $aiSetting
      * @return void
      */
-    protected function createKnowledgeBase(LineBotAiSetting $aiSetting): void
+    private function createKnowledgeBase(LineBotAiSetting $aiSetting): void
     {
-        $knowledgeItems = [
+        $this->command->info('📚 กำลังสร้าง Knowledge Base...');
+
+        $knowledgeBases = [
             [
                 'name' => 'ข้อมูลโปรแกรม Affiliate',
                 'type' => 'text',
                 'source' => null,
-                'content' => <<<'CONTENT'
+                'content' => <<<CONTENT
 # โปรแกรม Affiliate
 
 ## เกี่ยวกับเรา
@@ -126,72 +295,75 @@ PROMPT,
 - รองรับทุกธนาคาร
 CONTENT,
                 'priority' => 100,
-                'is_active' => true,
-            ],
-            [
-                'name' => 'อัตราคอมมิชชั่น',
-                'type' => 'text',
-                'source' => null,
-                'content' => <<<'CONTENT'
-# อัตราคอมมิชชั่น
-
-## ระดับคอมมิชชั่น
-| ระดับ | อัตรา |
-|-------|-------|
-| Bronze | 10% |
-| Silver | 15% |
-| Gold | 20% |
-| Platinum | 25% |
-| Diamond | 30% |
-
-## โบนัสพิเศษ
-- **โบนัสทีม**: 5% จากยอดขายทีม
-- **โบนัสรายเดือน**: ตามเป้าหมายยอดขาย
-- **โบนัสพิเศษ**: กิจกรรมพิเศษประจำเดือน
-
-## เงื่อนไข
-- คอมมิชชั่นจะถูกคำนวณจากยอดขายสุทธิ (หักส่วนลดและคืนสินค้า)
-- การเลื่อนระดับขึ้นอยู่กับยอดขายสะสมรายเดือน
-CONTENT,
-                'priority' => 90,
-                'is_active' => true,
             ],
             [
                 'name' => 'คำถามที่พบบ่อย (FAQ)',
                 'type' => 'text',
                 'source' => null,
-                'content' => <<<'CONTENT'
+                'content' => <<<CONTENT
 # คำถามที่พบบ่อย
 
-## Q: สมัครฟรีหรือไม่?
-A: ใช่ การสมัครเป็นสมาชิก Affiliate ไม่มีค่าใช้จ่าย
+## Q: ต้องเสียค่าใช้จ่ายในการสมัครไหม?
+A: ไม่เสียค่าใช้จ่ายใดๆ ทั้งสิ้น การสมัครฟรี!
 
-## Q: ต้องขายสินค้าเองไหม?
-A: ไม่จำเป็น คุณเพียงแค่แนะนำสินค้าผ่านลิงก์ส่วนตัว
+## Q: จะเริ่มหารายได้ได้เมื่อไร?
+A: เริ่มได้ทันทีหลังสมัครสมาชิก เพียงแชร์ลิงก์สินค้าให้เพื่อนๆ
 
-## Q: รับเงินอย่างไร?
-A: ถอนเงินผ่านบัญชีธนาคารที่ลงทะเบียนไว้ ขั้นต่ำ 300 บาท
+## Q: ต้องสต็อกสินค้าไหม?
+A: ไม่ต้องสต็อกสินค้า เราจัดส่งให้ทั้งหมด
 
-## Q: มีค่าใช้จ่ายรายเดือนไหม?
-A: ไม่มี ไม่มีค่าธรรมเนียมรายเดือน
+## Q: รายได้ขั้นต่ำเท่าไร?
+A: ไม่มีขั้นต่ำ ขายได้เท่าไร รับค่าคอมฯ เท่านั้น
 
-## Q: เริ่มต้นอย่างไร?
-A: 1) สมัครสมาชิก 2) รับลิงก์แนะนำ 3) แชร์ให้เพื่อน 4) รับคอมมิชชั่น
+## Q: ถอนเงินยังไง?
+A: ถอนได้ผ่านหน้าสมาชิก โอนเข้าบัญชีธนาคารภายใน 3 วันทำการ
+
+## Q: มีการอบรมไหม?
+A: มีการอบรมออนไลน์ฟรีทุกสัปดาห์ สอนเทคนิคการขายและการตลาด
+
+## Q: ทำเป็นอาชีพหลักได้ไหม?
+A: ได้ค่ะ มีสมาชิกหลายคนทำเป็นอาชีพหลักและมีรายได้หลักแสนต่อเดือน
+CONTENT,
+                'priority' => 90,
+            ],
+            [
+                'name' => 'ข้อมูลการติดต่อ',
+                'type' => 'text',
+                'source' => null,
+                'content' => <<<CONTENT
+# ช่องทางติดต่อ
+
+## LINE Official
+- LINE ID: @yourcompany
+- หรือสแกน QR Code ที่เว็บไซต์
+
+## โทรศัพท์
+- 02-XXX-XXXX (จันทร์-ศุกร์ 9:00-18:00)
+
+## อีเมล
+- support@yourcompany.com
+
+## Facebook
+- facebook.com/yourcompany
+
+## เวลาทำการ
+- จันทร์-ศุกร์: 9:00-18:00
+- เสาร์: 10:00-16:00
+- อาทิตย์และวันหยุด: ปิดทำการ
 CONTENT,
                 'priority' => 80,
-                'is_active' => true,
             ],
         ];
 
-        foreach ($knowledgeItems as $item) {
+        foreach ($knowledgeBases as $kb) {
             LineBotKnowledgeBase::create([
                 'ai_setting_id' => $aiSetting->id,
-                'name' => $item['name'],
-                'type' => $item['type'],
-                'source' => $item['source'],
-                'content' => $item['content'],
-                'priority' => $item['priority'],
-                'is_active' => $item['is_active'],
+                'name' => $kb['name'],
+                'type' => $kb['type'],
+                'source' => $kb['source'],
+                'content' => $kb['content'],
+                'is_active' => true,
+                'priority' => $kb['priority'],
             ]);
         }
     }

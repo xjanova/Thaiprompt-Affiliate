@@ -2,6 +2,76 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.184.2] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1611 from xjanova/claude/redesign-wallet-settings-01MFPiJAhkBWESc7tWVkyEuG (1379dbaf)
+- fix: use profile_picture instead of avatar column in wallet settings (7f0bde94)
+### 🔧 Other Changes
+
+
+## [v3.184.1] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1610 from xjanova/claude/seed-nfc-cards-01Bmb5VRqZTaYoaVY6MCoXXp (c6eb226c)
+- fix: safely drop indexes/foreign keys in LineSignupRewardSeeder (7a87cd7d)
+### 🔧 Other Changes
+
+
+## [v3.184.0] - 2025-11-25
+
+### ✨ Features
+- Merge pull request #1609 from xjanova/claude/redesign-wallet-settings-01MFPiJAhkBWESc7tWVkyEuG (e2001a31)
+- feat: redesign wallet settings page with modern V3 UI and user wallets view (61c454a9)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.183.0] - 2025-11-25
+
+### ✨ Features
+- Merge pull request #1608 from xjanova/claude/enhance-line-recruitment-01AuiukVCYuHENJV1JiKbXpW (7108eee3)
+- feat: implement LINE Recruitment AI system with topic filtering (6279e671)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.182.0] - 2025-11-25
+
+### ✨ Features
+- feat: add referrer requirement condition for signup rewards (e1269c8c)
+- feat: add toggle switch for rewards active status (60ec11c7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1607 from xjanova/claude/simplify-rewards-toggle-01VPJDw26QWBG1eTBia2ubFW (6df7297a)
+
+## [v3.181.8] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1606 from xjanova/claude/fix-ambiguous-column-01FoP2KM45ejaLiQMUCnWymt (b6059815)
+- fix: use qualified table name in AiRentalDeployment status scopes (be38d794)
+### 🔧 Other Changes
+
+
+## [v3.181.7] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1605 from xjanova/claude/seed-nfc-cards-01Bmb5VRqZTaYoaVY6MCoXXp (32afafb0)
+- fix: add card_data_hash field to NFCCardSeeder (0604d80e)
+### 🔧 Other Changes
+
+
 ## [v3.181.6] - 2025-11-25
 
 ### ✨ Features

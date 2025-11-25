@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $name ชื่อรางวัล
  * @property string|null $description คำอธิบาย
  * @property string $signup_type ประเภทการสมัคร (free, package, both)
+ * @property string $referrer_requirement เงื่อนไขผู้แนะนำ (any, required, none)
  * @property array|null $package_ids IDs ของแพคเกจ
  * @property string $reward_type ประเภทรางวัล
  * @property float $amount จำนวน
@@ -45,6 +46,7 @@ class LineSignupReward extends Model
         'name',
         'description',
         'signup_type',
+        'referrer_requirement',
         'package_ids',
         'reward_type',
         'amount',
@@ -163,9 +165,53 @@ class LineSignupReward extends Model
     }
 
     /**
-     * ดึงรางวัลที่ใช้ได้สำหรับการสมัคร
+     * ตรวจสอบว่ารางวัลนี้ใช้ได้กับเงื่อนไขผู้แนะนำหรือไม่
+     *
+     * @param bool $hasReferrer มีผู้แนะนำหรือไม่
+     * @return bool
      */
-    public static function getAvailableRewards(?int $packageId = null): \Illuminate\Database\Eloquent\Collection
+    public function isValidForReferrer(bool $hasReferrer): bool
+    {
+        // ถ้าไม่กำหนดเงื่อนไข (any) ผ่านเลย
+        if ($this->referrer_requirement === 'any' || empty($this->referrer_requirement)) {
+            return true;
+        }
+
+        // ต้องมีผู้แนะนำ
+        if ($this->referrer_requirement === 'required') {
+            return $hasReferrer;
+        }
+
+        // ต้องไม่มีผู้แนะนำ (สมัครเอง)
+        if ($this->referrer_requirement === 'none') {
+            return !$hasReferrer;
+        }
+
+        return true;
+    }
+
+    /**
+     * ดึงข้อความแสดงเงื่อนไขผู้แนะนำ
+     *
+     * @return string
+     */
+    public function getReferrerRequirementText(): string
+    {
+        return match ($this->referrer_requirement) {
+            'required' => 'ต้องมีผู้แนะนำ',
+            'none' => 'ไม่มีผู้แนะนำ',
+            default => 'ไม่กำหนด',
+        };
+    }
+
+    /**
+     * ดึงรางวัลที่ใช้ได้สำหรับการสมัคร
+     *
+     * @param int|null $packageId ID แพคเกจ
+     * @param bool|null $hasReferrer มีผู้แนะนำหรือไม่ (null = ไม่กรอง)
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public static function getAvailableRewards(?int $packageId = null, ?bool $hasReferrer = null): \Illuminate\Database\Eloquent\Collection
     {
         return static::query()
             ->where('is_active', true)
@@ -190,8 +236,18 @@ class LineSignupReward extends Model
             ->orderBy('display_order')
             ->orderBy('created_at')
             ->get()
-            ->filter(function ($reward) use ($packageId) {
-                return $reward->isValidForPackage($packageId);
+            ->filter(function ($reward) use ($packageId, $hasReferrer) {
+                // ตรวจสอบเงื่อนไขแพคเกจ
+                if (!$reward->isValidForPackage($packageId)) {
+                    return false;
+                }
+
+                // ตรวจสอบเงื่อนไขผู้แนะนำ (ถ้าระบุ)
+                if ($hasReferrer !== null && !$reward->isValidForReferrer($hasReferrer)) {
+                    return false;
+                }
+
+                return true;
             });
     }
 
