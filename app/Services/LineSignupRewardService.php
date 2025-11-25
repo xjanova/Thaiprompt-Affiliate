@@ -35,9 +35,10 @@ class LineSignupRewardService
      * @param User $user ผู้ใช้ที่สมัครสมาชิก
      * @param LineSignupSession|null $session Session การสมัคร
      * @param int|null $packageId ID ของแพคเกจที่ซื้อ (null = สมัครฟรี)
+     * @param bool|null $hasReferrer มีผู้แนะนำหรือไม่ (null = ตรวจสอบจาก user)
      * @return array ผลลัพธ์การให้รางวัล
      */
-    public function grantSignupRewards(User $user, ?LineSignupSession $session = null, ?int $packageId = null): array
+    public function grantSignupRewards(User $user, ?LineSignupSession $session = null, ?int $packageId = null, ?bool $hasReferrer = null): array
     {
         $results = [
             'success' => true,
@@ -49,8 +50,14 @@ class LineSignupRewardService
         try {
             DB::beginTransaction();
 
-            // ดึงรางวัลที่สามารถให้ได้
-            $rewards = LineSignupReward::getAvailableRewards($packageId);
+            // ตรวจสอบสถานะผู้แนะนำ (ถ้าไม่ระบุ)
+            if ($hasReferrer === null) {
+                // ตรวจสอบจาก upline_id ของผู้ใช้
+                $hasReferrer = !empty($user->upline_id);
+            }
+
+            // ดึงรางวัลที่สามารถให้ได้ (กรองตามเงื่อนไขผู้แนะนำ)
+            $rewards = LineSignupReward::getAvailableRewards($packageId, $hasReferrer);
 
             if ($rewards->isEmpty()) {
                 $results['message'] = 'ไม่มีรางวัลที่สามารถให้ได้';
@@ -562,11 +569,12 @@ class LineSignupRewardService
      * ดึงรายการรางวัลที่ผู้ใช้สามารถรับได้
      *
      * @param int|null $packageId ID ของแพคเกจ
+     * @param bool|null $hasReferrer มีผู้แนะนำหรือไม่
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getAvailableRewards(?int $packageId = null)
+    public function getAvailableRewards(?int $packageId = null, ?bool $hasReferrer = null)
     {
-        return LineSignupReward::getAvailableRewards($packageId);
+        return LineSignupReward::getAvailableRewards($packageId, $hasReferrer);
     }
 
     /**
