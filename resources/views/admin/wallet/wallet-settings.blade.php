@@ -342,7 +342,7 @@
                                                 </svg>
                                             </a>
                                         @endif
-                                        <a href="{{ route('admin.wallet-transactions.index', ['wallet_id' => $wallet->id]) }}"
+                                        <a href="{{ route('admin.wallet.all-transactions', ['wallet_id' => $wallet->id]) }}"
                                            class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
                                            title="ดูรายการธุรกรรม">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
