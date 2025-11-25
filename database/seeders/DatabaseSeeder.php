@@ -50,6 +50,7 @@ class DatabaseSeeder extends Seeder
             LineSignupSettingSeeder::class,     // 🆕 LINE Signup Settings (การตั้งค่าระบบสมัครสมาชิก: OTP, Validation, Rewards, Gamification)
             LineBotAiSeeder::class,             // 🆕 LINE Bot AI Profiles (Demo bots: Affiliate, Support, Sales)
             LineBotKeywordSeeder::class,        // 🆕 LINE Hybrid Bot Keywords (Keyword-based responses + AI fallback)
+            LineRecruitmentSeeder::class,       // 🆕 LINE Recruitment System (AI-powered recruitment with topic filtering)
 
             // 5. AI & Integrations
             AICoreFeatureSeeder::class,         // 🆕 AI Core Feature Registry (8 AI feature groups)
