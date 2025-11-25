@@ -11,220 +11,273 @@
 
     <!--
         ╔══════════════════════════════════════════════════════════════════╗
-        ║              THAIPROMPT HUB SELECTION PAGE                       ║
-        ║              Ultra App - เลือกบริการที่ต้องการ                     ║
+        ║         🚀 THAIPROMPT HUB SELECTION V2 🚀                        ║
+        ║              World-Class Service Selection                       ║
         ╚══════════════════════════════════════════════════════════════════╝
 
-        8 บริการหลัก:
-        1. 🛒 ช้อปปิ้ง & บริการ - E-commerce, อาหาร, โรงแรม, หมอนวด
-        2. 💰 กระเป๋าเงิน - Wallet, เติม/ถอน/โอน
-        3. 📈 ลงทุน & Trade - Crypto, Bot Trading, TPIX
-        4. 🤝 MLM & Affiliate - Commission, Referral, Team
-        5. 🚴 เป็นไรเดอร์ - Service Provider, รับงาน
-        6. 🤖 AI Bot - LINE Bot, Automation
-        7. 🎓 Academy - เรียนรู้, หลักสูตร
-        8. 🎮 Gaming & Rewards - เกม, Quest, Rewards
+        ✨ 8 บริการหลัก:
+        1. 🛒 ช้อปปิ้ง & บริการ
+        2. 💰 กระเป๋าเงิน
+        3. 📈 ลงทุน & Trade
+        4. 🤝 MLM & Affiliate
+        5. 🚴 เป็นไรเดอร์
+        6. 🤖 AI Bot
+        7. 🎓 Academy
+        8. 🎮 Gaming & Rewards
     -->
 
     <ContentPage.Background>
-        <!-- Dark Gradient Background -->
+        <!-- Deep Space Gradient Background -->
         <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#0F0F23" Offset="0.0"/>
-            <GradientStop Color="#1A1A2E" Offset="0.5"/>
-            <GradientStop Color="#0F0F23" Offset="1.0"/>
+            <GradientStop Color="#050510" Offset="0.0"/>
+            <GradientStop Color="#0A0A1A" Offset="0.3"/>
+            <GradientStop Color="#0F0F2D" Offset="0.6"/>
+            <GradientStop Color="#050510" Offset="1.0"/>
         </LinearGradientBrush>
     </ContentPage.Background>
 
     <Grid RowDefinitions="Auto,*,Auto">
 
         <!-- ═══════════════════════════════════════════════════════════════
-             HEADER SECTION - ส่วนหัวพร้อมข้อมูล User
+             LAYER 0: ANIMATED BACKGROUND
              ═══════════════════════════════════════════════════════════════ -->
 
-        <Grid Grid.Row="0" Padding="20,50,20,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+        <!-- Floating Particles -->
+        <BoxView x:Name="BgParticle1" Grid.RowSpan="3" WidthRequest="6" HeightRequest="6" CornerRadius="3"
+                 Color="#6366F1" Opacity="0.4" HorizontalOptions="Start" VerticalOptions="Start"
+                 TranslationX="40" TranslationY="120" InputTransparent="True"/>
+        <BoxView x:Name="BgParticle2" Grid.RowSpan="3" WidthRequest="4" HeightRequest="4" CornerRadius="2"
+                 Color="#8B5CF6" Opacity="0.3" HorizontalOptions="End" VerticalOptions="Start"
+                 TranslationX="-60" TranslationY="200" InputTransparent="True"/>
+        <BoxView x:Name="BgParticle3" Grid.RowSpan="3" WidthRequest="5" HeightRequest="5" CornerRadius="2.5"
+                 Color="#06B6D4" Opacity="0.35" HorizontalOptions="Start" VerticalOptions="Center"
+                 TranslationX="30" TranslationY="50" InputTransparent="True"/>
+        <BoxView x:Name="BgParticle4" Grid.RowSpan="3" WidthRequest="7" HeightRequest="7" CornerRadius="3.5"
+                 Color="#EC4899" Opacity="0.3" HorizontalOptions="End" VerticalOptions="End"
+                 TranslationX="-50" TranslationY="-150" InputTransparent="True"/>
 
-            <!-- Welcome Message -->
-            <VerticalStackLayout Grid.Column="0" Spacing="4">
+        <!-- Aurora Glows -->
+        <BoxView x:Name="Aurora1" Grid.RowSpan="3" WidthRequest="300" HeightRequest="300" CornerRadius="150"
+                 Opacity="0.06" HorizontalOptions="End" VerticalOptions="Start"
+                 TranslationX="100" TranslationY="-80" InputTransparent="True">
+            <BoxView.Background>
+                <RadialGradientBrush>
+                    <GradientStop Color="#6366F1" Offset="0"/>
+                    <GradientStop Color="#00000000" Offset="1"/>
+                </RadialGradientBrush>
+            </BoxView.Background>
+        </BoxView>
 
-                <!-- Greeting -->
-                <Label
-                    Text="{Binding GreetingText}"
-                    TextColor="#94A3B8"
-                    FontSize="14"
-                    FontFamily="OpenSansRegular"/>
-
-                <!-- User Name or Welcome -->
-                <Label
-                    Text="{Binding WelcomeTitle}"
-                    TextColor="White"
-                    FontSize="24"
-                    FontFamily="OpenSansBold"/>
-
-                <!-- Subtitle -->
-                <Label
-                    Text="เลือกบริการที่คุณต้องการ"
-                    TextColor="#64748B"
-                    FontSize="14"
-                    FontFamily="OpenSansRegular"/>
-
-            </VerticalStackLayout>
-
-            <!-- User Avatar / Login Button -->
-            <Border
-                Grid.Column="1"
-                StrokeThickness="2"
-                Stroke="{StaticResource UltraPrimary}"
-                HeightRequest="50"
-                WidthRequest="50"
-                StrokeShape="RoundRectangle 25">
-
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding ProfileOrLoginCommand}"/>
-                </Border.GestureRecognizers>
-
-                <Grid>
-                    <!-- Avatar (if logged in) -->
-                    <Label
-                        Text="{Binding UserInitial}"
-                        TextColor="White"
-                        FontSize="20"
-                        FontFamily="OpenSansBold"
-                        HorizontalOptions="Center"
-                        VerticalOptions="Center"
-                        IsVisible="{Binding IsLoggedIn}"/>
-
-                    <!-- Login Icon (if not logged in) -->
-                    <Label
-                        Text="👤"
-                        FontSize="24"
-                        HorizontalOptions="Center"
-                        VerticalOptions="Center"
-                        IsVisible="{Binding IsNotLoggedIn}"/>
-                </Grid>
-            </Border>
-
-        </Grid>
+        <BoxView x:Name="Aurora2" Grid.RowSpan="3" WidthRequest="350" HeightRequest="350" CornerRadius="175"
+                 Opacity="0.04" HorizontalOptions="Start" VerticalOptions="End"
+                 TranslationX="-120" TranslationY="100" InputTransparent="True">
+            <BoxView.Background>
+                <RadialGradientBrush>
+                    <GradientStop Color="#8B5CF6" Offset="0"/>
+                    <GradientStop Color="#00000000" Offset="1"/>
+                </RadialGradientBrush>
+            </BoxView.Background>
+        </BoxView>
 
         <!-- ═══════════════════════════════════════════════════════════════
-             MAIN CONTENT - Grid ของ Hub Cards
+             HEADER SECTION - ส่วนหัวแบบ Premium
              ═══════════════════════════════════════════════════════════════ -->
 
-        <ScrollView Grid.Row="1" Padding="16,0">
-            <VerticalStackLayout Spacing="16">
+        <Border Grid.Row="0" BackgroundColor="Transparent" Padding="20,50,20,16">
+            <Grid ColumnDefinitions="*,Auto">
+
+                <!-- Welcome Section -->
+                <VerticalStackLayout Grid.Column="0" Spacing="2">
+
+                    <!-- Greeting Badge -->
+                    <Border BackgroundColor="#15FFFFFF" StrokeThickness="0" Padding="10,4"
+                            HorizontalOptions="Start" StrokeShape="RoundRectangle 12" Margin="0,0,0,8">
+                        <Label Text="{Binding GreetingText}" TextColor="#94A3B8"
+                               FontSize="12" FontFamily="OpenSansRegular"/>
+                    </Border>
+
+                    <!-- User Name -->
+                    <Label Text="{Binding WelcomeTitle}" FontSize="28" FontFamily="OpenSansBold">
+                        <Label.TextColor>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#FFFFFF" Offset="0"/>
+                                <GradientStop Color="#E0E7FF" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Label.TextColor>
+                    </Label>
+
+                    <!-- Subtitle -->
+                    <Label Text="เลือกบริการที่คุณต้องการ ✨" TextColor="#64748B"
+                           FontSize="13" FontFamily="OpenSansRegular"/>
+
+                </VerticalStackLayout>
+
+                <!-- Avatar Button with Glow -->
+                <Grid Grid.Column="1" WidthRequest="60" HeightRequest="60">
+
+                    <!-- Glow Ring -->
+                    <Border x:Name="AvatarGlow" WidthRequest="60" HeightRequest="60"
+                            StrokeThickness="2" BackgroundColor="Transparent"
+                            StrokeShape="RoundRectangle 30">
+                        <Border.Stroke>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#6366F1" Offset="0"/>
+                                <GradientStop Color="#8B5CF6" Offset="0.5"/>
+                                <GradientStop Color="#06B6D4" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Stroke>
+                    </Border>
+
+                    <!-- Avatar Container -->
+                    <Border WidthRequest="52" HeightRequest="52" StrokeThickness="0"
+                            HorizontalOptions="Center" VerticalOptions="Center"
+                            StrokeShape="RoundRectangle 26">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#1E293B" Offset="0"/>
+                                <GradientStop Color="#0F172A" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ProfileOrLoginCommand}"/>
+                        </Border.GestureRecognizers>
+
+                        <Grid>
+                            <Label Text="{Binding UserInitial}" TextColor="White"
+                                   FontSize="20" FontFamily="OpenSansBold"
+                                   HorizontalOptions="Center" VerticalOptions="Center"
+                                   IsVisible="{Binding IsLoggedIn}"/>
+                            <Label Text="👤" FontSize="24"
+                                   HorizontalOptions="Center" VerticalOptions="Center"
+                                   IsVisible="{Binding IsNotLoggedIn}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Notification Badge -->
+                    <Border WidthRequest="18" HeightRequest="18" BackgroundColor="#EF4444"
+                            StrokeThickness="2" Stroke="#050510"
+                            HorizontalOptions="End" VerticalOptions="Start"
+                            TranslationX="-4" TranslationY="4"
+                            StrokeShape="RoundRectangle 9">
+                        <Label Text="3" TextColor="White" FontSize="10" FontFamily="OpenSansBold"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
+
+                </Grid>
+
+            </Grid>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             MAIN CONTENT - Hub Cards Grid
+             ═══════════════════════════════════════════════════════════════ -->
+
+        <ScrollView Grid.Row="1" Padding="12,0">
+            <VerticalStackLayout Spacing="12">
 
                 <!-- Hub Cards Grid - 2 columns -->
-                <CollectionView
-                    ItemsSource="{Binding HubItems}"
-                    ItemsLayout="VerticalGrid, 2"
-                    SelectionMode="None">
+                <CollectionView ItemsSource="{Binding HubItems}"
+                                ItemsLayout="VerticalGrid, 2"
+                                SelectionMode="None">
 
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:HubItem">
                             <Grid Padding="6">
 
-                                <!-- Hub Card -->
-                                <Frame
-                                    x:Name="HubCard"
-                                    BackgroundColor="#16213E"
-                                    BorderColor="#334155"
-                                    CornerRadius="20"
-                                    Padding="16"
-                                    HeightRequest="160"
-                                    HasShadow="True">
+                                <!-- Hub Card - Glassmorphism Style -->
+                                <Border BackgroundColor="#12FFFFFF"
+                                        StrokeThickness="1"
+                                        Stroke="#20FFFFFF"
+                                        Padding="0"
+                                        HeightRequest="165"
+                                        StrokeShape="RoundRectangle 24">
 
-                                    <Frame.Shadow>
-                                        <Shadow
-                                            Brush="#20000000"
-                                            Offset="0,4"
-                                            Radius="12"
-                                            Opacity="0.3"/>
-                                    </Frame.Shadow>
-
-                                    <Frame.GestureRecognizers>
+                                    <Border.GestureRecognizers>
                                         <TapGestureRecognizer
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:HubSelectionViewModel}}, Path=SelectHubCommand}"
                                             CommandParameter="{Binding .}"/>
-                                    </Frame.GestureRecognizers>
+                                    </Border.GestureRecognizers>
 
-                                    <Grid RowDefinitions="Auto,*,Auto,Auto">
+                                    <Grid Padding="16" RowDefinitions="Auto,*,Auto,Auto">
 
-                                        <!-- Icon Badge with Gradient -->
-                                        <Border
-                                            Grid.Row="0"
-                                            HeightRequest="56"
-                                            WidthRequest="56"
-                                            StrokeThickness="0"
-                                            HorizontalOptions="Start"
-                                            StrokeShape="RoundRectangle 16">
+                                        <!-- Icon Container with Gradient Glow -->
+                                        <Grid Grid.Row="0" WidthRequest="58" HeightRequest="58" HorizontalOptions="Start">
 
+                                            <!-- Glow Behind Icon -->
+                                            <BoxView WidthRequest="58" HeightRequest="58" CornerRadius="18"
+                                                     Opacity="0.3" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <BoxView.Background>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                        <GradientStop Color="{Binding GradientStart}" Offset="0"/>
+                                                        <GradientStop Color="{Binding GradientEnd}" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </BoxView.Background>
+                                            </BoxView>
+
+                                            <!-- Icon Box -->
+                                            <Border WidthRequest="54" HeightRequest="54" StrokeThickness="0"
+                                                    HorizontalOptions="Center" VerticalOptions="Center"
+                                                    StrokeShape="RoundRectangle 16">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                        <GradientStop Color="{Binding GradientStart}" Offset="0"/>
+                                                        <GradientStop Color="{Binding GradientEnd}" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+
+                                                <Label Text="{Binding Icon}" FontSize="26"
+                                                       HorizontalOptions="Center" VerticalOptions="Center"/>
+                                            </Border>
+
+                                        </Grid>
+
+                                        <!-- Badge (if any) -->
+                                        <Border Grid.Row="0" IsVisible="{Binding HasBadge}"
+                                                HeightRequest="22" Padding="8,2"
+                                                StrokeThickness="0" HorizontalOptions="End" VerticalOptions="Start"
+                                                StrokeShape="RoundRectangle 11">
                                             <Border.Background>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                    <GradientStop Color="{Binding GradientStart}" Offset="0.0"/>
-                                                    <GradientStop Color="{Binding GradientEnd}" Offset="1.0"/>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                    <GradientStop Color="#EF4444" Offset="0"/>
+                                                    <GradientStop Color="#EC4899" Offset="1"/>
                                                 </LinearGradientBrush>
                                             </Border.Background>
-
-                                            <Label
-                                                Text="{Binding Icon}"
-                                                FontSize="28"
-                                                HorizontalOptions="Center"
-                                                VerticalOptions="Center"/>
-
+                                            <Label Text="{Binding BadgeText}" TextColor="White"
+                                                   FontSize="10" FontFamily="OpenSansBold"
+                                                   HorizontalOptions="Center" VerticalOptions="Center"/>
                                         </Border>
 
                                         <!-- Spacer -->
-                                        <BoxView Grid.Row="1" HeightRequest="8"/>
+                                        <BoxView Grid.Row="1" HeightRequest="6"/>
 
                                         <!-- Title -->
-                                        <Label
-                                            Grid.Row="2"
-                                            Text="{Binding Title}"
-                                            TextColor="White"
-                                            FontSize="16"
-                                            FontFamily="OpenSansSemibold"
-                                            LineBreakMode="TailTruncation"
-                                            MaxLines="1"/>
+                                        <Label Grid.Row="2" Text="{Binding Title}"
+                                               TextColor="White" FontSize="15" FontFamily="OpenSansSemibold"
+                                               LineBreakMode="TailTruncation" MaxLines="1"/>
 
                                         <!-- Subtitle -->
-                                        <Label
-                                            Grid.Row="3"
-                                            Text="{Binding Subtitle}"
-                                            TextColor="#94A3B8"
-                                            FontSize="11"
-                                            FontFamily="OpenSansRegular"
-                                            LineBreakMode="TailTruncation"
-                                            MaxLines="2"/>
+                                        <Label Grid.Row="3" Text="{Binding Subtitle}"
+                                               TextColor="#7C8BA1" FontSize="11" FontFamily="OpenSansRegular"
+                                               LineBreakMode="TailTruncation" MaxLines="2"/>
 
-                                        <!-- Badge (if any) -->
-                                        <Border
-                                            Grid.Row="0"
-                                            IsVisible="{Binding HasBadge}"
-                                            BackgroundColor="{StaticResource UltraError}"
-                                            HeightRequest="20"
-                                            MinimumWidthRequest="20"
-                                            Padding="6,2"
-                                            StrokeThickness="0"
-                                            HorizontalOptions="End"
-                                            VerticalOptions="Start"
-                                            StrokeShape="RoundRectangle 10">
-
-                                            <Label
-                                                Text="{Binding BadgeText}"
-                                                TextColor="White"
-                                                FontSize="10"
-                                                FontFamily="OpenSansSemibold"
-                                                HorizontalOptions="Center"
-                                                VerticalOptions="Center"/>
-
-                                        </Border>
+                                        <!-- Shine Effect -->
+                                        <BoxView Grid.RowSpan="4" WidthRequest="80" HeightRequest="180"
+                                                 CornerRadius="40" Opacity="0.03" Rotation="-30"
+                                                 HorizontalOptions="End" VerticalOptions="Start"
+                                                 TranslationX="20" TranslationY="-30"
+                                                 InputTransparent="True">
+                                            <BoxView.Background>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                    <GradientStop Color="#FFFFFF" Offset="0"/>
+                                                    <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                                </LinearGradientBrush>
+                                            </BoxView.Background>
+                                        </BoxView>
 
                                     </Grid>
 
-                                </Frame>
+                                </Border>
 
                             </Grid>
                         </DataTemplate>
@@ -232,120 +285,97 @@
 
                 </CollectionView>
 
-                <!-- Quick Actions Section -->
-                <Frame
-                    BackgroundColor="#1A1A2E"
-                    BorderColor="#334155"
-                    CornerRadius="16"
-                    Padding="16"
-                    Margin="0,8,0,0"
-                    HasShadow="False">
+                <!-- ═══════════════════════════════════════════════════════════════
+                     QUICK ACTIONS - การดำเนินการด่วน
+                     ═══════════════════════════════════════════════════════════════ -->
 
-                    <VerticalStackLayout Spacing="12">
+                <Border BackgroundColor="#10FFFFFF" StrokeThickness="1" Stroke="#15FFFFFF"
+                        Padding="16" Margin="6,8,6,0" StrokeShape="RoundRectangle 20">
 
-                        <Label
-                            Text="การดำเนินการด่วน"
-                            TextColor="#94A3B8"
-                            FontSize="12"
-                            FontFamily="OpenSansSemibold"/>
+                    <VerticalStackLayout Spacing="14">
 
-                        <FlexLayout
-                            Wrap="Wrap"
-                            JustifyContent="SpaceEvenly"
-                            AlignItems="Center">
+                        <!-- Section Header -->
+                        <HorizontalStackLayout Spacing="8">
+                            <Label Text="⚡" FontSize="14"/>
+                            <Label Text="การดำเนินการด่วน" TextColor="#94A3B8"
+                                   FontSize="13" FontFamily="OpenSansSemibold" VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
 
-                            <!-- Quick Action: QR Scan -->
-                            <VerticalStackLayout Spacing="4" Margin="8">
-                                <Border
-                                    HeightRequest="48"
-                                    WidthRequest="48"
-                                    BackgroundColor="#334155"
-                                    StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 12">
-                                    <Label
-                                        Text="📷"
-                                        FontSize="22"
-                                        HorizontalOptions="Center"
-                                        VerticalOptions="Center"/>
+                        <!-- Quick Actions Grid -->
+                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+
+                            <!-- QR Scan -->
+                            <VerticalStackLayout Grid.Column="0" Spacing="6" HorizontalOptions="Center">
+                                <Border WidthRequest="52" HeightRequest="52" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 14">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Color="#1E293B" Offset="0"/>
+                                            <GradientStop Color="#0F172A" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <Label Text="📷" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center"/>
                                 </Border>
-                                <Label
-                                    Text="สแกน QR"
-                                    TextColor="#94A3B8"
-                                    FontSize="10"
-                                    HorizontalOptions="Center"/>
+                                <Label Text="สแกน QR" TextColor="#7C8BA1" FontSize="10"
+                                       HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
                             </VerticalStackLayout>
 
-                            <!-- Quick Action: Transfer -->
-                            <VerticalStackLayout Spacing="4" Margin="8">
-                                <Border
-                                    HeightRequest="48"
-                                    WidthRequest="48"
-                                    BackgroundColor="#334155"
-                                    StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 12">
-                                    <Label
-                                        Text="💸"
-                                        FontSize="22"
-                                        HorizontalOptions="Center"
-                                        VerticalOptions="Center"/>
+                            <!-- Transfer -->
+                            <VerticalStackLayout Grid.Column="1" Spacing="6" HorizontalOptions="Center">
+                                <Border WidthRequest="52" HeightRequest="52" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 14">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Color="#1E293B" Offset="0"/>
+                                            <GradientStop Color="#0F172A" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <Label Text="💸" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center"/>
                                 </Border>
-                                <Label
-                                    Text="โอนเงิน"
-                                    TextColor="#94A3B8"
-                                    FontSize="10"
-                                    HorizontalOptions="Center"/>
+                                <Label Text="โอนเงิน" TextColor="#7C8BA1" FontSize="10"
+                                       HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
                             </VerticalStackLayout>
 
-                            <!-- Quick Action: Top Up -->
-                            <VerticalStackLayout Spacing="4" Margin="8">
-                                <Border
-                                    HeightRequest="48"
-                                    WidthRequest="48"
-                                    BackgroundColor="#334155"
-                                    StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 12">
-                                    <Label
-                                        Text="➕"
-                                        FontSize="22"
-                                        HorizontalOptions="Center"
-                                        VerticalOptions="Center"/>
+                            <!-- Top Up -->
+                            <VerticalStackLayout Grid.Column="2" Spacing="6" HorizontalOptions="Center">
+                                <Border WidthRequest="52" HeightRequest="52" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 14">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Color="#1E293B" Offset="0"/>
+                                            <GradientStop Color="#0F172A" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <Label Text="➕" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center"/>
                                 </Border>
-                                <Label
-                                    Text="เติมเงิน"
-                                    TextColor="#94A3B8"
-                                    FontSize="10"
-                                    HorizontalOptions="Center"/>
+                                <Label Text="เติมเงิน" TextColor="#7C8BA1" FontSize="10"
+                                       HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
                             </VerticalStackLayout>
 
-                            <!-- Quick Action: History -->
-                            <VerticalStackLayout Spacing="4" Margin="8">
-                                <Border
-                                    HeightRequest="48"
-                                    WidthRequest="48"
-                                    BackgroundColor="#334155"
-                                    StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 12">
-                                    <Label
-                                        Text="📋"
-                                        FontSize="22"
-                                        HorizontalOptions="Center"
-                                        VerticalOptions="Center"/>
+                            <!-- History -->
+                            <VerticalStackLayout Grid.Column="3" Spacing="6" HorizontalOptions="Center">
+                                <Border WidthRequest="52" HeightRequest="52" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 14">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Color="#1E293B" Offset="0"/>
+                                            <GradientStop Color="#0F172A" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <Label Text="📋" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center"/>
                                 </Border>
-                                <Label
-                                    Text="ประวัติ"
-                                    TextColor="#94A3B8"
-                                    FontSize="10"
-                                    HorizontalOptions="Center"/>
+                                <Label Text="ประวัติ" TextColor="#7C8BA1" FontSize="10"
+                                       HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
                             </VerticalStackLayout>
 
-                        </FlexLayout>
+                        </Grid>
 
                     </VerticalStackLayout>
 
-                </Frame>
+                </Border>
 
                 <!-- Bottom Padding -->
-                <BoxView HeightRequest="20"/>
+                <BoxView HeightRequest="16"/>
 
             </VerticalStackLayout>
         </ScrollView>
@@ -354,109 +384,95 @@
              FOOTER - Login/Register หรือ Balance Info
              ═══════════════════════════════════════════════════════════════ -->
 
-        <Grid Grid.Row="2" Padding="16,12" BackgroundColor="#0F0F23">
+        <Border Grid.Row="2" BackgroundColor="#08FFFFFF" StrokeThickness="0" Padding="16,14">
 
-            <!-- If Not Logged In - Show Login/Register Buttons -->
-            <Grid IsVisible="{Binding IsNotLoggedIn}" ColumnDefinitions="*,16,*">
+            <!-- If Not Logged In -->
+            <Grid IsVisible="{Binding IsNotLoggedIn}" ColumnDefinitions="*,12,*">
 
-                <Button
-                    Grid.Column="0"
-                    Text="เข้าสู่ระบบ"
-                    Style="{StaticResource UltraPrimaryButton}"
-                    HeightRequest="50"
-                    Command="{Binding LoginCommand}"/>
+                <!-- Login Button -->
+                <Border Grid.Column="0" HeightRequest="52" StrokeThickness="0"
+                        StrokeShape="RoundRectangle 14">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#6366F1" Offset="0"/>
+                            <GradientStop Color="#8B5CF6" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding LoginCommand}"/>
+                    </Border.GestureRecognizers>
+                    <Label Text="เข้าสู่ระบบ" TextColor="White" FontSize="16"
+                           FontFamily="OpenSansSemibold"
+                           HorizontalOptions="Center" VerticalOptions="Center"/>
+                </Border>
 
-                <Button
-                    Grid.Column="2"
-                    Text="สมัครสมาชิก"
-                    Style="{StaticResource UltraOutlineButton}"
-                    HeightRequest="50"
-                    Command="{Binding RegisterCommand}"/>
+                <!-- Register Button -->
+                <Border Grid.Column="2" HeightRequest="52" BackgroundColor="Transparent"
+                        StrokeThickness="2" StrokeShape="RoundRectangle 14">
+                    <Border.Stroke>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                            <GradientStop Color="#6366F1" Offset="0"/>
+                            <GradientStop Color="#8B5CF6" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Stroke>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding RegisterCommand}"/>
+                    </Border.GestureRecognizers>
+                    <Label Text="สมัครสมาชิก" TextColor="#A5B4FC" FontSize="16"
+                           FontFamily="OpenSansSemibold"
+                           HorizontalOptions="Center" VerticalOptions="Center"/>
+                </Border>
 
             </Grid>
 
-            <!-- If Logged In - Show Balance Bar -->
-            <Frame
-                IsVisible="{Binding IsLoggedIn}"
-                BackgroundColor="#16213E"
-                BorderColor="#334155"
-                CornerRadius="12"
-                Padding="16,12"
-                HasShadow="False">
+            <!-- If Logged In - Balance Bar -->
+            <Border IsVisible="{Binding IsLoggedIn}" BackgroundColor="#12FFFFFF"
+                    StrokeThickness="1" Stroke="#20FFFFFF" Padding="16,12"
+                    StrokeShape="RoundRectangle 16">
 
                 <Grid ColumnDefinitions="Auto,*,Auto">
 
                     <!-- Wallet Icon -->
-                    <Label
-                        Grid.Column="0"
-                        Text="💳"
-                        FontSize="24"
-                        VerticalOptions="Center"/>
+                    <Border Grid.Column="0" WidthRequest="44" HeightRequest="44"
+                            StrokeThickness="0" StrokeShape="RoundRectangle 12">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#10B981" Offset="0"/>
+                                <GradientStop Color="#059669" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Label Text="💳" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
 
                     <!-- Balance Info -->
-                    <VerticalStackLayout Grid.Column="1" Margin="12,0" VerticalOptions="Center">
-                        <Label
-                            Text="ยอดเงินคงเหลือ"
-                            TextColor="#94A3B8"
-                            FontSize="11"/>
-                        <Label
-                            Text="{Binding BalanceDisplay}"
-                            TextColor="White"
-                            FontSize="18"
-                            FontFamily="OpenSansBold"/>
+                    <VerticalStackLayout Grid.Column="1" Margin="14,0" VerticalOptions="Center" Spacing="0">
+                        <Label Text="ยอดเงินคงเหลือ" TextColor="#7C8BA1" FontSize="11"/>
+                        <Label Text="{Binding BalanceDisplay}" TextColor="White"
+                               FontSize="20" FontFamily="OpenSansBold"/>
                     </VerticalStackLayout>
 
                     <!-- Top Up Button -->
-                    <Button
-                        Grid.Column="2"
-                        Text="เติมเงิน"
-                        BackgroundColor="{StaticResource UltraSuccess}"
-                        TextColor="White"
-                        FontSize="14"
-                        CornerRadius="8"
-                        Padding="16,8"
-                        HeightRequest="40"
-                        Command="{Binding TopUpCommand}"/>
+                    <Border Grid.Column="2" HeightRequest="40" Padding="16,0"
+                            StrokeThickness="0" StrokeShape="RoundRectangle 10">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#10B981" Offset="0"/>
+                                <GradientStop Color="#059669" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding TopUpCommand}"/>
+                        </Border.GestureRecognizers>
+                        <Label Text="+ เติมเงิน" TextColor="White" FontSize="13"
+                               FontFamily="OpenSansSemibold"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
 
                 </Grid>
 
-            </Frame>
+            </Border>
 
-        </Grid>
-
-        <!-- ═══════════════════════════════════════════════════════════════
-             DECORATIVE ELEMENTS - องค์ประกอบตกแต่ง
-             ═══════════════════════════════════════════════════════════════ -->
-
-        <!-- Top Right Glow -->
-        <BoxView
-            Grid.Row="0"
-            Grid.RowSpan="3"
-            WidthRequest="200"
-            HeightRequest="200"
-            CornerRadius="100"
-            Color="{StaticResource UltraPrimary}"
-            Opacity="0.05"
-            HorizontalOptions="End"
-            VerticalOptions="Start"
-            TranslationX="80"
-            TranslationY="-50"
-            InputTransparent="True"/>
-
-        <!-- Bottom Left Glow -->
-        <BoxView
-            Grid.Row="0"
-            Grid.RowSpan="3"
-            WidthRequest="250"
-            HeightRequest="250"
-            CornerRadius="125"
-            Color="{StaticResource UltraSecondary}"
-            Opacity="0.03"
-            HorizontalOptions="Start"
-            VerticalOptions="End"
-            TranslationX="-100"
-            TranslationY="50"
-            InputTransparent="True"/>
+        </Border>
 
     </Grid>
 

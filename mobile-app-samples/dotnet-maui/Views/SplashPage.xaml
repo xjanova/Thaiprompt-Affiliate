@@ -10,230 +10,352 @@
 
     <!--
         ╔══════════════════════════════════════════════════════════════════╗
-        ║              THAIPROMPT ULTRA SPLASH SCREEN                      ║
-        ║              Modern 3D Animated Splash                           ║
+        ║         🚀 THAIPROMPT ULTRA SPLASH SCREEN V2 🚀                  ║
+        ║              World-Class Animated Experience                     ║
         ╚══════════════════════════════════════════════════════════════════╝
 
-        ฟีเจอร์:
-        - Gradient Background แบบ Dynamic
-        - Logo พร้อม Glow Effect
-        - Loading Animation
-        - Auto-navigate หลังโหลดเสร็จ
-        - Dark Mode เท่านั้น (สวยกว่า)
+        ✨ Features:
+        - Animated Particle System (floating orbs)
+        - Rotating Glow Rings
+        - 3D Logo with Pulse Effect
+        - Gradient Text Animation
+        - Cyberpunk-style Design
+        - Smooth Loading Experience
     -->
 
     <ContentPage.Background>
-        <!-- Gradient Background สีเข้มสวยงาม -->
+        <!-- Deep Space Gradient Background -->
         <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#0F0F23" Offset="0.0"/>
-            <GradientStop Color="#1A1A2E" Offset="0.3"/>
-            <GradientStop Color="#16213E" Offset="0.6"/>
-            <GradientStop Color="#0F0F23" Offset="1.0"/>
+            <GradientStop Color="#050510" Offset="0.0"/>
+            <GradientStop Color="#0A0A1A" Offset="0.2"/>
+            <GradientStop Color="#0F0F2D" Offset="0.5"/>
+            <GradientStop Color="#0A0A1A" Offset="0.8"/>
+            <GradientStop Color="#050510" Offset="1.0"/>
         </LinearGradientBrush>
     </ContentPage.Background>
 
     <Grid>
-        <!-- Main Content -->
-        <VerticalStackLayout
-            VerticalOptions="Center"
-            HorizontalOptions="Center"
-            Spacing="32"
-            Padding="32">
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             LAYER 1: ANIMATED PARTICLE SYSTEM - อนุภาคลอยตัว
+             ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- Floating Particles -->
+        <BoxView x:Name="Particle1" WidthRequest="6" HeightRequest="6" CornerRadius="3"
+                 Color="#6366F1" Opacity="0.6" HorizontalOptions="Start" VerticalOptions="Start"
+                 TranslationX="30" TranslationY="100"/>
+        <BoxView x:Name="Particle2" WidthRequest="4" HeightRequest="4" CornerRadius="2"
+                 Color="#8B5CF6" Opacity="0.5" HorizontalOptions="End" VerticalOptions="Start"
+                 TranslationX="-50" TranslationY="150"/>
+        <BoxView x:Name="Particle3" WidthRequest="8" HeightRequest="8" CornerRadius="4"
+                 Color="#06B6D4" Opacity="0.4" HorizontalOptions="Start" VerticalOptions="Center"
+                 TranslationX="60" TranslationY="-50"/>
+        <BoxView x:Name="Particle4" WidthRequest="5" HeightRequest="5" CornerRadius="2.5"
+                 Color="#EC4899" Opacity="0.5" HorizontalOptions="End" VerticalOptions="Center"
+                 TranslationX="-40" TranslationY="80"/>
+        <BoxView x:Name="Particle5" WidthRequest="7" HeightRequest="7" CornerRadius="3.5"
+                 Color="#10B981" Opacity="0.4" HorizontalOptions="Center" VerticalOptions="End"
+                 TranslationX="-100" TranslationY="-200"/>
+        <BoxView x:Name="Particle6" WidthRequest="4" HeightRequest="4" CornerRadius="2"
+                 Color="#F59E0B" Opacity="0.6" HorizontalOptions="Start" VerticalOptions="End"
+                 TranslationX="80" TranslationY="-150"/>
+        <BoxView x:Name="Particle7" WidthRequest="6" HeightRequest="6" CornerRadius="3"
+                 Color="#6366F1" Opacity="0.3" HorizontalOptions="End" VerticalOptions="End"
+                 TranslationX="-80" TranslationY="-100"/>
+        <BoxView x:Name="Particle8" WidthRequest="5" HeightRequest="5" CornerRadius="2.5"
+                 Color="#8B5CF6" Opacity="0.5" HorizontalOptions="Center" VerticalOptions="Start"
+                 TranslationX="50" TranslationY="80"/>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             LAYER 2: LARGE AMBIENT GLOWS - แสงพื้นหลังขนาดใหญ่
+             ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- Top Right Aurora -->
+        <BoxView x:Name="Aurora1" WidthRequest="350" HeightRequest="350" CornerRadius="175"
+                 Opacity="0.08" HorizontalOptions="End" VerticalOptions="Start"
+                 TranslationX="120" TranslationY="-100">
+            <BoxView.Background>
+                <RadialGradientBrush>
+                    <GradientStop Color="#6366F1" Offset="0"/>
+                    <GradientStop Color="#00000000" Offset="1"/>
+                </RadialGradientBrush>
+            </BoxView.Background>
+        </BoxView>
+
+        <!-- Bottom Left Aurora -->
+        <BoxView x:Name="Aurora2" WidthRequest="400" HeightRequest="400" CornerRadius="200"
+                 Opacity="0.06" HorizontalOptions="Start" VerticalOptions="End"
+                 TranslationX="-150" TranslationY="150">
+            <BoxView.Background>
+                <RadialGradientBrush>
+                    <GradientStop Color="#8B5CF6" Offset="0"/>
+                    <GradientStop Color="#00000000" Offset="1"/>
+                </RadialGradientBrush>
+            </BoxView.Background>
+        </BoxView>
+
+        <!-- Center Accent Aurora -->
+        <BoxView x:Name="Aurora3" WidthRequest="300" HeightRequest="300" CornerRadius="150"
+                 Opacity="0.05" HorizontalOptions="Center" VerticalOptions="Center"
+                 TranslationY="200">
+            <BoxView.Background>
+                <RadialGradientBrush>
+                    <GradientStop Color="#06B6D4" Offset="0"/>
+                    <GradientStop Color="#00000000" Offset="1"/>
+                </RadialGradientBrush>
+            </BoxView.Background>
+        </BoxView>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             LAYER 3: MAIN CONTENT - เนื้อหาหลัก
+             ═══════════════════════════════════════════════════════════════ -->
+
+        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="24" Padding="32">
 
             <!-- ═══════════════════════════════════════════════════════════════
-                 LOGO SECTION - โลโก้และ Glow Effect
+                 LOGO SECTION - โลโก้พร้อม Rotating Rings
                  ═══════════════════════════════════════════════════════════════ -->
 
-            <!-- Logo Container with Glow -->
-            <Frame
-                x:Name="LogoFrame"
-                Style="{StaticResource SplashLogoContainer}"
-                Opacity="0">
+            <Grid x:Name="LogoContainer" WidthRequest="220" HeightRequest="220"
+                  HorizontalOptions="Center" Opacity="0">
 
-                <Grid>
-                    <!-- Glow Ring Animation Background -->
-                    <BoxView
-                        x:Name="GlowRing1"
-                        CornerRadius="80"
-                        WidthRequest="160"
-                        HeightRequest="160"
-                        Color="#6366F1"
-                        Opacity="0.3"
-                        HorizontalOptions="Center"
-                        VerticalOptions="Center"/>
+                <!-- Outer Rotating Ring 1 -->
+                <Border x:Name="OuterRing1" WidthRequest="220" HeightRequest="220"
+                        StrokeThickness="1" Stroke="#306366F1" BackgroundColor="Transparent"
+                        HorizontalOptions="Center" VerticalOptions="Center"
+                        StrokeShape="RoundRectangle 110"/>
 
-                    <BoxView
-                        x:Name="GlowRing2"
-                        CornerRadius="70"
-                        WidthRequest="140"
-                        HeightRequest="140"
-                        Color="#8B5CF6"
-                        Opacity="0.5"
-                        HorizontalOptions="Center"
-                        VerticalOptions="Center"/>
+                <!-- Outer Rotating Ring 2 -->
+                <Border x:Name="OuterRing2" WidthRequest="200" HeightRequest="200"
+                        StrokeThickness="2" BackgroundColor="Transparent"
+                        HorizontalOptions="Center" VerticalOptions="Center"
+                        StrokeShape="RoundRectangle 100">
+                    <Border.Stroke>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#606366F1" Offset="0"/>
+                            <GradientStop Color="#00000000" Offset="0.5"/>
+                            <GradientStop Color="#608B5CF6" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Stroke>
+                </Border>
 
-                    <!-- Logo Icon หรือ Image -->
-                    <Label
-                        Text="🚀"
-                        FontSize="72"
-                        HorizontalOptions="Center"
-                        VerticalOptions="Center"/>
+                <!-- Inner Rotating Ring -->
+                <Border x:Name="InnerRing" WidthRequest="180" HeightRequest="180"
+                        StrokeThickness="1.5" BackgroundColor="Transparent"
+                        HorizontalOptions="Center" VerticalOptions="Center"
+                        StrokeShape="RoundRectangle 90">
+                    <Border.Stroke>
+                        <LinearGradientBrush StartPoint="1,0" EndPoint="0,1">
+                            <GradientStop Color="#4006B6D4" Offset="0"/>
+                            <GradientStop Color="#00000000" Offset="0.3"/>
+                            <GradientStop Color="#40EC4899" Offset="0.7"/>
+                            <GradientStop Color="#00000000" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Stroke>
+                </Border>
+
+                <!-- Glow Pulse Layer -->
+                <BoxView x:Name="GlowPulse" WidthRequest="150" HeightRequest="150"
+                         CornerRadius="75" Opacity="0.4"
+                         HorizontalOptions="Center" VerticalOptions="Center">
+                    <BoxView.Background>
+                        <RadialGradientBrush>
+                            <GradientStop Color="#6366F1" Offset="0"/>
+                            <GradientStop Color="#308B5CF6" Offset="0.5"/>
+                            <GradientStop Color="#00000000" Offset="1"/>
+                        </RadialGradientBrush>
+                    </BoxView.Background>
+                </BoxView>
+
+                <!-- Logo Glass Container -->
+                <Border WidthRequest="130" HeightRequest="130"
+                        StrokeThickness="1" Stroke="#40FFFFFF"
+                        HorizontalOptions="Center" VerticalOptions="Center"
+                        StrokeShape="RoundRectangle 65">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#30FFFFFF" Offset="0"/>
+                            <GradientStop Color="#10FFFFFF" Offset="0.5"/>
+                            <GradientStop Color="#20FFFFFF" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+
+                    <Grid>
+                        <!-- Logo Icon -->
+                        <Label x:Name="LogoIcon" Text="⚡" FontSize="64"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+
+                        <!-- Shine Effect -->
+                        <BoxView x:Name="LogoShine" WidthRequest="60" HeightRequest="120"
+                                 CornerRadius="30" Opacity="0.15" Rotation="-45"
+                                 HorizontalOptions="Start" VerticalOptions="Start"
+                                 TranslationX="10" TranslationY="5">
+                            <BoxView.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#FFFFFF" Offset="0"/>
+                                    <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                </LinearGradientBrush>
+                            </BoxView.Background>
+                        </BoxView>
+                    </Grid>
+                </Border>
+
+                <!-- Orbiting Dots -->
+                <BoxView x:Name="OrbitDot1" WidthRequest="8" HeightRequest="8" CornerRadius="4"
+                         Color="#6366F1" Opacity="0.8"
+                         HorizontalOptions="Center" VerticalOptions="Start" TranslationY="5"/>
+                <BoxView x:Name="OrbitDot2" WidthRequest="6" HeightRequest="6" CornerRadius="3"
+                         Color="#06B6D4" Opacity="0.7"
+                         HorizontalOptions="End" VerticalOptions="Center" TranslationX="-5"/>
+                <BoxView x:Name="OrbitDot3" WidthRequest="7" HeightRequest="7" CornerRadius="3.5"
+                         Color="#EC4899" Opacity="0.6"
+                         HorizontalOptions="Center" VerticalOptions="End" TranslationY="-5"/>
+
+            </Grid>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 TITLE SECTION - ชื่อแอพสไตล์ Cyberpunk
+                 ═══════════════════════════════════════════════════════════════ -->
+
+            <VerticalStackLayout x:Name="TitleSection" Spacing="12" Opacity="0">
+
+                <!-- Main Title with Glow -->
+                <Grid HorizontalOptions="Center">
+                    <!-- Glow Behind Text -->
+                    <Label Text="THAIPROMPT" FontSize="42" FontFamily="OpenSansBold"
+                           TextColor="#6366F1" Opacity="0.3"
+                           HorizontalOptions="Center">
+                        <Label.Shadow>
+                            <Shadow Brush="#6366F1" Offset="0,0" Radius="30" Opacity="1"/>
+                        </Label.Shadow>
+                    </Label>
+                    <!-- Main Text -->
+                    <Label x:Name="MainTitle" Text="THAIPROMPT" FontSize="42" FontFamily="OpenSansBold"
+                           HorizontalOptions="Center">
+                        <Label.TextColor>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#FFFFFF" Offset="0"/>
+                                <GradientStop Color="#E0E7FF" Offset="0.5"/>
+                                <GradientStop Color="#FFFFFF" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Label.TextColor>
+                    </Label>
                 </Grid>
-            </Frame>
 
-            <!-- ═══════════════════════════════════════════════════════════════
-                 TITLE SECTION - ชื่อแอพและ tagline
-                 ═══════════════════════════════════════════════════════════════ -->
+                <!-- Animated Divider -->
+                <Grid HorizontalOptions="Center" WidthRequest="200" HeightRequest="4">
+                    <!-- Background Line -->
+                    <BoxView BackgroundColor="#1E293B" CornerRadius="2"/>
+                    <!-- Animated Gradient Line -->
+                    <BoxView x:Name="DividerLine" WidthRequest="0" HeightRequest="4"
+                             CornerRadius="2" HorizontalOptions="Start">
+                        <BoxView.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#6366F1" Offset="0"/>
+                                <GradientStop Color="#8B5CF6" Offset="0.5"/>
+                                <GradientStop Color="#06B6D4" Offset="1"/>
+                            </LinearGradientBrush>
+                        </BoxView.Background>
+                    </BoxView>
+                </Grid>
 
-            <VerticalStackLayout
-                x:Name="TitleSection"
-                Spacing="8"
-                Opacity="0">
-
-                <!-- App Name -->
-                <Label
-                    Text="THAIPROMPT"
-                    Style="{StaticResource SplashTitle}"
-                    FontSize="36"/>
-
-                <!-- Divider Line with Gradient -->
-                <BoxView
-                    x:Name="DividerLine"
-                    HeightRequest="3"
-                    WidthRequest="0"
-                    CornerRadius="2"
-                    HorizontalOptions="Center"
-                    Color="{StaticResource UltraPrimary}"/>
-
-                <!-- Tagline -->
-                <Label
-                    Text="Ultra Ecosystem"
-                    Style="{StaticResource SplashSubtitle}"
-                    FontSize="20"/>
-
-            </VerticalStackLayout>
-
-            <!-- ═══════════════════════════════════════════════════════════════
-                 LOADING SECTION - แสดงสถานะการโหลด
-                 ═══════════════════════════════════════════════════════════════ -->
-
-            <VerticalStackLayout
-                x:Name="LoadingSection"
-                Spacing="16"
-                Opacity="0">
-
-                <!-- Loading Dots Animation -->
-                <HorizontalStackLayout
-                    HorizontalOptions="Center"
-                    Spacing="12">
-
-                    <BoxView
-                        x:Name="LoadingDot1"
-                        WidthRequest="12"
-                        HeightRequest="12"
-                        CornerRadius="6"
-                        Color="{StaticResource UltraPrimary}"
-                        Opacity="0.3"/>
-
-                    <BoxView
-                        x:Name="LoadingDot2"
-                        WidthRequest="12"
-                        HeightRequest="12"
-                        CornerRadius="6"
-                        Color="{StaticResource UltraSecondary}"
-                        Opacity="0.3"/>
-
-                    <BoxView
-                        x:Name="LoadingDot3"
-                        WidthRequest="12"
-                        HeightRequest="12"
-                        CornerRadius="6"
-                        Color="{StaticResource UltraAccent}"
-                        Opacity="0.3"/>
-
+                <!-- Subtitle with Typing Effect Style -->
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                    <Label Text="⚡" FontSize="18"/>
+                    <Label x:Name="Subtitle" Text="ULTRA ECOSYSTEM" FontSize="16"
+                           FontFamily="OpenSansSemibold" TextColor="#94A3B8"
+                           CharacterSpacing="4"/>
+                    <Label Text="⚡" FontSize="18"/>
                 </HorizontalStackLayout>
 
-                <!-- Loading Status Text -->
-                <Label
-                    Text="{Binding LoadingStatus}"
-                    TextColor="#94A3B8"
-                    FontSize="14"
-                    HorizontalOptions="Center"/>
+            </VerticalStackLayout>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 LOADING SECTION - แสดงสถานะการโหลดแบบล้ำๆ
+                 ═══════════════════════════════════════════════════════════════ -->
+
+            <VerticalStackLayout x:Name="LoadingSection" Spacing="20" Opacity="0">
+
+                <!-- Progress Bar Style Loading -->
+                <Grid HorizontalOptions="Center" WidthRequest="180" HeightRequest="6">
+                    <!-- Background Track -->
+                    <Border BackgroundColor="#1E293B" StrokeThickness="0"
+                            StrokeShape="RoundRectangle 3"/>
+                    <!-- Animated Progress -->
+                    <Border x:Name="LoadingBar" WidthRequest="0" HeightRequest="6"
+                            StrokeThickness="0" HorizontalOptions="Start"
+                            StrokeShape="RoundRectangle 3">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#6366F1" Offset="0"/>
+                                <GradientStop Color="#8B5CF6" Offset="0.5"/>
+                                <GradientStop Color="#06B6D4" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                    </Border>
+                    <!-- Shine Effect on Progress -->
+                    <BoxView x:Name="LoadingShine" WidthRequest="30" HeightRequest="6"
+                             CornerRadius="3" Opacity="0.5" HorizontalOptions="Start">
+                        <BoxView.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#00FFFFFF" Offset="0"/>
+                                <GradientStop Color="#60FFFFFF" Offset="0.5"/>
+                                <GradientStop Color="#00FFFFFF" Offset="1"/>
+                            </LinearGradientBrush>
+                        </BoxView.Background>
+                    </BoxView>
+                </Grid>
+
+                <!-- Loading Dots -->
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                    <BoxView x:Name="LoadingDot1" WidthRequest="10" HeightRequest="10"
+                             CornerRadius="5" Color="#6366F1" Opacity="0.3"/>
+                    <BoxView x:Name="LoadingDot2" WidthRequest="10" HeightRequest="10"
+                             CornerRadius="5" Color="#8B5CF6" Opacity="0.3"/>
+                    <BoxView x:Name="LoadingDot3" WidthRequest="10" HeightRequest="10"
+                             CornerRadius="5" Color="#06B6D4" Opacity="0.3"/>
+                </HorizontalStackLayout>
+
+                <!-- Status Text -->
+                <Label Text="{Binding LoadingStatus}" TextColor="#64748B"
+                       FontSize="13" FontFamily="OpenSansRegular"
+                       HorizontalOptions="Center"/>
 
             </VerticalStackLayout>
 
         </VerticalStackLayout>
 
         <!-- ═══════════════════════════════════════════════════════════════
-             FOOTER SECTION - ด้านล่างหน้าจอ
+             LAYER 4: FOOTER - ด้านล่าง
              ═══════════════════════════════════════════════════════════════ -->
 
-        <VerticalStackLayout
-            x:Name="FooterSection"
-            VerticalOptions="End"
-            HorizontalOptions="Center"
-            Padding="32"
-            Spacing="8"
-            Opacity="0">
+        <VerticalStackLayout x:Name="FooterSection" VerticalOptions="End"
+                             HorizontalOptions="Center" Padding="32" Spacing="6" Opacity="0">
 
-            <!-- Powered By -->
-            <Label
-                Text="Powered by AI &amp; Blockchain"
-                TextColor="#64748B"
-                FontSize="12"
-                HorizontalOptions="Center"/>
+            <!-- Powered By Badge -->
+            <Border BackgroundColor="#10FFFFFF" StrokeThickness="1" Stroke="#20FFFFFF"
+                    Padding="16,8" HorizontalOptions="Center" StrokeShape="RoundRectangle 20">
+                <HorizontalStackLayout Spacing="8">
+                    <Label Text="🤖" FontSize="14"/>
+                    <Label Text="Powered by AI &amp; Blockchain" TextColor="#64748B"
+                           FontSize="11" FontFamily="OpenSansRegular" VerticalOptions="Center"/>
+                    <Label Text="⛓️" FontSize="14"/>
+                </HorizontalStackLayout>
+            </Border>
 
             <!-- Version -->
-            <Label
-                Text="{Binding AppVersion}"
-                TextColor="#475569"
-                FontSize="10"
-                HorizontalOptions="Center"/>
+            <Label Text="{Binding AppVersion}" TextColor="#475569" FontSize="10"
+                   HorizontalOptions="Center"/>
 
         </VerticalStackLayout>
 
         <!-- ═══════════════════════════════════════════════════════════════
-             DECORATIVE ELEMENTS - องค์ประกอบตกแต่ง
+             LAYER 5: SCAN LINES EFFECT (Cyberpunk Style)
              ═══════════════════════════════════════════════════════════════ -->
 
-        <!-- Top Right Glow -->
-        <BoxView
-            x:Name="TopGlow"
-            WidthRequest="200"
-            HeightRequest="200"
-            CornerRadius="100"
-            Color="{StaticResource UltraPrimary}"
-            Opacity="0.1"
-            HorizontalOptions="End"
-            VerticalOptions="Start"
-            TranslationX="50"
-            TranslationY="-50"/>
-
-        <!-- Bottom Left Glow -->
-        <BoxView
-            x:Name="BottomGlow"
-            WidthRequest="250"
-            HeightRequest="250"
-            CornerRadius="125"
-            Color="{StaticResource UltraSecondary}"
-            Opacity="0.08"
-            HorizontalOptions="Start"
-            VerticalOptions="End"
-            TranslationX="-80"
-            TranslationY="80"/>
-
-        <!-- Middle Accent Glow -->
-        <BoxView
-            x:Name="MiddleGlow"
-            WidthRequest="150"
-            HeightRequest="150"
-            CornerRadius="75"
-            Color="{StaticResource UltraAccent}"
-            Opacity="0.05"
-            HorizontalOptions="Center"
-            VerticalOptions="Center"
-            TranslationX="100"
-            TranslationY="150"/>
+        <BoxView x:Name="ScanLine" WidthRequest="9999" HeightRequest="2"
+                 Color="#106366F1" Opacity="0" VerticalOptions="Start"
+                 InputTransparent="True"/>
 
     </Grid>
 
