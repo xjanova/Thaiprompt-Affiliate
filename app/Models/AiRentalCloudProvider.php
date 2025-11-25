@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -133,6 +134,26 @@ class AiRentalCloudProvider extends Model
     public function cloudConfigs(): HasMany
     {
         return $this->hasMany(AiRentalCloudConfig::class, 'cloud_provider_id');
+    }
+
+    /**
+     * ความสัมพันธ์กับ Deployments (ผ่าน Cloud Configs)
+     *
+     * ใช้ HasManyThrough เพื่อเข้าถึง deployments ผ่าน cloud configs
+     * Provider -> CloudConfig -> Deployment
+     *
+     * @return HasManyThrough
+     */
+    public function deployments(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            AiRentalDeployment::class,      // Final model
+            AiRentalCloudConfig::class,     // Intermediate model
+            'cloud_provider_id',             // Foreign key บน intermediate model
+            'cloud_config_id',               // Foreign key บน final model
+            'id',                            // Local key บน starting model
+            'id'                             // Local key บน intermediate model
+        );
     }
 
     /**
