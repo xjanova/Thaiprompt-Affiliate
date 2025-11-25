@@ -31,15 +31,24 @@ class ServiceBookingController extends Controller
      */
     public function index(Request $request)
     {
-        // ดึงหมวดหมู่ที่เปิดใช้งานทั้งหมด (เรียงตามลำดับ)
-        $categories = ServiceCategory::active()->ordered()->get();
+        // ดึงหมวดหมู่ที่เปิดใช้งานทั้งหมด (เรียงตามลำดับ) พร้อมนับจำนวนบริการ
+        $categories = ServiceCategory::active()
+            ->ordered()
+            ->withCount(['services as active_services_count' => function ($query) {
+                $query->where('is_active', true);
+            }])
+            ->get();
 
-        // ดึงบริการแนะนำ (featured services)
-        $featuredServices = Service::active()->featured()->limit(6)->get();
+        // ดึงบริการทั้งหมดที่เปิดใช้งาน พร้อม pagination
+        $services = Service::active()
+            ->with('category')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->paginate(12);
 
         return view('user.services.index', [
             'categories' => $categories,
-            'featuredServices' => $featuredServices,
+            'services' => $services,
             'pageTitle' => 'ค้นหาบริการ',
         ]);
     }
