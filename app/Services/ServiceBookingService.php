@@ -6,6 +6,7 @@ use App\Models\Service;
 use App\Models\ServiceBooking;
 use App\Models\ServiceBookingItem;
 use App\Models\ServiceBookingLocation;
+use App\Models\ServiceBookingTracking;
 use App\Models\ServiceProvider;
 use App\Models\User;
 use App\Models\PaymentTransaction;
@@ -303,20 +304,202 @@ class ServiceBookingService
     /**
      * หาผู้ให้บริการที่พร้อมรับงาน
      *
+     * Algorithm:
+     * 1. กรองเฉพาะ Provider ที่ active และ available
+     * 2. กรองตาม Service Category (Provider ต้องให้บริการในหมวดหมู่นั้น)
+     * 3. กรองตามพื้นที่ให้บริการ (Service Area)
+     * 4. คำนวณคะแนนจาก:
+     *    - ระยะทาง (ยิ่งใกล้ยิ่งดี) - weight 40%
+     *    - Rating (ยิ่งสูงยิ่งดี) - weight 30%
+     *    - Response Rate (ยิ่งสูงยิ่งดี) - weight 20%
+     *    - Auto-accept enabled (bonus) - weight 10%
+     * 5. เรียงตามคะแนนสูงสุด
+     *
      * @param ServiceBooking $booking
+     * @param int $maxProviders จำนวน providers สูงสุดที่จะค้นหา
      * @return ServiceProvider|null
      */
-    protected function findAvailableProvider(ServiceBooking $booking): ?ServiceProvider
+    protected function findAvailableProvider(ServiceBooking $booking, int $maxProviders = 10): ?ServiceProvider
     {
-        // TODO: ใช้ algorithm หาผู้ให้บริการที่เหมาะสม
-        // - ระยะทางใกล้ที่สุด
-        // - คะแนนสูงสุด
-        // - เวลาตอบกลับเร็วที่สุด
-        // - Auto-accept settings
+        // ดึงตำแหน่งลูกค้า
+        $customerLocation = $booking->locations()->where('type', 'service_location')->first();
+        $service = $booking->service;
 
-        return ServiceProvider::where('status', 'available')
+        // Query providers พื้นฐาน
+        $query = ServiceProvider::query()
+            ->where('status', 'available')
             ->where('is_active', true)
-            ->first();
+            ->where('verification_status', 'approved');
+
+        // กรองตาม Service Category (ถ้ามี)
+        if ($service && $service->category_id) {
+            $query->whereHas('categories', function ($q) use ($service) {
+                $q->where('service_categories.id', $service->category_id);
+            });
+        }
+
+        // กรองตามพื้นที่ให้บริการ (ถ้ามีตำแหน่งลูกค้า)
+        if ($customerLocation) {
+            // หา providers ที่ให้บริการในพื้นที่นั้น
+            $query->where(function ($q) use ($customerLocation) {
+                $q->whereHas('areas', function ($areaQuery) use ($customerLocation) {
+                    // ตรวจสอบว่าอยู่ในรัศมีของ service area
+                    $areaQuery->whereRaw(
+                        'ST_Distance_Sphere(
+                            POINT(longitude, latitude),
+                            POINT(?, ?)
+                        ) <= radius_km * 1000',
+                        [$customerLocation->longitude, $customerLocation->latitude]
+                    );
+                })
+                // หรือ provider ที่ให้บริการทุกพื้นที่
+                ->orWhere('service_all_areas', true);
+            });
+        }
+
+        // ดึง providers ที่ผ่านเกณฑ์
+        $providers = $query->limit($maxProviders)->get();
+
+        if ($providers->isEmpty()) {
+            Log::info('No available providers found', [
+                'booking_id' => $booking->id,
+                'service_id' => $booking->service_id,
+            ]);
+            return null;
+        }
+
+        // คำนวณคะแนนและเรียงลำดับ
+        $scoredProviders = $providers->map(function ($provider) use ($customerLocation) {
+            $score = 0;
+
+            // 1. Distance Score (40%) - ยิ่งใกล้ยิ่งดี
+            if ($customerLocation && $provider->current_latitude && $provider->current_longitude) {
+                $distance = $this->calculateDistanceHaversine(
+                    $provider->current_latitude,
+                    $provider->current_longitude,
+                    $customerLocation->latitude,
+                    $customerLocation->longitude
+                );
+
+                // แปลงระยะทางเป็นคะแนน (0-10 km = 100-0 คะแนน)
+                $distanceScore = max(0, 100 - ($distance * 10));
+                $score += $distanceScore * 0.4;
+            } else {
+                // ไม่มีตำแหน่ง ให้คะแนนกลาง
+                $score += 50 * 0.4;
+            }
+
+            // 2. Rating Score (30%)
+            $rating = $provider->average_rating ?? 3.0;
+            $ratingScore = ($rating / 5) * 100;
+            $score += $ratingScore * 0.3;
+
+            // 3. Response Rate Score (20%)
+            $responseRate = $provider->response_rate ?? 50;
+            $score += $responseRate * 0.2;
+
+            // 4. Auto-accept Bonus (10%)
+            if ($provider->auto_accept_bookings) {
+                $score += 100 * 0.1;
+            }
+
+            return [
+                'provider' => $provider,
+                'score' => $score,
+                'distance' => $distance ?? null,
+            ];
+        });
+
+        // เรียงตามคะแนนสูงสุด
+        $sorted = $scoredProviders->sortByDesc('score');
+
+        Log::info('Found available providers', [
+            'booking_id' => $booking->id,
+            'providers_count' => $sorted->count(),
+            'top_provider_id' => $sorted->first()['provider']->id ?? null,
+            'top_score' => $sorted->first()['score'] ?? null,
+        ]);
+
+        return $sorted->first()['provider'] ?? null;
+    }
+
+    /**
+     * หาผู้ให้บริการหลายคนที่พร้อมรับงาน (สำหรับ broadcast notification)
+     *
+     * @param ServiceBooking $booking
+     * @param int $limit
+     * @return \Illuminate\Support\Collection
+     */
+    public function findAvailableProviders(ServiceBooking $booking, int $limit = 5): \Illuminate\Support\Collection
+    {
+        // ใช้ logic เดียวกับ findAvailableProvider แต่คืนหลายคน
+        $customerLocation = $booking->locations()->where('type', 'service_location')->first();
+        $service = $booking->service;
+
+        $query = ServiceProvider::query()
+            ->where('status', 'available')
+            ->where('is_active', true)
+            ->where('verification_status', 'approved');
+
+        // กรองตาม Service Category
+        if ($service && $service->category_id) {
+            $query->whereHas('categories', function ($q) use ($service) {
+                $q->where('service_categories.id', $service->category_id);
+            });
+        }
+
+        // กรองตามพื้นที่ให้บริการ
+        if ($customerLocation) {
+            $query->where(function ($q) use ($customerLocation) {
+                $q->whereHas('areas', function ($areaQuery) use ($customerLocation) {
+                    $areaQuery->whereRaw(
+                        'ST_Distance_Sphere(
+                            POINT(longitude, latitude),
+                            POINT(?, ?)
+                        ) <= radius_km * 1000',
+                        [$customerLocation->longitude, $customerLocation->latitude]
+                    );
+                })->orWhere('service_all_areas', true);
+            });
+        }
+
+        $providers = $query->limit($limit * 2)->get();
+
+        // คำนวณคะแนนและเรียงลำดับ
+        return $providers->map(function ($provider) use ($customerLocation) {
+            $distance = null;
+            $score = 0;
+
+            if ($customerLocation && $provider->current_latitude && $provider->current_longitude) {
+                $distance = $this->calculateDistanceHaversine(
+                    $provider->current_latitude,
+                    $provider->current_longitude,
+                    $customerLocation->latitude,
+                    $customerLocation->longitude
+                );
+                $distanceScore = max(0, 100 - ($distance * 10));
+                $score += $distanceScore * 0.4;
+            } else {
+                $score += 50 * 0.4;
+            }
+
+            $rating = $provider->average_rating ?? 3.0;
+            $score += (($rating / 5) * 100) * 0.3;
+            $score += ($provider->response_rate ?? 50) * 0.2;
+
+            if ($provider->auto_accept_bookings) {
+                $score += 100 * 0.1;
+            }
+
+            return [
+                'provider' => $provider,
+                'score' => $score,
+                'distance' => $distance,
+            ];
+        })
+        ->sortByDesc('score')
+        ->take($limit)
+        ->pluck('provider');
     }
 
     /**
@@ -416,32 +599,46 @@ class ServiceBookingService
      * เสร็จสิ้นบริการ
      *
      * @param ServiceBooking $booking
-     * @return bool
+     * @return array ผลลัพธ์การประมวลผล พร้อมข้อมูลคอมมิชชั่น
      */
-    public function completeService(ServiceBooking $booking): bool
+    public function completeService(ServiceBooking $booking): array
     {
         return DB::transaction(function () use ($booking) {
+            // อัพเดทสถานะเป็น completed
             $booking->completeService();
 
-            // จ่ายเงินให้ provider
-            $this->payProvider($booking);
-
-            // คำนวณและจ่ายคอมมิชชั่น MLM
-            $this->payCommission($booking);
+            // ประมวลผลการจ่ายเงินและคอมมิชชั่นทั้งหมด
+            // - จ่ายเงินให้ Provider
+            // - จ่าย Cashback ให้ลูกค้า
+            // - แจก PV สำหรับ Provider
+            // - คำนวณ MLM Commission
+            // - จ่ายคอมมิชชั่นผู้แนะนำ
+            $commissionResults = $this->processCommissions($booking);
 
             // ปลดล็อค provider
             if ($booking->provider) {
                 $booking->provider->setAvailable();
             }
 
-            // ส่ง notification
+            // ส่ง notification ให้ลูกค้า
             $this->notificationService->sendInAppNotification(
                 $booking,
                 $booking->user,
                 'service_completed'
             );
 
-            return true;
+            // Log ผลลัพธ์
+            Log::info('Service completed and commissions processed', [
+                'booking_id' => $booking->id,
+                'booking_number' => $booking->booking_number,
+                'results' => $commissionResults,
+            ]);
+
+            return [
+                'success' => true,
+                'booking' => $booking->fresh(),
+                'commission_results' => $commissionResults,
+            ];
         });
     }
 
@@ -499,59 +696,45 @@ class ServiceBookingService
     }
 
     /**
-     * จ่ายเงินให้ provider
+     * จ่ายเงินและคอมมิชชั่นให้ Provider, ลูกค้า และระบบ MLM
+     *
+     * ใช้ ServiceCommissionService สำหรับประมวลผลทั้งหมด
      *
      * @param ServiceBooking $booking
-     * @return void
+     * @return array ผลลัพธ์การประมวลผล
      */
-    protected function payProvider(ServiceBooking $booking): void
+    protected function processCommissions(ServiceBooking $booking): array
     {
-        if (!$booking->provider) {
-            return;
-        }
+        /** @var ServiceCommissionService $commissionService */
+        $commissionService = app(ServiceCommissionService::class);
 
-        // คำนวณเงินที่ provider ได้รับ (หักค่า platform fee)
-        $platformFeeRate = config('services.platform_fee_rate', 0.15); // 15%
-        $platformFee = $booking->total_amount * $platformFeeRate;
-        $providerAmount = $booking->total_amount - $platformFee;
-
-        // เพิ่มเงินเข้า wallet ของ provider
-        $this->walletService->deposit(
-            $booking->provider->user,
-            $providerAmount,
-            'service_income',
-            "รายได้จากบริการ #{$booking->booking_number}",
-            [
-                'booking_id' => $booking->id,
-                'service_id' => $booking->service_id,
-                'platform_fee' => $platformFee,
-            ]
-        );
+        return $commissionService->processCompletedBooking($booking);
     }
 
     /**
-     * จ่ายคอมมิชชั่น MLM
+     * จ่ายเงินให้ provider (Legacy method - ใช้ processCommissions แทน)
      *
      * @param ServiceBooking $booking
      * @return void
+     * @deprecated ใช้ processCommissions() แทน
+     */
+    protected function payProvider(ServiceBooking $booking): void
+    {
+        // ใช้ ServiceCommissionService แทน
+        $this->processCommissions($booking);
+    }
+
+    /**
+     * จ่ายคอมมิชชั่น MLM (Legacy method - ใช้ processCommissions แทน)
+     *
+     * @param ServiceBooking $booking
+     * @return void
+     * @deprecated ใช้ processCommissions() แทน
      */
     protected function payCommission(ServiceBooking $booking): void
     {
-        if (!$booking->service->commission_rate) {
-            return;
-        }
-
-        // คำนวณคอมมิชชั่น
-        $commissionAmount = $this->pricingService->calculateCommission(
-            $booking->total_amount,
-            $booking->service->commission_rate
-        );
-
-        // TODO: จ่ายคอมมิชชั่นตาม MLM structure
-        // ใช้ระบบ MLM ที่มีอยู่แล้ว
-
-        $booking->commission_amount = $commissionAmount;
-        $booking->save();
+        // ดำเนินการใน processCommissions() แล้ว
+        // method นี้เก็บไว้เพื่อ backward compatibility
     }
 
     /**

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Provider\RegistrationController;
 use App\Http\Controllers\Provider\ServiceBookingController;
 use Illuminate\Support\Facades\Route;
 
@@ -9,15 +10,33 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | Routes สำหรับผู้ให้บริการ (Service Providers)
-| จัดการงาน, รับ/ปฏิเสธงาน, อัพเดทสถานะ, tracking
+| ลงทะเบียน, จัดการงาน, รับ/ปฏิเสธงาน, อัพเดทสถานะ, tracking
 |
 */
 
 Route::middleware(['auth', 'verified'])->prefix('provider')->name('provider.')->group(function () {
 
-    // Redirect root /provider to /provider/bookings
+    // ===== Provider Registration =====
+    // ลงทะเบียนเป็นผู้ให้บริการ
+    Route::get('/register', [RegistrationController::class, 'showForm'])->name('register');
+    Route::post('/register', [RegistrationController::class, 'store'])->name('register.store');
+    Route::get('/register/status', [RegistrationController::class, 'status'])->name('register.status');
+
+    // Dashboard
+    Route::get('/dashboard', [RegistrationController::class, 'dashboard'])->name('dashboard');
+
+    // Profile Management
+    Route::get('/profile/edit', [RegistrationController::class, 'editProfile'])->name('profile.edit');
+    Route::put('/profile', [RegistrationController::class, 'updateProfile'])->name('profile.update');
+    Route::put('/bank-info', [RegistrationController::class, 'updateBankInfo'])->name('bank-info.update');
+
+    // Redirect root /provider to /provider/bookings or register
     Route::get('/', function () {
-        return redirect()->route('provider.bookings.index');
+        $provider = \App\Models\ServiceProvider::where('user_id', auth()->id())->first();
+        if ($provider && $provider->verification_status === 'approved') {
+            return redirect()->route('provider.bookings.index');
+        }
+        return redirect()->route('provider.register');
     });
 
     // Provider Dashboard & Bookings
