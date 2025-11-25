@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.181.0] - 2025-11-25
+
+### ✨ Features
+- Merge pull request #1597 from xjanova/claude/create-signup-logs-table-01Lsrabu1xaxSfbALDK1WLQr (c83e49d7)
+- feat: add migration for line_signup_step_logs table (e8bbae31)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.180.3] - 2025-11-25
 
 ### ✨ Features
