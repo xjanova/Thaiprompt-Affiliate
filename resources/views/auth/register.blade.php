@@ -97,6 +97,35 @@
         <div class="max-w-6xl w-full">
             <!-- Mobile Stats Banner - Show on mobile only -->
             <div class="lg:hidden mb-6 space-y-4 fade-in-up">
+                {{-- รางวัลการสมัครสมาชิก (Mobile) --}}
+                @if(isset($signupRewards) && $signupRewards->count() > 0)
+                <div class="glass-effect rounded-xl shadow-lg p-4">
+                    <div class="flex items-center mb-3">
+                        <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-2">
+                            <i class="fas fa-gift"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-gray-800">รับรางวัลเมื่อสมัครสมาชิก!</h3>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        @foreach($signupRewards->take(4) as $reward)
+                        <div class="flex items-center p-2 rounded-lg bg-white shadow-sm">
+                            <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-sm"
+                                 style="background-color: {{ $reward->badge_color }}20; color: {{ $reward->badge_color }}">
+                                {!! $reward->getIconHtml() !!}
+                            </div>
+                            <div class="ml-2 min-w-0">
+                                <p class="text-xs font-semibold text-gray-800 truncate">{{ $reward->name }}</p>
+                                <p class="text-xs text-gray-600">{{ $reward->getDisplayText() }}</p>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    @if($signupRewards->count() > 4)
+                    <p class="text-xs text-center text-gray-500 mt-2">และอื่นๆ อีก {{ $signupRewards->count() - 4 }} รางวัล!</p>
+                    @endif
+                </div>
+                @endif
+
                 <!-- Compact Stats -->
                 <div class="glass-effect rounded-xl shadow-lg p-4">
                     <div class="grid grid-cols-3 gap-3">
@@ -469,7 +498,46 @@
                         </div>
                     </div>
 
-                    <!-- Benefits -->
+                    {{-- รางวัลการสมัครสมาชิก (Desktop) --}}
+                    @if(isset($signupRewards) && $signupRewards->count() > 0)
+                    <div class="stat-card rounded-2xl shadow-2xl p-8 border-2 border-green-300">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                            <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full w-10 h-10 flex items-center justify-center mr-3">
+                                <i class="fas fa-gift"></i>
+                            </div>
+                            รับรางวัลเมื่อสมัครสมาชิก!
+                        </h3>
+
+                        <div class="space-y-4">
+                            @foreach($signupRewards as $reward)
+                            <div class="flex items-start p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:from-green-50 hover:to-emerald-50 transition border border-gray-200">
+                                <div class="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl text-xl"
+                                     style="background-color: {{ $reward->badge_color }}20; color: {{ $reward->badge_color }}">
+                                    {!! $reward->getIconHtml() !!}
+                                </div>
+                                <div class="ml-3 flex-1 min-w-0">
+                                    <p class="font-semibold text-gray-800">{{ $reward->name }}</p>
+                                    @if($reward->description)
+                                    <p class="text-sm text-gray-600">{{ $reward->description }}</p>
+                                    @endif
+                                    <div class="mt-1 inline-flex items-center px-2 py-1 rounded-full text-xs font-bold"
+                                         style="background-color: {{ $reward->badge_color }}20; color: {{ $reward->badge_color }}">
+                                        {{ $reward->getDisplayText() }}
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-gray-200">
+                            <div class="flex items-center text-sm text-green-600">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                <span class="font-medium">รับทันทีเมื่อสมัครสมาชิกสำเร็จ!</span>
+                            </div>
+                        </div>
+                    </div>
+                    @else
+                    <!-- Benefits (แสดงเมื่อไม่มี rewards) -->
                     <div class="stat-card rounded-2xl shadow-2xl p-8">
                         <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
                             <i class="fas fa-star text-yellow-500 mr-3"></i>
@@ -518,6 +586,7 @@
                             </div>
                         </div>
                     </div>
+                    @endif
 
                     <!-- Testimonial (Desktop) -->
                     <div class="stat-card rounded-2xl shadow-2xl p-8 fade-transition" id="desktopTestimonial">
