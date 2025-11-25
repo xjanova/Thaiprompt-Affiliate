@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\ImageUploadService;
 use App\Services\WebPService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -31,24 +32,52 @@ class SettingsController extends Controller
 
     /**
      * อัพเดทข้อมูลโปรไฟล์ส่วนตัว
+     *
+     * รองรับทั้ง JSON request และ form data (multipart/form-data สำหรับ avatar upload)
      */
-    public function updateProfile(Request $request)
+    public function updateProfile(Request $request, ImageUploadService $imageUploadService)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,' . auth()->id()],
             'phone' => ['nullable', 'string', 'max:20'],
             'position' => ['nullable', 'string', 'max:255'],
+            'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,gif,webp', 'max:5120'], // 5MB max
         ]);
 
         $user = auth()->user();
+
+        // Handle profile picture upload
+        if ($request->hasFile('profile_picture')) {
+            // ลบรูปเดิมถ้ามี
+            if ($user->profile_picture) {
+                $imageUploadService->deleteImage($user->profile_picture);
+            }
+
+            // อัพโหลดรูปใหม่ (แปลงเป็น WebP อัตโนมัติ)
+            // ใช้ directory 'avatars', ขนาด 800x800, quality 90
+            $validated['profile_picture'] = $imageUploadService->uploadImage(
+                $request->file('profile_picture'),
+                'avatars',
+                800,
+                800,
+                90
+            );
+        }
+
         $user->update($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'อัพเดทข้อมูลส่วนตัวสำเร็จ',
-            'user' => $user
-        ]);
+        // ตรวจสอบว่าเป็น JSON request หรือ form request
+        if ($request->expectsJson() || $request->isJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'อัพเดทข้อมูลส่วนตัวสำเร็จ',
+                'user' => $user,
+                'avatar_url' => $user->profile_picture_url,
+            ]);
+        }
+
+        return back()->with('success', 'อัพเดทข้อมูลส่วนตัวสำเร็จ');
     }
 
     /**

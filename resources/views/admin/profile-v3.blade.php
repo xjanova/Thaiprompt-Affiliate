@@ -35,19 +35,41 @@
         {{-- Left Sidebar - Profile Card --}}
         <div class="lg:col-span-1">
             <div class="glass-fusion rounded-2xl overflow-hidden border border-white/30 shadow-2xl p-6">
-                {{-- Avatar --}}
+                {{-- Avatar Section --}}
                 <div class="text-center mb-6">
-                    <div class="relative inline-block">
-                        <div class="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-5xl font-bold shadow-2xl">
-                            {{ substr(auth()->user()->name ?? 'A', 0, 1) }}
+                    <div class="relative inline-block group">
+                        {{-- Avatar with Glow Effect --}}
+                        <div class="relative w-32 h-32 mx-auto">
+                            <div class="absolute inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-full blur-lg opacity-60 group-hover:opacity-80 transition"></div>
+                            <div class="relative w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 rounded-full p-1 shadow-2xl">
+                                <img
+                                    :src="avatarPreview || '{{ auth()->user()->profile_picture_url }}'"
+                                    alt="{{ auth()->user()->name ?? 'Admin' }}"
+                                    class="w-full h-full object-cover rounded-full ring-4 ring-white/30"
+                                    id="avatar-preview-img"
+                                >
+                            </div>
                         </div>
-                        <button
-                            @click="changeAvatar"
-                            class="absolute bottom-0 right-0 w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg transition"
-                        >
-                            <i class="fas fa-camera"></i>
-                        </button>
+
+                        {{-- Upload Button --}}
+                        <label for="avatar-upload"
+                               class="mt-4 block w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer text-center">
+                            <i class="fas fa-camera mr-2"></i>เปลี่ยนรูปโปรไฟล์
+                        </label>
+
+                        <input type="file"
+                               id="avatar-upload"
+                               accept="image/jpeg,image/png,image/gif,image/webp"
+                               class="hidden"
+                               @change="handleAvatarChange($event)">
+
+                        <p class="mt-2 text-xs text-white/60">
+                            JPG, PNG, GIF หรือ WebP<br>
+                            ขนาดไม่เกิน 5MB<br>
+                            <span class="text-purple-300 font-semibold">จะแปลงเป็น WebP อัตโนมัติ</span>
+                        </p>
                     </div>
+
                     <h3 class="text-xl font-bold text-white mt-4">{{ auth()->user()->name ?? 'Admin' }}</h3>
                     <p class="text-white/70 text-sm">{{ auth()->user()->email }}</p>
                     <div class="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-green-400 to-emerald-500 text-white text-xs font-bold rounded-full shadow-lg">
@@ -233,6 +255,8 @@ function profileManager() {
     return {
         saving: false,
         savingPassword: false,
+        avatarPreview: null,
+        avatarFile: null,
         form: {
             name: '{{ auth()->user()->name ?? '' }}',
             email: '{{ auth()->user()->email ?? '' }}',
@@ -245,11 +269,43 @@ function profileManager() {
             new_password_confirmation: ''
         },
 
-        changeAvatar() {
-            alert('🎨 ฟีเจอร์เปลี่ยน Avatar กำลังพัฒนา...');
+        /**
+         * จัดการเมื่อเลือกไฟล์ avatar ใหม่
+         */
+        handleAvatarChange(event) {
+            const file = event.target.files[0];
+
+            if (!file) {
+                return;
+            }
+
+            // ตรวจสอบประเภทไฟล์
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('กรุณาเลือกไฟล์รูปภาพ (JPG, PNG, GIF, WebP) เท่านั้น');
+                event.target.value = '';
+                return;
+            }
+
+            // ตรวจสอบขนาดไฟล์ (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('ขนาดไฟล์ต้องไม่เกิน 5MB');
+                event.target.value = '';
+                return;
+            }
+
+            // เก็บไฟล์และแสดง preview
+            this.avatarFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.avatarPreview = e.target.result;
+            };
+            reader.readAsDataURL(file);
         },
 
         resetPersonalForm() {
+            this.avatarPreview = null;
+            this.avatarFile = null;
             location.reload();
         },
 
@@ -257,13 +313,25 @@ function profileManager() {
             this.saving = true;
 
             try {
+                // ใช้ FormData เพื่อส่งไฟล์ได้
+                const formData = new FormData();
+                formData.append('name', this.form.name);
+                formData.append('email', this.form.email);
+                formData.append('phone', this.form.phone || '');
+                formData.append('position', this.form.position || '');
+
+                // เพิ่ม avatar ถ้ามีการเปลี่ยน
+                if (this.avatarFile) {
+                    formData.append('profile_picture', this.avatarFile);
+                }
+
                 const response = await fetch('{{ route('admin.profile.update') }}', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
                     },
-                    body: JSON.stringify(this.form)
+                    body: formData
                 });
 
                 const data = await response.json();
@@ -272,7 +340,13 @@ function profileManager() {
                     alert('✅ บันทึกข้อมูลส่วนตัวสำเร็จ!');
                     location.reload();
                 } else {
-                    alert('❌ เกิดข้อผิดพลาด: ' + (data.message || 'Unknown error'));
+                    // แสดง validation errors
+                    if (data.errors) {
+                        const errorMessages = Object.values(data.errors).flat().join('\n');
+                        alert('❌ ข้อผิดพลาด:\n' + errorMessages);
+                    } else {
+                        alert('❌ เกิดข้อผิดพลาด: ' + (data.message || 'Unknown error'));
+                    }
                 }
             } catch (error) {
                 console.error('Error saving profile:', error);
