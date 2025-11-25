@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.181.2] - 2025-11-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1599 from xjanova/claude/fix-trending-models-connection-01T539L25SK57usoYU3dh9N7 (c3218fb7)
+- fix: correct invalid difficulty_level enum value in trending models seeder (10df3db2)
+### 🔧 Other Changes
+
+
 ## [v3.181.1] - 2025-11-25
 
 ### ✨ Features
