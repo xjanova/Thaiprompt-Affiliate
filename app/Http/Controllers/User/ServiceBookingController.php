@@ -24,32 +24,118 @@ class ServiceBookingController extends Controller
     }
 
     /**
-     * หน้าแรก - ค้นหาบริการ
+     * หน้าแรก - ค้นหาบริการ (Service Discovery)
+     *
+     * รองรับการค้นหา, กรองตามหมวดหมู่, ราคา, ระยะทาง และคะแนน
      *
      * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
     {
-        // ดึงหมวดหมู่ที่เปิดใช้งานทั้งหมด (เรียงตามลำดับ) พร้อมนับจำนวนบริการ
+        // ดึงหมวดหมู่ที่เปิดใช้งานทั้งหมด พร้อมนับจำนวนบริการ
         $categories = ServiceCategory::active()
             ->ordered()
-            ->withCount(['services as active_services_count' => function ($query) {
-                $query->where('is_active', true);
-            }])
+            ->withCount(['services' => fn ($q) => $q->active()])
             ->get();
 
-        // ดึงบริการทั้งหมดที่เปิดใช้งาน พร้อม pagination
-        $services = Service::active()
+        // สร้าง Query สำหรับบริการ
+        $query = Service::query()
+            ->active()
+            ->with(['category']);
+
+        // ค้นหาด้วยคำค้น
+        if ($request->filled('q')) {
+            $searchTerm = $request->q;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                  ->orWhere('description', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        // กรองตามหมวดหมู่
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+
+        // กรองตามราคา (ช่วงราคา)
+        if ($request->filled('min_price')) {
+            $query->where('base_price', '>=', $request->min_price);
+        }
+        if ($request->filled('max_price')) {
+            $query->where('base_price', '<=', $request->max_price);
+        }
+
+        // กรองตามคะแนน (ขั้นต่ำ)
+        if ($request->filled('min_rating')) {
+            $query->where('average_rating', '>=', $request->min_rating);
+        }
+
+        // เรียงลำดับ
+        $sortBy = $request->input('sort', 'featured');
+        switch ($sortBy) {
+            case 'price_low':
+                $query->orderBy('base_price', 'asc');
+                break;
+            case 'price_high':
+                $query->orderBy('base_price', 'desc');
+                break;
+            case 'rating':
+                $query->orderBy('average_rating', 'desc');
+                break;
+            case 'popular':
+                $query->orderBy('booking_count', 'desc');
+                break;
+            case 'newest':
+                $query->latest();
+                break;
+            default:
+                $query->orderBy('is_featured', 'desc')
+                      ->orderBy('booking_count', 'desc');
+        }
+
+        // Pagination
+        $services = $query->paginate(12)->withQueryString();
+
+        // ดึงบริการแนะนำ (featured) สำหรับแสดงส่วน Hero
+        $featuredServices = Service::active()
+            ->featured()
             ->with('category')
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->paginate(12);
+            ->limit(6)
+            ->get();
+
+        // ดึงบริการยอดนิยม
+        $popularServices = Service::active()
+            ->with('category')
+            ->orderBy('booking_count', 'desc')
+            ->limit(8)
+            ->get();
+
+        // สถิติ
+        $stats = [
+            'total_services' => Service::active()->count(),
+            'total_categories' => ServiceCategory::active()->count(),
+            'total_providers' => \App\Models\ServiceProvider::where('status', 'available')->count(),
+            'total_bookings' => \App\Models\ServiceBooking::count(),
+        ];
 
         return view('user.services.index', [
             'categories' => $categories,
             'services' => $services,
-            'pageTitle' => 'ค้นหาบริการ',
+            'featuredServices' => $featuredServices,
+            'popularServices' => $popularServices,
+            'stats' => $stats,
+            'filters' => [
+                'q' => $request->q,
+                'category' => $request->category,
+                'min_price' => $request->min_price,
+                'max_price' => $request->max_price,
+                'min_rating' => $request->min_rating,
+                'sort' => $sortBy,
+            ],
+            'pageTitle' => $request->filled('q')
+                ? "ผลการค้นหา: {$request->q}"
+                : 'ค้นหาบริการ',
         ]);
     }
 
