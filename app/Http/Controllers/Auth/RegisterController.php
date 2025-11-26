@@ -15,6 +15,7 @@ use App\Models\Setting;
 use App\Services\LineService;
 use App\Services\LineTokenService;
 use App\Services\MlmBinaryService;
+use App\Services\MlmUnilevelService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -137,25 +138,32 @@ class RegisterController extends Controller
             $defaultPlan = \App\Models\MlmPlan::first(); // Fallback to any plan
         }
 
+        // หาตำแหน่งใน Unilevel Tree (รองรับ width/depth limits และ spillover)
+        $unilevelPlacement = $this->findUnilevelPlacementForMember($parentMember);
+
         $mlmMember = MlmMember::create([
             'user_id' => $user->id,
             'mlm_plan_id' => $defaultPlan?->id,
-            'unilevel_sponsor_id' => $parentMember?->id,
-            'unilevel_level' => $parentMember ? $parentMember->unilevel_level + 1 : 1,
-            'unilevel_path' => $parentMember ? $parentMember->unilevel_path . '/' . $parentMember->id : '/' . $user->id,
-            'binary_sponsor_id' => $parentMember?->id,
+            'unilevel_sponsor_id' => $unilevelPlacement['sponsor_id'] ?? $parentMember?->id,
+            'unilevel_level' => $unilevelPlacement['level'] ?? ($parentMember ? $parentMember->unilevel_level + 1 : 1),
+            'unilevel_path' => $unilevelPlacement['path'] ?? ($parentMember ? $parentMember->unilevel_path . '/' . $parentMember->id : '/' . $user->id),
+            'binary_sponsor_id' => $parentMember?->id, // Binary sponsor ยังคงเป็นผู้แนะนำเดิม
             'member_code' => MlmMember::generateMemberCode(),
             'status' => 'active',
             'is_qualified' => true,
             'joined_at' => now(),
         ]);
 
-        // Update parent's referral count
-        if ($parentMember) {
-            $parentMember->increment('total_direct_referrals');
+        // Update actual unilevel sponsor's referral count (อาจไม่ใช่ parentMember ถ้ามี spillover)
+        $actualUnilevelSponsor = $unilevelPlacement['sponsor_id']
+            ? MlmMember::find($unilevelPlacement['sponsor_id'])
+            : $parentMember;
+
+        if ($actualUnilevelSponsor) {
+            $actualUnilevelSponsor->increment('total_direct_referrals');
         }
 
-        // จัดวางใน Binary Tree พร้อมกับ Unilevel
+        // จัดวางใน Binary Tree (ใช้การจัดวางที่ตั้งค่าได้แบบเดิม)
         $this->placeMemberInBinaryTree($mlmMember, $parentMember);
 
         // Handle Recruit Page Lead Conversion Tracking
@@ -198,7 +206,56 @@ class RegisterController extends Controller
     }
 
     /**
-     * จัดวางสมาชิกใหม่ใน Binary Tree พร้อมกับ Unilevel
+     * หาตำแหน่งใน Unilevel Tree สำหรับสมาชิกใหม่
+     *
+     * รองรับ width/depth limits และ auto spillover:
+     * - ถ้าผู้แนะนำมีลูกตรงถึง max_width แล้ว → ล้นไปชั้นถัดไปอัตโนมัติ
+     * - ใช้ BFS เพื่อเติมเต็มชั้นก่อนไปชั้นถัดไป
+     *
+     * @param MlmMember|null $sponsor ผู้แนะนำที่ลูกค้าใช้รหัส
+     * @return array ['sponsor_id' => int, 'level' => int, 'path' => string]
+     */
+    protected function findUnilevelPlacementForMember(?MlmMember $sponsor): array
+    {
+        // ถ้าไม่มี sponsor → คืนค่าเริ่มต้น
+        if (!$sponsor) {
+            return [
+                'sponsor_id' => null,
+                'level' => 1,
+                'path' => '/',
+            ];
+        }
+
+        try {
+            $unilevelService = new MlmUnilevelService();
+            $placement = $unilevelService->findUnilevelPlacement($sponsor);
+
+            if ($placement) {
+                \Log::info('Unilevel placement found', [
+                    'original_sponsor_id' => $sponsor->id,
+                    'actual_sponsor_id' => $placement['sponsor_id'],
+                    'level' => $placement['level'],
+                    'is_spillover' => $placement['sponsor_id'] !== $sponsor->id,
+                ]);
+                return $placement;
+            }
+        } catch (\Exception $e) {
+            \Log::error('Unilevel placement error', [
+                'sponsor_id' => $sponsor->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // Fallback: วางเป็นลูกตรงของ sponsor เดิม
+        return [
+            'sponsor_id' => $sponsor->id,
+            'level' => $sponsor->unilevel_level + 1,
+            'path' => $sponsor->unilevel_path . '/' . $sponsor->id,
+        ];
+    }
+
+    /**
+     * จัดวางสมาชิกใหม่ใน Binary Tree
      *
      * ใช้ algorithm ตาม auto_placement_strategy ที่ตั้งค่าไว้:
      * - fill_level: เรียงเต็มชั้นก่อนไปชั้นถัดไป (BFS - Breadth First Search)
