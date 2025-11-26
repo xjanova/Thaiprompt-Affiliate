@@ -60,6 +60,20 @@ class RankRequirement extends Model
 
     /**
      * Get user's current value for this requirement
+     *
+     * รองรับ requirement types:
+     * - points: คะแนนสะสม
+     * - referrals: จำนวนคนแนะนำโดยตรง
+     * - sales: ยอดขายส่วนตัว
+     * - active_referrals: จำนวนคนแนะนำที่ active
+     * - team_sales: ยอดขายทีม
+     * - consecutive_months: จำนวนเดือนต่อเนื่อง
+     * - diamond_legs: จำนวนลูกทีมระดับเพชร (Diamond)
+     * - crown_legs: จำนวนลูกทีมระดับมงกุฎ (Crown)
+     * - royal_legs: จำนวนลูกทีมระดับรอยัล (Royal)
+     *
+     * @param User $user
+     * @return float
      */
     public function getUserCurrentValue(User $user): float
     {
@@ -80,6 +94,9 @@ class RankRequirement extends Model
             'active_referrals' => $this->getActiveReferralsCount($mlmMember),
             'team_sales' => $mlmMember->total_team_pv ?? 0,
             'consecutive_months' => $this->getConsecutiveMonths($mlmMember),
+            'diamond_legs' => $this->getLegsCountByRankName($user, 'Diamond'),
+            'crown_legs' => $this->getLegsCountByRankName($user, 'Crown'),
+            'royal_legs' => $this->getLegsCountByRankName($user, 'Royal'),
             default => 0,
         };
     }
@@ -121,6 +138,42 @@ class RankRequirement extends Model
         // For now, returning a simple calculation
         $monthsSinceCreation = now()->diffInMonths($mlmMember->joined_at ?? $mlmMember->created_at);
         return $monthsSinceCreation;
+    }
+
+    /**
+     * นับจำนวนลูกทีมโดยตรงที่มีระดับตามที่ระบุ (Legs)
+     *
+     * ใช้สำหรับ requirement เช่น:
+     * - diamond_legs: ต้องมีลูกทีมโดยตรงระดับ Diamond กี่คน
+     * - crown_legs: ต้องมีลูกทีมโดยตรงระดับ Crown กี่คน
+     * - royal_legs: ต้องมีลูกทีมโดยตรงระดับ Royal กี่คน
+     *
+     * @param User $user ผู้ใช้ที่ต้องการตรวจสอบ
+     * @param string $rankName ชื่อระดับที่ต้องการนับ (เช่น 'Diamond', 'Crown', 'Royal')
+     * @return int จำนวนลูกทีมที่มีระดับตามที่ระบุ
+     */
+    private function getLegsCountByRankName(User $user, string $rankName): int
+    {
+        // หาระดับที่ต้องการ
+        $targetRank = \App\Models\Rank::where('name', $rankName)->first();
+        if (!$targetRank) {
+            return 0;
+        }
+
+        // หา MLM Member ของ user
+        $mlmMember = $user->mlmMembers()->first();
+        if (!$mlmMember) {
+            return 0;
+        }
+
+        // นับลูกทีมโดยตรงที่มีระดับเท่ากับหรือสูงกว่าระดับเป้าหมาย
+        return \App\Models\MlmMember::where('unilevel_sponsor_id', $mlmMember->id)
+            ->whereHas('user', function ($query) use ($targetRank) {
+                $query->whereHas('currentRank', function ($rankQuery) use ($targetRank) {
+                    $rankQuery->where('level', '>=', $targetRank->level);
+                });
+            })
+            ->count();
     }
 
     /**
