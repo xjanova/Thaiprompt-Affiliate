@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.217.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1677 from xjanova/claude/maintenance-mode-page-01UdcR175o5jHaKSq69rL4ZB (eed888d7)
+- feat: add beautiful maintenance mode page with social media links (b3ad3e67)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.216.0] - 2025-11-26
 
 ### ✨ Features
