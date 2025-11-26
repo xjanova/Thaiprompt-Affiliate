@@ -99,6 +99,22 @@ class TpixDeploymentController extends Controller
     }
 
     /**
+     * แสดงหน้า Tutorial - คู่มือการ Deploy TPIX สู่ Blockchain จริง
+     *
+     * หน้านี้แสดง:
+     * - Smart Contract Source Code พร้อมคำอธิบายภาษาไทย
+     * - ขั้นตอนการติดตั้ง Polygon Edge
+     * - ขั้นตอนการ Deploy Contracts
+     * - การเชื่อมต่อกับ Laravel
+     *
+     * @return View
+     */
+    public function tutorial(): View
+    {
+        return view('admin.tpix.deployment.tutorial');
+    }
+
+    /**
      * บันทึก configuration ใหม่
      *
      * @param Request $request
