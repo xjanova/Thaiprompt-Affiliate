@@ -73,11 +73,12 @@ class MlmReferralBonusService
         }
 
         // ตรวจสอบยอดสั่งซื้อขั้นต่ำ
+        // ⚠️ แก้ไข: ใช้ total_amount แทน total (Order model มี field total_amount)
         $minOrder = MlmGlobalSetting::get('direct_referral_bonus_min_order', 0);
-        if ($order->total < $minOrder) {
+        if ($order->total_amount < $minOrder) {
             Log::debug('Order total below minimum for referral bonus', [
                 'order_id' => $order->id,
-                'order_total' => $order->total,
+                'order_total' => $order->total_amount,
                 'min_order' => $minOrder,
             ]);
             return null;
@@ -114,12 +115,13 @@ class MlmReferralBonusService
         }
 
         // คำนวณจำนวนเงินค่าแนะนำ
-        $bonusAmount = $this->calculateBonusAmount($order->total);
+        // ⚠️ แก้ไข: ใช้ total_amount แทน total
+        $bonusAmount = $this->calculateBonusAmount($order->total_amount);
 
         if ($bonusAmount <= 0) {
             Log::debug('Calculated bonus amount is zero', [
                 'order_id' => $order->id,
-                'order_total' => $order->total,
+                'order_total' => $order->total_amount,
             ]);
             return null;
         }
@@ -171,6 +173,7 @@ class MlmReferralBonusService
         float $amount
     ): MlmCommission {
         return DB::transaction(function () use ($sponsor, $buyer, $order, $amount) {
+            // ⚠️ แก้ไข: ใช้ total_amount แทน total
             $commission = MlmCommission::create([
                 'mlm_member_id' => $sponsor->id,
                 'mlm_plan_id' => $sponsor->mlm_plan_id,
@@ -181,9 +184,9 @@ class MlmReferralBonusService
                 'type' => 'direct_referral',
                 'level' => 1, // ค่าแนะนำตรงจ่ายให้ชั้นเดียวเท่านั้น
                 'pv_amount' => 0, // ไม่เกี่ยวกับ PV
-                'sales_amount' => $order->total,
+                'sales_amount' => $order->total_amount,
                 'commission_amount' => $amount,
-                'percentage' => $this->getPercentageForRecord($order->total, $amount),
+                'percentage' => $this->getPercentageForRecord($order->total_amount, $amount),
                 'status' => 'pending',
                 'notes' => 'ค่าแนะนำตรงจากออเดอร์ #' . $order->order_number,
             ]);

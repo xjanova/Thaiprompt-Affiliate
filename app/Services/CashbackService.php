@@ -36,12 +36,16 @@ class CashbackService
     }
 
     /**
-     * Calculate cashback for a single order item
+     * คำนวณ cashback สำหรับ order item เดี่ยว
+     *
+     * @param OrderItem $item รายการสินค้าในออเดอร์
+     * @return float จำนวน cashback ที่คำนวณได้
      */
     public function calculateItemCashback(OrderItem $item): float
     {
         $product = $item->product;
-        $itemTotal = $item->price * $item->quantity;
+        // ⚠️ แก้ไข: ใช้ unit_price แทน price (OrderItem ไม่มี field price)
+        $itemTotal = $item->unit_price * $item->quantity;
 
         // Check for product-specific cashback first
         $productSetting = CashbackSetting::getProductSetting($product->id);

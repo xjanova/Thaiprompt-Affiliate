@@ -129,6 +129,7 @@ class MlmBinaryService
 
                 if ($pairsToProcess > 0 && $totalCommission > 0) {
                     // Create commission record
+                    // ⚠️ แก้ไข: ใช้ total_amount แทน total (Order model มี field total_amount)
                     MlmCommission::create([
                         'mlm_member_id' => $parent->id,
                         'mlm_plan_id' => $plan->id,
@@ -141,7 +142,7 @@ class MlmBinaryService
                         'right_leg_pv' => $rightPv,
                         'pairs_count' => $pairsToProcess,
                         'pv_amount' => $pairsToProcess * $this->getPairRatio(),
-                        'sales_amount' => $order->total,
+                        'sales_amount' => $order->total_amount,
                         'commission_amount' => $totalCommission,
                         'status' => 'pending',
                     ]);

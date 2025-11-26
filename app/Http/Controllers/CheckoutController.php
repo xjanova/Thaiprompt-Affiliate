@@ -153,8 +153,10 @@ class CheckoutController extends Controller
             $platformCommission = 0;
             $sellerEarning = 0;
 
-            // Calculate cashback
-            $cashbackAmount = $this->cashbackService->calculateOrderCashback($cartItems, $total);
+            // Calculate cashback (ใช้ getCashbackPreview เพราะยังไม่มี Order)
+            // ⚠️ แก้ไข: calculateOrderCashback รับ Order object ไม่ใช่ cartItems
+            $cashbackPreview = $this->cashbackService->getCashbackPreview($cartItems, $total);
+            $cashbackAmount = $cashbackPreview['total_cashback'];
 
             // Create order (don't decrease stock yet - will be done after payment)
             $order = Order::create([

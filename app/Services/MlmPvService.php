@@ -75,13 +75,14 @@ class MlmPvService
         // Determine which leg to attribute (for binary)
         $attributedLeg = $this->determineAttributedLeg($member);
 
+        // ⚠️ แก้ไข: ใช้ total_amount แทน total (Order model มี field total_amount)
         return MlmPvTransaction::create([
             'mlm_member_id' => $member->id,
             'mlm_plan_id' => $member->mlm_plan_id,
             'transaction_type' => 'purchase',
             'order_id' => $order->id,
             'pv_amount' => $pvData['total_pv'],
-            'sales_amount' => $order->total,
+            'sales_amount' => $order->total_amount,
             'previous_balance' => $previousBalance,
             'new_balance' => $newBalance,
             'attributed_leg' => $attributedLeg,
