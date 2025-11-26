@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\MlmMember;
 use App\Models\MlmGenealogy;
+use App\Models\MlmGlobalSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MlmGenealogyService
 {
@@ -91,13 +93,44 @@ class MlmGenealogyService
 
     /**
      * Place member in binary tree
+     *
+     * ใช้ algorithm ตาม auto_placement_strategy ที่ตั้งค่าไว้:
+     * - fill_level: เรียงเต็มชั้นก่อนไปชั้นถัดไป (BFS)
+     * - balanced: วางในขาที่มีสมาชิกน้อยกว่า
+     * - weak_leg: วางในขาที่มี PV น้อยกว่า
+     * - left_first: วางซ้ายก่อนขวา
+     * - right_first: วางขวาก่อนซ้าย
+     *
+     * รองรับ depth/width limits จาก Global Settings:
+     * - binary_max_depth: ความลึกสูงสุด
+     * - binary_max_width: จำนวนลูกสูงสุดต่อ node
      */
     protected function placeBinaryMember(MlmMember $member, MlmMember $sponsor, $preferredPosition = null)
     {
         $binaryService = new MlmBinaryService();
         $placement = $binaryService->findPlacementPosition($sponsor, $preferredPosition);
 
+        // ตรวจสอบว่าหาตำแหน่งได้หรือไม่
+        if (!$placement || !isset($placement['parent_id'])) {
+            Log::warning('Binary placement failed - no position found', [
+                'member_id' => $member->id,
+                'sponsor_id' => $sponsor->id,
+                'max_depth' => MlmGlobalSetting::get('binary_max_depth'),
+                'max_width' => MlmGlobalSetting::get('binary_max_width', 2),
+            ]);
+            return $member;
+        }
+
         $parent = MlmMember::find($placement['parent_id']);
+
+        if (!$parent) {
+            Log::warning('Binary placement failed - parent not found', [
+                'member_id' => $member->id,
+                'parent_id' => $placement['parent_id'],
+            ]);
+            return $member;
+        }
+
         $position = $placement['position'];
 
         // Update member
@@ -116,6 +149,13 @@ class MlmGenealogyService
         } else {
             $parent->increment('right_leg_members');
         }
+
+        Log::info('Binary placement successful', [
+            'member_id' => $member->id,
+            'parent_id' => $parent->id,
+            'position' => $position,
+            'binary_path' => $member->binary_path,
+        ]);
 
         return $member;
     }

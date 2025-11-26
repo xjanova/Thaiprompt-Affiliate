@@ -293,7 +293,7 @@ class MlmGlobalSettingsSeeder extends Seeder
             ],
             [
                 'key' => 'auto_placement_strategy',
-                'value' => 'balanced',
+                'value' => 'fill_level',
                 'type' => 'string',
                 'input_type' => 'select',
                 'allowed_values' => json_encode(['manual', 'left_first', 'right_first', 'fill_level', 'weak_leg', 'strong_leg', 'balanced']),
@@ -301,6 +301,42 @@ class MlmGlobalSettingsSeeder extends Seeder
                 'description' => 'Auto Placement Strategy',
                 'description_th' => 'กลยุทธ์การจัดวางอัตโนมัติ',
                 'sort_order' => 51,
+            ],
+
+            // Binary Tree Structure Limits (ความลึกและความกว้างของ Binary Tree)
+            [
+                'key' => 'binary_max_depth',
+                'value' => '10',
+                'type' => 'integer',
+                'input_type' => 'number',
+                'group' => 'placement',
+                'description' => 'Maximum Binary Tree Depth (null = unlimited)',
+                'description_th' => 'ความลึกสูงสุดของ Binary Tree (null = ไม่จำกัด)',
+                'placeholder' => '10',
+                'unit' => 'ชั้น',
+                'sort_order' => 52,
+            ],
+            [
+                'key' => 'binary_max_width',
+                'value' => '2',
+                'type' => 'integer',
+                'input_type' => 'number',
+                'group' => 'placement',
+                'description' => 'Maximum Children per Node (2 = Binary, 3 = Ternary)',
+                'description_th' => 'จำนวนลูกสูงสุดต่อ node (2 = Binary, 3 = Ternary)',
+                'placeholder' => '2',
+                'unit' => 'คน',
+                'sort_order' => 53,
+            ],
+            [
+                'key' => 'binary_auto_place_on_register',
+                'value' => '1',
+                'type' => 'boolean',
+                'input_type' => 'toggle',
+                'group' => 'placement',
+                'description' => 'Auto place in Binary Tree when member registers',
+                'description_th' => 'จัดวางใน Binary Tree อัตโนมัติเมื่อสมัครสมาชิก',
+                'sort_order' => 54,
             ],
 
             // Roll-up/Compression

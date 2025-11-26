@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\MlmMember;
+use App\Models\MlmGlobalSetting;
 use App\Models\LeadLock;
 use App\Models\LineLoginLog;
 use App\Models\LineOaSetting;
@@ -13,6 +14,7 @@ use App\Models\RecruitCustomization;
 use App\Models\Setting;
 use App\Services\LineService;
 use App\Services\LineTokenService;
+use App\Services\MlmBinaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -141,6 +143,7 @@ class RegisterController extends Controller
             'unilevel_sponsor_id' => $parentMember?->id,
             'unilevel_level' => $parentMember ? $parentMember->unilevel_level + 1 : 1,
             'unilevel_path' => $parentMember ? $parentMember->unilevel_path . '/' . $parentMember->id : '/' . $user->id,
+            'binary_sponsor_id' => $parentMember?->id,
             'member_code' => MlmMember::generateMemberCode(),
             'status' => 'active',
             'is_qualified' => true,
@@ -151,6 +154,9 @@ class RegisterController extends Controller
         if ($parentMember) {
             $parentMember->increment('total_direct_referrals');
         }
+
+        // จัดวางใน Binary Tree พร้อมกับ Unilevel
+        $this->placeMemberInBinaryTree($mlmMember, $parentMember);
 
         // Handle Recruit Page Lead Conversion Tracking
         $this->handleLeadConversion($request, $parentMember, $mlmMember);
@@ -189,6 +195,107 @@ class RegisterController extends Controller
 
         return redirect()->route('user.home')
             ->with('success', 'ลงทะเบียนสำเร็จ! ยินดีต้อนรับสู่ระบบ MLM');
+    }
+
+    /**
+     * จัดวางสมาชิกใหม่ใน Binary Tree พร้อมกับ Unilevel
+     *
+     * ใช้ algorithm ตาม auto_placement_strategy ที่ตั้งค่าไว้:
+     * - fill_level: เรียงเต็มชั้นก่อนไปชั้นถัดไป (BFS - Breadth First Search)
+     * - balanced: วางในขาที่มีสมาชิกน้อยกว่า
+     * - weak_leg: วางในขาที่มี PV น้อยกว่า
+     * - left_first: วางซ้ายก่อนขวา
+     * - right_first: วางขวาก่อนซ้าย
+     *
+     * @param MlmMember $newMember สมาชิกใหม่
+     * @param MlmMember|null $sponsor ผู้แนะนำ (sponsor)
+     * @return void
+     */
+    protected function placeMemberInBinaryTree(MlmMember $newMember, ?MlmMember $sponsor): void
+    {
+        // ตรวจสอบว่าเปิดใช้การจัดวาง Binary อัตโนมัติหรือไม่
+        $autoPlaceOnRegister = MlmGlobalSetting::get('binary_auto_place_on_register', true);
+
+        if (!$autoPlaceOnRegister || !$sponsor) {
+            return;
+        }
+
+        try {
+            $binaryService = new MlmBinaryService();
+
+            // หาตำแหน่งที่จะวาง (ใช้ strategy ที่ตั้งค่าไว้)
+            $placement = $binaryService->findPlacementPosition($sponsor, null);
+
+            if (!$placement || !isset($placement['parent_id'])) {
+                \Log::warning('Binary placement failed - no position found', [
+                    'member_id' => $newMember->id,
+                    'sponsor_id' => $sponsor->id,
+                ]);
+                return;
+            }
+
+            $parent = MlmMember::find($placement['parent_id']);
+            $position = $placement['position'];
+
+            if (!$parent) {
+                return;
+            }
+
+            // อัพเดทข้อมูล Binary Tree ของสมาชิกใหม่
+            $newMember->update([
+                'binary_parent_id' => $parent->id,
+                'binary_position' => $position,
+                'binary_path' => ($parent->binary_path ?? '') . '/' . $position,
+            ]);
+
+            // อัพเดทจำนวนสมาชิกในแต่ละขาของ parent
+            if ($position === 'left') {
+                $parent->increment('left_leg_members');
+            } else {
+                $parent->increment('right_leg_members');
+            }
+
+            // อัพเดท total_team_members ของ upline ทั้งหมดใน Binary Tree
+            $this->updateBinaryUplineTeamCounts($newMember);
+
+            \Log::info('Binary placement successful', [
+                'member_id' => $newMember->id,
+                'parent_id' => $parent->id,
+                'position' => $position,
+                'binary_path' => $newMember->binary_path,
+            ]);
+
+        } catch (\Exception $e) {
+            // Log error แต่ไม่ให้กระทบการสมัครสมาชิก
+            \Log::error('Binary placement error', [
+                'member_id' => $newMember->id,
+                'sponsor_id' => $sponsor->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * อัพเดทจำนวนสมาชิกทีมของ upline ทั้งหมดใน Binary Tree
+     *
+     * @param MlmMember $member สมาชิกใหม่
+     * @return void
+     */
+    protected function updateBinaryUplineTeamCounts(MlmMember $member): void
+    {
+        $currentMember = $member;
+
+        // Traverse up the binary tree and update team counts
+        while ($currentMember->binaryParent) {
+            $parent = $currentMember->binaryParent;
+            $parent->increment('total_team_members');
+            $currentMember = $parent;
+
+            // Safety limit เพื่อป้องกัน infinite loop
+            if ($parent->id === $currentMember->id) {
+                break;
+            }
+        }
     }
 
     /**
