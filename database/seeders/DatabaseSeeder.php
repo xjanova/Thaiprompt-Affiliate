@@ -17,6 +17,9 @@ class DatabaseSeeder extends Seeder
 
         // Seed in proper order to handle dependencies
         $this->call([
+            // 0. Roles & Permissions (ต้องมาก่อนสุดเพื่อให้ระบบสิทธิ์พร้อมใช้งาน)
+            AdminPermissionsSeeder::class,      // 🔐 Admin Permissions ครอบคลุมทุก modules
+
             // 1. Core Settings & Configuration (ต้องมาก่อนสุด)
             AppNameSettingSeeder::class,        // ตั้งค่าชื่อแอพ
             TwoFactorSettingsSeeder::class,     // ตั้งค่า 2FA และ OTP
