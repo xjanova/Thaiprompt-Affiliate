@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.223.3] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1701 from xjanova/claude/fix-dashboard-overflow-017TXke57qC2P28qiVPp6W3n (f83d4774)
+- fix: ลดความฟุ้งของ effects ในหน้าแดชบอร์ด user (e5f3c0f2)
+### 🔧 Other Changes
+
+
 ## [v3.223.2] - 2025-11-26
 
 ### ✨ Features
