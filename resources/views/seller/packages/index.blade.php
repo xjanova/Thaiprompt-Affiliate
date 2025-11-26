@@ -1,9 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.seller')
 
 @section('title', 'เลือกแพ็คเกจ')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-12 px-4 sm:px-6 lg:px-8">
+<div class="py-6">
     <div class="max-w-7xl mx-auto">
         {{-- Header --}}
         <div class="text-center mb-12">
