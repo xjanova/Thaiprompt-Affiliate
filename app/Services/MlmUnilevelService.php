@@ -4,27 +4,38 @@ namespace App\Services;
 
 use App\Models\MlmMember;
 use App\Models\MlmCommission;
+use App\Models\MlmGlobalSetting;
 use App\Models\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * MlmUnilevelService - จัดการการคำนวณ Unilevel Commission
+ *
+ * ⚠️ IMPORTANT: Service นี้ใช้ค่าจาก MlmGlobalSetting เท่านั้น
+ * ไม่ใช้ค่าจาก MlmPlan (per-plan settings) เพื่อความเป็นเอกภาพ
+ */
 class MlmUnilevelService
 {
     /**
      * Calculate unilevel commissions
+     * ใช้ค่าจาก Global Settings แทน per-plan settings
      */
     public function calculateUnilevelCommissions(MlmMember $member, Order $order, array $pvData)
     {
-        $plan = $member->plan;
-        $levels = $plan->unilevel_levels ?? [];
+        // ใช้ Global Settings แทน per-plan settings
+        $levels = MlmGlobalSetting::get('unilevel_levels', []);
+        $maxDepth = MlmGlobalSetting::get('unilevel_max_depth', 10);
+        $compressionEnabled = MlmGlobalSetting::get('unilevel_compression_enabled', true);
+        $maxPerLevel = MlmGlobalSetting::get('unilevel_max_commission_per_level', null);
 
         if (empty($levels)) {
             return;
         }
 
+        $plan = $member->plan;
         $currentMember = $member;
         $currentLevel = 0;
-        $maxDepth = $plan->unilevel_max_depth ?? 10;
 
         // Traverse up the unilevel tree
         while ($currentMember && $currentLevel < $maxDepth && $currentLevel < count($levels)) {
@@ -37,7 +48,7 @@ class MlmUnilevelService
             // Check if sponsor is qualified
             if (!$this->isQualifiedForCommission($sponsor, $currentLevel + 1)) {
                 // Compression: skip inactive members if enabled
-                if (!$plan->unilevel_compression) {
+                if (!$compressionEnabled) {
                     $currentLevel++;
                 }
                 $currentMember = $sponsor;
@@ -50,12 +61,17 @@ class MlmUnilevelService
             if ($percentage > 0) {
                 $commissionAmount = ($pvData['total_pv'] * $percentage) / 100;
 
-                // Check rank multiplier if enabled
-                if ($plan->requires_rank && $sponsor->user->current_rank_id) {
+                // Check rank multiplier if user has rank
+                if ($sponsor->user->current_rank_id) {
                     $rank = $sponsor->user->rank;
                     if ($rank && $rank->bonus_multiplier) {
                         $commissionAmount *= $rank->bonus_multiplier;
                     }
+                }
+
+                // Apply max per level constraint
+                if ($maxPerLevel && $commissionAmount > $maxPerLevel) {
+                    $commissionAmount = $maxPerLevel;
                 }
 
                 // Create commission record
@@ -86,6 +102,7 @@ class MlmUnilevelService
 
     /**
      * Check if member is qualified for commission at a level
+     * ใช้ค่าจาก Global Settings แทน per-plan settings
      */
     protected function isQualifiedForCommission(MlmMember $member, int $level)
     {
@@ -94,33 +111,19 @@ class MlmUnilevelService
             return false;
         }
 
-        // Check plan-specific requirements
-        $plan = $member->plan;
-
-        // Check rank requirements if enabled
-        if ($plan->requires_rank) {
-            $rankRequirements = $plan->rank_requirements ?? [];
-
-            if (isset($rankRequirements[$level])) {
-                $requiredRank = $rankRequirements[$level];
-                $memberRank = $member->user->current_rank_id;
-
-                if ($memberRank < $requiredRank) {
-                    return false;
-                }
-            }
-        }
+        // Note: rank requirements ไม่ใช้ per-plan settings แล้ว
+        // ถ้าต้องการ rank requirements ให้ใช้ Global Settings แทน
 
         return true;
     }
 
     /**
      * Get unilevel downline tree
+     * ใช้ค่าจาก Global Settings แทน per-plan settings
      */
     public function getUnilevelTree(MlmMember $member, int $maxDepth = null)
     {
-        $plan = $member->plan;
-        $maxDepth = $maxDepth ?? $plan->unilevel_max_depth ?? 10;
+        $maxDepth = $maxDepth ?? MlmGlobalSetting::get('unilevel_max_depth', 10);
 
         return $this->buildUnilevelTreeRecursive($member, 0, $maxDepth);
     }
@@ -161,11 +164,12 @@ class MlmUnilevelService
 
     /**
      * Get unilevel statistics by level
+     * ใช้ค่าจาก Global Settings แทน per-plan settings
      */
     public function getUnilevelStatsByLevel(MlmMember $member)
     {
+        $maxDepth = MlmGlobalSetting::get('unilevel_max_depth', 10);
         $plan = $member->plan;
-        $maxDepth = $plan->unilevel_max_depth ?? 10;
 
         $stats = [];
 
@@ -187,11 +191,11 @@ class MlmUnilevelService
 
     /**
      * Calculate potential commission for preview
+     * ใช้ค่าจาก Global Settings แทน per-plan settings
      */
     public function calculatePotentialCommission(MlmMember $member, $pvAmount)
     {
-        $plan = $member->plan;
-        $levels = $plan->unilevel_levels ?? [];
+        $levels = MlmGlobalSetting::get('unilevel_levels', []);
 
         if (empty($levels) || !isset($levels[0])) {
             return 0;
@@ -200,8 +204,8 @@ class MlmUnilevelService
         $percentage = $levels[0]['percentage'] ?? 0;
         $commission = ($pvAmount * $percentage) / 100;
 
-        // Apply rank multiplier if applicable
-        if ($plan->requires_rank && $member->user->current_rank_id) {
+        // Apply rank multiplier if user has rank
+        if ($member->user->current_rank_id) {
             $rank = $member->user->rank;
             if ($rank && $rank->bonus_multiplier) {
                 $commission *= $rank->bonus_multiplier;

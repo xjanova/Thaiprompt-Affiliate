@@ -829,6 +829,8 @@ function incomeSimulator() {
 
         /**
          * จำลองรายได้ 1 เดือน
+         * ⚠️ IMPORTANT: เรียก API เพื่อคำนวณ commission
+         * ใช้ logic เดียวกับ Admin Calculator เพื่อความถูกต้อง
          */
         async simulateMonth(month) {
             // คำนวณการเติบโตของทีม (3% ต่อเดือน)
@@ -836,7 +838,7 @@ function incomeSimulator() {
             const currentTeamSize = Math.floor(this.inputs.teamSize * growthFactor);
             const totalTeamSales = currentTeamSize * this.inputs.teamAvgSales;
 
-            // คำนวณ PV
+            // คำนวณ PV สำหรับ display
             const pvRate = parseFloat(this.settings.global_pv_rate || 1);
             const personalPv = this.inputs.personalSales * pvRate;
             const teamPv = totalTeamSales * pvRate;
@@ -845,26 +847,54 @@ function incomeSimulator() {
             const rankMultiplier = this.selectedRank ? parseFloat(this.selectedRank.bonus_multiplier || 1) : 1;
             const rankCommissionRate = this.selectedRank ? parseFloat(this.selectedRank.commission_rate || 0) : 0;
 
-            // คำนวณ Unilevel
-            let unilevelCommission = this.calculateUnilevel(teamPv, rankMultiplier);
+            // ดึง Binary left ratio จาก settings
+            const leftRatio = parseFloat(this.settings.binary_default_left_ratio || 50);
 
-            // คำนวณ Binary
-            let binaryCommission = this.calculateBinary(teamPv, rankMultiplier);
+            // คำนวณ Binary pairs (ประมาณ)
+            const leftLegPv = teamPv * (leftRatio / 100);
+            const rightLegPv = teamPv * ((100 - leftRatio) / 100);
+            const weakerLegPv = Math.min(leftLegPv, rightLegPv);
+            const pairingType = this.settings.binary_pairing_type || '1:1';
+            const pairRatio = pairingType === '2:1' ? 2 : 1;
+            const estimatedPairs = Math.floor(weakerLegPv / pairRatio);
+
+            // เรียก API เพื่อคำนวณ commission (ใช้ logic เดียวกับ Admin)
+            let unilevelCommission = 0;
+            let binaryCommission = 0;
+
+            try {
+                const response = await fetch('{{ route("user.mlm.preview-calculation") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({
+                        sales_amount: totalTeamSales,
+                        team_size: currentTeamSize,
+                        member_depth: parseInt(this.settings.unilevel_max_depth || 10),
+                        binary_pairs: estimatedPairs,
+                        left_ratio: leftRatio,
+                        rank_multiplier: rankMultiplier,
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    unilevelCommission = result.calculation.unilevel_commission || 0;
+                    binaryCommission = result.calculation.binary_commission || 0;
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                // Fallback: ไม่มี commission ถ้า API ล้มเหลว
+            }
 
             // คำนวณ Personal Commission
             const personalCommission = (personalPv * rankCommissionRate) / 100;
 
-            // รวม
-            let totalIncome = personalCommission + unilevelCommission + binaryCommission;
-
-            // Overpay Protection
-            totalIncome = this.applyOverpayProtection(
-                totalIncome,
-                personalCommission,
-                unilevelCommission,
-                binaryCommission,
-                this.inputs.personalSales + totalTeamSales
-            );
+            // รวม (API จัดการ overpay protection แล้ว)
+            const totalIncome = personalCommission + unilevelCommission + binaryCommission;
 
             // อัพเดท current income (สำหรับ animation)
             this.currentIncome.personal = personalCommission;
@@ -888,113 +918,6 @@ function incomeSimulator() {
                 total: totalIncome,
                 accumulated
             });
-        },
-
-        /**
-         * คำนวณ Unilevel Commission
-         */
-        calculateUnilevel(teamPv, multiplier) {
-            const unilevelLevels = this.settings.unilevel_levels || [];
-            const maxDepth = parseInt(this.settings.unilevel_max_depth || 10);
-
-            if (!Array.isArray(unilevelLevels) || unilevelLevels.length === 0) {
-                return 0;
-            }
-
-            // สร้าง distribution แบบ pyramid
-            const distribution = this.generateDistribution(maxDepth);
-
-            let commission = 0;
-
-            unilevelLevels.forEach((level, index) => {
-                if (index >= maxDepth) return;
-
-                const percentage = level.percentage || 0;
-                if (percentage > 0) {
-                    const dist = distribution[index] || 0;
-                    const levelPv = teamPv * dist;
-                    const levelCommission = (levelPv * percentage) / 100;
-                    commission += levelCommission;
-                }
-            });
-
-            return commission * multiplier;
-        },
-
-        /**
-         * คำนวณ Binary Commission
-         */
-        calculateBinary(teamPv, multiplier) {
-            const pairCommission = parseFloat(this.settings.binary_pair_commission || 0);
-
-            if (pairCommission <= 0) return 0;
-
-            // จำลอง left/right leg (60/40)
-            const leftLegPv = teamPv * 0.6;
-            const rightLegPv = teamPv * 0.4;
-            const weakLegPv = Math.min(leftLegPv, rightLegPv);
-
-            // Pairing type
-            const pairingType = this.settings.binary_pairing_type || '1:1';
-            const pairRatio = pairingType === '2:1' ? 2 : 1;
-            const pairsAvailable = Math.floor(weakLegPv / pairRatio);
-
-            // Max pairs limit
-            const maxPairsPerDay = parseInt(this.settings.binary_max_pairs_per_day || 0);
-            let pairsToPay = pairsAvailable;
-            if (maxPairsPerDay > 0) {
-                pairsToPay = Math.min(pairsToPay, maxPairsPerDay);
-            }
-
-            let commission = pairsToPay * pairCommission * multiplier;
-
-            // Max commission limit
-            const maxCommissionPerDay = parseFloat(this.settings.binary_max_commission_per_day || 0);
-            if (maxCommissionPerDay > 0) {
-                commission = Math.min(commission, maxCommissionPerDay);
-            }
-
-            return commission;
-        },
-
-        /**
-         * Overpay Protection
-         */
-        applyOverpayProtection(totalIncome, personal, unilevel, binary, totalSales) {
-            const enabled = this.settings.overpay_protection_enabled !== false;
-            const maxPercentage = parseFloat(this.settings.max_commission_percentage || 50);
-
-            if (!enabled) return totalIncome;
-
-            const maxAllowed = (totalSales * maxPercentage) / 100;
-
-            if (totalIncome > maxAllowed) {
-                const scaleFactor = maxAllowed / totalIncome;
-                return personal + (unilevel * scaleFactor) + (binary * scaleFactor);
-            }
-
-            return totalIncome;
-        },
-
-        /**
-         * สร้าง distribution แบบ pyramid
-         */
-        generateDistribution(maxLevels) {
-            const dist = {};
-            const baseDistribution = [0.40, 0.25, 0.15, 0.10, 0.05, 0.03, 0.02];
-            let remaining = 1.0;
-
-            for (let i = 0; i < maxLevels; i++) {
-                if (i < baseDistribution.length) {
-                    dist[i] = baseDistribution[i];
-                } else {
-                    dist[i] = remaining / (maxLevels - baseDistribution.length);
-                }
-                remaining -= dist[i];
-                if (remaining < 0) remaining = 0;
-            }
-
-            return dist;
         },
 
         /**

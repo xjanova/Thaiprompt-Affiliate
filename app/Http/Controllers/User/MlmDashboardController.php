@@ -234,4 +234,208 @@ class MlmDashboardController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * คำนวณ Commission Preview สำหรับ Income Simulator
+     * ใช้ logic เดียวกับ Admin Calculator เพื่อความถูกต้อง
+     *
+     * ⚠️ IMPORTANT: ฟังก์ชันนี้ใช้ค่าจาก MlmGlobalSetting เท่านั้น
+     * ไม่ใช้ค่าจาก MlmPlan (per-plan settings) เพื่อความเป็นเอกภาพ
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function previewCalculation(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'sales_amount' => 'required|numeric|min:0',
+                'team_size' => 'nullable|integer|min:0',
+                'member_depth' => 'nullable|integer|min:1|max:10',
+                'binary_pairs' => 'nullable|integer|min:0',
+                'left_ratio' => 'nullable|numeric|min:0|max:100',
+                'rank_multiplier' => 'nullable|numeric|min:1',
+            ]);
+
+            $salesAmount = $validated['sales_amount'];
+            $teamSize = $validated['team_size'] ?? 10;
+            $memberDepth = $validated['member_depth'] ?? 10;
+            $binaryPairs = $validated['binary_pairs'] ?? 0;
+            $leftRatio = $validated['left_ratio'] ?? \App\Models\MlmGlobalSetting::get('binary_default_left_ratio', 50);
+            $rankMultiplier = $validated['rank_multiplier'] ?? 1;
+
+            // ดึงค่า settings จาก Global Settings (แหล่งเดียว)
+            $pvRate = \App\Models\MlmGlobalSetting::get('global_pv_rate', 1);
+            $commissionPerPv = \App\Models\MlmGlobalSetting::get('commission_per_pv', 1);
+            $unilevelLevels = \App\Models\MlmGlobalSetting::get('unilevel_levels', []);
+            $unilevelMaxDepth = \App\Models\MlmGlobalSetting::get('unilevel_max_depth', 10);
+            $binaryPairCommission = \App\Models\MlmGlobalSetting::get('binary_pair_commission', 100);
+            $binaryMatchPercentage = \App\Models\MlmGlobalSetting::get('binary_match_percentage', 50);
+            $binaryPairingType = \App\Models\MlmGlobalSetting::get('binary_pairing_type', '1:1');
+
+            // Constraints
+            $maxPerLevel = \App\Models\MlmGlobalSetting::get('unilevel_max_commission_per_level', null);
+            $maxPerDay = \App\Models\MlmGlobalSetting::get('binary_max_commission_per_day', null);
+            $maxPairsPerDay = \App\Models\MlmGlobalSetting::get('binary_max_pairs_per_day', null);
+            $overpayEnabled = \App\Models\MlmGlobalSetting::get('overpay_protection_enabled', true);
+            $maxCommissionPercentage = \App\Models\MlmGlobalSetting::get('max_commission_percentage', 50);
+
+            // System enabled flags
+            $unilevelEnabled = \App\Models\MlmGlobalSetting::get('unilevel_enabled', true);
+            $binaryEnabled = \App\Models\MlmGlobalSetting::get('binary_enabled', true);
+
+            // คำนวณ PV
+            $totalPv = $salesAmount / $pvRate;
+
+            // ==== UNILEVEL CALCULATION ====
+            $unilevelTotal = 0;
+            $unilevelBreakdown = [];
+
+            if ($unilevelEnabled && is_array($unilevelLevels)) {
+                foreach ($unilevelLevels as $level) {
+                    $levelNum = $level['level'] ?? 0;
+
+                    if ($levelNum > $memberDepth || $levelNum > $unilevelMaxDepth) {
+                        continue;
+                    }
+
+                    $percentage = $level['percentage'] ?? 0;
+                    if ($percentage <= 0) {
+                        continue;
+                    }
+
+                    // คำนวณ commission ตาม percentage จริงจาก settings
+                    $commission = ($totalPv * $percentage) / 100;
+
+                    // Apply rank multiplier
+                    $commission *= $rankMultiplier;
+
+                    // Apply level constraint
+                    if ($maxPerLevel && $commission > $maxPerLevel) {
+                        $commission = $maxPerLevel;
+                    }
+
+                    $unilevelBreakdown[] = [
+                        'level' => $levelNum,
+                        'percentage' => $percentage,
+                        'commission' => round($commission, 2),
+                    ];
+
+                    $unilevelTotal += $commission;
+                }
+            }
+
+            // ==== BINARY CALCULATION ====
+            $binaryTotal = 0;
+            $binaryBreakdown = [];
+
+            if ($binaryEnabled && $binaryPairs > 0) {
+                // คำนวณ left/right ratio จาก settings
+                $leftLegPv = $totalPv * ($leftRatio / 100);
+                $rightLegPv = $totalPv * ((100 - $leftRatio) / 100);
+                $weakerLegPv = min($leftLegPv, $rightLegPv);
+
+                // Pairing type
+                $pairRatio = $binaryPairingType === '2:1' ? 2 : 1;
+
+                // คำนวณ pairs ที่เป็นไปได้
+                $maxPossiblePairs = floor($weakerLegPv / $pairRatio);
+                $actualPairs = min($binaryPairs, $maxPossiblePairs);
+
+                // Apply daily limits
+                if ($maxPairsPerDay && $actualPairs > $maxPairsPerDay) {
+                    $actualPairs = $maxPairsPerDay;
+                }
+
+                // คำนวณ commission
+                $binaryCommission = $actualPairs * $binaryPairCommission;
+
+                // Apply rank multiplier
+                $binaryCommission *= $rankMultiplier;
+
+                // Apply daily commission limit
+                if ($maxPerDay && $binaryCommission > $maxPerDay) {
+                    $binaryCommission = $maxPerDay;
+                }
+
+                $binaryTotal = $binaryCommission;
+
+                $binaryBreakdown = [
+                    'left_leg_pv' => round($leftLegPv, 2),
+                    'right_leg_pv' => round($rightLegPv, 2),
+                    'weaker_leg_pv' => round($weakerLegPv, 2),
+                    'pairs_requested' => $binaryPairs,
+                    'pairs_actual' => $actualPairs,
+                    'commission_per_pair' => $binaryPairCommission,
+                    'total_commission' => round($binaryTotal, 2),
+                ];
+            }
+
+            // ==== TOTAL CALCULATION ====
+            $totalCommission = $unilevelTotal + $binaryTotal;
+
+            // Overpay protection
+            $isOverpay = false;
+            $totalPercentage = $salesAmount > 0 ? ($totalCommission / $salesAmount) * 100 : 0;
+
+            if ($overpayEnabled && $totalPercentage > $maxCommissionPercentage) {
+                $isOverpay = true;
+                // ปรับลด commission ตามสัดส่วน
+                $adjustmentRatio = $maxCommissionPercentage / $totalPercentage;
+                $unilevelTotal *= $adjustmentRatio;
+                $binaryTotal *= $adjustmentRatio;
+                $totalCommission = $unilevelTotal + $binaryTotal;
+                $totalPercentage = $maxCommissionPercentage;
+            }
+
+            return response()->json([
+                'success' => true,
+                'input' => [
+                    'sales_amount' => $salesAmount,
+                    'team_size' => $teamSize,
+                    'member_depth' => $memberDepth,
+                    'binary_pairs' => $binaryPairs,
+                    'left_ratio' => $leftRatio,
+                    'rank_multiplier' => $rankMultiplier,
+                ],
+                'calculation' => [
+                    'total_pv' => round($totalPv, 2),
+                    'unilevel_commission' => round($unilevelTotal, 2),
+                    'binary_commission' => round($binaryTotal, 2),
+                    'total_commission' => round($totalCommission, 2),
+                    'total_percentage' => round($totalPercentage, 2),
+                ],
+                'breakdown' => [
+                    'unilevel' => $unilevelBreakdown,
+                    'binary' => $binaryBreakdown,
+                ],
+                'constraints' => [
+                    'overpay_protection_enabled' => $overpayEnabled,
+                    'max_commission_percentage' => $maxCommissionPercentage,
+                    'is_overpay' => $isOverpay,
+                    'max_per_level' => $maxPerLevel,
+                    'max_pairs_per_day' => $maxPairsPerDay,
+                    'max_per_day' => $maxPerDay,
+                ],
+                'settings_used' => [
+                    'pv_rate' => $pvRate,
+                    'unilevel_enabled' => $unilevelEnabled,
+                    'binary_enabled' => $binaryEnabled,
+                    'binary_pairing_type' => $binaryPairingType,
+                ],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการคำนวณ',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

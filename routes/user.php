@@ -353,6 +353,10 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     // API สำหรับ MLM Settings (Read-only)
     Route::get('/settings', [\App\Http\Controllers\User\MlmDashboardController::class, 'getSettings'])->name('settings');
 
+    // API สำหรับ Commission Preview Calculator
+    // ใช้ logic เดียวกับ Admin Calculator เพื่อความถูกต้อง
+    Route::post('/preview-calculation', [\App\Http\Controllers\User\MlmDashboardController::class, 'previewCalculation'])->name('preview-calculation');
+
     // Income Simulator - Marketing Tool
     Route::get('/income-simulator', function () {
         return view('user.mlm.income-simulator');
