@@ -75,6 +75,7 @@ class DatabaseSeeder extends Seeder
             MlmPlanSeeder::class,               // แผนคอมมิชชัน MLM หลัก (แผนเดียวบังคับทั้งระบบ)
             MlmPackageSeeder::class,            // แพคเกจสมาชิก MLM (Bronze, Silver, Gold, Diamond, Premier)
             RankSeeder::class,                  // ระบบยศ/ระดับ (Bronze, Silver, Gold, Platinum, Diamond)
+            MlmHierarchySeeder::class,          // 🆕 ระบบสายงาน MLM 5 ชั้น (94 สมาชิกทดสอบ)
             RecruitTemplateSeeder::class,       // 🆕 เทมเพลตหน้า Recruit สำหรับแม่ทีม
 
             // 8. E-commerce & Products
