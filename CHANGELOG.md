@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.195.1] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1641 from xjanova/claude/setup-line-bot-api-01JrmtcwJxe3s9qdiDAP32Dh (03222e29)
+- docs: add comprehensive LINE Bot API setup guide and improve UI (2692038b)
+
 ## [v3.195.0] - 2025-11-26
 
 ### ✨ Features
