@@ -485,34 +485,120 @@
 
                     <div class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
                         <div class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-[#00B900] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-[#00B900] text-white text-xs flex items-center justify-center font-bold">1</span>
                             <p>เลือก AI Provider ที่เหมาะสม</p>
                         </div>
                         <div class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-[#00B900] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
-                            <p>รับ API Key จาก Dashboard</p>
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-[#00B900] text-white text-xs flex items-center justify-center font-bold">2</span>
+                            <p>รับ API Key จาก Dashboard ของ Provider</p>
                         </div>
                         <div class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-[#00B900] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
-                            <p>ปรับพารามิเตอร์ให้เหมาะสม</p>
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-[#00B900] text-white text-xs flex items-center justify-center font-bold">3</span>
+                            <p>ปรับ Temperature และ Max Tokens</p>
                         </div>
                         <div class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-[#00B900] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-[#00B900] text-white text-xs flex items-center justify-center font-bold">4</span>
                             <p>เขียน System Prompt ที่ชัดเจน</p>
                         </div>
                         <div class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-[#00B900] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-[#00B900] text-white text-xs flex items-center justify-center font-bold">5</span>
                             <p>ทดสอบก่อนเปิดใช้งานจริง</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- วิธีขอ API Key แบบละเอียด -->
+                <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden" x-data="{ openTab: '' }">
+                    <div class="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-4">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                            </svg>
+                            วิธีขอ API Key
+                        </h3>
+                    </div>
+                    <div class="p-4 space-y-2">
+                        <!-- OpenAI -->
+                        <div class="border border-gray-200 dark:border-slate-600 rounded-xl overflow-hidden">
+                            <button @click="openTab = openTab === 'openai' ? '' : 'openai'"
+                                    class="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors">
+                                <span class="flex items-center gap-2 font-medium text-gray-900 dark:text-white">
+                                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                    OpenAI (ChatGPT)
+                                </span>
+                                <svg class="w-5 h-5 text-gray-500 transition-transform" :class="openTab === 'openai' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <div x-show="openTab === 'openai'" x-collapse class="px-4 py-3 bg-white dark:bg-slate-800 text-sm space-y-2">
+                                <p class="text-gray-600 dark:text-gray-400">1. ไปที่ <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-600 hover:underline">platform.openai.com/api-keys</a></p>
+                                <p class="text-gray-600 dark:text-gray-400">2. ล็อกอินหรือสมัครบัญชี</p>
+                                <p class="text-gray-600 dark:text-gray-400">3. กด "Create new secret key"</p>
+                                <p class="text-gray-600 dark:text-gray-400">4. คัดลอก API Key (รูปแบบ: sk-...)</p>
+                                <p class="text-xs text-orange-600 dark:text-orange-400 mt-2">* Key จะแสดงครั้งเดียว อย่าลืมคัดลอก!</p>
+                            </div>
+                        </div>
+
+                        <!-- Anthropic -->
+                        <div class="border border-gray-200 dark:border-slate-600 rounded-xl overflow-hidden">
+                            <button @click="openTab = openTab === 'anthropic' ? '' : 'anthropic'"
+                                    class="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors">
+                                <span class="flex items-center gap-2 font-medium text-gray-900 dark:text-white">
+                                    <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                                    Anthropic (Claude)
+                                </span>
+                                <svg class="w-5 h-5 text-gray-500 transition-transform" :class="openTab === 'anthropic' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <div x-show="openTab === 'anthropic'" x-collapse class="px-4 py-3 bg-white dark:bg-slate-800 text-sm space-y-2">
+                                <p class="text-gray-600 dark:text-gray-400">1. ไปที่ <a href="https://console.anthropic.com/" target="_blank" class="text-blue-600 hover:underline">console.anthropic.com</a></p>
+                                <p class="text-gray-600 dark:text-gray-400">2. ล็อกอินหรือสมัครบัญชี</p>
+                                <p class="text-gray-600 dark:text-gray-400">3. ไปที่ API Keys แล้วกด "Create Key"</p>
+                                <p class="text-gray-600 dark:text-gray-400">4. คัดลอก API Key (รูปแบบ: sk-ant-...)</p>
+                            </div>
+                        </div>
+
+                        <!-- Gemini -->
+                        <div class="border border-gray-200 dark:border-slate-600 rounded-xl overflow-hidden">
+                            <button @click="openTab = openTab === 'gemini' ? '' : 'gemini'"
+                                    class="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors">
+                                <span class="flex items-center gap-2 font-medium text-gray-900 dark:text-white">
+                                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                    Google Gemini
+                                </span>
+                                <svg class="w-5 h-5 text-gray-500 transition-transform" :class="openTab === 'gemini' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <div x-show="openTab === 'gemini'" x-collapse class="px-4 py-3 bg-white dark:bg-slate-800 text-sm space-y-2">
+                                <p class="text-gray-600 dark:text-gray-400">1. ไปที่ <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-600 hover:underline">aistudio.google.com/app/apikey</a></p>
+                                <p class="text-gray-600 dark:text-gray-400">2. ล็อกอินด้วย Google Account</p>
+                                <p class="text-gray-600 dark:text-gray-400">3. กด "Create API Key"</p>
+                                <p class="text-gray-600 dark:text-gray-400">4. คัดลอก API Key (รูปแบบ: AIza...)</p>
+                                <p class="text-xs text-green-600 dark:text-green-400 mt-2">* มี Free tier ให้ใช้งาน!</p>
+                            </div>
+                        </div>
+
+                        <!-- DeepSeek -->
+                        <div class="border border-gray-200 dark:border-slate-600 rounded-xl overflow-hidden">
+                            <button @click="openTab = openTab === 'deepseek' ? '' : 'deepseek'"
+                                    class="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors">
+                                <span class="flex items-center gap-2 font-medium text-gray-900 dark:text-white">
+                                    <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                                    DeepSeek
+                                </span>
+                                <svg class="w-5 h-5 text-gray-500 transition-transform" :class="openTab === 'deepseek' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <div x-show="openTab === 'deepseek'" x-collapse class="px-4 py-3 bg-white dark:bg-slate-800 text-sm space-y-2">
+                                <p class="text-gray-600 dark:text-gray-400">1. ไปที่ <a href="https://platform.deepseek.com/" target="_blank" class="text-blue-600 hover:underline">platform.deepseek.com</a></p>
+                                <p class="text-gray-600 dark:text-gray-400">2. ล็อกอินหรือสมัครบัญชี</p>
+                                <p class="text-gray-600 dark:text-gray-400">3. ไปที่ API Keys แล้วกด Create</p>
+                                <p class="text-gray-600 dark:text-gray-400">4. คัดลอก API Key (รูปแบบ: sk-...)</p>
+                                <p class="text-xs text-green-600 dark:text-green-400 mt-2">* ราคาถูกมาก!</p>
+                            </div>
                         </div>
                     </div>
                 </div>
