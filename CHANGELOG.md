@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.213.0] - 2025-11-26
+
+### ✨ Features
+- feat: add migration for all anti-abuse tables (04a701e5)
+### 🐛 Bug Fixes
+- fix: add new migration to fix platform_wallets ENUM type (e167fb49)
+### 🔧 Other Changes
+- Merge pull request #1673 from xjanova/claude/create-disputes-table-01FiY6LSg8ktziLspmucHN9D (d1d227e4)
+
 ## [v3.212.2] - 2025-11-26
 
 ### ✨ Features
