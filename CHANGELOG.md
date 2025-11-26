@@ -2,6 +2,196 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.206.2] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1661 from xjanova/claude/fix-rank-seeder-duplicates-0195Yukhi5QS8WayGFSm1w17 (083e0a51)
+- fix: add missing columns to payout_settings table (a657884d)
+### 🔧 Other Changes
+
+
+## [v3.206.1] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1660 from xjanova/claude/fix-org-chart-system-019ZXNC5ByDp5TxdRQMCUQgh (3629b988)
+- fix: overhaul organization chart system with touch support (c9858ad4)
+### 🔧 Other Changes
+
+
+## [v3.206.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1659 from xjanova/claude/redesign-homepage-manager-019umhLni1yNdxLUNk9g42Hf (cfeab621)
+- feat: add HomepageManagerSeeder with default sections and templates (ec7ff76e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.205.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1658 from xjanova/claude/redesign-homepage-manager-019umhLni1yNdxLUNk9g42Hf (380362e9)
+- feat: add Homepage Manager visual editor system (b2492bd0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.204.2] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1657 from xjanova/claude/fix-genealogy-null-error-01RzmHHLVr6zM5Xmrmy8h4Fn (8544a574)
+- fix: แก้ไข null error สำหรับ $member->plan ในทุกหน้า MLM (777e8d17)
+### 🔧 Other Changes
+
+
+## [v3.204.1] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1656 from xjanova/claude/fix-rank-seeder-duplicates-0195Yukhi5QS8WayGFSm1w17 (541a2189)
+- fix: add missing leg requirement types to rank_requirements ENUM (4ab1f940)
+### 🔧 Other Changes
+
+
+## [v3.204.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1655 from xjanova/claude/redesign-homepage-navigation-01RrL7GwBcCijKCoJorbW1Hu (bde0b779)
+- feat: upgrade 2FA to Google Authenticator (TOTP) (e120c6e0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.203.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1654 from xjanova/claude/add-label-barcode-system-01XtZdjN9aUGY25P2X9CdhX2 (a07e2b26)
+- feat: add camera barcode/QR scanner support for label designer (fa73bf97)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.202.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1653 from xjanova/claude/virtual-id-cards-01Wsax8cHKsT6dcMUdmfL85b (564b01d6)
+- feat: add Virtual ID Card system with rank-based styling (70907167)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.201.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1652 from xjanova/claude/fix-commission-column-error-014edLTNKujunWpqtECQYYjG (be6496b7)
+- feat: add complete Platform Revenue System (c6e918bb)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.200.2] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1651 from xjanova/claude/fix-genealogy-null-error-01RzmHHLVr6zM5Xmrmy8h4Fn (9932c3a7)
+- fix: แก้ไข null error เมื่อ member ไม่มี plan ในหน้า genealogy (54358475)
+### 🔧 Other Changes
+
+
+## [v3.200.1] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1650 from xjanova/claude/audit-mlm-commission-013i75fKQGPDaRJzmuqxvmpf (e2ed4834)
+- fix: update MlmProductPv to use MlmGlobalSetting instead of per-plan settings (2b9ee7de)
+### 🔧 Other Changes
+
+
+## [v3.200.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1649 from xjanova/claude/fix-commission-column-error-014edLTNKujunWpqtECQYYjG (21d3ca8a)
+- feat: add PV System Settings UI for commission_per_pv configuration (8523c036)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.199.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1648 from xjanova/claude/redesign-homepage-navigation-01RrL7GwBcCijKCoJorbW1Hu (b78d3381)
+- feat: add app-like home page with hub navigation (f7d3e09d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.198.3] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1647 from xjanova/claude/audit-mlm-commission-013i75fKQGPDaRJzmuqxvmpf (2f347717)
+- refactor: remove per-plan settings and use MlmGlobalSetting only (59e8333c)
+
+## [v3.198.2] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1646 from xjanova/claude/fix-commission-column-error-014edLTNKujunWpqtECQYYjG (10cda183)
+- fix: correct column name from 'pv' to 'pv_amount' in MlmCommissionService (ba898e20)
+### 🔧 Other Changes
+
+
+## [v3.198.1] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1645 from xjanova/claude/audit-mlm-commission-013i75fKQGPDaRJzmuqxvmpf (4570d351)
+- refactor: unify MLM commission calculation to use Global Settings (df5bb7fd)
+
+## [v3.198.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1644 from xjanova/claude/improve-mlm-system-theme-01H6euxkokeFHjYmKAKgjtTe (0fa9230f)
+- feat: เพิ่มระบบรักษายอดอัตโนมัติ (Auto-Renewal) และ Status Bar (833e26e8)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.197.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1643 from xjanova/claude/upgrade-admin-permissions-016ziKfocCGQPjahBxQCvFE3 (b4d00e88)
+- feat: upgrade admin permissions system with 140+ comprehensive permissions (7080a551)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.196.0] - 2025-11-26
 
 ### ✨ Features

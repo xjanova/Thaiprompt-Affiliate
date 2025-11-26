@@ -12,7 +12,7 @@
                     <span class="text-3xl">📊</span>
                 </div>
                 <div>
-                    <h1 class="text-3xl font-bold">แผน MLM: {{ $member->plan->name ?? 'N/A' }}</h1>
+                    <h1 class="text-3xl font-bold">แผน MLM: {{ $member->plan?->name ?? 'N/A' }}</h1>
                     <p class="text-purple-100 mt-1">รหัสสมาชิก: {{ $member->member_code }}</p>
                 </div>
             </div>
@@ -104,21 +104,21 @@
             <div class="space-y-3">
                 <div class="flex justify-between items-center py-2 border-b">
                     <span class="text-gray-600 dark:text-gray-400">ชื่อแผน:</span>
-                    <span class="font-bold text-gray-800 dark:text-white">{{ $member->plan->name ?? 'N/A' }}</span>
+                    <span class="font-bold text-gray-800 dark:text-white">{{ $member->plan?->name ?? 'N/A' }}</span>
                 </div>
                 <div class="flex justify-between items-center py-2 border-b">
                     <span class="text-gray-600 dark:text-gray-400">ประเภท:</span>
                     <span class="font-bold text-gray-800 dark:text-white">
-                        @if($member->plan->type === 'binary')
+                        @if($member->plan?->type === 'binary')
                             Binary
-                        @elseif($member->plan->type === 'unilevel')
+                        @elseif($member->plan?->type === 'unilevel')
                             Unilevel
-                        @elseif($member->plan->type === 'matrix')
+                        @elseif($member->plan?->type === 'matrix')
                             Matrix
-                        @elseif($member->plan->type === 'hybrid')
+                        @elseif($member->plan?->type === 'hybrid')
                             Hybrid
                         @else
-                            {{ $member->plan->type }}
+                            {{ $member->plan?->type ?? 'N/A' }}
                         @endif
                     </span>
                 </div>

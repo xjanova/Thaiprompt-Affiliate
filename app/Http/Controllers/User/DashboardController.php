@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Commission;
 use App\Models\MlmCommission;
 use App\Services\ImageUploadService;
+use App\Services\MembershipRetentionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -267,6 +268,22 @@ class DashboardController extends Controller
         $showKycAlert = in_array($kycStatus, ['not_submitted', 'rejected']);
 
         // ===============================================
+        // 12. ข้อมูลระบบรักษายอด (Retention Status)
+        // ===============================================
+
+        $retentionStatus = null;
+        $retentionStatistics = null;
+
+        try {
+            $retentionService = app(MembershipRetentionService::class);
+            $retentionStatus = $retentionService->getOrCreateStatus($user);
+            $retentionStatistics = $retentionService->getUserStatistics($user);
+        } catch (\Exception $e) {
+            // ถ้าเกิด error ก็ปล่อยเป็น null
+            \Log::warning('Failed to load retention data for user dashboard: ' . $e->getMessage());
+        }
+
+        // ===============================================
         // Return View พร้อมข้อมูลทั้งหมด
         // ===============================================
 
@@ -307,8 +324,197 @@ class DashboardController extends Controller
 
             // KYC
             'kycStatus',
-            'showKycAlert'
+            'showKycAlert',
+
+            // Retention (ระบบรักษายอด)
+            'retentionStatus',
+            'retentionStatistics'
         ));
+    }
+
+    /**
+     * แสดงหน้า Home แบบ App-Like Interface
+     *
+     * หน้าหลักหลังล็อกอินที่มี Hub Navigation Cards
+     * เหมือนกับ mobile app
+     *
+     * @return \Illuminate\View\View
+     */
+    public function home()
+    {
+        $user = Auth::user();
+
+        // ===============================================
+        // 1. ข้อมูล Wallet
+        // ===============================================
+        $walletBalance = $user->wallet_balance ?? 0;
+
+        // คำนวณ wallet growth (เทียบกับเดือนที่แล้ว)
+        $thisMonthEarnings = $user->mlmCommissions()
+            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', now()->month)
+            ->whereIn('status', ['approved', 'paid'])
+            ->sum('commission_amount') ?? 0;
+
+        $lastMonthEarnings = $user->mlmCommissions()
+            ->whereYear('created_at', now()->subMonth()->year)
+            ->whereMonth('created_at', now()->subMonth()->month)
+            ->whereIn('status', ['approved', 'paid'])
+            ->sum('commission_amount') ?? 0;
+
+        $walletGrowth = 0;
+        if ($lastMonthEarnings > 0) {
+            $walletGrowth = (($thisMonthEarnings - $lastMonthEarnings) / $lastMonthEarnings) * 100;
+        } elseif ($thisMonthEarnings > 0) {
+            $walletGrowth = 100;
+        }
+
+        // ===============================================
+        // 2. ข้อมูล Commission & Referrals
+        // ===============================================
+        $pendingCommission = $user->mlmCommissions()
+            ->where('status', 'pending')
+            ->sum('commission_amount') ?? 0;
+
+        $mlmMember = $user->mlmMembers()->first();
+        $totalReferrals = $mlmMember ? ($mlmMember->total_direct_referrals ?? 0) : 0;
+
+        // ===============================================
+        // 3. Notifications
+        // ===============================================
+        $unreadNotifications = $user->unreadNotifications()->count();
+
+        // ===============================================
+        // 4. Hub Items (8 รายการ)
+        // ===============================================
+        $hubs = $this->getHubItems();
+
+        // ===============================================
+        // 5. กิจกรรมล่าสุด (5 รายการ)
+        // ===============================================
+        $recentActivities = $user->mlmCommissions()
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($commission) {
+                return [
+                    'type' => 'commission',
+                    'status' => $commission->status,
+                    'amount' => $commission->commission_amount,
+                    'description' => $commission->description ?? 'คอมมิชชั่น',
+                    'created_at' => $commission->created_at,
+                ];
+            });
+
+        return view('user.home', compact(
+            'user',
+            'walletBalance',
+            'walletGrowth',
+            'pendingCommission',
+            'totalReferrals',
+            'unreadNotifications',
+            'hubs',
+            'recentActivities'
+        ));
+    }
+
+    /**
+     * สร้างรายการ Hub Items ทั้ง 8 รายการ
+     *
+     * @return array
+     */
+    private function getHubItems(): array
+    {
+        return [
+            // 1. ช้อปปิ้ง & บริการ
+            [
+                'id' => 'shopping',
+                'icon' => '🛒',
+                'title' => 'ช้อปปิ้ง & บริการ',
+                'subtitle' => 'สั่งอาหาร, จองโรงแรม, E-commerce',
+                'route' => route('user.services.index'),
+                'gradient_start' => '#F59E0B',
+                'gradient_end' => '#EF4444',
+                'badge' => null,
+            ],
+            // 2. กระเป๋าเงิน
+            [
+                'id' => 'wallet',
+                'icon' => '💰',
+                'title' => 'กระเป๋าเงิน',
+                'subtitle' => 'เติมเงิน, ถอนเงิน, โอนเงิน',
+                'route' => route('user.wallet.index'),
+                'gradient_start' => '#10B981',
+                'gradient_end' => '#059669',
+                'badge' => null,
+            ],
+            // 3. ลงทุน & Trade
+            [
+                'id' => 'invest',
+                'icon' => '📈',
+                'title' => 'ลงทุน & Trade',
+                'subtitle' => 'Crypto, TPIX Token, Staking',
+                'route' => route('user.crypto-wallet.index'),
+                'gradient_start' => '#3B82F6',
+                'gradient_end' => '#1D4ED8',
+                'badge' => null,
+            ],
+            // 4. MLM & Affiliate
+            [
+                'id' => 'mlm',
+                'icon' => '🤝',
+                'title' => 'MLM & Affiliate',
+                'subtitle' => 'Commission, Referral, Team',
+                'route' => route('user.mlm.dashboard'),
+                'gradient_start' => '#8B5CF6',
+                'gradient_end' => '#6D28D9',
+                'badge' => 'HOT',
+            ],
+            // 5. เป็นไรเดอร์
+            [
+                'id' => 'rider',
+                'icon' => '🚴',
+                'title' => 'เป็นไรเดอร์',
+                'subtitle' => 'รับงานส่งของ, บริการ',
+                'route' => '#',
+                'gradient_start' => '#06B6D4',
+                'gradient_end' => '#0891B2',
+                'badge' => 'เร็วๆ นี้',
+            ],
+            // 6. AI Bot
+            [
+                'id' => 'aibot',
+                'icon' => '🤖',
+                'title' => 'AI Bot',
+                'subtitle' => 'LINE Bot, Chatbot, Automation',
+                'route' => route('user.ai-gen.index'),
+                'gradient_start' => '#EC4899',
+                'gradient_end' => '#BE185D',
+                'badge' => 'NEW',
+            ],
+            // 7. Academy
+            [
+                'id' => 'academy',
+                'icon' => '🎓',
+                'title' => 'Academy',
+                'subtitle' => 'เรียนรู้, หลักสูตร, Certificate',
+                'route' => '#',
+                'gradient_start' => '#14B8A6',
+                'gradient_end' => '#0D9488',
+                'badge' => 'เร็วๆ นี้',
+            ],
+            // 8. Gaming & Rewards
+            [
+                'id' => 'gaming',
+                'icon' => '🎮',
+                'title' => 'Gaming & Rewards',
+                'subtitle' => 'เกม, Quest, Achievement',
+                'route' => '#',
+                'gradient_start' => '#F97316',
+                'gradient_end' => '#EA580C',
+                'badge' => 'เร็วๆ นี้',
+            ],
+        ];
     }
 
     /**

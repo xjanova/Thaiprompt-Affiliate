@@ -261,7 +261,7 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 shadow">
                                 <i class="fas fa-layer-group mr-1"></i>
-                                {{ $member->plan->display_name }}
+                                {{ $member->plan?->display_name ?? 'ไม่มีแผน' }}
                             </span>
                         </td>
 

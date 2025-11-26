@@ -23,11 +23,15 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Redirect root /user to /user/dashboard
+// Redirect root /user to /user/home (หน้าหลักแบบ App-Like)
 Route::get('/', function () {
-    return redirect()->route('user.dashboard');
+    return redirect()->route('user.home');
 });
 
+// หน้าหลักแบบ App-Like Interface (Hub Navigation)
+Route::get('/home', [DashboardController::class, 'home'])->name('home');
+
+// หน้า Dashboard แบบเดิม (Stats, Charts, Activities)
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
 Route::put('/profile', [DashboardController::class, 'updateProfile'])
@@ -315,6 +319,7 @@ Route::prefix('ranks')->name('ranks.')->group(function () {
     Route::get('/leaderboard', [RankController::class, 'leaderboard'])->name('leaderboard');
     Route::get('/widget-data', [RankController::class, 'widgetData'])->name('widget-data');
     Route::post('/request-promotion', [RankController::class, 'requestPromotion'])->name('request-promotion');
+    Route::get('/id-card', [RankController::class, 'virtualIdCard'])->name('id-card');
 });
 
 // Email Preferences
@@ -331,6 +336,7 @@ Route::prefix('retention')->name('retention.')->group(function () {
     Route::get('/status', [MembershipRetentionController::class, 'getStatus'])->name('status');
     Route::get('/history', [MembershipRetentionController::class, 'history'])->name('history');
     Route::get('/widget-data', [MembershipRetentionController::class, 'getWidgetData'])->name('widget-data');
+    Route::get('/status-bar-data', [MembershipRetentionController::class, 'getStatusBarData'])->name('status-bar-data');
     Route::get('/how-it-works', [MembershipRetentionController::class, 'howItWorks'])->name('how-it-works');
 
     // Repair Routes
@@ -340,6 +346,12 @@ Route::prefix('retention')->name('retention.')->group(function () {
     // Advance Renewal Routes
     Route::get('/advance-renewal', [MembershipRetentionController::class, 'showAdvanceRenewal'])->name('advance-renewal');
     Route::post('/advance-renewal', [MembershipRetentionController::class, 'processAdvanceRenewal'])->name('advance-renewal.process');
+
+    // Auto-Renewal Settings Routes (ระบบรักษายอดอัตโนมัติ)
+    Route::get('/auto-settings', [MembershipRetentionController::class, 'showAutoSettings'])->name('auto-settings');
+    Route::post('/auto-settings', [MembershipRetentionController::class, 'saveAutoSettings'])->name('auto-settings.save');
+    Route::post('/auto-settings/pause', [MembershipRetentionController::class, 'pauseAutoRenewal'])->name('auto-settings.pause');
+    Route::post('/auto-settings/resume', [MembershipRetentionController::class, 'resumeAutoRenewal'])->name('auto-settings.resume');
 });
 
 // MLM System (User)
@@ -420,6 +432,10 @@ Route::prefix('two-factor')->name('two-factor.')->group(function () {
     Route::post('/regenerate-recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])->name('regenerate-recovery-codes');
     Route::delete('/trusted-devices/{fingerprint}', [TwoFactorController::class, 'removeTrustedDevice'])->name('remove-trusted-device');
     Route::delete('/trusted-devices', [TwoFactorController::class, 'removeAllTrustedDevices'])->name('remove-all-trusted-devices');
+
+    // Google Authenticator routes
+    Route::get('/generate-authenticator', [TwoFactorController::class, 'generateAuthenticatorSetup'])->name('generate-authenticator');
+    Route::post('/verify-authenticator-setup', [TwoFactorController::class, 'verifyAuthenticatorSetup'])->name('verify-authenticator-setup');
 });
 
 // Redirect old user shop to main frontend shop

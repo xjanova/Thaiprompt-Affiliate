@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\NotificationManagementController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\VisualBuilderController;
 use App\Http\Controllers\Admin\RankController;
+use App\Http\Controllers\Admin\IdCardController;
 use App\Http\Controllers\Admin\EmailController;
 use App\Http\Controllers\Admin\MembershipRetentionController as AdminRetentionController;
 use App\Http\Controllers\Admin\LineOaController;
@@ -71,6 +72,7 @@ use App\Http\Controllers\Admin\AppControlSectionController;
 use App\Http\Controllers\Admin\ComponentSettingController;
 use App\Http\Controllers\Admin\PageBuilderController;
 use App\Http\Controllers\Admin\PageBuilderSectionController;
+use App\Http\Controllers\Admin\HomepageManagerController;
 use App\Http\Controllers\Admin\SystemResetController;
 use App\Http\Controllers\Admin\ApiEndpointController;
 use App\Http\Controllers\Admin\ApiKeyController;
@@ -487,6 +489,18 @@ Route::prefix('ranks')->name('ranks.')->group(function () {
     Route::get('/promotions', [RankController::class, 'promotions'])->name('promotions.index');
     Route::post('/promotions/{promotion}/approve', [RankController::class, 'approvePromotion'])->name('promotions.approve');
     Route::post('/promotions/{promotion}/reject', [RankController::class, 'rejectPromotion'])->name('promotions.reject');
+});
+
+// Virtual ID Card Designer
+Route::prefix('id-card')->name('id-card.')->group(function () {
+    Route::get('/', [IdCardController::class, 'index'])->name('index');
+    Route::get('/designer', [IdCardController::class, 'designer'])->name('designer');
+    Route::post('/save', [IdCardController::class, 'save'])->name('save');
+    Route::post('/upload-background', [IdCardController::class, 'uploadBackground'])->name('upload-background');
+    Route::get('/preview-data', [IdCardController::class, 'previewData'])->name('preview-data');
+    Route::get('/user/{user}', [IdCardController::class, 'viewUserCard'])->name('view-user');
+    Route::delete('/{setting}', [IdCardController::class, 'destroy'])->name('destroy');
+    Route::post('/{setting}/duplicate', [IdCardController::class, 'duplicate'])->name('duplicate');
 });
 
 // Email Management (Email Delivery System)
@@ -2032,6 +2046,46 @@ Route::prefix('page-builder')->name('page-builder.')->group(function () {
     });
 });
 
+// Homepage Manager - Visual Page Builder สำหรับหน้าแรก
+Route::prefix('homepage-manager')->name('homepage-manager.')->group(function () {
+    // หน้าหลัก Visual Editor
+    Route::get('/', [HomepageManagerController::class, 'index'])->name('index');
+    Route::get('/preview', [HomepageManagerController::class, 'preview'])->name('preview');
+
+    // API สำหรับดึงข้อมูล
+    Route::get('/sections', [HomepageManagerController::class, 'getSections'])->name('sections.get');
+    Route::get('/templates', [HomepageManagerController::class, 'getTemplates'])->name('templates.get');
+
+    // Section Management
+    Route::post('/sections', [HomepageManagerController::class, 'storeSection'])->name('sections.store');
+    Route::put('/sections/{section}', [HomepageManagerController::class, 'updateSection'])->name('sections.update');
+    Route::delete('/sections/{section}', [HomepageManagerController::class, 'destroySection'])->name('sections.destroy');
+    Route::post('/sections/{section}/toggle', [HomepageManagerController::class, 'toggleSection'])->name('sections.toggle');
+    Route::post('/sections/{section}/duplicate', [HomepageManagerController::class, 'duplicateSection'])->name('sections.duplicate');
+    Route::post('/sections/reorder', [HomepageManagerController::class, 'reorderSections'])->name('sections.reorder');
+
+    // Element Management
+    Route::post('/sections/{section}/elements', [HomepageManagerController::class, 'storeElement'])->name('elements.store');
+    Route::put('/elements/{element}', [HomepageManagerController::class, 'updateElement'])->name('elements.update');
+    Route::delete('/elements/{element}', [HomepageManagerController::class, 'destroyElement'])->name('elements.destroy');
+    Route::post('/elements/{element}/duplicate', [HomepageManagerController::class, 'duplicateElement'])->name('elements.duplicate');
+    Route::post('/sections/{section}/elements/reorder', [HomepageManagerController::class, 'reorderElements'])->name('elements.reorder');
+
+    // Template Management
+    Route::post('/templates/{template}/import', [HomepageManagerController::class, 'importTemplate'])->name('templates.import');
+    Route::post('/templates/save', [HomepageManagerController::class, 'saveAsTemplate'])->name('templates.save');
+
+    // Import/Export
+    Route::get('/export', [HomepageManagerController::class, 'export'])->name('export');
+    Route::post('/import', [HomepageManagerController::class, 'import'])->name('import');
+
+    // Media Upload
+    Route::post('/upload', [HomepageManagerController::class, 'uploadImage'])->name('upload');
+
+    // Clear All
+    Route::post('/clear', [HomepageManagerController::class, 'clearAll'])->name('clear');
+});
+
 // Hotel Owner Management (Super Admin)
 Route::prefix('hotel-owners')->name('hotel-owners.')->group(function () {
     // Web routes (return views)
@@ -2607,5 +2661,100 @@ Route::prefix('ai-rental')->name('ai-rental.')->group(function () {
     Route::prefix('trending-models')->name('trending-models.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\AiRentalController::class, 'trendingModels'])
             ->name('index');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Platform Revenue Routes - ระบบรายได้ Platform
+|--------------------------------------------------------------------------
+|
+| เส้นทางสำหรับจัดการ:
+| - Dashboard รายได้ Platform
+| - Platform Wallets (Fee, VAT, MLM Pool)
+| - Payout Requests และ Settings
+| - Wallet Debts (หนี้/ติดลบ)
+| - Earnings Ledger
+|
+*/
+
+Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () {
+
+    // Dashboard หลัก
+    Route::get('/', [\App\Http\Controllers\Admin\PlatformRevenueController::class, 'index'])
+        ->name('index');
+
+    // API Stats (real-time)
+    Route::get('/api/stats', [\App\Http\Controllers\Admin\PlatformRevenueController::class, 'apiStats'])
+        ->name('api.stats');
+
+    // Transactions
+    Route::get('/transactions', [\App\Http\Controllers\Admin\PlatformRevenueController::class, 'transactions'])
+        ->name('transactions');
+
+    // Reports
+    Route::get('/reports', [\App\Http\Controllers\Admin\PlatformRevenueController::class, 'reports'])
+        ->name('reports');
+    Route::get('/reports/export', [\App\Http\Controllers\Admin\PlatformRevenueController::class, 'exportReport'])
+        ->name('reports.export');
+
+    // Wallets
+    Route::get('/wallets/{wallet}', [\App\Http\Controllers\Admin\PlatformRevenueController::class, 'showWallet'])
+        ->name('wallets.show');
+
+    // Payouts
+    Route::prefix('payouts')->name('payouts.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\PayoutController::class, 'index'])
+            ->name('index');
+        Route::get('/settings', [\App\Http\Controllers\Admin\PayoutController::class, 'settings'])
+            ->name('settings');
+        Route::put('/settings/{setting}', [\App\Http\Controllers\Admin\PayoutController::class, 'updateSetting'])
+            ->name('settings.update');
+        Route::post('/bulk-approve', [\App\Http\Controllers\Admin\PayoutController::class, 'bulkApprove'])
+            ->name('bulk-approve');
+        Route::get('/api/pending', [\App\Http\Controllers\Admin\PayoutController::class, 'apiPendingPayouts'])
+            ->name('api.pending');
+        Route::get('/{payout}', [\App\Http\Controllers\Admin\PayoutController::class, 'show'])
+            ->name('show');
+        Route::post('/{payout}/approve', [\App\Http\Controllers\Admin\PayoutController::class, 'approve'])
+            ->name('approve');
+        Route::post('/{payout}/reject', [\App\Http\Controllers\Admin\PayoutController::class, 'reject'])
+            ->name('reject');
+        Route::post('/{payout}/process', [\App\Http\Controllers\Admin\PayoutController::class, 'process'])
+            ->name('process');
+    });
+
+    // Earnings
+    Route::prefix('earnings')->name('earnings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\PayoutController::class, 'earnings'])
+            ->name('index');
+        Route::get('/{earning}', [\App\Http\Controllers\Admin\PayoutController::class, 'showEarning'])
+            ->name('show');
+    });
+
+    // Debts
+    Route::prefix('debts')->name('debts.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\DebtController::class, 'index'])
+            ->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\DebtController::class, 'create'])
+            ->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\DebtController::class, 'store'])
+            ->name('store');
+        Route::get('/export', [\App\Http\Controllers\Admin\DebtController::class, 'export'])
+            ->name('export');
+        Route::post('/batch-collect', [\App\Http\Controllers\Admin\DebtController::class, 'batchCollect'])
+            ->name('batch-collect');
+        Route::get('/api/stats', [\App\Http\Controllers\Admin\DebtController::class, 'apiStats'])
+            ->name('api.stats');
+        Route::get('/api/search-users', [\App\Http\Controllers\Admin\DebtController::class, 'searchUsers'])
+            ->name('api.search-users');
+        Route::get('/user/{user}', [\App\Http\Controllers\Admin\DebtController::class, 'userDebts'])
+            ->name('user');
+        Route::get('/{debt}', [\App\Http\Controllers\Admin\DebtController::class, 'show'])
+            ->name('show');
+        Route::post('/{debt}/waive', [\App\Http\Controllers\Admin\DebtController::class, 'waive'])
+            ->name('waive');
+        Route::delete('/{debt}', [\App\Http\Controllers\Admin\DebtController::class, 'cancel'])
+            ->name('cancel');
     });
 });

@@ -28,24 +28,65 @@ class TwoFactorController extends Controller
     }
 
     /**
-     * Enable 2FA
+     * เปิดใช้งาน 2FA
+     *
+     * รองรับ Google Authenticator เป็นวิธีหลัก
      */
     public function enable(Request $request)
     {
         $request->validate([
-            'preferred_method' => ['required', 'in:sms,line,email'],
+            'preferred_method' => ['required', 'in:authenticator,sms,line,email'],
+            'code' => ['required_if:preferred_method,authenticator', 'nullable', 'string', 'size:6'],
         ]);
 
         $user = Auth::user();
-        $result = $this->twoFactorService->enable($user, $request->input('preferred_method'));
+        $preferredMethod = $request->input('preferred_method');
+
+        // สำหรับ Google Authenticator ต้องยืนยันรหัสก่อนเปิดใช้งาน
+        if ($preferredMethod === 'authenticator') {
+            // ตรวจสอบรหัสจาก authenticator
+            $verifyResult = $this->twoFactorService->verifySetupCode($user, $request->input('code'));
+
+            if (!$verifyResult['success']) {
+                return redirect()->back()->with('error', $verifyResult['message']);
+            }
+        }
+
+        $result = $this->twoFactorService->enable($user, $preferredMethod);
 
         if (!$result['success']) {
             return redirect()->back()->with('error', $result['message']);
         }
 
-        // Show recovery codes
+        // แสดง recovery codes
         return redirect()->route('two-factor.recovery-codes', ['codes' => json_encode($result['recovery_codes'])])
             ->with('success', $result['message']);
+    }
+
+    /**
+     * สร้าง QR Code สำหรับ Google Authenticator
+     */
+    public function generateAuthenticatorSetup()
+    {
+        $user = Auth::user();
+        $result = $this->twoFactorService->generateAuthenticatorSetup($user);
+
+        return response()->json($result);
+    }
+
+    /**
+     * ตรวจสอบรหัส Google Authenticator ก่อนเปิดใช้งาน
+     */
+    public function verifyAuthenticatorSetup(Request $request)
+    {
+        $request->validate([
+            'code' => ['required', 'string', 'size:6'],
+        ]);
+
+        $user = Auth::user();
+        $result = $this->twoFactorService->verifySetupCode($user, $request->input('code'));
+
+        return response()->json($result);
     }
 
     /**
@@ -113,7 +154,7 @@ class TwoFactorController extends Controller
         return response()->json([
             'success' => true,
             'message' => $result['message'],
-            'redirect' => $request->input('redirect') ?? route('user.dashboard'),
+            'redirect' => $request->input('redirect') ?? route('user.home'),
         ]);
     }
 
@@ -142,7 +183,7 @@ class TwoFactorController extends Controller
             'success' => true,
             'message' => $result['message'],
             'warning' => $result['warning'] ?? null,
-            'redirect' => $request->input('redirect') ?? route('user.dashboard'),
+            'redirect' => $request->input('redirect') ?? route('user.home'),
         ]);
     }
 

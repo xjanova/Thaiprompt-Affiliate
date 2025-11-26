@@ -252,6 +252,115 @@
 </div>
 @endif
 
+<!-- Membership Retention Status -->
+@php
+    $retentionStatus = \App\Models\MembershipRetentionStatus::where('user_id', $user->id)->first();
+@endphp
+@if($retentionStatus)
+<div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <i class="fas fa-heart-pulse" style="color: var(--arrow-x-primary)"></i>
+            ระบบรักษายอด (Retention)
+        </h3>
+        <a href="{{ route('admin.retention.users.show', $user->id) }}"
+           class="text-sm font-medium hover:opacity-80 transition-opacity"
+           style="color: var(--arrow-x-primary)">
+            ดูรายละเอียด →
+        </a>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        {{-- สถานะ --}}
+        <div class="bg-white/60 dark:bg-white/10 rounded-xl p-4">
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">สถานะ</div>
+            <div class="flex items-center gap-2">
+                @if($retentionStatus->status === 'active')
+                    <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                    <span class="font-semibold" style="color: var(--arrow-x-success)">Active</span>
+                @elseif($retentionStatus->status === 'expired')
+                    <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+                    <span class="font-semibold text-red-500">Expired</span>
+                @else
+                    <span class="w-3 h-3 bg-gray-400 rounded-full"></span>
+                    <span class="font-semibold text-gray-500">Inactive</span>
+                @endif
+            </div>
+        </div>
+
+        {{-- วันที่เหลือ --}}
+        <div class="bg-white/60 dark:bg-white/10 rounded-xl p-4">
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">วันที่เหลือ</div>
+            <div class="text-2xl font-bold {{ $retentionStatus->daysRemaining() <= 7 ? 'text-amber-500' : '' }}" style="color: {{ $retentionStatus->daysRemaining() > 7 ? 'var(--arrow-x-primary)' : '' }}">
+                {{ $retentionStatus->daysRemaining() }} <span class="text-sm font-normal text-gray-500">วัน</span>
+            </div>
+        </div>
+
+        {{-- แต้มปัจจุบัน --}}
+        <div class="bg-white/60 dark:bg-white/10 rounded-xl p-4">
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">แต้มปัจจุบัน</div>
+            <div class="text-2xl font-bold" style="color: var(--arrow-x-primary)">
+                {{ number_format($retentionStatus->current_points, 0) }}
+                <span class="text-sm font-normal text-gray-500">/ {{ number_format($retentionStatus->required_points, 0) }}</span>
+            </div>
+        </div>
+
+        {{-- เดือนติดต่อกัน --}}
+        <div class="bg-white/60 dark:bg-white/10 rounded-xl p-4">
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">เดือนติดต่อกัน</div>
+            <div class="text-2xl font-bold" style="color: var(--arrow-x-success)">
+                {{ $retentionStatus->consecutive_months }} <span class="text-sm font-normal text-gray-500">เดือน</span>
+            </div>
+        </div>
+    </div>
+
+    {{-- Progress Bar --}}
+    <div class="mb-4">
+        <div class="flex items-center justify-between text-sm mb-1">
+            <span class="text-gray-600 dark:text-gray-400">ความคืบหน้าแต้ม</span>
+            <span class="font-semibold" style="color: var(--arrow-x-primary)">{{ number_format($retentionStatus->getPointsPercentage(), 1) }}%</span>
+        </div>
+        <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500 {{ $retentionStatus->getPointsPercentage() >= 100 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-blue-500 to-indigo-500' }}"
+                 style="width: {{ min(100, $retentionStatus->getPointsPercentage()) }}%"></div>
+        </div>
+    </div>
+
+    {{-- Auto-Renewal Settings --}}
+    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-4 border border-indigo-200/50 dark:border-indigo-700/30">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-robot text-indigo-600 dark:text-indigo-400"></i>
+                </div>
+                <div>
+                    <div class="font-semibold text-gray-900 dark:text-white">Auto-Renewal</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                        {{ $retentionStatus->getAutoRenewalStatusText() }}
+                    </div>
+                </div>
+            </div>
+            <div class="text-right">
+                @if($retentionStatus->isAutoRenewalEnabled())
+                    <div class="text-sm">
+                        <span class="text-gray-500">แหล่งเงิน:</span>
+                        <span class="font-medium text-gray-700 dark:text-gray-300">{{ $retentionStatus->getAutoRenewalSourceLabel() }}</span>
+                    </div>
+                    <div class="text-sm">
+                        <span class="text-gray-500">ต่ออายุ:</span>
+                        <span class="font-medium text-gray-700 dark:text-gray-300">{{ $retentionStatus->auto_renewal_months ?? 1 }} เดือน</span>
+                    </div>
+                @else
+                    <span class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-sm rounded-full">
+                        ยังไม่เปิดใช้งาน
+                    </span>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 <!-- Activity Summary -->
 <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
     <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">

@@ -127,4 +127,25 @@ class RankController extends Controller
             ->where('rank_points', '>', $user->rank_points)
             ->count() + 1;
     }
+
+    /**
+     * แสดงบัตรประจำตัวเสมือนของผู้ใช้
+     *
+     * @return \Illuminate\View\View
+     */
+    public function virtualIdCard()
+    {
+        $user = auth()->user()->load(['currentRank']);
+
+        $currentRank = $user->currentRank;
+
+        // ดึงการตั้งค่า ID Card จากระบบ (ถ้ามี)
+        $idCardSettings = \App\Models\IdCardSetting::getActiveSettingsForRank($currentRank?->level ?? 1);
+
+        return view('user.virtual-id-card', compact(
+            'user',
+            'currentRank',
+            'idCardSettings'
+        ));
+    }
 }

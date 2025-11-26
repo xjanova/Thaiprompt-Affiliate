@@ -17,6 +17,9 @@ class DatabaseSeeder extends Seeder
 
         // Seed in proper order to handle dependencies
         $this->call([
+            // 0. Roles & Permissions (ต้องมาก่อนสุดเพื่อให้ระบบสิทธิ์พร้อมใช้งาน)
+            AdminPermissionsSeeder::class,      // 🔐 Admin Permissions ครอบคลุมทุก modules
+
             // 1. Core Settings & Configuration (ต้องมาก่อนสุด)
             AppNameSettingSeeder::class,        // ตั้งค่าชื่อแอพ
             TwoFactorSettingsSeeder::class,     // ตั้งค่า 2FA และ OTP
@@ -38,6 +41,7 @@ class DatabaseSeeder extends Seeder
             // 3. Content & Pages
             DemoPagesSeeder::class,             // สร้างหน้าเพจต่างๆ
             SeoMetaSeeder::class,               // สร้าง SEO meta data
+            HomepageManagerSeeder::class,       // 🏠 Homepage Manager - Sections, Elements, Templates
             // PageBuilderSeeder::class,           // Page Builder Templates (Homepage, Wiki, About builder) - SKIP: Already exists
             // HomepageImportSeeder::class,        // Import current homepage to Page Builder - SKIP: Already exists
 
@@ -75,8 +79,10 @@ class DatabaseSeeder extends Seeder
             MlmPlanSeeder::class,               // แผนคอมมิชชัน MLM หลัก (แผนเดียวบังคับทั้งระบบ)
             MlmPackageSeeder::class,            // แพคเกจสมาชิก MLM (Bronze, Silver, Gold, Diamond, Premier)
             RankSeeder::class,                  // ระบบยศ/ระดับ (Bronze, Silver, Gold, Platinum, Diamond)
+            IdCardSettingSeeder::class,         // 🆕 การตั้งค่า Virtual ID Card ตาม Rank (8 ระดับ)
             MlmHierarchySeeder::class,          // 🆕 ระบบสายงาน MLM 5 ชั้น (94 สมาชิกทดสอบ)
             RecruitTemplateSeeder::class,       // 🆕 เทมเพลตหน้า Recruit สำหรับแม่ทีม
+            PlatformRevenueSeeder::class,       // 🆕 ระบบรายได้ Platform (Wallets, Payout Settings)
 
             // 8. E-commerce & Products
             ProductCategorySeeder::class,       // หมวดหมู่สินค้า (ต้องมาก่อน ProductSeeder)

@@ -8,6 +8,14 @@ use App\Models\User;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 
+/**
+ * TwoFactorService - บริการจัดการ Two-Factor Authentication
+ *
+ * รองรับการยืนยันตัวตนผ่าน:
+ * - Google Authenticator (TOTP) - หลัก
+ * - SMS OTP - สำรอง
+ * - LINE OTP - สำรอง
+ */
 class TwoFactorService
 {
     private OtpService $otpService;
@@ -50,7 +58,68 @@ class TwoFactorService
     }
 
     /**
-     * Send 2FA code to user
+     * Verify 2FA code - รองรับทั้ง Google Authenticator และ OTP
+     */
+    public function verifyCode(User $user, string $code, string $action = 'verification', bool $rememberDevice = false): array
+    {
+        $userSettings = TwoFactorUserSetting::where('user_id', $user->id)->first();
+
+        if (!$userSettings || !$userSettings->enabled) {
+            return [
+                'success' => false,
+                'message' => '2FA ยังไม่ได้เปิดใช้งาน',
+            ];
+        }
+
+        // ตรวจสอบตามวิธีที่เลือก
+        $preferredMethod = $userSettings->preferred_method;
+        $isValid = false;
+
+        if ($preferredMethod === 'authenticator') {
+            // ใช้ Google Authenticator (TOTP)
+            $isValid = $userSettings->verifyGoogle2FACode($code);
+        } else {
+            // ใช้ OTP (SMS/LINE/Email)
+            $result = $this->otpService->verifyOTPForUser($user, $code, '2fa_' . $action);
+            $isValid = $result['success'] ?? false;
+        }
+
+        if (!$isValid) {
+            // Record failed attempt
+            $userSettings->recordFailedVerification();
+
+            return [
+                'success' => false,
+                'message' => 'รหัสยืนยันไม่ถูกต้อง กรุณาลองใหม่',
+            ];
+        }
+
+        // Record successful verification
+        $userSettings->recordSuccessfulVerification();
+
+        // Remember device if requested
+        if ($rememberDevice && TwoFactorSetting::canRememberDevice()) {
+            $deviceFingerprint = $this->getDeviceFingerprint();
+            if ($deviceFingerprint) {
+                $userSettings->addTrustedDevice($deviceFingerprint, $this->getDeviceName());
+            }
+        }
+
+        // Clear verification session
+        Session::forget('2fa_verification_pending');
+
+        // Mark as verified in session
+        Session::put('2fa_verified_at', now()->toDateTimeString());
+        Session::put('2fa_verified_for', $action);
+
+        return [
+            'success' => true,
+            'message' => 'ยืนยันตัวตนสำเร็จ',
+        ];
+    }
+
+    /**
+     * Send 2FA code to user (สำหรับ OTP methods เท่านั้น)
      */
     public function sendCode(User $user, string $action = 'verification'): array
     {
@@ -59,7 +128,16 @@ class TwoFactorService
         if (!$userSettings->enabled) {
             return [
                 'success' => false,
-                'message' => '2FA is not enabled for this user',
+                'message' => '2FA ยังไม่ได้เปิดใช้งาน',
+            ];
+        }
+
+        // ถ้าใช้ Google Authenticator ไม่ต้องส่ง code
+        if ($userSettings->preferred_method === 'authenticator') {
+            return [
+                'success' => true,
+                'message' => 'กรุณากรอกรหัสจากแอป Google Authenticator',
+                'method' => 'authenticator',
             ];
         }
 
@@ -69,7 +147,7 @@ class TwoFactorService
         if (empty($availableMethods)) {
             return [
                 'success' => false,
-                'message' => 'No verified 2FA methods available. Please set up 2FA first.',
+                'message' => 'ไม่มีวิธี 2FA ที่ใช้ได้ กรุณาตั้งค่า 2FA ก่อน',
             ];
         }
 
@@ -98,51 +176,6 @@ class TwoFactorService
     }
 
     /**
-     * Verify 2FA code
-     */
-    public function verifyCode(User $user, string $code, string $action = 'verification', bool $rememberDevice = false): array
-    {
-        // Verify the OTP
-        $result = $this->otpService->verifyOTPForUser($user, $code, '2fa_' . $action);
-
-        if (!$result['success']) {
-            // Record failed attempt
-            $userSettings = TwoFactorUserSetting::where('user_id', $user->id)->first();
-            if ($userSettings) {
-                $userSettings->recordFailedVerification();
-            }
-
-            return $result;
-        }
-
-        // Record successful verification
-        $userSettings = TwoFactorUserSetting::where('user_id', $user->id)->first();
-        if ($userSettings) {
-            $userSettings->recordSuccessfulVerification();
-
-            // Remember device if requested
-            if ($rememberDevice && TwoFactorSetting::canRememberDevice()) {
-                $deviceFingerprint = $this->getDeviceFingerprint();
-                if ($deviceFingerprint) {
-                    $userSettings->addTrustedDevice($deviceFingerprint, $this->getDeviceName());
-                }
-            }
-        }
-
-        // Clear verification session
-        Session::forget('2fa_verification_pending');
-
-        // Mark as verified in session
-        Session::put('2fa_verified_at', now()->toDateTimeString());
-        Session::put('2fa_verified_for', $action);
-
-        return [
-            'success' => true,
-            'message' => '2FA verification successful',
-        ];
-    }
-
-    /**
      * Verify recovery code
      */
     public function verifyRecoveryCode(User $user, string $code, string $action = 'verification'): array
@@ -152,14 +185,14 @@ class TwoFactorService
         if (!$userSettings) {
             return [
                 'success' => false,
-                'message' => '2FA is not set up for this user',
+                'message' => '2FA ยังไม่ได้ตั้งค่า',
             ];
         }
 
         if (!$userSettings->verifyRecoveryCode($code)) {
             return [
                 'success' => false,
-                'message' => 'Invalid recovery code',
+                'message' => 'รหัสกู้คืนไม่ถูกต้อง',
             ];
         }
 
@@ -175,23 +208,47 @@ class TwoFactorService
 
         return [
             'success' => true,
-            'message' => 'Recovery code verified successfully',
-            'warning' => 'Recovery code has been used and is no longer valid',
+            'message' => 'ยืนยันด้วยรหัสกู้คืนสำเร็จ',
+            'warning' => 'รหัสกู้คืนนี้ถูกใช้แล้วและไม่สามารถใช้ได้อีก',
         ];
     }
 
     /**
-     * Enable 2FA for user
+     * Enable 2FA for user with Google Authenticator
      */
-    public function enable(User $user, string $preferredMethod = 'sms'): array
+    public function enable(User $user, string $preferredMethod = 'authenticator'): array
     {
         $userSettings = TwoFactorUserSetting::getOrCreateForUser($user);
 
-        // Verify that the user has at least one verified contact method
+        // ถ้าเลือก Google Authenticator
+        if ($preferredMethod === 'authenticator') {
+            // สร้าง secret key ถ้ายังไม่มี
+            if (!$userSettings->hasGoogle2FASecret()) {
+                $secret = $userSettings->generateGoogle2FASecret();
+            }
+
+            $userSettings->enabled = true;
+            $userSettings->preferred_method = 'authenticator';
+
+            // Generate recovery codes
+            $recoveryCodes = $userSettings->generateRecoveryCodes();
+
+            $userSettings->save();
+
+            return [
+                'success' => true,
+                'message' => 'เปิดใช้งาน 2FA สำเร็จ',
+                'recovery_codes' => $recoveryCodes,
+                'secret' => $userSettings->getGoogle2FASecret(),
+                'qr_code_svg' => $userSettings->getGoogle2FAQRCodeSVG(),
+            ];
+        }
+
+        // วิธีอื่น (SMS, LINE, Email)
         if (!$userSettings->isMethodAvailable($preferredMethod)) {
             return [
                 'success' => false,
-                'message' => 'Please verify your ' . $preferredMethod . ' before enabling 2FA',
+                'message' => 'กรุณายืนยัน ' . $preferredMethod . ' ก่อนเปิดใช้งาน 2FA',
             ];
         }
 
@@ -205,8 +262,53 @@ class TwoFactorService
 
         return [
             'success' => true,
-            'message' => '2FA has been enabled successfully',
+            'message' => 'เปิดใช้งาน 2FA สำเร็จ',
             'recovery_codes' => $recoveryCodes,
+        ];
+    }
+
+    /**
+     * Generate Google Authenticator setup data
+     */
+    public function generateAuthenticatorSetup(User $user): array
+    {
+        $userSettings = TwoFactorUserSetting::getOrCreateForUser($user);
+
+        // สร้าง secret key ใหม่
+        $secret = $userSettings->generateGoogle2FASecret();
+
+        return [
+            'success' => true,
+            'secret' => $secret,
+            'qr_code_svg' => $userSettings->getGoogle2FAQRCodeSVG(),
+            'qr_code_url' => $userSettings->getGoogle2FAQRCodeUrl(),
+        ];
+    }
+
+    /**
+     * Verify initial setup code (ใช้ตอนเปิดใช้งาน 2FA ครั้งแรก)
+     */
+    public function verifySetupCode(User $user, string $code): array
+    {
+        $userSettings = TwoFactorUserSetting::getOrCreateForUser($user);
+
+        if (!$userSettings->hasGoogle2FASecret()) {
+            return [
+                'success' => false,
+                'message' => 'กรุณาสร้าง QR Code ก่อน',
+            ];
+        }
+
+        if (!$userSettings->verifyGoogle2FACode($code)) {
+            return [
+                'success' => false,
+                'message' => 'รหัสไม่ถูกต้อง กรุณาตรวจสอบรหัสจากแอป Google Authenticator',
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => 'รหัสถูกต้อง',
         ];
     }
 
@@ -220,18 +322,19 @@ class TwoFactorService
         if (!$userSettings) {
             return [
                 'success' => false,
-                'message' => '2FA is not enabled',
+                'message' => '2FA ยังไม่ได้เปิดใช้งาน',
             ];
         }
 
         $userSettings->enabled = false;
         $userSettings->trusted_devices = [];
         $userSettings->recovery_codes = null;
+        $userSettings->removeGoogle2FASecret();
         $userSettings->save();
 
         return [
             'success' => true,
-            'message' => '2FA has been disabled',
+            'message' => 'ปิดใช้งาน 2FA สำเร็จ',
         ];
     }
 
@@ -258,7 +361,7 @@ class TwoFactorService
         $userAgent = request()->userAgent();
 
         if (!$userAgent) {
-            return 'Unknown Device';
+            return 'อุปกรณ์ที่ไม่รู้จัก';
         }
 
         // Simple device detection
@@ -267,16 +370,16 @@ class TwoFactorService
         } elseif (stripos($userAgent, 'iPad') !== false) {
             return 'iPad';
         } elseif (stripos($userAgent, 'Android') !== false) {
-            return 'Android Device';
+            return 'อุปกรณ์ Android';
         } elseif (stripos($userAgent, 'Windows') !== false) {
-            return 'Windows PC';
+            return 'คอมพิวเตอร์ Windows';
         } elseif (stripos($userAgent, 'Mac') !== false) {
             return 'Mac';
         } elseif (stripos($userAgent, 'Linux') !== false) {
-            return 'Linux PC';
+            return 'คอมพิวเตอร์ Linux';
         }
 
-        return 'Unknown Device';
+        return 'อุปกรณ์ที่ไม่รู้จัก';
     }
 
     /**
@@ -329,8 +432,10 @@ class TwoFactorService
         if (!$userSettings) {
             return [
                 'enabled' => false,
+                'preferred_method' => 'authenticator',
                 'methods' => [],
                 'has_recovery_codes' => false,
+                'has_authenticator' => false,
                 'trusted_devices' => [],
             ];
         }
@@ -341,9 +446,33 @@ class TwoFactorService
             'available_methods' => $userSettings->getAvailableMethods(),
             'has_recovery_codes' => $userSettings->hasRecoveryCodes(),
             'recovery_codes_count' => $userSettings->recovery_codes ? count($userSettings->recovery_codes) : 0,
+            'has_authenticator' => $userSettings->hasGoogle2FASecret(),
             'trusted_devices' => $userSettings->trusted_devices ?? [],
             'total_verifications' => $userSettings->total_verifications,
             'last_verified_at' => $userSettings->last_verified_at?->toDateTimeString(),
+        ];
+    }
+
+    /**
+     * Regenerate recovery codes
+     */
+    public function regenerateRecoveryCodes(User $user): array
+    {
+        $userSettings = TwoFactorUserSetting::where('user_id', $user->id)->first();
+
+        if (!$userSettings || !$userSettings->enabled) {
+            return [
+                'success' => false,
+                'message' => 'กรุณาเปิดใช้งาน 2FA ก่อน',
+            ];
+        }
+
+        $codes = $userSettings->generateRecoveryCodes();
+
+        return [
+            'success' => true,
+            'message' => 'สร้างรหัสกู้คืนใหม่สำเร็จ',
+            'recovery_codes' => $codes,
         ];
     }
 }

@@ -125,8 +125,8 @@ class LineLoginController extends Controller
                 // Login user
                 Auth::login($user);
 
-                // Redirect to intended page
-                $redirect = Session::get('line_login_redirect', route('user.dashboard'));
+                // Redirect to intended page (user home - App-Like Interface)
+                $redirect = Session::get('line_login_redirect', route('user.home'));
                 Session::forget('line_login_redirect');
 
                 return redirect($redirect)
