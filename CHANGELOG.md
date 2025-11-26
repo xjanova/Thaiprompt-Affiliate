@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.193.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1637 from xjanova/claude/add-mlm-hierarchy-system-01YMjHqnoi1D7CFjh4DiWz9S (5f70613d)
+- feat: เพิ่มระบบ MLM Hierarchy 5 ชั้นสำหรับทดสอบ (e32c1b10)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.192.1] - 2025-11-26
 
 ### ✨ Features
