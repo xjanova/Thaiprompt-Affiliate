@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.206.1] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1660 from xjanova/claude/fix-org-chart-system-019ZXNC5ByDp5TxdRQMCUQgh (3629b988)
+- fix: overhaul organization chart system with touch support (c9858ad4)
+### 🔧 Other Changes
+
+
 ## [v3.206.0] - 2025-11-26
 
 ### ✨ Features
