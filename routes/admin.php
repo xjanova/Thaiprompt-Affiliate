@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\NotificationManagementController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\VisualBuilderController;
 use App\Http\Controllers\Admin\RankController;
+use App\Http\Controllers\Admin\IdCardController;
 use App\Http\Controllers\Admin\EmailController;
 use App\Http\Controllers\Admin\MembershipRetentionController as AdminRetentionController;
 use App\Http\Controllers\Admin\LineOaController;
@@ -487,6 +488,18 @@ Route::prefix('ranks')->name('ranks.')->group(function () {
     Route::get('/promotions', [RankController::class, 'promotions'])->name('promotions.index');
     Route::post('/promotions/{promotion}/approve', [RankController::class, 'approvePromotion'])->name('promotions.approve');
     Route::post('/promotions/{promotion}/reject', [RankController::class, 'rejectPromotion'])->name('promotions.reject');
+});
+
+// Virtual ID Card Designer
+Route::prefix('id-card')->name('id-card.')->group(function () {
+    Route::get('/', [IdCardController::class, 'index'])->name('index');
+    Route::get('/designer', [IdCardController::class, 'designer'])->name('designer');
+    Route::post('/save', [IdCardController::class, 'save'])->name('save');
+    Route::post('/upload-background', [IdCardController::class, 'uploadBackground'])->name('upload-background');
+    Route::get('/preview-data', [IdCardController::class, 'previewData'])->name('preview-data');
+    Route::get('/user/{user}', [IdCardController::class, 'viewUserCard'])->name('view-user');
+    Route::delete('/{setting}', [IdCardController::class, 'destroy'])->name('destroy');
+    Route::post('/{setting}/duplicate', [IdCardController::class, 'duplicate'])->name('duplicate');
 });
 
 // Email Management (Email Delivery System)

@@ -5,7 +5,7 @@
 @section('content')
 {{--
 /**
- * User Dashboard - Version 3.1 (Arrow X Theme)
+ * User Dashboard - Version 3.2 (Arrow X Theme + Rank-based Styling)
  *
  * อัพเกรดใช้ Arrow X Theme Components:
  * - <x-arrow-x.alert-v3> สำหรับ alerts
@@ -14,13 +14,21 @@
  * - Glassmorphism effects
  * - 3D และ gradient effects
  * - Full dark mode support
+ * - 🆕 Rank-based styling effects ตาม 8 ระดับ
  *
- * @version 3.1.0
- * @date 2025-11-21
+ * @version 3.2.0
+ * @date 2025-11-26
  */
 --}}
 
-<div class="space-y-6">
+@php
+    $rankLevel = $currentRank?->level ?? 1;
+@endphp
+
+{{-- Rank-based Background Effects --}}
+@include('user.partials.dashboard-rank-effects', ['rankLevel' => $rankLevel])
+
+<div class="space-y-6 relative z-10">
 
     {{-- ======================================
         1. KYC Alert (ถ้ายังไม่ทำ KYC) - ใช้ Arrow X Alert
@@ -54,79 +62,23 @@
     @endif
 
     {{-- ======================================
-        2. Welcome Section - ใช้ Arrow X Card
+        2. Welcome Section - Rank-based Header 🆕
     ====================================== --}}
-    <x-arrow-x.card-v3 class="bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 overflow-hidden relative">
-        {{-- Background Pattern --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 left-0 w-64 h-64 bg-white rounded-full filter blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 right-0 w-64 h-64 bg-white rounded-full filter blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
-        </div>
-
-        <div class="relative z-10 flex flex-col md:flex-row items-center gap-6 p-2">
-            {{-- Avatar --}}
-            <div class="flex-shrink-0">
-                <div class="w-24 h-24 rounded-full bg-white/20 backdrop-blur-lg p-1 ring-4 ring-white/30">
-                    <img src="{{ $user->profile_picture_url ?? 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=random' }}"
-                         alt="{{ $user->name }}"
-                         class="w-full h-full rounded-full object-cover">
-                </div>
-            </div>
-
-            {{-- Welcome Text --}}
-            <div class="flex-1 text-center md:text-left text-white">
-                <div class="text-white/80 text-sm mb-1">ยินดีต้อนรับกลับมา</div>
-                <h1 class="text-3xl md:text-4xl font-bold mb-2 drop-shadow-lg flex items-center justify-center md:justify-start gap-3 flex-wrap">
-                    {{ $user->name }}
-                    {{-- KYC Verified Badge --}}
-                    @if($user->isKycVerified())
-                        <a href="{{ route('user.kyc.index') }}"
-                           class="inline-flex items-center px-3 py-1 bg-green-500/90 backdrop-blur-sm text-white text-sm rounded-full shadow-lg hover:bg-green-600 transition-all"
-                           title="บัญชียืนยันตัวตนแล้ว">
-                            <i class="fas fa-shield-check mr-1"></i>
-                            <span class="text-xs font-semibold">KYC ✓</span>
-                        </a>
-                    @endif
-                </h1>
-                <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                    @if($currentRank)
-                    <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-lg rounded-full px-4 py-2 shadow-lg">
-                        <i class="fas fa-trophy text-yellow-300"></i>
-                        <span class="text-white/80 text-sm">Rank:</span>
-                        <span class="font-bold">{{ $currentRank->name_th ?? $currentRank->name }}</span>
-                    </div>
-                    @endif
-
-                    {{-- KYC Status Badge (if not verified) --}}
-                    @if($user->isKycPending())
-                        <a href="{{ route('user.kyc.index') }}"
-                           class="inline-flex items-center gap-2 bg-yellow-500/90 backdrop-blur-lg rounded-full px-4 py-2 shadow-lg hover:bg-yellow-600 transition-all animate-pulse">
-                            <i class="fas fa-hourglass-half text-white"></i>
-                            <span class="text-white text-sm font-semibold">KYC รอตรวจสอบ</span>
-                        </a>
-                    @elseif(!$user->isKycVerified() && $kycStatus === 'not_submitted')
-                        <a href="{{ route('user.kyc.index') }}"
-                           class="inline-flex items-center gap-2 bg-red-500/80 backdrop-blur-lg rounded-full px-4 py-2 shadow-lg hover:bg-red-600 transition-all">
-                            <i class="fas fa-exclamation-triangle text-white"></i>
-                            <span class="text-white text-sm font-semibold">ยังไม่ยืนยันตัวตน</span>
-                        </a>
-                    @endif
-                </div>
-            </div>
-
-            {{-- Member Number --}}
-            @if($user->member_number)
-            <div class="flex-shrink-0 text-center md:text-right text-white">
-                <div class="text-white/60 text-xs mb-1">รหัสสมาชิก</div>
-                <div class="font-mono text-xl font-bold drop-shadow-lg">{{ $user->member_number }}</div>
-            </div>
-            @endif
-        </div>
-    </x-arrow-x.card-v3>
+    @include('user.partials.dashboard-rank-header', [
+        'rankLevel' => $rankLevel,
+        'user' => $user,
+        'currentRank' => $currentRank,
+        'kycStatus' => $kycStatus ?? null,
+    ])
 
     {{-- ======================================
-        3. Stats Cards (4 การ์ดหลัก) - ใช้ Arrow X 3D Stats Cards
+        3. Stats Cards (4 การ์ดหลัก) - ใช้ Arrow X 3D Stats Cards + Rank Styling
     ====================================== --}}
+    @php
+        // Rank-based card styling enhancements
+        $cardEnhance = $rankLevel >= 5 ? 'ring-1 ring-white/10 dark:ring-white/5' : '';
+        $cardGlow = $rankLevel >= 7 ? 'shadow-xl shadow-purple-500/10 dark:shadow-purple-500/5' : '';
+    @endphp
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {{-- Wallet Balance --}}
         <x-arrow-x.stats.card-3d
@@ -136,6 +88,7 @@
             gradient="from-green-500 to-emerald-600"
             :change="$stats['wallet_change'] != 0 ? $stats['wallet_change'] : null"
             href="{{ route('user.wallet.index') }}"
+            class="{{ $cardEnhance }} {{ $cardGlow }}"
         />
 
         {{-- Pending Commission --}}
@@ -146,6 +99,7 @@
             gradient="from-blue-500 to-cyan-600"
             :change="$stats['commission_change'] != 0 ? $stats['commission_change'] : null"
             href="{{ route('user.commissions') }}"
+            class="{{ $cardEnhance }} {{ $cardGlow }}"
         />
 
         {{-- Total Referrals --}}
@@ -156,15 +110,30 @@
             gradient="from-purple-500 to-pink-600"
             :change="$stats['referrals_change'] != 0 ? $stats['referrals_change'] : null"
             href="{{ route('user.mlm.team') }}"
+            class="{{ $cardEnhance }} {{ $cardGlow }}"
         />
 
-        {{-- Rank Points --}}
+        {{-- Rank Points - Special styling based on rank --}}
+        @php
+            $rankCardGradients = [
+                1 => 'from-amber-600 to-orange-600',
+                2 => 'from-gray-400 to-slate-500',
+                3 => 'from-yellow-400 to-amber-500',
+                4 => 'from-slate-300 to-gray-400',
+                5 => 'from-cyan-400 to-blue-500',
+                6 => 'from-yellow-400 to-orange-500',
+                7 => 'from-purple-500 to-violet-600',
+                8 => 'from-pink-500 to-purple-600',
+            ];
+            $rankCardGradient = $rankCardGradients[$rankLevel] ?? 'from-yellow-500 to-orange-600';
+        @endphp
         <x-arrow-x.stats.card-3d
             :value="number_format($stats['rank_points'])"
             label="คะแนน Rank"
             icon="fas fa-star"
-            gradient="from-yellow-500 to-orange-600"
+            :gradient="$rankCardGradient"
             href="{{ route('user.ranks.progress') }}"
+            class="{{ $cardEnhance }} {{ $rankLevel >= 6 ? 'ring-2 ring-yellow-400/30' : '' }} {{ $rankLevel >= 8 ? 'animate-pulse-slow' : '' }}"
         />
     </div>
 
@@ -236,52 +205,122 @@
         {{-- Right Column (1 col) - Rank Progress & Activities --}}
         <div class="space-y-6">
 
-            {{-- Rank Progress - ใช้ Arrow X Card --}}
+            {{-- Rank Progress - ใช้ Arrow X Card + Rank-based styling --}}
             @if($currentRank || $nextRank)
-            <x-arrow-x.card-v3 class="p-6">
+            @php
+                $rankBadges = [
+                    1 => '🥉', 2 => '🥈', 3 => '🥇', 4 => '💎',
+                    5 => '💠', 6 => '👑', 7 => '🏆', 8 => '⭐',
+                ];
+                $rankBadge = $rankBadges[$rankLevel] ?? '🥉';
+
+                $progressGradients = [
+                    1 => 'from-amber-500 to-orange-500',
+                    2 => 'from-gray-400 to-slate-500',
+                    3 => 'from-yellow-400 to-amber-500',
+                    4 => 'from-slate-300 via-purple-300 to-pink-300',
+                    5 => 'from-cyan-400 via-blue-400 to-sky-500',
+                    6 => 'from-yellow-400 via-amber-400 to-orange-400',
+                    7 => 'from-purple-500 via-violet-500 to-indigo-500',
+                    8 => 'from-pink-500 via-purple-500 to-cyan-500',
+                ];
+                $progressGradient = $progressGradients[$rankLevel] ?? 'from-purple-500 to-pink-500';
+            @endphp
+            <x-arrow-x.card-v3 class="p-6 {{ $rankLevel >= 6 ? 'ring-2 ring-yellow-400/20' : '' }} {{ $rankLevel >= 8 ? 'animate-glow-legend-subtle' : '' }}">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                    <i class="fas fa-trophy text-yellow-500"></i>
+                    <span class="text-2xl {{ $rankLevel >= 5 ? 'animate-bounce-slow' : '' }}">{{ $rankBadge }}</span>
                     <span>ความคืบหน้า Rank</span>
+                    @if($rankLevel >= 5)
+                        <span class="ml-auto text-xs px-2 py-1 bg-gradient-to-r {{ $progressGradient }} text-white rounded-full shadow">
+                            Level {{ $rankLevel }}
+                        </span>
+                    @endif
                 </h2>
 
-                {{-- Current Rank --}}
+                {{-- Current Rank - Enhanced styling --}}
                 @if($currentRank)
-                <div class="mb-6 p-4 glass-neu rounded-xl">
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Rank ปัจจุบัน</div>
-                    <div class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <i class="fas fa-award text-purple-500"></i>
-                        {{ $currentRank->name_th ?? $currentRank->name }}
+                <div class="mb-6 p-4 glass-neu rounded-xl relative overflow-hidden
+                    {{ $rankLevel >= 6 ? 'ring-1 ring-yellow-400/30' : '' }}">
+                    {{-- Subtle background gradient based on rank --}}
+                    @if($rankLevel >= 4)
+                    <div class="absolute inset-0 bg-gradient-to-br {{ $progressGradient }} opacity-5"></div>
+                    @endif
+
+                    <div class="relative z-10">
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Rank ปัจจุบัน</div>
+                        <div class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <span class="text-2xl">{{ $rankBadge }}</span>
+                            <span class="{{ $rankLevel >= 7 ? 'bg-gradient-to-r ' . $progressGradient . ' bg-clip-text text-transparent' : '' }}">
+                                {{ $currentRank->name_th ?? $currentRank->name }}
+                            </span>
+                            @if($rankLevel >= 8)
+                                <span class="text-xs bg-pink-500/20 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded-full animate-pulse">
+                                    ตำนาน
+                                </span>
+                            @endif
+                        </div>
                     </div>
                 </div>
                 @endif
 
-                {{-- Next Rank Progress --}}
+                {{-- Next Rank Progress - Enhanced with rank-based styling --}}
                 @if($nextRank)
                 <div>
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                            <i class="fas fa-arrow-up text-green-500"></i>
+                            <i class="fas fa-arrow-up text-green-500 {{ $rankLevel >= 5 ? 'animate-bounce' : '' }}"></i>
                             ถัดไป: {{ $nextRank->name_th ?? $nextRank->name }}
                         </span>
-                        <span class="text-sm font-bold text-purple-600 dark:text-purple-400">
+                        <span class="text-sm font-bold {{ $rankLevel >= 5 ? 'bg-gradient-to-r ' . $progressGradient . ' bg-clip-text text-transparent' : 'text-purple-600 dark:text-purple-400' }}">
                             {{ number_format($rankProgress, 1) }}%
                         </span>
                     </div>
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden mb-2 shadow-inner">
-                        <div class="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 rounded-full transition-all duration-500 shadow-lg"
-                             style="width: {{ $rankProgress }}%"></div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden mb-2 shadow-inner relative">
+                        <div class="h-full bg-gradient-to-r {{ $progressGradient }} rounded-full transition-all duration-500 shadow-lg relative"
+                             style="width: {{ $rankProgress }}%">
+                            {{-- Shimmer effect for high ranks --}}
+                            @if($rankLevel >= 4)
+                            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+                            @endif
+                        </div>
                     </div>
                     <p class="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
                         <i class="fas fa-info-circle"></i>
-                        ต้องการอีก {{ number_format($pointsNeeded) }} คะแนน
+                        ต้องการอีก <span class="font-bold {{ $rankLevel >= 5 ? 'text-purple-600 dark:text-purple-400' : '' }}">{{ number_format($pointsNeeded) }}</span> คะแนน
                     </p>
                 </div>
                 @else
-                <div class="text-center py-8 glass-neu rounded-xl">
-                    <i class="fas fa-crown text-5xl text-yellow-500 mb-3"></i>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        คุณอยู่ที่ Rank สูงสุดแล้ว! 🎉
-                    </p>
+                <div class="text-center py-8 glass-neu rounded-xl relative overflow-hidden">
+                    {{-- Celebration background for max rank --}}
+                    <div class="absolute inset-0 bg-gradient-to-br from-yellow-400/10 via-pink-400/10 to-purple-400/10"></div>
+                    @for($i = 0; $i < 5; $i++)
+                        <div class="absolute w-1 h-1 bg-yellow-400 rounded-full animate-sparkle"
+                             style="top: {{ rand(10, 90) }}%; left: {{ rand(10, 90) }}%; animation-delay: {{ $i * 0.3 }}s;"></div>
+                    @endfor
+
+                    <div class="relative z-10">
+                        <div class="text-6xl mb-3 animate-bounce-slow">👑</div>
+                        <p class="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                            คุณอยู่ที่ Rank สูงสุดแล้ว!
+                        </p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            ยินดีด้วย! คุณคือสุดยอดสมาชิก 🎉
+                        </p>
+                    </div>
+                </div>
+                @endif
+
+                {{-- Virtual ID Card Link --}}
+                @if($rankLevel >= 2)
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <a href="{{ route('user.id-card') }}"
+                       class="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r {{ $progressGradient }} text-white font-semibold rounded-xl hover:opacity-90 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02]">
+                        <i class="fas fa-id-card"></i>
+                        <span>ดูบัตรประจำตัว VIP</span>
+                        @if($rankLevel >= 5)
+                            <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full">{{ $rankBadge }}</span>
+                        @endif
+                    </a>
                 </div>
                 @endif
             </x-arrow-x.card-v3>
@@ -448,5 +487,60 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+@endpush
+
+{{-- Rank-based Dashboard Animations --}}
+@push('styles')
+<style>
+    /* Shimmer Animation */
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
+    /* Glow Legend Subtle */
+    @keyframes glow-legend-subtle {
+        0%, 100% { box-shadow: 0 0 15px rgba(236, 72, 153, 0.2); }
+        50% { box-shadow: 0 0 25px rgba(236, 72, 153, 0.3); }
+    }
+
+    /* Sparkle */
+    @keyframes sparkle {
+        0%, 100% { opacity: 0; transform: scale(0); }
+        50% { opacity: 1; transform: scale(1); }
+    }
+
+    /* Bounce Slow */
+    @keyframes bounce-slow {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+
+    /* Pulse Slow */
+    @keyframes pulse-slow {
+        0%, 100% { opacity: 0.8; }
+        50% { opacity: 1; }
+    }
+
+    .animate-shimmer {
+        animation: shimmer 3s infinite;
+    }
+
+    .animate-glow-legend-subtle {
+        animation: glow-legend-subtle 3s ease-in-out infinite;
+    }
+
+    .animate-sparkle {
+        animation: sparkle 2s ease-in-out infinite;
+    }
+
+    .animate-bounce-slow {
+        animation: bounce-slow 2s ease-in-out infinite;
+    }
+
+    .animate-pulse-slow {
+        animation: pulse-slow 3s ease-in-out infinite;
+    }
+</style>
 @endpush
 @endsection
