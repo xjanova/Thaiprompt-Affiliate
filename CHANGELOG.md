@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.200.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1649 from xjanova/claude/fix-commission-column-error-014edLTNKujunWpqtECQYYjG (21d3ca8a)
+- feat: add PV System Settings UI for commission_per_pv configuration (8523c036)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.199.0] - 2025-11-26
 
 ### ✨ Features
