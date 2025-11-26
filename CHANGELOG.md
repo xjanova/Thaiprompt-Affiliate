@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.216.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1676 from xjanova/claude/mlm-binary-tree-structure-01ApLTBGUPSXC66hbkqBJUjR (91d4893b)
+- feat: add original_sponsor_id for direct referral bonus tracking (0241f894)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.215.0] - 2025-11-26
 
 ### ✨ Features
