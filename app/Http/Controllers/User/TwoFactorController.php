@@ -113,7 +113,7 @@ class TwoFactorController extends Controller
         return response()->json([
             'success' => true,
             'message' => $result['message'],
-            'redirect' => $request->input('redirect') ?? route('user.dashboard'),
+            'redirect' => $request->input('redirect') ?? route('user.home'),
         ]);
     }
 
@@ -142,7 +142,7 @@ class TwoFactorController extends Controller
             'success' => true,
             'message' => $result['message'],
             'warning' => $result['warning'] ?? null,
-            'redirect' => $request->input('redirect') ?? route('user.dashboard'),
+            'redirect' => $request->input('redirect') ?? route('user.home'),
         ]);
     }
 

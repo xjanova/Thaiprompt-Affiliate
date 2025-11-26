@@ -62,8 +62,8 @@ class LoginController extends Controller
                 return redirect()->intended(route('seller.dashboard'));
             }
 
-            // Default to user dashboard for regular users
-            return redirect()->intended(route('user.dashboard'));
+            // Default to user home (App-Like Interface) for regular users
+            return redirect()->intended(route('user.home'));
         }
 
         throw ValidationException::withMessages([

@@ -187,7 +187,7 @@ class RegisterController extends Controller
         // Log the user in
         Auth::login($user);
 
-        return redirect()->route('user.dashboard')
+        return redirect()->route('user.home')
             ->with('success', 'ลงทะเบียนสำเร็จ! ยินดีต้อนรับสู่ระบบ MLM');
     }
 
