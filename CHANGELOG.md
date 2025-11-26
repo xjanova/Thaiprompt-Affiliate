@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.198.1] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1645 from xjanova/claude/audit-mlm-commission-013i75fKQGPDaRJzmuqxvmpf (4570d351)
+- refactor: unify MLM commission calculation to use Global Settings (df5bb7fd)
+
 ## [v3.198.0] - 2025-11-26
 
 ### ✨ Features
