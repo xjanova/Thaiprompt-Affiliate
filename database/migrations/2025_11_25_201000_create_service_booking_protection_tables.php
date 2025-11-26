@@ -54,9 +54,9 @@ return new class extends Migration
                 $table->timestamp('recorded_at')->useCurrent();
                 $table->timestamps();
 
-                // Indexes สำหรับ query ที่รวดเร็ว
-                $table->index(['service_booking_id', 'actor_type', 'recorded_at']);
-                $table->index(['recorded_at']);
+                // Indexes สำหรับ query ที่รวดเร็ว (ชื่อย่อเพื่อไม่เกิน 64 ตัวอักษร)
+                $table->index(['service_booking_id', 'actor_type', 'recorded_at'], 'sb_loc_logs_booking_actor_time_idx');
+                $table->index(['recorded_at'], 'sb_loc_logs_recorded_at_idx');
             });
         }
 
