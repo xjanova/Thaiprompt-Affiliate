@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.223.2] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: ปรับปรุงการแสดง Avatar เพิ่มเติม (รอบที่ 2) (08cd6e88)
+- fix: ปรับปรุงการแสดง Avatar ให้สอดคล้องกันทั้งระบบ (faecd9e2)
+### 🔧 Other Changes
+- Merge pull request #1700 from xjanova/claude/avatar-display-consistency-015KP2hbf4HZ3PTJwEuJx1Ex (9c9c3f93)
+
 ## [v3.223.1] - 2025-11-26
 
 ### ✨ Features
