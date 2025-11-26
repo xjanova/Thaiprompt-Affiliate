@@ -232,20 +232,25 @@ class MlmGlobalSettingController extends Controller
             'auto_placement' => 'required|boolean',
             'binary_enabled' => 'required|boolean',
             'unilevel_enabled' => 'required|boolean',
+            'genealogy_enabled' => 'nullable|boolean',
             'binary_match_commission' => 'nullable|numeric|min:0|max:100',
             'unilevel_levels' => 'nullable|integer|min:1|max:10',
             'unilevel_percentages' => 'nullable|string',
             'direct_referral_commission' => 'nullable|numeric|min:0|max:100',
             'min_pv_for_commission' => 'nullable|numeric|min:0',
-            'matching_bonus' => 'nullable|numeric|min:0|max:100',
             'commission_per_pv' => 'nullable|numeric|min:0|max:1000',
         ]);
 
-        // อัพเดทการตั้งค่าแต่ละค่า
+        // อัพเดทการตั้งค่า 3 ระบบหลัก
         MlmGlobalSetting::set('auto_placement_type', $validated['auto_placement_type']);
         MlmGlobalSetting::set('auto_placement', $validated['auto_placement']);
         MlmGlobalSetting::set('binary_enabled', $validated['binary_enabled']);
         MlmGlobalSetting::set('unilevel_enabled', $validated['unilevel_enabled']);
+
+        // อัพเดท Genealogy (ผังสายเลือด) enabled
+        if (isset($validated['genealogy_enabled'])) {
+            MlmGlobalSetting::set('genealogy_enabled', $validated['genealogy_enabled']);
+        }
 
         // อัพเดทค่าคอมมิชชั่นเพิ่มเติม
         if (isset($validated['binary_match_commission'])) {
@@ -262,9 +267,6 @@ class MlmGlobalSettingController extends Controller
         }
         if (isset($validated['min_pv_for_commission'])) {
             MlmGlobalSetting::set('min_pv_for_commission', $validated['min_pv_for_commission']);
-        }
-        if (isset($validated['matching_bonus'])) {
-            MlmGlobalSetting::set('matching_bonus', $validated['matching_bonus']);
         }
         if (isset($validated['commission_per_pv'])) {
             MlmGlobalSetting::set('commission_per_pv', $validated['commission_per_pv']);

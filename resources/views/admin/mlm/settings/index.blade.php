@@ -119,19 +119,19 @@
 
                 {{-- Breakdown --}}
                 <div class="mt-4 p-4 bg-white/50 dark:bg-black/20 rounded-xl">
-                    <p class="font-semibold mb-2">รายละเอียดการคำนวณ:</p>
+                    <p class="font-semibold mb-2">รายละเอียดการคำนวณ (เฉพาะระบบที่เปิด):</p>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                        <div>
+                        <div :class="{'opacity-40': !settings.binary_enabled}">
                             <p class="opacity-75">Binary</p>
-                            <p class="font-bold text-base" x-text="`${(settings.binary_match_commission || 0)}%`"></p>
+                            <p class="font-bold text-base" x-text="`${settings.binary_enabled ? (settings.binary_match_commission || 0) : 0}%`"></p>
                         </div>
-                        <div>
+                        <div :class="{'opacity-40': !settings.unilevel_enabled}">
                             <p class="opacity-75">Unilevel</p>
-                            <p class="font-bold text-base" x-text="`${unilevelTotal.toFixed(2)}%`"></p>
+                            <p class="font-bold text-base" x-text="`${settings.unilevel_enabled ? unilevelTotal.toFixed(2) : 0}%`"></p>
                         </div>
-                        <div>
-                            <p class="opacity-75">Direct</p>
-                            <p class="font-bold text-base" x-text="`${(settings.direct_referral_commission || 0)}%`"></p>
+                        <div :class="{'opacity-40': !settings.genealogy_enabled}">
+                            <p class="opacity-75">ผังสายเลือด</p>
+                            <p class="font-bold text-base" x-text="`${settings.genealogy_enabled ? (settings.direct_referral_commission || 0) : 0}%`"></p>
                         </div>
                         <div>
                             <p class="opacity-75">รวมทั้งหมด</p>
@@ -416,28 +416,41 @@
                 </div>
             </div>
 
-            {{-- Direct Referral & Other Settings --}}
+            {{-- Genealogy System (ผังสายเลือด - ค่าแนะนำตรง) --}}
             <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div class="bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4">
                     <h2 class="text-xl font-bold text-white flex items-center gap-3">
                         <i class="fas fa-user-plus"></i>
-                        Direct Referral & Other
+                        ผังสายเลือด (Genealogy)
                     </h2>
-                    <p class="text-sm text-white/80 mt-1">การตั้งค่าอื่นๆ</p>
+                    <p class="text-sm text-white/80 mt-1">ค่าแนะนำตรง - จ่ายให้ผู้แนะนำจริง (ไม่ใช่ Unilevel/Binary)</p>
                 </div>
 
                 <div class="p-6 space-y-6">
+                    {{-- Genealogy Enabled Toggle --}}
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+                        <div>
+                            <label class="text-sm font-semibold text-gray-900 dark:text-white">เปิดใช้งานค่าแนะนำตรง</label>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">เปิด/ปิด ค่าคอมมิชชั่นจากการแนะนำตรง (ผังสายเลือด)</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" x-model="settings.genealogy_enabled" @change="calculateTotal()" class="sr-only peer">
+                            <div class="w-14 h-7 bg-gray-300 peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-blue-600 peer-checked:to-cyan-600"></div>
+                        </label>
+                    </div>
+
                     {{-- Direct Referral Commission --}}
-                    <div>
+                    <div x-show="settings.genealogy_enabled" x-transition>
                         <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                            Direct Referral Commission (%)
+                            ค่าแนะนำตรง (%)
                         </label>
                         <div class="flex items-center gap-4">
                             <input type="range"
                                    x-model.number="settings.direct_referral_commission"
                                    @input="calculateTotal()"
                                    min="0" max="20" step="0.5"
-                                   class="flex-1 h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                                   class="flex-1 h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                   :disabled="!settings.genealogy_enabled">
                             <div class="w-20 px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-center font-bold">
                                 <span x-text="(settings.direct_referral_commission || 0) + '%'"></span>
                             </div>
@@ -445,6 +458,33 @@
                         <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">คอมมิชชั่นจากการแนะนำโดยตรง (แนะนำ: 5-10%)</p>
                     </div>
 
+                    {{-- Info Box --}}
+                    <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                        <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
+                            <i class="fas fa-info-circle"></i>
+                            ความแตกต่างกับ Unilevel/Binary
+                        </h4>
+                        <ul class="text-xs text-blue-700 dark:text-blue-400 space-y-1 list-disc list-inside">
+                            <li><strong>ผังสายเลือด:</strong> ใครแนะนำใครจริงๆ (ใช้รหัสแนะนำของใคร)</li>
+                            <li><strong>Unilevel:</strong> ตำแหน่งในสายงาน (อาจ spillover ไปคนอื่น)</li>
+                            <li><strong>Binary:</strong> ตำแหน่งในโครงสร้าง 2 ขา (ตามกลยุทธ์ที่ตั้ง)</li>
+                            <li>ค่าแนะนำตรงจ่ายให้ผู้แนะนำจริงเท่านั้น ไม่มี spillover</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Other Settings --}}
+            <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                <div class="bg-gradient-to-r from-gray-600 to-slate-600 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-3">
+                        <i class="fas fa-cogs"></i>
+                        การตั้งค่าอื่นๆ
+                    </h2>
+                    <p class="text-sm text-white/80 mt-1">การตั้งค่าเพิ่มเติม</p>
+                </div>
+
+                <div class="p-6 space-y-6">
                     {{-- Minimum PV for Commission --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
@@ -455,24 +495,6 @@
                                min="0" step="10"
                                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl">
                         <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">สมาชิกต้องมี PV ขั้นต่ำเท่านี้เพื่อรับคอมมิชชั่น</p>
-                    </div>
-
-                    {{-- Matching Bonus --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                            Matching Bonus (%)
-                        </label>
-                        <div class="flex items-center gap-4">
-                            <input type="range"
-                                   x-model.number="settings.matching_bonus"
-                                   @input="calculateTotal()"
-                                   min="0" max="10" step="0.5"
-                                   class="flex-1 h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
-                            <div class="w-20 px-3 py-2 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 rounded-lg text-center font-bold">
-                                <span x-text="(settings.matching_bonus || 0) + '%'"></span>
-                            </div>
-                        </div>
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">โบนัสจากทีมงาน (Matching Bonus)</p>
                     </div>
                 </div>
             </div>
@@ -507,23 +529,31 @@
                            x-text="totalCommissionPercentage.toFixed(2) + '%'"></p>
                     </div>
 
-                    {{-- Breakdown --}}
+                    {{-- Breakdown - 3 ระบบหลัก --}}
                     <div class="space-y-3">
-                        <div class="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                            <span class="text-sm text-gray-700 dark:text-gray-300">Binary</span>
+                        <div class="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg"
+                             :class="{'opacity-40': !settings.binary_enabled}">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">Binary</span>
+                                <span x-show="!settings.binary_enabled" class="text-xs text-gray-400">(ปิด)</span>
+                            </div>
                             <span class="font-bold text-purple-600" x-text="(settings.binary_enabled ? settings.binary_match_commission : 0) + '%'"></span>
                         </div>
-                        <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                            <span class="text-sm text-gray-700 dark:text-gray-300">Unilevel</span>
+                        <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg"
+                             :class="{'opacity-40': !settings.unilevel_enabled}">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">Unilevel</span>
+                                <span x-show="!settings.unilevel_enabled" class="text-xs text-gray-400">(ปิด)</span>
+                            </div>
                             <span class="font-bold text-green-600" x-text="(settings.unilevel_enabled ? unilevelTotal : 0).toFixed(2) + '%'"></span>
                         </div>
-                        <div class="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                            <span class="text-sm text-gray-700 dark:text-gray-300">Direct Referral</span>
-                            <span class="font-bold text-blue-600" x-text="(settings.direct_referral_commission || 0) + '%'"></span>
-                        </div>
-                        <div class="flex items-center justify-between p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg">
-                            <span class="text-sm text-gray-700 dark:text-gray-300">Matching Bonus</span>
-                            <span class="font-bold text-cyan-600" x-text="(settings.matching_bonus || 0) + '%'"></span>
+                        <div class="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg"
+                             :class="{'opacity-40': !settings.genealogy_enabled}">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-gray-700 dark:text-gray-300">ผังสายเลือด</span>
+                                <span x-show="!settings.genealogy_enabled" class="text-xs text-gray-400">(ปิด)</span>
+                            </div>
+                            <span class="font-bold text-blue-600" x-text="(settings.genealogy_enabled ? (settings.direct_referral_commission || 0) : 0) + '%'"></span>
                         </div>
                     </div>
 
@@ -599,9 +629,9 @@ function mlmSettings() {
             auto_placement: true,
             unilevel_enabled: true,
             unilevel_levels: 5,
+            genealogy_enabled: true,
             direct_referral_commission: 5,
             min_pv_for_commission: 100,
-            matching_bonus: 3,
             commission_per_pv: 1,
         },
         unilevelPercentages: [5, 3, 2, 1, 1],
@@ -627,9 +657,9 @@ function mlmSettings() {
                             auto_placement: data.settings.auto_placement ?? true,
                             unilevel_enabled: data.settings.unilevel_enabled ?? true,
                             unilevel_levels: parseInt(data.settings.unilevel_levels) || 5,
+                            genealogy_enabled: data.settings.genealogy_enabled ?? true,
                             direct_referral_commission: parseFloat(data.settings.direct_referral_commission) || 5,
                             min_pv_for_commission: parseFloat(data.settings.min_pv_for_commission) || 100,
-                            matching_bonus: parseFloat(data.settings.matching_bonus) || 3,
                             commission_per_pv: parseFloat(data.settings.commission_per_pv) || 1,
                         };
 
@@ -668,6 +698,7 @@ function mlmSettings() {
                 : 0;
 
             // Calculate total commission percentage
+            // รวมเฉพาะระบบที่เปิดใช้งาน (3 ระบบ: Binary, Unilevel, Genealogy)
             this.totalCommissionPercentage = 0;
 
             if (this.settings.binary_enabled) {
@@ -678,8 +709,9 @@ function mlmSettings() {
                 this.totalCommissionPercentage += this.unilevelTotal;
             }
 
-            this.totalCommissionPercentage += parseFloat(this.settings.direct_referral_commission) || 0;
-            this.totalCommissionPercentage += parseFloat(this.settings.matching_bonus) || 0;
+            if (this.settings.genealogy_enabled) {
+                this.totalCommissionPercentage += parseFloat(this.settings.direct_referral_commission) || 0;
+            }
         },
 
         async saveSettings() {
@@ -697,12 +729,12 @@ function mlmSettings() {
                         auto_placement: this.settings.auto_placement,
                         binary_enabled: this.settings.binary_enabled,
                         unilevel_enabled: this.settings.unilevel_enabled,
+                        genealogy_enabled: this.settings.genealogy_enabled,
                         binary_match_commission: this.settings.binary_match_commission,
                         unilevel_levels: this.settings.unilevel_levels,
                         unilevel_percentages: JSON.stringify(this.unilevelPercentages),
                         direct_referral_commission: this.settings.direct_referral_commission,
                         min_pv_for_commission: this.settings.min_pv_for_commission,
-                        matching_bonus: this.settings.matching_bonus,
                         commission_per_pv: this.settings.commission_per_pv,
                     }),
                 });
