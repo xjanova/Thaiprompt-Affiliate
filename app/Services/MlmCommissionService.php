@@ -236,7 +236,7 @@ class MlmCommissionService
         $startOfMonth = Carbon::now()->startOfMonth();
         $monthlyPv = $member->commissions()
             ->where('created_at', '>=', $startOfMonth)
-            ->sum('pv');
+            ->sum('pv_amount');
 
         // Check if member meets monthly requirement
         if ($monthlyPv >= $requiredMonthlyPv) {
@@ -333,7 +333,7 @@ class MlmCommissionService
         $startOfMonth = Carbon::now()->startOfMonth();
         $monthlyPv = $member->commissions()
             ->where('created_at', '>=', $startOfMonth)
-            ->sum('pv');
+            ->sum('pv_amount');
 
         $lastCommissionDate = $member->commissions()
             ->orderBy('created_at', 'desc')
