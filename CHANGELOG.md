@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.194.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1638 from xjanova/claude/modernize-homepage-logo-01KsqZCBGZadHFbEdAiRgwQh (a2205d1b)
+- feat: modernize homepage logo with 3D effects and futuristic design (6f4f31dc)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.193.0] - 2025-11-26
 
 ### ✨ Features
