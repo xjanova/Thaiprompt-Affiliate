@@ -2393,6 +2393,9 @@ Route::prefix('tpix/deployment')->name('tpix.deployment.')->group(function () {
     Route::get('/create', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'create'])->name('create');
     Route::post('/', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'store'])->name('store');
 
+    // Tutorial Route - คู่มือการ Deploy TPIX สู่ Blockchain จริง
+    Route::get('/tutorial', [\App\Http\Controllers\Admin\TpixDeploymentController::class, 'tutorial'])->name('tutorial');
+
     // Wizard Routes (แยกตาม slug)
     Route::prefix('{slug}')->group(function () {
         // Main Wizard (Redirect to current step)
