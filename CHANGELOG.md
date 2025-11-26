@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.195.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1640 from xjanova/claude/add-label-barcode-system-01XtZdjN9aUGY25P2X9CdhX2 (5901760a)
+- feat: add label/barcode/QR code designer system and dashboard switcher (58c6bdd4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.194.1] - 2025-11-26
 
 ### ✨ Features
