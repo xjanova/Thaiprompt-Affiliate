@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.222.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1695 from xjanova/claude/improve-admin-reporting-01RLnYiPH4BZoNrbEXwUdchC (7cce7a5c)
+- feat: เพิ่มระบบรายงานรวมศูนย์ (Unified Reporting Center) พร้อม Business Intelligence Dashboard (e0f87bfb)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.221.6] - 2025-11-26
 
 ### ✨ Features
