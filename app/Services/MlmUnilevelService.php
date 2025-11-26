@@ -192,6 +192,7 @@ class MlmUnilevelService
                 }
 
                 // Create commission record
+                // ⚠️ แก้ไข: ใช้ total_amount แทน total (Order model มี field total_amount)
                 MlmCommission::create([
                     'mlm_member_id' => $sponsor->id,
                     'mlm_plan_id' => $plan->id,
@@ -202,7 +203,7 @@ class MlmUnilevelService
                     'type' => $currentLevel === 0 ? 'unilevel_direct' : 'unilevel_indirect',
                     'level' => $currentLevel + 1,
                     'pv_amount' => $pvData['total_pv'],
-                    'sales_amount' => $order->total,
+                    'sales_amount' => $order->total_amount,
                     'commission_amount' => $commissionAmount,
                     'percentage' => $percentage,
                     'status' => 'pending',
