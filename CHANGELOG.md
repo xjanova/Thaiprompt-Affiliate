@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.220.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1684 from xjanova/claude/mlm-binary-tree-structure-01ApLTBGUPSXC66hbkqBJUjR (3505d81c)
+- feat: add Unilevel max width setting to MLM settings UI (86fe5f4c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.219.0] - 2025-11-26
 
 ### ✨ Features
