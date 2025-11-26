@@ -10,13 +10,130 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * MlmUnilevelService - จัดการการคำนวณ Unilevel Commission
+ * MlmUnilevelService - จัดการการคำนวณ Unilevel Commission และ Placement
  *
  * ⚠️ IMPORTANT: Service นี้ใช้ค่าจาก MlmGlobalSetting เท่านั้น
  * ไม่ใช้ค่าจาก MlmPlan (per-plan settings) เพื่อความเป็นเอกภาพ
+ *
+ * รองรับ:
+ * - unilevel_max_depth: ความลึกสูงสุด
+ * - unilevel_max_width: จำนวนลูกตรงสูงสุดต่อสมาชิก
+ * - unilevel_auto_spillover: ล้นอัตโนมัติเมื่อเกินความกว้าง
  */
 class MlmUnilevelService
 {
+    /**
+     * หาตำแหน่งสำหรับสมาชิกใหม่ใน Unilevel Tree
+     *
+     * ถ้า sponsor มีลูกตรงถึง max_width แล้ว จะหาตำแหน่งใน subtree
+     * โดยใช้ BFS (เติมเต็มชั้นก่อนไปชั้นถัดไป)
+     *
+     * @param MlmMember $sponsor ผู้แนะนำ (sponsor)
+     * @return array ['sponsor_id' => int, 'level' => int, 'path' => string]|null
+     */
+    public function findUnilevelPlacement(MlmMember $sponsor): ?array
+    {
+        $maxWidth = MlmGlobalSetting::get('unilevel_max_width', null);
+        $maxDepth = MlmGlobalSetting::get('unilevel_max_depth', 10);
+        $autoSpillover = MlmGlobalSetting::get('unilevel_auto_spillover', true);
+
+        // ถ้าไม่จำกัด width หรือ sponsor ยังไม่เต็ม → วางเป็นลูกตรงของ sponsor
+        if ($maxWidth === null || $this->getDirectChildrenCount($sponsor) < $maxWidth) {
+            return $this->createPlacementResult($sponsor);
+        }
+
+        // ถ้าปิด auto spillover → คืนค่า null (ไม่สามารถวางได้)
+        if (!$autoSpillover) {
+            Log::warning('Unilevel placement failed - width limit reached and spillover disabled', [
+                'sponsor_id' => $sponsor->id,
+                'max_width' => $maxWidth,
+            ]);
+            return null;
+        }
+
+        // ใช้ BFS หาตำแหน่งในชั้นถัดไป
+        return $this->findSpilloverPlacement($sponsor, $maxWidth, $maxDepth);
+    }
+
+    /**
+     * หาตำแหน่ง spillover ด้วย BFS (เติมเต็มชั้นก่อนไปชั้นถัดไป)
+     *
+     * @param MlmMember $sponsor
+     * @param int $maxWidth
+     * @param int $maxDepth
+     * @return array|null
+     */
+    protected function findSpilloverPlacement(MlmMember $sponsor, int $maxWidth, int $maxDepth): ?array
+    {
+        // ใช้ Queue สำหรับ BFS - เก็บ [member, currentDepth]
+        $queue = collect([['member' => $sponsor, 'depth' => $sponsor->unilevel_level]]);
+        $visited = collect();
+
+        while ($queue->isNotEmpty()) {
+            $item = $queue->shift();
+            $current = $item['member'];
+            $currentDepth = $item['depth'];
+
+            // ข้าม node ที่เคย visit แล้ว
+            if ($visited->contains($current->id)) {
+                continue;
+            }
+            $visited->push($current->id);
+
+            // ตรวจสอบ depth limit (depth ของลูกจะเป็น currentDepth + 1)
+            if ($currentDepth >= $maxDepth) {
+                continue;
+            }
+
+            // ตรวจสอบว่า node นี้ยังมีที่ว่างไหม
+            $childCount = $this->getDirectChildrenCount($current);
+            if ($childCount < $maxWidth) {
+                return $this->createPlacementResult($current);
+            }
+
+            // เพิ่ม children เข้า queue (ไปชั้นถัดไป)
+            $children = $current->unilevelChildren()->orderBy('id')->get();
+            foreach ($children as $child) {
+                $queue->push(['member' => $child, 'depth' => $currentDepth + 1]);
+            }
+        }
+
+        // ไม่พบตำแหน่งว่าง (tree เต็มหรือเกิน depth limit)
+        Log::warning('Unilevel spillover placement failed - tree is full or depth limit reached', [
+            'sponsor_id' => $sponsor->id,
+            'max_width' => $maxWidth,
+            'max_depth' => $maxDepth,
+        ]);
+
+        return null;
+    }
+
+    /**
+     * นับจำนวนลูกตรงของ member
+     *
+     * @param MlmMember $member
+     * @return int
+     */
+    protected function getDirectChildrenCount(MlmMember $member): int
+    {
+        return MlmMember::where('unilevel_sponsor_id', $member->id)->count();
+    }
+
+    /**
+     * สร้างผลลัพธ์ placement
+     *
+     * @param MlmMember $targetSponsor
+     * @return array
+     */
+    protected function createPlacementResult(MlmMember $targetSponsor): array
+    {
+        return [
+            'sponsor_id' => $targetSponsor->id,
+            'level' => $targetSponsor->unilevel_level + 1,
+            'path' => $targetSponsor->unilevel_path . '/' . $targetSponsor->id,
+        ];
+    }
+
     /**
      * Calculate unilevel commissions
      * ใช้ค่าจาก Global Settings แทน per-plan settings

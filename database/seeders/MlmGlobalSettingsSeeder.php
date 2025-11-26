@@ -87,6 +87,28 @@ class MlmGlobalSettingsSeeder extends Seeder
                 'sort_order' => 20,
             ],
             [
+                'key' => 'unilevel_max_width',
+                'value' => null,
+                'type' => 'integer',
+                'input_type' => 'number',
+                'group' => 'unilevel',
+                'description' => 'Maximum Direct Referrals per Member (null = unlimited)',
+                'description_th' => 'จำนวนลูกตรงสูงสุดต่อสมาชิก (null = ไม่จำกัด)',
+                'placeholder' => 'ไม่จำกัด',
+                'unit' => 'คน',
+                'sort_order' => 21,
+            ],
+            [
+                'key' => 'unilevel_auto_spillover',
+                'value' => '1',
+                'type' => 'boolean',
+                'input_type' => 'toggle',
+                'group' => 'unilevel',
+                'description' => 'Auto spillover when width limit reached (fill level by level)',
+                'description_th' => 'ล้นอัตโนมัติเมื่อเกินจำนวนลูกตรง (เติมเต็มชั้นก่อน)',
+                'sort_order' => 22,
+            ],
+            [
                 'key' => 'unilevel_levels',
                 'value' => json_encode([
                     ['level' => 1, 'percentage' => 10],
@@ -105,7 +127,7 @@ class MlmGlobalSettingsSeeder extends Seeder
                 'group' => 'unilevel',
                 'description' => 'Unilevel Commission Percentages by Level',
                 'description_th' => 'เปอร์เซ็นต์คอมมิชชัน Unilevel แต่ละระดับ',
-                'sort_order' => 21,
+                'sort_order' => 23,
             ],
             [
                 'key' => 'unilevel_compression_enabled',
@@ -115,7 +137,7 @@ class MlmGlobalSettingsSeeder extends Seeder
                 'group' => 'unilevel',
                 'description' => 'Enable Unilevel Compression (Skip inactive members)',
                 'description_th' => 'เปิดใช้ Compression (ข้ามคนไม่ active)',
-                'sort_order' => 22,
+                'sort_order' => 24,
             ],
             [
                 'key' => 'unilevel_max_commission_per_level',
@@ -127,7 +149,7 @@ class MlmGlobalSettingsSeeder extends Seeder
                 'description_th' => 'คอมมิชชันสูงสุดต่อระดับ (null = ไม่จำกัด)',
                 'placeholder' => 'ไม่จำกัด',
                 'unit' => 'บาท',
-                'sort_order' => 23,
+                'sort_order' => 25,
             ],
 
             // Binary Settings
