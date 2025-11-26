@@ -195,7 +195,7 @@
                                     Global Rate
                                 </span>
                                 <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 font-semibold">
-                                    ฿{{ number_format($productPv->plan->commission_per_pv, 2) }}/PV
+                                    ฿{{ number_format(\App\Models\MlmGlobalSetting::get('commission_per_pv', 1), 2) }}/PV
                                 </div>
                             @else
                                 <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 shadow">

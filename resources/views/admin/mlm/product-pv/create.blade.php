@@ -100,18 +100,25 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                             แผน MLM <span class="text-red-500">*</span>
                         </label>
+                        @php
+                            $globalCommissionPerPv = \App\Models\MlmGlobalSetting::get('commission_per_pv', 1);
+                        @endphp
                         <select name="mlm_plan_id" id="plan-select"
                                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500"
                                 required>
                             <option value="">เลือกแผน MLM...</option>
                             @foreach($plans as $plan)
                                 <option value="{{ $plan->id }}"
-                                        data-commission-rate="{{ $plan->commission_per_pv }}"
+                                        data-commission-rate="{{ $globalCommissionPerPv }}"
                                         {{ old('mlm_plan_id') == $plan->id ? 'selected' : '' }}>
-                                    {{ $plan->display_name }} (฿{{ number_format($plan->commission_per_pv, 2) }}/PV)
+                                    {{ $plan->display_name }}
                                 </option>
                             @endforeach
                         </select>
+                        <p class="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            อัตราคอมมิชชั่น: ฿{{ number_format($globalCommissionPerPv, 2) }}/PV (Global Setting)
+                        </p>
                         <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">เลือกแผน MLM ที่ต้องการกำหนด</p>
                         @error('mlm_plan_id')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>

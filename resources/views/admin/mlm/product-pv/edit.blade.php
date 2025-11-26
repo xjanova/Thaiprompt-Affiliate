@@ -2,6 +2,11 @@
 
 @section('title', 'แก้ไขค่า PV สินค้า')
 
+@php
+    // ใช้ค่าจาก Global Settings แทน per-plan settings
+    $globalCommissionPerPv = \App\Models\MlmGlobalSetting::get('commission_per_pv', 1);
+@endphp
+
 @section('content')
 <div class="space-y-6">
     <!-- Back Button -->
@@ -141,7 +146,7 @@
                                         ใช้ Global Commission Rate
                                     </span>
                                     <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
-                                        ใช้อัตราค่าคอมมิชชั่นจากการตั้งค่าแผน MLM (฿{{ number_format($productPv->plan->commission_per_pv, 2) }}/PV)
+                                        ใช้อัตราค่าคอมมิชชั่นจาก Global Setting (฿{{ number_format($globalCommissionPerPv, 2) }}/PV)
                                     </p>
                                 </div>
                             </label>
@@ -334,7 +339,7 @@
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">Global Rate</span>
-                            <span class="font-bold text-green-600 dark:text-green-400">฿{{ number_format($productPv->plan->commission_per_pv, 2) }}/PV</span>
+                            <span class="font-bold text-green-600 dark:text-green-400">฿{{ number_format($globalCommissionPerPv, 2) }}/PV</span>
                         </div>
                     </div>
                 </div>
@@ -367,7 +372,7 @@
 
 <script>
 const productPrice = {{ $productPv->product->price }};
-const globalRate = {{ $productPv->plan->commission_per_pv }};
+const globalRate = {{ $globalCommissionPerPv }};
 
 function calculatePreview() {
     const pvValue = parseFloat(document.getElementById('pvValue').value) || 0;
