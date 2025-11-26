@@ -231,6 +231,42 @@ class UnifiedReportService
     }
 
     /**
+     * ดึงข้อมูลรายงาน HRM/บุคลากร
+     *
+     * @param string $period ช่วงเวลา
+     * @return array
+     */
+    public function getHrmReport(string $period = 'month'): array
+    {
+        $dates = $this->getDateRange($period);
+
+        return [
+            'summary' => $this->getHrmStats($dates),
+            'departments' => $this->getDepartmentStats($dates),
+            'attendance' => $this->getAttendanceStats($dates),
+            'payroll' => $this->getPayrollStats($dates),
+        ];
+    }
+
+    /**
+     * ดึงข้อมูลรายงานการเรียนรู้
+     *
+     * @param string $period ช่วงเวลา
+     * @return array
+     */
+    public function getLearningReport(string $period = 'month'): array
+    {
+        $dates = $this->getDateRange($period);
+
+        return [
+            'summary' => $this->getLearningStats($dates),
+            'courses' => $this->getCourseStats($dates),
+            'enrollments' => $this->getEnrollmentStats($dates),
+            'completion_rate' => $this->getCourseCompletionRate($dates),
+        ];
+    }
+
+    /**
      * ดึงรายการระบบทั้งหมดที่สามารถสร้างรายงานได้
      *
      * @return array
@@ -1154,5 +1190,200 @@ class UnifiedReportService
     protected function getCryptoWalletDistribution(): array
     {
         return [];
+    }
+
+    // =================================================================
+    // HRM (บุคลากร) METHODS
+    // =================================================================
+
+    /**
+     * สถิติ HRM ภาพรวม
+     */
+    protected function getHrmStats(array $dates): array
+    {
+        $totalEmployees = 0;
+        $newEmployees = 0;
+        $leftEmployees = 0;
+
+        if (class_exists(\App\Models\Employee::class)) {
+            $totalEmployees = \App\Models\Employee::where('status', 'active')->count();
+            $newEmployees = \App\Models\Employee::whereBetween('created_at', [$dates['start'], $dates['end']])->count();
+            $leftEmployees = \App\Models\Employee::whereBetween('terminated_at', [$dates['start'], $dates['end']])->count();
+        }
+
+        return [
+            'total_employees' => $totalEmployees,
+            'new_employees' => $newEmployees,
+            'left_employees' => $leftEmployees,
+            'net_change' => $newEmployees - $leftEmployees,
+        ];
+    }
+
+    /**
+     * สถิติตามแผนก
+     */
+    protected function getDepartmentStats(array $dates): array
+    {
+        if (!class_exists(\App\Models\Employee::class)) {
+            return [];
+        }
+
+        return DB::table('employees')
+            ->join('departments', 'employees.department_id', '=', 'departments.id')
+            ->where('employees.status', 'active')
+            ->select('departments.name', DB::raw('COUNT(*) as count'))
+            ->groupBy('departments.id', 'departments.name')
+            ->get()
+            ->toArray();
+    }
+
+    /**
+     * สถิติการเข้างาน
+     */
+    protected function getAttendanceStats(array $dates): array
+    {
+        $present = 0;
+        $absent = 0;
+        $late = 0;
+        $leave = 0;
+
+        if (class_exists(\App\Models\Attendance::class)) {
+            $present = \App\Models\Attendance::whereBetween('date', [$dates['start'], $dates['end']])
+                ->where('status', 'present')->count();
+            $absent = \App\Models\Attendance::whereBetween('date', [$dates['start'], $dates['end']])
+                ->where('status', 'absent')->count();
+            $late = \App\Models\Attendance::whereBetween('date', [$dates['start'], $dates['end']])
+                ->where('is_late', true)->count();
+            $leave = \App\Models\Attendance::whereBetween('date', [$dates['start'], $dates['end']])
+                ->where('status', 'leave')->count();
+        }
+
+        return [
+            'present' => $present,
+            'absent' => $absent,
+            'late' => $late,
+            'leave' => $leave,
+            'attendance_rate' => ($present + $absent + $leave) > 0
+                ? round(($present / ($present + $absent + $leave)) * 100, 2)
+                : 0,
+        ];
+    }
+
+    /**
+     * สถิติเงินเดือน
+     */
+    protected function getPayrollStats(array $dates): array
+    {
+        $totalPayroll = 0;
+        $employeeCount = 0;
+
+        if (class_exists(\App\Models\Payroll::class)) {
+            $stats = \App\Models\Payroll::whereBetween('pay_date', [$dates['start'], $dates['end']])
+                ->selectRaw('SUM(net_salary) as total, COUNT(DISTINCT employee_id) as employees')
+                ->first();
+
+            $totalPayroll = $stats->total ?? 0;
+            $employeeCount = $stats->employees ?? 0;
+        }
+
+        return [
+            'total_payroll' => $totalPayroll,
+            'employee_count' => $employeeCount,
+            'average_salary' => $employeeCount > 0 ? round($totalPayroll / $employeeCount, 2) : 0,
+        ];
+    }
+
+    // =================================================================
+    // LEARNING (การเรียนรู้) METHODS
+    // =================================================================
+
+    /**
+     * สถิติการเรียนรู้ภาพรวม
+     */
+    protected function getLearningStats(array $dates): array
+    {
+        $totalCourses = 0;
+        $totalEnrollments = 0;
+        $completions = 0;
+
+        if (class_exists(\App\Models\Course::class)) {
+            $totalCourses = \App\Models\Course::where('status', 'published')->count();
+        }
+
+        if (class_exists(\App\Models\Enrollment::class)) {
+            $totalEnrollments = \App\Models\Enrollment::whereBetween('created_at', [$dates['start'], $dates['end']])->count();
+            $completions = \App\Models\Enrollment::whereBetween('completed_at', [$dates['start'], $dates['end']])->count();
+        }
+
+        return [
+            'total_courses' => $totalCourses,
+            'total_enrollments' => $totalEnrollments,
+            'completions' => $completions,
+            'completion_rate' => $totalEnrollments > 0 ? round(($completions / $totalEnrollments) * 100, 2) : 0,
+        ];
+    }
+
+    /**
+     * สถิติหลักสูตร
+     */
+    protected function getCourseStats(array $dates): array
+    {
+        if (!class_exists(\App\Models\Course::class)) {
+            return [];
+        }
+
+        return \App\Models\Course::where('status', 'published')
+            ->withCount(['enrollments' => function ($query) use ($dates) {
+                $query->whereBetween('created_at', [$dates['start'], $dates['end']]);
+            }])
+            ->orderByDesc('enrollments_count')
+            ->limit(10)
+            ->get(['id', 'title', 'enrollments_count'])
+            ->toArray();
+    }
+
+    /**
+     * สถิติการลงทะเบียน
+     */
+    protected function getEnrollmentStats(array $dates): array
+    {
+        if (!class_exists(\App\Models\Enrollment::class)) {
+            return [];
+        }
+
+        return \App\Models\Enrollment::whereBetween('created_at', [$dates['start'], $dates['end']])
+            ->selectRaw("DATE(created_at) as date, COUNT(*) as count")
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->toArray();
+    }
+
+    /**
+     * อัตราการสำเร็จหลักสูตร
+     */
+    protected function getCourseCompletionRate(array $dates): array
+    {
+        if (!class_exists(\App\Models\Course::class)) {
+            return [];
+        }
+
+        return DB::table('enrollments')
+            ->join('courses', 'enrollments.course_id', '=', 'courses.id')
+            ->whereBetween('enrollments.created_at', [$dates['start'], $dates['end']])
+            ->select(
+                'courses.title',
+                DB::raw('COUNT(*) as total_enrollments'),
+                DB::raw('SUM(CASE WHEN enrollments.completed_at IS NOT NULL THEN 1 ELSE 0 END) as completions')
+            )
+            ->groupBy('courses.id', 'courses.title')
+            ->get()
+            ->map(function ($item) {
+                $item->completion_rate = $item->total_enrollments > 0
+                    ? round(($item->completions / $item->total_enrollments) * 100, 2)
+                    : 0;
+                return $item;
+            })
+            ->toArray();
     }
 }

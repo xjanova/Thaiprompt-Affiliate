@@ -265,6 +265,56 @@ class UnifiedReportController extends Controller
     }
 
     /**
+     * รายงาน HRM/บุคลากร
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
+     */
+    public function hrm(Request $request)
+    {
+        $period = $request->input('period', 'month');
+        $report = $this->reportService->getHrmReport($period);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => $report,
+            ]);
+        }
+
+        return view('admin.unified-reports.hrm', [
+            'report' => $report,
+            'period' => $period,
+            'pageTitle' => 'รายงานบุคลากร (HRM)',
+        ]);
+    }
+
+    /**
+     * รายงานการเรียนรู้
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
+     */
+    public function learning(Request $request)
+    {
+        $period = $request->input('period', 'month');
+        $report = $this->reportService->getLearningReport($period);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => $report,
+            ]);
+        }
+
+        return view('admin.unified-reports.learning', [
+            'report' => $report,
+            'period' => $period,
+            'pageTitle' => 'รายงานการเรียนรู้',
+        ]);
+    }
+
+    /**
      * ข้อมูลแนวโน้ม (AJAX endpoint สำหรับกราฟ)
      *
      * @param Request $request
@@ -306,6 +356,8 @@ class UnifiedReportController extends Controller
             'hotel' => $this->reportService->getHotelReport($period),
             'pos' => $this->reportService->getPosReport($period),
             'crypto' => $this->reportService->getCryptoReport($period),
+            'hrm' => $this->reportService->getHrmReport($period),
+            'learning' => $this->reportService->getLearningReport($period),
             default => $this->reportService->getExecutiveSummary($period, $startDate, $endDate),
         };
 

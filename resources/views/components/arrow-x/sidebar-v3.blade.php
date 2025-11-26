@@ -813,6 +813,14 @@
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">System Analytics</span>
                 </a>
 
+                {{-- Unified Reports Center - ศูนย์รายงานรวม 🆕 --}}
+                <a href="{{ route('admin.unified-reports.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.unified-reports.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-bar w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ศูนย์รายงานรวม</span>
+                </a>
+
                 {{-- Advanced Analytics (Phase 3 - Not Yet Implemented) --}}
                 {{--
                 <a href="{{ route('admin.advanced-analytics.dashboard') }}"
