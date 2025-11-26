@@ -315,6 +315,7 @@ Route::prefix('ranks')->name('ranks.')->group(function () {
     Route::get('/leaderboard', [RankController::class, 'leaderboard'])->name('leaderboard');
     Route::get('/widget-data', [RankController::class, 'widgetData'])->name('widget-data');
     Route::post('/request-promotion', [RankController::class, 'requestPromotion'])->name('request-promotion');
+    Route::get('/id-card', [RankController::class, 'virtualIdCard'])->name('id-card');
 });
 
 // Email Preferences
