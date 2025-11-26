@@ -126,6 +126,8 @@ Route::prefix('unified-reports')->name('unified-reports.')->group(function () {
     Route::get('/hotel', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'hotel'])->name('hotel');
     Route::get('/pos', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'pos'])->name('pos');
     Route::get('/crypto', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'crypto'])->name('crypto');
+    Route::get('/hrm', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'hrm'])->name('hrm');
+    Route::get('/learning', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'learning'])->name('learning');
 
     // API สำหรับแนวโน้มและการเปรียบเทียบ
     Route::get('/trends', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'trends'])->name('trends');
