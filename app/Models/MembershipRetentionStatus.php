@@ -23,6 +23,16 @@ class MembershipRetentionStatus extends Model
         'next_renewal_date',
         'consecutive_months',
         'last_active_date',
+        // Auto-renewal settings
+        'auto_renewal_enabled',
+        'auto_renewal_source',
+        'auto_renewal_priority',
+        'auto_renewal_max_amount',
+        'auto_renewal_months',
+        'auto_renewal_notify_before_days',
+        'auto_renewal_last_executed',
+        'auto_renewal_failed_count',
+        'auto_renewal_paused_until',
     ];
 
     protected $casts = [
@@ -34,6 +44,14 @@ class MembershipRetentionStatus extends Model
         'next_renewal_date' => 'date',
         'consecutive_months' => 'integer',
         'last_active_date' => 'date',
+        // Auto-renewal casts
+        'auto_renewal_enabled' => 'boolean',
+        'auto_renewal_max_amount' => 'decimal:2',
+        'auto_renewal_months' => 'integer',
+        'auto_renewal_notify_before_days' => 'integer',
+        'auto_renewal_last_executed' => 'datetime',
+        'auto_renewal_failed_count' => 'integer',
+        'auto_renewal_paused_until' => 'date',
     ];
 
     /**
@@ -171,5 +189,134 @@ class MembershipRetentionStatus extends Model
         return $query->where('status', 'active')
             ->whereNotNull('next_renewal_date')
             ->where('next_renewal_date', '<=', $targetDate);
+    }
+
+    // ============================================================
+    // Auto-Renewal Helper Methods
+    // ============================================================
+
+    /**
+     * ตรวจสอบว่าเปิด Auto-renewal หรือไม่
+     */
+    public function isAutoRenewalEnabled(): bool
+    {
+        return $this->auto_renewal_enabled ?? false;
+    }
+
+    /**
+     * ตรวจสอบว่า Auto-renewal ถูก pause อยู่หรือไม่
+     */
+    public function isAutoRenewalPaused(): bool
+    {
+        if (!$this->auto_renewal_paused_until) {
+            return false;
+        }
+
+        return Carbon::today()->lte($this->auto_renewal_paused_until);
+    }
+
+    /**
+     * ตรวจสอบว่าสามารถทำ Auto-renewal ได้หรือไม่
+     */
+    public function canAutoRenew(): bool
+    {
+        // ต้องเปิด auto-renewal
+        if (!$this->isAutoRenewalEnabled()) {
+            return false;
+        }
+
+        // ต้องไม่ถูก pause
+        if ($this->isAutoRenewalPaused()) {
+            return false;
+        }
+
+        // ต้องไม่ล้มเหลวเกิน 3 ครั้ง
+        if ($this->auto_renewal_failed_count >= 3) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * ดึงคำอธิบายแหล่งเงิน Auto-renewal
+     */
+    public function getAutoRenewalSourceLabel(): string
+    {
+        return match ($this->auto_renewal_source) {
+            'wallet' => 'กระเป๋าเงิน',
+            'commission' => 'คอมมิชชั่น',
+            'both' => 'ทั้งสองแหล่ง',
+            default => 'กระเป๋าเงิน',
+        };
+    }
+
+    /**
+     * ดึงคำอธิบายลำดับการหัก Auto-renewal
+     */
+    public function getAutoRenewalPriorityLabel(): string
+    {
+        return match ($this->auto_renewal_priority) {
+            'wallet_first' => 'หัก Wallet ก่อน',
+            'commission_first' => 'หัก Commission ก่อน',
+            default => 'หัก Wallet ก่อน',
+        };
+    }
+
+    /**
+     * ดึงสถานะ Auto-renewal เป็นข้อความ
+     */
+    public function getAutoRenewalStatusText(): string
+    {
+        if (!$this->isAutoRenewalEnabled()) {
+            return 'ปิดอยู่';
+        }
+
+        if ($this->isAutoRenewalPaused()) {
+            return 'หยุดชั่วคราวถึง ' . $this->auto_renewal_paused_until->format('d/m/Y');
+        }
+
+        if ($this->auto_renewal_failed_count >= 3) {
+            return 'ระงับ (ล้มเหลว 3 ครั้ง)';
+        }
+
+        return 'เปิดใช้งาน';
+    }
+
+    /**
+     * ดึงสีสถานะ Auto-renewal
+     */
+    public function getAutoRenewalStatusColor(): string
+    {
+        if (!$this->isAutoRenewalEnabled()) {
+            return 'gray';
+        }
+
+        if ($this->isAutoRenewalPaused() || $this->auto_renewal_failed_count >= 3) {
+            return 'yellow';
+        }
+
+        return 'green';
+    }
+
+    /**
+     * Scope สำหรับ records ที่เปิด auto-renewal
+     */
+    public function scopeAutoRenewalEnabled($query)
+    {
+        return $query->where('auto_renewal_enabled', true);
+    }
+
+    /**
+     * Scope สำหรับ records ที่พร้อม auto-renew
+     */
+    public function scopeReadyForAutoRenewal($query)
+    {
+        return $query->where('auto_renewal_enabled', true)
+            ->where(function ($q) {
+                $q->whereNull('auto_renewal_paused_until')
+                    ->orWhere('auto_renewal_paused_until', '<', Carbon::today());
+            })
+            ->where('auto_renewal_failed_count', '<', 3);
     }
 }
