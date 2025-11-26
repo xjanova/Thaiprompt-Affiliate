@@ -431,6 +431,10 @@ Route::prefix('two-factor')->name('two-factor.')->group(function () {
     Route::post('/regenerate-recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])->name('regenerate-recovery-codes');
     Route::delete('/trusted-devices/{fingerprint}', [TwoFactorController::class, 'removeTrustedDevice'])->name('remove-trusted-device');
     Route::delete('/trusted-devices', [TwoFactorController::class, 'removeAllTrustedDevices'])->name('remove-all-trusted-devices');
+
+    // Google Authenticator routes
+    Route::get('/generate-authenticator', [TwoFactorController::class, 'generateAuthenticatorSetup'])->name('generate-authenticator');
+    Route::post('/verify-authenticator-setup', [TwoFactorController::class, 'verifyAuthenticatorSetup'])->name('verify-authenticator-setup');
 });
 
 // Redirect old user shop to main frontend shop
