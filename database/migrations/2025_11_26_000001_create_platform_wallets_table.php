@@ -26,6 +26,8 @@ return new class extends Migration
                 'mlm_pool',         // กองทุน MLM Commission
                 'reserve',          // เงินสำรอง
                 'refund_pool',      // กองทุนคืนเงิน
+                'admin_shop',       // รายได้ร้านแอดมิน
+                'admin_services',   // รายได้บริการแอดมิน
                 'other'             // อื่นๆ
             ])->default('platform_fee');
 
