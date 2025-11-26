@@ -10,6 +10,7 @@ use App\Models\RankPromotion;
 use App\Models\User;
 use App\Services\RankingService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class RankController extends Controller
 {
@@ -200,5 +201,93 @@ class RankController extends Controller
         $promotion->reject($request->input('reason'));
 
         return back()->with('success', 'Promotion rejected');
+    }
+
+    /**
+     * แสดงหน้าจัดการกรอบอวาต้าร์
+     *
+     * จัดการกรอบ Avatar สำหรับแต่ละ Rank
+     */
+    public function avatarFrames()
+    {
+        $ranks = Rank::byLevel()->get();
+
+        return view('admin.ranks.avatar-frames', compact('ranks'));
+    }
+
+    /**
+     * อัพโหลดกรอบอวาต้าร์สำหรับ Rank
+     *
+     * รองรับ PNG, SVG (transparent background)
+     */
+    public function uploadAvatarFrame(Request $request, Rank $rank)
+    {
+        // ✅ ตรวจสอบสิทธิ์ก่อนอัพเดท
+        $this->authorize('update', $rank);
+
+        $validated = $request->validate([
+            'avatar_frame' => 'required|file|mimes:png,svg,webp|max:2048',
+            'frame_animation' => 'nullable|in:none,pulse,glow,sparkle,rotate',
+        ]);
+
+        // ลบไฟล์เก่าถ้ามี
+        if ($rank->avatar_frame) {
+            Storage::disk('public')->delete($rank->avatar_frame);
+        }
+
+        // อัพโหลดไฟล์ใหม่
+        $path = $request->file('avatar_frame')->store('rank-frames', 'public');
+
+        // อัพเดท rank
+        $rank->update([
+            'avatar_frame' => $path,
+            'frame_animation' => $request->input('frame_animation', 'none'),
+        ]);
+
+        return back()->with('success', 'อัพโหลดกรอบอวาต้าร์สำเร็จ!');
+    }
+
+    /**
+     * ลบกรอบอวาต้าร์
+     */
+    public function deleteAvatarFrame(Rank $rank)
+    {
+        // ✅ ตรวจสอบสิทธิ์ก่อนลบ
+        $this->authorize('update', $rank);
+
+        // ลบไฟล์
+        if ($rank->avatar_frame) {
+            Storage::disk('public')->delete($rank->avatar_frame);
+        }
+
+        // อัพเดท rank
+        $rank->update([
+            'avatar_frame' => null,
+            'frame_animation' => null,
+        ]);
+
+        return back()->with('success', 'ลบกรอบอวาต้าร์สำเร็จ!');
+    }
+
+    /**
+     * อัพเดท animation ของกรอบ
+     */
+    public function updateFrameAnimation(Request $request, Rank $rank)
+    {
+        // ✅ ตรวจสอบสิทธิ์ก่อนอัพเดท
+        $this->authorize('update', $rank);
+
+        $validated = $request->validate([
+            'frame_animation' => 'required|in:none,pulse,glow,sparkle,rotate',
+        ]);
+
+        $rank->update([
+            'frame_animation' => $validated['frame_animation'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'อัพเดท animation สำเร็จ!',
+        ]);
     }
 }
