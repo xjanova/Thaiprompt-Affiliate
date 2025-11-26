@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.209.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1665 from xjanova/claude/fix-commission-column-error-014edLTNKujunWpqtECQYYjG (11ce5921)
+- feat: add Admin Shop/Services wallets and Refund system with MLM clawback (0ef1f294)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.208.0] - 2025-11-26
 
 ### ✨ Features
