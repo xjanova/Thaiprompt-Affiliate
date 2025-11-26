@@ -192,10 +192,8 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-12 w-12">
-                                        <img class="h-12 w-12 rounded-xl ring-2 dark:ring-slate-600"
-                                             style="--tw-ring-color: var(--arrow-x-primary-start)"
-                                             src="{{ $user->profile_picture_url }}"
-                                             alt="{{ $user->name }}">
+                                        {{-- ใช้ component เพื่อความสอดคล้องทั้งระบบ --}}
+                                        <x-user-avatar :user="$user" size="lg" ringColor="purple" />
                                     </div>
                                     <div class="ml-4">
                                         <div class="text-sm font-semibold text-gray-900 dark:text-white">

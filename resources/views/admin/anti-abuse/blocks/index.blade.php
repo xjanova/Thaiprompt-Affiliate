@@ -153,9 +153,8 @@
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10">
                                         @if($block->blocker_type === 'user' && $block->blockerUser)
-                                            <img class="h-10 w-10 rounded-full object-cover"
-                                                 src="{{ $block->blockerUser->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($block->blockerUser->name) }}"
-                                                 alt="{{ $block->blockerUser->name }}">
+                                            {{-- ใช้ profile_picture_url ซึ่งเป็น accessor ที่ถูกต้องของ User model --}}
+                                            <x-user-avatar :user="$block->blockerUser" size="md" :ring="false" />
                                         @elseif($block->blocker_type === 'provider' && $block->blockerProvider)
                                             <img class="h-10 w-10 rounded-full object-cover"
                                                  src="{{ $block->blockerProvider->logo_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($block->blockerProvider->name ?? 'P') }}"
@@ -193,9 +192,8 @@
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10">
                                         @if($block->blocked_type === 'user' && $block->blockedUser)
-                                            <img class="h-10 w-10 rounded-full object-cover"
-                                                 src="{{ $block->blockedUser->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($block->blockedUser->name) }}"
-                                                 alt="{{ $block->blockedUser->name }}">
+                                            {{-- ใช้ profile_picture_url ซึ่งเป็น accessor ที่ถูกต้องของ User model --}}
+                                            <x-user-avatar :user="$block->blockedUser" size="md" :ring="false" />
                                         @elseif($block->blocked_type === 'provider' && $block->blockedProvider)
                                             <img class="h-10 w-10 rounded-full object-cover"
                                                  src="{{ $block->blockedProvider->logo_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($block->blockedProvider->name ?? 'P') }}"

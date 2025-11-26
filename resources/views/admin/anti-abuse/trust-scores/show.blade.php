@@ -50,9 +50,10 @@
                     {{-- Avatar --}}
                     <div class="mb-4">
                         @if($trustScore->entity_type === 'user' && $trustScore->user)
-                            <img class="h-24 w-24 rounded-full object-cover mx-auto border-4 border-{{ $trustScore->getTrustLevelColor() }}-500"
-                                 src="{{ $trustScore->user->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($trustScore->user->name) . '&size=96' }}"
-                                 alt="{{ $trustScore->user->name }}">
+                            {{-- ใช้ profile_picture_url ซึ่งเป็น accessor ที่ถูกต้องของ User model --}}
+                            <div class="mx-auto w-24 h-24 border-4 border-{{ $trustScore->getTrustLevelColor() }}-500 rounded-full overflow-hidden">
+                                <x-user-avatar :user="$trustScore->user" size="2xl" :ring="false" class="w-full h-full" />
+                            </div>
                         @elseif($trustScore->entity_type === 'provider' && $trustScore->provider)
                             <img class="h-24 w-24 rounded-full object-cover mx-auto border-4 border-{{ $trustScore->getTrustLevelColor() }}-500"
                                  src="{{ $trustScore->provider->logo_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($trustScore->provider->name ?? 'P') . '&size=96' }}"
