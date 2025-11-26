@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.209.1] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1666 from xjanova/claude/add-platform-revenue-seeder-01ALPwtXuZNDGxQ6D43KRF52 (5a08b50c)
+- fix: add admin_shop and admin_services to platform_wallets ENUM type (4963941c)
+### 🔧 Other Changes
+
+
 ## [v3.209.0] - 2025-11-26
 
 ### ✨ Features
