@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.218.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1680 from xjanova/claude/mlm-binary-tree-structure-01ApLTBGUPSXC66hbkqBJUjR (ebc8b5e0)
+- feat: add genealogy system enable/disable toggle (94c54b4a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.217.1] - 2025-11-26
 
 ### ✨ Features
