@@ -38,7 +38,13 @@ class MlmReferralBonusService
      */
     public function calculateReferralBonus(Order $order): ?MlmCommission
     {
-        // ตรวจสอบว่าเปิดใช้ระบบค่าแนะนำตรงหรือไม่
+        // ตรวจสอบว่าเปิดใช้ระบบผังสายเลือด (Genealogy) หรือไม่
+        if (!MlmGlobalSetting::get('genealogy_enabled', true)) {
+            Log::debug('Genealogy commission system disabled', ['order_id' => $order->id]);
+            return null;
+        }
+
+        // ตรวจสอบว่าเปิดใช้ค่าแนะนำตรงหรือไม่
         if (!MlmGlobalSetting::get('direct_referral_bonus_enabled', true)) {
             Log::debug('Direct referral bonus disabled', ['order_id' => $order->id]);
             return null;

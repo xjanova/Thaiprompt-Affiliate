@@ -455,9 +455,19 @@ class MlmGlobalSettingsSeeder extends Seeder
                 'sort_order' => 81,
             ],
 
-            // Direct Referral Bonus (ค่าแนะนำตรง)
+            // Genealogy System (ผังสายเลือด - ค่าแนะนำตรง)
             // หมายเหตุ: ค่าแนะนำตรงเป็นคนละส่วนกับ PV Commission ของ Unilevel/Binary
-            // จ่ายครั้งเดียวให้ผู้แนะนำตรงจริงๆ (original_sponsor)
+            // จ่ายให้ผู้แนะนำตรงจริงๆ (original_sponsor) ไม่มี spillover
+            [
+                'key' => 'genealogy_enabled',
+                'value' => '1',
+                'type' => 'boolean',
+                'input_type' => 'toggle',
+                'group' => 'referral',
+                'description' => 'Enable Genealogy Commission System (Direct Referral)',
+                'description_th' => 'เปิดใช้ระบบคอมมิชชั่นผังสายเลือด (ค่าแนะนำตรง)',
+                'sort_order' => 89,
+            ],
             [
                 'key' => 'direct_referral_bonus_enabled',
                 'value' => '1',
