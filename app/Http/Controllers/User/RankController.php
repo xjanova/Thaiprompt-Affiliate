@@ -34,12 +34,51 @@ class RankController extends Controller
         // Get leaderboard position
         $leaderboardPosition = $this->getUserLeaderboardPosition($user);
 
+        // ดึงเงื่อนไขและโบนัสของ Rank ปัจจุบัน
+        $currentRankRequirements = $currentRank?->activeRequirements()
+            ->orderBy('weight')
+            ->get() ?? collect();
+        $currentRankBonuses = $currentRank?->activeBonuses()
+            ->orderBy('priority')
+            ->get() ?? collect();
+        $currentRankPrivileges = $currentRank?->getPrivilegesWithDescriptions() ?? [];
+
+        // ดึงเงื่อนไขและโบนัสของ Rank ถัดไป พร้อมความคืบหน้า
+        $nextRankRequirements = $nextRank?->activeRequirements()
+            ->orderBy('weight')
+            ->get() ?? collect();
+        $nextRankRequirementsProgress = [];
+        foreach ($nextRankRequirements as $req) {
+            $nextRankRequirementsProgress[$req->id] = [
+                'current' => $req->getUserCurrentValue($user),
+                'target' => $req->target_value,
+                'percentage' => $req->getProgressPercentage($user),
+                'met' => $req->checkUserMeetsRequirement($user),
+            ];
+        }
+
+        $nextRankBonuses = $nextRank?->activeBonuses()
+            ->orderBy('priority')
+            ->get() ?? collect();
+        $nextRankPrivileges = $nextRank?->getPrivilegesWithDescriptions() ?? [];
+
+        // ดึง Ranks ทั้งหมดสำหรับแสดง roadmap
+        $allRanks = Rank::active()->byLevel()->with(['activeRequirements', 'activeBonuses'])->get();
+
         return view('user.ranks.dashboard', compact(
             'user',
             'currentRank',
             'nextRank',
             'nextRankProgress',
-            'leaderboardPosition'
+            'leaderboardPosition',
+            'currentRankRequirements',
+            'currentRankBonuses',
+            'currentRankPrivileges',
+            'nextRankRequirements',
+            'nextRankRequirementsProgress',
+            'nextRankBonuses',
+            'nextRankPrivileges',
+            'allRanks'
         ));
     }
 

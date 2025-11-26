@@ -489,6 +489,26 @@ Route::prefix('ranks')->name('ranks.')->group(function () {
     Route::get('/promotions', [RankController::class, 'promotions'])->name('promotions.index');
     Route::post('/promotions/{promotion}/approve', [RankController::class, 'approvePromotion'])->name('promotions.approve');
     Route::post('/promotions/{promotion}/reject', [RankController::class, 'rejectPromotion'])->name('promotions.reject');
+
+    // Avatar Frames Management
+    Route::get('/avatar-frames', [RankController::class, 'avatarFrames'])->name('avatar-frames');
+    Route::post('/{rank}/upload-frame', [RankController::class, 'uploadAvatarFrame'])->name('upload-frame');
+    Route::delete('/{rank}/delete-frame', [RankController::class, 'deleteAvatarFrame'])->name('delete-frame');
+    Route::post('/{rank}/update-animation', [RankController::class, 'updateFrameAnimation'])->name('update-animation');
+
+    // Rank Settings (Requirements & Bonuses Management)
+    Route::get('/{rank}/settings', [RankController::class, 'settings'])->name('settings');
+    Route::post('/{rank}/privileges', [RankController::class, 'updatePrivileges'])->name('update-privileges');
+
+    // Requirements Management
+    Route::post('/{rank}/requirements', [RankController::class, 'storeRequirement'])->name('requirements.store');
+    Route::put('/requirements/{requirement}', [RankController::class, 'updateRequirement'])->name('requirements.update');
+    Route::delete('/requirements/{requirement}', [RankController::class, 'deleteRequirement'])->name('requirements.destroy');
+
+    // Bonuses Management
+    Route::post('/{rank}/bonuses', [RankController::class, 'storeBonus'])->name('bonuses.store');
+    Route::put('/bonuses/{bonus}', [RankController::class, 'updateBonus'])->name('bonuses.update');
+    Route::delete('/bonuses/{bonus}', [RankController::class, 'deleteBonus'])->name('bonuses.destroy');
 });
 
 // Virtual ID Card Designer

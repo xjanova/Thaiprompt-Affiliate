@@ -20,6 +20,8 @@ class Rank extends Model
         'icon',
         'color',
         'badge_icon',
+        'avatar_frame',
+        'frame_animation',
         'stars',
         'commission_rate',
         'bonus_multiplier',
@@ -181,6 +183,39 @@ class Rank extends Model
         }
 
         return asset($this->badge_icon);
+    }
+
+    /**
+     * Get avatar frame URL
+     * คืนค่า URL กรอบอวาต้าร์ที่อัพโหลดโดย Admin
+     */
+    public function getAvatarFrameUrlAttribute(): ?string
+    {
+        if (!$this->avatar_frame) {
+            return null;
+        }
+
+        if (str_starts_with($this->avatar_frame, 'http')) {
+            return $this->avatar_frame;
+        }
+
+        return asset('storage/' . $this->avatar_frame);
+    }
+
+    /**
+     * ตรวจสอบว่ามีกรอบอวาต้าร์ custom หรือไม่
+     */
+    public function hasCustomFrame(): bool
+    {
+        return !empty($this->avatar_frame);
+    }
+
+    /**
+     * ดึงประเภท animation ของกรอบ
+     */
+    public function getFrameAnimationType(): string
+    {
+        return $this->frame_animation ?? 'none';
     }
 
     /**

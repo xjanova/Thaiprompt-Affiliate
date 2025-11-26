@@ -10,6 +10,7 @@ use App\Models\RankPromotion;
 use App\Models\User;
 use App\Services\RankingService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class RankController extends Controller
 {
@@ -200,5 +201,289 @@ class RankController extends Controller
         $promotion->reject($request->input('reason'));
 
         return back()->with('success', 'Promotion rejected');
+    }
+
+    /**
+     * แสดงหน้าจัดการกรอบอวาต้าร์
+     *
+     * จัดการกรอบ Avatar สำหรับแต่ละ Rank
+     */
+    public function avatarFrames()
+    {
+        $ranks = Rank::byLevel()->get();
+
+        return view('admin.ranks.avatar-frames', compact('ranks'));
+    }
+
+    /**
+     * อัพโหลดกรอบอวาต้าร์สำหรับ Rank
+     *
+     * รองรับ PNG, SVG (transparent background)
+     */
+    public function uploadAvatarFrame(Request $request, Rank $rank)
+    {
+        // ✅ ตรวจสอบสิทธิ์ก่อนอัพเดท
+        $this->authorize('update', $rank);
+
+        $validated = $request->validate([
+            'avatar_frame' => 'required|file|mimes:png,svg,webp|max:2048',
+            'frame_animation' => 'nullable|in:none,pulse,glow,sparkle,rotate',
+        ]);
+
+        // ลบไฟล์เก่าถ้ามี
+        if ($rank->avatar_frame) {
+            Storage::disk('public')->delete($rank->avatar_frame);
+        }
+
+        // อัพโหลดไฟล์ใหม่
+        $path = $request->file('avatar_frame')->store('rank-frames', 'public');
+
+        // อัพเดท rank
+        $rank->update([
+            'avatar_frame' => $path,
+            'frame_animation' => $request->input('frame_animation', 'none'),
+        ]);
+
+        return back()->with('success', 'อัพโหลดกรอบอวาต้าร์สำเร็จ!');
+    }
+
+    /**
+     * ลบกรอบอวาต้าร์
+     */
+    public function deleteAvatarFrame(Rank $rank)
+    {
+        // ✅ ตรวจสอบสิทธิ์ก่อนลบ
+        $this->authorize('update', $rank);
+
+        // ลบไฟล์
+        if ($rank->avatar_frame) {
+            Storage::disk('public')->delete($rank->avatar_frame);
+        }
+
+        // อัพเดท rank
+        $rank->update([
+            'avatar_frame' => null,
+            'frame_animation' => null,
+        ]);
+
+        return back()->with('success', 'ลบกรอบอวาต้าร์สำเร็จ!');
+    }
+
+    /**
+     * อัพเดท animation ของกรอบ
+     */
+    public function updateFrameAnimation(Request $request, Rank $rank)
+    {
+        // ✅ ตรวจสอบสิทธิ์ก่อนอัพเดท
+        $this->authorize('update', $rank);
+
+        $validated = $request->validate([
+            'frame_animation' => 'required|in:none,pulse,glow,sparkle,rotate',
+        ]);
+
+        $rank->update([
+            'frame_animation' => $validated['frame_animation'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'อัพเดท animation สำเร็จ!',
+        ]);
+    }
+
+    // ============================================
+    // จัดการเงื่อนไขและรางวัล Rank
+    // ============================================
+
+    /**
+     * แสดงหน้าตั้งค่าเงื่อนไขและรางวัลของ Rank
+     *
+     * แสดงรายการ Requirements และ Bonuses สำหรับ Rank ที่เลือก
+     */
+    public function settings(Rank $rank)
+    {
+        $this->authorize('update', $rank);
+
+        $rank->load(['requirements', 'bonuses']);
+
+        // ดึงรายการสิทธิพิเศษที่มีในระบบ
+        $availablePrivileges = Rank::getAvailablePrivileges();
+
+        // ดึง requirement types ที่รองรับ
+        $requirementTypes = [
+            'points' => ['name' => 'คะแนนสะสม', 'icon' => '🎯', 'unit' => 'คะแนน'],
+            'referrals' => ['name' => 'จำนวนคนแนะนำโดยตรง', 'icon' => '👥', 'unit' => 'คน'],
+            'sales' => ['name' => 'ยอดขายส่วนตัว', 'icon' => '💰', 'unit' => 'บาท'],
+            'active_referrals' => ['name' => 'คนแนะนำที่ Active', 'icon' => '✅', 'unit' => 'คน'],
+            'team_sales' => ['name' => 'ยอดขายทีม', 'icon' => '📊', 'unit' => 'บาท'],
+            'consecutive_months' => ['name' => 'จำนวนเดือนต่อเนื่อง', 'icon' => '📅', 'unit' => 'เดือน'],
+            'diamond_legs' => ['name' => 'ลูกทีมระดับ Diamond', 'icon' => '💎', 'unit' => 'คน'],
+            'crown_legs' => ['name' => 'ลูกทีมระดับ Crown', 'icon' => '👑', 'unit' => 'คน'],
+            'royal_legs' => ['name' => 'ลูกทีมระดับ Royal', 'icon' => '🏆', 'unit' => 'คน'],
+        ];
+
+        // ดึง bonus types ที่รองรับ
+        $bonusTypes = [
+            'one_time' => ['name' => 'โบนัสครั้งเดียว', 'icon' => '💰', 'description' => 'รับเมื่อเลื่อนระดับ'],
+            'monthly' => ['name' => 'โบนัสรายเดือน', 'icon' => '📆', 'description' => 'รับทุกเดือน'],
+            'commission' => ['name' => 'เพิ่มค่าคอมมิชชั่น', 'icon' => '📈', 'description' => 'เพิ่มเปอร์เซ็นต์คอมฯ'],
+            'multiplier' => ['name' => 'ตัวคูณรายได้', 'icon' => '✖️', 'description' => 'คูณรายได้ทั้งหมด'],
+        ];
+
+        return view('admin.ranks.settings', compact(
+            'rank',
+            'availablePrivileges',
+            'requirementTypes',
+            'bonusTypes'
+        ));
+    }
+
+    /**
+     * สร้างเงื่อนไขใหม่สำหรับ Rank
+     */
+    public function storeRequirement(Request $request, Rank $rank)
+    {
+        $this->authorize('update', $rank);
+
+        $validated = $request->validate([
+            'requirement_type' => 'required|string|in:points,referrals,sales,active_referrals,team_sales,consecutive_months,diamond_legs,crown_legs,royal_legs',
+            'name' => 'required|string|max:255',
+            'name_th' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'description_th' => 'nullable|string',
+            'target_value' => 'required|numeric|min:0',
+            'operator' => 'required|in:>=,>,=,<=,<',
+            'unit' => 'nullable|string|max:50',
+            'is_required' => 'boolean',
+            'weight' => 'integer|min:0',
+        ]);
+
+        $validated['rank_id'] = $rank->id;
+        $validated['is_active'] = true;
+
+        RankRequirement::create($validated);
+
+        return back()->with('success', 'เพิ่มเงื่อนไขสำเร็จ!');
+    }
+
+    /**
+     * อัพเดทเงื่อนไข
+     */
+    public function updateRequirement(Request $request, RankRequirement $requirement)
+    {
+        $this->authorize('update', $requirement->rank);
+
+        $validated = $request->validate([
+            'requirement_type' => 'required|string|in:points,referrals,sales,active_referrals,team_sales,consecutive_months,diamond_legs,crown_legs,royal_legs',
+            'name' => 'required|string|max:255',
+            'name_th' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'description_th' => 'nullable|string',
+            'target_value' => 'required|numeric|min:0',
+            'operator' => 'required|in:>=,>,=,<=,<',
+            'unit' => 'nullable|string|max:50',
+            'is_required' => 'boolean',
+            'weight' => 'integer|min:0',
+            'is_active' => 'boolean',
+        ]);
+
+        $requirement->update($validated);
+
+        return back()->with('success', 'อัพเดทเงื่อนไขสำเร็จ!');
+    }
+
+    /**
+     * ลบเงื่อนไข
+     */
+    public function deleteRequirement(RankRequirement $requirement)
+    {
+        $this->authorize('update', $requirement->rank);
+
+        $requirement->delete();
+
+        return back()->with('success', 'ลบเงื่อนไขสำเร็จ!');
+    }
+
+    /**
+     * สร้างโบนัส/รางวัลใหม่สำหรับ Rank
+     */
+    public function storeBonus(Request $request, Rank $rank)
+    {
+        $this->authorize('update', $rank);
+
+        $validated = $request->validate([
+            'bonus_type' => 'required|string|in:one_time,monthly,commission,multiplier',
+            'name' => 'required|string|max:255',
+            'name_th' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'description_th' => 'nullable|string',
+            'amount' => 'nullable|numeric|min:0',
+            'percentage' => 'nullable|numeric|min:0|max:100',
+            'auto_apply' => 'boolean',
+            'priority' => 'integer|min:0',
+        ]);
+
+        $validated['rank_id'] = $rank->id;
+        $validated['is_active'] = true;
+
+        RankBonus::create($validated);
+
+        return back()->with('success', 'เพิ่มโบนัส/รางวัลสำเร็จ!');
+    }
+
+    /**
+     * อัพเดทโบนัส/รางวัล
+     */
+    public function updateBonus(Request $request, RankBonus $bonus)
+    {
+        $this->authorize('update', $bonus->rank);
+
+        $validated = $request->validate([
+            'bonus_type' => 'required|string|in:one_time,monthly,commission,multiplier',
+            'name' => 'required|string|max:255',
+            'name_th' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'description_th' => 'nullable|string',
+            'amount' => 'nullable|numeric|min:0',
+            'percentage' => 'nullable|numeric|min:0|max:100',
+            'auto_apply' => 'boolean',
+            'priority' => 'integer|min:0',
+            'is_active' => 'boolean',
+        ]);
+
+        $bonus->update($validated);
+
+        return back()->with('success', 'อัพเดทโบนัส/รางวัลสำเร็จ!');
+    }
+
+    /**
+     * ลบโบนัส/รางวัล
+     */
+    public function deleteBonus(RankBonus $bonus)
+    {
+        $this->authorize('update', $bonus->rank);
+
+        $bonus->delete();
+
+        return back()->with('success', 'ลบโบนัส/รางวัลสำเร็จ!');
+    }
+
+    /**
+     * อัพเดทสิทธิพิเศษของ Rank
+     */
+    public function updatePrivileges(Request $request, Rank $rank)
+    {
+        $this->authorize('update', $rank);
+
+        $validated = $request->validate([
+            'privileges' => 'nullable|array',
+            'privileges.*' => 'string|in:' . implode(',', array_keys(Rank::getAvailablePrivileges())),
+        ]);
+
+        $rank->update([
+            'privileges' => $validated['privileges'] ?? [],
+        ]);
+
+        return back()->with('success', 'อัพเดทสิทธิพิเศษสำเร็จ!');
     }
 }
