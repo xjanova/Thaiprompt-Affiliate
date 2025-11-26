@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.198.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1644 from xjanova/claude/improve-mlm-system-theme-01H6euxkokeFHjYmKAKgjtTe (0fa9230f)
+- feat: เพิ่มระบบรักษายอดอัตโนมัติ (Auto-Renewal) และ Status Bar (833e26e8)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.197.0] - 2025-11-26
 
 ### ✨ Features
