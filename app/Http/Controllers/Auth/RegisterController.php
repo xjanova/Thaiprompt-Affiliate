@@ -144,23 +144,25 @@ class RegisterController extends Controller
         $mlmMember = MlmMember::create([
             'user_id' => $user->id,
             'mlm_plan_id' => $defaultPlan?->id,
+            // original_sponsor_id: ผู้แนะนำตรงจริงๆ (ใช้รหัสของใคร) → ใช้สำหรับค่าแนะนำตรง
+            'original_sponsor_id' => $parentMember?->id,
+            // unilevel_sponsor_id: parent ใน Unilevel tree (อาจ spillover ไปคนอื่น)
             'unilevel_sponsor_id' => $unilevelPlacement['sponsor_id'] ?? $parentMember?->id,
             'unilevel_level' => $unilevelPlacement['level'] ?? ($parentMember ? $parentMember->unilevel_level + 1 : 1),
             'unilevel_path' => $unilevelPlacement['path'] ?? ($parentMember ? $parentMember->unilevel_path . '/' . $parentMember->id : '/' . $user->id),
-            'binary_sponsor_id' => $parentMember?->id, // Binary sponsor ยังคงเป็นผู้แนะนำเดิม
+            // binary_sponsor_id: parent ใน Binary tree (ตามกลยุทธ์ที่ตั้งค่า)
+            'binary_sponsor_id' => $parentMember?->id,
             'member_code' => MlmMember::generateMemberCode(),
             'status' => 'active',
             'is_qualified' => true,
             'joined_at' => now(),
         ]);
 
-        // Update actual unilevel sponsor's referral count (อาจไม่ใช่ parentMember ถ้ามี spillover)
-        $actualUnilevelSponsor = $unilevelPlacement['sponsor_id']
-            ? MlmMember::find($unilevelPlacement['sponsor_id'])
-            : $parentMember;
-
-        if ($actualUnilevelSponsor) {
-            $actualUnilevelSponsor->increment('total_direct_referrals');
+        // Update original sponsor's direct referral count (ผู้แนะนำตรงจริงๆ)
+        // total_direct_referrals นับจากผู้ที่ใช้รหัสแนะนำจริงๆ (original_sponsor)
+        // ไม่ใช่ unilevel_sponsor ซึ่งอาจเปลี่ยนไปจากการ spillover
+        if ($parentMember) {
+            $parentMember->increment('total_direct_referrals');
         }
 
         // จัดวางใน Binary Tree (ใช้การจัดวางที่ตั้งค่าได้แบบเดิม)
