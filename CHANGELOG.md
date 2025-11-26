@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.204.1] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1656 from xjanova/claude/fix-rank-seeder-duplicates-0195Yukhi5QS8WayGFSm1w17 (541a2189)
+- fix: add missing leg requirement types to rank_requirements ENUM (4ab1f940)
+### 🔧 Other Changes
+
+
 ## [v3.204.0] - 2025-11-26
 
 ### ✨ Features
