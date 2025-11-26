@@ -343,6 +343,79 @@
                 </div>
             </div>
 
+            {{-- PV System Settings --}}
+            <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                <div class="bg-gradient-to-r from-orange-600 to-amber-600 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-3">
+                        <i class="fas fa-coins"></i>
+                        PV System (Point Value)
+                    </h2>
+                    <p class="text-sm text-white/80 mt-1">ตั้งค่าอัตราแปลง PV เป็นเงินคอมมิชชั่น</p>
+                </div>
+
+                <div class="p-6 space-y-6">
+                    {{-- Commission per PV --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                            <i class="fas fa-exchange-alt text-orange-500 mr-2"></i>
+                            อัตราแปลง PV เป็นเงิน (บาท/PV)
+                        </label>
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1 relative">
+                                <input type="number"
+                                       x-model.number="settings.commission_per_pv"
+                                       min="0" max="1000" step="0.01"
+                                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl pr-16">
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">บาท/PV</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            กำหนดว่า 1 PV จะแปลงเป็นเงินเท่าไหร่สำหรับคำนวณคอมมิชชั่น
+                        </p>
+                    </div>
+
+                    {{-- Example Calculation --}}
+                    <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
+                        <h4 class="text-sm font-semibold text-orange-800 dark:text-orange-300 mb-3 flex items-center gap-2">
+                            <i class="fas fa-calculator"></i>
+                            ตัวอย่างการคำนวณ
+                        </h4>
+                        <div class="text-sm text-orange-700 dark:text-orange-400 space-y-2">
+                            <p>
+                                <span class="font-medium">สินค้ามี PV:</span> 100 PV
+                            </p>
+                            <p>
+                                <span class="font-medium">อัตราแปลง:</span>
+                                <span x-text="settings.commission_per_pv || 1"></span> บาท/PV
+                            </p>
+                            <p>
+                                <span class="font-medium">มูลค่าคอมมิชชั่นฐาน:</span>
+                                <span class="text-lg font-bold" x-text="(100 * (settings.commission_per_pv || 1)).toLocaleString()"></span> บาท
+                            </p>
+                            <div class="pt-2 border-t border-orange-200 dark:border-orange-700 mt-2">
+                                <p class="text-xs opacity-80">
+                                    * จากนั้นจะนำไปคูณกับ % คอมมิชชั่นของแต่ละระดับ (Unilevel/Binary)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Info Box --}}
+                    <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                        <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
+                            <i class="fas fa-lightbulb"></i>
+                            หมายเหตุสำคัญ
+                        </h4>
+                        <ul class="text-xs text-blue-700 dark:text-blue-400 space-y-1 list-disc list-inside">
+                            <li>PV ของสินค้า/บริการ กำหนดโดยผู้ขายในหน้าจัดการสินค้า</li>
+                            <li>สินค้าที่ไม่มี PV จะไม่เข้าระบบ MLM (เช่น การเติมเงิน Wallet)</li>
+                            <li>คอมมิชชั่นจะถูกหักจากยอดขายก่อนโอนให้ร้านค้า</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             {{-- Direct Referral & Other Settings --}}
             <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div class="bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4">
@@ -529,6 +602,7 @@ function mlmSettings() {
             direct_referral_commission: 5,
             min_pv_for_commission: 100,
             matching_bonus: 3,
+            commission_per_pv: 1,
         },
         unilevelPercentages: [5, 3, 2, 1, 1],
         saving: false,
@@ -556,6 +630,7 @@ function mlmSettings() {
                             direct_referral_commission: parseFloat(data.settings.direct_referral_commission) || 5,
                             min_pv_for_commission: parseFloat(data.settings.min_pv_for_commission) || 100,
                             matching_bonus: parseFloat(data.settings.matching_bonus) || 3,
+                            commission_per_pv: parseFloat(data.settings.commission_per_pv) || 1,
                         };
 
                         // Load unilevel percentages
@@ -628,6 +703,7 @@ function mlmSettings() {
                         direct_referral_commission: this.settings.direct_referral_commission,
                         min_pv_for_commission: this.settings.min_pv_for_commission,
                         matching_bonus: this.settings.matching_bonus,
+                        commission_per_pv: this.settings.commission_per_pv,
                     }),
                 });
 
