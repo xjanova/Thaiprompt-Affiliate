@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.202.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1653 from xjanova/claude/virtual-id-cards-01Wsax8cHKsT6dcMUdmfL85b (564b01d6)
+- feat: add Virtual ID Card system with rank-based styling (70907167)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.201.0] - 2025-11-26
 
 ### ✨ Features
