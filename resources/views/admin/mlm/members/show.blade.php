@@ -43,7 +43,7 @@
                     <div class="flex items-center gap-3 mt-2 flex-wrap">
                         <span class="inline-flex items-center px-3 py-1 text-xs rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 font-medium">
                             <i class="fas fa-layer-group mr-1"></i>
-                            {{ $member->plan->display_name }}
+                            {{ $member->plan?->display_name ?? 'ไม่มีแผน' }}
                         </span>
                         <span class="inline-flex items-center px-3 py-1 text-xs rounded-full font-semibold
                             {{ $member->status === 'active' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' : '' }}
