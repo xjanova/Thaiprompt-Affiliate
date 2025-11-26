@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.221.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1688 from xjanova/claude/audit-mlm-system-01MzPSmgezEVn3qRUX7nxozs (e1084621)
+- feat: เพิ่มระบบ Rebuild Unilevel Tree จาก Genealogy + Roll-up Tracking (00de33c9)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.220.3] - 2025-11-26
 
 ### ✨ Features
