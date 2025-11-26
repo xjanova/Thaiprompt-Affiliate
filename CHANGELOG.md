@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.204.2] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1657 from xjanova/claude/fix-genealogy-null-error-01RzmHHLVr6zM5Xmrmy8h4Fn (8544a574)
+- fix: แก้ไข null error สำหรับ $member->plan ในทุกหน้า MLM (777e8d17)
+### 🔧 Other Changes
+
+
 ## [v3.204.1] - 2025-11-26
 
 ### ✨ Features
