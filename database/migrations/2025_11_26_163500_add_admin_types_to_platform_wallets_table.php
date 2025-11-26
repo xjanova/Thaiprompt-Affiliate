@@ -20,6 +20,14 @@ return new class extends Migration
             return;
         }
 
+        // ตรวจสอบว่า ENUM มี admin_shop อยู่แล้วหรือไม่
+        $columnType = DB::selectOne("SHOW COLUMNS FROM platform_wallets WHERE Field = 'type'");
+
+        if ($columnType && str_contains($columnType->Type, 'admin_shop')) {
+            // ENUM มี admin_shop อยู่แล้ว ไม่ต้องทำอะไร
+            return;
+        }
+
         // แก้ไข ENUM เพื่อเพิ่ม values ใหม่
         DB::statement("ALTER TABLE platform_wallets MODIFY COLUMN type ENUM(
             'platform_fee',
