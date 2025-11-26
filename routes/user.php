@@ -23,11 +23,15 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Redirect root /user to /user/dashboard
+// Redirect root /user to /user/home (หน้าหลักแบบ App-Like)
 Route::get('/', function () {
-    return redirect()->route('user.dashboard');
+    return redirect()->route('user.home');
 });
 
+// หน้าหลักแบบ App-Like Interface (Hub Navigation)
+Route::get('/home', [DashboardController::class, 'home'])->name('home');
+
+// หน้า Dashboard แบบเดิม (Stats, Charts, Activities)
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
 Route::put('/profile', [DashboardController::class, 'updateProfile'])

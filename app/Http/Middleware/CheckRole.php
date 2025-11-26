@@ -51,6 +51,6 @@ class CheckRole
             return redirect()->route('seller.dashboard')->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         }
 
-        return redirect()->route('user.dashboard')->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
+        return redirect()->route('user.home')->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
     }
 }
