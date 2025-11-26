@@ -1,17 +1,16 @@
 {{--
 /**
- * Dashboard Rank Header - Welcome Header ที่เปลี่ยนตาม Rank
+ * Dashboard Rank Header - Welcome Header ที่เปลี่ยนตาม Rank (V3.1 - ลดความฟุ้ง)
  *
- * ออกแบบให้แตกต่างกัน 8 ระดับ:
- * Level 1-2: Standard gradient
- * Level 3-4: Enhanced gradient + shine
- * Level 5-6: Premium gradient + glow
- * Level 7-8: Legendary gradient + animated effects
+ * ออกแบบให้สวยงามแต่ไม่รบกวนสายตา:
+ * - Gradient พื้นหลังตาม Rank
+ * - ลด animations ที่ไม่จำเป็น
+ * - เอา particles ออก
  *
  * @var int $rankLevel ระดับ Rank (1-8)
  * @var \App\Models\User $user
  * @var \App\Models\Rank|null $currentRank
- * @version 1.0.0
+ * @version 3.1.0 (ลดความฟุ้ง)
  * @date 2025-11-26
  */
 --}}
@@ -44,61 +43,17 @@
         8 => '⭐', // Legend
     ];
     $rankBadge = $rankBadges[$rankLevel] ?? $rankBadges[1];
-
-    // Additional Effects
-    $hasGlow = $rankLevel >= 5;
-    $hasShine = $rankLevel >= 3;
-    $hasPulse = $rankLevel >= 7;
-    $hasParticles = $rankLevel >= 6;
 @endphp
 
 <x-arrow-x.card-v3
     class="bg-gradient-to-br {{ $headerGradient }} overflow-hidden relative
-        {{ $hasGlow ? 'shadow-2xl shadow-current/30' : '' }}
-        {{ $rankLevel >= 8 ? 'ring-2 ring-pink-400/50 animate-glow-legend' : '' }}
-        {{ $rankLevel >= 6 ? 'ring-2 ring-yellow-400/30' : '' }}">
+        {{ $rankLevel >= 6 ? 'ring-1 ring-white/20' : '' }}">
 
-    {{-- Background Pattern - เปลี่ยนตาม Rank --}}
+    {{-- Background Pattern - เรียบง่าย --}}
     <div class="absolute inset-0 opacity-10">
-        @if($rankLevel >= 8)
-            {{-- Legend: Aurora effect --}}
-            <div class="absolute inset-0 animate-spin-very-slow" style="animation-duration: 20s;">
-                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-pink-400/30 to-transparent transform rotate-45"></div>
-                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent transform -rotate-45"></div>
-            </div>
-        @elseif($rankLevel >= 6)
-            {{-- Crown/Royal: Multiple orbs --}}
-            <div class="absolute top-0 left-0 w-72 h-72 bg-white rounded-full filter blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 right-0 w-72 h-72 bg-white rounded-full filter blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-white rounded-full filter blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
-        @elseif($rankLevel >= 4)
-            {{-- Platinum/Diamond: Holographic shine --}}
-            <div class="absolute top-0 left-0 w-64 h-64 bg-white rounded-full filter blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 right-0 w-64 h-64 bg-white rounded-full filter blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
-            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
-        @else
-            {{-- Bronze/Silver/Gold: Standard orbs --}}
-            <div class="absolute top-0 left-0 w-64 h-64 bg-white rounded-full filter blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 right-0 w-64 h-64 bg-white rounded-full filter blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
-        @endif
+        <div class="absolute top-0 left-0 w-64 h-64 bg-white rounded-full filter blur-3xl"></div>
+        <div class="absolute bottom-0 right-0 w-64 h-64 bg-white rounded-full filter blur-3xl"></div>
     </div>
-
-    {{-- Shine Effect (Gold+) --}}
-    @if($hasShine)
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-shimmer"></div>
-    </div>
-    @endif
-
-    {{-- Particle Effects (Crown+) --}}
-    @if($hasParticles)
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        @for($i = 0; $i < ($rankLevel >= 8 ? 8 : 5); $i++)
-            <div class="absolute w-1 h-1 bg-white rounded-full animate-sparkle"
-                 style="top: {{ rand(10, 90) }}%; left: {{ rand(10, 90) }}%; animation-delay: {{ $i * 0.3 }}s;"></div>
-        @endfor
-    </div>
-    @endif
 
     {{-- Main Content --}}
     <div class="relative z-10 flex flex-col md:flex-row items-center gap-6 p-2">
@@ -109,7 +64,7 @@
                 :rank-level="$rankLevel"
                 size="lg"
                 :show-badge="$rankLevel >= 3"
-                :animate="true"
+                :animate="false"
                 class="drop-shadow-xl"
             />
         </div>
@@ -117,8 +72,7 @@
         {{-- Welcome Text --}}
         <div class="flex-1 text-center md:text-left text-white">
             <div class="text-white/80 text-sm mb-1">ยินดีต้อนรับกลับมา</div>
-            <h1 class="text-3xl md:text-4xl font-bold mb-2 drop-shadow-lg flex items-center justify-center md:justify-start gap-3 flex-wrap
-                {{ $rankLevel >= 8 ? 'animate-glow-text' : '' }}">
+            <h1 class="text-3xl md:text-4xl font-bold mb-2 drop-shadow-lg flex items-center justify-center md:justify-start gap-3 flex-wrap">
                 {{ $user->name }}
 
                 {{-- KYC Verified Badge --}}
@@ -133,13 +87,10 @@
             </h1>
             <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
                 @if($currentRank)
-                <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-lg rounded-full px-4 py-2 shadow-lg
-                    {{ $rankLevel >= 6 ? 'ring-2 ring-white/30' : '' }}
-                    {{ $rankLevel >= 8 ? 'animate-pulse-slow' : '' }}">
+                <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-lg rounded-full px-4 py-2 shadow-lg">
                     <span class="text-xl">{{ $rankBadge }}</span>
                     <span class="text-white/80 text-sm">Rank:</span>
-                    <span class="font-bold
-                        {{ $rankLevel >= 5 ? 'drop-shadow-lg' : '' }}">
+                    <span class="font-bold">
                         {{ $currentRank->name_th ?? $currentRank->name }}
                     </span>
                     @if($rankLevel >= 4)
@@ -152,7 +103,7 @@
                 @if(isset($kycStatus))
                     @if($user->isKycPending())
                         <a href="{{ route('user.kyc.index') }}"
-                           class="inline-flex items-center gap-2 bg-yellow-500/90 backdrop-blur-lg rounded-full px-4 py-2 shadow-lg hover:bg-yellow-600 transition-all animate-pulse">
+                           class="inline-flex items-center gap-2 bg-yellow-500/90 backdrop-blur-lg rounded-full px-4 py-2 shadow-lg hover:bg-yellow-600 transition-all">
                             <i class="fas fa-hourglass-half text-white"></i>
                             <span class="text-white text-sm font-semibold">KYC รอตรวจสอบ</span>
                         </a>
@@ -176,101 +127,28 @@
             </div>
         </div>
 
-        {{-- Member Number with Rank Decoration --}}
+        {{-- Member Number --}}
         @if($user->member_number)
         <div class="flex-shrink-0 text-center md:text-right text-white">
             <div class="text-white/60 text-xs mb-1">รหัสสมาชิก</div>
             <div class="font-mono text-xl font-bold drop-shadow-lg flex items-center gap-2 justify-center md:justify-end">
-                @if($rankLevel >= 6)
-                    <span class="text-yellow-300">★</span>
-                @endif
                 {{ $user->member_number }}
-                @if($rankLevel >= 6)
-                    <span class="text-yellow-300">★</span>
-                @endif
             </div>
             @if($rankLevel >= 5)
             <div class="text-xs text-white/50 mt-1">
-                {{ $rankLevel >= 8 ? '🌟 ตำนาน' : ($rankLevel >= 7 ? '👑 รอยัล' : ($rankLevel >= 6 ? '✨ มงกุฎ' : '💎 VIP')) }}
+                {{ $rankLevel >= 8 ? 'ตำนาน' : ($rankLevel >= 7 ? 'รอยัล' : ($rankLevel >= 6 ? 'มงกุฎ' : 'VIP')) }}
             </div>
             @endif
         </div>
         @endif
     </div>
 
-    {{-- Bottom Decorative Border (Rank 5+) --}}
+    {{-- Bottom Decorative Border (Rank 5+) - Static --}}
     @if($rankLevel >= 5)
     <div class="absolute bottom-0 left-0 right-0 h-1
-        {{ $rankLevel >= 8 ? 'bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 animate-gradient-x' : '' }}
+        {{ $rankLevel >= 8 ? 'bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400' : '' }}
         {{ $rankLevel >= 6 && $rankLevel < 8 ? 'bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-400' : '' }}
         {{ $rankLevel >= 5 && $rankLevel < 6 ? 'bg-gradient-to-r from-cyan-400 via-blue-400 to-sky-400' : '' }}
         "></div>
     @endif
 </x-arrow-x.card-v3>
-
-<style>
-    /* Header-specific animations */
-    @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
-    }
-
-    @keyframes glow-legend {
-        0%, 100% { box-shadow: 0 0 30px rgba(236, 72, 153, 0.3), 0 0 60px rgba(139, 92, 246, 0.2); }
-        50% { box-shadow: 0 0 50px rgba(236, 72, 153, 0.5), 0 0 100px rgba(139, 92, 246, 0.3); }
-    }
-
-    @keyframes glow-text {
-        0%, 100% { text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
-        50% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 30px rgba(255, 255, 255, 0.4); }
-    }
-
-    @keyframes gradient-x {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-
-    @keyframes bounce-slow {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-5px); }
-    }
-
-    .animate-shimmer {
-        animation: shimmer 3s infinite;
-    }
-
-    .animate-glow-legend {
-        animation: glow-legend 3s ease-in-out infinite;
-    }
-
-    .animate-glow-text {
-        animation: glow-text 2s ease-in-out infinite;
-    }
-
-    .animate-gradient-x {
-        background-size: 200% 200%;
-        animation: gradient-x 3s ease infinite;
-    }
-
-    .animate-bounce-slow {
-        animation: bounce-slow 2s ease-in-out infinite;
-    }
-
-    .animate-pulse-slow {
-        animation: pulse 3s ease-in-out infinite;
-    }
-
-    .animate-spin-very-slow {
-        animation: spin 30s linear infinite;
-    }
-
-    .animate-sparkle {
-        animation: sparkle 2s ease-in-out infinite;
-    }
-
-    @keyframes sparkle {
-        0%, 100% { opacity: 0; transform: scale(0); }
-        50% { opacity: 1; transform: scale(1); }
-    }
-</style>
