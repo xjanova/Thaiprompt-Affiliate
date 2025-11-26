@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.217.1] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1679 from xjanova/claude/update-shop-theme-018sX7nJyV9ou5ZQcDtUyTqw (8b1baae8)
+- fix: correct seller.analytics route to seller.analytics.index (9174787b)
+### 🔧 Other Changes
+
+
 ## [v3.217.0] - 2025-11-26
 
 ### ✨ Features
