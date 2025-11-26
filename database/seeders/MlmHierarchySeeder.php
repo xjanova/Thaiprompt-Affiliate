@@ -110,21 +110,44 @@ class MlmHierarchySeeder extends Seeder
     /**
      * สร้างหรือดึง Default MLM Plan
      *
+     * ใช้ลำดับการตรวจสอบดังนี้:
+     * 1. หา plan ที่เป็น default (is_default = true)
+     * 2. หา plan ที่มี slug = 'default-plan' (ป้องกัน duplicate)
+     * 3. ใช้ plan แรกที่มี
+     * 4. สร้างใหม่ด้วย firstOrCreate (ป้องกัน race condition)
+     *
      * @return MlmPlan
      */
     private function getOrCreateDefaultPlan(): MlmPlan
     {
+        // 1. ตรวจสอบ default plan ที่มีอยู่แล้ว
         $plan = MlmPlan::where('is_default', true)->first();
-
-        if (!$plan) {
-            $plan = MlmPlan::first();
+        if ($plan) {
+            return $plan;
         }
 
-        if (!$plan) {
-            $plan = MlmPlan::create([
+        // 2. ตรวจสอบ plan ที่มี slug เดียวกัน (ป้องกัน duplicate key error)
+        $plan = MlmPlan::where('slug', 'default-plan')->first();
+        if ($plan) {
+            // อัพเดทให้เป็น default ถ้ายังไม่ใช่
+            if (!$plan->is_default) {
+                $plan->update(['is_default' => true]);
+            }
+            return $plan;
+        }
+
+        // 3. ใช้ plan แรกที่มี
+        $plan = MlmPlan::first();
+        if ($plan) {
+            return $plan;
+        }
+
+        // 4. สร้างใหม่ด้วย firstOrCreate เพื่อป้องกัน race condition
+        return MlmPlan::firstOrCreate(
+            ['slug' => 'default-plan'],
+            [
                 'name' => 'Default Commission Plan',
                 'name_th' => 'แผนคอมมิชชันหลัก',
-                'slug' => 'default-plan',
                 'description' => 'Default MLM commission plan using global settings',
                 'description_th' => 'แผนคอมมิชชันหลักที่ใช้ตั้งค่าจาก Global Settings',
                 'type' => 'hybrid',
@@ -135,10 +158,8 @@ class MlmHierarchySeeder extends Seeder
                 'sort_order' => 1,
                 'joining_fee' => 0,
                 'requires_joining_fee' => false,
-            ]);
-        }
-
-        return $plan;
+            ]
+        );
     }
 
     /**
