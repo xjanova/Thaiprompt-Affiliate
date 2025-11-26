@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.223.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1698 from xjanova/claude/tpix-deployment-review-019vxQQwAAuS2jyFF9BkScJp (f590f3d2)
+- feat: เพิ่มหน้า TPIX Deployment Tutorial สอนขั้นตอนการ Deploy เหรียญเข้า Blockchain (c635bdd6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.222.2] - 2025-11-26
 
 ### ✨ Features
