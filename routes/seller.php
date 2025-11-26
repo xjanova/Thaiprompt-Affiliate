@@ -24,6 +24,11 @@ Route::get('/', function () {
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('/marketing', [DashboardController::class, 'marketing'])->name('marketing');
+
+// QR Scanner - redirect ไปหน้า QR Scanner สาธารณะ
+Route::get('/qr-scanner', function () {
+    return redirect()->route('qr-barcode.scanner');
+})->name('qr-scanner');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
 Route::put('/profile', [DashboardController::class, 'updateProfile'])->name('profile.update');
 Route::get('/commissions', [DashboardController::class, 'commissions'])->name('commissions');
