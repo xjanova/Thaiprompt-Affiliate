@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.197.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1643 from xjanova/claude/upgrade-admin-permissions-016ziKfocCGQPjahBxQCvFE3 (b4d00e88)
+- feat: upgrade admin permissions system with 140+ comprehensive permissions (7080a551)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.196.0] - 2025-11-26
 
 ### ✨ Features
