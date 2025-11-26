@@ -1309,6 +1309,13 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
         Route::post('/preview-calculation', [MlmGlobalSettingController::class, 'previewCalculation'])->name('preview-calculation');
         Route::get('/get', [MlmGlobalSettingController::class, 'getSettings'])->name('get');
         Route::post('/update-placement', [MlmGlobalSettingController::class, 'updatePlacement'])->name('update-placement');
+
+        // Unilevel Width Change & Tree Rebuild
+        Route::post('/update-width', [MlmGlobalSettingController::class, 'updateUnilevelWidth'])->name('update-width');
+        Route::get('/rebuild-status', [MlmGlobalSettingController::class, 'getRebuildStatus'])->name('rebuild-status');
+        Route::post('/cancel-rebuild', [MlmGlobalSettingController::class, 'cancelRebuild'])->name('cancel-rebuild');
+        Route::post('/start-rebuild', [MlmGlobalSettingController::class, 'startManualRebuild'])->name('start-rebuild');
+        Route::post('/preview-width-change', [MlmGlobalSettingController::class, 'previewWidthChange'])->name('preview-width-change');
     });
 
     // MLM Genealogy Viewer

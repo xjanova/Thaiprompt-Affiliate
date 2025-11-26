@@ -77,6 +77,12 @@ class MlmCommissionService
 
     /**
      * Calculate Unilevel commissions with roll-up/compression logic
+     *
+     * Roll-up Logic:
+     * 1. ถ้าสมาชิกไม่ active (ไม่รักษายอด) → ข้ามไป upline ที่ active
+     * 2. ป้องกัน duplicate rollup - คนที่ได้รับแล้วจะไม่ได้รับซ้ำ
+     * 3. สุดท้ายจะ rollup ไปที่ Admin (ID 1) เท่านั้น
+     * 4. บันทึก rollup_chain เพื่อติดตามที่มาที่ไป
      */
     protected function calculateUnilevelWithRollup(
         MlmMember $member,
@@ -93,6 +99,9 @@ class MlmCommissionService
         if (empty($unilevelLevels)) {
             return $commissions;
         }
+
+        // ดึง Admin member (ID 1) สำหรับ final rollup
+        $adminMember = MlmMember::find(1);
 
         $currentMember = $member;
         $currentLevel = 1;
@@ -141,58 +150,68 @@ class MlmCommissionService
                     'amount' => $commissionAmount
                 ]);
 
-                // Find next active upline
-                $rollupSponsor = $this->findNextActiveUpline($sponsor, $maxLevels - $currentLevel);
+                // สร้าง rollup chain สำหรับติดตาม
+                $rollupChain = [];
+                $rollupChain[] = [
+                    'member_id' => $sponsor->id,
+                    'member_code' => $sponsor->member_code,
+                    'level' => $currentLevel,
+                    'reason' => 'inactive',
+                    'tree_type' => 'unilevel',
+                ];
+
+                // Find next active upline พร้อมสร้าง chain
+                $rollupResult = $this->findNextActiveUplineWithChain(
+                    $sponsor,
+                    $maxLevels - $currentLevel,
+                    $rollupTracker,
+                    $preventDuplicateRollup,
+                    $adminMember
+                );
+
+                $rollupSponsor = $rollupResult['sponsor'];
+                $rollupChain = array_merge($rollupChain, $rollupResult['chain']);
 
                 if ($rollupSponsor) {
-                    // Check if this upline already received roll-up commission from this transaction
-                    if ($preventDuplicateRollup && isset($rollupTracker[$rollupSponsor->id])) {
-                        Log::info("Duplicate roll-up prevented", [
-                            'upline_id' => $rollupSponsor->id,
-                            'transaction' => $transactionId
-                        ]);
-
-                        // Continue rolling up to next level
-                        $rollupSponsor = $this->findNextActiveUpline($rollupSponsor, $maxLevels - $currentLevel - 1);
-
-                        if (!$rollupSponsor) {
-                            $currentMember = $sponsor;
-                            $currentLevel++;
-                            continue;
-                        }
-                    }
-
                     // Mark this upline as having received roll-up
                     $rollupTracker[$rollupSponsor->id] = true;
 
                     $commissions[] = [
                         'mlm_member_id' => $rollupSponsor->id,
+                        'mlm_plan_id' => $member->mlm_plan_id,
+                        'user_id' => $rollupSponsor->user_id,
                         'from_member_id' => $member->id,
                         'type' => 'unilevel_rollup',
                         'level' => $currentLevel,
-                        'original_level' => $currentLevel,
-                        'rolled_from_member_id' => $sponsor->id,
-                        'amount' => $commissionAmount,
-                        'pv' => $pv,
+                        'commission_amount' => $commissionAmount,
+                        'pv_amount' => $pv,
                         'percentage' => $percentage,
                         'status' => 'pending',
-                        'transaction_type' => $transactionType,
-                        'transaction_id' => $transactionId,
-                        'notes' => "Roll-up from inactive member #{$sponsor->member_code}",
+                        // ข้อมูล Roll-up tracking
+                        'is_rollup' => true,
+                        'rollup_from_member_id' => $sponsor->id,
+                        'rollup_original_level' => $currentLevel,
+                        'rollup_chain' => json_encode($rollupChain),
+                        'tree_type' => 'unilevel',
+                        'notes' => $this->buildRollupNotes($rollupChain, $sponsor),
                         'calculation_details' => json_encode([
                             'pv' => $pv,
                             'percentage' => $percentage,
                             'level' => $currentLevel,
                             'rollup' => true,
                             'inactive_member' => $sponsor->member_code,
+                            'rollup_recipient' => $rollupSponsor->member_code,
+                            'rollup_chain_length' => count($rollupChain),
                         ]),
                         'created_at' => now(),
                     ];
 
-                    Log::info("Roll-up commission created", [
+                    Log::info("Roll-up commission created with chain tracking", [
                         'recipient_id' => $rollupSponsor->id,
+                        'recipient_code' => $rollupSponsor->member_code,
                         'amount' => $commissionAmount,
-                        'rolled_from' => $sponsor->id
+                        'rolled_from' => $sponsor->id,
+                        'chain_length' => count($rollupChain),
                     ]);
                 }
 
@@ -200,15 +219,21 @@ class MlmCommissionService
                 // Normal commission (member is active)
                 $commissions[] = [
                     'mlm_member_id' => $sponsor->id,
+                    'mlm_plan_id' => $member->mlm_plan_id,
+                    'user_id' => $sponsor->user_id,
                     'from_member_id' => $member->id,
                     'type' => 'unilevel',
                     'level' => $currentLevel,
-                    'amount' => $commissionAmount,
-                    'pv' => $pv,
+                    'commission_amount' => $commissionAmount,
+                    'pv_amount' => $pv,
                     'percentage' => $percentage,
                     'status' => 'pending',
-                    'transaction_type' => $transactionType,
-                    'transaction_id' => $transactionId,
+                    // ไม่ใช่ rollup
+                    'is_rollup' => false,
+                    'rollup_from_member_id' => null,
+                    'rollup_original_level' => null,
+                    'rollup_chain' => null,
+                    'tree_type' => 'unilevel',
                     'calculation_details' => json_encode([
                         'pv' => $pv,
                         'percentage' => $percentage,
@@ -223,6 +248,90 @@ class MlmCommissionService
         }
 
         return $commissions;
+    }
+
+    /**
+     * หา upline ที่ active ถัดไป พร้อมสร้าง chain tracking
+     *
+     * @param MlmMember $member
+     * @param int $maxLevelsToSearch
+     * @param array $rollupTracker
+     * @param bool $preventDuplicate
+     * @param MlmMember|null $adminMember
+     * @return array ['sponsor' => MlmMember|null, 'chain' => array]
+     */
+    protected function findNextActiveUplineWithChain(
+        MlmMember $member,
+        int $maxLevelsToSearch,
+        array $rollupTracker,
+        bool $preventDuplicate,
+        ?MlmMember $adminMember
+    ): array {
+        $chain = [];
+        $currentMember = $member;
+        $levelsSearched = 0;
+
+        while ($levelsSearched < $maxLevelsToSearch && $currentMember->sponsor_id) {
+            $sponsor = $currentMember->sponsor;
+
+            if (!$sponsor) {
+                break;
+            }
+
+            $isActive = $this->isMemberActive($sponsor);
+            $alreadyReceived = $preventDuplicate && isset($rollupTracker[$sponsor->id]);
+
+            if ($isActive && !$alreadyReceived) {
+                // พบ upline ที่ active และยังไม่ได้รับ rollup
+                return ['sponsor' => $sponsor, 'chain' => $chain];
+            }
+
+            // เพิ่มเข้า chain
+            $chain[] = [
+                'member_id' => $sponsor->id,
+                'member_code' => $sponsor->member_code,
+                'level' => $member->unilevel_level + $levelsSearched + 1,
+                'reason' => $alreadyReceived ? 'already_received' : 'inactive',
+                'tree_type' => 'unilevel',
+            ];
+
+            $currentMember = $sponsor;
+            $levelsSearched++;
+        }
+
+        // ถ้าหาไม่เจอ → rollup ไป Admin (ID 1) ถ้ามี
+        if ($adminMember && !isset($rollupTracker[$adminMember->id])) {
+            $chain[] = [
+                'member_id' => $adminMember->id,
+                'member_code' => $adminMember->member_code,
+                'level' => 0,
+                'reason' => 'final_rollup_to_admin',
+                'tree_type' => 'unilevel',
+            ];
+            return ['sponsor' => $adminMember, 'chain' => $chain];
+        }
+
+        return ['sponsor' => null, 'chain' => $chain];
+    }
+
+    /**
+     * สร้าง notes สำหรับ rollup commission
+     *
+     * @param array $chain
+     * @param MlmMember $originalInactive
+     * @return string
+     */
+    protected function buildRollupNotes(array $chain, MlmMember $originalInactive): string
+    {
+        $skippedCount = count($chain);
+        $skippedCodes = array_map(fn($item) => $item['member_code'], $chain);
+
+        return sprintf(
+            "Roll-up จากสมาชิก #%s (ไม่ active) ข้าม %d คน: %s",
+            $originalInactive->member_code,
+            $skippedCount,
+            implode(' → ', $skippedCodes)
+        );
     }
 
     /**
