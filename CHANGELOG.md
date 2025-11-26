@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.223.1] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1699 from xjanova/claude/fix-seller-qr-scanner-route-01EJhRY7MKzjwJwgNojzbVYp (62d340d2)
+- fix: add missing seller.qr-scanner route (e6920a79)
+### 🔧 Other Changes
+
+
 ## [v3.223.0] - 2025-11-26
 
 ### ✨ Features
