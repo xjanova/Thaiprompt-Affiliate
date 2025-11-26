@@ -33,25 +33,25 @@
         </h2>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            @foreach($featured_news as $news)
-            <a href="{{ route('admin.ai-rental.news.show', $news) }}"
+            @foreach($featured_news as $featured_item)
+            <a href="{{ route('admin.ai-rental.news.show', $featured_item) }}"
                class="glass-neu rounded-2xl overflow-hidden border border-white/20 hover:border-cyan-400/50 hover:scale-105 transition-all duration-300 group">
                 {{-- Image --}}
-                @if($news->featured_image_url)
+                @if($featured_item->image_url)
                 <div class="aspect-video bg-gradient-to-br from-cyan-500/20 to-purple-500/20 relative overflow-hidden">
-                    <img src="{{ $news->featured_image_url }}"
-                         alt="{{ $news->title }}"
+                    <img src="{{ $featured_item->image_url }}"
+                         alt="{{ $featured_item->title }}"
                          class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
 
                     {{-- Badges --}}
                     <div class="absolute top-4 left-4 flex gap-2">
-                        @if($news->is_pinned)
+                        @if($featured_item->is_pinned)
                         <span class="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
                             <i class="fas fa-thumbtack"></i> ปักหมุด
                         </span>
                         @endif
-                        @if($news->importance === 'critical')
+                        @if($featured_item->importance === 'critical')
                         <span class="px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse">
                             <i class="fas fa-exclamation-circle"></i> สำคัญมาก
                         </span>
@@ -64,39 +64,39 @@
                     {{-- Category & Type --}}
                     <div class="flex items-center gap-2 mb-3">
                         <span class="px-3 py-1 bg-cyan-500/20 text-cyan-300 text-xs font-bold rounded-full border border-cyan-500/30">
-                            {{ $news->categories[0] ?? 'General' }}
+                            {{ $featured_item->model_type ?? 'General' }}
                         </span>
                         <span class="px-3 py-1 bg-purple-500/20 text-purple-300 text-xs rounded-full border border-purple-500/30">
-                            @switch($news->news_type)
+                            @switch($featured_item->news_type)
                                 @case('new_model') 🆕 Model ใหม่ @break
                                 @case('model_update') 🔄 อัพเดท @break
                                 @case('trending') 🔥 Trending @break
                                 @case('tutorial') 📚 Tutorial @break
                                 @case('best_practices') 💡 Best Practices @break
-                                @default {{ $news->news_type }}
+                                @default {{ $featured_item->news_type }}
                             @endswitch
                         </span>
                     </div>
 
                     {{-- Title --}}
                     <h3 class="text-xl font-bold text-white mb-2 line-clamp-2 group-hover:text-cyan-400 transition">
-                        {{ $news->title }}
+                        {{ $featured_item->title }}
                     </h3>
 
                     {{-- Summary --}}
                     <p class="text-white/70 text-sm mb-4 line-clamp-2">
-                        {{ $news->summary }}
+                        {{ $featured_item->summary }}
                     </p>
 
                     {{-- Meta --}}
                     <div class="flex items-center justify-between text-xs text-white/60">
                         <div class="flex items-center gap-3">
-                            <span><i class="fas fa-user"></i> {{ $news->author_name }}</span>
-                            <span><i class="fas fa-clock"></i> {{ $news->published_at->diffForHumans() }}</span>
+                            <span><i class="fas fa-user"></i> {{ $featured_item->author_name }}</span>
+                            <span><i class="fas fa-clock"></i> {{ $featured_item->published_at?->diffForHumans() ?? '-' }}</span>
                         </div>
                         <div class="flex items-center gap-3">
-                            <span><i class="fas fa-eye"></i> {{ number_format($news->view_count) }}</span>
-                            <span><i class="fas fa-heart"></i> {{ number_format($news->like_count) }}</span>
+                            <span><i class="fas fa-eye"></i> {{ number_format($featured_item->view_count) }}</span>
+                            <span><i class="fas fa-heart"></i> {{ number_format($featured_item->model_likes ?? 0) }}</span>
                         </div>
                     </div>
                 </div>
@@ -201,7 +201,7 @@
                 {{-- Category --}}
                 <div class="mb-3">
                     <span class="px-3 py-1 bg-cyan-500/20 text-cyan-300 text-xs font-bold rounded-full border border-cyan-500/30">
-                        {{ $article->categories[0] ?? 'General' }}
+                        {{ $article->model_type ?? 'General' }}
                     </span>
                 </div>
 
@@ -233,13 +233,13 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <span><i class="fas fa-eye"></i> {{ number_format($article->view_count) }}</span>
-                        <span><i class="fas fa-heart"></i> {{ $article->like_count }}</span>
+                        <span><i class="fas fa-heart"></i> {{ number_format($article->model_likes ?? 0) }}</span>
                     </div>
                 </div>
 
                 {{-- Reading Time --}}
                 <div class="mt-3 flex items-center gap-4 text-xs text-white/60 flex-shrink-0">
-                    <span><i class="fas fa-clock"></i> {{ $article->published_at->diffForHumans() }}</span>
+                    <span><i class="fas fa-clock"></i> {{ $article->published_at?->diffForHumans() ?? '-' }}</span>
                     @if(isset($article->metadata['reading_time']))
                     <span><i class="fas fa-book-reader"></i> {{ $article->metadata['reading_time'] }}</span>
                     @endif
