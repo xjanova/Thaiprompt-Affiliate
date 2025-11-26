@@ -16,7 +16,7 @@ class PaymentGatewayController extends Controller
      */
     public function index()
     {
-        if (!auth()->user()->hasPermission('manage_payment_settings')) {
+        if (!auth()->user()->hasPermission('manage_payment_gateways')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         }
 
@@ -71,7 +71,7 @@ class PaymentGatewayController extends Controller
      */
     public function edit(PaymentGateway $paymentGateway)
     {
-        if (!auth()->user()->hasPermission('manage_payment_settings')) {
+        if (!auth()->user()->hasPermission('manage_payment_gateways')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         }
 
@@ -83,7 +83,7 @@ class PaymentGatewayController extends Controller
      */
     public function update(Request $request, PaymentGateway $paymentGateway)
     {
-        if (!auth()->user()->hasPermission('manage_payment_settings')) {
+        if (!auth()->user()->hasPermission('manage_payment_gateways')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
         }
 
@@ -169,7 +169,7 @@ class PaymentGatewayController extends Controller
      */
     public function toggle(PaymentGateway $paymentGateway)
     {
-        if (!auth()->user()->hasPermission('manage_payment_settings')) {
+        if (!auth()->user()->hasPermission('manage_payment_gateways')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -195,7 +195,7 @@ class PaymentGatewayController extends Controller
      */
     public function testConnection(PaymentGateway $paymentGateway)
     {
-        if (!auth()->user()->hasPermission('manage_payment_settings')) {
+        if (!auth()->user()->hasPermission('manage_payment_gateways')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -227,7 +227,7 @@ class PaymentGatewayController extends Controller
      */
     public function updateOrder(Request $request)
     {
-        if (!auth()->user()->hasPermission('manage_payment_settings')) {
+        if (!auth()->user()->hasPermission('manage_payment_gateways')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
