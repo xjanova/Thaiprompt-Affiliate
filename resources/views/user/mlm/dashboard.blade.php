@@ -43,7 +43,7 @@
                 </div>
                 <div class="text-right">
                     <div class="text-sm opacity-75">แผน MLM ของคุณ</div>
-                    <div class="text-2xl font-bold">{{ $member->plan->display_name }}</div>
+                    <div class="text-2xl font-bold">{{ $member->plan?->display_name ?? 'ไม่มีแผน' }}</div>
                 </div>
             </div>
         </x-arrow-x.card-v3>
@@ -114,7 +114,7 @@
             <!-- Left Column: Binary Legs -->
             <div class="lg:col-span-2 space-y-8">
                 <!-- Binary Legs Stats -->
-                @if($member->plan->type === 'binary' || $member->plan->type === 'hybrid')
+                @if($member->plan?->type === 'binary' || $member->plan?->type === 'hybrid')
                 <x-arrow-x.card-v3 class="p-8">
                     <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
                         <span class="mr-3">🔀</span>
