@@ -9,9 +9,10 @@
  * - Touch events (pinch-to-zoom, pan)
  * - Modern node design
  * - Animated connections
+ * - Real browser fullscreen (Fullscreen API)
  *
  * @author TP-Affiliate Team
- * @version 3.1.0
+ * @version 3.2.0
  */
 
 class OrgChartViewer {
@@ -59,6 +60,7 @@ class OrgChartViewer {
         this.nodeCount = 0;
         this.maxDepthReached = 0;
         this.nodePositions = new Map();
+        this.isFullscreen = false;
 
         // Initialize
         this.init();
@@ -168,6 +170,21 @@ class OrgChartViewer {
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
                             <path d="M3 3v5h5"/>
+                        </svg>
+                    </button>
+                    <div class="n8n-ctrl-divider"></div>
+                    <button class="n8n-ctrl-btn n8n-fullscreen" title="เต็มจอ">
+                        <svg class="n8n-fullscreen-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+                            <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+                            <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+                            <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+                        </svg>
+                        <svg class="n8n-fullscreen-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                            <path d="M8 3v3a2 2 0 0 1-2 2H3"/>
+                            <path d="M21 8h-3a2 2 0 0 1-2-2V3"/>
+                            <path d="M3 16h3a2 2 0 0 1 2 2v3"/>
+                            <path d="M16 21v-3a2 2 0 0 1 2-2h3"/>
                         </svg>
                     </button>
                 </div>
@@ -550,6 +567,33 @@ class OrgChartViewer {
                     animation: n8n-flow 0.5s linear infinite;
                 }
 
+                /* Fullscreen Mode */
+                .n8n-chart-wrapper.n8n-fullscreen-mode {
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    bottom: 0 !important;
+                    width: 100vw !important;
+                    height: 100vh !important;
+                    z-index: 999999 !important;
+                    border-radius: 0 !important;
+                    margin: 0 !important;
+                    max-width: none !important;
+                    max-height: none !important;
+                }
+
+                .n8n-chart-wrapper.n8n-fullscreen-mode .n8n-canvas {
+                    width: 100vw !important;
+                    height: 100vh !important;
+                }
+
+                /* Fullscreen button highlight when active */
+                .n8n-fullscreen.n8n-fullscreen-active {
+                    background: rgba(168, 85, 247, 0.2);
+                    color: var(--n8n-primary);
+                }
+
                 /* Responsive */
                 @media (max-width: 768px) {
                     .n8n-stats {
@@ -602,6 +646,18 @@ class OrgChartViewer {
         this.container.querySelector('.n8n-zoom-out').addEventListener('click', () => this.zoomOut());
         this.container.querySelector('.n8n-reset').addEventListener('click', () => this.resetView());
         this.container.querySelector('.n8n-fit').addEventListener('click', () => this.fitToScreen());
+
+        // Fullscreen button
+        this.fullscreenBtn = this.container.querySelector('.n8n-fullscreen');
+        this.fullscreenEnterIcon = this.container.querySelector('.n8n-fullscreen-enter');
+        this.fullscreenExitIcon = this.container.querySelector('.n8n-fullscreen-exit');
+        this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+
+        // Listen for fullscreen change events (for Escape key and other exit methods)
+        document.addEventListener('fullscreenchange', () => this.handleFullscreenChange());
+        document.addEventListener('webkitfullscreenchange', () => this.handleFullscreenChange());
+        document.addEventListener('mozfullscreenchange', () => this.handleFullscreenChange());
+        document.addEventListener('MSFullscreenChange', () => this.handleFullscreenChange());
 
         // Mouse events
         this.canvas.addEventListener('mousedown', (e) => this.onDragStart(e));
@@ -1392,7 +1448,106 @@ class OrgChartViewer {
         }
     }
 
+    /**
+     * Toggle Fullscreen Mode (ใช้ Browser Fullscreen API)
+     * เต็มจอจริงๆ ไม่เห็นเมนูหรือธีมใดๆ
+     */
+    toggleFullscreen() {
+        if (!this.isFullscreen) {
+            this.enterFullscreen();
+        } else {
+            this.exitFullscreen();
+        }
+    }
+
+    /**
+     * Enter Browser Fullscreen
+     */
+    enterFullscreen() {
+        const element = this.wrapper;
+
+        // ลองใช้ Browser Fullscreen API ก่อน
+        if (element.requestFullscreen) {
+            element.requestFullscreen();
+        } else if (element.webkitRequestFullscreen) {
+            // Safari
+            element.webkitRequestFullscreen();
+        } else if (element.mozRequestFullScreen) {
+            // Firefox
+            element.mozRequestFullScreen();
+        } else if (element.msRequestFullscreen) {
+            // IE/Edge
+            element.msRequestFullscreen();
+        } else {
+            // Fallback: ใช้ CSS fullscreen mode ถ้าไม่รองรับ API
+            this.wrapper.classList.add('n8n-fullscreen-mode');
+            this.isFullscreen = true;
+            this.updateFullscreenUI();
+            this.fitToScreen();
+        }
+    }
+
+    /**
+     * Exit Browser Fullscreen
+     */
+    exitFullscreen() {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        } else {
+            // Fallback: ลบ CSS fullscreen mode
+            this.wrapper.classList.remove('n8n-fullscreen-mode');
+            this.isFullscreen = false;
+            this.updateFullscreenUI();
+        }
+    }
+
+    /**
+     * Handle fullscreen change event (เมื่อกด Escape หรือออก fullscreen)
+     */
+    handleFullscreenChange() {
+        const fullscreenElement = document.fullscreenElement ||
+                                  document.webkitFullscreenElement ||
+                                  document.mozFullScreenElement ||
+                                  document.msFullscreenElement;
+
+        this.isFullscreen = (fullscreenElement === this.wrapper);
+        this.updateFullscreenUI();
+
+        // Fit to screen after fullscreen change
+        setTimeout(() => {
+            this.fitToScreen();
+            this.updateMinimap();
+        }, 100);
+    }
+
+    /**
+     * Update fullscreen button UI
+     */
+    updateFullscreenUI() {
+        if (this.isFullscreen) {
+            this.fullscreenBtn.classList.add('n8n-fullscreen-active');
+            this.fullscreenBtn.title = 'ออกจากเต็มจอ';
+            this.fullscreenEnterIcon.style.display = 'none';
+            this.fullscreenExitIcon.style.display = 'block';
+        } else {
+            this.fullscreenBtn.classList.remove('n8n-fullscreen-active');
+            this.fullscreenBtn.title = 'เต็มจอ';
+            this.fullscreenEnterIcon.style.display = 'block';
+            this.fullscreenExitIcon.style.display = 'none';
+        }
+    }
+
     destroy() {
+        // Remove fullscreen if active
+        if (this.isFullscreen) {
+            this.exitFullscreen();
+        }
         this.container.innerHTML = '';
     }
 }

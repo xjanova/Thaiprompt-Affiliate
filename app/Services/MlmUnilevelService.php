@@ -237,16 +237,71 @@ class MlmUnilevelService
     /**
      * Get unilevel downline tree
      * ใช้ค่าจาก Global Settings แทน per-plan settings
+     *
+     * @param MlmMember $member สมาชิกที่ต้องการดูสายงาน
+     * @param int|null $maxDepth ความลึกสูงสุด
+     * @return array ข้อมูล node รวม root member พร้อม children
      */
     public function getUnilevelTree(MlmMember $member, int $maxDepth = null)
     {
         $maxDepth = $maxDepth ?? MlmGlobalSetting::get('unilevel_max_depth', 10);
 
-        return $this->buildUnilevelTreeRecursive($member, 0, $maxDepth);
+        // Return root member พร้อม children (เหมือน Binary tree format)
+        return $this->buildUnilevelNodeWithChildren($member, 0, $maxDepth);
     }
 
     /**
-     * Build unilevel tree recursively
+     * Build unilevel tree recursively - รวม root member พร้อม children
+     *
+     * @param MlmMember $member
+     * @param int $currentDepth
+     * @param int $maxDepth
+     * @return array
+     */
+    protected function buildUnilevelNodeWithChildren(MlmMember $member, int $currentDepth, int $maxDepth)
+    {
+        // ดึง retention status
+        $commissionService = app(MlmCommissionService::class);
+        $retentionData = $commissionService->getMemberRetentionStatus($member);
+
+        // สร้าง node ของ member นี้
+        $node = [
+            'id' => $member->id,
+            'user_id' => $member->user_id,
+            'name' => $member->user->name ?? 'Unknown',
+            'member_code' => $member->member_code,
+            'level' => $currentDepth,
+            'total_pv' => $member->total_pv,
+            'monthly_pv' => $retentionData['monthly_pv'] ?? 0,
+            'total_team_pv' => $member->total_team_pv,
+            'total_earnings' => $member->total_earnings,
+            'direct_referrals' => $member->total_direct_referrals,
+            'total_team_members' => $member->total_team_members,
+            'status' => $member->status,
+            'retention_status' => $retentionData['status'] ?? 'active',
+            'children' => [],
+        ];
+
+        // หยุด recursion เมื่อถึง max depth
+        if ($currentDepth >= $maxDepth) {
+            return $node;
+        }
+
+        // โหลด children
+        $children = $member->unilevelChildren()
+            ->with(['user', 'plan'])
+            ->get();
+
+        foreach ($children as $child) {
+            $node['children'][] = $this->buildUnilevelNodeWithChildren($child, $currentDepth + 1, $maxDepth);
+        }
+
+        return $node;
+    }
+
+    /**
+     * Build unilevel tree recursively (Legacy - แค่ children)
+     * @deprecated ใช้ buildUnilevelNodeWithChildren แทน
      */
     protected function buildUnilevelTreeRecursive(MlmMember $member, int $currentDepth, int $maxDepth)
     {
@@ -264,7 +319,7 @@ class MlmUnilevelService
             $tree[] = [
                 'id' => $child->id,
                 'user_id' => $child->user_id,
-                'name' => $child->user->name,
+                'name' => $child->user->name ?? 'Unknown',
                 'member_code' => $child->member_code,
                 'level' => $currentDepth + 1,
                 'total_pv' => $child->total_pv,
