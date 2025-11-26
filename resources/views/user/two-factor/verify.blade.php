@@ -14,7 +14,7 @@
                 ยืนยันตัวตน
             </h2>
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                กรุณากรอกรหัส 6 หลักที่ส่งให้คุณ
+                กรอกรหัส 6 หลักจาก Google Authenticator
             </p>
         </div>
 
@@ -23,12 +23,12 @@
             <form id="verifyForm" class="space-y-6">
                 @csrf
                 <input type="hidden" name="action" value="{{ $action ?? 'general' }}">
-                <input type="hidden" name="redirect" value="{{ $redirect ?? route('user.dashboard') }}">
+                <input type="hidden" name="redirect" value="{{ $redirect ?? route('user.home') }}">
 
                 <!-- Code Input -->
                 <div>
                     <label for="code" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                        รหัสยืนยันตัวตน
+                        รหัสจาก Authenticator
                     </label>
                     <input type="text"
                            id="code"
@@ -37,9 +37,12 @@
                            pattern="[0-9]{6}"
                            required
                            autocomplete="off"
-                           class="w-full px-4 py-4 text-center text-2xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 tracking-widest"
+                           inputmode="numeric"
+                           class="w-full px-4 py-4 text-center text-2xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 tracking-widest dark:bg-gray-700 dark:text-white"
                            placeholder="000000">
-                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">กรอกรหัส 6 หลักที่ได้รับ</p>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+                        เปิดแอป Google Authenticator แล้วกรอกรหัส 6 หลักที่แสดง
+                    </p>
                 </div>
 
                 <!-- Remember Device -->
@@ -77,15 +80,16 @@
                 </div>
             </form>
 
-            <!-- Resend Code -->
+            <!-- Authenticator Help -->
             <div class="mt-6 text-center border-t pt-6">
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">ไม่ได้รับรหัส?</p>
-                <button type="button"
-                        id="resendButton"
-                        class="px-6 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 text-gray-700 dark:text-gray-300 rounded-lg font-semibold transition-colors">
-                    <span id="resendButtonText">ส่งรหัสใหม่</span>
-                    <span id="resendTimer" class="hidden">(<span id="countdown">60</span>s)</span>
-                </button>
+                <div class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    <p class="font-semibold mb-2">💡 ไม่มีรหัส?</p>
+                    <ul class="text-left space-y-1 text-xs">
+                        <li>• เปิดแอป Google Authenticator หรือ Microsoft Authenticator</li>
+                        <li>• หารหัสของ {{ config('app.name', 'Thaiprompt') }}</li>
+                        <li>• รหัสจะเปลี่ยนทุก 30 วินาที รอรหัสใหม่ถ้าใกล้หมดเวลา</li>
+                    </ul>
+                </div>
             </div>
 
             <!-- Recovery Code Option -->
@@ -103,7 +107,7 @@
             <form id="recoveryForm" class="space-y-6">
                 @csrf
                 <input type="hidden" name="action" value="{{ $action ?? 'general' }}">
-                <input type="hidden" name="redirect" value="{{ $redirect ?? route('user.dashboard') }}">
+                <input type="hidden" name="redirect" value="{{ $redirect ?? route('user.home') }}">
 
                 <div class="text-center mb-6">
                     <span class="text-4xl">🔑</span>
@@ -142,11 +146,13 @@
 
 @push('scripts')
 <script>
+/**
+ * สคริปต์สำหรับหน้ายืนยันตัวตน 2FA ด้วย Google Authenticator
+ */
 document.addEventListener('DOMContentLoaded', function() {
     const verifyForm = document.getElementById('verifyForm');
     const recoveryForm = document.getElementById('recoveryForm');
     const verifyButton = document.getElementById('verifyButton');
-    const resendButton = document.getElementById('resendButton');
     const useRecoveryCodeButton = document.getElementById('useRecoveryCodeButton');
     const backToCodeButton = document.getElementById('backToCodeButton');
     const recoveryCodeForm = document.getElementById('recoveryCodeForm');
@@ -154,19 +160,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const errorText = document.getElementById('errorText');
     const codeInput = document.getElementById('code');
 
-    let resendCountdown = 0;
-
     // Auto-focus on code input
     codeInput.focus();
 
     // Format code input (numbers only)
     codeInput.addEventListener('input', function(e) {
         this.value = this.value.replace(/[^0-9]/g, '');
+
+        // Auto-submit when 6 digits entered
+        if (this.value.length === 6) {
+            verifyForm.dispatchEvent(new Event('submit'));
+        }
     });
 
     // Verify form submission
     verifyForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+
+        // ตรวจสอบว่ามีรหัส 6 หลักก่อนส่ง
+        if (codeInput.value.length !== 6) {
+            errorText.textContent = 'กรุณากรอกรหัส 6 หลัก';
+            errorMessage.classList.remove('hidden');
+            return;
+        }
 
         verifyButton.disabled = true;
         document.getElementById('verifyButtonText').textContent = 'กำลังตรวจสอบ...';
@@ -188,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (data.success) {
                 // Success - redirect
-                window.location.href = data.redirect || '{{ route("user.dashboard") }}';
+                window.location.href = data.redirect || '{{ route("user.home") }}';
             } else {
                 // Show error
                 errorText.textContent = data.message || 'รหัสไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง';
@@ -228,9 +244,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
 
             if (data.success) {
-                window.location.href = data.redirect || '{{ route("user.dashboard") }}';
+                // แสดงคำเตือนถ้ามี
+                if (data.warning) {
+                    alert('⚠️ ' + data.warning);
+                }
+                window.location.href = data.redirect || '{{ route("user.home") }}';
             } else {
-                alert(data.message || 'รหัสกู้คืนไม่ถูกต้อง');
+                alert('❌ ' + (data.message || 'รหัสกู้คืนไม่ถูกต้อง'));
             }
         } catch (error) {
             alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
@@ -239,55 +259,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('recoveryButtonText').textContent = 'ยืนยันด้วยรหัสกู้คืน';
         }
     });
-
-    // Resend code
-    resendButton.addEventListener('click', async function() {
-        if (resendCountdown > 0) return;
-
-        try {
-            const formData = new FormData();
-            formData.append('action', '{{ $action ?? "general" }}');
-
-            const response = await fetch('{{ route("user.two-factor.send-code") }}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json',
-                },
-                body: formData
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                alert('✅ ส่งรหัสใหม่แล้ว');
-                startResendCountdown();
-            } else {
-                alert('❌ ' + (data.message || 'ไม่สามารถส่งรหัสได้'));
-            }
-        } catch (error) {
-            alert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
-        }
-    });
-
-    function startResendCountdown() {
-        resendCountdown = 60;
-        resendButton.disabled = true;
-        document.getElementById('resendButtonText').classList.add('hidden');
-        document.getElementById('resendTimer').classList.remove('hidden');
-
-        const interval = setInterval(() => {
-            resendCountdown--;
-            document.getElementById('countdown').textContent = resendCountdown;
-
-            if (resendCountdown <= 0) {
-                clearInterval(interval);
-                resendButton.disabled = false;
-                document.getElementById('resendButtonText').classList.remove('hidden');
-                document.getElementById('resendTimer').classList.add('hidden');
-            }
-        }, 1000);
-    }
 
     // Toggle recovery code form
     useRecoveryCodeButton.addEventListener('click', function() {

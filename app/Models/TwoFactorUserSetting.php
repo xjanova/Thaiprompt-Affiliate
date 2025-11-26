@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Crypt;
+use PragmaRX\Google2FA\Google2FA;
 
 class TwoFactorUserSetting extends Model
 {
@@ -14,6 +16,7 @@ class TwoFactorUserSetting extends Model
         'user_id',
         'enabled',
         'preferred_method',
+        'google2fa_secret',
         'backup_methods',
         'phone',
         'phone_verified',
@@ -50,6 +53,13 @@ class TwoFactorUserSetting extends Model
         'total_verifications' => 'integer',
         'failed_attempts' => 'integer',
         'last_failed_at' => 'datetime',
+    ];
+
+    /**
+     * ซ่อน secret key ไม่ให้แสดงใน API
+     */
+    protected $hidden = [
+        'google2fa_secret',
     ];
 
     /**
@@ -225,6 +235,7 @@ class TwoFactorUserSetting extends Model
     public function isMethodAvailable(string $method): bool
     {
         return match ($method) {
+            'authenticator' => $this->hasGoogle2FASecret(),
             'sms' => $this->phone && $this->phone_verified,
             'line' => $this->line_user_id && $this->line_verified,
             'email' => $this->email && $this->email_verified,
@@ -249,6 +260,123 @@ class TwoFactorUserSetting extends Model
         return $userMethods;
     }
 
+    // ================================================================
+    // Google Authenticator (TOTP) Methods
+    // ================================================================
+
+    /**
+     * สร้าง Google Authenticator Secret Key ใหม่
+     */
+    public function generateGoogle2FASecret(): string
+    {
+        $google2fa = new Google2FA();
+        $secret = $google2fa->generateSecretKey();
+
+        // เก็บ secret แบบ encrypted
+        $this->google2fa_secret = Crypt::encryptString($secret);
+        $this->save();
+
+        return $secret;
+    }
+
+    /**
+     * ดึง Google Authenticator Secret Key (decrypted)
+     */
+    public function getGoogle2FASecret(): ?string
+    {
+        if (!$this->google2fa_secret) {
+            return null;
+        }
+
+        try {
+            return Crypt::decryptString($this->google2fa_secret);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * ตรวจสอบว่ามี Google 2FA Secret หรือไม่
+     */
+    public function hasGoogle2FASecret(): bool
+    {
+        return !empty($this->google2fa_secret);
+    }
+
+    /**
+     * ตรวจสอบรหัส Google Authenticator (TOTP)
+     */
+    public function verifyGoogle2FACode(string $code): bool
+    {
+        $secret = $this->getGoogle2FASecret();
+
+        if (!$secret) {
+            return false;
+        }
+
+        $google2fa = new Google2FA();
+
+        // อนุญาต window ± 1 (30 วินาทีก่อนและหลัง)
+        return $google2fa->verifyKey($secret, $code, 1);
+    }
+
+    /**
+     * สร้าง QR Code URL สำหรับ Google Authenticator
+     */
+    public function getGoogle2FAQRCodeUrl(string $appName = null): ?string
+    {
+        $secret = $this->getGoogle2FASecret();
+
+        if (!$secret) {
+            return null;
+        }
+
+        $google2fa = new Google2FA();
+        $appName = $appName ?? config('app.name', 'Thaiprompt');
+        $email = $this->user->email ?? 'user';
+
+        return $google2fa->getQRCodeUrl(
+            $appName,
+            $email,
+            $secret
+        );
+    }
+
+    /**
+     * สร้าง QR Code SVG สำหรับ Google Authenticator
+     */
+    public function getGoogle2FAQRCodeSVG(string $appName = null): ?string
+    {
+        $qrCodeUrl = $this->getGoogle2FAQRCodeUrl($appName);
+
+        if (!$qrCodeUrl) {
+            return null;
+        }
+
+        // ใช้ bacon/bacon-qr-code สร้าง SVG
+        $renderer = new \BaconQrCode\Renderer\ImageRenderer(
+            new \BaconQrCode\Renderer\RendererStyle\RendererStyle(200),
+            new \BaconQrCode\Renderer\Image\SvgImageBackEnd()
+        );
+
+        $writer = new \BaconQrCode\Writer($renderer);
+
+        return $writer->writeString($qrCodeUrl);
+    }
+
+    /**
+     * ลบ Google 2FA Secret
+     */
+    public function removeGoogle2FASecret(): void
+    {
+        $this->google2fa_secret = null;
+        $this->save();
+    }
+
+    // ================================================================
+    // End Google Authenticator Methods
+    // ================================================================
+
     /**
      * Get or create 2FA setting for user
      */
@@ -258,7 +386,7 @@ class TwoFactorUserSetting extends Model
             ['user_id' => $user->id],
             [
                 'enabled' => false,
-                'preferred_method' => TwoFactorSetting::getDefaultMethod(),
+                'preferred_method' => 'authenticator', // Default เป็น Google Authenticator
                 'phone' => $user->phone,
                 'phone_verified' => $user->phone_verified ?? false,
                 'phone_verified_at' => $user->phone_verified_at,
