@@ -65,15 +65,28 @@
             <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 text-center flex items-center justify-center gap-2">
                 <span>📱</span> QR Code
             </h3>
-            <div class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-8 border-2 border-gray-200 dark:border-gray-700">
+            <div class="bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-8 border-2 border-gray-200 dark:border-gray-700">
                 <div class="flex justify-center mb-4">
-                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-                        <div id="qrcode"></div>
+                    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-lg">
+                        <div id="qrcode" class="flex items-center justify-center" style="min-width: 200px; min-height: 200px;">
+                            {{-- Loading state --}}
+                            <div id="qrcode-loading" class="text-center">
+                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">กำลังสร้าง QR Code...</p>
+                            </div>
+                        </div>
                     </div>
+                </div>
+                {{-- Error message (hidden by default) --}}
+                <div id="qrcode-error" class="hidden text-center mb-4">
+                    <p class="text-red-500 text-sm mb-2">ไม่สามารถสร้าง QR Code ได้</p>
+                    <button onclick="generateQRCode()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+                        ลองใหม่
+                    </button>
                 </div>
                 <p class="text-center text-sm text-gray-600 dark:text-gray-400">สแกน QR Code เพื่อเข้าสู่หน้าสมัครสมาชิก</p>
                 <div class="mt-4 text-center">
-                    <button onclick="downloadQR()" class="px-6 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg font-semibold transition-colors">
+                    <button id="download-qr" onclick="downloadQR()" class="hidden px-6 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg font-semibold transition-colors">
                         💾 ดาวน์โหลด QR Code
                     </button>
                 </div>
@@ -145,13 +158,118 @@
 const referralUrl = "{{ $referralUrl }}";
 const memberCode = "{{ $member->member_code }}";
 
-// Generate QR Code
-const qrcode = new QRCode(document.getElementById("qrcode"), {
-    text: referralUrl,
-    width: 200,
-    height: 200,
-    colorDark: "#000000",
-    colorLight: "#ffffff",
+// ตัวแปร global เก็บ QR code instance
+let qrCodeInstance = null;
+
+/**
+ * สร้าง QR Code พร้อม retry mechanism
+ * รอให้ library โหลดเสร็จก่อนสร้าง QR Code
+ */
+function generateQRCode(retryCount = 0) {
+    const maxRetries = 10;
+    const retryDelay = 300; // 300ms
+
+    const qrcodeContainer = document.getElementById('qrcode');
+    const loadingEl = document.getElementById('qrcode-loading');
+    const errorEl = document.getElementById('qrcode-error');
+    const downloadBtn = document.getElementById('download-qr');
+
+    // ซ่อน error message
+    if (errorEl) errorEl.classList.add('hidden');
+
+    // ตรวจสอบว่า QRCode library โหลดแล้วหรือยัง
+    if (typeof QRCode === 'undefined') {
+        if (retryCount < maxRetries) {
+            console.log(`QRCode library ยังไม่พร้อม, รอ... (${retryCount + 1}/${maxRetries})`);
+            setTimeout(() => generateQRCode(retryCount + 1), retryDelay);
+            return;
+        } else {
+            // ลองใช้ fallback (Google Charts API)
+            console.warn('QRCode library โหลดไม่สำเร็จ, ใช้ fallback');
+            useFallbackQRCode();
+            return;
+        }
+    }
+
+    try {
+        // ล้าง container ก่อนสร้างใหม่
+        if (loadingEl) loadingEl.remove();
+
+        // ล้าง QR code เดิม (ถ้ามี)
+        if (qrCodeInstance) {
+            qrCodeInstance.clear();
+            qrcodeContainer.innerHTML = '';
+        }
+
+        // สร้าง QR Code ใหม่
+        qrCodeInstance = new QRCode(qrcodeContainer, {
+            text: referralUrl,
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        // แสดงปุ่มดาวน์โหลด
+        if (downloadBtn) {
+            downloadBtn.classList.remove('hidden');
+        }
+
+        console.log('สร้าง QR Code สำเร็จ');
+    } catch (error) {
+        console.error('เกิดข้อผิดพลาดในการสร้าง QR Code:', error);
+        useFallbackQRCode();
+    }
+}
+
+/**
+ * Fallback ใช้ Google Charts API สร้าง QR Code (ไม่ต้องใช้ library)
+ */
+function useFallbackQRCode() {
+    const qrcodeContainer = document.getElementById('qrcode');
+    const loadingEl = document.getElementById('qrcode-loading');
+    const errorEl = document.getElementById('qrcode-error');
+    const downloadBtn = document.getElementById('download-qr');
+
+    if (loadingEl) loadingEl.remove();
+
+    // สร้าง QR Code ด้วย Google Charts API
+    const encodedUrl = encodeURIComponent(referralUrl);
+    const googleQRUrl = `https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodedUrl}&choe=UTF-8`;
+
+    // สร้าง img element
+    const img = document.createElement('img');
+    img.src = googleQRUrl;
+    img.alt = 'QR Code สำหรับลิงก์แนะนำ';
+    img.width = 200;
+    img.height = 200;
+    img.style.borderRadius = '8px';
+    img.id = 'qrcode-image';
+
+    img.onload = function() {
+        qrcodeContainer.innerHTML = '';
+        qrcodeContainer.appendChild(img);
+        if (downloadBtn) {
+            downloadBtn.classList.remove('hidden');
+        }
+        console.log('สร้าง QR Code ด้วย Google Charts API สำเร็จ');
+    };
+
+    img.onerror = function() {
+        // แสดง error message
+        if (errorEl) {
+            errorEl.classList.remove('hidden');
+        }
+        qrcodeContainer.innerHTML = '<p class="text-gray-500 text-sm">ไม่สามารถโหลด QR Code ได้</p>';
+        console.error('ไม่สามารถโหลด QR Code จาก Google Charts API');
+    };
+}
+
+// รอให้ DOM พร้อมก่อนสร้าง QR Code
+document.addEventListener('DOMContentLoaded', function() {
+    // รอเพิ่มอีกนิดให้ library โหลดเสร็จ
+    setTimeout(generateQRCode, 100);
 });
 
 function showToast(message) {
@@ -186,13 +304,34 @@ function copyCode() {
 }
 
 function downloadQR() {
-    const canvas = document.querySelector('#qrcode canvas');
-    const url = canvas.toDataURL("image/png");
-    const link = document.createElement('a');
-    link.download = `referral-qr-${memberCode}.png`;
-    link.href = url;
-    link.click();
-    showToast('✅ ดาวน์โหลด QR Code แล้ว');
+    const qrcodeContainer = document.getElementById('qrcode');
+    const canvas = qrcodeContainer.querySelector('canvas');
+    const img = qrcodeContainer.querySelector('img');
+
+    let dataUrl;
+
+    if (canvas) {
+        // QRCode.js สร้าง canvas
+        dataUrl = canvas.toDataURL('image/png');
+    } else if (img) {
+        // Fallback ใช้ img จาก Google Charts
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = img.width;
+        tempCanvas.height = img.height;
+        const ctx = tempCanvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        dataUrl = tempCanvas.toDataURL('image/png');
+    }
+
+    if (dataUrl) {
+        const link = document.createElement('a');
+        link.download = `referral-qr-${memberCode}.png`;
+        link.href = dataUrl;
+        link.click();
+        showToast('✅ ดาวน์โหลด QR Code แล้ว');
+    } else {
+        showToast('❌ ไม่สามารถดาวน์โหลด QR Code ได้');
+    }
 }
 
 function shareViaLine() {
