@@ -238,6 +238,7 @@ class MlmGlobalSettingController extends Controller
             'direct_referral_commission' => 'nullable|numeric|min:0|max:100',
             'min_pv_for_commission' => 'nullable|numeric|min:0',
             'matching_bonus' => 'nullable|numeric|min:0|max:100',
+            'commission_per_pv' => 'nullable|numeric|min:0|max:1000',
         ]);
 
         // อัพเดทการตั้งค่าแต่ละค่า
@@ -264,6 +265,9 @@ class MlmGlobalSettingController extends Controller
         }
         if (isset($validated['matching_bonus'])) {
             MlmGlobalSetting::set('matching_bonus', $validated['matching_bonus']);
+        }
+        if (isset($validated['commission_per_pv'])) {
+            MlmGlobalSetting::set('commission_per_pv', $validated['commission_per_pv']);
         }
 
         return response()->json([
