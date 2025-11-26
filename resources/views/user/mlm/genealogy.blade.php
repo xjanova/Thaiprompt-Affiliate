@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
     viewer = new MlmGenealogyPremium('genealogy-container', {
         memberCode: '{{ $member->member_code }}',
         apiUrl: '/api/user/mlm/genealogy',
-        type: '{{ $member->plan->type === "binary" || $member->plan->type === "hybrid" ? "binary" : "unilevel" }}',
+        type: '{{ ($member->plan?->type === "binary" || $member->plan?->type === "hybrid") ? "binary" : "unilevel" }}',
         maxDepth: 5,
         showMinimap: true,
         showStats: true,
