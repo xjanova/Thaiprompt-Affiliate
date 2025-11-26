@@ -200,6 +200,38 @@ class MlmGlobalSettingsSeeder extends Seeder
                 'description_th' => 'ประเภทการจับคู่ Binary (1:1 หรือ 2:1)',
                 'sort_order' => 35,
             ],
+            [
+                'key' => 'binary_default_left_ratio',
+                'value' => '50',
+                'type' => 'integer',
+                'input_type' => 'number',
+                'group' => 'binary',
+                'description' => 'Default Left Leg Ratio for Simulation (%)',
+                'description_th' => 'สัดส่วนขาซ้ายเริ่มต้นสำหรับการจำลอง (%)',
+                'placeholder' => '50',
+                'unit' => '%',
+                'sort_order' => 36,
+            ],
+            [
+                'key' => 'binary_enabled',
+                'value' => '1',
+                'type' => 'boolean',
+                'input_type' => 'toggle',
+                'group' => 'binary',
+                'description' => 'Enable Binary Commission System',
+                'description_th' => 'เปิดใช้ระบบคอมมิชชัน Binary',
+                'sort_order' => 37,
+            ],
+            [
+                'key' => 'unilevel_enabled',
+                'value' => '1',
+                'type' => 'boolean',
+                'input_type' => 'toggle',
+                'group' => 'unilevel',
+                'description' => 'Enable Unilevel Commission System',
+                'description_th' => 'เปิดใช้ระบบคอมมิชชัน Unilevel',
+                'sort_order' => 24,
+            ],
 
             // Flush Settings
             [

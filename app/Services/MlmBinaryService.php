@@ -4,10 +4,17 @@ namespace App\Services;
 
 use App\Models\MlmMember;
 use App\Models\MlmCommission;
+use App\Models\MlmGlobalSetting;
 use App\Models\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * MlmBinaryService - จัดการการคำนวณ Binary Commission
+ *
+ * ⚠️ IMPORTANT: Service นี้ใช้ค่าจาก MlmGlobalSetting เท่านั้น
+ * ไม่ใช้ค่าจาก MlmPlan (per-plan settings) เพื่อความเป็นเอกภาพ
+ */
 class MlmBinaryService
 {
     /**
@@ -58,10 +65,17 @@ class MlmBinaryService
 
     /**
      * Calculate binary pair commissions
+     * ใช้ค่าจาก Global Settings แทน per-plan settings
      */
     protected function calculateBinaryPairCommissions(MlmMember $member, Order $order, array $pvData)
     {
         $plan = $member->plan;
+
+        // ดึงค่าจาก Global Settings
+        $maxPairsPerDay = MlmGlobalSetting::get('binary_max_pairs_per_day', null);
+        $commissionPerPair = MlmGlobalSetting::get('binary_pair_commission', 100);
+        $maxCommissionPerDay = MlmGlobalSetting::get('binary_max_commission_per_day', null);
+        $flushPercentage = MlmGlobalSetting::get('binary_flush_percentage', 100) / 100;
 
         // Traverse up the binary tree
         $currentMember = $member;
@@ -86,12 +100,11 @@ class MlmBinaryService
             $strongerLeg = max($leftPv, $rightPv);
 
             // Calculate how many pairs can be formed
-            $pairsAvailable = floor($weakerLeg / $this->getPairRatio($plan));
+            $pairsAvailable = floor($weakerLeg / $this->getPairRatio());
 
             if ($pairsAvailable > 0) {
                 // Check daily limits
                 $todayPairs = $this->getTodayPairsCount($parent);
-                $maxPairsPerDay = $plan->binary_max_pairs_per_day;
 
                 if ($maxPairsPerDay && $todayPairs >= $maxPairsPerDay) {
                     $currentMember = $parent;
@@ -104,12 +117,10 @@ class MlmBinaryService
                 }
 
                 // Calculate commission
-                $commissionPerPair = $plan->binary_pair_commission;
                 $totalCommission = $pairsToProcess * $commissionPerPair;
 
                 // Check daily commission limit
                 $todayCommission = $this->getTodayCommissionAmount($parent);
-                $maxCommissionPerDay = $plan->binary_max_commission_per_day;
 
                 if ($maxCommissionPerDay && ($todayCommission + $totalCommission) > $maxCommissionPerDay) {
                     $totalCommission = $maxCommissionPerDay - $todayCommission;
@@ -129,15 +140,14 @@ class MlmBinaryService
                         'left_leg_pv' => $leftPv,
                         'right_leg_pv' => $rightPv,
                         'pairs_count' => $pairsToProcess,
-                        'pv_amount' => $pairsToProcess * $this->getPairRatio($plan),
+                        'pv_amount' => $pairsToProcess * $this->getPairRatio(),
                         'sales_amount' => $order->total,
                         'commission_amount' => $totalCommission,
                         'status' => 'pending',
                     ]);
 
                     // Flush PV based on flush percentage
-                    $flushPercentage = $plan->binary_flush_percentage / 100;
-                    $pvFlushed = $pairsToProcess * $this->getPairRatio($plan) * $flushPercentage;
+                    $pvFlushed = $pairsToProcess * $this->getPairRatio() * $flushPercentage;
 
                     // Update carried PV
                     if ($leftPv <= $rightPv) {
@@ -149,7 +159,7 @@ class MlmBinaryService
                     }
 
                     // แก้ Bug #3: Carry forward remaining PV พร้อม set expiry date
-                    $remainingWeakPv = $weakerLeg - ($pairsToProcess * $this->getPairRatio($plan));
+                    $remainingWeakPv = $weakerLeg - ($pairsToProcess * $this->getPairRatio());
 
                     if ($remainingWeakPv > 0) {
                         $leg = ($leftPv <= $rightPv) ? 'left' : 'right';
@@ -164,12 +174,14 @@ class MlmBinaryService
 
     /**
      * Get pair ratio based on pairing type
+     * ใช้ค่าจาก Global Settings
      */
-    protected function getPairRatio($plan)
+    protected function getPairRatio()
     {
         // 1:1 means 1 PV left + 1 PV right = 1 pair
         // 2:1 means 2 PV left + 1 PV right = 1 pair (or vice versa)
-        return $plan->binary_pairing_type === '2:1' ? 2 : 1;
+        $pairingType = MlmGlobalSetting::get('binary_pairing_type', '1:1');
+        return $pairingType === '2:1' ? 2 : 1;
     }
 
     /**
@@ -196,23 +208,74 @@ class MlmBinaryService
 
     /**
      * Find placement position for new member (auto-placement)
+     * ใช้ค่าจาก Global Settings แทน per-plan settings
      */
     public function findPlacementPosition(MlmMember $sponsor, $preferredLeg = null)
     {
-        $plan = $sponsor->plan;
+        $autoPlacementEnabled = MlmGlobalSetting::get('auto_placement_enabled', true);
 
-        if (!$plan->auto_placement) {
+        if (!$autoPlacementEnabled) {
             return ['parent_id' => $sponsor->id, 'position' => $preferredLeg ?? 'left'];
         }
 
-        $placementType = $plan->auto_placement_type;
+        $placementType = MlmGlobalSetting::get('auto_placement_strategy', 'balanced');
 
         return match ($placementType) {
             'balanced' => $this->findBalancedPlacement($sponsor),
             'weak_leg' => $this->findWeakLegPlacement($sponsor),
-            'fill_by_level' => $this->findFillByLevelPlacement($sponsor),
-            default => $this->findLeftToRightPlacement($sponsor),
+            'fill_by_level', 'fill_level' => $this->findFillByLevelPlacement($sponsor),
+            'left_first' => $this->findLeftToRightPlacement($sponsor),
+            'right_first' => $this->findRightToLeftPlacement($sponsor),
+            'strong_leg' => $this->findStrongLegPlacement($sponsor),
+            'manual' => ['parent_id' => $sponsor->id, 'position' => $preferredLeg ?? 'left'],
+            default => $this->findBalancedPlacement($sponsor),
         };
+    }
+
+    /**
+     * Find right-to-left placement
+     */
+    protected function findRightToLeftPlacement(MlmMember $member)
+    {
+        // Check if right is available
+        if (!$member->binaryRightChild) {
+            return ['parent_id' => $member->id, 'position' => 'right'];
+        }
+
+        // Check if left is available
+        if (!$member->binaryLeftChild) {
+            return ['parent_id' => $member->id, 'position' => 'left'];
+        }
+
+        // Recursively check right subtree first
+        $rightPlacement = $this->findRightToLeftPlacement($member->binaryRightChild);
+        if ($rightPlacement) {
+            return $rightPlacement;
+        }
+
+        // Then check left subtree
+        return $this->findRightToLeftPlacement($member->binaryLeftChild);
+    }
+
+    /**
+     * Find strong leg placement
+     */
+    protected function findStrongLegPlacement(MlmMember $member)
+    {
+        if (!$member->binaryLeftChild) {
+            return ['parent_id' => $member->id, 'position' => 'left'];
+        }
+
+        if (!$member->binaryRightChild) {
+            return ['parent_id' => $member->id, 'position' => 'right'];
+        }
+
+        // Find the leg with more PV (strong leg)
+        if ($member->left_leg_pv >= $member->right_leg_pv) {
+            return $this->findLeftToRightPlacement($member->binaryLeftChild);
+        }
+
+        return $this->findLeftToRightPlacement($member->binaryRightChild);
     }
 
     /**
