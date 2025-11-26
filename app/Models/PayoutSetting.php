@@ -57,6 +57,17 @@ class PayoutSetting extends Model
         'is_active',
         'description',
         'extra_settings',
+        // คอลัมน์เพิ่มเติมสำหรับ PlatformRevenueSeeder
+        'slug',
+        'name',
+        'earning_type',
+        'payout_mode',
+        'min_payout',
+        'max_payout',
+        'fee_fixed',
+        'fee_percentage',
+        'requires_approval',
+        'schedule',
     ];
 
     protected $casts = [
@@ -76,6 +87,13 @@ class PayoutSetting extends Model
         'large_payout_threshold' => 'decimal:2',
         'is_active' => 'boolean',
         'extra_settings' => 'array',
+        // casts เพิ่มเติมสำหรับ PlatformRevenueSeeder
+        'min_payout' => 'decimal:2',
+        'max_payout' => 'decimal:2',
+        'fee_fixed' => 'decimal:2',
+        'fee_percentage' => 'decimal:2',
+        'requires_approval' => 'boolean',
+        'schedule' => 'array',
     ];
 
     /**
