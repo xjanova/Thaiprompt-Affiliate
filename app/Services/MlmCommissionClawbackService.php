@@ -204,8 +204,8 @@ class MlmCommissionClawbackService
             return $result;
         }
 
-        // ตรวจสอบยอดเงินใน Wallet
-        $walletBalance = $user->wallet->balance ?? 0;
+        // ตรวจสอบยอดเงินใน Wallet (null safety)
+        $walletBalance = $user->wallet?->balance ?? 0;
 
         if ($walletBalance >= $amount) {
             // มีเงินพอ → หักทันที

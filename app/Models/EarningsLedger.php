@@ -52,6 +52,8 @@ class EarningsLedger extends Model
         'status',
         'available_at',
         'paid_at',
+        'cancelled_at',
+        'cancel_reason',
         'payout_request_id',
         'wallet_transaction_id',
         'description',
@@ -68,6 +70,7 @@ class EarningsLedger extends Model
         'net_amount' => 'decimal:4',
         'available_at' => 'datetime',
         'paid_at' => 'datetime',
+        'cancelled_at' => 'datetime',
         'breakdown' => 'array',
     ];
 

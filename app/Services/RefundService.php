@@ -382,7 +382,7 @@ class RefundService
             return $result;
         }
 
-        $walletBalance = $user->wallet->balance ?? 0;
+        $walletBalance = $user->wallet?->balance ?? 0;
 
         if ($walletBalance >= $amount) {
             // มีเงินพอ → หักทันที
