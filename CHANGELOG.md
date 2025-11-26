@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.215.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1675 from xjanova/claude/update-shop-theme-018sX7nJyV9ou5ZQcDtUyTqw (938daf19)
+- feat: update shop and seller pages to use Arrow X V3 theme (effcd9a0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.214.0] - 2025-11-26
 
 ### ✨ Features
