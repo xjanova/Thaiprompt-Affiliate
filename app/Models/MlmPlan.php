@@ -6,11 +6,24 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * MlmPlan Model
+ *
+ * ⚠️ IMPORTANT: Per-plan commission settings ถูกย้ายไปที่ MlmGlobalSetting แล้ว
+ * Model นี้เก็บเฉพาะข้อมูลพื้นฐานของ Plan เท่านั้น (ชื่อ, ประเภท, ค่าธรรมเนียม)
+ *
+ * @see MlmGlobalSetting สำหรับการตั้งค่าคอมมิชชั่นทั้งหมด
+ */
 class MlmPlan extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /**
+     * ⚠️ ลบ per-plan commission settings ออกแล้ว
+     * ใช้ MlmGlobalSetting แทน
+     */
     protected $fillable = [
+        // ข้อมูลพื้นฐาน
         'name',
         'name_th',
         'description',
@@ -22,36 +35,10 @@ class MlmPlan extends Model
         'color',
         'icon',
         'sort_order',
+        // ค่าธรรมเนียมสมัครสมาชิก
         'joining_fee',
         'requires_joining_fee',
-        'use_pv_system',
-        'global_pv_rate',
-        'global_commission_per_pv',
-        'max_total_commission_percentage',
-        'enable_overpay_protection',
-        'unilevel_levels',
-        'unilevel_max_depth',
-        'unilevel_compression',
-        'unilevel_max_commission_per_level',
-        'unilevel_max_commission_per_order',
-        'binary_pair_commission',
-        'binary_match_percentage',
-        'binary_max_pairs_per_day',
-        'binary_max_commission_per_day',
-        'binary_min_pv_for_commission',
-        'binary_flush_percentage',
-        'binary_flush_enabled',
-        'binary_flush_mode',
-        'binary_carry_forward_pv',
-        'binary_carry_forward_days',
-        'binary_spillover',
-        'binary_pairing_type',
-        'binary_placement_preference',
-        'binary_placement_fill_level_first',
-        'requires_rank',
-        'rank_requirements',
-        'auto_placement',
-        'auto_placement_type',
+        // การตั้งค่าขั้นสูง
         'advanced_settings',
     ];
 
@@ -62,30 +49,6 @@ class MlmPlan extends Model
             'is_default' => 'boolean',
             'joining_fee' => 'decimal:2',
             'requires_joining_fee' => 'boolean',
-            'use_pv_system' => 'boolean',
-            'global_pv_rate' => 'decimal:2',
-            'global_commission_per_pv' => 'decimal:2',
-            'max_total_commission_percentage' => 'decimal:2',
-            'enable_overpay_protection' => 'boolean',
-            'unilevel_levels' => 'array',
-            'unilevel_max_depth' => 'integer',
-            'unilevel_compression' => 'boolean',
-            'unilevel_max_commission_per_level' => 'decimal:2',
-            'unilevel_max_commission_per_order' => 'decimal:2',
-            'binary_pair_commission' => 'decimal:2',
-            'binary_match_percentage' => 'decimal:2',
-            'binary_max_pairs_per_day' => 'decimal:2',
-            'binary_max_commission_per_day' => 'decimal:2',
-            'binary_min_pv_for_commission' => 'decimal:2',
-            'binary_flush_percentage' => 'decimal:2',
-            'binary_flush_enabled' => 'boolean',
-            'binary_carry_forward_pv' => 'boolean',
-            'binary_carry_forward_days' => 'integer',
-            'binary_spillover' => 'boolean',
-            'binary_placement_fill_level_first' => 'boolean',
-            'requires_rank' => 'boolean',
-            'rank_requirements' => 'array',
-            'auto_placement' => 'boolean',
             'advanced_settings' => 'array',
         ];
     }
