@@ -71,6 +71,7 @@ use App\Http\Controllers\Admin\AppControlSectionController;
 use App\Http\Controllers\Admin\ComponentSettingController;
 use App\Http\Controllers\Admin\PageBuilderController;
 use App\Http\Controllers\Admin\PageBuilderSectionController;
+use App\Http\Controllers\Admin\HomepageManagerController;
 use App\Http\Controllers\Admin\SystemResetController;
 use App\Http\Controllers\Admin\ApiEndpointController;
 use App\Http\Controllers\Admin\ApiKeyController;
@@ -2030,6 +2031,46 @@ Route::prefix('page-builder')->name('page-builder.')->group(function () {
         Route::post('/toggle-visibility', [PageBuilderSectionController::class, 'toggleVisibility'])->name('toggle-visibility');
         Route::post('/toggle-active', [PageBuilderSectionController::class, 'toggleActive'])->name('toggle-active');
     });
+});
+
+// Homepage Manager - Visual Page Builder สำหรับหน้าแรก
+Route::prefix('homepage-manager')->name('homepage-manager.')->group(function () {
+    // หน้าหลัก Visual Editor
+    Route::get('/', [HomepageManagerController::class, 'index'])->name('index');
+    Route::get('/preview', [HomepageManagerController::class, 'preview'])->name('preview');
+
+    // API สำหรับดึงข้อมูล
+    Route::get('/sections', [HomepageManagerController::class, 'getSections'])->name('sections.get');
+    Route::get('/templates', [HomepageManagerController::class, 'getTemplates'])->name('templates.get');
+
+    // Section Management
+    Route::post('/sections', [HomepageManagerController::class, 'storeSection'])->name('sections.store');
+    Route::put('/sections/{section}', [HomepageManagerController::class, 'updateSection'])->name('sections.update');
+    Route::delete('/sections/{section}', [HomepageManagerController::class, 'destroySection'])->name('sections.destroy');
+    Route::post('/sections/{section}/toggle', [HomepageManagerController::class, 'toggleSection'])->name('sections.toggle');
+    Route::post('/sections/{section}/duplicate', [HomepageManagerController::class, 'duplicateSection'])->name('sections.duplicate');
+    Route::post('/sections/reorder', [HomepageManagerController::class, 'reorderSections'])->name('sections.reorder');
+
+    // Element Management
+    Route::post('/sections/{section}/elements', [HomepageManagerController::class, 'storeElement'])->name('elements.store');
+    Route::put('/elements/{element}', [HomepageManagerController::class, 'updateElement'])->name('elements.update');
+    Route::delete('/elements/{element}', [HomepageManagerController::class, 'destroyElement'])->name('elements.destroy');
+    Route::post('/elements/{element}/duplicate', [HomepageManagerController::class, 'duplicateElement'])->name('elements.duplicate');
+    Route::post('/sections/{section}/elements/reorder', [HomepageManagerController::class, 'reorderElements'])->name('elements.reorder');
+
+    // Template Management
+    Route::post('/templates/{template}/import', [HomepageManagerController::class, 'importTemplate'])->name('templates.import');
+    Route::post('/templates/save', [HomepageManagerController::class, 'saveAsTemplate'])->name('templates.save');
+
+    // Import/Export
+    Route::get('/export', [HomepageManagerController::class, 'export'])->name('export');
+    Route::post('/import', [HomepageManagerController::class, 'import'])->name('import');
+
+    // Media Upload
+    Route::post('/upload', [HomepageManagerController::class, 'uploadImage'])->name('upload');
+
+    // Clear All
+    Route::post('/clear', [HomepageManagerController::class, 'clearAll'])->name('clear');
 });
 
 // Hotel Owner Management (Super Admin)
