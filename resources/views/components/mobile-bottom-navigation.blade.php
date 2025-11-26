@@ -74,8 +74,8 @@
             [
                 'label' => 'รายงาน',
                 'icon' => 'fas fa-chart-line',
-                'url' => route('seller.analytics'),
-                'active' => request()->routeIs('seller.analytics'),
+                'url' => route('seller.analytics.index'),
+                'active' => request()->routeIs('seller.analytics.*'),
             ],
             [
                 'label' => 'เมนู',
