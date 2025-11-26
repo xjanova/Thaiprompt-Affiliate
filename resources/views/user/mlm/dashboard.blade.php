@@ -184,7 +184,7 @@
                             <div>
                                 <div class="text-sm text-gray-600 dark:text-gray-400">Est. Commission</div>
                                 <div class="text-2xl font-bold text-green-600">
-                                    ฿{{ number_format(floor(min($member->left_leg_pv ?? 0, $member->right_leg_pv ?? 0)) * ($member->plan?->binary_pair_commission ?? 100), 2) }}
+                                    ฿{{ number_format(floor(min($member->left_leg_pv ?? 0, $member->right_leg_pv ?? 0)) * \App\Models\MlmGlobalSetting::get('binary_pair_commission', 100), 2) }}
                                 </div>
                             </div>
                         </div>

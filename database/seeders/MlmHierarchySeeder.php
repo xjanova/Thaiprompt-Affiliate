@@ -189,6 +189,7 @@ class MlmHierarchySeeder extends Seeder
 
         if (!$plan) {
             // สร้าง Default Plan สำหรับ foreign key constraint
+            // ⚠️ หมายเหตุ: ค่า commission settings ใช้จาก MlmGlobalSetting แทน per-plan settings
             $plan = MlmPlan::create([
                 'name' => 'Default Commission Plan',
                 'name_th' => 'แผนคอมมิชชันหลัก',
@@ -203,31 +204,6 @@ class MlmHierarchySeeder extends Seeder
                 'sort_order' => 1,
                 'joining_fee' => 0,
                 'requires_joining_fee' => false,
-                'use_pv_system' => true,
-                'global_pv_rate' => 1.00,
-                'global_commission_per_pv' => 1.00,
-                'max_total_commission_percentage' => 50.00,
-                'enable_overpay_protection' => true,
-                'unilevel_levels' => [
-                    ['level' => 1, 'percentage' => 10],
-                    ['level' => 2, 'percentage' => 5],
-                    ['level' => 3, 'percentage' => 3],
-                    ['level' => 4, 'percentage' => 2],
-                    ['level' => 5, 'percentage' => 1],
-                ],
-                'unilevel_max_depth' => 10,
-                'unilevel_compression' => true,
-                'binary_pair_commission' => 100.00,
-                'binary_match_percentage' => 50.00,
-                'binary_flush_enabled' => true,
-                'binary_flush_mode' => 'percentage',
-                'binary_carry_forward_pv' => false,
-                'binary_spillover' => true,
-                'binary_pairing_type' => '1:1',
-                'binary_placement_preference' => 'balanced',
-                'binary_placement_fill_level_first' => true,
-                'auto_placement' => true,
-                'auto_placement_type' => 'balanced',
             ]);
         }
 
