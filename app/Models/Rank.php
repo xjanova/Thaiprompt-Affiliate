@@ -23,24 +23,40 @@ class Rank extends Model
         'stars',
         'commission_rate',
         'bonus_multiplier',
+        'promotion_bonus',
+        'max_downline_level_bonus',
+        'unilevel_commission_levels',
+        'privileges',
         'min_points',
         'min_referrals',
         'min_sales',
+        'monthly_maintenance_pv',
+        'withdrawal_fee_discount',
+        'max_withdrawals_per_month',
         'is_active',
         'is_default',
+        'is_top_tier',
         'sort_order',
     ];
 
     protected $casts = [
         'commission_rate' => 'decimal:2',
         'bonus_multiplier' => 'decimal:2',
+        'promotion_bonus' => 'decimal:2',
         'min_sales' => 'decimal:2',
+        'monthly_maintenance_pv' => 'decimal:2',
+        'withdrawal_fee_discount' => 'decimal:2',
+        'unilevel_commission_levels' => 'array',
+        'privileges' => 'array',
         'is_active' => 'boolean',
         'is_default' => 'boolean',
+        'is_top_tier' => 'boolean',
         'level' => 'integer',
         'min_points' => 'integer',
         'min_referrals' => 'integer',
         'stars' => 'integer',
+        'max_downline_level_bonus' => 'integer',
+        'max_withdrawals_per_month' => 'integer',
     ];
 
     /**
@@ -234,5 +250,195 @@ class Rank extends Model
             'total_count' => $requirements->count(),
             'requirements' => $results,
         ];
+    }
+
+    /**
+     * ดึงเปอร์เซ็นต์คอมมิชชันสำหรับชั้นลูกทีมที่ระบุ
+     *
+     * @param int $downlineLevel ระดับลูกทีม (1 = ลูกตรง, 2 = ลูกของลูก, ...)
+     * @return float เปอร์เซ็นต์คอมมิชชัน
+     */
+    public function getDownlineCommissionRate(int $downlineLevel): float
+    {
+        // ถ้าเกินจำนวนชั้นที่กำหนด คืนค่า 0
+        if ($downlineLevel > $this->max_downline_level_bonus) {
+            return 0;
+        }
+
+        // ถ้ามี unilevel_commission_levels กำหนดไว้
+        if ($this->unilevel_commission_levels && isset($this->unilevel_commission_levels[$downlineLevel - 1])) {
+            return (float) $this->unilevel_commission_levels[$downlineLevel - 1];
+        }
+
+        // ค่าเริ่มต้น: ลดลงตามระดับ
+        $defaultRates = [10, 5, 3, 2, 1, 1, 0.5, 0.5, 0.25, 0.25];
+
+        return $defaultRates[$downlineLevel - 1] ?? 0;
+    }
+
+    /**
+     * ตรวจสอบว่าผู้ใช้มีสิทธิพิเศษที่ระบุหรือไม่
+     *
+     * @param string $privilege รหัสสิทธิพิเศษ
+     * @return bool
+     */
+    public function hasPrivilege(string $privilege): bool
+    {
+        if (!$this->privileges) {
+            return false;
+        }
+
+        return in_array($privilege, $this->privileges);
+    }
+
+    /**
+     * ดึงรายการสิทธิพิเศษทั้งหมดพร้อมคำอธิบาย
+     *
+     * @return array
+     */
+    public function getPrivilegesWithDescriptions(): array
+    {
+        $allPrivileges = self::getAvailablePrivileges();
+        $result = [];
+
+        if (!$this->privileges) {
+            return $result;
+        }
+
+        foreach ($this->privileges as $privilege) {
+            if (isset($allPrivileges[$privilege])) {
+                $result[$privilege] = $allPrivileges[$privilege];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * รายการสิทธิพิเศษที่มีในระบบ
+     *
+     * @return array
+     */
+    public static function getAvailablePrivileges(): array
+    {
+        return [
+            'vip_support' => [
+                'name' => 'VIP Support',
+                'name_th' => 'บริการ VIP พิเศษ',
+                'description' => 'Priority customer support',
+                'description_th' => 'บริการลูกค้าสัมพันธ์ลำดับแรก',
+                'icon' => '⭐',
+            ],
+            'priority_withdrawal' => [
+                'name' => 'Priority Withdrawal',
+                'name_th' => 'ถอนเงินด่วน',
+                'description' => 'Fast-track withdrawal processing',
+                'description_th' => 'ถอนเงินรวดเร็วกว่าปกติ',
+                'icon' => '💨',
+            ],
+            'exclusive_products' => [
+                'name' => 'Exclusive Products',
+                'name_th' => 'สินค้าเอ็กซ์คลูซีฟ',
+                'description' => 'Access to exclusive products',
+                'description_th' => 'เข้าถึงสินค้าพิเศษเฉพาะกลุ่ม',
+                'icon' => '🎁',
+            ],
+            'leadership_training' => [
+                'name' => 'Leadership Training',
+                'name_th' => 'อบรมผู้นำ',
+                'description' => 'Access to leadership training programs',
+                'description_th' => 'เข้าร่วมโปรแกรมอบรมผู้นำ',
+                'icon' => '📚',
+            ],
+            'travel_rewards' => [
+                'name' => 'Travel Rewards',
+                'name_th' => 'รางวัลท่องเที่ยว',
+                'description' => 'Eligible for travel reward programs',
+                'description_th' => 'สิทธิ์รับรางวัลท่องเที่ยว',
+                'icon' => '✈️',
+            ],
+            'car_bonus' => [
+                'name' => 'Car Bonus',
+                'name_th' => 'โบนัสรถยนต์',
+                'description' => 'Eligible for car bonus program',
+                'description_th' => 'สิทธิ์รับโบนัสรถยนต์',
+                'icon' => '🚗',
+            ],
+            'house_bonus' => [
+                'name' => 'House Bonus',
+                'name_th' => 'โบนัสบ้าน',
+                'description' => 'Eligible for house bonus program',
+                'description_th' => 'สิทธิ์รับโบนัสบ้าน',
+                'icon' => '🏠',
+            ],
+            'global_bonus_pool' => [
+                'name' => 'Global Bonus Pool',
+                'name_th' => 'แบ่งปันกำไรทั่วโลก',
+                'description' => 'Share in global profit pool',
+                'description_th' => 'รับส่วนแบ่งจากกองทุนกำไรทั่วโลก',
+                'icon' => '🌍',
+            ],
+            'personal_assistant' => [
+                'name' => 'Personal Assistant',
+                'name_th' => 'ผู้ช่วยส่วนตัว',
+                'description' => 'Dedicated personal assistant',
+                'description_th' => 'ผู้ช่วยส่วนตัวประจำ',
+                'icon' => '👤',
+            ],
+            'unlimited_withdrawals' => [
+                'name' => 'Unlimited Withdrawals',
+                'name_th' => 'ถอนไม่จำกัด',
+                'description' => 'No limit on withdrawal frequency',
+                'description_th' => 'ถอนเงินได้ไม่จำกัดจำนวนครั้ง',
+                'icon' => '♾️',
+            ],
+        ];
+    }
+
+    /**
+     * ดึงระดับเริ่มต้น (Bronze)
+     *
+     * @return Rank|null
+     */
+    public static function getDefaultRank(): ?Rank
+    {
+        return static::where('is_default', true)
+            ->where('is_active', true)
+            ->first();
+    }
+
+    /**
+     * ดึงระดับสูงสุด (Legend)
+     *
+     * @return Rank|null
+     */
+    public static function getTopTierRank(): ?Rank
+    {
+        return static::where('is_top_tier', true)
+            ->where('is_active', true)
+            ->first();
+    }
+
+    /**
+     * Scope สำหรับ Top Tier
+     */
+    public function scopeTopTier($query)
+    {
+        return $query->where('is_top_tier', true);
+    }
+
+    /**
+     * คำนวณคอมมิชชันรวมสำหรับยอดขายที่กำหนด
+     *
+     * @param float $saleAmount ยอดขาย
+     * @return float จำนวนคอมมิชชัน
+     */
+    public function calculateCommission(float $saleAmount): float
+    {
+        // คอมมิชชันพื้นฐานจาก commission_rate
+        $baseCommission = $saleAmount * ($this->commission_rate / 100);
+
+        // คูณด้วย bonus_multiplier
+        return $baseCommission * $this->bonus_multiplier;
     }
 }
