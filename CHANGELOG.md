@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.196.0] - 2025-11-26
+
+### ✨ Features
+- feat: อัพเกรดระบบ Rank ให้สมบูรณ์ 8 ระดับพร้อมโบนัสเลื่อนตำแหน่ง (0a1a8a8c)
+### 🐛 Bug Fixes
+- fix: เพิ่มรองรับ requirement types สำหรับ legs (diamond_legs, crown_legs, royal_legs) (3b7b4e43)
+### 🔧 Other Changes
+- Merge pull request #1642 from xjanova/claude/add-mlm-hierarchy-system-01YMjHqnoi1D7CFjh4DiWz9S (29d691ac)
+
 ## [v3.195.1] - 2025-11-26
 
 ### ✨ Features
