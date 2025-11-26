@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.207.0] - 2025-11-26
+
+### ✨ Features
+- feat: add comprehensive Rank system with requirements and rewards (339fe780)
+- feat: add avatar frame system with rank-based designs (1f2d44f8)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1663 from xjanova/claude/virtual-id-cards-01Wsax8cHKsT6dcMUdmfL85b (2b2203cf)
+
 ## [v3.206.3] - 2025-11-26
 
 ### ✨ Features
