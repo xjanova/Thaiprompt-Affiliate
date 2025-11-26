@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\MlmGlobalSetting;
 use App\Models\MlmMember;
 use App\Models\MlmPlan;
 use App\Models\MlmPvTransaction;
@@ -10,13 +11,23 @@ use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * MlmPvService - จัดการการคำนวณ PV
+ *
+ * ⚠️ IMPORTANT: Service นี้ใช้ค่าจาก MlmGlobalSetting เท่านั้น
+ * ไม่ใช้ค่าจาก MlmPlan (per-plan settings) เพื่อความเป็นเอกภาพ
+ */
 class MlmPvService
 {
     /**
      * Calculate PV for an order
+     * ใช้ค่าจาก Global Settings แทน per-plan settings
      */
     public function calculateOrderPv(Order $order, MlmPlan $plan)
     {
+        // ใช้ Global Settings แทน per-plan settings
+        $globalPvRate = MlmGlobalSetting::get('global_pv_rate', 1);
+
         $totalPv = 0;
         $items = [];
 
@@ -32,8 +43,8 @@ class MlmPvService
             if ($productPv) {
                 $itemPv = $productPv->pv_value * $quantity;
             } else {
-                // Use global PV rate
-                $itemPv = $orderItem->subtotal * $plan->global_pv_rate;
+                // Use global PV rate from MlmGlobalSetting
+                $itemPv = $orderItem->subtotal * $globalPvRate;
             }
 
             $totalPv += $itemPv;
@@ -124,19 +135,24 @@ class MlmPvService
 
     /**
      * Get PV configuration for a product
+     * ใช้ค่าจาก Global Settings แทน per-plan settings
      */
     public function getProductPvConfig(Product $product, MlmPlan $plan)
     {
+        // ใช้ Global Settings แทน per-plan settings
+        $globalPvRate = MlmGlobalSetting::get('global_pv_rate', 1);
+        $commissionPerPv = MlmGlobalSetting::get('commission_per_pv', 1);
+
         $config = MlmProductPv::where('product_id', $product->id)
             ->where('mlm_plan_id', $plan->id)
             ->first();
 
         if (!$config) {
-            // Return default config
+            // Return default config using global settings
             return [
-                'pv_value' => $product->price * $plan->global_pv_rate,
+                'pv_value' => $product->price * $globalPvRate,
                 'use_global_rate' => true,
-                'commission_preview' => $product->price * $plan->global_pv_rate * $plan->global_commission_per_pv,
+                'commission_preview' => $product->price * $globalPvRate * $commissionPerPv,
                 'show_pv' => true,
                 'show_commission' => true,
             ];
@@ -154,11 +170,18 @@ class MlmPvService
 
     /**
      * Calculate commission preview for product
+     * ใช้ค่าจาก Global Settings แทน per-plan settings
      */
     public function calculateProductCommissionPreview(Product $product, MlmPlan $plan, $quantity = 1)
     {
         $pvConfig = $this->getProductPvConfig($product, $plan);
         $totalPv = $pvConfig['pv_value'] * $quantity;
+
+        // ดึงค่าจาก Global Settings
+        $unilevelEnabled = MlmGlobalSetting::get('unilevel_enabled', true);
+        $binaryEnabled = MlmGlobalSetting::get('binary_enabled', true);
+        $levels = MlmGlobalSetting::get('unilevel_levels', []);
+        $binaryMatchPercentage = MlmGlobalSetting::get('binary_match_percentage', 50);
 
         $preview = [
             'pv' => $totalPv,
@@ -166,9 +189,7 @@ class MlmPvService
         ];
 
         // Unilevel preview
-        if ($plan->type === 'unilevel' || $plan->type === 'hybrid') {
-            $levels = $plan->unilevel_levels ?? [];
-
+        if ($unilevelEnabled && ($plan->type === 'unilevel' || $plan->type === 'hybrid')) {
             foreach ($levels as $index => $level) {
                 $percentage = $level['percentage'] ?? 0;
                 $commission = ($totalPv * $percentage) / 100;
@@ -183,12 +204,12 @@ class MlmPvService
         }
 
         // Binary preview
-        if ($plan->type === 'binary' || $plan->type === 'hybrid') {
-            $binaryCommission = $totalPv * ($plan->binary_match_percentage / 100);
+        if ($binaryEnabled && ($plan->type === 'binary' || $plan->type === 'hybrid')) {
+            $binaryCommission = $totalPv * ($binaryMatchPercentage / 100);
 
             $preview['commissions'][] = [
                 'type' => 'binary',
-                'percentage' => $plan->binary_match_percentage,
+                'percentage' => $binaryMatchPercentage,
                 'amount' => $binaryCommission,
                 'note' => 'Estimated binary matching bonus',
             ];

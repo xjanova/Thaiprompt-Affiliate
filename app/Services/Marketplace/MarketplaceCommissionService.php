@@ -4,6 +4,7 @@ namespace App\Services\Marketplace;
 
 use App\Models\MarketplaceCommission;
 use App\Models\MarketplaceOrder;
+use App\Models\MlmGlobalSetting;
 use App\Models\User;
 use App\Models\MlmPlan;
 use App\Models\MlmMember;
@@ -148,6 +149,7 @@ class MarketplaceCommissionService
 
     /**
      * Calculate unilevel commissions
+     * ใช้ค่าจาก Global Settings แทน per-plan settings
      *
      * @param MarketplaceOrder $order
      * @param MlmMember $member
@@ -157,8 +159,9 @@ class MarketplaceCommissionService
     private function calculateUnilevelCommissions(MarketplaceOrder $order, MlmMember $member, MlmPlan $plan): array
     {
         $commissions = [];
-        $levels = $plan->unilevel_levels ?? [];
-        $maxDepth = $plan->unilevel_max_depth ?? 10;
+        // ใช้ Global Settings แทน per-plan settings
+        $levels = MlmGlobalSetting::get('unilevel_levels', []);
+        $maxDepth = MlmGlobalSetting::get('unilevel_max_depth', 10);
 
         // Get upline path
         $uplinePath = $this->getUnilevelUplinePath($member, $maxDepth);

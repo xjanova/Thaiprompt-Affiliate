@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\MlmMember;
 use App\Models\MlmCommission;
+use App\Models\MlmGlobalSetting;
 use App\Models\MlmPlan;
 use App\Models\Order;
 use App\Models\WalletTransaction;
@@ -179,13 +180,19 @@ class MlmCalculationService
 
     /**
      * Calculate commission preview for a member
+     *
+     * ⚠️ IMPORTANT: ใช้ค่าจาก MlmGlobalSetting เท่านั้น
+     * ไม่ใช้ค่าจาก MlmPlan (per-plan settings) เพื่อความเป็นเอกภาพ
      */
     public function calculateCommissionPreview(MlmMember $member, $orderAmount, $orderPv = null)
     {
         $plan = $member->plan;
 
+        // ใช้ Global Settings แทน per-plan settings
+        $pvRate = MlmGlobalSetting::get('global_pv_rate', 1);
+
         if (!$orderPv) {
-            $orderPv = $orderAmount * $plan->global_pv_rate;
+            $orderPv = $orderAmount * $pvRate;
         }
 
         $preview = [
@@ -195,17 +202,22 @@ class MlmCalculationService
             'total_commission' => 0,
         ];
 
+        // ดึงค่าจาก Global Settings
+        $unilevelEnabled = MlmGlobalSetting::get('unilevel_enabled', true);
+        $binaryEnabled = MlmGlobalSetting::get('binary_enabled', true);
+        $levels = MlmGlobalSetting::get('unilevel_levels', []);
+        $binaryMatchPercentage = MlmGlobalSetting::get('binary_match_percentage', 50);
+
         // Unilevel preview (direct level only)
-        if ($plan->type === 'unilevel' || $plan->type === 'hybrid') {
-            $levels = $plan->unilevel_levels ?? [];
+        if ($unilevelEnabled && ($plan->type === 'unilevel' || $plan->type === 'hybrid')) {
             if (!empty($levels) && isset($levels[0])) {
                 $preview['unilevel_commission'] = $orderPv * ($levels[0]['percentage'] / 100);
             }
         }
 
         // Binary preview (estimated)
-        if ($plan->type === 'binary' || $plan->type === 'hybrid') {
-            $preview['binary_commission'] = $orderPv * ($plan->binary_match_percentage / 100);
+        if ($binaryEnabled && ($plan->type === 'binary' || $plan->type === 'hybrid')) {
+            $preview['binary_commission'] = $orderPv * ($binaryMatchPercentage / 100);
         }
 
         $preview['total_commission'] = $preview['unilevel_commission'] + $preview['binary_commission'];
