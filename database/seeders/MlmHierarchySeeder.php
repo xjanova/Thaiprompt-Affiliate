@@ -9,37 +9,58 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * สร้างข้อมูล MLM Hierarchy สำหรับการทดสอบ 3 ระบบผัง
+ *
+ * โครงสร้าง Binary Tree (5 ชั้น เต็มผัง):
+ * Level 0: 1 คน (Root)
+ * Level 1: 2 คน
+ * Level 2: 4 คน
+ * Level 3: 8 คน
+ * Level 4: 16 คน
+ * รวม: 31 สมาชิก
+ *
+ * 3 ผังที่ต้องสอดคล้องกัน:
+ * 1. Binary Tree: ผังไบนารี 2 ขา (binary_parent_id, binary_position)
+ * 2. Unilevel Tree: ผังหลายขา (unilevel_sponsor_id)
+ * 3. Genealogy Tree: ผังสายเลือด/แนะนำตรง (original_sponsor_id) - มีการแนะนำข้ามสายได้
+ */
 class MlmHierarchySeeder extends Seeder
 {
     /**
-     * สร้างข้อมูล MLM Hierarchy 5 ชั้นสำหรับการทดสอบจริง
-     *
-     * โครงสร้างสายงาน (Unilevel):
-     * Level 0: Admin (Root)
-     * Level 1: 3 คน (สมาชิกที่ Admin แนะนำโดยตรง)
-     * Level 2: 6 คน (สมาชิกที่ Level 1 แนะนำ - 2 คนต่อคน)
-     * Level 3: 12 คน (สมาชิกที่ Level 2 แนะนำ - 2 คนต่อคน)
-     * Level 4: 24 คน (สมาชิกที่ Level 3 แนะนำ - 2 คนต่อคน)
-     * Level 5: 48 คน (สมาชิกที่ Level 4 แนะนำ - 2 คนต่อคน)
-     *
-     * รวม: 1 (Admin) + 3 + 6 + 12 + 24 + 48 = 94 สมาชิก
+     * ชื่อจริงภาษาไทยสำหรับทดสอบ
+     */
+    private array $thaiFirstNames = [
+        'สมชาย', 'สมหญิง', 'สมศักดิ์', 'สมศรี', 'สมบัติ',
+        'สุรชัย', 'สุรศักดิ์', 'สุภาพร', 'สุภาภรณ์', 'สุนิสา',
+        'วิชัย', 'วิภา', 'วิไล', 'วิรัตน์', 'วิภาวดี',
+        'ประสิทธิ์', 'ประภา', 'ประเสริฐ', 'ประไพ', 'ประพันธ์',
+        'ชัยวัฒน์', 'ชัยชนะ', 'ชุติมา', 'ชุลีกร', 'ชนิดา',
+        'พิชัย', 'พิมพ์', 'พิไล', 'พิศมัย', 'พิมลพรรณ',
+        'ธนากร', 'ธนาพร', 'ธิดา', 'ธิติมา', 'ธัญญา',
+    ];
+
+    private array $thaiLastNames = [
+        'ใจดี', 'มีสุข', 'รุ่งเรือง', 'เจริญศรี', 'สมบูรณ์',
+        'สวัสดิ์', 'ประเสริฐ', 'ศรีสุข', 'วงศ์สุวรรณ', 'พิพัฒน์',
+        'ทองดี', 'ทองสุข', 'แก้วมณี', 'เพชรดี', 'รัตนา',
+    ];
+
+    /**
+     * สร้างข้อมูล MLM Hierarchy 5 ชั้น (31 สมาชิก)
      *
      * @return void
      */
     public function run(): void
     {
         $this->command->info('');
-        $this->command->info('🌳 กำลังสร้างระบบ MLM Hierarchy 5 ชั้น...');
+        $this->command->info('🌳 กำลังสร้างระบบ MLM Hierarchy 5 ชั้น (3 ผังสายงาน)...');
         $this->command->info('');
 
-        // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่
-        if (MlmMember::where('member_code', 'LIKE', 'MLM-DEMO-%')->exists()) {
-            $this->command->warn('⚠️  ข้อมูล MLM Hierarchy มีอยู่แล้ว ข้าม...');
-            $this->command->info('   หากต้องการสร้างใหม่ ให้ลบข้อมูลเก่าก่อน');
-            return;
-        }
+        // ลบข้อมูล demo เดิมก่อน
+        $this->cleanupOldData();
 
-        // 1. สร้าง/ดึง Default MLM Plan (จำเป็นสำหรับ foreign key)
+        // 1. สร้าง/ดึง Default MLM Plan
         $plan = $this->getOrCreateDefaultPlan();
         $this->command->info("✅ MLM Plan ID: {$plan->id}");
 
@@ -51,127 +72,39 @@ class MlmHierarchySeeder extends Seeder
         }
         $this->command->info("✅ MLM Package: {$package->name}");
 
-        // 3. สร้างหรือดึง Admin User
-        $adminUser = User::where('email', 'superadmin@thaiprompt.com')->first();
-        if (!$adminUser) {
-            $adminUser = User::where('role', 'admin')->where('is_super_admin', true)->first();
+        // 3. สร้าง Admin User และ MLM Members ทั้ง 31 คน
+        $members = $this->createAllMembers($plan, $package);
+
+        // 4. แสดงผลลัพธ์
+        $this->showResults($members);
+    }
+
+    /**
+     * ลบข้อมูล demo เดิม
+     *
+     * @return void
+     */
+    private function cleanupOldData(): void
+    {
+        $this->command->info('🧹 กำลังลบข้อมูล demo เดิม...');
+
+        // ลบ MLM Members ที่มี member_code เริ่มต้นด้วย MLM-DEMO-
+        $deletedCount = MlmMember::where('member_code', 'LIKE', 'MLM-DEMO-%')->count();
+
+        if ($deletedCount > 0) {
+            // ลบ users ที่เกี่ยวข้อง
+            $memberUserIds = MlmMember::where('member_code', 'LIKE', 'MLM-DEMO-%')
+                ->pluck('user_id');
+
+            MlmMember::where('member_code', 'LIKE', 'MLM-DEMO-%')->delete();
+            User::whereIn('id', $memberUserIds)
+                ->where('email', 'LIKE', 'mlm-member-%@example.com')
+                ->delete();
+
+            $this->command->info("   ลบ {$deletedCount} สมาชิก MLM เดิม");
+        } else {
+            $this->command->info('   ไม่มีข้อมูลเดิมที่ต้องลบ');
         }
-        if (!$adminUser) {
-            $adminUser = User::create([
-                'name' => 'MLM Admin',
-                'email' => 'mlm-admin@thaiprompt.com',
-                'password' => Hash::make('password123'),
-                'role' => 'admin',
-                'is_super_admin' => true,
-                'preferred_language' => 'th',
-            ]);
-        }
-
-        // 4. สร้าง Admin เป็น MLM Member (Root)
-        $adminMember = $this->createMlmMember(
-            user: $adminUser,
-            plan: $plan,
-            package: $package,
-            sponsor: null,
-            level: 0,
-            memberCode: 'MLM-DEMO-0001'
-        );
-        $this->command->info("✅ Root Admin: {$adminUser->name} (ID: {$adminMember->id})");
-
-        // 5. สร้าง MLM Hierarchy 5 ชั้น
-        $membersPerLevel = [
-            1 => 3,   // Level 1: 3 คน
-            2 => 2,   // Level 2: 2 คนต่อ sponsor
-            3 => 2,   // Level 3: 2 คนต่อ sponsor
-            4 => 2,   // Level 4: 2 คนต่อ sponsor
-            5 => 2,   // Level 5: 2 คนต่อ sponsor
-        ];
-
-        $currentLevelMembers = [$adminMember];
-        $memberCounter = 1; // เริ่มจาก 1 (Admin = 0001)
-        $totalCreated = 1;
-
-        // ชื่อจริงภาษาไทยสำหรับทดสอบ
-        $thaiFirstNames = [
-            'สมชาย', 'สมหญิง', 'สมศักดิ์', 'สมศรี', 'สมบัติ',
-            'สุรชัย', 'สุรศักดิ์', 'สุภาพร', 'สุภาภรณ์', 'สุนิสา',
-            'วิชัย', 'วิภา', 'วิไล', 'วิรัตน์', 'วิภาวดี',
-            'ประสิทธิ์', 'ประภา', 'ประเสริฐ', 'ประไพ', 'ประพันธ์',
-            'ชัยวัฒน์', 'ชัยชนะ', 'ชุติมา', 'ชุลีกร', 'ชนิดา',
-            'พิชัย', 'พิมพ์', 'พิไล', 'พิศมัย', 'พิมลพรรณ',
-            'ธนากร', 'ธนาพร', 'ธิดา', 'ธิติมา', 'ธัญญา',
-            'อนุชา', 'อนุสรณ์', 'อรุณ', 'อรพิน', 'อัญชลี',
-            'ณัฐพล', 'ณัฐวุฒิ', 'ณิชา', 'ณิชกานต์', 'ณัฐธิดา',
-            'กิตติ', 'กิตติศักดิ์', 'กัญญา', 'กัลยา', 'กนกวรรณ',
-        ];
-
-        $thaiLastNames = [
-            'ใจดี', 'มีสุข', 'รุ่งเรือง', 'เจริญศรี', 'สมบูรณ์',
-            'สวัสดิ์', 'ประเสริฐ', 'ศรีสุข', 'วงศ์สุวรรณ', 'พิพัฒน์',
-            'ทองดี', 'ทองสุข', 'แก้วมณี', 'เพชรดี', 'รัตนา',
-            'สุขสันต์', 'สันติภาพ', 'เกษมสุข', 'วิไลวรรณ', 'ศิริพร',
-        ];
-
-        for ($level = 1; $level <= 5; $level++) {
-            $newLevelMembers = [];
-            $membersPerSponsor = ($level === 1) ? $membersPerLevel[1] : $membersPerLevel[$level];
-
-            foreach ($currentLevelMembers as $sponsor) {
-                for ($i = 0; $i < $membersPerSponsor; $i++) {
-                    $memberCounter++;
-                    $memberCode = sprintf('MLM-DEMO-%04d', $memberCounter);
-
-                    // สร้างชื่อแบบสุ่ม
-                    $firstName = $thaiFirstNames[array_rand($thaiFirstNames)];
-                    $lastName = $thaiLastNames[array_rand($thaiLastNames)];
-
-                    // สร้าง User
-                    $user = User::create([
-                        'name' => "{$firstName} {$lastName}",
-                        'email' => "mlm-member-{$memberCounter}@example.com",
-                        'password' => Hash::make('password123'),
-                        'role' => 'affiliate',
-                        'is_super_admin' => false,
-                        'preferred_language' => 'th',
-                    ]);
-
-                    // สร้าง MLM Member
-                    $member = $this->createMlmMember(
-                        user: $user,
-                        plan: $plan,
-                        package: $package,
-                        sponsor: $sponsor,
-                        level: $level,
-                        memberCode: $memberCode
-                    );
-
-                    $newLevelMembers[] = $member;
-                    $totalCreated++;
-                }
-            }
-
-            $count = count($newLevelMembers);
-            $this->command->info("   Level {$level}: สร้าง {$count} สมาชิก");
-
-            $currentLevelMembers = $newLevelMembers;
-        }
-
-        // 6. อัพเดทสถิติ
-        $this->updateStatistics();
-
-        $this->command->info('');
-        $this->command->info("✨ สร้าง MLM Hierarchy สำเร็จ! รวม {$totalCreated} สมาชิก");
-        $this->command->info('');
-        $this->command->info('📊 โครงสร้างสายงาน:');
-        $this->command->info('   Level 0 (Root): 1 คน');
-        $this->command->info('   Level 1: 3 คน');
-        $this->command->info('   Level 2: 6 คน');
-        $this->command->info('   Level 3: 12 คน');
-        $this->command->info('   Level 4: 24 คน');
-        $this->command->info('   Level 5: 48 คน');
-        $this->command->info('');
-        $this->command->info('🔐 รหัสผ่านทุกบัญชี: password123');
-        $this->command->info('');
     }
 
     /**
@@ -188,8 +121,6 @@ class MlmHierarchySeeder extends Seeder
         }
 
         if (!$plan) {
-            // สร้าง Default Plan สำหรับ foreign key constraint
-            // ⚠️ หมายเหตุ: ค่า commission settings ใช้จาก MlmGlobalSetting แทน per-plan settings
             $plan = MlmPlan::create([
                 'name' => 'Default Commission Plan',
                 'name_th' => 'แผนคอมมิชชันหลัก',
@@ -211,86 +142,289 @@ class MlmHierarchySeeder extends Seeder
     }
 
     /**
-     * สร้าง MLM Member
+     * สร้างสมาชิก MLM ทั้ง 31 คน
      *
+     * @param MlmPlan $plan
+     * @param MlmPackage $package
+     * @return array
+     */
+    private function createAllMembers(MlmPlan $plan, MlmPackage $package): array
+    {
+        $members = [];
+
+        // ================================
+        // โครงสร้าง Binary Tree (BFS - fill by level)
+        // ================================
+        // Level 0: M1
+        // Level 1: M2 (L), M3 (R)
+        // Level 2: M4 (M2-L), M5 (M2-R), M6 (M3-L), M7 (M3-R)
+        // Level 3: M8-M15
+        // Level 4: M16-M31
+        //
+        // Binary Index Formula:
+        // - Parent of N = floor((N-1)/2)
+        // - Left child of N = 2N + 1
+        // - Right child of N = 2N + 2
+        // - Position: odd index = left, even index = right
+
+        // ================================
+        // โครงสร้าง Original Sponsor (Genealogy) - มีการแนะนำข้ามสาย
+        // ================================
+        // ส่วนใหญ่ใช้ binary parent เป็น original sponsor
+        // แต่บางคนมี original sponsor จากสายอื่น:
+        // - M8: แนะนำโดย M3 (จากสายขวา)
+        // - M10: แนะนำโดย M7 (จากสายขวา)
+        // - M16: แนะนำโดย M6 (จากสายขวา)
+        // - M20: แนะนำโดย M3 (จากสายขวา)
+        // - M24: แนะนำโดย M2 (จากสายซ้าย)
+        // - M28: แนะนำโดย M4 (จากสายซ้าย)
+
+        $crossReferrals = [
+            8 => 3,   // M8 แนะนำโดย M3 (ข้ามสาย)
+            10 => 7,  // M10 แนะนำโดย M7 (ข้ามสาย)
+            16 => 6,  // M16 แนะนำโดย M6 (ข้ามสาย)
+            20 => 3,  // M20 แนะนำโดย M3 (ข้ามสาย)
+            24 => 2,  // M24 แนะนำโดย M2 (ข้ามสาย)
+            28 => 4,  // M28 แนะนำโดย M4 (ข้ามสาย)
+        ];
+
+        // ดึง Admin User สำหรับ Root
+        $adminUser = User::where('email', 'superadmin@thaiprompt.com')->first();
+        if (!$adminUser) {
+            $adminUser = User::where('role', 'admin')->where('is_super_admin', true)->first();
+        }
+        if (!$adminUser) {
+            $adminUser = User::create([
+                'name' => 'MLM Admin (Root)',
+                'email' => 'mlm-admin@thaiprompt.com',
+                'password' => Hash::make('password123'),
+                'role' => 'admin',
+                'is_super_admin' => true,
+                'preferred_language' => 'th',
+            ]);
+        }
+
+        // สร้าง Root Member (M1, index 0)
+        $members[0] = $this->createMember(
+            index: 0,
+            user: $adminUser,
+            plan: $plan,
+            package: $package,
+            members: $members,
+            crossReferrals: $crossReferrals
+        );
+        $this->command->info("   M1 (Root): {$adminUser->name}");
+
+        // สร้างสมาชิกที่เหลือ (M2-M31, index 1-30)
+        for ($i = 1; $i <= 30; $i++) {
+            $memberNum = $i + 1; // M2, M3, ... M31
+            $memberCode = sprintf('MLM-DEMO-%04d', $memberNum);
+
+            // สร้างชื่อแบบสุ่ม
+            $firstName = $this->thaiFirstNames[array_rand($this->thaiFirstNames)];
+            $lastName = $this->thaiLastNames[array_rand($this->thaiLastNames)];
+
+            // สร้าง User
+            $user = User::create([
+                'name' => "{$firstName} {$lastName}",
+                'email' => "mlm-member-{$memberNum}@example.com",
+                'password' => Hash::make('password123'),
+                'role' => 'affiliate',
+                'is_super_admin' => false,
+                'preferred_language' => 'th',
+            ]);
+
+            // สร้าง MLM Member
+            $members[$i] = $this->createMember(
+                index: $i,
+                user: $user,
+                plan: $plan,
+                package: $package,
+                members: $members,
+                crossReferrals: $crossReferrals
+            );
+        }
+
+        // อัพเดทสถิติ
+        $this->updateStatistics($members);
+
+        return $members;
+    }
+
+    /**
+     * สร้าง MLM Member พร้อม 3 ผังสายงาน
+     *
+     * @param int $index ตำแหน่งใน array (0-30)
      * @param User $user
      * @param MlmPlan $plan
      * @param MlmPackage $package
-     * @param MlmMember|null $sponsor
-     * @param int $level
-     * @param string $memberCode
+     * @param array $members สมาชิกที่สร้างแล้ว
+     * @param array $crossReferrals mapping ของ original sponsor ที่ข้ามสาย
      * @return MlmMember
      */
-    private function createMlmMember(
+    private function createMember(
+        int $index,
         User $user,
         MlmPlan $plan,
         MlmPackage $package,
-        ?MlmMember $sponsor,
-        int $level,
-        string $memberCode
+        array $members,
+        array $crossReferrals
     ): MlmMember {
-        // คำนวณ unilevel_path
-        $unilevelPath = $sponsor
-            ? ($sponsor->unilevel_path ? $sponsor->unilevel_path . '/' . $sponsor->id : (string)$sponsor->id)
-            : null;
+        $memberNum = $index + 1; // M1, M2, ... M31
+        $memberCode = $index === 0 ? 'MLM-DEMO-0001' : sprintf('MLM-DEMO-%04d', $memberNum);
 
-        // กำหนด binary position แบบสลับซ้าย-ขวา
+        // ================================
+        // คำนวณ Binary Tree Position
+        // ================================
+        $binaryParentIndex = $index > 0 ? floor(($index - 1) / 2) : null;
         $binaryPosition = null;
-        if ($sponsor) {
-            // ตรวจสอบว่า sponsor มีลูกซ้ายหรือยัง
-            $hasLeftChild = MlmMember::where('binary_parent_id', $sponsor->id)
-                ->where('binary_position', 'left')
-                ->exists();
-            $binaryPosition = $hasLeftChild ? 'right' : 'left';
+        if ($index > 0) {
+            // index คี่ = ซ้าย, index คู่ = ขวา
+            $binaryPosition = ($index % 2 === 1) ? 'left' : 'right';
+        }
+        $binaryParent = $binaryParentIndex !== null ? ($members[$binaryParentIndex] ?? null) : null;
+        $binaryLevel = $index > 0 ? floor(log($index + 1, 2)) : 0;
+
+        // คำนวณ binary_path
+        $binaryPath = $this->calculateBinaryPath($index, $members);
+
+        // ================================
+        // คำนวณ Unilevel Position (ใช้โครงสร้างเดียวกับ Binary)
+        // ================================
+        $unilevelSponsor = $binaryParent; // ใช้ binary parent เป็น unilevel sponsor
+
+        // คำนวณ unilevel_path
+        $unilevelPath = null;
+        if ($unilevelSponsor) {
+            $unilevelPath = $unilevelSponsor->unilevel_path
+                ? $unilevelSponsor->unilevel_path . '/' . $unilevelSponsor->id
+                : (string) $unilevelSponsor->id;
         }
 
+        // ================================
+        // คำนวณ Original Sponsor (Genealogy)
+        // ================================
+        // ตรวจสอบว่ามี cross referral หรือไม่
+        $originalSponsorIndex = null;
+        if ($index > 0) {
+            if (isset($crossReferrals[$memberNum])) {
+                // มี cross referral - ใช้ sponsor ที่กำหนด
+                $originalSponsorIndex = $crossReferrals[$memberNum] - 1; // convert M-number to index
+            } else {
+                // ใช้ binary parent เป็น original sponsor
+                $originalSponsorIndex = $binaryParentIndex;
+            }
+        }
+        $originalSponsor = $originalSponsorIndex !== null ? ($members[$originalSponsorIndex] ?? null) : null;
+
+        // ================================
+        // สร้าง MLM Member
+        // ================================
         $member = MlmMember::create([
             'user_id' => $user->id,
             'mlm_plan_id' => $plan->id,
             'package_id' => $package->id,
-            'unilevel_sponsor_id' => $sponsor?->id,
-            'unilevel_level' => $level,
+            // 3 ผังสายงาน
+            'original_sponsor_id' => $originalSponsor?->id,     // ผังสายเลือด (แนะนำตรงจริงๆ)
+            'unilevel_sponsor_id' => $unilevelSponsor?->id,     // ผังหลายขา
+            'unilevel_level' => $binaryLevel,                    // ใช้ level เดียวกับ binary
             'unilevel_path' => $unilevelPath,
-            'binary_sponsor_id' => $sponsor?->id,
-            'binary_parent_id' => $sponsor?->id,
+            'binary_sponsor_id' => $binaryParent?->id,          // ผังไบนารี
+            'binary_parent_id' => $binaryParent?->id,
             'binary_position' => $binaryPosition,
+            'binary_path' => $binaryPath,
+            // ข้อมูลอื่นๆ
             'status' => 'active',
             'is_qualified' => true,
             'member_code' => $memberCode,
             'joining_fee_paid' => $package->price ?? 990.00,
             'total_pv' => $package->pv_value ?? 990.00,
             'joined_at' => now()->subDays(rand(1, 365)),
+            // สถิติเริ่มต้น
+            'total_direct_referrals' => 0,
+            'total_team_members' => 0,
+            'left_leg_pv' => 0,
+            'right_leg_pv' => 0,
+            'left_leg_members' => 0,
+            'right_leg_members' => 0,
         ]);
 
         return $member;
     }
 
     /**
+     * คำนวณ binary_path
+     *
+     * @param int $index
+     * @param array $members
+     * @return string|null
+     */
+    private function calculateBinaryPath(int $index, array $members): ?string
+    {
+        if ($index === 0) {
+            return null;
+        }
+
+        $path = [];
+        $currentIndex = $index;
+
+        while ($currentIndex > 0) {
+            $parentIndex = floor(($currentIndex - 1) / 2);
+            if (isset($members[$parentIndex])) {
+                array_unshift($path, $members[$parentIndex]->id);
+            }
+            $currentIndex = $parentIndex;
+        }
+
+        return count($path) > 0 ? implode('/', $path) : null;
+    }
+
+    /**
      * อัพเดทสถิติของสมาชิก MLM
      *
+     * @param array $members
      * @return void
      */
-    private function updateStatistics(): void
+    private function updateStatistics(array $members): void
     {
         $this->command->info('');
         $this->command->info('📈 กำลังอัพเดทสถิติสายงาน...');
 
-        // อัพเดทจำนวน direct referrals
-        MlmMember::where('member_code', 'LIKE', 'MLM-DEMO-%')->each(function ($member) {
-            $directCount = MlmMember::where('unilevel_sponsor_id', $member->id)->count();
+        foreach ($members as $member) {
+            // นับ direct referrals (original sponsor - ผังสายเลือด)
+            $directReferralsCount = MlmMember::where('original_sponsor_id', $member->id)->count();
+
+            // นับ unilevel children
+            $unilevelChildrenCount = MlmMember::where('unilevel_sponsor_id', $member->id)->count();
+
+            // นับ binary children
+            $leftChildCount = MlmMember::where('binary_parent_id', $member->id)
+                ->where('binary_position', 'left')
+                ->count();
+            $rightChildCount = MlmMember::where('binary_parent_id', $member->id)
+                ->where('binary_position', 'right')
+                ->count();
+
+            // นับ team members (recursive)
             $teamCount = $this->countAllDownline($member->id);
 
+            // นับ left/right leg members
+            $leftLegMembers = $this->countBinaryLegMembers($member->id, 'left');
+            $rightLegMembers = $this->countBinaryLegMembers($member->id, 'right');
+
             $member->update([
-                'total_direct_referrals' => $directCount,
+                'total_direct_referrals' => $directReferralsCount,
                 'total_team_members' => $teamCount,
+                'left_leg_members' => $leftLegMembers,
+                'right_leg_members' => $rightLegMembers,
             ]);
-        });
+        }
 
         $this->command->info('✅ อัพเดทสถิติสำเร็จ');
     }
 
     /**
-     * นับจำนวน downline ทั้งหมด (recursive)
+     * นับจำนวน downline ทั้งหมด (unilevel - recursive)
      *
      * @param int $memberId
      * @return int
@@ -306,5 +440,79 @@ class MlmHierarchySeeder extends Seeder
         }
 
         return $count;
+    }
+
+    /**
+     * นับจำนวนสมาชิกในขา Binary
+     *
+     * @param int $memberId
+     * @param string $position 'left' หรือ 'right'
+     * @return int
+     */
+    private function countBinaryLegMembers(int $memberId, string $position): int
+    {
+        $child = MlmMember::where('binary_parent_id', $memberId)
+            ->where('binary_position', $position)
+            ->first();
+
+        if (!$child) {
+            return 0;
+        }
+
+        return 1 + $this->countBinarySubtree($child->id);
+    }
+
+    /**
+     * นับสมาชิกทั้งหมดใน Binary subtree
+     *
+     * @param int $memberId
+     * @return int
+     */
+    private function countBinarySubtree(int $memberId): int
+    {
+        $count = 0;
+        $children = MlmMember::where('binary_parent_id', $memberId)->get();
+
+        foreach ($children as $child) {
+            $count++;
+            $count += $this->countBinarySubtree($child->id);
+        }
+
+        return $count;
+    }
+
+    /**
+     * แสดงผลลัพธ์การสร้าง
+     *
+     * @param array $members
+     * @return void
+     */
+    private function showResults(array $members): void
+    {
+        $this->command->info('');
+        $this->command->info('✨ สร้าง MLM Hierarchy สำเร็จ! รวม ' . count($members) . ' สมาชิก');
+        $this->command->info('');
+        $this->command->info('📊 โครงสร้าง Binary Tree (5 ชั้น):');
+        $this->command->info('   Level 0 (Root): 1 คน');
+        $this->command->info('   Level 1: 2 คน (ซ้าย-ขวา)');
+        $this->command->info('   Level 2: 4 คน');
+        $this->command->info('   Level 3: 8 คน');
+        $this->command->info('   Level 4: 16 คน');
+        $this->command->info('');
+        $this->command->info('🔗 การเชื่อมโยง 3 ผัง:');
+        $this->command->info('   • Binary Tree: binary_parent_id + binary_position');
+        $this->command->info('   • Unilevel Tree: unilevel_sponsor_id (mirror Binary)');
+        $this->command->info('   • Genealogy: original_sponsor_id (มีข้ามสาย 6 คน)');
+        $this->command->info('');
+        $this->command->info('👥 สมาชิกที่มีการแนะนำข้ามสาย (Cross-referral):');
+        $this->command->info('   • M8 ← M3 (จากขวามาซ้าย)');
+        $this->command->info('   • M10 ← M7 (จากขวามาซ้าย)');
+        $this->command->info('   • M16 ← M6 (จากขวามาซ้าย)');
+        $this->command->info('   • M20 ← M3 (จากขวามาซ้าย)');
+        $this->command->info('   • M24 ← M2 (จากซ้ายมาขวา)');
+        $this->command->info('   • M28 ← M4 (จากซ้ายมาขวา)');
+        $this->command->info('');
+        $this->command->info('🔐 รหัสผ่านทุกบัญชี: password123');
+        $this->command->info('');
     }
 }
