@@ -80,6 +80,7 @@ class DatabaseSeeder extends Seeder
             RankSeeder::class,                  // ระบบยศ/ระดับ (Bronze, Silver, Gold, Platinum, Diamond)
             MlmHierarchySeeder::class,          // 🆕 ระบบสายงาน MLM 5 ชั้น (94 สมาชิกทดสอบ)
             RecruitTemplateSeeder::class,       // 🆕 เทมเพลตหน้า Recruit สำหรับแม่ทีม
+            PlatformRevenueSeeder::class,       // 🆕 ระบบรายได้ Platform (Wallets, Payout Settings)
 
             // 8. E-commerce & Products
             ProductCategorySeeder::class,       // หมวดหมู่สินค้า (ต้องมาก่อน ProductSeeder)
