@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.192.1] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1636 from xjanova/claude/add-live-location-columns-01BXwUZK5xxT2j3yXpriyJt3 (f90d8a6e)
+- fix: shorten index names to comply with MySQL 64-char limit (112f678c)
+### 🔧 Other Changes
+
+
 ## [v3.192.0] - 2025-11-25
 
 ### ✨ Features
