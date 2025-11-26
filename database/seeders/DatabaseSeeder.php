@@ -130,6 +130,10 @@ class DatabaseSeeder extends Seeder
 
             // 16. Google Maps Integration
             GoogleMapsSettingsSeeder::class,    // การตั้งค่า Google Maps API (Geocoding, Directions, Distance Matrix, Places)
+
+            // 17. Label & Barcode System
+            LabelPaperSizeSeeder::class,        // 🆕 ขนาดกระดาษมาตรฐานสำหรับฉลาก (A4, สติ๊กเกอร์, ใบเสร็จ, Zebra, DYMO, Brother)
+            LabelTemplateSeeder::class,         // 🆕 เทมเพลตฉลากเริ่มต้น (ป้ายราคา, ฉลากจัดส่ง, Food Passport, ฉลากเปล่า)
         ]);
 
         $this->command->info('');
