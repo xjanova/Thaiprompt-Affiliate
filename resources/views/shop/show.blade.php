@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.user-arrow-x')
 
 @section('title', $product->name . ' - ร้านค้าออนไลน์')
 
@@ -7,7 +7,7 @@
 @endsection
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/20">
+<div class="py-6">
     <div class="container mx-auto px-4 py-6">
 
         <!-- Breadcrumb -->

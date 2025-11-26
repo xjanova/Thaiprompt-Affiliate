@@ -1,9 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.user-arrow-x')
 
 @section('title', 'รีวิวสินค้า')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-yellow-50/20 to-amber-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+<div class="py-6">
 
     <!-- Hero Header -->
     <div class="relative overflow-hidden bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 dark:from-yellow-600 dark:via-amber-600 dark:to-orange-600">

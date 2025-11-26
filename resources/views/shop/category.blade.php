@@ -1,7 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.user-arrow-x')
+
+@section('title', $category->name . ' - ร้านค้าออนไลน์')
 
 @section('content')
-<div class="min-h-screen bg-gray-50">
+<div class="py-6">
     <!-- Category Hero Section -->
     <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

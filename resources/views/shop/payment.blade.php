@@ -1,7 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.user-arrow-x')
+
+@section('title', 'ชำระเงิน')
 
 @section('content')
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+<div class="py-6">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Breadcrumb -->
         <nav class="mb-8" aria-label="Breadcrumb">

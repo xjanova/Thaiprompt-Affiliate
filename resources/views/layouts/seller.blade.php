@@ -1,415 +1,204 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="th" class="h-full">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-    <title>@yield('title') - {{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}</title>
+    <title>@yield('title', 'แดชบอร์ดร้านค้า') - {{ config('app.name') }}</title>
 
+    {{-- Favicon (ใช้จาก Theme Setting) --}}
     @php
-        $favicon = \App\Models\Setting::get('favicon');
+        $themeSetting = \App\Models\ThemeSetting::active();
+        $faviconPath = $themeSetting && $themeSetting->favicon_path
+            ? asset('storage/' . $themeSetting->favicon_path)
+            : asset('favicon.ico');
     @endphp
-    @if($favicon)
-        <link rel="icon" type="image/x-icon" href="{{ asset($favicon) }}">
-        <link rel="apple-touch-icon" href="{{ asset($favicon) }}">
-    @endif
+    <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ $faviconPath }}">
+    <link rel="apple-touch-icon" href="{{ $faviconPath }}">
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    {{-- Google Fonts --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    {{-- Font Awesome 6.5.1 --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    {{-- Vite Assets --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.13.3/dist/cdn.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    {{-- Arrow X Theme Styles --}}
+    <x-arrow-x.theme-styles />
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- GSAP -->
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-
-    @php
-        $primaryStart = \App\Models\Setting::get('theme_primary_start', '#3B82F6');
-        $primaryEnd = \App\Models\Setting::get('theme_primary_end', '#1D4ED8');
-        $secondaryStart = \App\Models\Setting::get('theme_secondary_start', '#10B981');
-        $secondaryEnd = \App\Models\Setting::get('theme_secondary_end', '#059669');
-        $accentStart = \App\Models\Setting::get('theme_accent_start', '#8B5CF6');
-        $accentEnd = \App\Models\Setting::get('theme_accent_end', '#6D28D9');
-    @endphp
-
+    {{-- Alpine.js x-cloak --}}
     <style>
-        :root {
-            --gradient-primary: linear-gradient(135deg, {{ $primaryStart }}, {{ $primaryEnd }});
-            --gradient-secondary: linear-gradient(135deg, {{ $secondaryStart }}, {{ $secondaryEnd }});
-            --gradient-accent: linear-gradient(135deg, {{ $accentStart }}, {{ $accentEnd }});
+        [x-cloak] {
+            display: none !important;
         }
 
-        .bg-gradient-primary {
-            background: var(--gradient-primary);
-        }
-
-        .bg-gradient-secondary {
-            background: var(--gradient-secondary);
-        }
-
-        .bg-gradient-accent {
-            background: var(--gradient-accent);
-        }
-
-        /* Dark Mode Variables */
-        .dark {
-            color-scheme: dark;
-        }
-
-        .dark body {
-            background-color: #0f172a;
-            color: #e2e8f0;
-        }
-
-        .dark .bg-gray-100 {
-            background-color: #1e293b;
-        }
-
-        .dark .bg-gray-50 {
-            background-color: #0f172a;
-        }
-
-        .dark .bg-white {
-            background-color: #1e293b;
-            color: #e2e8f0;
-        }
-
-        .dark .text-gray-800 {
-            color: #e2e8f0;
-        }
-
-        .dark .text-gray-900 {
-            color: #f1f5f9;
-        }
-
-        .dark .text-gray-700 {
-            color: #cbd5e1;
-        }
-
-        .dark .text-gray-600 {
-            color: #94a3b8;
-        }
-
-        .dark .text-gray-500 {
-            color: #94a3b8;
-        }
-
-        .dark .border-gray-200 {
-            border-color: #334155;
-        }
-
-        .dark .divide-gray-200 {
-            border-color: #334155;
-        }
-
-        .dark .shadow-sm {
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-        }
-
-        .dark .shadow-md {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-        }
-
-        .dark .shadow-lg {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
-        }
-
-        .dark .shadow-xl {
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
-        }
-
-        .dark .hover\:bg-gray-50:hover {
-            background-color: #334155;
-        }
-
-        /* Dark mode for tables */
-        .dark table thead {
-            background-color: #0f172a;
-        }
-
-        .dark table tbody tr:hover {
-            background-color: #334155;
-        }
-
-        .dark input,
-        .dark select,
-        .dark textarea {
-            background-color: #1e293b;
-            border-color: #334155;
-            color: #e2e8f0;
-        }
-
-        .dark input:focus,
-        .dark select:focus,
-        .dark textarea:focus {
-            border-color: #6366f1;
-            background-color: #1e293b;
-        }
-
-        /* Smooth transitions */
-        * {
-            transition-property: background-color, border-color, color, fill, stroke;
-            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-            transition-duration: 200ms;
-        }
-
-        /* Mobile-first responsive utilities */
-        @media (max-width: 768px) {
-            .mobile-padding {
-                padding: 1rem;
+        /* Mobile Bottom Navigation Padding */
+        @media (max-width: 1023px) {
+            body {
+                padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
             }
-        }
-
-        /* Smooth scrolling */
-        html {
-            scroll-behavior: smooth;
-        }
-
-        /* Touch-friendly tap targets */
-        button, a {
-            min-height: 44px;
-            min-width: 44px;
         }
     </style>
 
     @stack('styles')
-
-    <style>
-        /* Ensure Windows Taskbar doesn't overlap with content */
-        @php
-            $taskbarPosition = \App\Models\WindowsUiSetting::get('windows_taskbar_position', 'top');
-            $taskbarHeight = \App\Models\WindowsUiSetting::get('windows_taskbar_height', 48);
-
-            // Content width settings
-            $contentWidthMode = \App\Models\WindowsUiSetting::get('content_width_mode', 'container');
-            $contentWidthCustom = \App\Models\WindowsUiSetting::get('content_width_custom', 1400);
-        @endphp
-
-        @if($taskbarPosition === 'top')
-        body {
-            padding-top: {{ $taskbarHeight }}px;
-        }
-        @else
-        body {
-            padding-bottom: {{ $taskbarHeight }}px;
-        }
-        @endif
-    </style>
-
-    <script>
-        // Chart.js Dark Mode Helpers
-        window.isDarkMode = function() {
-            return document.documentElement.classList.contains('dark');
-        };
-
-        window.getChartColors = function() {
-            const isDark = window.isDarkMode();
-            return {
-                textColor: isDark ? '#e2e8f0' : '#374151',
-                gridColor: isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                tooltipBg: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(0, 0, 0, 0.8)',
-                borderColor: isDark ? '#475569' : '#e5e7eb',
-                chartBorderColor: isDark ? '#1e293b' : '#fff'
-            };
-        };
-    </script>
-
-    {{-- Dark Mode System --}}
-    <x-dark-mode-init />
-    <x-dark-mode-styles />
-
-    {{-- Laravel Echo Configuration --}}
-    <x-echo-config />
 </head>
-<body class="font-sans antialiased bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-    <!-- Spaceship Background -->
-    <x-spaceship-background />
+<body class="h-full font-sans overflow-hidden flex"
+      x-data="{ profileOpen: false }"
+      x-init="
+          // เริ่มต้น theme store และ sidebar store
+          $store.theme.init();
+          $store.sidebar.init();
+      ">
 
-    {{-- Arrow X Layout - บังคับใช้เพียงธีมเดียว --}}
-    <!-- Arrow X Sidebar/Navigation -->
-    <x-arrow-x-sidebar type="seller" />
+    {{-- Background Gradient พื้นหลังแบบ Dashboard4 - ใช้ Arrow X Theme Variables --}}
+    {{-- Light mode: Colorful gradient จาก theme | Dark mode: Dark gradient --}}
+    <div class="fixed inset-0 -z-10 transition-all duration-500"
+         :style="$store.theme.isDark
+             ? 'background: linear-gradient(to bottom right, #111827, #1f2937, #111827)'
+             : 'background: var(--arrow-x-primary-gradient, linear-gradient(to right, #9333EA, #EC4899, #F97316))'">
+    </div>
 
-    <!-- Page Loader -->
-    <x-page-loader />
+    {{-- Animated Background Circles วงกลมเคลื่อนไหวพื้นหลัง (ควบคุมจาก Theme Settings) --}}
+    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none"
+         :style="'display: ' + (window.getComputedStyle(document.documentElement).getPropertyValue('--bg-effects-enabled').trim() === '1' ? 'block' : 'none')">
+        {{-- Circle 1 --}}
+        <div class="absolute top-1/4 left-1/4 rounded-full animate-pulse transition-all duration-500"
+             :style="'width: var(--bg-circle-size); height: var(--bg-circle-size); filter: blur(var(--bg-circle-blur)); animation-duration: var(--bg-animation-duration); ' +
+                 ($store.theme.isDark
+                     ? 'background: linear-gradient(to bottom right, var(--bg-circle1-color1), var(--bg-circle1-color2)); opacity: ' + Math.min(parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue('--bg-circle-opacity')) * 1.5, 0.3)
+                     : 'background: linear-gradient(to bottom right, var(--bg-circle1-color1), var(--bg-circle1-color2)); opacity: var(--bg-circle-opacity)')">
+        </div>
 
-    <!-- Main Content Area -->
-    <div class="min-h-screen arrow-x-content">
-        <!-- Top Bar -->
-        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
-            <div class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-4"
-                 @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">@yield('title')</h1>
-                    </div>
+        {{-- Circle 2 --}}
+        <div class="absolute bottom-1/4 right-1/4 rounded-full animate-pulse transition-all duration-500"
+             style="animation-delay: 1s;"
+             :style="'width: var(--bg-circle-size); height: var(--bg-circle-size); filter: blur(var(--bg-circle-blur)); animation-duration: var(--bg-animation-duration); ' +
+                 ($store.theme.isDark
+                     ? 'background: linear-gradient(to bottom right, var(--bg-circle2-color1), var(--bg-circle2-color2)); opacity: ' + Math.min(parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue('--bg-circle-opacity')) * 1.5, 0.3)
+                     : 'background: linear-gradient(to bottom right, var(--bg-circle2-color1), var(--bg-circle2-color2)); opacity: var(--bg-circle-opacity)')">
+        </div>
 
-                    <div class="flex items-center space-x-3">
-                        <!-- Quick POS Access -->
-                        <a href="{{ route('seller.pos.terminal') }}"
-                           class="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                            </svg>
-                            <span class="text-sm">เปิด POS</span>
-                        </a>
+        {{-- Circle 3 --}}
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full animate-pulse transition-all duration-500"
+             style="animation-delay: 2s;"
+             :style="'width: var(--bg-circle-size); height: var(--bg-circle-size); filter: blur(var(--bg-circle-blur)); animation-duration: var(--bg-animation-duration); ' +
+                 ($store.theme.isDark
+                     ? 'background: linear-gradient(to bottom right, var(--bg-circle3-color1), var(--bg-circle3-color2)); opacity: ' + Math.min(parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue('--bg-circle-opacity')) * 1.5, 0.3)
+                     : 'background: linear-gradient(to bottom right, var(--bg-circle3-color1), var(--bg-circle3-color2)); opacity: var(--bg-circle-opacity)')">
+        </div>
+    </div>
 
-                        <!-- Dashboard Switcher -->
-                        <x-dashboard-switcher />
+    {{-- Sidebar Component สำหรับ Seller (ใช้ arrow-x.sidebar-v3 component) --}}
+    <x-arrow-x.sidebar-v3 type="seller" />
 
-                        <!-- Notification Bell -->
-                        <x-notification-bell />
+    {{-- Main Content Area (Flex-1 เพื่อขยายเต็มพื้นที่) --}}
+    <div class="flex flex-col flex-1 h-full overflow-hidden">
+        {{-- Top Navbar Component --}}
+        <x-arrow-x.navbar-v3 type="seller" />
 
-                        <!-- Language Switcher -->
-                        <div class="relative z-[60]">
-                            <x-language-switcher-pro />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <!-- Page Content -->
-        <main class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-6"
-              @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
+        {{-- Page Content --}}
+        <main class="flex-1 overflow-y-auto p-4 md:p-6 arrow-x-content">
             @yield('content')
         </main>
     </div>
 
-    <!-- Fixed Floating Toast Notifications -->
-    <div class="fixed top-4 right-4 z-[9999] space-y-3 max-w-md">
-        @if (session('success'))
-            <div x-data="{ show: true }"
-                 x-show="show"
-                 x-init="setTimeout(() => show = false, 5000)"
-                 x-transition:enter="transition ease-out duration-300"
-                 x-transition:enter-start="opacity-0 transform translate-x-full"
-                 x-transition:enter-end="opacity-100 transform translate-x-0"
-                 x-transition:leave="transition ease-in duration-200"
-                 x-transition:leave-start="opacity-100 transform translate-x-0"
-                 x-transition:leave-end="opacity-0 transform translate-x-full"
-                 class="bg-green-100 border-l-4 border-green-500 text-green-700 px-4 py-3 rounded-lg shadow-lg flex items-start justify-between min-w-[320px]">
-                <div class="flex items-start">
-                    <svg class="h-6 w-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span class="font-medium">{{ session('success') }}</span>
-                </div>
-                <button @click="show = false" class="ml-4 text-green-700 hover:text-green-900 flex-shrink-0">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-        @endif
+    {{-- Theme Customizer --}}
+    <x-arrow-x.theme-customizer />
 
-        @if (session('error'))
-            <div x-data="{ show: true }"
-                 x-show="show"
-                 x-init="setTimeout(() => show = false, 5000)"
-                 x-transition:enter="transition ease-out duration-300"
-                 x-transition:enter-start="opacity-0 transform translate-x-full"
-                 x-transition:enter-end="opacity-100 transform translate-x-0"
-                 x-transition:leave="transition ease-in duration-200"
-                 x-transition:leave-start="opacity-100 transform translate-x-0"
-                 x-transition:leave-end="opacity-0 transform translate-x-full"
-                 class="bg-red-100 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg shadow-lg flex items-start justify-between min-w-[320px]">
-                <div class="flex items-start">
-                    <svg class="h-6 w-6 text-red-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span class="font-medium">{{ session('error') }}</span>
+    {{-- Toast Notifications --}}
+    <div class="fixed bottom-24 right-4 z-[90] space-y-2 max-w-md"
+         x-data="{ notifications: [] }"
+         @notify.window="notifications.push($event.detail); setTimeout(() => notifications.shift(), 5000)">
+        <template x-for="(notification, index) in notifications" :key="index">
+            <div
+                x-show="true"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform translate-x-full"
+                x-transition:enter-end="opacity-100 transform translate-x-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform translate-x-0"
+                x-transition:leave-end="opacity-0 transform translate-x-full"
+                class="px-4 py-3 rounded-lg shadow-lg backdrop-blur-lg"
+                :class="{
+                    'bg-green-500/90 text-white': notification.type === 'success',
+                    'bg-red-500/90 text-white': notification.type === 'error',
+                    'bg-blue-500/90 text-white': notification.type === 'info',
+                    'bg-yellow-500/90 text-white': notification.type === 'warning'
+                }">
+                <div class="flex items-center space-x-2">
+                    <i class="fas"
+                       :class="{
+                           'fa-check-circle': notification.type === 'success',
+                           'fa-exclamation-circle': notification.type === 'error',
+                           'fa-info-circle': notification.type === 'info',
+                           'fa-exclamation-triangle': notification.type === 'warning'
+                       }"></i>
+                    <span x-text="notification.message"></span>
                 </div>
-                <button @click="show = false" class="ml-4 text-red-700 hover:text-red-900 flex-shrink-0">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
             </div>
-        @endif
+        </template>
     </div>
 
-    <script>
-        // Chart.js Dark Mode Helpers
-        window.isDarkMode = function() {
-            return document.documentElement.classList.contains('dark');
-        };
+    {{-- Laravel Session Flash Messages (แปลงเป็น notifications) --}}
+    @if (session('success'))
+        <div x-data x-init="$dispatch('notify', { type: 'success', message: '{{ session('success') }}' })"></div>
+    @endif
+    @if (session('error'))
+        <div x-data x-init="$dispatch('notify', { type: 'error', message: '{{ session('error') }}' })"></div>
+    @endif
+    @if (session('info'))
+        <div x-data x-init="$dispatch('notify', { type: 'info', message: '{{ session('info') }}' })"></div>
+    @endif
+    @if (session('warning'))
+        <div x-data x-init="$dispatch('notify', { type: 'warning', message: '{{ session('warning') }}' })"></div>
+    @endif
 
-        window.getChartColors = function() {
-            const isDark = window.isDarkMode();
-            return {
-                textColor: isDark ? '#e2e8f0' : '#374151',
-                gridColor: isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                tooltipBg: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(0, 0, 0, 0.8)',
-                borderColor: isDark ? '#475569' : '#e5e7eb',
-                chartBorderColor: isDark ? '#1e293b' : '#fff'
-            };
-        };
+    {{-- Mobile Bottom Navigation - สำหรับมือถือ --}}
+    <x-mobile-bottom-navigation type="seller" />
 
-        // GSAP Animations
-        document.addEventListener('DOMContentLoaded', function() {
-            // Subtle entrance animation
-            gsap.from('main > *', {
-                y: 10,
-                duration: 0.3,
-                stagger: 0.05,
-                ease: 'power2.out',
-                clearProps: 'all'
-            });
-
-            // Subtle hover effects on buttons
-            const buttons = document.querySelectorAll('button:not([type=submit]), .btn');
-            buttons.forEach(button => {
-                button.addEventListener('mouseenter', () => {
-                    gsap.to(button, { scale: 1.03, duration: 0.15 });
-                });
-                button.addEventListener('mouseleave', () => {
-                    gsap.to(button, { scale: 1, duration: 0.15 });
-                });
-            });
-        });
-    </script>
-
-    <script>
-        // Dark Mode Toggle Function for Windows UI
-        function toggleDarkMode() {
-            const isDark = document.documentElement.classList.contains('dark');
-
-            if (isDark) {
-                document.documentElement.classList.remove('dark');
-                localStorage.setItem('darkMode', 'light');
-            } else {
-                document.documentElement.classList.add('dark');
-                localStorage.setItem('darkMode', 'dark');
-            }
-        }
-    </script>
-
-    {{-- Notification System --}}
-    @auth
-        <x-immediate-notification-popup />
-    @endauth
-
-    {{-- Service Worker for Offline Support --}}
-    @vite('resources/js/service-worker-register.js')
-
-    {{-- Laravel Echo for Real-time Notifications --}}
-    @vite('resources/js/echo-setup.js')
+    {{-- Mobile Quick Actions - FAB --}}
+    <x-mobile-quick-actions type="seller" />
 
     @stack('scripts')
+
+    <script>
+    /**
+     * รับ theme change events จาก Alpine Store
+     * อัพเดท Chart.js และ components อื่นๆ
+     */
+    window.addEventListener('theme-changed', (event) => {
+        console.log('🎨 Theme changed in Seller Dashboard:', event.detail.isDark ? 'Dark' : 'Light');
+
+        // อัพเดท Chart.js ถ้ามี
+        if (typeof Chart !== 'undefined') {
+            Chart.defaults.color = event.detail.isDark ? '#e2e8f0' : '#1f2937';
+            Chart.defaults.borderColor = event.detail.isDark ? '#374151' : '#e5e7eb';
+            Chart.defaults.backgroundColor = event.detail.isDark ? '#1f2937' : '#ffffff';
+        }
+
+        // Dispatch event สำหรับ custom components
+        window.dispatchEvent(new CustomEvent('seller-theme-changed', {
+            detail: event.detail
+        }));
+    });
+
+    /**
+     * Helper function สำหรับ show notification
+     */
+    window.showNotification = function(message, type = 'info') {
+        window.dispatchEvent(new CustomEvent('notify', {
+            detail: { message, type }
+        }));
+    };
+    </script>
 </body>
 </html>
