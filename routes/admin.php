@@ -2609,3 +2609,98 @@ Route::prefix('ai-rental')->name('ai-rental.')->group(function () {
             ->name('index');
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Platform Revenue Routes - ระบบรายได้ Platform
+|--------------------------------------------------------------------------
+|
+| เส้นทางสำหรับจัดการ:
+| - Dashboard รายได้ Platform
+| - Platform Wallets (Fee, VAT, MLM Pool)
+| - Payout Requests และ Settings
+| - Wallet Debts (หนี้/ติดลบ)
+| - Earnings Ledger
+|
+*/
+
+Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () {
+
+    // Dashboard หลัก
+    Route::get('/', [\App\Http\Controllers\Admin\PlatformRevenueController::class, 'index'])
+        ->name('index');
+
+    // API Stats (real-time)
+    Route::get('/api/stats', [\App\Http\Controllers\Admin\PlatformRevenueController::class, 'apiStats'])
+        ->name('api.stats');
+
+    // Transactions
+    Route::get('/transactions', [\App\Http\Controllers\Admin\PlatformRevenueController::class, 'transactions'])
+        ->name('transactions');
+
+    // Reports
+    Route::get('/reports', [\App\Http\Controllers\Admin\PlatformRevenueController::class, 'reports'])
+        ->name('reports');
+    Route::get('/reports/export', [\App\Http\Controllers\Admin\PlatformRevenueController::class, 'exportReport'])
+        ->name('reports.export');
+
+    // Wallets
+    Route::get('/wallets/{wallet}', [\App\Http\Controllers\Admin\PlatformRevenueController::class, 'showWallet'])
+        ->name('wallets.show');
+
+    // Payouts
+    Route::prefix('payouts')->name('payouts.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\PayoutController::class, 'index'])
+            ->name('index');
+        Route::get('/settings', [\App\Http\Controllers\Admin\PayoutController::class, 'settings'])
+            ->name('settings');
+        Route::put('/settings/{setting}', [\App\Http\Controllers\Admin\PayoutController::class, 'updateSetting'])
+            ->name('settings.update');
+        Route::post('/bulk-approve', [\App\Http\Controllers\Admin\PayoutController::class, 'bulkApprove'])
+            ->name('bulk-approve');
+        Route::get('/api/pending', [\App\Http\Controllers\Admin\PayoutController::class, 'apiPendingPayouts'])
+            ->name('api.pending');
+        Route::get('/{payout}', [\App\Http\Controllers\Admin\PayoutController::class, 'show'])
+            ->name('show');
+        Route::post('/{payout}/approve', [\App\Http\Controllers\Admin\PayoutController::class, 'approve'])
+            ->name('approve');
+        Route::post('/{payout}/reject', [\App\Http\Controllers\Admin\PayoutController::class, 'reject'])
+            ->name('reject');
+        Route::post('/{payout}/process', [\App\Http\Controllers\Admin\PayoutController::class, 'process'])
+            ->name('process');
+    });
+
+    // Earnings
+    Route::prefix('earnings')->name('earnings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\PayoutController::class, 'earnings'])
+            ->name('index');
+        Route::get('/{earning}', [\App\Http\Controllers\Admin\PayoutController::class, 'showEarning'])
+            ->name('show');
+    });
+
+    // Debts
+    Route::prefix('debts')->name('debts.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\DebtController::class, 'index'])
+            ->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\DebtController::class, 'create'])
+            ->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\DebtController::class, 'store'])
+            ->name('store');
+        Route::get('/export', [\App\Http\Controllers\Admin\DebtController::class, 'export'])
+            ->name('export');
+        Route::post('/batch-collect', [\App\Http\Controllers\Admin\DebtController::class, 'batchCollect'])
+            ->name('batch-collect');
+        Route::get('/api/stats', [\App\Http\Controllers\Admin\DebtController::class, 'apiStats'])
+            ->name('api.stats');
+        Route::get('/api/search-users', [\App\Http\Controllers\Admin\DebtController::class, 'searchUsers'])
+            ->name('api.search-users');
+        Route::get('/user/{user}', [\App\Http\Controllers\Admin\DebtController::class, 'userDebts'])
+            ->name('user');
+        Route::get('/{debt}', [\App\Http\Controllers\Admin\DebtController::class, 'show'])
+            ->name('show');
+        Route::post('/{debt}/waive', [\App\Http\Controllers\Admin\DebtController::class, 'waive'])
+            ->name('waive');
+        Route::delete('/{debt}', [\App\Http\Controllers\Admin\DebtController::class, 'cancel'])
+            ->name('cancel');
+    });
+});
