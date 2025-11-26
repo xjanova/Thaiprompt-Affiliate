@@ -108,6 +108,34 @@ Route::prefix('analytics')->name('analytics.')->group(function () {
     Route::post('/collect', [AnalyticsController::class, 'collect'])->name('collect');
 });
 
+// Unified Reports Center - ศูนย์รายงานรวม
+Route::prefix('unified-reports')->name('unified-reports.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'index'])->name('index');
+
+    // รายงานภาพรวมผู้บริหาร (Executive Summary)
+    Route::get('/executive', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'executive'])->name('executive');
+
+    // Business Intelligence Dashboard
+    Route::get('/business-intelligence', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'businessIntelligence'])->name('business-intelligence');
+
+    // รายงานแต่ละระบบ
+    Route::get('/mlm', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'mlm'])->name('mlm');
+    Route::get('/ecommerce', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'ecommerce'])->name('ecommerce');
+    Route::get('/finance', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'finance'])->name('finance');
+    Route::get('/ai-bot', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'aiBot'])->name('ai_bot');
+    Route::get('/hotel', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'hotel'])->name('hotel');
+    Route::get('/pos', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'pos'])->name('pos');
+    Route::get('/crypto', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'crypto'])->name('crypto');
+
+    // API สำหรับแนวโน้มและการเปรียบเทียบ
+    Route::get('/trends', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'trends'])->name('trends');
+    Route::get('/compare', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'compare'])->name('compare');
+
+    // Export รายงาน
+    Route::get('/export/{type?}', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'export'])->name('export');
+    Route::get('/export-csv/{type?}', [\App\Http\Controllers\Admin\UnifiedReportController::class, 'exportCsv'])->name('export-csv');
+});
+
 // CSRF Token Refresh (for long-running forms)
 Route::get('/csrf-token', function () {
     return response()->json(['token' => csrf_token()]);
