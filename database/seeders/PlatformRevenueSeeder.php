@@ -68,6 +68,18 @@ class PlatformRevenueSeeder extends Seeder
                 'type' => 'refund_pool',
                 'description' => 'กระเป๋าสำหรับคืนเงินลูกค้า',
             ],
+            [
+                'name' => 'รายได้ร้านแอดมิน',
+                'slug' => 'admin_shop',
+                'type' => 'admin_shop',
+                'description' => 'กระเป๋ารายได้จากการขายสินค้า Official Shop (ร้านแอดมิน)',
+            ],
+            [
+                'name' => 'รายได้บริการแอดมิน',
+                'slug' => 'admin_services',
+                'type' => 'admin_services',
+                'description' => 'กระเป๋ารายได้จากบริการต่างๆ ของแอดมิน (ค่าสมัคร, ค่าบริการ, etc.)',
+            ],
         ];
 
         foreach ($wallets as $wallet) {

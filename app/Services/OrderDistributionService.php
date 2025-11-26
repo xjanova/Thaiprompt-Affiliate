@@ -53,10 +53,22 @@ class OrderDistributionService
             $itemsBySeller = $order->items->groupBy('seller_id');
 
             foreach ($itemsBySeller as $sellerId => $items) {
-                if (!$sellerId) continue;
+                // ถ้า seller_id = null → สินค้าของ Admin (Official Shop)
+                if (!$sellerId || $sellerId == 0) {
+                    $adminResult = $this->processAdminShopItems($order, $items);
+                    $results['distributions'][] = $adminResult;
+                    continue;
+                }
 
                 $sellerResult = $this->processSellerItems($order, $sellerId, $items);
                 $results['distributions'][] = $sellerResult;
+            }
+
+            // ตรวจสอบบริการของ Admin (ค่าสมัคร, ค่าบริการ, etc.)
+            $adminServices = $order->items->filter(fn($item) => $item->item_type === 'admin_service');
+            if ($adminServices->isNotEmpty()) {
+                $serviceResult = $this->processAdminServices($order, $adminServices);
+                $results['distributions'][] = $serviceResult;
             }
 
             // คำนวณ MLM Commission (ถ้าเปิดใช้งาน)
@@ -259,6 +271,187 @@ class OrderDistributionService
         // เพื่อคำนวณและสร้าง commission ให้ uplines
         // ตอนนี้ return empty array ก่อน
         return [];
+    }
+
+    /**
+     * ประมวลผลรายการสินค้าของ Admin Shop (Official Shop)
+     * สินค้าที่ seller_id = null หรือ 0 คือสินค้าของ Admin
+     *
+     * @param Order $order
+     * @param \Illuminate\Support\Collection $items
+     * @return array
+     */
+    protected function processAdminShopItems(Order $order, $items): array
+    {
+        // คำนวณยอดรวม
+        $grossAmount = $items->sum('total');
+        $vatAmount = $this->calculateVat($items);
+        $mlmCommission = $this->calculateMlmCommissionFromItems($items);
+
+        // Admin Shop ไม่มี Platform Fee (ขายเอง)
+        // ยอดสุทธิ = ยอดรวม - VAT - MLM Commission
+        $netAmount = $grossAmount - $vatAmount - $mlmCommission;
+
+        // เก็บ VAT เข้า Platform Wallet
+        if ($vatAmount > 0) {
+            $this->revenueService->collectVat(
+                $vatAmount,
+                'Order',
+                $order->id,
+                [
+                    'order_number' => $order->order_number,
+                    'source' => 'admin_shop',
+                ]
+            );
+        }
+
+        // เก็บ MLM Commission เข้า Pool
+        if ($mlmCommission > 0) {
+            $this->revenueService->collectMlmPool(
+                $mlmCommission,
+                'Order',
+                $order->id,
+                [
+                    'order_number' => $order->order_number,
+                    'source' => 'admin_shop',
+                ]
+            );
+        }
+
+        // เก็บรายได้สุทธิเข้า Admin Shop Wallet
+        if ($netAmount > 0) {
+            $this->revenueService->recordIncome(
+                'admin_shop',
+                $netAmount,
+                'admin_shop_sale',
+                "รายได้ขายสินค้า Order #{$order->order_number}",
+                'Order',
+                $order->id,
+                null,
+                [
+                    'items_count' => $items->count(),
+                    'gross_amount' => $grossAmount,
+                    'vat_amount' => $vatAmount,
+                    'mlm_commission' => $mlmCommission,
+                    'items' => $items->map(fn($item) => [
+                        'product_id' => $item->product_id,
+                        'product_name' => $item->product_name,
+                        'quantity' => $item->quantity,
+                        'total' => $item->total,
+                    ])->toArray(),
+                ]
+            );
+        }
+
+        Log::info('Admin shop items processed', [
+            'order_id' => $order->id,
+            'gross_amount' => $grossAmount,
+            'net_amount' => $netAmount,
+        ]);
+
+        return [
+            'type' => 'admin_shop',
+            'gross_amount' => $grossAmount,
+            'vat_amount' => $vatAmount,
+            'mlm_commission' => $mlmCommission,
+            'net_amount' => $netAmount,
+            'items_count' => $items->count(),
+        ];
+    }
+
+    /**
+     * ประมวลผลบริการของ Admin (ค่าสมัคร, ค่าบริการ, ค่าอัพเกรด, etc.)
+     *
+     * @param Order $order
+     * @param \Illuminate\Support\Collection $items
+     * @return array
+     */
+    protected function processAdminServices(Order $order, $items): array
+    {
+        // คำนวณยอดรวม
+        $grossAmount = $items->sum('total');
+        $vatAmount = $this->calculateVat($items);
+
+        // บริการของ Admin ไม่มี MLM Commission (ยกเว้นกำหนดเป็นพิเศษ)
+        $mlmCommission = 0;
+
+        // ตรวจสอบว่ามี PV หรือไม่ (บางบริการอาจให้ PV)
+        foreach ($items as $item) {
+            if (isset($item->pv_value) && $item->pv_value > 0) {
+                $mlmCommission += $this->calculateMlmCommissionFromItems(collect([$item]));
+            }
+        }
+
+        // ยอดสุทธิ = ยอดรวม - VAT - MLM Commission
+        $netAmount = $grossAmount - $vatAmount - $mlmCommission;
+
+        // เก็บ VAT เข้า Platform Wallet
+        if ($vatAmount > 0) {
+            $this->revenueService->collectVat(
+                $vatAmount,
+                'Order',
+                $order->id,
+                [
+                    'order_number' => $order->order_number,
+                    'source' => 'admin_services',
+                ]
+            );
+        }
+
+        // เก็บ MLM Commission เข้า Pool (ถ้ามี)
+        if ($mlmCommission > 0) {
+            $this->revenueService->collectMlmPool(
+                $mlmCommission,
+                'Order',
+                $order->id,
+                [
+                    'order_number' => $order->order_number,
+                    'source' => 'admin_services',
+                ]
+            );
+        }
+
+        // เก็บรายได้สุทธิเข้า Admin Services Wallet
+        if ($netAmount > 0) {
+            $this->revenueService->recordIncome(
+                'admin_services',
+                $netAmount,
+                'admin_service_fee',
+                "รายได้บริการ Order #{$order->order_number}",
+                'Order',
+                $order->id,
+                null,
+                [
+                    'items_count' => $items->count(),
+                    'gross_amount' => $grossAmount,
+                    'vat_amount' => $vatAmount,
+                    'mlm_commission' => $mlmCommission,
+                    'service_types' => $items->pluck('service_type')->unique()->toArray(),
+                    'items' => $items->map(fn($item) => [
+                        'service_type' => $item->service_type ?? 'general',
+                        'service_name' => $item->product_name,
+                        'quantity' => $item->quantity,
+                        'total' => $item->total,
+                    ])->toArray(),
+                ]
+            );
+        }
+
+        Log::info('Admin services processed', [
+            'order_id' => $order->id,
+            'gross_amount' => $grossAmount,
+            'net_amount' => $netAmount,
+        ]);
+
+        return [
+            'type' => 'admin_services',
+            'gross_amount' => $grossAmount,
+            'vat_amount' => $vatAmount,
+            'mlm_commission' => $mlmCommission,
+            'net_amount' => $netAmount,
+            'items_count' => $items->count(),
+            'service_types' => $items->pluck('service_type')->unique()->toArray(),
+        ];
     }
 
     /**
