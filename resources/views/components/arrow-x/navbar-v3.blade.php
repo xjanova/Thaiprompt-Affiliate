@@ -154,56 +154,164 @@
             <i x-show="$store.theme.isDark" class="fas fa-sun text-yellow-300 drop-shadow"></i>
         </button>
 
-        {{-- User Profile Dropdown --}}
+        {{-- User Profile Dropdown with Dashboard Switcher --}}
+        @php
+            $user = Auth::user();
+            $currentRoute = request()->route() ? request()->route()->getName() : '';
+
+            // ตรวจสอบว่ากำลังอยู่ที่ dashboard ไหน
+            $isAdmin = str_starts_with($currentRoute, 'admin.');
+            $isSeller = str_starts_with($currentRoute, 'seller.');
+            $isUser = str_starts_with($currentRoute, 'user.');
+
+            // ตรวจสอบสิทธิ์ที่ผู้ใช้มี
+            $hasAdminAccess = $user->hasRole(['admin', 'super_admin']);
+            $hasSellerAccess = $user->hasRole(['seller', 'super_admin']);
+            $hasUserAccess = true; // ทุกคนสามารถเข้าใช้ user dashboard ได้
+
+            // นับจำนวน dashboard ที่สามารถเข้าถึงได้
+            $availableDashboards = ($hasAdminAccess ? 1 : 0) + ($hasSellerAccess ? 1 : 0) + ($hasUserAccess ? 1 : 0);
+        @endphp
+
         <div x-data="{ profileOpen: false }" class="relative">
             <button @click="profileOpen = !profileOpen"
                     type="button"
                     class="flex items-center gap-2 p-2 pr-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-105 active:scale-95">
                 <div class="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <span class="text-white text-sm font-bold drop-shadow">{{ substr(Auth::user()->name, 0, 1) }}</span>
+                    <span class="text-white text-sm font-bold drop-shadow">{{ substr($user->name, 0, 1) }}</span>
                 </div>
-                <span class="hidden md:block text-white font-medium text-sm drop-shadow">{{ Auth::user()->name }}</span>
-                <i class="fas fa-chevron-down text-white/60 text-xs drop-shadow"></i>
+                <span class="hidden md:block text-white font-medium text-sm drop-shadow">{{ $user->name }}</span>
+                <i class="fas fa-chevron-down text-white/60 text-xs drop-shadow transition-transform duration-200" :class="profileOpen ? 'rotate-180' : ''"></i>
             </button>
 
             {{-- Profile Dropdown --}}
             <div x-show="profileOpen"
                  @click.outside="profileOpen = false"
-                 x-transition
-                 class="absolute top-full right-0 mt-2 w-56 glass-dropdown rounded-xl shadow-2xl border border-white/30 overflow-hidden">
-                {{-- User Info --}}
-                <div class="px-4 py-3 border-b border-white/20 bg-black/20">
-                    <p class="font-medium text-white text-sm drop-shadow">{{ Auth::user()->name }}</p>
-                    <p class="text-xs text-white/70 truncate">{{ Auth::user()->email }}</p>
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="absolute top-full right-0 mt-2 w-72 glass-dropdown rounded-2xl shadow-2xl border border-white/30 overflow-hidden"
+                 style="display: none;">
+
+                {{-- User Info Header --}}
+                <div class="px-4 py-4 bg-gradient-to-br from-indigo-600/30 to-purple-600/30 border-b border-white/20">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <span class="text-white text-lg font-bold drop-shadow">{{ substr($user->name, 0, 1) }}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-white text-sm drop-shadow truncate">{{ $user->name }}</p>
+                            <p class="text-xs text-white/70 truncate">{{ $user->email }}</p>
+                            <div class="flex items-center gap-1 mt-1">
+                                @if($isAdmin)
+                                    <span class="px-2 py-0.5 bg-red-500/80 rounded-full text-xs font-medium text-white">แอดมิน</span>
+                                @elseif($isSeller)
+                                    <span class="px-2 py-0.5 bg-green-500/80 rounded-full text-xs font-medium text-white">ร้านค้า</span>
+                                @else
+                                    <span class="px-2 py-0.5 bg-blue-500/80 rounded-full text-xs font-medium text-white">ผู้ใช้</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
+                {{-- Dashboard Switcher Section --}}
+                @if($availableDashboards > 1)
+                <div class="px-2 py-2 border-b border-white/20">
+                    <p class="px-2 py-1 text-xs font-bold text-white/60 uppercase tracking-wider">สลับแดชบอร์ด</p>
+
+                    @if($hasAdminAccess)
+                    <a href="{{ route('admin.dashboard') }}"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-all group {{ $isAdmin ? 'bg-white/10' : '' }}">
+                        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center text-white shadow group-hover:scale-110 transition-transform">
+                            <i class="fas fa-cog text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-white text-sm drop-shadow">แอดมิน</p>
+                            <p class="text-xs text-white/60">จัดการระบบ</p>
+                        </div>
+                        @if($isAdmin)
+                            <i class="fas fa-check-circle text-green-400"></i>
+                        @endif
+                    </a>
+                    @endif
+
+                    @if($hasSellerAccess)
+                    <a href="{{ route('seller.dashboard') }}"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-all group {{ $isSeller ? 'bg-white/10' : '' }}">
+                        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white shadow group-hover:scale-110 transition-transform">
+                            <i class="fas fa-store text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-white text-sm drop-shadow">ร้านค้า</p>
+                            <p class="text-xs text-white/60">จัดการสินค้า</p>
+                        </div>
+                        @if($isSeller)
+                            <i class="fas fa-check-circle text-green-400"></i>
+                        @endif
+                    </a>
+                    @endif
+
+                    @if($hasUserAccess)
+                    <a href="{{ route('user.dashboard') }}"
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-all group {{ $isUser ? 'bg-white/10' : '' }}">
+                        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white shadow group-hover:scale-110 transition-transform">
+                            <i class="fas fa-user text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-white text-sm drop-shadow">ผู้ใช้งาน</p>
+                            <p class="text-xs text-white/60">แดชบอร์ดส่วนตัว</p>
+                        </div>
+                        @if($isUser)
+                            <i class="fas fa-check-circle text-green-400"></i>
+                        @endif
+                    </a>
+                    @endif
+                </div>
+                @endif
+
                 {{-- Menu Items --}}
-                <div class="py-2">
+                <div class="px-2 py-2 border-b border-white/20">
+                    <p class="px-2 py-1 text-xs font-bold text-white/60 uppercase tracking-wider">เมนูลัด</p>
+
                     <a href="{{ route('admin.profile.index') }}"
-                       class="flex items-center gap-3 px-4 py-2 hover:bg-white/10 transition-colors text-white text-sm">
-                        <i class="fas fa-user-circle w-4 drop-shadow"></i>
-                        <span class="drop-shadow">โปรไฟล์</span>
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-all group">
+                        <div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center text-white/80 group-hover:bg-indigo-500/30 group-hover:text-white transition-all">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <span class="text-white text-sm drop-shadow">โปรไฟล์</span>
                     </a>
+
                     <a href="{{ route('admin.settings.index') }}"
-                       class="flex items-center gap-3 px-4 py-2 hover:bg-white/10 transition-colors text-white text-sm">
-                        <i class="fas fa-cog w-4 drop-shadow"></i>
-                        <span class="drop-shadow">ตั้งค่า</span>
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-all group">
+                        <div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center text-white/80 group-hover:bg-indigo-500/30 group-hover:text-white transition-all">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <span class="text-white text-sm drop-shadow">ตั้งค่า</span>
                     </a>
+
                     <a href="{{ route('admin.user-guide.index') }}"
-                       class="flex items-center gap-3 px-4 py-2 hover:bg-white/10 transition-colors text-white text-sm">
-                        <i class="fas fa-book-open w-4 drop-shadow"></i>
-                        <span class="drop-shadow">คู่มือการใช้งาน</span>
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-all group">
+                        <div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center text-white/80 group-hover:bg-indigo-500/30 group-hover:text-white transition-all">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <span class="text-white text-sm drop-shadow">คู่มือการใช้งาน</span>
                     </a>
                 </div>
 
                 {{-- Logout --}}
-                <div class="border-t border-white/20">
+                <div class="px-2 py-2">
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
                         <button type="submit"
-                                class="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-colors text-white text-sm">
-                            <i class="fas fa-sign-out-alt w-4 drop-shadow"></i>
-                            <span class="drop-shadow">ออกจากระบบ</span>
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/20 transition-all group">
+                            <div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center text-white/80 group-hover:bg-red-500/30 group-hover:text-red-300 transition-all">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </div>
+                            <span class="text-white text-sm drop-shadow group-hover:text-red-300">ออกจากระบบ</span>
                         </button>
                     </form>
                 </div>

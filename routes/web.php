@@ -568,6 +568,42 @@ Route::prefix('qr-barcode')->name('qr-barcode.')->group(function () {
 });
 
 // ========================================
+// LABEL DESIGNER SYSTEM ROUTES
+// ========================================
+// 🏷️ ระบบออกแบบฉลาก บาร์โค้ด QR Code สำหรับสติ๊กเกอร์ติดผลิตภัณฑ์
+// เครื่องมือฟรีสำหรับร้านค้าทุกร้าน รองรับเครื่องพิมพ์หลากหลาย
+
+Route::prefix('label-designer')->name('label-designer.')->group(function () {
+    // Public routes (ไม่ต้อง login)
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\LabelDesignerController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/create', [\App\Http\Controllers\LabelDesignerController::class, 'create'])->name('create');
+
+    // API routes สำหรับดึงข้อมูล (public)
+    Route::get('/api/templates', [\App\Http\Controllers\LabelDesignerController::class, 'templates'])->name('api.templates');
+    Route::get('/api/paper-sizes', [\App\Http\Controllers\LabelDesignerController::class, 'paperSizes'])->name('api.paper-sizes');
+    Route::get('/api/barcode-formats', [\App\Http\Controllers\LabelDesignerController::class, 'barcodeFormats'])->name('api.barcode-formats');
+    Route::post('/api/generate-barcode', [\App\Http\Controllers\LabelDesignerController::class, 'generateBarcode'])->name('api.generate-barcode');
+    Route::post('/api/generate-qrcode', [\App\Http\Controllers\LabelDesignerController::class, 'generateQrcode'])->name('api.generate-qrcode');
+
+    // Authenticated routes (ต้อง login)
+    Route::middleware('auth')->group(function () {
+        // CRUD ฉลาก
+        Route::post('/store', [\App\Http\Controllers\LabelDesignerController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [\App\Http\Controllers\LabelDesignerController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [\App\Http\Controllers\LabelDesignerController::class, 'update'])->name('update');
+        Route::delete('/delete/{id}', [\App\Http\Controllers\LabelDesignerController::class, 'destroy'])->name('destroy');
+
+        // ฟังก์ชันเพิ่มเติม
+        Route::get('/my-labels', [\App\Http\Controllers\LabelDesignerController::class, 'myLabels'])->name('my-labels');
+        Route::post('/favorite/{id}', [\App\Http\Controllers\LabelDesignerController::class, 'toggleFavorite'])->name('favorite');
+        Route::post('/duplicate/{id}', [\App\Http\Controllers\LabelDesignerController::class, 'duplicate'])->name('duplicate');
+        Route::post('/print/{id}', [\App\Http\Controllers\LabelDesignerController::class, 'recordPrint'])->name('print');
+        Route::get('/export-pdf/{id}', [\App\Http\Controllers\LabelDesignerController::class, 'exportPdf'])->name('export-pdf');
+        Route::post('/create-template/{id}', [\App\Http\Controllers\LabelDesignerController::class, 'createTemplateFromLabel'])->name('create-template');
+    });
+});
+
+// ========================================
 // SOFTWARE SALES SYSTEM ROUTES
 // ========================================
 require __DIR__.'/software_sales.php';

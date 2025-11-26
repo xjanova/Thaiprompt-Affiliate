@@ -1,0 +1,308 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+/**
+ * LabelTemplate Model
+ *
+ * จัดเก็บ template สำหรับออกฉลาก บาร์โค้ด QR Code
+ * ใช้สำหรับทำสติ๊กเกอร์ติดผลิตภัณฑ์
+ *
+ * @property int $id
+ * @property int|null $user_id เจ้าของ template
+ * @property string $name ชื่อ template
+ * @property string|null $description คำอธิบาย
+ * @property string|null $category หมวดหมู่
+ * @property float $paper_width ความกว้างกระดาษ (mm)
+ * @property float $paper_height ความสูงกระดาษ (mm)
+ * @property string $paper_unit หน่วย (mm, cm, in)
+ * @property string|null $paper_type ประเภทกระดาษ
+ * @property int $columns จำนวนคอลัมน์
+ * @property int $rows จำนวนแถว
+ * @property float $gap_horizontal ระยะห่างแนวนอน
+ * @property float $gap_vertical ระยะห่างแนวตั้ง
+ * @property float $margin_top ขอบบน
+ * @property float $margin_left ขอบซ้าย
+ * @property float $margin_right ขอบขวา
+ * @property float $margin_bottom ขอบล่าง
+ * @property array|null $elements องค์ประกอบทั้งหมด
+ * @property array|null $settings ตั้งค่าทั่วไป
+ * @property array|null $print_settings ตั้งค่าการพิมพ์
+ * @property bool $is_public แชร์สาธารณะ
+ * @property bool $is_system เป็น system template
+ * @property bool $is_active เปิดใช้งาน
+ * @property int $usage_count จำนวนครั้งที่ใช้
+ * @property string|null $thumbnail_path path รูป thumbnail
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ * @property \Carbon\Carbon|null $deleted_at
+ *
+ * @author Claude AI
+ */
+class LabelTemplate extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    /**
+     * ชื่อตาราง
+     *
+     * @var string
+     */
+    protected $table = 'label_templates';
+
+    /**
+     * ฟิลด์ที่สามารถกำหนดค่าได้
+     *
+     * @var array<string>
+     */
+    protected $fillable = [
+        'user_id',
+        'name',
+        'description',
+        'category',
+        'paper_width',
+        'paper_height',
+        'paper_unit',
+        'paper_type',
+        'columns',
+        'rows',
+        'gap_horizontal',
+        'gap_vertical',
+        'margin_top',
+        'margin_left',
+        'margin_right',
+        'margin_bottom',
+        'elements',
+        'settings',
+        'print_settings',
+        'is_public',
+        'is_system',
+        'is_active',
+        'usage_count',
+        'thumbnail_path',
+    ];
+
+    /**
+     * การแปลงประเภทข้อมูล
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'paper_width' => 'float',
+        'paper_height' => 'float',
+        'columns' => 'integer',
+        'rows' => 'integer',
+        'gap_horizontal' => 'float',
+        'gap_vertical' => 'float',
+        'margin_top' => 'float',
+        'margin_left' => 'float',
+        'margin_right' => 'float',
+        'margin_bottom' => 'float',
+        'elements' => 'array',
+        'settings' => 'array',
+        'print_settings' => 'array',
+        'is_public' => 'boolean',
+        'is_system' => 'boolean',
+        'is_active' => 'boolean',
+        'usage_count' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
+    ];
+
+    /**
+     * ค่าเริ่มต้น
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'paper_width' => 50,
+        'paper_height' => 30,
+        'paper_unit' => 'mm',
+        'columns' => 1,
+        'rows' => 1,
+        'gap_horizontal' => 0,
+        'gap_vertical' => 0,
+        'margin_top' => 0,
+        'margin_left' => 0,
+        'margin_right' => 0,
+        'margin_bottom' => 0,
+        'is_public' => false,
+        'is_system' => false,
+        'is_active' => true,
+        'usage_count' => 0,
+    ];
+
+    /**
+     * ความสัมพันธ์กับ User
+     *
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * ความสัมพันธ์กับ Labels ที่ใช้ template นี้
+     *
+     * @return HasMany
+     */
+    public function labels(): HasMany
+    {
+        return $this->hasMany(Label::class, 'template_id');
+    }
+
+    /**
+     * Scope: เฉพาะ template ที่เป็นสาธารณะ
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopePublic($query)
+    {
+        return $query->where('is_public', true);
+    }
+
+    /**
+     * Scope: เฉพาะ template ของระบบ
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeSystem($query)
+    {
+        return $query->where('is_system', true);
+    }
+
+    /**
+     * Scope: เฉพาะ template ที่เปิดใช้งาน
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope: กรองตามหมวดหมู่
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $category
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeInCategory($query, string $category)
+    {
+        return $query->where('category', $category);
+    }
+
+    /**
+     * Scope: template ยอดนิยม
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param int $limit
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopePopular($query, int $limit = 10)
+    {
+        return $query->orderBy('usage_count', 'desc')->limit($limit);
+    }
+
+    /**
+     * เพิ่มจำนวนการใช้งาน
+     *
+     * @return void
+     */
+    public function incrementUsage(): void
+    {
+        $this->increment('usage_count');
+    }
+
+    /**
+     * คำนวณขนาดฉลากแต่ละชิ้น (กรณีพิมพ์หลายชิ้นต่อแผ่น)
+     *
+     * @return array{width: float, height: float}
+     */
+    public function getLabelSizeAttribute(): array
+    {
+        $usableWidth = $this->paper_width - $this->margin_left - $this->margin_right;
+        $usableHeight = $this->paper_height - $this->margin_top - $this->margin_bottom;
+
+        $totalGapH = ($this->columns - 1) * $this->gap_horizontal;
+        $totalGapV = ($this->rows - 1) * $this->gap_vertical;
+
+        return [
+            'width' => ($usableWidth - $totalGapH) / $this->columns,
+            'height' => ($usableHeight - $totalGapV) / $this->rows,
+        ];
+    }
+
+    /**
+     * คำนวณจำนวนฉลากต่อแผ่น
+     *
+     * @return int
+     */
+    public function getLabelsPerSheetAttribute(): int
+    {
+        return $this->columns * $this->rows;
+    }
+
+    /**
+     * ดึง default elements structure
+     *
+     * @return array
+     */
+    public static function getDefaultElements(): array
+    {
+        return [
+            'text' => [],      // Text elements
+            'barcode' => [],   // Barcode elements
+            'qrcode' => [],    // QR Code elements
+            'image' => [],     // Image elements
+            'shape' => [],     // Shape elements (line, rectangle, etc.)
+        ];
+    }
+
+    /**
+     * ดึง default settings structure
+     *
+     * @return array
+     */
+    public static function getDefaultSettings(): array
+    {
+        return [
+            'background_color' => '#ffffff',
+            'border_enabled' => false,
+            'border_color' => '#000000',
+            'border_width' => 1,
+            'grid_enabled' => true,
+            'grid_size' => 5, // mm
+            'snap_to_grid' => true,
+        ];
+    }
+
+    /**
+     * ดึง default print settings structure
+     *
+     * @return array
+     */
+    public static function getDefaultPrintSettings(): array
+    {
+        return [
+            'copies' => 1,
+            'orientation' => 'portrait',
+            'scale' => 100,
+            'color_mode' => 'color',
+            'quality' => 'high',
+            'mirror' => false,
+        ];
+    }
+}
