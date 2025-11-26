@@ -14,6 +14,7 @@ class MlmMember extends Model
         'user_id',
         'mlm_plan_id',
         'package_id',
+        'original_sponsor_id',
         'unilevel_sponsor_id',
         'unilevel_level',
         'unilevel_path',
@@ -99,6 +100,30 @@ class MlmMember extends Model
     public function sponsor()
     {
         return $this->belongsTo(MlmMember::class, 'unilevel_sponsor_id');
+    }
+
+    /**
+     * Get original sponsor - ผู้แนะนำตรงจริงๆ (ใช้รหัสของใคร)
+     *
+     * ความแตกต่างระหว่าง sponsor ต่างๆ:
+     * - original_sponsor: คนที่แนะนำตรงจริงๆ (ใช้รหัสของใคร) → ใช้สำหรับค่าแนะนำตรง
+     * - unilevel_sponsor: parent ใน Unilevel tree (อาจ spillover ไปคนอื่น)
+     * - binary_sponsor: parent ใน Binary tree (ตามกลยุทธ์ที่ตั้งค่า)
+     */
+    public function originalSponsor()
+    {
+        return $this->belongsTo(MlmMember::class, 'original_sponsor_id');
+    }
+
+    /**
+     * Get direct referrals - สมาชิกที่ใช้รหัสแนะนำตรงจากคนนี้
+     *
+     * ใช้สำหรับแสดงผังสายเลือด (Genealogy Tree) ที่ตรงความจริง
+     * ไม่เกี่ยวกับ Unilevel/Binary Tree
+     */
+    public function directReferrals()
+    {
+        return $this->hasMany(MlmMember::class, 'original_sponsor_id');
     }
 
     /**

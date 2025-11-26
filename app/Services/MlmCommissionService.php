@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\MlmMember;
 use App\Models\MlmCommission;
 use App\Models\MlmGlobalSetting;
+use App\Models\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -320,6 +321,98 @@ class MlmCommissionService
     protected function isBinaryEnabled(): bool
     {
         return MlmGlobalSetting::get('binary_enabled', false);
+    }
+
+    /**
+     * คำนวณและจ่ายค่าแนะนำตรงสำหรับออเดอร์
+     *
+     * ค่าแนะนำตรงเป็นคนละส่วนกับ PV Commission ของ Unilevel/Binary:
+     * - จ่ายให้ผู้แนะนำตรงจริงๆ (original_sponsor)
+     * - ไม่ใช่ unilevel_sponsor ซึ่งอาจเปลี่ยนไปจากการ spillover
+     *
+     * @param Order $order ออเดอร์ที่ชำระแล้ว
+     * @return MlmCommission|null
+     */
+    public function calculateDirectReferralBonus(Order $order): ?MlmCommission
+    {
+        $referralService = new MlmReferralBonusService();
+        return $referralService->calculateReferralBonus($order);
+    }
+
+    /**
+     * คำนวณค่าคอมมิชชันทั้งหมดสำหรับออเดอร์ (รวมค่าแนะนำตรง, Unilevel, Binary)
+     *
+     * เรียกใช้หลังจากออเดอร์ได้รับชำระเงินแล้ว
+     *
+     * @param Order $order ออเดอร์ที่ชำระแล้ว
+     * @param array $pvData ข้อมูล PV ['total_pv' => float]
+     * @return array ['direct_referral' => ?MlmCommission, 'unilevel' => array, 'binary' => array]
+     */
+    public function processOrderCommissions(Order $order, array $pvData): array
+    {
+        $result = [
+            'direct_referral' => null,
+            'unilevel' => [],
+            'binary' => [],
+        ];
+
+        // หา MlmMember ของผู้ซื้อ
+        $buyerMember = MlmMember::where('user_id', $order->user_id)->first();
+
+        if (!$buyerMember) {
+            Log::debug('Buyer is not MLM member, skipping commission calculation', [
+                'order_id' => $order->id,
+                'user_id' => $order->user_id,
+            ]);
+            return $result;
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // 1. คำนวณค่าแนะนำตรง (Direct Referral Bonus)
+            $result['direct_referral'] = $this->calculateDirectReferralBonus($order);
+
+            // 2. คำนวณ Unilevel + Binary Commission (ถ้ามี PV)
+            if (($pvData['total_pv'] ?? 0) > 0) {
+                $pvCommissions = $this->calculateCommissionsWithRollup(
+                    $buyerMember,
+                    $pvData['total_pv'],
+                    'order',
+                    $order->id
+                );
+
+                if ($pvCommissions['success']) {
+                    // แยก commissions ตามประเภท
+                    foreach ($pvCommissions['commissions'] as $commission) {
+                        $type = $commission['type'] ?? 'unknown';
+                        if (str_starts_with($type, 'unilevel')) {
+                            $result['unilevel'][] = $commission;
+                        } elseif (str_starts_with($type, 'binary')) {
+                            $result['binary'][] = $commission;
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+
+            Log::info('Order commissions processed successfully', [
+                'order_id' => $order->id,
+                'has_direct_referral' => $result['direct_referral'] !== null,
+                'unilevel_count' => count($result['unilevel']),
+                'binary_count' => count($result['binary']),
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to process order commissions', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $result;
     }
 
     /**
