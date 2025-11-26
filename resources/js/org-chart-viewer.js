@@ -12,7 +12,7 @@
  * - Real browser fullscreen (Fullscreen API)
  *
  * @author TP-Affiliate Team
- * @version 3.2.0
+ * @version 3.2.1
  */
 
 class OrgChartViewer {
@@ -651,7 +651,17 @@ class OrgChartViewer {
         this.fullscreenBtn = this.container.querySelector('.n8n-fullscreen');
         this.fullscreenEnterIcon = this.container.querySelector('.n8n-fullscreen-enter');
         this.fullscreenExitIcon = this.container.querySelector('.n8n-fullscreen-exit');
-        this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+
+        if (this.fullscreenBtn) {
+            this.fullscreenBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Fullscreen button clicked');
+                this.toggleFullscreen();
+            });
+        } else {
+            console.warn('Fullscreen button not found');
+        }
 
         // Listen for fullscreen change events (for Escape key and other exit methods)
         document.addEventListener('fullscreenchange', () => this.handleFullscreenChange());
@@ -1466,24 +1476,47 @@ class OrgChartViewer {
     enterFullscreen() {
         const element = this.wrapper;
 
-        // ลองใช้ Browser Fullscreen API ก่อน
-        if (element.requestFullscreen) {
-            element.requestFullscreen();
-        } else if (element.webkitRequestFullscreen) {
-            // Safari
-            element.webkitRequestFullscreen();
-        } else if (element.mozRequestFullScreen) {
-            // Firefox
-            element.mozRequestFullScreen();
-        } else if (element.msRequestFullscreen) {
-            // IE/Edge
-            element.msRequestFullscreen();
-        } else {
-            // Fallback: ใช้ CSS fullscreen mode ถ้าไม่รองรับ API
+        console.log('Entering fullscreen mode...');
+
+        // ฟังก์ชันสำหรับ fallback เป็น CSS fullscreen
+        const useCSSFullscreen = () => {
+            console.log('Using CSS fullscreen fallback');
             this.wrapper.classList.add('n8n-fullscreen-mode');
             this.isFullscreen = true;
             this.updateFullscreenUI();
-            this.fitToScreen();
+            setTimeout(() => this.fitToScreen(), 50);
+        };
+
+        // ลองใช้ Browser Fullscreen API ก่อน
+        let fullscreenPromise = null;
+
+        if (element.requestFullscreen) {
+            fullscreenPromise = element.requestFullscreen();
+        } else if (element.webkitRequestFullscreen) {
+            // Safari
+            element.webkitRequestFullscreen();
+            useCSSFullscreen(); // Safari doesn't return a promise
+            return;
+        } else if (element.mozRequestFullScreen) {
+            // Firefox
+            element.mozRequestFullScreen();
+            return;
+        } else if (element.msRequestFullscreen) {
+            // IE/Edge
+            element.msRequestFullscreen();
+            return;
+        } else {
+            // Fallback: ใช้ CSS fullscreen mode ถ้าไม่รองรับ API
+            useCSSFullscreen();
+            return;
+        }
+
+        // Handle promise (Chrome, Firefox modern)
+        if (fullscreenPromise && fullscreenPromise.catch) {
+            fullscreenPromise.catch((err) => {
+                console.warn('Fullscreen API failed, using CSS fallback:', err);
+                useCSSFullscreen();
+            });
         }
     }
 
@@ -1491,17 +1524,29 @@ class OrgChartViewer {
      * Exit Browser Fullscreen
      */
     exitFullscreen() {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-        } else if (document.mozCancelFullScreen) {
-            document.mozCancelFullScreen();
-        } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
+        console.log('Exiting fullscreen mode...');
+
+        // ลบ CSS fullscreen class ก่อน (ในกรณีที่ใช้ fallback)
+        this.wrapper.classList.remove('n8n-fullscreen-mode');
+
+        // ลอง Browser Fullscreen API
+        const fullscreenElement = document.fullscreenElement ||
+                                  document.webkitFullscreenElement ||
+                                  document.mozFullScreenElement ||
+                                  document.msFullscreenElement;
+
+        if (fullscreenElement) {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
         } else {
-            // Fallback: ลบ CSS fullscreen mode
-            this.wrapper.classList.remove('n8n-fullscreen-mode');
+            // ถ้าไม่มี fullscreen element แปลว่าใช้ CSS fallback
             this.isFullscreen = false;
             this.updateFullscreenUI();
         }
@@ -1516,7 +1561,16 @@ class OrgChartViewer {
                                   document.mozFullScreenElement ||
                                   document.msFullscreenElement;
 
+        const wasFullscreen = this.isFullscreen;
         this.isFullscreen = (fullscreenElement === this.wrapper);
+
+        console.log('Fullscreen changed:', this.isFullscreen);
+
+        // ลบ CSS class เมื่อออกจาก fullscreen
+        if (!this.isFullscreen) {
+            this.wrapper.classList.remove('n8n-fullscreen-mode');
+        }
+
         this.updateFullscreenUI();
 
         // Fit to screen after fullscreen change
@@ -1530,16 +1584,18 @@ class OrgChartViewer {
      * Update fullscreen button UI
      */
     updateFullscreenUI() {
+        if (!this.fullscreenBtn) return;
+
         if (this.isFullscreen) {
             this.fullscreenBtn.classList.add('n8n-fullscreen-active');
-            this.fullscreenBtn.title = 'ออกจากเต็มจอ';
-            this.fullscreenEnterIcon.style.display = 'none';
-            this.fullscreenExitIcon.style.display = 'block';
+            this.fullscreenBtn.title = 'ออกจากเต็มจอ (กด ESC หรือคลิก)';
+            if (this.fullscreenEnterIcon) this.fullscreenEnterIcon.style.display = 'none';
+            if (this.fullscreenExitIcon) this.fullscreenExitIcon.style.display = 'block';
         } else {
             this.fullscreenBtn.classList.remove('n8n-fullscreen-active');
             this.fullscreenBtn.title = 'เต็มจอ';
-            this.fullscreenEnterIcon.style.display = 'block';
-            this.fullscreenExitIcon.style.display = 'none';
+            if (this.fullscreenEnterIcon) this.fullscreenEnterIcon.style.display = 'block';
+            if (this.fullscreenExitIcon) this.fullscreenExitIcon.style.display = 'none';
         }
     }
 
