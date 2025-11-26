@@ -108,7 +108,7 @@ class PlatformWallet extends Model
     public static function getFeeWallet(): self
     {
         return static::firstOrCreate(
-            ['slug' => 'platform-fee'],
+            ['slug' => 'fee'],
             [
                 'name' => 'ค่าธรรมเนียม Platform',
                 'type' => self::TYPE_PLATFORM_FEE,
@@ -138,11 +138,56 @@ class PlatformWallet extends Model
     public static function getMlmPoolWallet(): self
     {
         return static::firstOrCreate(
-            ['slug' => 'mlm-pool'],
+            ['slug' => 'mlm_pool'],
             [
                 'name' => 'กองทุน MLM Commission',
                 'type' => self::TYPE_MLM_POOL,
                 'description' => 'กระเป๋าสำหรับเก็บเงินคอมมิชชัน MLM รอจ่าย',
+            ]
+        );
+    }
+
+    /**
+     * ดึงหรือสร้างกระเป๋า Admin Shop
+     */
+    public static function getAdminShopWallet(): self
+    {
+        return static::firstOrCreate(
+            ['slug' => 'admin_shop'],
+            [
+                'name' => 'รายได้ร้านแอดมิน',
+                'type' => 'admin_shop',
+                'description' => 'กระเป๋ารายได้จากการขายสินค้า Official Shop',
+            ]
+        );
+    }
+
+    /**
+     * ดึงหรือสร้างกระเป๋า Admin Services
+     */
+    public static function getAdminServicesWallet(): self
+    {
+        return static::firstOrCreate(
+            ['slug' => 'admin_services'],
+            [
+                'name' => 'รายได้บริการแอดมิน',
+                'type' => 'admin_services',
+                'description' => 'กระเป๋ารายได้จากบริการต่างๆ ของแอดมิน',
+            ]
+        );
+    }
+
+    /**
+     * ดึงหรือสร้างกระเป๋า Refund Pool
+     */
+    public static function getRefundPoolWallet(): self
+    {
+        return static::firstOrCreate(
+            ['slug' => 'refund_pool'],
+            [
+                'name' => 'กองทุนคืนเงิน',
+                'type' => self::TYPE_REFUND_POOL,
+                'description' => 'กระเป๋าสำหรับคืนเงินลูกค้า',
             ]
         );
     }

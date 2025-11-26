@@ -115,6 +115,65 @@ class PlatformRevenueService
     }
 
     /**
+     * บันทึกรายได้เข้ากระเป๋าที่ระบุ
+     *
+     * @param string $walletSlug ชื่อ slug ของกระเป๋า (admin_shop, admin_services, etc.)
+     * @param float $amount จำนวนเงิน
+     * @param string $subType ประเภทย่อย
+     * @param string $description คำอธิบาย
+     * @param string|null $sourceType ที่มา
+     * @param int|null $sourceId ID ที่มา
+     * @param int|null $relatedUserId User ID ที่เกี่ยวข้อง
+     * @param array $metadata ข้อมูลเพิ่มเติม
+     * @return PlatformTransaction|null
+     */
+    public function recordIncome(
+        string $walletSlug,
+        float $amount,
+        string $subType,
+        string $description,
+        ?string $sourceType = null,
+        ?int $sourceId = null,
+        ?int $relatedUserId = null,
+        array $metadata = []
+    ): ?PlatformTransaction {
+        // ดึงกระเป๋าตาม slug
+        $wallet = PlatformWallet::findBySlug($walletSlug);
+
+        if (!$wallet) {
+            // ลองสร้างกระเป๋าใหม่ถ้าไม่พบ
+            $wallet = match ($walletSlug) {
+                'admin_shop' => PlatformWallet::getAdminShopWallet(),
+                'admin_services' => PlatformWallet::getAdminServicesWallet(),
+                'fee' => PlatformWallet::getFeeWallet(),
+                'vat' => PlatformWallet::getVatWallet(),
+                'mlm_pool' => PlatformWallet::getMlmPoolWallet(),
+                'refund_pool' => PlatformWallet::getRefundPoolWallet(),
+                default => null,
+            };
+        }
+
+        if (!$wallet) {
+            return null;
+        }
+
+        $transaction = $wallet->addFunds(
+            $amount,
+            $subType,
+            $sourceType,
+            $sourceId,
+            $metadata
+        );
+
+        $transaction->update([
+            'description' => $description,
+            'related_user_id' => $relatedUserId,
+        ]);
+
+        return $transaction;
+    }
+
+    /**
      * จ่ายคอมมิชชัน MLM จากกองทุน
      *
      * @param float $amount จำนวนเงิน
