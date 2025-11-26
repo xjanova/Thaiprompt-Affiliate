@@ -236,4 +236,150 @@ class MembershipRetentionController extends Controller
             ],
         ]);
     }
+
+    /**
+     * แสดงหน้าตั้งค่า Auto-Renewal
+     *
+     * @return \Illuminate\View\View
+     */
+    public function showAutoSettings()
+    {
+        $user = Auth::user();
+        $status = $this->retentionService->getOrCreateStatus($user);
+
+        return view('user.retention.auto-settings', compact('status'));
+    }
+
+    /**
+     * บันทึกการตั้งค่า Auto-Renewal
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function saveAutoSettings(Request $request)
+    {
+        $request->validate([
+            'enabled' => 'required|boolean',
+            'source' => 'required|in:wallet,commission,both',
+            'priority' => 'required|in:wallet_first,commission_first',
+            'months' => 'required|integer|min:1|max:12',
+            'max_amount' => 'nullable|numeric|min:0',
+            'notify_days' => 'required|integer|min:1|max:7',
+        ]);
+
+        $user = Auth::user();
+        $status = $this->retentionService->getOrCreateStatus($user);
+
+        try {
+            $status->update([
+                'auto_renewal_enabled' => $request->enabled,
+                'auto_renewal_source' => $request->source,
+                'auto_renewal_priority' => $request->priority,
+                'auto_renewal_months' => $request->months,
+                'auto_renewal_max_amount' => $request->max_amount,
+                'auto_renewal_notify_before_days' => $request->notify_days,
+                // รีเซ็ต failed count เมื่อตั้งค่าใหม่
+                'auto_renewal_failed_count' => 0,
+                'auto_renewal_paused_until' => null,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกการตั้งค่าสำเร็จ',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * หยุด Auto-Renewal ชั่วคราว
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function pauseAutoRenewal(Request $request)
+    {
+        $request->validate([
+            'pause_until' => 'required|date|after:today',
+        ]);
+
+        $user = Auth::user();
+        $status = $this->retentionService->getOrCreateStatus($user);
+
+        try {
+            $status->update([
+                'auto_renewal_paused_until' => $request->pause_until,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'หยุด Auto-Renewal ชั่วคราวสำเร็จ',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ยกเลิกการหยุด Auto-Renewal ชั่วคราว
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function resumeAutoRenewal()
+    {
+        $user = Auth::user();
+        $status = $this->retentionService->getOrCreateStatus($user);
+
+        try {
+            $status->update([
+                'auto_renewal_paused_until' => null,
+                'auto_renewal_failed_count' => 0,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'เปิดใช้งาน Auto-Renewal อีกครั้งสำเร็จ',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงข้อมูลสำหรับ Status Bar ใน Dashboard
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getStatusBarData()
+    {
+        $user = Auth::user();
+        $status = $this->retentionService->getOrCreateStatus($user);
+        $statistics = $this->retentionService->getUserStatistics($user);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'statistics' => $statistics,
+                'auto_renewal' => [
+                    'enabled' => $status->isAutoRenewalEnabled(),
+                    'paused' => $status->isAutoRenewalPaused(),
+                    'can_auto_renew' => $status->canAutoRenew(),
+                    'status_text' => $status->getAutoRenewalStatusText(),
+                    'status_color' => $status->getAutoRenewalStatusColor(),
+                    'source_label' => $status->getAutoRenewalSourceLabel(),
+                    'priority_label' => $status->getAutoRenewalPriorityLabel(),
+                ],
+            ],
+        ]);
+    }
 }

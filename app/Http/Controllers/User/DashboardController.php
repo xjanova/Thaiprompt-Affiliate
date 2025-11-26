@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Commission;
 use App\Models\MlmCommission;
 use App\Services\ImageUploadService;
+use App\Services\MembershipRetentionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -267,6 +268,22 @@ class DashboardController extends Controller
         $showKycAlert = in_array($kycStatus, ['not_submitted', 'rejected']);
 
         // ===============================================
+        // 12. ข้อมูลระบบรักษายอด (Retention Status)
+        // ===============================================
+
+        $retentionStatus = null;
+        $retentionStatistics = null;
+
+        try {
+            $retentionService = app(MembershipRetentionService::class);
+            $retentionStatus = $retentionService->getOrCreateStatus($user);
+            $retentionStatistics = $retentionService->getUserStatistics($user);
+        } catch (\Exception $e) {
+            // ถ้าเกิด error ก็ปล่อยเป็น null
+            \Log::warning('Failed to load retention data for user dashboard: ' . $e->getMessage());
+        }
+
+        // ===============================================
         // Return View พร้อมข้อมูลทั้งหมด
         // ===============================================
 
@@ -307,7 +324,11 @@ class DashboardController extends Controller
 
             // KYC
             'kycStatus',
-            'showKycAlert'
+            'showKycAlert',
+
+            // Retention (ระบบรักษายอด)
+            'retentionStatus',
+            'retentionStatistics'
         ));
     }
 
