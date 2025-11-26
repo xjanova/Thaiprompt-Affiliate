@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.205.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1658 from xjanova/claude/redesign-homepage-manager-019umhLni1yNdxLUNk9g42Hf (380362e9)
+- feat: add Homepage Manager visual editor system (b2492bd0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.204.2] - 2025-11-26
 
 ### ✨ Features
