@@ -257,6 +257,22 @@
 </div>
 
 @push('scripts')
+{{-- เตรียมข้อมูลสำหรับ Map --}}
+@php
+$mapLocations = $locationLogs->map(function($log) {
+    return [
+        'lat' => $log->latitude,
+        'lng' => $log->longitude,
+        'type' => $log->entity_type,
+        'time' => $log->created_at->format('H:i:s'),
+        'suspected' => $log->suspected_spoofing,
+        'mock' => $log->is_mock_location,
+        'accuracy' => $log->accuracy,
+        'speed' => $log->speed,
+    ];
+})->values();
+@endphp
+
 {{-- Google Maps API --}}
 <script>
 let map;
@@ -277,18 +293,7 @@ function initMap() {
     });
 
     // โหลดข้อมูลตำแหน่ง
-    const locations = @json($locationLogs->map(function($log) {
-        return [
-            'lat' => $log->latitude,
-            'lng' => $log->longitude,
-            'type' => $log->entity_type,
-            'time' => $log->created_at->format('H:i:s'),
-            'suspected' => $log->suspected_spoofing,
-            'mock' => $log->is_mock_location,
-            'accuracy' => $log->accuracy,
-            'speed' => $log->speed,
-        ];
-    })->values());
+    const locations = @json($mapLocations);
 
     if (locations.length === 0) return;
 
