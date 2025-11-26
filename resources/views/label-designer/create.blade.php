@@ -472,10 +472,22 @@
                         <template x-if="selectedElement.type === 'barcode'">
                             <div class="space-y-4">
                                 <div>
-                                    <label class="text-xs text-gray-500 dark:text-gray-400">เนื้อหา</label>
-                                    <input type="text" x-model="selectedElement.content"
-                                           class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm"
-                                           placeholder="1234567890">
+                                    <label class="text-xs text-gray-500 dark:text-gray-400">เนื้อหา / รหัสสินค้า</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" x-model="selectedElement.content"
+                                               class="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm"
+                                               placeholder="1234567890">
+                                        <button @click="openCameraScanner('barcode')"
+                                                type="button"
+                                                class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition flex items-center gap-1"
+                                                title="สแกนบาร์โค้ด/QR Code ด้วยกล้อง">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-400">กดปุ่มกล้องเพื่อสแกนบาร์โค้ด</p>
                                 </div>
                                 <div>
                                     <label class="text-xs text-gray-500 dark:text-gray-400">รูปแบบ</label>
@@ -500,10 +512,22 @@
                         <template x-if="selectedElement.type === 'qrcode'">
                             <div class="space-y-4">
                                 <div>
-                                    <label class="text-xs text-gray-500 dark:text-gray-400">เนื้อหา / URL</label>
-                                    <textarea x-model="selectedElement.content" rows="3"
-                                              class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm"
-                                              placeholder="https://example.com"></textarea>
+                                    <label class="text-xs text-gray-500 dark:text-gray-400">เนื้อหา / URL / รหัสสินค้า</label>
+                                    <div class="flex gap-2 mb-1">
+                                        <textarea x-model="selectedElement.content" rows="2"
+                                                  class="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm"
+                                                  placeholder="https://example.com หรือ รหัสสินค้า"></textarea>
+                                        <button @click="openCameraScanner('qrcode')"
+                                                type="button"
+                                                class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition flex items-center gap-1 self-start"
+                                                title="สแกนบาร์โค้ด/QR Code ด้วยกล้อง">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-gray-400">กดปุ่มกล้องเพื่อสแกน QR Code</p>
                                 </div>
                                 <div>
                                     <label class="text-xs text-gray-500 dark:text-gray-400">ระดับ Error Correction</label>
@@ -587,9 +611,133 @@
             </div>
         </div>
     </div>
+
+    {{-- Camera Scanner Modal --}}
+    <div x-show="showCameraScanner"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+         style="display: none;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
+            {{-- Header --}}
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-indigo-600 to-purple-600">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">สแกนบาร์โค้ด / QR Code</h3>
+                        <p class="text-sm text-white/70">หันกล้องไปที่บาร์โค้ดหรือ QR Code</p>
+                    </div>
+                </div>
+                <button @click="closeCameraScanner()" class="p-2 hover:bg-white/20 rounded-lg transition">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Camera View --}}
+            <div class="p-4 bg-gray-900">
+                <div id="camera-scanner-container" class="relative rounded-xl overflow-hidden bg-black" style="min-height: 300px;">
+                    {{-- กรอบสแกน --}}
+                    <div class="absolute inset-0 z-10 pointer-events-none">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="w-64 h-48 border-2 border-white/50 rounded-lg relative">
+                                {{-- มุมซ้ายบน --}}
+                                <div class="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-green-400 rounded-tl-lg"></div>
+                                {{-- มุมขวาบน --}}
+                                <div class="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-green-400 rounded-tr-lg"></div>
+                                {{-- มุมซ้ายล่าง --}}
+                                <div class="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-green-400 rounded-bl-lg"></div>
+                                {{-- มุมขวาล่าง --}}
+                                <div class="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-green-400 rounded-br-lg"></div>
+                                {{-- เส้นสแกน --}}
+                                <div class="absolute top-0 left-0 right-0 h-0.5 bg-green-400 animate-scan-line"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {{-- Video element จะถูกสร้างที่นี่ --}}
+                    <div id="qr-reader" class="w-full"></div>
+                </div>
+
+                {{-- สถานะ --}}
+                <div class="mt-4 text-center">
+                    <div x-show="scannerStatus === 'loading'" class="flex items-center justify-center gap-2 text-yellow-400">
+                        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>กำลังเปิดกล้อง...</span>
+                    </div>
+                    <div x-show="scannerStatus === 'ready'" class="flex items-center justify-center gap-2 text-green-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>พร้อมสแกน - หันกล้องไปที่โค้ด</span>
+                    </div>
+                    <div x-show="scannerStatus === 'error'" class="flex items-center justify-center gap-2 text-red-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span x-text="scannerError"></span>
+                    </div>
+                    <div x-show="scannerStatus === 'success'" class="flex items-center justify-center gap-2 text-green-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span>สแกนสำเร็จ!</span>
+                    </div>
+                </div>
+
+                {{-- ผลสแกน --}}
+                <div x-show="scannedValue" class="mt-4 p-3 bg-gray-800 rounded-xl border border-gray-700">
+                    <p class="text-xs text-gray-400 mb-1">ผลการสแกน:</p>
+                    <p class="text-lg font-mono text-white break-all" x-text="scannedValue"></p>
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between gap-2">
+                <button @click="closeCameraScanner()"
+                        class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                    ยกเลิก
+                </button>
+                <button @click="applyScannedValue()"
+                        x-show="scannedValue"
+                        class="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    ใช้ค่านี้
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
+{{-- Scan line animation --}}
+<style>
+@keyframes scan-line {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(180px); }
+    100% { transform: translateY(0); }
+}
+.animate-scan-line {
+    animation: scan-line 2s ease-in-out infinite;
+}
+</style>
+
 @push('scripts')
+{{-- html5-qrcode Library --}}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 /**
  * Label Designer Canvas - Alpine.js Component
@@ -625,6 +773,14 @@ function labelDesignerCanvas() {
         dragStartX: 0,
         dragStartY: 0,
         dragElement: null,
+
+        // Camera Scanner state
+        showCameraScanner: false,
+        scannerTargetType: null, // 'barcode' หรือ 'qrcode'
+        scannerStatus: 'loading', // 'loading', 'ready', 'success', 'error'
+        scannerError: '',
+        scannedValue: '',
+        html5QrCode: null,
 
         /**
          * เริ่มต้น component
@@ -915,6 +1071,175 @@ function labelDesignerCanvas() {
             } finally {
                 this.saving = false;
             }
+        },
+
+        // ==========================================
+        // Camera Scanner Functions
+        // ==========================================
+
+        /**
+         * เปิด Camera Scanner Modal
+         * @param {string} targetType - 'barcode' หรือ 'qrcode'
+         */
+        openCameraScanner(targetType) {
+            this.scannerTargetType = targetType;
+            this.showCameraScanner = true;
+            this.scannerStatus = 'loading';
+            this.scannerError = '';
+            this.scannedValue = '';
+
+            // รอให้ modal แสดงก่อนแล้วค่อยเริ่ม scanner
+            setTimeout(() => {
+                this.startCameraScanner();
+            }, 300);
+        },
+
+        /**
+         * เริ่มต้น Camera Scanner
+         */
+        async startCameraScanner() {
+            try {
+                // ตรวจสอบว่า browser รองรับ Camera API หรือไม่
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('เบราว์เซอร์ไม่รองรับการใช้กล้อง');
+                }
+
+                // สร้าง html5-qrcode instance
+                this.html5QrCode = new Html5Qrcode('qr-reader');
+
+                // Config สำหรับ scanner
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 180 },
+                    aspectRatio: 1.0,
+                    formatsToSupport: [
+                        // Barcode formats
+                        Html5QrcodeSupportedFormats.CODE_128,
+                        Html5QrcodeSupportedFormats.CODE_39,
+                        Html5QrcodeSupportedFormats.EAN_13,
+                        Html5QrcodeSupportedFormats.EAN_8,
+                        Html5QrcodeSupportedFormats.UPC_A,
+                        Html5QrcodeSupportedFormats.UPC_E,
+                        Html5QrcodeSupportedFormats.ITF,
+                        Html5QrcodeSupportedFormats.CODABAR,
+                        // QR code formats
+                        Html5QrcodeSupportedFormats.QR_CODE,
+                        Html5QrcodeSupportedFormats.DATA_MATRIX,
+                        Html5QrcodeSupportedFormats.AZTEC,
+                        Html5QrcodeSupportedFormats.PDF_417
+                    ]
+                };
+
+                // เริ่ม scan
+                await this.html5QrCode.start(
+                    { facingMode: 'environment' }, // ใช้กล้องหลัง (ถ้ามี)
+                    config,
+                    (decodedText, decodedResult) => {
+                        // สแกนสำเร็จ
+                        this.onScanSuccess(decodedText, decodedResult);
+                    },
+                    (errorMessage) => {
+                        // ข้อความ error ระหว่างสแกน (ปกติไม่ต้องแสดง)
+                        // console.log('Scanning...', errorMessage);
+                    }
+                );
+
+                this.scannerStatus = 'ready';
+
+            } catch (error) {
+                console.error('Camera scanner error:', error);
+                this.scannerStatus = 'error';
+
+                if (error.name === 'NotAllowedError') {
+                    this.scannerError = 'กรุณาอนุญาตการเข้าถึงกล้อง';
+                } else if (error.name === 'NotFoundError') {
+                    this.scannerError = 'ไม่พบกล้องบนอุปกรณ์นี้';
+                } else if (error.name === 'NotSupportedError') {
+                    this.scannerError = 'เบราว์เซอร์ไม่รองรับการใช้กล้อง';
+                } else {
+                    this.scannerError = error.message || 'ไม่สามารถเปิดกล้องได้';
+                }
+            }
+        },
+
+        /**
+         * Callback เมื่อสแกนสำเร็จ
+         */
+        onScanSuccess(decodedText, decodedResult) {
+            // เก็บค่าที่สแกนได้
+            this.scannedValue = decodedText;
+            this.scannerStatus = 'success';
+
+            // เล่นเสียง beep (ถ้ามี)
+            this.playBeepSound();
+
+            // หยุด scanner ชั่วคราว
+            if (this.html5QrCode && this.html5QrCode.isScanning) {
+                this.html5QrCode.pause(true);
+            }
+
+            console.log('Scanned:', decodedText, decodedResult);
+        },
+
+        /**
+         * เล่นเสียง beep เมื่อสแกนสำเร็จ
+         */
+        playBeepSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 1000;
+                gainNode.gain.value = 0.3;
+
+                oscillator.start();
+                setTimeout(() => {
+                    oscillator.stop();
+                }, 150);
+            } catch (e) {
+                // ไม่ต้องทำอะไรถ้าเล่นเสียงไม่ได้
+            }
+        },
+
+        /**
+         * นำค่าที่สแกนได้ไปใส่ใน element
+         */
+        applyScannedValue() {
+            if (this.scannedValue && this.selectedElement) {
+                this.selectedElement.content = this.scannedValue;
+                this.saveHistory();
+            }
+            this.closeCameraScanner();
+        },
+
+        /**
+         * ปิด Camera Scanner Modal
+         */
+        async closeCameraScanner() {
+            // หยุด scanner
+            if (this.html5QrCode) {
+                try {
+                    if (this.html5QrCode.isScanning) {
+                        await this.html5QrCode.stop();
+                    }
+                    this.html5QrCode.clear();
+                } catch (e) {
+                    console.log('Error stopping scanner:', e);
+                }
+                this.html5QrCode = null;
+            }
+
+            // Reset state
+            this.showCameraScanner = false;
+            this.scannerStatus = 'loading';
+            this.scannerError = '';
+            this.scannedValue = '';
+            this.scannerTargetType = null;
         }
     };
 }
