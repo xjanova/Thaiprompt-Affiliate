@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.218.1] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1681 from xjanova/claude/fix-rank-seeder-duplicates-0195Yukhi5QS8WayGFSm1w17 (b5b285f7)
+- fix: add payout_type to PlatformRevenueSeeder (dd2e9238)
+### 🔧 Other Changes
+
+
 ## [v3.218.0] - 2025-11-26
 
 ### ✨ Features
