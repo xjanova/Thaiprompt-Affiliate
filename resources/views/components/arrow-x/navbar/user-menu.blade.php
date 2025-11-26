@@ -25,9 +25,17 @@
     'avatar' => null,
     'role' => null,
     'menuItems' => [],
+    'user' => null,
 ])
 
 @php
+    // ดึงข้อมูล User - ใช้ prop หรือ Auth::user()
+    $currentUser = $user ?? Auth::user();
+
+    // ใช้ profile_picture_url accessor สำหรับ avatar (รองรับ fallback อัตโนมัติ)
+    $avatarUrl = $avatar ?? $currentUser?->profile_picture_url;
+    $userName = $name !== 'User' ? $name : ($currentUser?->name ?? 'User');
+
     // Default menu items
     $defaultMenuItems = [
         ['label' => 'โปรไฟล์', 'icon' => 'fa-user', 'href' => '/profile'],
@@ -45,18 +53,21 @@
         @click="open = !open"
         class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
     >
-        {{-- Avatar --}}
-        @if($avatar)
-            <img src="{{ $avatar }}" alt="{{ $name }}" class="h-9 w-9 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600">
+        {{-- Avatar - ใช้ profile_picture_url accessor พร้อม fallback --}}
+        @if($avatarUrl)
+            <img src="{{ $avatarUrl }}"
+                 alt="{{ $userName }}"
+                 class="h-9 w-9 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+                 onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($userName, 0, 1)) }}&background=6366f1&color=fff&size=200';">
         @else
             <div class="h-9 w-9 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center text-white font-bold text-sm border-2 border-white dark:border-gray-700">
-                {{ substr($name, 0, 2) }}
+                {{ substr($userName, 0, 2) }}
             </div>
         @endif
 
         {{-- Name (Hidden on mobile) --}}
         <div class="hidden md:block text-left">
-            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $name }}</p>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $userName }}</p>
             @if($role)
                 <p class="text-xs text-gray-500 dark:text-gray-400">{{ $role }}</p>
             @endif

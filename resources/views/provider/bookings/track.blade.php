@@ -199,15 +199,8 @@
                 {{-- Customer Info --}}
                 <div class="flex items-center gap-4 mb-4">
                     <div class="flex-shrink-0">
-                        @if($booking->user->profile_image)
-                            <img src="{{ asset('storage/' . $booking->user->profile_image) }}"
-                                 alt="{{ $booking->user->name }}"
-                                 class="w-14 h-14 rounded-full object-cover ring-2 ring-blue-500">
-                        @else
-                            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center ring-2 ring-blue-500">
-                                <i class="fas fa-user text-white text-xl"></i>
-                            </div>
-                        @endif
+                        {{-- ใช้ component เพื่อความสอดคล้องทั้งระบบ --}}
+                        <x-user-avatar :user="$booking->user" size="lg" :ring="true" ringColor="blue" />
                     </div>
                     <div class="flex-1">
                         <h3 class="font-bold text-gray-900 dark:text-white">

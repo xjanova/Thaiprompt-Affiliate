@@ -194,15 +194,8 @@
                                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                                         <td class="px-4 py-4">
                                             <div class="flex items-center gap-3">
-                                                @if($card->user->avatar)
-                                                    <img src="{{ asset($card->user->avatar) }}"
-                                                         alt="{{ $card->user->name }}"
-                                                         class="w-8 h-8 rounded-full ring-2 ring-gray-200 dark:ring-gray-600">
-                                                @else
-                                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
-                                                        {{ substr($card->user->name, 0, 1) }}
-                                                    </div>
-                                                @endif
+                                                {{-- ใช้ component เพื่อความสอดคล้องทั้งระบบ --}}
+                                                <x-user-avatar :user="$card->user" size="sm" :ring="true" ringColor="white" />
                                                 <div>
                                                     <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $card->user->name }}</p>
                                                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ $card->user->email }}</p>

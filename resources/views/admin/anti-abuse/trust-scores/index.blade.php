@@ -149,9 +149,8 @@
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10">
                                         @if($score->entity_type === 'user' && $score->user)
-                                            <img class="h-10 w-10 rounded-full object-cover"
-                                                 src="{{ $score->user->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($score->user->name) }}"
-                                                 alt="{{ $score->user->name }}">
+                                            {{-- ใช้ profile_picture_url ซึ่งเป็น accessor ที่ถูกต้องของ User model --}}
+                                            <x-user-avatar :user="$score->user" size="md" :ring="false" />
                                         @elseif($score->entity_type === 'provider' && $score->provider)
                                             <img class="h-10 w-10 rounded-full object-cover"
                                                  src="{{ $score->provider->logo_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($score->provider->name ?? 'P') }}"

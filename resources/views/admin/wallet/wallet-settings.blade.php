@@ -252,12 +252,12 @@
                                 {{-- ผู้ใช้ --}}
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
-                                        @if($wallet->user?->profile_picture)
-                                            <img src="{{ $wallet->user->profile_picture }}" alt="{{ $wallet->user->name }}"
-                                                 class="w-10 h-10 rounded-full object-cover border-2 border-violet-200 dark:border-violet-700">
+                                        {{-- ใช้ component เพื่อความสอดคล้องทั้งระบบ --}}
+                                        @if($wallet->user)
+                                            <x-user-avatar :user="$wallet->user" size="md" :ring="true" ringColor="purple" />
                                         @else
                                             <div class="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center text-white font-semibold">
-                                                {{ $wallet->user ? strtoupper(substr($wallet->user->name, 0, 1)) : '?' }}
+                                                ?
                                             </div>
                                         @endif
                                         <div>

@@ -47,9 +47,11 @@
                                 <div class="absolute inset-0 bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-500 rounded-full blur-lg opacity-60 group-hover:opacity-80 transition"></div>
                                 <div class="relative w-full h-full bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full p-1 shadow-2xl">
                                     <div class="w-full h-full bg-white dark:bg-gray-800 rounded-full p-1">
+                                        {{-- รองรับ Alpine.js preview + fallback สำหรับ error --}}
                                         <img :src="avatarPreview || '{{ $user->profile_picture_url }}'"
                                              alt="{{ $user->name }}"
-                                             class="w-full h-full object-cover rounded-full ring-4 ring-white dark:ring-gray-700">
+                                             class="w-full h-full object-cover rounded-full ring-4 ring-white dark:ring-gray-700"
+                                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=6366f1&color=fff&size=200';">
                                     </div>
                                 </div>
                             </div>

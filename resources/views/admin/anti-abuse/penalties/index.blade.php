@@ -187,9 +187,8 @@
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10">
                                         @if($penalty->penalized_type === 'user' && $penalty->user)
-                                            <img class="h-10 w-10 rounded-full object-cover"
-                                                 src="{{ $penalty->user->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($penalty->user->name) }}"
-                                                 alt="{{ $penalty->user->name }}">
+                                            {{-- ใช้ profile_picture_url ซึ่งเป็น accessor ที่ถูกต้องของ User model --}}
+                                            <x-user-avatar :user="$penalty->user" size="md" :ring="false" />
                                         @elseif($penalty->penalized_type === 'provider' && $penalty->provider)
                                             <img class="h-10 w-10 rounded-full object-cover"
                                                  src="{{ $penalty->provider->logo_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($penalty->provider->name ?? 'P') }}"

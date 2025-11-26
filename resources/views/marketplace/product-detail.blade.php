@@ -446,9 +446,8 @@
                     @foreach($product->reviews as $review)
                     <div class="pb-6 border-b border-gray-200 dark:border-gray-700 last:border-0">
                         <div class="flex items-start gap-4">
-                            <img src="{{ $review->user->avatar_url ?? asset('images/default-avatar.png') }}"
-                                 alt="{{ $review->user->name }}"
-                                 class="w-12 h-12 rounded-full object-cover">
+                            {{-- ใช้ component เพื่อความสอดคล้องทั้งระบบ --}}
+                            <x-user-avatar :user="$review->user" size="lg" :ring="false" />
 
                             <div class="flex-1">
                                 <div class="flex items-center gap-3 mb-2">

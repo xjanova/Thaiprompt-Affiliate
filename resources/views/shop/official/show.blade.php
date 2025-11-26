@@ -345,9 +345,8 @@
                                 @foreach($product->approvedReviews as $review)
                                 <div class="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0">
                                     <div class="flex items-start gap-4">
-                                        <img src="{{ $review->user->avatar ?? 'https://ui-avatars.com/api/?name=' . urlencode($review->user->name) }}"
-                                             alt="{{ $review->user->name }}"
-                                             class="w-12 h-12 rounded-full">
+                                        {{-- ใช้ component เพื่อความสอดคล้องทั้งระบบ --}}
+                                        <x-user-avatar :user="$review->user" size="lg" :ring="false" />
                                         <div class="flex-1">
                                             <div class="flex items-center gap-3 mb-2">
                                                 <span class="font-semibold text-gray-900 dark:text-white">{{ $review->user->name }}</span>

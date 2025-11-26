@@ -53,8 +53,8 @@
     {{-- User Info Card --}}
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
         <div class="flex items-center gap-6">
-            <img src="{{ $user->profile_picture_url ?? 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=random' }}"
-                 class="w-20 h-20 rounded-xl object-cover shadow-lg">
+            {{-- ใช้ component เพื่อความสอดคล้องทั้งระบบ --}}
+            <x-user-avatar :user="$user" size="xl" :ring="false" class="shadow-lg" />
             <div>
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $user->name }}</h2>
                 <p class="text-gray-500">{{ $user->email }}</p>
@@ -125,9 +125,11 @@
                                     {{ $rankLevel >= 8 ? 'ring-4 ring-yellow-400 animate-pulse-slow' : '' }}
                                     {{ $rankLevel >= 6 && $rankLevel < 8 ? 'ring-3 ring-white/50' : '' }}
                                     {{ $rankLevel >= 4 && $rankLevel < 6 ? 'ring-2 ring-white/30' : '' }}">
-                                    <img src="{{ $user->profile_picture_url ?? 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=random&size=200' }}"
+                                    {{-- ใช้ profile_picture_url accessor พร้อม onerror fallback --}}
+                                    <img src="{{ $user->profile_picture_url }}"
                                          alt="{{ $user->name }}"
-                                         class="w-full h-full object-cover">
+                                         class="w-full h-full object-cover"
+                                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=6366f1&color=fff&size=200';">
                                 </div>
                                 {{-- Stars badge --}}
                                 <div class="absolute -bottom-2 -right-2 bg-black/40 backdrop-blur-md rounded-full px-2 py-0.5">

@@ -66,15 +66,11 @@
                 {{-- Avatar Container --}}
                 <div class="relative w-16 h-16 p-0.5 bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 rounded-full">
                     <div class="w-full h-full bg-gray-900 rounded-full flex items-center justify-center overflow-hidden">
-                        @if($user->profile_picture_url)
-                            <img src="{{ $user->profile_picture_url }}"
-                                 alt="{{ $user->name }}"
-                                 class="w-full h-full object-cover">
-                        @else
-                            <span class="text-xl font-bold text-white">
-                                {{ strtoupper(substr($user->name, 0, 1)) }}
-                            </span>
-                        @endif
+                        {{-- ใช้ profile_picture_url accessor ที่รองรับ fallback อัตโนมัติ --}}
+                        <img src="{{ $user->profile_picture_url }}"
+                             alt="{{ $user->name }}"
+                             class="w-full h-full object-cover"
+                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=6366f1&color=fff&size=200';">
                     </div>
                 </div>
 

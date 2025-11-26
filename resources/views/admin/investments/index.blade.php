@@ -114,9 +114,8 @@
             <div class="space-y-4">
                 @forelse($pendingPositions as $position)
                     <div class="flex items-start gap-4 p-4 bg-gradient-to-r from-gray-50 to-white dark:from-slate-700 dark:to-slate-800 rounded-xl hover:shadow-md transition border border-gray-100 dark:border-slate-600">
-                        <img src="{{ $position->user->profile_picture_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($position->user->name) }}"
-                             alt="{{ $position->user->name }}"
-                             class="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-gray-200">
+                        {{-- ใช้ component เพื่อความสอดคล้องทั้งระบบ --}}
+                        <x-user-avatar :user="$position->user" size="lg" :ring="true" ringColor="white" class="flex-shrink-0" />
                         <div class="flex-1 min-w-0">
                             <p class="font-semibold text-gray-900 dark:text-white truncate">{{ $position->user->name }}</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ $position->investmentPlan->name ?? 'N/A' }}</p>
@@ -159,9 +158,8 @@
             <div class="space-y-4">
                 @forelse($recentDistributions as $distribution)
                     <div class="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg transition">
-                        <img src="{{ $distribution->user->profile_picture_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($distribution->user->name) }}"
-                             alt="{{ $distribution->user->name }}"
-                             class="w-10 h-10 rounded-full object-cover flex-shrink-0 ring-2 ring-gray-200">
+                        {{-- ใช้ component เพื่อความสอดคล้องทั้งระบบ --}}
+                        <x-user-avatar :user="$distribution->user" size="md" :ring="true" ringColor="white" class="flex-shrink-0" />
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">
                                 {{ $distribution->user->name }}

@@ -102,27 +102,16 @@
 
     {{-- Main Content --}}
     <div class="relative z-10 flex flex-col md:flex-row items-center gap-6 p-2">
-        {{-- Avatar with Rank Border --}}
+        {{-- Avatar with Rank Border - ใช้ component เพื่อความสอดคล้องทั้งระบบ --}}
         <div class="flex-shrink-0">
-            <div class="relative">
-                <div class="w-24 h-24 rounded-full bg-white/20 backdrop-blur-lg p-1
-                    {{ $rankLevel >= 8 ? 'ring-4 ring-pink-400/60 animate-pulse-slow' : '' }}
-                    {{ $rankLevel >= 6 && $rankLevel < 8 ? 'ring-4 ring-yellow-400/50' : '' }}
-                    {{ $rankLevel >= 4 && $rankLevel < 6 ? 'ring-4 ring-white/40' : '' }}
-                    {{ $rankLevel < 4 ? 'ring-4 ring-white/30' : '' }}">
-                    <img src="{{ $user->profile_picture_url ?? 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=random' }}"
-                         alt="{{ $user->name }}"
-                         class="w-full h-full rounded-full object-cover">
-                </div>
-
-                {{-- Rank Badge (floating) --}}
-                @if($rankLevel >= 3)
-                <div class="absolute -bottom-1 -right-1 text-2xl
-                    {{ $rankLevel >= 5 ? 'animate-bounce-slow' : '' }}">
-                    {{ $rankBadge }}
-                </div>
-                @endif
-            </div>
+            <x-rank-avatar
+                :user="$user"
+                :rank-level="$rankLevel"
+                size="lg"
+                :show-badge="$rankLevel >= 3"
+                :animate="true"
+                class="drop-shadow-xl"
+            />
         </div>
 
         {{-- Welcome Text --}}

@@ -469,9 +469,8 @@
             <div class="p-4 space-y-2 max-h-80 overflow-y-auto">
                 @forelse($recentCommissions->take(5) as $commission)
                     <div class="flex items-start gap-3 p-3 bg-white/10 dark:bg-white/5 backdrop-blur-sm rounded-lg border border-white/20 hover:bg-white/20 dark:hover:bg-white/10 transition-all cursor-pointer">
-                        <img src="{{ $commission->affiliate->user->profile_picture_url }}"
-                             alt="{{ $commission->affiliate->user->name }}"
-                             class="w-10 h-10 rounded-lg object-cover flex-shrink-0 shadow-lg">
+                        {{-- ใช้ component เพื่อความสอดคล้องทั้งระบบ --}}
+                        <x-user-avatar :user="$commission->affiliate->user" size="md" :ring="false" class="flex-shrink-0 shadow-lg" />
                         <div class="flex-1 min-w-0">
                             <p class="text-xs font-semibold text-gray-900 dark:text-white truncate">
                                 {{ $commission->affiliate->user->name }}
