@@ -44,6 +44,16 @@
     @endif
 
     {{-- ======================================
+        1.5 Retention Status Bar (แถบเตือนสถานะรักษายอด)
+    ====================================== --}}
+    @if($retentionStatus && $retentionStatistics)
+        <x-retention-status-bar
+            :retentionStatus="$retentionStatus"
+            :statistics="$retentionStatistics"
+        />
+    @endif
+
+    {{-- ======================================
         2. Welcome Section - ใช้ Arrow X Card
     ====================================== --}}
     <x-arrow-x.card-v3 class="bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 overflow-hidden relative">
