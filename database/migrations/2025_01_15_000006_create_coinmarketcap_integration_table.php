@@ -6,9 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * สร้างตารางสำหรับ CoinMarketCap Integration และ Coin Control
+     *
+     * @return void
+     */
     public function up(): void
     {
-        Schema::create('cmc_sync_logs', function (Blueprint $table) {
+        // ✅ สร้างตาราง cmc_sync_logs สำหรับเก็บ log การ sync ข้อมูลจาก CMC
+        if (Schema::hasTable('cmc_sync_logs')) {
+            // ตารางมีอยู่แล้ว ข้ามการสร้าง
+        } else {
+            Schema::create('cmc_sync_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('token_id')->nullable()->constrained('tpix_tokens')->onDelete('cascade');
 
@@ -38,9 +47,14 @@ return new class extends Migration
             $table->index(['token_id', 'created_at']);
             $table->index('cmc_id');
             $table->index('status');
-        });
+            });
+        }
 
-        Schema::create('cmc_token_listings', function (Blueprint $table) {
+        // ✅ สร้างตาราง cmc_token_listings สำหรับเก็บข้อมูล listing จาก CMC
+        if (Schema::hasTable('cmc_token_listings')) {
+            // ตารางมีอยู่แล้ว ข้ามการสร้าง
+        } else {
+            Schema::create('cmc_token_listings', function (Blueprint $table) {
             $table->id();
             $table->string('cmc_id')->unique()->comment('CoinMarketCap ID');
 
@@ -90,9 +104,14 @@ return new class extends Migration
             $table->index('symbol');
             $table->index('cmc_rank');
             $table->index('is_active');
-        });
+            });
+        }
 
-        Schema::create('coin_control_rules', function (Blueprint $table) {
+        // ✅ สร้างตาราง coin_control_rules สำหรับเก็บกฎการควบคุมเหรียญ
+        if (Schema::hasTable('coin_control_rules')) {
+            // ตารางมีอยู่แล้ว ข้ามการสร้าง
+        } else {
+            Schema::create('coin_control_rules', function (Blueprint $table) {
             $table->id();
             $table->foreignId('token_id')->constrained('tpix_tokens')->onDelete('cascade');
             $table->foreignId('created_by')->constrained('users');
@@ -131,9 +150,14 @@ return new class extends Migration
 
             // Indexes
             $table->index(['token_id', 'rule_type', 'is_active']);
-        });
+            });
+        }
 
-        Schema::create('coin_control_actions', function (Blueprint $table) {
+        // ✅ สร้างตาราง coin_control_actions สำหรับเก็บประวัติการดำเนินการควบคุมเหรียญ
+        if (Schema::hasTable('coin_control_actions')) {
+            // ตารางมีอยู่แล้ว ข้ามการสร้าง
+        } else {
+            Schema::create('coin_control_actions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('token_id')->constrained('tpix_tokens')->onDelete('cascade');
             $table->foreignId('admin_id')->constrained('users')->comment('Admin who performed action');
@@ -173,9 +197,15 @@ return new class extends Migration
             $table->index('admin_id');
             $table->index('target_address');
             $table->index('status');
-        });
+            });
+        }
     }
 
+    /**
+     * ลบตารางที่สร้างไว้
+     *
+     * @return void
+     */
     public function down(): void
     {
         Schema::dropIfExists('coin_control_actions');
