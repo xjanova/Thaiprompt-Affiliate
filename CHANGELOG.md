@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.214.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1674 from xjanova/claude/mlm-binary-tree-structure-01ApLTBGUPSXC66hbkqBJUjR (52db9bb3)
+- feat: add Unilevel width/depth limits with auto spillover (3326e03f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.213.0] - 2025-11-26
 
 ### ✨ Features
