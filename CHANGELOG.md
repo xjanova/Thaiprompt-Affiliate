@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.221.4] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1692 from xjanova/claude/fix-registration-qrcode-01EnxZAd1Vs12qEtPLM3EEUN (226457bd)
+- fix: แก้ไข QR Code ไม่แสดงผลในหน้า referral (dba6c711)
+### 🔧 Other Changes
+
+
 ## [v3.221.3] - 2025-11-26
 
 ### ✨ Features
