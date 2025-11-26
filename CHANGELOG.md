@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.221.2] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1690 from xjanova/claude/verify-permissions-system-01VyVWLUkLsKPuq8b3dPmXR2 (91cbc9dd)
+- fix: correct permission name in PaymentGatewayController (5d11e986)
+### 🔧 Other Changes
+
+
 ## [v3.221.1] - 2025-11-26
 
 ### ✨ Features
