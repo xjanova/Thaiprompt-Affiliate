@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.221.6] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1694 from xjanova/claude/create-coin-control-table-01Ek7Qc2W3KEZoyAYaPArwWu (a352c361)
+- fix: แก้ไข variable collision ใน Hugging Face News view (0db81af9)
+### 🔧 Other Changes
+
+
 ## [v3.221.5] - 2025-11-26
 
 ### ✨ Features
