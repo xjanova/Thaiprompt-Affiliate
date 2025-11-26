@@ -36,7 +36,7 @@
                 </div>
                 <div>
                     <h2 class="text-xl font-bold">{{ $member->user->name }}</h2>
-                    <p class="text-sm opacity-90">{{ $member->member_code }} • {{ $member->plan->display_name }}</p>
+                    <p class="text-sm opacity-90">{{ $member->member_code }} • {{ $member->plan?->display_name ?? 'ไม่มีแผน' }}</p>
                     <div class="flex flex-wrap items-center gap-3 mt-2 text-sm">
                         <span class="flex items-center gap-1">
                             <i class="fas fa-chart-line"></i>
