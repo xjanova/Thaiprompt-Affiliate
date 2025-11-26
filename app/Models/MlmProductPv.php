@@ -5,6 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * MlmProductPv Model
+ *
+ * ⚠️ IMPORTANT: ใช้ค่าจาก MlmGlobalSetting สำหรับ commission_per_pv
+ * ไม่ใช้ค่าจาก MlmPlan (per-plan settings) เพื่อความเป็นเอกภาพ
+ */
 class MlmProductPv extends Model
 {
     use HasFactory;
@@ -65,19 +71,29 @@ class MlmProductPv extends Model
     }
 
     /**
-     * Get effective commission rate (custom or global)
+     * ดึงอัตราคอมมิชชั่นที่ใช้งานจริง (custom หรือ global)
+     *
+     * ใช้ค่าจาก MlmGlobalSetting แทน per-plan settings
+     *
+     * @return float
      */
     public function getEffectiveCommissionRate()
     {
+        // ดึงค่าจาก Global Settings
+        $globalCommissionPerPv = MlmGlobalSetting::get('commission_per_pv', 1);
+
         if ($this->use_global_rate) {
-            return $this->plan->global_commission_per_pv;
+            return $globalCommissionPerPv;
         }
 
-        return $this->custom_commission_per_pv ?? $this->plan->global_commission_per_pv;
+        return $this->custom_commission_per_pv ?? $globalCommissionPerPv;
     }
 
     /**
-     * Calculate commission preview for a given quantity
+     * คำนวณ preview คอมมิชชั่นตามจำนวนสินค้า
+     *
+     * @param int $quantity จำนวนสินค้า
+     * @return float จำนวนคอมมิชชั่น
      */
     public function calculateCommissionPreview($quantity = 1)
     {
