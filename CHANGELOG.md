@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.212.1] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1671 from xjanova/claude/fix-admin-menu-01LiEM5pcsKajVY762nPTQhg (3cb9dd32)
+- fix: ลบ nested blade comments ที่ทำให้แสดง --}} ใน admin sidebar (8bd57bb6)
+### 🔧 Other Changes
+
+
 ## [v3.212.0] - 2025-11-26
 
 ### ✨ Features
