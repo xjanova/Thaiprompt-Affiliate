@@ -300,7 +300,7 @@
                     {{-- Unilevel Levels --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                            จำนวนชั้น Unilevel
+                            จำนวนชั้น Unilevel (ความลึก)
                         </label>
                         <div class="flex items-center gap-4">
                             <input type="range"
@@ -313,6 +313,38 @@
                                 <span x-text="settings.unilevel_levels + ' ชั้น'"></span>
                             </div>
                         </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">กำหนดว่าจะจ่ายคอมมิชชั่นกี่ชั้นลึก</p>
+                    </div>
+
+                    {{-- Unilevel Max Width --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                            ความกว้างสูงสุด (Max Width)
+                        </label>
+                        <div class="flex items-center gap-4">
+                            <input type="range"
+                                   x-model.number="settings.unilevel_max_width"
+                                   min="0" max="20" step="1"
+                                   class="flex-1 h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                   :disabled="!settings.unilevel_enabled">
+                            <div class="w-28 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-center font-bold">
+                                <span x-text="settings.unilevel_max_width === 0 ? 'ไม่จำกัด' : settings.unilevel_max_width + ' คน'"></span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            จำนวนลูกทีมตรงสูงสุดต่อคน (0 = ไม่จำกัด) หากเกินจะ spillover ไปชั้นถัดไป
+                        </p>
+                    </div>
+
+                    {{-- Spillover Info --}}
+                    <div x-show="settings.unilevel_max_width > 0" x-transition class="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                        <h4 class="text-sm font-semibold text-green-800 dark:text-green-300 mb-2 flex items-center gap-2">
+                            <i class="fas fa-random"></i>
+                            Spillover System
+                        </h4>
+                        <p class="text-xs text-green-700 dark:text-green-400">
+                            เมื่อสมาชิกมีลูกทีมตรงครบ <strong x-text="settings.unilevel_max_width"></strong> คน สมาชิกใหม่ที่สมัครโดยรหัสของเขาจะถูก spillover ไปอยู่ใต้ลูกทีมที่มีช่องว่างอยู่
+                        </p>
                     </div>
 
                     {{-- Unilevel Percentages --}}
@@ -629,6 +661,7 @@ function mlmSettings() {
             auto_placement: true,
             unilevel_enabled: true,
             unilevel_levels: 5,
+            unilevel_max_width: 0,
             genealogy_enabled: true,
             direct_referral_commission: 5,
             min_pv_for_commission: 100,
@@ -657,6 +690,7 @@ function mlmSettings() {
                             auto_placement: data.settings.auto_placement ?? true,
                             unilevel_enabled: data.settings.unilevel_enabled ?? true,
                             unilevel_levels: parseInt(data.settings.unilevel_levels) || 5,
+                            unilevel_max_width: parseInt(data.settings.unilevel_max_width) || 0,
                             genealogy_enabled: data.settings.genealogy_enabled ?? true,
                             direct_referral_commission: parseFloat(data.settings.direct_referral_commission) || 5,
                             min_pv_for_commission: parseFloat(data.settings.min_pv_for_commission) || 100,
@@ -732,6 +766,7 @@ function mlmSettings() {
                         genealogy_enabled: this.settings.genealogy_enabled,
                         binary_match_commission: this.settings.binary_match_commission,
                         unilevel_levels: this.settings.unilevel_levels,
+                        unilevel_max_width: this.settings.unilevel_max_width,
                         unilevel_percentages: JSON.stringify(this.unilevelPercentages),
                         direct_referral_commission: this.settings.direct_referral_commission,
                         min_pv_for_commission: this.settings.min_pv_for_commission,

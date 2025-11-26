@@ -235,6 +235,7 @@ class MlmGlobalSettingController extends Controller
             'genealogy_enabled' => 'nullable|boolean',
             'binary_match_commission' => 'nullable|numeric|min:0|max:100',
             'unilevel_levels' => 'nullable|integer|min:1|max:10',
+            'unilevel_max_width' => 'nullable|integer|min:0|max:100',
             'unilevel_percentages' => 'nullable|string',
             'direct_referral_commission' => 'nullable|numeric|min:0|max:100',
             'min_pv_for_commission' => 'nullable|numeric|min:0',
@@ -258,6 +259,9 @@ class MlmGlobalSettingController extends Controller
         }
         if (isset($validated['unilevel_levels'])) {
             MlmGlobalSetting::set('unilevel_levels', $validated['unilevel_levels']);
+        }
+        if (isset($validated['unilevel_max_width'])) {
+            MlmGlobalSetting::set('unilevel_max_width', $validated['unilevel_max_width']);
         }
         if (isset($validated['unilevel_percentages'])) {
             MlmGlobalSetting::set('unilevel_percentages', $validated['unilevel_percentages']);
