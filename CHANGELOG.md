@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.212.2] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1672 from xjanova/claude/create-disputes-table-01FiY6LSg8ktziLspmucHN9D (cc365be0)
+- fix: make platform_wallets ENUM migration idempotent (e6eb1551)
+### 🔧 Other Changes
+
+
 ## [v3.212.1] - 2025-11-26
 
 ### ✨ Features
