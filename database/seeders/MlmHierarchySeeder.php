@@ -112,54 +112,62 @@ class MlmHierarchySeeder extends Seeder
      *
      * ใช้ลำดับการตรวจสอบดังนี้:
      * 1. หา plan ที่เป็น default (is_default = true)
-     * 2. หา plan ที่มี slug = 'default-plan' (ป้องกัน duplicate)
+     * 2. หา plan ที่มี slug = 'default-plan' (รวม soft-deleted - ป้องกัน duplicate)
      * 3. ใช้ plan แรกที่มี
-     * 4. สร้างใหม่ด้วย firstOrCreate (ป้องกัน race condition)
+     * 4. สร้างใหม่ถ้าไม่มีเลย
+     *
+     * ⚠️ IMPORTANT: MlmPlan ใช้ SoftDeletes
+     * ต้องใช้ withTrashed() เพื่อตรวจสอบ record ที่ถูก soft-delete
+     * เพราะ unique constraint ยังคงมีผลกับ soft-deleted records
      *
      * @return MlmPlan
      */
     private function getOrCreateDefaultPlan(): MlmPlan
     {
-        // 1. ตรวจสอบ default plan ที่มีอยู่แล้ว
+        // 1. ตรวจสอบ default plan ที่มีอยู่แล้ว (active)
         $plan = MlmPlan::where('is_default', true)->first();
         if ($plan) {
             return $plan;
         }
 
-        // 2. ตรวจสอบ plan ที่มี slug เดียวกัน (ป้องกัน duplicate key error)
-        $plan = MlmPlan::where('slug', 'default-plan')->first();
+        // 2. ตรวจสอบ plan ที่มี slug เดียวกัน (รวม soft-deleted - ป้องกัน duplicate key error)
+        $plan = MlmPlan::withTrashed()->where('slug', 'default-plan')->first();
         if ($plan) {
-            // อัพเดทให้เป็น default ถ้ายังไม่ใช่
-            if (!$plan->is_default) {
-                $plan->update(['is_default' => true]);
+            // ถ้าถูก soft-delete, restore กลับมา
+            if ($plan->trashed()) {
+                $plan->restore();
+                $this->command->info('   🔄 Restored soft-deleted default-plan');
             }
+            // อัพเดทให้เป็น default และ active
+            $plan->update([
+                'is_default' => true,
+                'is_active' => true,
+            ]);
             return $plan;
         }
 
-        // 3. ใช้ plan แรกที่มี
+        // 3. ใช้ plan แรกที่มี (active)
         $plan = MlmPlan::first();
         if ($plan) {
             return $plan;
         }
 
-        // 4. สร้างใหม่ด้วย firstOrCreate เพื่อป้องกัน race condition
-        return MlmPlan::firstOrCreate(
-            ['slug' => 'default-plan'],
-            [
-                'name' => 'Default Commission Plan',
-                'name_th' => 'แผนคอมมิชชันหลัก',
-                'description' => 'Default MLM commission plan using global settings',
-                'description_th' => 'แผนคอมมิชชันหลักที่ใช้ตั้งค่าจาก Global Settings',
-                'type' => 'hybrid',
-                'is_active' => true,
-                'is_default' => true,
-                'color' => '#4F46E5',
-                'icon' => 'star',
-                'sort_order' => 1,
-                'joining_fee' => 0,
-                'requires_joining_fee' => false,
-            ]
-        );
+        // 4. สร้างใหม่ถ้าไม่มี plan เลยในระบบ
+        return MlmPlan::create([
+            'name' => 'Default Commission Plan',
+            'name_th' => 'แผนคอมมิชชันหลัก',
+            'slug' => 'default-plan',
+            'description' => 'Default MLM commission plan using global settings',
+            'description_th' => 'แผนคอมมิชชันหลักที่ใช้ตั้งค่าจาก Global Settings',
+            'type' => 'hybrid',
+            'is_active' => true,
+            'is_default' => true,
+            'color' => '#4F46E5',
+            'icon' => 'star',
+            'sort_order' => 1,
+            'joining_fee' => 0,
+            'requires_joining_fee' => false,
+        ]);
     }
 
     /**
