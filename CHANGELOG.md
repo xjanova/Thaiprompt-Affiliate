@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.222.2] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1697 from xjanova/claude/improve-admin-reporting-01RLnYiPH4BZoNrbEXwUdchC (02d2864c)
+- fix: แก้ไข Route ไม่มี และเพิ่ม menu ศูนย์รายงานรวม (e76cccaa)
+### 🔧 Other Changes
+
+
 ## [v3.222.1] - 2025-11-26
 
 ### ✨ Features
