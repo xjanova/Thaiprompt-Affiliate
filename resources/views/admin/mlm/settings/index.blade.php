@@ -347,6 +347,114 @@
                         </p>
                     </div>
 
+                    {{-- Rebuild Tree Section --}}
+                    <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                        <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-3 flex items-center gap-2">
+                            <i class="fas fa-sitemap"></i>
+                            จัดเรียงผัง Unilevel ใหม่
+                        </h4>
+
+                        {{-- Rebuild Status --}}
+                        <div x-show="rebuildTask && rebuildTask.status === 'running'" x-transition class="mb-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-blue-700 dark:text-blue-300">
+                                    <i class="fas fa-spinner fa-spin mr-1"></i>
+                                    กำลังจัดเรียงผัง...
+                                </span>
+                                <span class="text-sm font-bold text-blue-800 dark:text-blue-200" x-text="`${rebuildTask.progress_percentage || 0}%`"></span>
+                            </div>
+                            <div class="w-full bg-blue-200 dark:bg-blue-900 rounded-full h-3">
+                                <div class="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-300"
+                                     :style="`width: ${rebuildTask.progress_percentage || 0}%`"></div>
+                            </div>
+                            <div class="flex justify-between mt-2 text-xs text-blue-600 dark:text-blue-400">
+                                <span x-text="`${rebuildTask.processed_items || 0} / ${rebuildTask.total_items || 0} สมาชิก`"></span>
+                                <span x-show="rebuildTask.failed_items > 0" class="text-red-500" x-text="`ล้มเหลว: ${rebuildTask.failed_items}`"></span>
+                            </div>
+                        </div>
+
+                        {{-- Completed Status --}}
+                        <div x-show="rebuildTask && rebuildTask.status === 'completed'" x-transition class="mb-4 p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                            <div class="flex items-center gap-2 text-green-700 dark:text-green-300">
+                                <i class="fas fa-check-circle"></i>
+                                <span class="text-sm font-medium">จัดเรียงผังเสร็จเรียบร้อย!</span>
+                            </div>
+                            <p class="text-xs text-green-600 dark:text-green-400 mt-1" x-text="`เสร็จเมื่อ: ${new Date(rebuildTask.completed_at).toLocaleString('th-TH')}`"></p>
+                        </div>
+
+                        {{-- Failed Status --}}
+                        <div x-show="rebuildTask && rebuildTask.status === 'failed'" x-transition class="mb-4 p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                            <div class="flex items-center gap-2 text-red-700 dark:text-red-300">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span class="text-sm font-medium">เกิดข้อผิดพลาด</span>
+                            </div>
+                            <p class="text-xs text-red-600 dark:text-red-400 mt-1" x-text="rebuildTask.error_message"></p>
+                        </div>
+
+                        {{-- Rebuild Button --}}
+                        <div class="flex items-center gap-3">
+                            <button type="button"
+                                    @click="showRebuildConfirm = true"
+                                    :disabled="rebuildTask && rebuildTask.status === 'running'"
+                                    class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+                                <i class="fas" :class="rebuildTask && rebuildTask.status === 'running' ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
+                                <span x-text="rebuildTask && rebuildTask.status === 'running' ? 'กำลังดำเนินการ...' : 'จัดเรียงผังใหม่ตาม Genealogy'"></span>
+                            </button>
+                            <button type="button"
+                                    x-show="rebuildTask && rebuildTask.status === 'running'"
+                                    @click="cancelRebuild()"
+                                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
+                                <i class="fas fa-stop"></i>
+                                ยกเลิก
+                            </button>
+                        </div>
+
+                        <p class="text-xs text-blue-600 dark:text-blue-400 mt-3">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            การจัดเรียงใหม่จะใช้ผังสายเลือด (Genealogy) เป็นต้นแบบ และจัดวางใน Unilevel tree ตามความกว้างที่กำหนด
+                        </p>
+                    </div>
+
+                    {{-- Rebuild Confirmation Modal --}}
+                    <div x-show="showRebuildConfirm"
+                         x-transition
+                         @click.away="showRebuildConfirm = false"
+                         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+                        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-exclamation-triangle text-yellow-500"></i>
+                                ยืนยันการจัดเรียงผังใหม่
+                            </h3>
+                            <div class="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+                                <p>การจัดเรียงผังใหม่จะ:</p>
+                                <ul class="list-disc list-inside space-y-1 ml-2">
+                                    <li>ย้ายสมาชิกไปตำแหน่งใหม่ตามลำดับการแนะนำจริง</li>
+                                    <li>อัพเดท level และ path ของสมาชิกทุกคน</li>
+                                    <li>ค่าคอมมิชชั่นอาจเปลี่ยนแปลงตาม level ใหม่</li>
+                                </ul>
+                                <div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
+                                    <p class="text-yellow-700 dark:text-yellow-300">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        กระบวนการจะทำงานต่อแม้คุณปิดหน้าเว็บ และสามารถกลับมาดู progress ได้
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex gap-3 mt-6">
+                                <button type="button"
+                                        @click="showRebuildConfirm = false"
+                                        class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+                                    ยกเลิก
+                                </button>
+                                <button type="button"
+                                        @click="startRebuild(); showRebuildConfirm = false"
+                                        class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg flex items-center justify-center gap-2">
+                                    <i class="fas fa-check"></i>
+                                    เริ่มจัดเรียง
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- Unilevel Percentages --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-900 dark:text-white mb-3">
@@ -672,9 +780,15 @@ function mlmSettings() {
         totalCommissionPercentage: 0,
         unilevelTotal: 0,
 
+        // Rebuild task tracking
+        rebuildTask: null,
+        showRebuildConfirm: false,
+        rebuildPolling: null,
+
         init() {
             this.loadSettings();
             this.calculateTotal();
+            this.checkRebuildStatus();
         },
 
         async loadSettings() {
@@ -784,6 +898,123 @@ function mlmSettings() {
                 this.showNotification('error', 'เกิดข้อผิดพลาดในการบันทึก');
             } finally {
                 this.saving = false;
+            }
+        },
+
+        // =========================================
+        // Rebuild Task Methods
+        // =========================================
+
+        async checkRebuildStatus() {
+            try {
+                const response = await fetch('/admin/mlm/settings/rebuild-status');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.task) {
+                        this.rebuildTask = data.task;
+
+                        // ถ้ากำลัง running ให้ poll ต่อ
+                        if (this.rebuildTask.status === 'running') {
+                            this.startPolling();
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to check rebuild status:', error);
+            }
+        },
+
+        startPolling() {
+            // หยุด polling เดิมถ้ามี
+            if (this.rebuildPolling) {
+                clearInterval(this.rebuildPolling);
+            }
+
+            // Poll ทุก 2 วินาที
+            this.rebuildPolling = setInterval(async () => {
+                try {
+                    const response = await fetch('/admin/mlm/settings/rebuild-status');
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.task) {
+                            this.rebuildTask = data.task;
+
+                            // หยุด polling ถ้าเสร็จหรือ failed
+                            if (this.rebuildTask.status !== 'running') {
+                                clearInterval(this.rebuildPolling);
+                                this.rebuildPolling = null;
+
+                                if (this.rebuildTask.status === 'completed') {
+                                    this.showNotification('success', 'จัดเรียงผังเสร็จเรียบร้อย!');
+                                } else if (this.rebuildTask.status === 'failed') {
+                                    this.showNotification('error', 'เกิดข้อผิดพลาดในการจัดเรียงผัง');
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to poll rebuild status:', error);
+                }
+            }, 2000);
+        },
+
+        async startRebuild() {
+            try {
+                const response = await fetch('/admin/mlm/settings/start-rebuild', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.rebuildTask = data.task;
+                    this.showNotification('success', data.message);
+                    this.startPolling();
+                } else {
+                    this.showNotification('error', data.error || 'ไม่สามารถเริ่มการจัดเรียงได้');
+                }
+            } catch (error) {
+                console.error('Failed to start rebuild:', error);
+                this.showNotification('error', 'เกิดข้อผิดพลาดในการเริ่มจัดเรียง');
+            }
+        },
+
+        async cancelRebuild() {
+            if (!this.rebuildTask) return;
+
+            try {
+                const response = await fetch('/admin/mlm/settings/cancel-rebuild', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({
+                        task_id: this.rebuildTask.id,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.rebuildTask = data.task;
+                    this.showNotification('success', 'ยกเลิกการจัดเรียงเรียบร้อย');
+
+                    // หยุด polling
+                    if (this.rebuildPolling) {
+                        clearInterval(this.rebuildPolling);
+                        this.rebuildPolling = null;
+                    }
+                } else {
+                    this.showNotification('error', data.error || 'ไม่สามารถยกเลิกได้');
+                }
+            } catch (error) {
+                console.error('Failed to cancel rebuild:', error);
+                this.showNotification('error', 'เกิดข้อผิดพลาดในการยกเลิก');
             }
         },
 

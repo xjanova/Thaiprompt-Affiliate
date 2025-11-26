@@ -3,8 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\RebuildUnilevelTreeJob;
 use App\Models\MlmGlobalSetting;
+use App\Models\MlmMember;
+use App\Models\MlmRebuildTask;
+use App\Services\MlmTreeRebuildService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class MlmGlobalSettingController extends Controller
 {
@@ -280,6 +285,273 @@ class MlmGlobalSettingController extends Controller
             'success' => true,
             'message' => 'MLM settings updated successfully',
             'settings' => $validated,
+        ]);
+    }
+
+    /**
+     * อัพเดท Unilevel width และเริ่ม rebuild task
+     *
+     * เมื่อเปลี่ยน width จะ:
+     * 1. บันทึกค่า width ใหม่
+     * 2. สร้าง rebuild task
+     * 3. dispatch background job
+     * 4. return task info สำหรับ tracking
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateUnilevelWidth(Request $request)
+    {
+        $validated = $request->validate([
+            'unilevel_max_width' => 'nullable|integer|min:0|max:100',
+            'rebuild_tree' => 'required|boolean',
+        ]);
+
+        $newWidth = $validated['unilevel_max_width'] === 0 ? null : $validated['unilevel_max_width'];
+        $shouldRebuild = $validated['rebuild_tree'];
+
+        // ตรวจสอบว่ามี rebuild task กำลังทำงานอยู่หรือไม่
+        $rebuildService = new MlmTreeRebuildService();
+
+        if ($rebuildService->hasRunningTask()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'กำลังมีการ rebuild อยู่ กรุณารอให้เสร็จก่อน',
+                'task' => $rebuildService->getLatestTaskStatus(),
+            ], 400);
+        }
+
+        // บันทึกค่า width ใหม่
+        $oldWidth = MlmGlobalSetting::get('unilevel_max_width');
+        MlmGlobalSetting::set('unilevel_max_width', $newWidth);
+
+        Log::info('Unilevel width changed', [
+            'old_width' => $oldWidth,
+            'new_width' => $newWidth,
+            'rebuild_requested' => $shouldRebuild,
+        ]);
+
+        $response = [
+            'success' => true,
+            'message' => 'บันทึกค่าความกว้างใหม่เรียบร้อย',
+            'old_width' => $oldWidth,
+            'new_width' => $newWidth,
+            'rebuild_started' => false,
+            'task' => null,
+        ];
+
+        // ถ้าต้องการ rebuild
+        if ($shouldRebuild) {
+            $memberCount = MlmMember::count();
+
+            if ($memberCount === 0) {
+                $response['message'] .= ' (ไม่มีสมาชิก ไม่ต้อง rebuild)';
+                return response()->json($response);
+            }
+
+            // สร้าง rebuild task
+            $task = MlmRebuildTask::createWithLock(
+                MlmRebuildTask::TYPE_UNILEVEL_REBUILD,
+                [
+                    'unilevel_max_width' => $newWidth,
+                    'unilevel_max_depth' => MlmGlobalSetting::get('unilevel_max_depth', 10),
+                    'trigger' => 'width_change',
+                    'old_width' => $oldWidth,
+                ],
+                auth()->id()
+            );
+
+            if (!$task) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'ไม่สามารถสร้าง rebuild task ได้ (อาจมี task อื่นกำลังทำงานอยู่)',
+                ], 400);
+            }
+
+            // Dispatch background job
+            RebuildUnilevelTreeJob::dispatch($task->id);
+
+            $response['message'] = 'เริ่มกระบวนการ rebuild tree แล้ว';
+            $response['rebuild_started'] = true;
+            $response['task'] = $task->getProgressData();
+            $response['member_count'] = $memberCount;
+
+            Log::info('Unilevel rebuild task created', [
+                'task_id' => $task->id,
+                'member_count' => $memberCount,
+            ]);
+        }
+
+        return response()->json($response);
+    }
+
+    /**
+     * ดึงสถานะ rebuild task ปัจจุบัน
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getRebuildStatus(Request $request)
+    {
+        $type = $request->get('type', MlmRebuildTask::TYPE_UNILEVEL_REBUILD);
+
+        $rebuildService = new MlmTreeRebuildService();
+        $taskStatus = $rebuildService->getLatestTaskStatus($type);
+
+        return response()->json([
+            'success' => true,
+            'has_task' => $taskStatus !== null,
+            'task' => $taskStatus,
+        ]);
+    }
+
+    /**
+     * ยกเลิก rebuild task ที่กำลังทำงาน
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function cancelRebuild(Request $request)
+    {
+        $taskId = $request->get('task_id');
+
+        $task = MlmRebuildTask::find($taskId);
+
+        if (!$task) {
+            return response()->json([
+                'success' => false,
+                'error' => 'ไม่พบ task ที่ระบุ',
+            ], 404);
+        }
+
+        if ($task->status !== MlmRebuildTask::STATUS_RUNNING) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Task ไม่ได้อยู่ในสถานะที่สามารถยกเลิกได้',
+            ], 400);
+        }
+
+        $task->cancel();
+
+        Log::info('Rebuild task cancelled', [
+            'task_id' => $task->id,
+            'cancelled_by' => auth()->id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ยกเลิก rebuild task เรียบร้อย',
+            'task' => $task->getProgressData(),
+        ]);
+    }
+
+    /**
+     * เริ่ม rebuild ใหม่แบบ manual
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function startManualRebuild(Request $request)
+    {
+        $rebuildService = new MlmTreeRebuildService();
+
+        if ($rebuildService->hasRunningTask()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'กำลังมีการ rebuild อยู่ กรุณารอให้เสร็จก่อน',
+                'task' => $rebuildService->getLatestTaskStatus(),
+            ], 400);
+        }
+
+        $memberCount = MlmMember::count();
+
+        if ($memberCount === 0) {
+            return response()->json([
+                'success' => false,
+                'error' => 'ไม่มีสมาชิกในระบบ',
+            ], 400);
+        }
+
+        // สร้าง rebuild task
+        $task = MlmRebuildTask::createWithLock(
+            MlmRebuildTask::TYPE_UNILEVEL_REBUILD,
+            [
+                'unilevel_max_width' => MlmGlobalSetting::get('unilevel_max_width'),
+                'unilevel_max_depth' => MlmGlobalSetting::get('unilevel_max_depth', 10),
+                'trigger' => 'manual',
+            ],
+            auth()->id()
+        );
+
+        if (!$task) {
+            return response()->json([
+                'success' => false,
+                'error' => 'ไม่สามารถสร้าง rebuild task ได้',
+            ], 400);
+        }
+
+        // Dispatch background job
+        RebuildUnilevelTreeJob::dispatch($task->id);
+
+        Log::info('Manual rebuild started', [
+            'task_id' => $task->id,
+            'initiated_by' => auth()->id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'เริ่มกระบวนการ rebuild tree แล้ว',
+            'task' => $task->getProgressData(),
+            'member_count' => $memberCount,
+        ]);
+    }
+
+    /**
+     * ดึงข้อมูลตัวอย่างผลกระทบจากการเปลี่ยน width
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function previewWidthChange(Request $request)
+    {
+        $validated = $request->validate([
+            'new_width' => 'nullable|integer|min:0|max:100',
+        ]);
+
+        $newWidth = $validated['new_width'] === 0 ? null : $validated['new_width'];
+        $currentWidth = MlmGlobalSetting::get('unilevel_max_width');
+
+        // นับสมาชิกทั้งหมด
+        $totalMembers = MlmMember::count();
+
+        // นับสมาชิกที่มีลูกตรงเกิน width ใหม่
+        $affectedSponsors = 0;
+        $affectedMembers = 0;
+
+        if ($newWidth !== null && $newWidth > 0) {
+            // หาสมาชิกที่มีลูกตรง (unilevel) เกิน width ใหม่
+            $sponsorsOverLimit = MlmMember::select('unilevel_sponsor_id')
+                ->selectRaw('COUNT(*) as child_count')
+                ->whereNotNull('unilevel_sponsor_id')
+                ->groupBy('unilevel_sponsor_id')
+                ->havingRaw('COUNT(*) > ?', [$newWidth])
+                ->get();
+
+            $affectedSponsors = $sponsorsOverLimit->count();
+            $affectedMembers = $sponsorsOverLimit->sum(function ($item) use ($newWidth) {
+                return $item->child_count - $newWidth;
+            });
+        }
+
+        return response()->json([
+            'success' => true,
+            'current_width' => $currentWidth,
+            'new_width' => $newWidth,
+            'total_members' => $totalMembers,
+            'affected_sponsors' => $affectedSponsors,
+            'affected_members' => $affectedMembers,
+            'needs_rebuild' => $affectedSponsors > 0,
+            'estimated_time_seconds' => ceil($totalMembers / 100) * 2, // ประมาณ 2 วินาที ต่อ 100 คน
         ]);
     }
 }
