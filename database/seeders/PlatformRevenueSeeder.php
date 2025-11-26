@@ -102,6 +102,7 @@ class PlatformRevenueSeeder extends Seeder
     {
         $settings = [
             [
+                'payout_type' => 'seller',  // ต้องกำหนด payout_type (unique)
                 'name' => 'รายได้จากการขาย',
                 'slug' => 'seller_sale',
                 'earning_type' => 'seller_sale',
@@ -119,6 +120,7 @@ class PlatformRevenueSeeder extends Seeder
                 ],
             ],
             [
+                'payout_type' => 'mlm',  // ต้องกำหนด payout_type (unique)
                 'name' => 'MLM Commission',
                 'slug' => 'mlm_commission',
                 'earning_type' => 'mlm_commission',
@@ -137,6 +139,7 @@ class PlatformRevenueSeeder extends Seeder
                 ],
             ],
             [
+                'payout_type' => 'service',  // ต้องกำหนด payout_type (unique)
                 'name' => 'Affiliate Commission',
                 'slug' => 'affiliate_commission',
                 'earning_type' => 'affiliate_commission',
@@ -157,9 +160,9 @@ class PlatformRevenueSeeder extends Seeder
         ];
 
         foreach ($settings as $setting) {
-            // ตรวจสอบก่อนสร้าง (idempotent)
-            if (PayoutSetting::where('slug', $setting['slug'])->exists()) {
-                $this->command->info("  - Payout Setting '{$setting['slug']}' มีอยู่แล้ว ข้าม...");
+            // ตรวจสอบก่อนสร้าง (idempotent) - ใช้ payout_type เพราะเป็น unique
+            if (PayoutSetting::where('payout_type', $setting['payout_type'])->exists()) {
+                $this->command->info("  - Payout Setting '{$setting['payout_type']}' มีอยู่แล้ว ข้าม...");
                 continue;
             }
 
