@@ -2,6 +2,50 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.208.0] - 2025-11-26
+
+### ✨ Features
+- feat: add HomepageManagerSeeder with default sections and templates (4349a145)
+- feat: add Homepage Manager visual editor system (df792f62)
+- feat: upgrade 2FA to Google Authenticator (TOTP) (0d7f54fc)
+- feat: add camera barcode/QR scanner support for label designer (ef5ccd13)
+- feat: add Virtual ID Card system with rank-based styling (1ec08c50)
+- feat: add complete Platform Revenue System (4b0728e5)
+- feat: add PV System Settings UI for commission_per_pv configuration (eb0fb3a8)
+- feat: add app-like home page with hub navigation (ea4404c1)
+- feat: เพิ่มระบบรักษายอดอัตโนมัติ (Auto-Renewal) และ Status Bar (985e8d0a)
+- feat: upgrade admin permissions system with 140+ comprehensive permissions (389bb1d6)
+### 🐛 Bug Fixes
+- fix: resolve conflict - update MLM dashboard to use MlmGlobalSetting (19cfbfab)
+- fix: add missing columns to payout_settings table (fdd56aad)
+- fix: overhaul organization chart system with touch support (7ebd0244)
+- fix: แก้ไข null error สำหรับ $member->plan ในทุกหน้า MLM (9166ab06)
+- fix: add missing leg requirement types to rank_requirements ENUM (47507522)
+- fix: แก้ไข null error เมื่อ member ไม่มี plan ในหน้า genealogy (29115d79)
+- fix: correct column name from 'pv' to 'pv_amount' in MlmCommissionService (816853a2)
+### 🔧 Other Changes
+- Merge pull request #1664 from xjanova/claude/fix-rank-seeder-duplicates-0195Yukhi5QS8WayGFSm1w17 (320fa53d)
+- merge: sync with Main branch and resolve conflict (095428de)
+- chore: bump version to 3.206.2 [skip ci] (d32fd0a9)
+- chore: bump version to 3.206.1 [skip ci] (12136bbb)
+- chore: bump version to 3.206.0 [skip ci] (4dd2bcba)
+- chore: bump version to 3.205.0 [skip ci] (04f08264)
+- chore: bump version to 3.204.2 [skip ci] (d1e8258e)
+- chore: bump version to 3.204.1 [skip ci] (ceb970ec)
+- chore: bump version to 3.204.0 [skip ci] (44a2f04a)
+- chore: bump version to 3.203.0 [skip ci] (797fa998)
+- chore: bump version to 3.202.0 [skip ci] (f267cafa)
+- chore: bump version to 3.201.0 [skip ci] (e04a45a7)
+- chore: bump version to 3.200.2 [skip ci] (0b697d0c)
+- chore: bump version to 3.200.1 [skip ci] (946d668a)
+- chore: bump version to 3.200.0 [skip ci] (d93ab211)
+- chore: bump version to 3.199.0 [skip ci] (ba1a433c)
+- chore: bump version to 3.198.3 [skip ci] (506e0207)
+- chore: bump version to 3.198.2 [skip ci] (e26ff693)
+- chore: bump version to 3.198.1 [skip ci] (3acc27bd)
+- chore: bump version to 3.198.0 [skip ci] (2bac511f)
+- chore: bump version to 3.197.0 [skip ci] (1cf8597a)
+
 ## [v3.207.0] - 2025-11-26
 
 ### ✨ Features
