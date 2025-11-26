@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.211.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1669 from xjanova/claude/create-disputes-table-01FiY6LSg8ktziLspmucHN9D (4fc2a708)
+- feat: add migration for service_booking_disputes table (b3691fa1)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.210.0] - 2025-11-26
 
 ### ✨ Features
