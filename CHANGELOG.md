@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.221.3] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1691 from xjanova/claude/fix-ecommerce-mlm-calculations-019L2PJnNtbaVfFvPLTRdhGK (47e39fd0)
+- fix: correct E-commerce and MLM calculation bugs (a24a83b7)
+### 🔧 Other Changes
+
+
 ## [v3.221.2] - 2025-11-26
 
 ### ✨ Features
