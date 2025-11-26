@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.209.2] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1667 from xjanova/claude/fix-commission-column-error-014edLTNKujunWpqtECQYYjG (01413a17)
+- fix: resolve critical issues in Platform Revenue financial services (26c26fae)
+### 🔧 Other Changes
+
+
 ## [v3.209.1] - 2025-11-26
 
 ### ✨ Features
