@@ -75,10 +75,16 @@ class TokenManagementController extends Controller
 
     /**
      * Token Details
+     *
+     * แสดงรายละเอียดของ Token พร้อมข้อมูลที่เกี่ยวข้อง
+     *
+     * @param int $id Token ID
+     * @return \Illuminate\View\View
      */
     public function show($id)
     {
-        $token = TPIXToken::with(['creator', 'balances', 'transfers', 'controlActions'])
+        // ดึงข้อมูล token พร้อม relations (ไม่รวม controlActions เพื่อหลีกเลี่ยง error ถ้าตารางไม่มี)
+        $token = TPIXToken::with(['creator', 'balances', 'transfers'])
             ->findOrFail($id);
 
         // Get top holders
@@ -96,12 +102,18 @@ class TokenManagementController extends Controller
             ->limit(20)
             ->get();
 
-        // Control actions
-        $controlActions = $token->controlActions()
-            ->with('admin')
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+        // Control actions - ใช้ try-catch เพื่อรองรับกรณีตารางยังไม่มี
+        try {
+            $controlActions = $token->controlActions()
+                ->with('admin')
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // ตารางยังไม่มี - ส่ง empty collection แทน
+            $controlActions = collect([]);
+            Log::warning('coin_control_actions table not found - please run migrations');
+        }
 
         return view('admin.tokens.show', compact('token', 'topHolders', 'recentTransfers', 'controlActions'));
     }
