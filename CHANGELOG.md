@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.204.0] - 2025-11-26
+
+### ✨ Features
+- Merge pull request #1655 from xjanova/claude/redesign-homepage-navigation-01RrL7GwBcCijKCoJorbW1Hu (bde0b779)
+- feat: upgrade 2FA to Google Authenticator (TOTP) (e120c6e0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.203.0] - 2025-11-26
 
 ### ✨ Features
