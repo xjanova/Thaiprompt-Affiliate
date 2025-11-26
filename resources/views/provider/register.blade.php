@@ -114,10 +114,12 @@
                     </label>
                     <div class="flex items-center gap-4">
                         <div class="relative w-24 h-24 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                            {{-- ใช้ profile_picture_url accessor พร้อม fallback --}}
                             <img x-ref="profilePreview"
-                                 src="{{ $user->avatar ?? asset('images/default-avatar.png') }}"
+                                 src="{{ $user->profile_picture_url ?? asset('images/default-avatar.png') }}"
                                  alt="Profile"
-                                 class="w-full h-full object-cover">
+                                 class="w-full h-full object-cover"
+                                 onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name ?? 'U', 0, 1)) }}&background=6366f1&color=fff&size=200';">
                         </div>
                         <div class="flex-1">
                             <input type="file"

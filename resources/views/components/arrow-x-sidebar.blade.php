@@ -51,18 +51,8 @@
         <!-- User Profile Section -->
         <div class="relative p-6 border-b border-white/10 dark:border-gray-700/30 bg-black/10 backdrop-blur-sm">
             <div class="flex items-center space-x-3">
-                <!-- Avatar -->
-                <div class="relative">
-                    @if($user->avatar)
-                        <img src="{{ asset($user->avatar) }}" alt="{{ $user->name }}" class="h-12 w-12 rounded-full ring-2 ring-purple-400/50 shadow-lg">
-                    @else
-                        <div class="h-12 w-12 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center ring-2 ring-purple-400/50 shadow-lg">
-                            <span class="text-white font-bold text-lg">{{ substr($user->name, 0, 1) }}</span>
-                        </div>
-                    @endif
-                    <!-- Online Status -->
-                    <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-purple-900 rounded-full"></div>
-                </div>
+                <!-- Avatar - ใช้ component เพื่อความสอดคล้องทั้งระบบ -->
+                <x-user-avatar :user="$user" size="lg" :ring="true" ringColor="purple" :showStatus="true" />
 
                 <!-- User Info -->
                 <div class="flex-1 min-w-0">
