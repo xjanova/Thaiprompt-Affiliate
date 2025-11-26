@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.198.2] - 2025-11-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1646 from xjanova/claude/fix-commission-column-error-014edLTNKujunWpqtECQYYjG (10cda183)
+- fix: correct column name from 'pv' to 'pv_amount' in MlmCommissionService (ba898e20)
+### 🔧 Other Changes
+
+
 ## [v3.198.1] - 2025-11-26
 
 ### ✨ Features
