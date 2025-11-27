@@ -2900,4 +2900,60 @@ Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () 
         Route::get('/documentation', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'documentation'])
             ->name('documentation');
     });
+
+    // =========================================
+    // AI Content Writer System
+    // =========================================
+    Route::prefix('ai-content-writer')->name('ai-content-writer.')->group(function () {
+
+        // Dashboard
+        Route::get('/', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'dashboard'])
+            ->name('dashboard');
+
+        // Settings (API Keys)
+        Route::get('/settings', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'settings'])
+            ->name('settings');
+        Route::post('/settings', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'saveSettings'])
+            ->name('settings.save');
+        Route::post('/settings/test/{provider}', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'testApiConnection'])
+            ->name('settings.test');
+
+        // Templates (เทมเพลตสร้าง Content)
+        Route::get('/templates', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'templates'])
+            ->name('templates');
+        Route::get('/templates/create', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'createTemplate'])
+            ->name('templates.create');
+        Route::post('/templates', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'storeTemplate'])
+            ->name('templates.store');
+        Route::get('/templates/{id}/edit', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'editTemplate'])
+            ->name('templates.edit');
+        Route::put('/templates/{id}', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'updateTemplate'])
+            ->name('templates.update');
+        Route::delete('/templates/{id}', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'deleteTemplate'])
+            ->name('templates.delete');
+
+        // Projects (โปรเจกต์ Content)
+        Route::get('/projects', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'projects'])
+            ->name('projects');
+        Route::get('/projects/{id}', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'showProject'])
+            ->name('projects.show');
+        Route::delete('/projects/{id}', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'deleteProject'])
+            ->name('projects.delete');
+
+        // Generations (ประวัติการสร้าง)
+        Route::get('/generations', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'generations'])
+            ->name('generations');
+        Route::get('/generations/{id}', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'showGeneration'])
+            ->name('generations.show');
+
+        // Usage Logs
+        Route::get('/usage-logs', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'usageLogs'])
+            ->name('usage-logs');
+
+        // Playground (ทดสอบสร้าง Content)
+        Route::get('/playground', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'playground'])
+            ->name('playground');
+        Route::post('/playground/generate', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'quickGenerate'])
+            ->name('playground.generate');
+    });
 });
