@@ -345,7 +345,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                 @endauth
 
                 @auth
-                    <div class="ml-3 relative" x-data="{ open: false }">
+                    <div class="ml-3 relative z-50" x-data="{ open: false }">
                         <button @click="open = !open"
                                 class="flex items-center text-sm font-medium focus:outline-none transition duration-150 ease-in-out"
                                 style="color: {{ $headerTextColor }};"
@@ -359,7 +359,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
 
                         <div x-show="open"
                              @click.away="open = false"
-                             class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5"
+                             class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-[9999]"
                              style="display: none;">
                             <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">แดชบอร์ด</a>
                             <a href="{{ route('wiki.index') }}" class="block px-4 py-2 text-sm text-amber-700 hover:bg-amber-50 font-semibold">🇹🇭 Wiki - เรื่องราว ThaiPrompt</a>
