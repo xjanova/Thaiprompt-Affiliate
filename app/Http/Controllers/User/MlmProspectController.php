@@ -27,8 +27,8 @@ class MlmProspectController extends Controller
                 'stats' => [
                     'total' => 0,
                     'pending' => 0,
-                    'clicked' => 0,
-                    'registered' => 0,
+                    'in_progress' => 0,
+                    'completed' => 0,
                     'expired' => 0,
                 ],
                 'notMlmMember' => true,
