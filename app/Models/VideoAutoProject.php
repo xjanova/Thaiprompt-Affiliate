@@ -150,6 +150,15 @@ class VideoAutoProject extends Model
         'max_retries',
         // Stats
         'statistics',
+        // Thumbnail & Cleanup (เพิ่มเติม)
+        'thumbnail_path',
+        'thumbnail_url',
+        'delete_source_after_publish',
+        'source_files_deleted',
+        'source_deleted_at',
+        'publish_count',
+        'last_published_at',
+        'hashtags',
     ];
 
     /**
@@ -183,6 +192,12 @@ class VideoAutoProject extends Model
         'processing_time' => 'integer',
         'retry_count' => 'integer',
         'max_retries' => 'integer',
+        'delete_source_after_publish' => 'boolean',
+        'source_files_deleted' => 'boolean',
+        'source_deleted_at' => 'datetime',
+        'publish_count' => 'integer',
+        'last_published_at' => 'datetime',
+        'hashtags' => 'array',
     ];
 
     /**
@@ -313,6 +328,16 @@ class VideoAutoProject extends Model
     public function logs(): HasMany
     {
         return $this->hasMany(VideoAutoJobLog::class, 'project_id');
+    }
+
+    /**
+     * ประวัติการโพสต์
+     *
+     * @return HasMany
+     */
+    public function publishHistory(): HasMany
+    {
+        return $this->hasMany(VideoAutoPublishHistory::class, 'project_id');
     }
 
     // =========================================
@@ -662,8 +687,97 @@ class VideoAutoProject extends Model
             'video_tags' => $template->default_tags,
             'video_category' => $template->default_category,
             'target_platforms' => $template->target_platforms,
+            // Default cleanup setting
+            'delete_source_after_publish' => true,
         ], $overrides);
 
         return static::create($data);
+    }
+
+    /**
+     * เพิ่ม publish count
+     *
+     * @return void
+     */
+    public function incrementPublishCount(): void
+    {
+        $this->increment('publish_count');
+        $this->last_published_at = now();
+        $this->save();
+    }
+
+    /**
+     * ลบไฟล์ต้นฉบับหลังโพสต์สำเร็จ
+     *
+     * @return bool
+     */
+    public function deleteSourceFiles(): bool
+    {
+        if ($this->source_files_deleted) {
+            return true;
+        }
+
+        $deleted = [];
+
+        // ลบไฟล์เพลง
+        if ($this->generated_music_path) {
+            $path = storage_path('app/public/' . $this->generated_music_path);
+            if (file_exists($path)) {
+                unlink($path);
+                $deleted[] = 'music';
+            }
+        }
+
+        // ลบภาพทั้งหมด
+        if ($this->generated_images && is_array($this->generated_images)) {
+            foreach ($this->generated_images as $image) {
+                $imagePath = $image['path'] ?? $image;
+                if (is_string($imagePath)) {
+                    $fullPath = storage_path('app/public/' . $imagePath);
+                    if (file_exists($fullPath)) {
+                        unlink($fullPath);
+                    }
+                }
+            }
+            $deleted[] = 'images';
+        }
+
+        // ลบวีดีโอ
+        if ($this->generated_video_path) {
+            $path = storage_path('app/public/' . $this->generated_video_path);
+            if (file_exists($path)) {
+                unlink($path);
+                $deleted[] = 'video';
+            }
+        }
+
+        // อัพเดทสถานะ
+        $this->source_files_deleted = true;
+        $this->source_deleted_at = now();
+        $this->save();
+
+        return count($deleted) > 0;
+    }
+
+    /**
+     * ดึง URL ของ thumbnail
+     *
+     * @return string|null
+     */
+    public function getThumbnailFullUrlAttribute(): ?string
+    {
+        if ($this->thumbnail_url) {
+            return $this->thumbnail_url;
+        }
+
+        if ($this->thumbnail_path) {
+            return asset('storage/' . $this->thumbnail_path);
+        }
+
+        if ($this->video_thumbnail) {
+            return asset('storage/' . $this->video_thumbnail);
+        }
+
+        return null;
     }
 }

@@ -243,6 +243,17 @@
             </div>
         </a>
 
+        <a href="{{ route('admin.video-automation.publish-history') }}"
+           class="glass-fusion rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition group">
+            <div class="text-center">
+                <div class="w-14 h-14 mx-auto rounded-xl va-gradient-red text-white flex items-center justify-center mb-3 group-hover:scale-110 transition">
+                    <i class="fas fa-history fa-xl"></i>
+                </div>
+                <h3 class="font-semibold text-gray-900 dark:text-white">ประวัติการโพสต์</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">ดู Engagement & Stats</p>
+            </div>
+        </a>
+
         <a href="{{ route('admin.video-automation.documentation') }}"
            class="glass-fusion rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition group">
             <div class="text-center">
