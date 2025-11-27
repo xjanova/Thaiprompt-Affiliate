@@ -990,6 +990,24 @@ return [
         ],
 
         [
+            'id' => 'tpix-tokens',
+            'label' => 'TPIX Token',
+            'icon' => '🪙',
+            'route' => null,
+            'order' => 8.3,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-amber-500 to-orange-500',
+            'submenu' => [
+                ['label' => '📖 คู่มือสร้างเหรียญ', 'route' => 'user.tokens.tutorial', 'description' => 'เรียนรู้การสร้างเหรียญของคุณเอง'],
+                ['label' => '🪙 ตลาด Token', 'route' => 'user.tokens.index', 'description' => 'ดู Token ทั้งหมดในระบบ'],
+                ['label' => '✨ สร้างเหรียญใหม่', 'route' => 'user.tokens.create', 'description' => 'สร้าง Token ของคุณเอง'],
+                ['label' => '📁 เหรียญของฉัน', 'route' => 'user.tokens.my-tokens', 'description' => 'จัดการ Token ที่สร้างไว้'],
+                ['label' => '💰 ยอดคงเหลือ', 'route' => 'user.tokens.my-balances', 'description' => 'ดูยอด Token ที่ถือครอง'],
+            ],
+        ],
+
+        [
             'id' => 'nfc-cards',
             'label' => 'บัตร NFC',
             'icon' => 'fas fa-credit-card',

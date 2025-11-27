@@ -157,6 +157,19 @@ class TokenController extends Controller
     }
 
     /**
+     * Tutorial สอนการสร้างเหรียญลูก (Custom Token)
+     *
+     * หน้าคู่มือสอนขั้นตอนการสร้างเหรียญของตัวเองบน TPIX Blockchain
+     * สำหรับผู้ใช้ที่ต้องการมีเหรียญ ERC-20 ของตัวเอง
+     *
+     * @return \Illuminate\View\View
+     */
+    public function tutorial()
+    {
+        return view('user.tokens.tutorial');
+    }
+
+    /**
      * Create Token Page
      */
     public function create()
