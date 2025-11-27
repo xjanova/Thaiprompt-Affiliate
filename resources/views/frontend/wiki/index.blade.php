@@ -203,8 +203,15 @@
         }
     }"
     x-init="init()"
-    class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900"
+    class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-gray-950 dark:via-slate-900 dark:to-purple-950 relative overflow-hidden"
 >
+    {{-- V3 Floating Glow Effects --}}
+    <div class="fixed inset-0 pointer-events-none overflow-hidden">
+        <div class="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-purple-500/20 dark:from-blue-600/10 dark:to-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute top-1/2 -left-40 w-80 h-80 bg-gradient-to-br from-pink-400/20 to-rose-500/20 dark:from-pink-600/10 dark:to-rose-600/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+        <div class="absolute -bottom-40 right-1/3 w-72 h-72 bg-gradient-to-br from-cyan-400/20 to-blue-500/20 dark:from-cyan-600/10 dark:to-blue-600/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+    </div>
+
     {{-- Reading Progress Bar - ติดด้านบน --}}
     <div class="fixed top-0 left-0 right-0 h-1 bg-gray-200 dark:bg-gray-700 z-50">
         <div
@@ -241,14 +248,17 @@
             x-transition:leave-end="opacity-0 -translate-x-full"
             class="lg:sticky lg:top-24 lg:max-h-[calc(100vh-8rem)] overflow-y-auto
                    fixed lg:relative inset-0 lg:inset-auto z-30 lg:z-auto
-                   bg-white/95 dark:bg-gray-800/95 lg:bg-white lg:dark:bg-gray-800
-                   backdrop-blur-xl lg:backdrop-blur-none
-                   lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-200 lg:dark:border-gray-700"
+                   bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl
+                   lg:rounded-3xl lg:shadow-2xl lg:border lg:border-white/20 dark:lg:border-gray-700/50
+                   lg:ring-1 lg:ring-black/5 dark:lg:ring-white/5"
         >
-            {{-- Sidebar Header --}}
-            <div class="sticky top-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 text-white p-6 rounded-t-2xl lg:rounded-2xl shadow-lg">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl backdrop-blur-sm">
+            {{-- Sidebar Header - V3 Premium Gradient --}}
+            <div class="sticky top-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 text-white p-6 rounded-t-3xl lg:rounded-3xl shadow-2xl shadow-purple-500/30 relative overflow-hidden">
+                {{-- Glow overlay --}}
+                <div class="absolute inset-0 bg-gradient-to-t from-black/10 to-white/10"></div>
+                <div class="absolute -top-20 -right-20 w-40 h-40 bg-white/20 rounded-full blur-2xl"></div>
+                <div class="relative flex items-center gap-3 mb-4">
+                    <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-3xl backdrop-blur-sm shadow-lg border border-white/30">
                         📚
                     </div>
                     <div class="flex-1">
@@ -355,19 +365,21 @@
 
         {{-- Main Content Area --}}
         <main class="min-h-screen">
-            {{-- Search Bar --}}
-            <div class="mb-6">
-                <div class="relative">
+            {{-- Search Bar - V3 Glassmorphism --}}
+            <div class="mb-8">
+                <div class="relative group">
+                    {{-- Glow effect on focus --}}
+                    <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl opacity-0 group-focus-within:opacity-50 blur transition-opacity duration-300"></div>
                     <input
                         type="text"
                         x-model="searchQuery"
                         placeholder="🔍 ค้นหาในคู่มือ... (เช่น MLM, Wallet, API)"
-                        class="w-full px-6 py-4 pr-12 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl
-                               focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20
+                        class="relative w-full px-6 py-5 pr-14 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-2 border-white/30 dark:border-gray-700/50 rounded-2xl
+                               focus:border-purple-400 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20
                                text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400
-                               transition-all duration-300 shadow-lg"
+                               transition-all duration-300 shadow-xl"
                     >
-                    <button class="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-lg flex items-center justify-center hover:scale-110 transition-transform">
+                    <button class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white rounded-xl flex items-center justify-center hover:scale-110 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
@@ -375,13 +387,17 @@
                 </div>
             </div>
 
-            {{-- Content Card --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {{-- Content Card - V3 Glassmorphism --}}
+            <div class="relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 ring-1 ring-black/5 dark:ring-white/5 overflow-hidden">
 
-                {{-- Loading State --}}
+                {{-- Loading State - V3 Premium --}}
                 <div x-show="loading" class="flex flex-col items-center justify-center py-32" style="display: none;">
-                    <div class="w-16 h-16 border-4 border-gray-200 dark:border-gray-700 border-t-blue-600 rounded-full animate-spin"></div>
-                    <p class="mt-4 text-gray-600 dark:text-gray-400 font-semibold">กำลังโหลดเนื้อหา...</p>
+                    <div class="relative">
+                        <div class="w-20 h-20 border-4 border-purple-200 dark:border-purple-900 rounded-full"></div>
+                        <div class="absolute inset-0 w-20 h-20 border-4 border-transparent border-t-purple-600 rounded-full animate-spin"></div>
+                        <div class="absolute inset-2 w-16 h-16 border-4 border-transparent border-t-blue-500 rounded-full animate-spin" style="animation-direction: reverse; animation-duration: 0.8s;"></div>
+                    </div>
+                    <p class="mt-6 text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text font-bold text-lg">กำลังโหลดเนื้อหา...</p>
                 </div>
 
                 {{-- Content Area --}}
