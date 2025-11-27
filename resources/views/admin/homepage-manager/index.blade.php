@@ -18,7 +18,7 @@
     .element-selected { outline: 2px solid #6366f1; outline-offset: 2px; }
 
     /* Resize handles */
-    .resize-handle { position: absolute; width: 10px; height: 10px; background: #6366f1; border-radius: 2px; }
+    .resize-handle { position: absolute; width: 10px; height: 10px; background: #6366f1; border-radius: 2px; z-index: 100; }
     .resize-handle.nw { top: -5px; left: -5px; cursor: nwse-resize; }
     .resize-handle.ne { top: -5px; right: -5px; cursor: nesw-resize; }
     .resize-handle.sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
@@ -27,89 +27,318 @@
     /* Canvas grid */
     .canvas-grid { background-image: linear-gradient(rgba(99, 102, 241, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(99, 102, 241, 0.1) 1px, transparent 1px); background-size: 20px 20px; }
 
-    /* Animation preview */
+    /* Glassmorphism Panel */
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .dark .glass-panel {
+        background: rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Animations */
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
     @keyframes slideInUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     @keyframes zoomIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
     .animate-fadeIn { animation: fadeIn 0.5s ease-out forwards; }
     .animate-fadeInUp { animation: fadeInUp 0.5s ease-out forwards; }
     .animate-fadeInDown { animation: fadeInDown 0.5s ease-out forwards; }
+    .animate-fadeInLeft { animation: fadeInLeft 0.5s ease-out forwards; }
+    .animate-fadeInRight { animation: fadeInRight 0.5s ease-out forwards; }
     .animate-slideInUp { animation: slideInUp 0.5s ease-out forwards; }
     .animate-zoomIn { animation: zoomIn 0.5s ease-out forwards; }
+    .animate-bounce { animation: bounce 1s ease infinite; }
+    .animate-pulse { animation: pulse 2s ease infinite; }
+
+    /* Element hover effect */
+    .homepage-element:hover { outline: 1px dashed #6366f1; outline-offset: 2px; }
+
+    /* Panel tabs */
+    .panel-tab { transition: all 0.2s; }
+    .panel-tab.active { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; }
+
+    /* Draggable element card */
+    .element-card {
+        transition: all 0.2s;
+        cursor: grab;
+    }
+    .element-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.2);
+    }
+    .element-card:active {
+        cursor: grabbing;
+    }
+
+    /* Color picker */
+    .color-picker-wrapper input[type="color"] {
+        -webkit-appearance: none;
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    .color-picker-wrapper input[type="color"]::-webkit-color-swatch-wrapper {
+        padding: 0;
+    }
+    .color-picker-wrapper input[type="color"]::-webkit-color-swatch {
+        border: 2px solid #e5e7eb;
+        border-radius: 6px;
+    }
+
+    /* Toast notification */
+    .toast-container {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .toast {
+        padding: 12px 20px;
+        border-radius: 10px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        animation: fadeInRight 0.3s ease-out;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .toast.success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+    .toast.error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+    .toast.info { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; }
+    .toast.warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
+
+    /* Quick action floating button */
+    .quick-action-btn {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        transition: all 0.3s;
+    }
+    .quick-action-btn:hover {
+        transform: scale(1.1);
+    }
+
+    /* Layer item */
+    .layer-item {
+        transition: all 0.2s;
+    }
+    .layer-item:hover {
+        background: rgba(99, 102, 241, 0.1);
+    }
+    .layer-item.selected {
+        background: rgba(99, 102, 241, 0.2);
+        border-left: 3px solid #6366f1;
+    }
+
+    /* Block template card */
+    .block-template-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .block-template-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+    }
+    .block-template-card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .block-template-card:hover::after {
+        opacity: 1;
+    }
+    .block-template-card .card-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 16px;
+        transform: translateY(100%);
+        transition: transform 0.3s;
+        z-index: 1;
+    }
+    .block-template-card:hover .card-overlay {
+        transform: translateY(0);
+    }
+
+    /* Gradient presets */
+    .gradient-preset {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .gradient-preset:hover {
+        transform: scale(1.1);
+    }
+
+    /* AI generate button */
+    .ai-generate-btn {
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+        background-size: 200% 200%;
+        animation: gradientShift 3s ease infinite;
+    }
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* Keyboard shortcut badge */
+    .kbd {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2px 6px;
+        font-size: 11px;
+        font-family: monospace;
+        background: rgba(0,0,0,0.1);
+        border-radius: 4px;
+        border: 1px solid rgba(0,0,0,0.2);
+    }
+    .dark .kbd {
+        background: rgba(255,255,255,0.1);
+        border-color: rgba(255,255,255,0.2);
+    }
 </style>
 @endsection
 
 @section('content')
 <div x-data="homepageManager()" x-init="init()" class="h-screen flex flex-col bg-gray-100 dark:bg-gray-900 overflow-hidden">
+
+    {{-- Toast Container --}}
+    <div class="toast-container" x-show="toasts.length > 0">
+        <template x-for="(toast, index) in toasts" :key="index">
+            <div class="toast" :class="toast.type" x-show="toast.show" x-transition>
+                <i class="fas" :class="{
+                    'fa-check-circle': toast.type === 'success',
+                    'fa-exclamation-circle': toast.type === 'error',
+                    'fa-info-circle': toast.type === 'info',
+                    'fa-exclamation-triangle': toast.type === 'warning'
+                }"></i>
+                <span x-text="toast.message"></span>
+            </div>
+        </template>
+    </div>
+
     {{-- Top Toolbar --}}
-    <div class="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+    <div class="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 shadow-sm">
         <div class="flex items-center justify-between">
-            {{-- Left: Title & Actions --}}
+            {{-- Left: Title & Device Preview --}}
             <div class="flex items-center space-x-4">
-                <h1 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
-                    <i class="fas fa-home mr-2 text-indigo-500"></i>
-                    จัดการหน้าแรก
-                </h1>
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mr-3">
+                        <i class="fas fa-magic text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-gray-900 dark:text-white">Homepage Builder</h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Visual Editor Pro</p>
+                    </div>
+                </div>
+
+                <div class="h-8 w-px bg-gray-300 dark:bg-gray-600"></div>
 
                 {{-- Device Preview Toggle --}}
-                <div class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                    <button @click="deviceMode = 'desktop'" :class="deviceMode === 'desktop' ? 'bg-white dark:bg-gray-600 shadow' : ''" class="px-3 py-1.5 rounded text-sm transition">
+                <div class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
+                    <button @click="deviceMode = 'desktop'" :class="deviceMode === 'desktop' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'text-gray-500'" class="px-3 py-1.5 rounded-lg text-sm transition flex items-center" title="Desktop (1440px)">
                         <i class="fas fa-desktop"></i>
                     </button>
-                    <button @click="deviceMode = 'tablet'" :class="deviceMode === 'tablet' ? 'bg-white dark:bg-gray-600 shadow' : ''" class="px-3 py-1.5 rounded text-sm transition">
+                    <button @click="deviceMode = 'tablet'" :class="deviceMode === 'tablet' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'text-gray-500'" class="px-3 py-1.5 rounded-lg text-sm transition flex items-center" title="Tablet (768px)">
                         <i class="fas fa-tablet-alt"></i>
                     </button>
-                    <button @click="deviceMode = 'mobile'" :class="deviceMode === 'mobile' ? 'bg-white dark:bg-gray-600 shadow' : ''" class="px-3 py-1.5 rounded text-sm transition">
+                    <button @click="deviceMode = 'mobile'" :class="deviceMode === 'mobile' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'text-gray-500'" class="px-3 py-1.5 rounded-lg text-sm transition flex items-center" title="Mobile (375px)">
                         <i class="fas fa-mobile-alt"></i>
                     </button>
                 </div>
 
                 {{-- Zoom --}}
-                <div class="flex items-center space-x-2">
-                    <button @click="zoom = Math.max(25, zoom - 25)" class="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <i class="fas fa-minus text-sm"></i>
+                <div class="flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 rounded-xl px-2 py-1">
+                    <button @click="zoom = Math.max(25, zoom - 25)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                        <i class="fas fa-minus text-xs"></i>
                     </button>
-                    <span class="text-sm text-gray-600 dark:text-gray-400 w-12 text-center" x-text="zoom + '%'"></span>
-                    <button @click="zoom = Math.min(200, zoom + 25)" class="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <i class="fas fa-plus text-sm"></i>
+                    <span class="text-sm text-gray-600 dark:text-gray-400 w-12 text-center font-medium" x-text="zoom + '%'"></span>
+                    <button @click="zoom = Math.min(200, zoom + 25)" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                        <i class="fas fa-plus text-xs"></i>
+                    </button>
+                    <button @click="zoom = 100" class="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition text-xs" title="Reset">
+                        <i class="fas fa-compress-arrows-alt"></i>
                     </button>
                 </div>
+
+                {{-- Grid Toggle --}}
+                <button @click="showGrid = !showGrid" :class="showGrid ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'" class="p-2 rounded-lg transition" title="Toggle Grid">
+                    <i class="fas fa-th"></i>
+                </button>
             </div>
 
-            {{-- Right: Action Buttons --}}
-            <div class="flex items-center space-x-3">
+            {{-- Center: Quick Actions --}}
+            <div class="flex items-center space-x-2">
                 {{-- Undo/Redo --}}
-                <div class="flex items-center space-x-1">
-                    <button @click="undo()" :disabled="historyIndex <= 0" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50" title="Undo">
+                <div class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
+                    <button @click="undo()" :disabled="historyIndex <= 0" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-30 transition" title="Undo (Ctrl+Z)">
                         <i class="fas fa-undo"></i>
                     </button>
-                    <button @click="redo()" :disabled="historyIndex >= history.length - 1" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50" title="Redo">
+                    <button @click="redo()" :disabled="historyIndex >= history.length - 1" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-30 transition" title="Redo (Ctrl+Y)">
                         <i class="fas fa-redo"></i>
                     </button>
                 </div>
 
-                <div class="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
+                {{-- Clear All --}}
+                <button @click="clearAll()" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-500 transition" title="Clear All">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+
+            {{-- Right: Action Buttons --}}
+            <div class="flex items-center space-x-2">
+                {{-- Keyboard Shortcuts --}}
+                <button @click="showShortcutsModal = true" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition" title="Keyboard Shortcuts">
+                    <i class="fas fa-keyboard"></i>
+                </button>
 
                 {{-- Import/Export --}}
-                <button @click="showExportModal = true" class="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-                    <i class="fas fa-download mr-1"></i> Export
+                <button @click="showExport()" class="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center">
+                    <i class="fas fa-download mr-1.5"></i> Export
                 </button>
-                <button @click="showImportModal = true" class="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-                    <i class="fas fa-upload mr-1"></i> Import
+                <button @click="showImportModal = true" class="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center">
+                    <i class="fas fa-upload mr-1.5"></i> Import
                 </button>
 
                 <div class="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
 
                 {{-- Preview --}}
-                <a href="{{ route('admin.homepage-manager.preview') }}" target="_blank" class="px-3 py-2 text-sm bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800 transition">
-                    <i class="fas fa-eye mr-1"></i> Preview
+                <a href="{{ route('admin.homepage-manager.preview') }}" target="_blank" class="px-3 py-2 text-sm bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800 transition flex items-center">
+                    <i class="fas fa-eye mr-1.5"></i> Preview
                 </a>
 
                 {{-- Save --}}
-                <button @click="saveAll()" :disabled="saving" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 flex items-center">
-                    <i class="fas fa-save mr-1" :class="saving && 'fa-spin'"></i>
+                <button @click="saveAll()" :disabled="saving" class="px-5 py-2 text-sm bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition disabled:opacity-50 flex items-center shadow-lg shadow-indigo-500/25">
+                    <i class="fas" :class="saving ? 'fa-spinner fa-spin' : 'fa-save'" class="mr-1.5"></i>
                     <span x-text="saving ? 'กำลังบันทึก...' : 'บันทึก'"></span>
                 </button>
             </div>
@@ -118,414 +347,633 @@
 
     {{-- Main 3-Panel Layout --}}
     <div class="flex-1 flex overflow-hidden">
-        {{-- Left Panel: Elements Library --}}
-        <div class="w-72 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-            {{-- Panel Header --}}
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="font-semibold text-gray-900 dark:text-white">Elements</h2>
-                    <button @click="showTemplates = !showTemplates" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
-                        <span x-text="showTemplates ? 'Elements' : 'Templates'"></span>
-                    </button>
-                </div>
-                <input type="text" x-model="searchElements" placeholder="ค้นหา..." class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500">
+
+        {{-- Left Panel: Elements & Blocks Library --}}
+        <div class="w-80 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+            {{-- Panel Tabs --}}
+            <div class="flex border-b border-gray-200 dark:border-gray-700">
+                <button @click="leftPanelTab = 'elements'" :class="leftPanelTab === 'elements' && 'active'" class="panel-tab flex-1 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
+                    <i class="fas fa-shapes mr-1.5"></i> Elements
+                </button>
+                <button @click="leftPanelTab = 'blocks'" :class="leftPanelTab === 'blocks' && 'active'" class="panel-tab flex-1 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
+                    <i class="fas fa-layer-group mr-1.5"></i> Blocks
+                </button>
+                <button @click="leftPanelTab = 'templates'" :class="leftPanelTab === 'templates' && 'active'" class="panel-tab flex-1 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
+                    <i class="fas fa-palette mr-1.5"></i> Templates
+                </button>
             </div>
 
-            {{-- Elements List --}}
-            <div x-show="!showTemplates" class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-4">
+            {{-- Search --}}
+            <div class="p-3 border-b border-gray-200 dark:border-gray-700">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" x-model="searchQuery" placeholder="ค้นหา..." class="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                </div>
+            </div>
+
+            {{-- Elements Tab --}}
+            <div x-show="leftPanelTab === 'elements'" class="flex-1 overflow-y-auto hide-scrollbar p-3 space-y-4">
                 {{-- Add Section Button --}}
-                <button @click="addSection()" class="w-full py-3 border-2 border-dashed border-indigo-300 dark:border-indigo-600 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition flex items-center justify-center">
+                <button @click="addSection()" class="w-full py-3 border-2 border-dashed border-indigo-300 dark:border-indigo-600 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition flex items-center justify-center font-medium">
                     <i class="fas fa-plus-circle mr-2"></i> เพิ่ม Section ใหม่
                 </button>
 
                 {{-- Section Types --}}
                 <div class="space-y-2">
-                    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Section Types</h3>
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-layer-group mr-2"></i> Section Types
+                    </h3>
                     <div class="grid grid-cols-2 gap-2">
-                        @foreach($sectionTypes as $type => $label)
-                        <button @click="addSection('{{ $type }}')" class="p-3 text-left border border-gray-200 dark:border-gray-600 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition group">
-                            <i class="fas fa-{{ $type === 'hero' ? 'star' : ($type === 'features' ? 'th-large' : ($type === 'stats' ? 'chart-bar' : ($type === 'testimonials' ? 'quote-left' : ($type === 'cta' ? 'bullhorn' : ($type === 'gallery' ? 'images' : 'cube'))))) }} text-lg text-gray-400 group-hover:text-indigo-500 mb-1"></i>
-                            <div class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{{ $label }}</div>
-                        </button>
-                        @endforeach
+                        <template x-for="(label, type) in sectionTypes" :key="type">
+                            <button @click="addSection(type)" class="element-card p-3 text-left border border-gray-200 dark:border-gray-600 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition group">
+                                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mb-2">
+                                    <i class="fas text-white text-sm" :class="getSectionIcon(type)"></i>
+                                </div>
+                                <div class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate" x-text="label"></div>
+                            </button>
+                        </template>
                     </div>
                 </div>
 
-                {{-- Element Types --}}
+                {{-- Basic Elements --}}
                 <div class="space-y-2">
-                    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Element Types</h3>
-                    <div class="space-y-1" id="element-types-list">
-                        @foreach($elementTypes as $type => $label)
-                        <div draggable="true" @dragstart="dragElementType($event, '{{ $type }}')" class="flex items-center p-2 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 cursor-grab transition">
-                            <i class="fas fa-{{ $type === 'heading' ? 'heading' : ($type === 'text' ? 'paragraph' : ($type === 'image' ? 'image' : ($type === 'button' ? 'square' : ($type === 'video' ? 'video' : ($type === 'icon' ? 'icons' : ($type === 'html' ? 'code' : 'arrows-alt')))))) }} w-6 text-gray-400"></i>
-                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ $label }}</span>
-                            <i class="fas fa-grip-vertical ml-auto text-gray-300"></i>
-                        </div>
-                        @endforeach
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-font mr-2"></i> Basic Elements
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in basicElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Advanced Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-star mr-2"></i> Advanced Elements
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in advancedElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Interactive Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-hand-pointer mr-2"></i> Interactive
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in interactiveElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </div>
 
-            {{-- Templates List --}}
-            <div x-show="showTemplates" class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-3">
-                @foreach($templates as $template)
-                <div @click="importTemplate({{ $template->id }})" class="p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:border-indigo-500 cursor-pointer transition">
-                    @if($template->thumbnail)
-                    <img src="{{ $template->thumbnail }}" alt="{{ $template->name }}" class="w-full h-24 object-cover rounded mb-2">
-                    @else
-                    <div class="w-full h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded mb-2 flex items-center justify-center">
-                        <i class="fas fa-layer-group text-3xl text-white/50"></i>
+            {{-- Blocks Tab --}}
+            <div x-show="leftPanelTab === 'blocks'" class="flex-1 overflow-y-auto hide-scrollbar p-3 space-y-4">
+                {{-- Pre-built Blocks --}}
+                <template x-for="(category, catName) in prebuiltBlocks" :key="catName">
+                    <div class="space-y-2">
+                        <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider" x-text="catName"></h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <template x-for="(block, blockIndex) in category" :key="blockIndex">
+                                <div @click="addPrebuiltBlock(block)" class="block-template-card border border-gray-200 dark:border-gray-600">
+                                    <div class="aspect-video bg-gradient-to-br" :style="'background:' + block.preview"></div>
+                                    <div class="card-overlay text-white">
+                                        <div class="text-sm font-medium" x-text="block.name"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
                     </div>
-                    @endif
-                    <h4 class="font-medium text-sm text-gray-900 dark:text-white">{{ $template->name }}</h4>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $templateCategories[$template->category] ?? $template->category }}</p>
-                </div>
-                @endforeach
+                </template>
+            </div>
+
+            {{-- Templates Tab --}}
+            <div x-show="leftPanelTab === 'templates'" class="flex-1 overflow-y-auto hide-scrollbar p-3 space-y-3">
+                <template x-for="template in templates" :key="template.id">
+                    <div @click="importTemplate(template.id)" class="block-template-card border border-gray-200 dark:border-gray-600 overflow-hidden">
+                        <template x-if="template.thumbnail">
+                            <img :src="template.thumbnail" :alt="template.name" class="w-full h-28 object-cover">
+                        </template>
+                        <template x-if="!template.thumbnail">
+                            <div class="w-full h-28 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                                <i class="fas fa-layer-group text-4xl text-white/50"></i>
+                            </div>
+                        </template>
+                        <div class="p-3 bg-white dark:bg-gray-800">
+                            <h4 class="font-medium text-sm text-gray-900 dark:text-white" x-text="template.name"></h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="template.description || template.category"></p>
+                        </div>
+                    </div>
+                </template>
+
+                {{-- Save as Template --}}
+                <button @click="showSaveTemplateModal = true" class="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-indigo-500 hover:text-indigo-500 transition flex items-center justify-center">
+                    <i class="fas fa-save mr-2"></i> บันทึกเป็น Template
+                </button>
             </div>
         </div>
 
         {{-- Center: Canvas --}}
-        <div class="flex-1 bg-gray-200 dark:bg-gray-900 overflow-auto p-8">
-            <div class="mx-auto transition-all duration-300"
-                 :style="{
-                    width: deviceMode === 'mobile' ? '375px' : (deviceMode === 'tablet' ? '768px' : '100%'),
-                    maxWidth: deviceMode === 'desktop' ? '1440px' : 'none',
-                    transform: 'scale(' + (zoom / 100) + ')',
-                    transformOrigin: 'top center'
-                 }">
+        <div class="flex-1 bg-gray-200 dark:bg-gray-900 overflow-auto relative" id="canvas-wrapper">
+            {{-- Floating Quick Actions --}}
+            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center space-x-2 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl px-4 py-2 border border-gray-200 dark:border-gray-700">
+                <button @click="addSection('hero')" class="quick-action-btn bg-gradient-to-br from-indigo-500 to-purple-600 text-white" title="Add Hero Section">
+                    <i class="fas fa-star"></i>
+                </button>
+                <button @click="addSection('features')" class="quick-action-btn bg-gradient-to-br from-green-500 to-emerald-600 text-white" title="Add Features Section">
+                    <i class="fas fa-th-large"></i>
+                </button>
+                <button @click="addSection('cta')" class="quick-action-btn bg-gradient-to-br from-orange-500 to-red-600 text-white" title="Add CTA Section">
+                    <i class="fas fa-bullhorn"></i>
+                </button>
+                <div class="h-8 w-px bg-gray-300 dark:bg-gray-600"></div>
+                <button @click="showAiGeneratorModal = true" class="quick-action-btn ai-generate-btn text-white" title="AI Content Generator">
+                    <i class="fas fa-magic"></i>
+                </button>
+            </div>
 
-                {{-- Canvas Area --}}
-                <div id="sections-container" class="bg-white dark:bg-gray-800 shadow-2xl rounded-lg overflow-hidden min-h-[600px]" :class="showGrid && 'canvas-grid'">
-                    {{-- Sections List --}}
-                    <template x-for="(section, sectionIndex) in sections" :key="section.id">
-                        <div class="relative group border-b-2 border-transparent hover:border-indigo-500 transition"
-                             :class="selectedSection?.id === section.id && 'border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50'"
-                             :style="getSectionStyle(section)"
-                             @click.self="selectSection(section)"
-                             :data-section-id="section.id">
+            {{-- Canvas Content --}}
+            <div class="p-8 min-h-full">
+                <div class="mx-auto transition-all duration-300"
+                     :style="{
+                        width: deviceMode === 'mobile' ? '375px' : (deviceMode === 'tablet' ? '768px' : '100%'),
+                        maxWidth: deviceMode === 'desktop' ? '1440px' : 'none',
+                        transform: 'scale(' + (zoom / 100) + ')',
+                        transformOrigin: 'top center'
+                     }">
 
-                            {{-- Section Controls --}}
-                            <div class="absolute top-2 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition z-50">
-                                <span class="px-2 py-1 text-xs bg-black/50 text-white rounded mr-2" x-text="section.name"></span>
-                                <button @click.stop="moveSection(sectionIndex, -1)" :disabled="sectionIndex === 0" class="p-1.5 bg-white dark:bg-gray-700 rounded shadow hover:bg-gray-100 disabled:opacity-50" title="ขึ้น">
-                                    <i class="fas fa-chevron-up text-xs"></i>
-                                </button>
-                                <button @click.stop="moveSection(sectionIndex, 1)" :disabled="sectionIndex === sections.length - 1" class="p-1.5 bg-white dark:bg-gray-700 rounded shadow hover:bg-gray-100 disabled:opacity-50" title="ลง">
-                                    <i class="fas fa-chevron-down text-xs"></i>
-                                </button>
-                                <button @click.stop="duplicateSection(section)" class="p-1.5 bg-white dark:bg-gray-700 rounded shadow hover:bg-gray-100" title="ทำสำเนา">
-                                    <i class="fas fa-copy text-xs"></i>
-                                </button>
-                                <button @click.stop="toggleSection(section)" class="p-1.5 bg-white dark:bg-gray-700 rounded shadow hover:bg-gray-100" title="เปิด/ปิด">
-                                    <i class="fas" :class="section.is_active ? 'fa-eye' : 'fa-eye-slash'" :style="!section.is_active && 'color: #ef4444'"></i>
-                                </button>
-                                <button @click.stop="editSection(section)" class="p-1.5 bg-indigo-500 text-white rounded shadow hover:bg-indigo-600" title="แก้ไข">
-                                    <i class="fas fa-cog text-xs"></i>
-                                </button>
-                                <button @click.stop="deleteSection(section)" class="p-1.5 bg-red-500 text-white rounded shadow hover:bg-red-600" title="ลบ">
-                                    <i class="fas fa-trash text-xs"></i>
-                                </button>
-                            </div>
+                    {{-- Canvas Area --}}
+                    <div id="sections-container" class="bg-white dark:bg-gray-800 shadow-2xl rounded-xl overflow-hidden min-h-[600px]" :class="showGrid && 'canvas-grid'">
+                        {{-- Sections List --}}
+                        <template x-for="(section, sectionIndex) in sections" :key="section.id">
+                            <div class="relative group border-b-2 border-transparent hover:border-indigo-500/50 transition"
+                                 :class="selectedSection?.id === section.id && 'ring-2 ring-indigo-500 ring-opacity-50'"
+                                 :style="getSectionStyle(section)"
+                                 @click.self="selectSection(section)"
+                                 :data-section-id="section.id">
 
-                            {{-- Section Content Container --}}
-                            <div class="relative" :class="section.is_fullwidth ? 'w-full' : 'container mx-auto'" style="min-height: inherit;"
-                                 @drop.prevent="dropElement($event, section)"
-                                 @dragover.prevent="$event.currentTarget.classList.add('bg-indigo-100', 'dark:bg-indigo-900/30')"
-                                 @dragleave="$event.currentTarget.classList.remove('bg-indigo-100', 'dark:bg-indigo-900/30')">
-
-                                {{-- Elements --}}
-                                <template x-for="(element, elemIndex) in section.elements" :key="element.id">
-                                    <div class="homepage-element cursor-pointer transition-all"
-                                         :class="[
-                                            selectedElement?.id === element.id && 'element-selected',
-                                            element.position.type === 'absolute' ? 'absolute' : 'relative'
-                                         ]"
-                                         :style="getElementStyle(element)"
-                                         @click.stop="selectElement(element, section)"
-                                         @mousedown="startDragElement($event, element, section)"
-                                         :data-element-id="element.id">
-
-                                        {{-- Element Content --}}
-                                        <template x-if="element.type === 'heading'">
-                                            <div x-html="'<' + (element.settings?.heading_level || 'h2') + '>' + (element.content?.text || 'Heading') + '</' + (element.settings?.heading_level || 'h2') + '>'"></div>
-                                        </template>
-                                        <template x-if="element.type === 'text'">
-                                            <p x-text="element.content?.text || 'Text content'"></p>
-                                        </template>
-                                        <template x-if="element.type === 'image'">
-                                            <img :src="element.content?.image_url || 'https://via.placeholder.com/400x300'" class="max-w-full h-auto" alt="">
-                                        </template>
-                                        <template x-if="element.type === 'button'">
-                                            <button class="inline-flex items-center justify-center" x-text="element.content?.text || 'Button'"></button>
-                                        </template>
-                                        <template x-if="element.type === 'icon'">
-                                            <i :class="element.content?.icon_class || 'fas fa-star text-4xl'"></i>
-                                        </template>
-                                        <template x-if="element.type === 'video'">
-                                            <div class="aspect-video bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                                <i class="fas fa-play-circle text-4xl text-gray-400"></i>
-                                            </div>
-                                        </template>
-                                        <template x-if="element.type === 'html'">
-                                            <div x-html="element.content?.text || '<p>Custom HTML</p>'"></div>
-                                        </template>
-                                        <template x-if="element.type === 'spacer'">
-                                            <div class="bg-gray-100 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-xs text-gray-400" :style="'height:' + (element.size?.height || '50px')">
-                                                Spacer
-                                            </div>
-                                        </template>
-
-                                        {{-- Resize Handles (when selected) --}}
-                                        <template x-if="selectedElement?.id === element.id && element.position.type === 'absolute'">
-                                            <div>
-                                                <div class="resize-handle nw" @mousedown.stop="startResize($event, element, 'nw')"></div>
-                                                <div class="resize-handle ne" @mousedown.stop="startResize($event, element, 'ne')"></div>
-                                                <div class="resize-handle sw" @mousedown.stop="startResize($event, element, 'sw')"></div>
-                                                <div class="resize-handle se" @mousedown.stop="startResize($event, element, 'se')"></div>
-                                            </div>
-                                        </template>
+                                {{-- Section Controls Bar --}}
+                                <div class="absolute -top-10 left-0 right-0 flex items-center justify-between px-2 opacity-0 group-hover:opacity-100 transition z-50">
+                                    <div class="flex items-center space-x-1">
+                                        <span class="px-3 py-1 text-xs bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium shadow-lg" x-text="section.name"></span>
+                                        <span class="px-2 py-1 text-xs bg-gray-800 text-white rounded" x-text="section.type_label || section.type"></span>
                                     </div>
-                                </template>
+                                    <div class="flex items-center space-x-1">
+                                        <button @click.stop="moveSection(sectionIndex, -1)" :disabled="sectionIndex === 0" class="p-1.5 bg-white dark:bg-gray-700 rounded-lg shadow hover:bg-gray-100 disabled:opacity-30 transition" title="ขึ้น">
+                                            <i class="fas fa-chevron-up text-xs"></i>
+                                        </button>
+                                        <button @click.stop="moveSection(sectionIndex, 1)" :disabled="sectionIndex === sections.length - 1" class="p-1.5 bg-white dark:bg-gray-700 rounded-lg shadow hover:bg-gray-100 disabled:opacity-30 transition" title="ลง">
+                                            <i class="fas fa-chevron-down text-xs"></i>
+                                        </button>
+                                        <button @click.stop="duplicateSection(section)" class="p-1.5 bg-white dark:bg-gray-700 rounded-lg shadow hover:bg-gray-100 transition" title="ทำสำเนา">
+                                            <i class="fas fa-copy text-xs"></i>
+                                        </button>
+                                        <button @click.stop="toggleSection(section)" class="p-1.5 bg-white dark:bg-gray-700 rounded-lg shadow hover:bg-gray-100 transition" title="เปิด/ปิด">
+                                            <i class="fas" :class="section.is_active ? 'fa-eye text-green-500' : 'fa-eye-slash text-red-500'"></i>
+                                        </button>
+                                        <button @click.stop="selectSection(section)" class="p-1.5 bg-indigo-500 text-white rounded-lg shadow hover:bg-indigo-600 transition" title="แก้ไข">
+                                            <i class="fas fa-cog text-xs"></i>
+                                        </button>
+                                        <button @click.stop="deleteSection(section)" class="p-1.5 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition" title="ลบ">
+                                            <i class="fas fa-trash text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
 
-                                {{-- Empty Section Placeholder --}}
-                                <div x-show="!section.elements || section.elements.length === 0" class="flex items-center justify-center h-full min-h-[200px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded m-4">
-                                    <div class="text-center text-gray-400">
-                                        <i class="fas fa-plus-circle text-3xl mb-2"></i>
-                                        <p class="text-sm">ลาก Element มาวางที่นี่</p>
+                                {{-- Section Content Container --}}
+                                <div class="relative" :class="section.is_fullwidth ? 'w-full' : 'container mx-auto'" style="min-height: inherit;"
+                                     @drop.prevent="dropElement($event, section)"
+                                     @dragover.prevent="$event.currentTarget.classList.add('ring-2', 'ring-indigo-500', 'ring-dashed')"
+                                     @dragleave="$event.currentTarget.classList.remove('ring-2', 'ring-indigo-500', 'ring-dashed')">
+
+                                    {{-- Elements --}}
+                                    <template x-for="(element, elemIndex) in section.elements" :key="element.id">
+                                        <div class="homepage-element cursor-pointer transition-all"
+                                             :class="[
+                                                selectedElement?.id === element.id && 'element-selected',
+                                                element.position?.type === 'absolute' ? 'absolute' : 'relative'
+                                             ]"
+                                             :style="getElementStyle(element)"
+                                             @click.stop="selectElement(element, section)"
+                                             @dblclick.stop="editElementContent(element)"
+                                             :data-element-id="element.id">
+
+                                            {{-- Element Content Renderer --}}
+                                            <div x-html="renderElement(element)"></div>
+
+                                            {{-- Element Quick Actions (on hover) --}}
+                                            <div x-show="selectedElement?.id === element.id" class="absolute -top-8 left-0 flex items-center space-x-1 bg-gray-900 rounded-lg px-2 py-1 shadow-xl z-50">
+                                                <button @click.stop="moveElementLayer(element, 1)" class="p-1 text-white hover:text-indigo-400 transition" title="Bring Forward">
+                                                    <i class="fas fa-layer-group text-xs"></i>
+                                                </button>
+                                                <button @click.stop="duplicateElement(element)" class="p-1 text-white hover:text-green-400 transition" title="Duplicate">
+                                                    <i class="fas fa-copy text-xs"></i>
+                                                </button>
+                                                <button @click.stop="deleteElement(element)" class="p-1 text-white hover:text-red-400 transition" title="Delete">
+                                                    <i class="fas fa-trash text-xs"></i>
+                                                </button>
+                                            </div>
+
+                                            {{-- Resize Handles --}}
+                                            <template x-if="selectedElement?.id === element.id">
+                                                <div>
+                                                    <div class="resize-handle nw" @mousedown.stop="startResize($event, element, 'nw')"></div>
+                                                    <div class="resize-handle ne" @mousedown.stop="startResize($event, element, 'ne')"></div>
+                                                    <div class="resize-handle sw" @mousedown.stop="startResize($event, element, 'sw')"></div>
+                                                    <div class="resize-handle se" @mousedown.stop="startResize($event, element, 'se')"></div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+
+                                    {{-- Empty Section Placeholder --}}
+                                    <div x-show="!section.elements || section.elements.length === 0" class="flex flex-col items-center justify-center h-full min-h-[200px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl m-4">
+                                        <div class="text-center text-gray-400 p-8">
+                                            <div class="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-4">
+                                                <i class="fas fa-plus-circle text-3xl text-gray-400"></i>
+                                            </div>
+                                            <p class="text-sm font-medium mb-2">ลาก Element มาวางที่นี่</p>
+                                            <p class="text-xs">หรือ <button @click="addElement(section)" class="text-indigo-500 hover:underline">คลิกเพื่อเพิ่ม</button></p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Inactive Overlay --}}
+                                <div x-show="!section.is_active" class="absolute inset-0 bg-gray-500/60 backdrop-blur-sm flex items-center justify-center z-40">
+                                    <div class="bg-gray-800 text-white px-6 py-3 rounded-xl flex items-center">
+                                        <i class="fas fa-eye-slash mr-2"></i>
+                                        <span>Section ถูกปิดการแสดงผล</span>
                                     </div>
                                 </div>
                             </div>
+                        </template>
 
-                            {{-- Inactive Overlay --}}
-                            <div x-show="!section.is_active" class="absolute inset-0 bg-gray-500/50 flex items-center justify-center z-40">
-                                <span class="px-4 py-2 bg-gray-800 text-white rounded-lg">Section ถูกปิดการแสดงผล</span>
+                        {{-- Empty State --}}
+                        <div x-show="sections.length === 0" class="flex flex-col items-center justify-center h-[600px] text-gray-400">
+                            <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center mb-6">
+                                <i class="fas fa-layer-group text-5xl text-indigo-500"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มี Section</h3>
+                            <p class="text-gray-500 mb-6">เริ่มต้นสร้างหน้าแรกของคุณ</p>
+                            <div class="flex items-center space-x-3">
+                                <button @click="addSection('hero')" class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition shadow-lg shadow-indigo-500/25">
+                                    <i class="fas fa-plus mr-2"></i> เพิ่ม Hero Section
+                                </button>
+                                <button @click="leftPanelTab = 'templates'" class="px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                                    <i class="fas fa-palette mr-2"></i> เลือก Template
+                                </button>
                             </div>
                         </div>
-                    </template>
-
-                    {{-- Empty State --}}
-                    <div x-show="sections.length === 0" class="flex flex-col items-center justify-center h-[600px] text-gray-400">
-                        <i class="fas fa-layer-group text-6xl mb-4"></i>
-                        <p class="text-lg mb-4">ยังไม่มี Section</p>
-                        <button @click="addSection()" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                            <i class="fas fa-plus mr-2"></i> เพิ่ม Section แรก
-                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- Right Panel: Properties --}}
+        {{-- Right Panel: Properties & Layers --}}
         <div class="w-80 flex-shrink-0 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
-            {{-- Panel Header --}}
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 class="font-semibold text-gray-900 dark:text-white flex items-center">
-                    <i class="fas fa-sliders-h mr-2 text-indigo-500"></i>
-                    Properties
-                </h2>
+            {{-- Panel Tabs --}}
+            <div class="flex border-b border-gray-200 dark:border-gray-700">
+                <button @click="rightPanelTab = 'properties'" :class="rightPanelTab === 'properties' && 'active'" class="panel-tab flex-1 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
+                    <i class="fas fa-sliders-h mr-1.5"></i> Properties
+                </button>
+                <button @click="rightPanelTab = 'layers'" :class="rightPanelTab === 'layers' && 'active'" class="panel-tab flex-1 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
+                    <i class="fas fa-layer-group mr-1.5"></i> Layers
+                </button>
             </div>
 
-            {{-- Properties Content --}}
-            <div class="flex-1 overflow-y-auto hide-scrollbar">
+            {{-- Properties Tab --}}
+            <div x-show="rightPanelTab === 'properties'" class="flex-1 overflow-y-auto hide-scrollbar">
                 {{-- No Selection --}}
-                <div x-show="!selectedSection && !selectedElement" class="p-8 text-center text-gray-400">
-                    <i class="fas fa-mouse-pointer text-4xl mb-4"></i>
-                    <p>เลือก Section หรือ Element เพื่อแก้ไข</p>
+                <div x-show="!selectedSection && !selectedElement" class="flex flex-col items-center justify-center h-full p-8 text-center">
+                    <div class="w-20 h-20 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
+                        <i class="fas fa-mouse-pointer text-4xl text-gray-400"></i>
+                    </div>
+                    <h3 class="font-medium text-gray-700 dark:text-gray-300 mb-2">ไม่มีการเลือก</h3>
+                    <p class="text-sm text-gray-500">คลิกที่ Section หรือ Element เพื่อแก้ไข</p>
                 </div>
 
                 {{-- Section Properties --}}
                 <div x-show="selectedSection && !selectedElement" class="p-4 space-y-4">
-                    <h3 class="font-medium text-gray-900 dark:text-white">Section Settings</h3>
-
-                    {{-- Name --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อ Section</label>
-                        <input type="text" x-model="selectedSection.name" @input="updateSection()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
+                    {{-- Section Header --}}
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-semibold text-gray-900 dark:text-white flex items-center">
+                            <i class="fas fa-layer-group text-indigo-500 mr-2"></i>
+                            Section Settings
+                        </h3>
+                        <button @click="selectedSection = null" class="p-1 text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
 
-                    {{-- Type --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ประเภท</label>
-                        <select x-model="selectedSection.type" @change="updateSection()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
-                            @foreach($sectionTypes as $type => $label)
-                            <option value="{{ $type }}">{{ $label }}</option>
-                            @endforeach
-                        </select>
+                    {{-- Section Type Badge --}}
+                    <div class="flex items-center space-x-2">
+                        <span class="px-3 py-1 text-xs font-medium bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-lg" x-text="selectedSection?.type_label || selectedSection?.type"></span>
+                        <span class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded" x-text="'ID: ' + selectedSection?.id"></span>
                     </div>
 
-                    {{-- Height --}}
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ความสูงขั้นต่ำ</label>
-                            <input type="text" x-model="selectedSection.min_height" @input="updateSection()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm" placeholder="400px">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ความสูงสูงสุด</label>
-                            <input type="text" x-model="selectedSection.max_height" @input="updateSection()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm" placeholder="auto">
-                        </div>
-                    </div>
-
-                    {{-- Padding --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Padding</label>
-                        <input type="text" x-model="selectedSection.padding" @input="updateSection()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm" placeholder="60px 20px">
-                    </div>
-
-                    {{-- Background Type --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ประเภทพื้นหลัง</label>
-                        <select x-model="selectedSection.background.type" @change="updateSection()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
-                            @foreach($backgroundTypes as $type => $label)
-                            <option value="{{ $type }}">{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    {{-- Background Color --}}
-                    <div x-show="selectedSection.background?.type === 'color'" class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สี Light</label>
-                            <div class="flex">
-                                <input type="color" x-model="selectedSection.background.color" @input="updateSection()" class="w-10 h-10 rounded-l border border-gray-300 dark:border-gray-600">
-                                <input type="text" x-model="selectedSection.background.color" @input="updateSection()" class="flex-1 px-2 py-2 border-t border-r border-b border-gray-300 dark:border-gray-600 rounded-r bg-white dark:bg-gray-700 text-xs">
+                    {{-- Accordion: General --}}
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <button @click="propAccordion.general = !propAccordion.general" class="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                            <span class="font-medium text-sm text-gray-700 dark:text-gray-300">General</span>
+                            <i class="fas fa-chevron-down transition" :class="propAccordion.general && 'rotate-180'"></i>
+                        </button>
+                        <div x-show="propAccordion.general" x-collapse class="p-3 space-y-3 bg-white dark:bg-gray-800">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">ชื่อ Section</label>
+                                <input type="text" x-model="selectedSection.name" @input.debounce.500ms="updateSection()" class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 transition">
                             </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สี Dark</label>
-                            <div class="flex">
-                                <input type="color" x-model="selectedSection.background.color_dark" @input="updateSection()" class="w-10 h-10 rounded-l border border-gray-300 dark:border-gray-600">
-                                <input type="text" x-model="selectedSection.background.color_dark" @input="updateSection()" class="flex-1 px-2 py-2 border-t border-r border-b border-gray-300 dark:border-gray-600 rounded-r bg-white dark:bg-gray-700 text-xs">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">ประเภท</label>
+                                <select x-model="selectedSection.type" @change="updateSection()" class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500">
+                                    <template x-for="(label, type) in sectionTypes" :key="type">
+                                        <option :value="type" x-text="label"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">Full Width</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" x-model="selectedSection.is_fullwidth" @change="updateSection()" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                </label>
                             </div>
                         </div>
                     </div>
 
-                    {{-- Background Gradient --}}
-                    <div x-show="selectedSection.background?.type === 'gradient'">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gradient CSS</label>
-                        <textarea x-model="selectedSection.background.gradient" @input="updateSection()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm" rows="2" placeholder="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"></textarea>
-                    </div>
-
-                    {{-- Background Image --}}
-                    <div x-show="selectedSection.background?.type === 'image'">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL รูปภาพ</label>
-                        <div class="flex space-x-2">
-                            <input type="text" x-model="selectedSection.background.image" @input="updateSection()" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
-                            <button @click="uploadBackgroundImage()" class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
-                                <i class="fas fa-upload"></i>
-                            </button>
+                    {{-- Accordion: Size --}}
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <button @click="propAccordion.size = !propAccordion.size" class="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                            <span class="font-medium text-sm text-gray-700 dark:text-gray-300">Size & Spacing</span>
+                            <i class="fas fa-chevron-down transition" :class="propAccordion.size && 'rotate-180'"></i>
+                        </button>
+                        <div x-show="propAccordion.size" x-collapse class="p-3 space-y-3 bg-white dark:bg-gray-800">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Min Height</label>
+                                    <input type="text" x-model="selectedSection.min_height" @input.debounce.500ms="updateSection()" class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700" placeholder="400px">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Max Height</label>
+                                    <input type="text" x-model="selectedSection.max_height" @input.debounce.500ms="updateSection()" class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700" placeholder="auto">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Padding</label>
+                                <input type="text" x-model="selectedSection.padding" @input.debounce.500ms="updateSection()" class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700" placeholder="60px 20px">
+                            </div>
                         </div>
                     </div>
 
-                    {{-- Animation --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Animation</label>
-                        <select x-model="selectedSection.animation.type" @change="updateSection()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
-                            @foreach($animations as $type => $label)
-                            <option value="{{ $type }}">{{ $label }}</option>
-                            @endforeach
-                        </select>
+                    {{-- Accordion: Background --}}
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <button @click="propAccordion.background = !propAccordion.background" class="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                            <span class="font-medium text-sm text-gray-700 dark:text-gray-300">Background</span>
+                            <i class="fas fa-chevron-down transition" :class="propAccordion.background && 'rotate-180'"></i>
+                        </button>
+                        <div x-show="propAccordion.background" x-collapse class="p-3 space-y-3 bg-white dark:bg-gray-800">
+                            {{-- Background Type --}}
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Type</label>
+                                <div class="grid grid-cols-4 gap-1">
+                                    <template x-for="bgType in ['color', 'gradient', 'image', 'video']" :key="bgType">
+                                        <button @click="selectedSection.background.type = bgType; updateSection()" :class="selectedSection.background?.type === bgType ? 'bg-indigo-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'" class="p-2 rounded-lg text-xs font-medium transition capitalize" x-text="bgType"></button>
+                                    </template>
+                                </div>
+                            </div>
+
+                            {{-- Color Picker --}}
+                            <div x-show="selectedSection.background?.type === 'color'" class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-gray-500">Light Mode</span>
+                                    <div class="color-picker-wrapper flex items-center space-x-2">
+                                        <input type="color" x-model="selectedSection.background.color" @input="updateSection()">
+                                        <input type="text" x-model="selectedSection.background.color" @input="updateSection()" class="w-20 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700">
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-gray-500">Dark Mode</span>
+                                    <div class="color-picker-wrapper flex items-center space-x-2">
+                                        <input type="color" x-model="selectedSection.background.color_dark" @input="updateSection()">
+                                        <input type="text" x-model="selectedSection.background.color_dark" @input="updateSection()" class="w-20 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700">
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Gradient --}}
+                            <div x-show="selectedSection.background?.type === 'gradient'" class="space-y-2">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Gradient CSS</label>
+                                    <textarea x-model="selectedSection.background.gradient" @input.debounce.500ms="updateSection()" class="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 font-mono" rows="2" placeholder="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-2">Presets</label>
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="gradient in gradientPresets" :key="gradient">
+                                            <button @click="selectedSection.background.gradient = gradient; updateSection()" class="gradient-preset" :style="'background:' + gradient" :title="gradient"></button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Image --}}
+                            <div x-show="selectedSection.background?.type === 'image'" class="space-y-2">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Image URL</label>
+                                    <div class="flex space-x-2">
+                                        <input type="text" x-model="selectedSection.background.image" @input.debounce.500ms="updateSection()" class="flex-1 px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                                        <button @click="uploadBackgroundImage()" class="px-3 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition">
+                                            <i class="fas fa-upload"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">Position</label>
+                                        <select x-model="selectedSection.background.position" @change="updateSection()" class="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                                            <option value="center center">Center</option>
+                                            <option value="top center">Top</option>
+                                            <option value="bottom center">Bottom</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">Size</label>
+                                        <select x-model="selectedSection.background.size" @change="updateSection()" class="w-full px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                                            <option value="cover">Cover</option>
+                                            <option value="contain">Contain</option>
+                                            <option value="auto">Auto</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    {{-- Add Element Button --}}
-                    <button @click="addElement(selectedSection)" class="w-full py-2 border-2 border-dashed border-indigo-300 dark:border-indigo-600 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition text-sm">
-                        <i class="fas fa-plus mr-1"></i> เพิ่ม Element
-                    </button>
+                    {{-- Accordion: Animation --}}
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <button @click="propAccordion.animation = !propAccordion.animation" class="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                            <span class="font-medium text-sm text-gray-700 dark:text-gray-300">Animation</span>
+                            <i class="fas fa-chevron-down transition" :class="propAccordion.animation && 'rotate-180'"></i>
+                        </button>
+                        <div x-show="propAccordion.animation" x-collapse class="p-3 space-y-3 bg-white dark:bg-gray-800">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Animation Type</label>
+                                <select x-model="selectedSection.animation.type" @change="updateSection()" class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                                    <template x-for="(label, type) in animations" :key="type">
+                                        <option :value="type" x-text="label"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Delay (ms)</label>
+                                <input type="number" x-model.number="selectedSection.animation.delay" @input.debounce.500ms="updateSection()" class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700" placeholder="0" min="0" step="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Section Actions --}}
+                    <div class="flex space-x-2 pt-2">
+                        <button @click="addElement(selectedSection)" class="flex-1 py-2.5 text-sm font-medium border-2 border-dashed border-indigo-300 dark:border-indigo-600 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                            <i class="fas fa-plus mr-1"></i> เพิ่ม Element
+                        </button>
+                    </div>
                 </div>
 
                 {{-- Element Properties --}}
                 <div x-show="selectedElement" class="p-4 space-y-4">
+                    {{-- Element Header --}}
                     <div class="flex items-center justify-between">
-                        <h3 class="font-medium text-gray-900 dark:text-white">Element Settings</h3>
-                        <button @click="selectedElement = null" class="text-gray-400 hover:text-gray-600">
+                        <h3 class="font-semibold text-gray-900 dark:text-white flex items-center">
+                            <i class="fas fa-cube text-purple-500 mr-2"></i>
+                            Element Settings
+                        </h3>
+                        <button @click="selectedElement = null" class="p-1 text-gray-400 hover:text-gray-600">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
 
                     {{-- Element Type Badge --}}
                     <div class="flex items-center space-x-2">
-                        <span class="px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded" x-text="selectedElement?.type_label"></span>
+                        <span class="px-3 py-1 text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-lg" x-text="selectedElement?.type_label || selectedElement?.type"></span>
                     </div>
 
-                    {{-- Content --}}
-                    <div x-show="['heading', 'text', 'button'].includes(selectedElement?.type)">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เนื้อหา</label>
-                        <textarea x-model="selectedElement.content.text" @input="updateElement()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm" rows="3"></textarea>
-                    </div>
-
-                    {{-- Image URL --}}
-                    <div x-show="selectedElement?.type === 'image'">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL รูปภาพ</label>
-                        <div class="flex space-x-2">
-                            <input type="text" x-model="selectedElement.content.image_url" @input="updateElement()" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
-                            <button @click="uploadElementImage()" class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
-                                <i class="fas fa-upload"></i>
-                            </button>
+                    {{-- Content Section --}}
+                    <div x-show="['heading', 'text', 'button', 'html'].includes(selectedElement?.type)" class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700/50">
+                            <span class="font-medium text-sm text-gray-700 dark:text-gray-300">Content</span>
                         </div>
-                    </div>
-
-                    {{-- Link --}}
-                    <div x-show="['button', 'image'].includes(selectedElement?.type)">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Link URL</label>
-                        <input type="text" x-model="selectedElement.content.link_url" @input="updateElement()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm" placeholder="https://...">
-                    </div>
-
-                    {{-- Position Type --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Position</label>
-                        <select x-model="selectedElement.position.type" @change="updateElement()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
-                            <option value="relative">Relative (ไหลตามปกติ)</option>
-                            <option value="absolute">Absolute (ลากวางอิสระ)</option>
-                        </select>
-                    </div>
-
-                    {{-- Position X/Y (for absolute) --}}
-                    <div x-show="selectedElement?.position?.type === 'absolute'" class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">X</label>
-                            <div class="flex">
-                                <input type="number" x-model.number="selectedElement.position.x" @input="updateElement()" class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg bg-white dark:bg-gray-700 text-sm">
-                                <select x-model="selectedElement.position.x_unit" @change="updateElement()" class="px-2 py-2 border-t border-r border-b border-gray-300 dark:border-gray-600 rounded-r-lg bg-white dark:bg-gray-700 text-sm">
-                                    <option value="%">%</option>
-                                    <option value="px">px</option>
-                                </select>
+                        <div class="p-3 space-y-3 bg-white dark:bg-gray-800">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-xs font-medium text-gray-600 dark:text-gray-400">Text Content</label>
+                                    <button @click="showAiGeneratorModal = true" class="text-xs text-indigo-500 hover:text-indigo-600 flex items-center">
+                                        <i class="fas fa-magic mr-1"></i> AI Generate
+                                    </button>
+                                </div>
+                                <textarea x-model="selectedElement.content.text" @input.debounce.500ms="updateElement()" class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700" rows="3"></textarea>
                             </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Y</label>
-                            <div class="flex">
-                                <input type="number" x-model.number="selectedElement.position.y" @input="updateElement()" class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg bg-white dark:bg-gray-700 text-sm">
-                                <select x-model="selectedElement.position.y_unit" @change="updateElement()" class="px-2 py-2 border-t border-r border-b border-gray-300 dark:border-gray-600 rounded-r-lg bg-white dark:bg-gray-700 text-sm">
-                                    <option value="%">%</option>
-                                    <option value="px">px</option>
+                            <div x-show="selectedElement?.type === 'heading'">
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Heading Level</label>
+                                <select x-model="selectedElement.settings.heading_level" @change="updateElement()" class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                                    <option value="h1">H1 - Main Title</option>
+                                    <option value="h2">H2 - Section Title</option>
+                                    <option value="h3">H3 - Sub Title</option>
+                                    <option value="h4">H4 - Heading</option>
+                                    <option value="h5">H5 - Small Heading</option>
+                                    <option value="h6">H6 - Tiny Heading</option>
                                 </select>
                             </div>
                         </div>
                     </div>
 
-                    {{-- Size --}}
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Width</label>
-                            <input type="text" x-model="selectedElement.size.width" @input="updateElement()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm" placeholder="auto">
+                    {{-- Image Section --}}
+                    <div x-show="selectedElement?.type === 'image'" class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700/50">
+                            <span class="font-medium text-sm text-gray-700 dark:text-gray-300">Image</span>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Height</label>
-                            <input type="text" x-model="selectedElement.size.height" @input="updateElement()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm" placeholder="auto">
+                        <div class="p-3 space-y-3 bg-white dark:bg-gray-800">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Image URL</label>
+                                <div class="flex space-x-2">
+                                    <input type="text" x-model="selectedElement.content.image_url" @input.debounce.500ms="updateElement()" class="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                                    <button @click="uploadElementImage()" class="px-3 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition">
+                                        <i class="fas fa-upload"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Alt Text</label>
+                                <input type="text" x-model="selectedElement.content.alt" @input.debounce.500ms="updateElement()" class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700" placeholder="รูปภาพ...">
+                            </div>
                         </div>
                     </div>
 
-                    {{-- Typography --}}
-                    <div x-show="['heading', 'text', 'button'].includes(selectedElement?.type)">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Typography</label>
-                        <div class="space-y-3">
-                            <div class="grid grid-cols-2 gap-3">
+                    {{-- Link Section --}}
+                    <div x-show="['button', 'image'].includes(selectedElement?.type)" class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700/50">
+                            <span class="font-medium text-sm text-gray-700 dark:text-gray-300">Link</span>
+                        </div>
+                        <div class="p-3 space-y-3 bg-white dark:bg-gray-800">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">URL</label>
+                                <input type="text" x-model="selectedElement.content.link_url" @input.debounce.500ms="updateElement()" class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700" placeholder="https://...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Target</label>
+                                <select x-model="selectedElement.content.link_target" @change="updateElement()" class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                                    <option value="_self">เปิดหน้าเดิม</option>
+                                    <option value="_blank">เปิดหน้าใหม่</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Typography Section --}}
+                    <div x-show="['heading', 'text', 'button'].includes(selectedElement?.type)" class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <button @click="propAccordion.typography = !propAccordion.typography" class="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                            <span class="font-medium text-sm text-gray-700 dark:text-gray-300">Typography</span>
+                            <i class="fas fa-chevron-down transition" :class="propAccordion.typography && 'rotate-180'"></i>
+                        </button>
+                        <div x-show="propAccordion.typography" x-collapse class="p-3 space-y-3 bg-white dark:bg-gray-800">
+                            <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">Font Size</label>
-                                    <input type="text" x-model="selectedElement.typography.font_size" @input="updateElement()" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm" placeholder="16px">
+                                    <input type="text" x-model="selectedElement.typography.font_size" @input.debounce.500ms="updateElement()" class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700" placeholder="16px">
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">Font Weight</label>
-                                    <select x-model="selectedElement.typography.font_weight" @change="updateElement()" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm">
+                                    <select x-model="selectedElement.typography.font_weight" @change="updateElement()" class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
                                         <option value="300">Light</option>
                                         <option value="400">Normal</option>
                                         <option value="500">Medium</option>
@@ -537,860 +985,170 @@
                             </div>
                             <div>
                                 <label class="block text-xs text-gray-500 mb-1">Text Align</label>
-                                <div class="flex border border-gray-300 dark:border-gray-600 rounded overflow-hidden">
-                                    <button @click="selectedElement.typography.text_align = 'left'; updateElement()" :class="selectedElement?.typography?.text_align === 'left' && 'bg-indigo-100 dark:bg-indigo-900'" class="flex-1 py-1.5 text-center hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        <i class="fas fa-align-left"></i>
-                                    </button>
-                                    <button @click="selectedElement.typography.text_align = 'center'; updateElement()" :class="selectedElement?.typography?.text_align === 'center' && 'bg-indigo-100 dark:bg-indigo-900'" class="flex-1 py-1.5 text-center border-l border-r border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        <i class="fas fa-align-center"></i>
-                                    </button>
-                                    <button @click="selectedElement.typography.text_align = 'right'; updateElement()" :class="selectedElement?.typography?.text_align === 'right' && 'bg-indigo-100 dark:bg-indigo-900'" class="flex-1 py-1.5 text-center hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        <i class="fas fa-align-right"></i>
-                                    </button>
+                                <div class="flex border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+                                    <template x-for="align in ['left', 'center', 'right', 'justify']" :key="align">
+                                        <button @click="selectedElement.typography.text_align = align; updateElement()" :class="selectedElement?.typography?.text_align === align ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-gray-700 text-gray-600'" class="flex-1 py-2 text-center transition">
+                                            <i class="fas" :class="'fa-align-' + align"></i>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Line Height</label>
+                                <input type="text" x-model="selectedElement.typography.line_height" @input.debounce.500ms="updateElement()" class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700" placeholder="1.5">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Colors Section --}}
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <button @click="propAccordion.colors = !propAccordion.colors" class="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                            <span class="font-medium text-sm text-gray-700 dark:text-gray-300">Colors</span>
+                            <i class="fas fa-chevron-down transition" :class="propAccordion.colors && 'rotate-180'"></i>
+                        </button>
+                        <div x-show="propAccordion.colors" x-collapse class="p-3 space-y-3 bg-white dark:bg-gray-800">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-gray-500">Text Color</span>
+                                <div class="color-picker-wrapper flex items-center space-x-2">
+                                    <input type="color" x-model="selectedElement.colors.color" @input="updateElement()">
+                                    <input type="text" x-model="selectedElement.colors.color" @input.debounce.500ms="updateElement()" class="w-20 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700">
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-gray-500">Background</span>
+                                <div class="color-picker-wrapper flex items-center space-x-2">
+                                    <input type="color" x-model="selectedElement.colors.background_color" @input="updateElement()">
+                                    <input type="text" x-model="selectedElement.colors.background_color" @input.debounce.500ms="updateElement()" class="w-20 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700">
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {{-- Colors --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Colors</label>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Text Color</label>
-                                <div class="flex">
-                                    <input type="color" x-model="selectedElement.colors.color" @input="updateElement()" class="w-8 h-8 rounded-l border border-gray-300 dark:border-gray-600">
-                                    <input type="text" x-model="selectedElement.colors.color" @input="updateElement()" class="flex-1 px-2 py-1 border-t border-r border-b border-gray-300 dark:border-gray-600 rounded-r bg-white dark:bg-gray-700 text-xs">
+                    {{-- Border & Spacing --}}
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <button @click="propAccordion.border = !propAccordion.border" class="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                            <span class="font-medium text-sm text-gray-700 dark:text-gray-300">Border & Spacing</span>
+                            <i class="fas fa-chevron-down transition" :class="propAccordion.border && 'rotate-180'"></i>
+                        </button>
+                        <div x-show="propAccordion.border" x-collapse class="p-3 space-y-3 bg-white dark:bg-gray-800">
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Width</label>
+                                    <input type="text" x-model="selectedElement.border.width" @input.debounce.500ms="updateElement()" class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700" placeholder="0">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Style</label>
+                                    <select x-model="selectedElement.border.style" @change="updateElement()" class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700">
+                                        <option value="solid">Solid</option>
+                                        <option value="dashed">Dashed</option>
+                                        <option value="dotted">Dotted</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Radius</label>
+                                    <input type="text" x-model="selectedElement.border.radius" @input.debounce.500ms="updateElement()" class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700" placeholder="0">
                                 </div>
                             </div>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Background</label>
-                                <div class="flex">
-                                    <input type="color" x-model="selectedElement.colors.background_color" @input="updateElement()" class="w-8 h-8 rounded-l border border-gray-300 dark:border-gray-600">
-                                    <input type="text" x-model="selectedElement.colors.background_color" @input="updateElement()" class="flex-1 px-2 py-1 border-t border-r border-b border-gray-300 dark:border-gray-600 rounded-r bg-white dark:bg-gray-700 text-xs">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Padding</label>
+                                    <input type="text" x-model="selectedElement.spacing.padding" @input.debounce.500ms="updateElement()" class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700" placeholder="0">
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Border --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Border</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Width</label>
-                                <input type="text" x-model="selectedElement.border.width" @input="updateElement()" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm" placeholder="0">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Style</label>
-                                <select x-model="selectedElement.border.style" @change="updateElement()" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm">
-                                    <option value="solid">Solid</option>
-                                    <option value="dashed">Dashed</option>
-                                    <option value="dotted">Dotted</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Radius</label>
-                                <input type="text" x-model="selectedElement.border.radius" @input="updateElement()" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm" placeholder="0">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Spacing --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Spacing</label>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Padding</label>
-                                <input type="text" x-model="selectedElement.spacing.padding" @input="updateElement()" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm" placeholder="0">
-                            </div>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1">Margin</label>
-                                <input type="text" x-model="selectedElement.spacing.margin" @input="updateElement()" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm" placeholder="0">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Margin</label>
+                                    <input type="text" x-model="selectedElement.spacing.margin" @input.debounce.500ms="updateElement()" class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700" placeholder="0">
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     {{-- Animation --}}
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Animation</label>
-                        <select x-model="selectedElement.animation.type" @change="updateElement()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
-                            @foreach($animations as $type => $label)
-                            <option value="{{ $type }}">{{ $label }}</option>
-                            @endforeach
-                        </select>
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <button @click="propAccordion.elemAnimation = !propAccordion.elemAnimation" class="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                            <span class="font-medium text-sm text-gray-700 dark:text-gray-300">Animation</span>
+                            <i class="fas fa-chevron-down transition" :class="propAccordion.elemAnimation && 'rotate-180'"></i>
+                        </button>
+                        <div x-show="propAccordion.elemAnimation" x-collapse class="p-3 space-y-3 bg-white dark:bg-gray-800">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Animation</label>
+                                <select x-model="selectedElement.animation.type" @change="updateElement()" class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                                    <template x-for="(label, type) in animations" :key="type">
+                                        <option :value="type" x-text="label"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Delay (ms)</label>
+                                    <input type="number" x-model.number="selectedElement.animation.delay" @input.debounce.500ms="updateElement()" class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700" min="0" step="100">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Duration (ms)</label>
+                                    <input type="number" x-model.number="selectedElement.animation.duration" @input.debounce.500ms="updateElement()" class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700" min="0" step="100">
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Element Actions --}}
-                    <div class="flex space-x-2 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <button @click="duplicateElement(selectedElement)" class="flex-1 py-2 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                    <div class="flex space-x-2 pt-2">
+                        <button @click="duplicateElement(selectedElement)" class="flex-1 py-2.5 text-sm font-medium bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">
                             <i class="fas fa-copy mr-1"></i> ทำสำเนา
                         </button>
-                        <button @click="deleteElement(selectedElement)" class="flex-1 py-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition">
+                        <button @click="deleteElement(selectedElement)" class="flex-1 py-2.5 text-sm font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition">
                             <i class="fas fa-trash mr-1"></i> ลบ
                         </button>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    {{-- Add Element Modal --}}
-    <div x-show="showAddElementModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="showAddElementModal = false">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6" @click.stop>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">เลือกประเภท Element</h3>
-            <div class="grid grid-cols-3 gap-3">
-                @foreach($elementTypes as $type => $label)
-                <button @click="createNewElement('{{ $type }}')" class="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition text-center">
-                    <i class="fas fa-{{ $type === 'heading' ? 'heading' : ($type === 'text' ? 'paragraph' : ($type === 'image' ? 'image' : ($type === 'button' ? 'square' : ($type === 'video' ? 'video' : ($type === 'icon' ? 'icons' : ($type === 'html' ? 'code' : 'arrows-alt')))))) }} text-2xl text-gray-400 mb-2"></i>
-                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $label }}</div>
-                </button>
-                @endforeach
-            </div>
-            <button @click="showAddElementModal = false" class="mt-4 w-full py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">ยกเลิก</button>
-        </div>
-    </div>
-
-    {{-- Export Modal --}}
-    <div x-show="showExportModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="showExportModal = false">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl p-6" @click.stop>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Export Homepage</h3>
-            <textarea x-ref="exportData" class="w-full h-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 font-mono text-sm" readonly></textarea>
-            <div class="flex justify-end space-x-3 mt-4">
-                <button @click="copyExportData()" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
-                    <i class="fas fa-copy mr-1"></i> Copy
-                </button>
-                <button @click="downloadExportData()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                    <i class="fas fa-download mr-1"></i> Download
-                </button>
-            </div>
-        </div>
-    </div>
-
-    {{-- Import Modal --}}
-    <div x-show="showImportModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="showImportModal = false">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl p-6" @click.stop>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Import Homepage</h3>
-            <textarea x-model="importData" class="w-full h-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 font-mono text-sm" placeholder="วาง JSON data ที่นี่..."></textarea>
-            <div class="flex items-center mt-4">
-                <label class="flex items-center">
-                    <input type="checkbox" x-model="replaceOnImport" class="rounded border-gray-300 dark:border-gray-600 text-indigo-600">
-                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">ลบข้อมูลเดิมทั้งหมดก่อน import</span>
-                </label>
-            </div>
-            <div class="flex justify-end space-x-3 mt-4">
-                <button @click="showImportModal = false" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600">
-                    ยกเลิก
-                </button>
-                <button @click="importHomepage()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                    <i class="fas fa-upload mr-1"></i> Import
-                </button>
+            {{-- Layers Tab --}}
+            <div x-show="rightPanelTab === 'layers'" class="flex-1 overflow-y-auto hide-scrollbar p-3 space-y-2">
+                <template x-for="(section, sIndex) in sections" :key="section.id">
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                        <div @click="selectSection(section)" :class="selectedSection?.id === section.id && !selectedElement ? 'bg-indigo-50 dark:bg-indigo-900/30' : 'bg-gray-50 dark:bg-gray-700/50'" class="flex items-center justify-between p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                            <div class="flex items-center">
+                                <button @click.stop="section.expanded = !section.expanded" class="p-1 mr-1">
+                                    <i class="fas fa-chevron-right text-xs transition" :class="section.expanded && 'rotate-90'"></i>
+                                </button>
+                                <i class="fas fa-layer-group text-indigo-500 mr-2"></i>
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 truncate" x-text="section.name"></span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <button @click.stop="toggleSection(section)" class="p-1 text-gray-400 hover:text-gray-600">
+                                    <i class="fas text-xs" :class="section.is_active ? 'fa-eye' : 'fa-eye-slash'"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div x-show="section.expanded" x-collapse class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                            <template x-for="(element, eIndex) in section.elements" :key="element.id">
+                                <div @click="selectElement(element, section)" :class="selectedElement?.id === element.id ? 'bg-purple-50 dark:bg-purple-900/30 border-l-purple-500' : ''" class="layer-item flex items-center justify-between p-2 pl-8 cursor-pointer border-l-2 border-transparent">
+                                    <div class="flex items-center">
+                                        <i class="fas text-purple-500 mr-2 text-xs" :class="getElementIcon(element.type)"></i>
+                                        <span class="text-xs text-gray-600 dark:text-gray-400 truncate" x-text="element.name || element.type_label || element.type"></span>
+                                    </div>
+                                    <div class="flex items-center space-x-1">
+                                        <span class="text-xs text-gray-400" x-text="eIndex + 1"></span>
+                                    </div>
+                                </div>
+                            </template>
+                            <div x-show="!section.elements || section.elements.length === 0" class="p-2 pl-8 text-xs text-gray-400 italic">
+                                ไม่มี elements
+                            </div>
+                        </div>
+                    </div>
+                </template>
             </div>
         </div>
     </div>
 
-    {{-- Loading Overlay --}}
-    <div x-show="loading" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-8 text-center">
-            <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
-            <p class="text-gray-700 dark:text-gray-300">กำลังโหลด...</p>
-        </div>
-    </div>
+    {{-- Include Modals --}}
+    @include('admin.homepage-manager.partials.modals')
+
 </div>
 @endsection
 
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-<script>
-function homepageManager() {
-    return {
-        // State
-        sections: @json($sections->map->toApiArray()),
-        templates: @json($templates),
-        selectedSection: null,
-        selectedElement: null,
-        selectedElementSection: null,
-
-        // UI State
-        loading: false,
-        saving: false,
-        deviceMode: 'desktop',
-        zoom: 100,
-        showGrid: false,
-        showTemplates: false,
-        searchElements: '',
-        showAddElementModal: false,
-        showExportModal: false,
-        showImportModal: false,
-        importData: '',
-        replaceOnImport: false,
-
-        // History for undo/redo
-        history: [],
-        historyIndex: -1,
-
-        // Drag state
-        draggingElement: null,
-        dragStartX: 0,
-        dragStartY: 0,
-        elementStartX: 0,
-        elementStartY: 0,
-
-        // Sortable instances
-        sectionsSortable: null,
-
-        init() {
-            this.saveHistory();
-            this.initSortable();
-
-            // Global click to deselect
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.homepage-element') && !e.target.closest('[data-section-id]') && !e.target.closest('.properties-panel')) {
-                    // Don't deselect if clicking on properties panel
-                }
-            });
-
-            // Keyboard shortcuts
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Delete' && this.selectedElement) {
-                    this.deleteElement(this.selectedElement);
-                }
-                if (e.ctrlKey && e.key === 'z') {
-                    e.preventDefault();
-                    this.undo();
-                }
-                if (e.ctrlKey && e.key === 'y') {
-                    e.preventDefault();
-                    this.redo();
-                }
-                if (e.ctrlKey && e.key === 's') {
-                    e.preventDefault();
-                    this.saveAll();
-                }
-            });
-        },
-
-        initSortable() {
-            const container = document.getElementById('sections-container');
-            if (container) {
-                this.sectionsSortable = new Sortable(container, {
-                    animation: 150,
-                    handle: '[data-section-id]',
-                    ghostClass: 'sortable-ghost',
-                    onEnd: (evt) => {
-                        const newOrder = Array.from(container.querySelectorAll('[data-section-id]')).map(el => parseInt(el.dataset.sectionId));
-                        this.reorderSections(newOrder);
-                    }
-                });
-            }
-        },
-
-        // Section Methods
-        async addSection(type = 'custom') {
-            this.loading = true;
-            try {
-                const response = await fetch('{{ route("admin.homepage-manager.sections.store") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        name: type === 'hero' ? 'Hero Section' : (type === 'custom' ? 'Section ใหม่' : type.charAt(0).toUpperCase() + type.slice(1) + ' Section'),
-                        type: type,
-                        is_active: true
-                    })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    this.sections.push(data.data);
-                    this.saveHistory();
-                    this.showNotification('เพิ่ม Section สำเร็จ', 'success');
-                }
-            } catch (error) {
-                this.showNotification('เกิดข้อผิดพลาด', 'error');
-            }
-            this.loading = false;
-        },
-
-        selectSection(section) {
-            this.selectedSection = section;
-            this.selectedElement = null;
-        },
-
-        editSection(section) {
-            this.selectedSection = section;
-            this.selectedElement = null;
-        },
-
-        async updateSection() {
-            if (!this.selectedSection) return;
-
-            try {
-                const response = await fetch(`/admin/homepage-manager/sections/${this.selectedSection.id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        name: this.selectedSection.name,
-                        type: this.selectedSection.type,
-                        min_height: this.selectedSection.min_height,
-                        max_height: this.selectedSection.max_height,
-                        padding: this.selectedSection.padding,
-                        background_type: this.selectedSection.background?.type,
-                        background_color: this.selectedSection.background?.color,
-                        background_color_dark: this.selectedSection.background?.color_dark,
-                        background_gradient: this.selectedSection.background?.gradient,
-                        background_image: this.selectedSection.background?.image,
-                        animation: this.selectedSection.animation?.type
-                    })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    // Update local state
-                    const index = this.sections.findIndex(s => s.id === this.selectedSection.id);
-                    if (index !== -1) {
-                        this.sections[index] = { ...this.sections[index], ...data.data };
-                    }
-                }
-            } catch (error) {
-                console.error('Update section error:', error);
-            }
-        },
-
-        async deleteSection(section) {
-            if (!confirm('ยืนยันการลบ Section นี้?')) return;
-
-            try {
-                const response = await fetch(`/admin/homepage-manager/sections/${section.id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
-                });
-                const data = await response.json();
-                if (data.success) {
-                    this.sections = this.sections.filter(s => s.id !== section.id);
-                    if (this.selectedSection?.id === section.id) {
-                        this.selectedSection = null;
-                    }
-                    this.saveHistory();
-                    this.showNotification('ลบ Section สำเร็จ', 'success');
-                }
-            } catch (error) {
-                this.showNotification('เกิดข้อผิดพลาด', 'error');
-            }
-        },
-
-        async duplicateSection(section) {
-            try {
-                const response = await fetch(`/admin/homepage-manager/sections/${section.id}/duplicate`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
-                });
-                const data = await response.json();
-                if (data.success) {
-                    this.sections.push(data.data);
-                    this.saveHistory();
-                    this.showNotification('ทำสำเนา Section สำเร็จ', 'success');
-                }
-            } catch (error) {
-                this.showNotification('เกิดข้อผิดพลาด', 'error');
-            }
-        },
-
-        async toggleSection(section) {
-            try {
-                const response = await fetch(`/admin/homepage-manager/sections/${section.id}/toggle`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
-                });
-                const data = await response.json();
-                if (data.success) {
-                    section.is_active = data.is_active;
-                }
-            } catch (error) {
-                this.showNotification('เกิดข้อผิดพลาด', 'error');
-            }
-        },
-
-        async moveSection(index, direction) {
-            const newIndex = index + direction;
-            if (newIndex < 0 || newIndex >= this.sections.length) return;
-
-            const temp = this.sections[index];
-            this.sections[index] = this.sections[newIndex];
-            this.sections[newIndex] = temp;
-
-            await this.reorderSections(this.sections.map(s => s.id));
-        },
-
-        async reorderSections(sectionIds) {
-            try {
-                await fetch('{{ route("admin.homepage-manager.sections.reorder") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({ sections: sectionIds })
-                });
-            } catch (error) {
-                console.error('Reorder error:', error);
-            }
-        },
-
-        // Element Methods
-        addElement(section) {
-            this.selectedElementSection = section;
-            this.showAddElementModal = true;
-        },
-
-        async createNewElement(type) {
-            if (!this.selectedElementSection) return;
-
-            this.showAddElementModal = false;
-            this.loading = true;
-
-            try {
-                const response = await fetch(`/admin/homepage-manager/sections/${this.selectedElementSection.id}/elements`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        type: type,
-                        content: type === 'heading' ? 'Heading' : (type === 'text' ? 'Text content' : (type === 'button' ? 'Button' : null)),
-                        is_active: true
-                    })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    const sectionIndex = this.sections.findIndex(s => s.id === this.selectedElementSection.id);
-                    if (sectionIndex !== -1) {
-                        if (!this.sections[sectionIndex].elements) {
-                            this.sections[sectionIndex].elements = [];
-                        }
-                        this.sections[sectionIndex].elements.push(data.data);
-                    }
-                    this.saveHistory();
-                    this.showNotification('เพิ่ม Element สำเร็จ', 'success');
-                }
-            } catch (error) {
-                this.showNotification('เกิดข้อผิดพลาด', 'error');
-            }
-            this.loading = false;
-        },
-
-        selectElement(element, section) {
-            this.selectedElement = element;
-            this.selectedSection = section;
-            this.selectedElementSection = section;
-        },
-
-        async updateElement() {
-            if (!this.selectedElement) return;
-
-            try {
-                const response = await fetch(`/admin/homepage-manager/elements/${this.selectedElement.id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        content: this.selectedElement.content?.text,
-                        position_type: this.selectedElement.position?.type,
-                        position_x: this.selectedElement.position?.x,
-                        position_y: this.selectedElement.position?.y,
-                        position_x_unit: this.selectedElement.position?.x_unit,
-                        position_y_unit: this.selectedElement.position?.y_unit,
-                        width: this.selectedElement.size?.width,
-                        height: this.selectedElement.size?.height,
-                        font_size: this.selectedElement.typography?.font_size,
-                        font_weight: this.selectedElement.typography?.font_weight,
-                        text_align: this.selectedElement.typography?.text_align,
-                        color: this.selectedElement.colors?.color,
-                        background_color: this.selectedElement.colors?.background_color,
-                        border_width: this.selectedElement.border?.width,
-                        border_style: this.selectedElement.border?.style,
-                        border_radius: this.selectedElement.border?.radius,
-                        padding: this.selectedElement.spacing?.padding,
-                        margin: this.selectedElement.spacing?.margin,
-                        animation: this.selectedElement.animation?.type,
-                        image_url: this.selectedElement.content?.image_url,
-                        link_url: this.selectedElement.content?.link_url
-                    })
-                });
-            } catch (error) {
-                console.error('Update element error:', error);
-            }
-        },
-
-        async deleteElement(element) {
-            if (!confirm('ยืนยันการลบ Element นี้?')) return;
-
-            try {
-                const response = await fetch(`/admin/homepage-manager/elements/${element.id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
-                });
-                const data = await response.json();
-                if (data.success) {
-                    // Remove from section
-                    this.sections.forEach(section => {
-                        section.elements = section.elements?.filter(e => e.id !== element.id) || [];
-                    });
-                    this.selectedElement = null;
-                    this.saveHistory();
-                    this.showNotification('ลบ Element สำเร็จ', 'success');
-                }
-            } catch (error) {
-                this.showNotification('เกิดข้อผิดพลาด', 'error');
-            }
-        },
-
-        async duplicateElement(element) {
-            try {
-                const response = await fetch(`/admin/homepage-manager/elements/${element.id}/duplicate`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
-                });
-                const data = await response.json();
-                if (data.success) {
-                    const section = this.sections.find(s => s.id === element.section_id);
-                    if (section) {
-                        section.elements.push(data.data);
-                    }
-                    this.saveHistory();
-                    this.showNotification('ทำสำเนา Element สำเร็จ', 'success');
-                }
-            } catch (error) {
-                this.showNotification('เกิดข้อผิดพลาด', 'error');
-            }
-        },
-
-        // Drag & Drop Element
-        dragElementType(event, type) {
-            event.dataTransfer.setData('element-type', type);
-        },
-
-        dropElement(event, section) {
-            event.currentTarget.classList.remove('bg-indigo-100', 'dark:bg-indigo-900/30');
-            const type = event.dataTransfer.getData('element-type');
-            if (type) {
-                this.selectedElementSection = section;
-                this.createNewElement(type);
-            }
-        },
-
-        startDragElement(event, element, section) {
-            if (element.position?.type !== 'absolute') return;
-
-            this.draggingElement = element;
-            this.dragStartX = event.clientX;
-            this.dragStartY = event.clientY;
-            this.elementStartX = element.position.x;
-            this.elementStartY = element.position.y;
-
-            document.addEventListener('mousemove', this.dragElement.bind(this));
-            document.addEventListener('mouseup', this.stopDragElement.bind(this));
-        },
-
-        dragElement(event) {
-            if (!this.draggingElement) return;
-
-            const dx = event.clientX - this.dragStartX;
-            const dy = event.clientY - this.dragStartY;
-
-            const unit = this.draggingElement.position.x_unit;
-            const scale = unit === '%' ? 0.1 : 1;
-
-            this.draggingElement.position.x = this.elementStartX + (dx * scale);
-            this.draggingElement.position.y = this.elementStartY + (dy * scale);
-        },
-
-        stopDragElement() {
-            if (this.draggingElement) {
-                this.updateElement();
-            }
-            this.draggingElement = null;
-            document.removeEventListener('mousemove', this.dragElement.bind(this));
-            document.removeEventListener('mouseup', this.stopDragElement.bind(this));
-        },
-
-        // Resize Element
-        startResize(event, element, handle) {
-            // Implement resize logic
-        },
-
-        // Style Helpers
-        getSectionStyle(section) {
-            let style = `min-height: ${section.min_height || '400px'}; padding: ${section.padding || '60px 20px'};`;
-
-            if (section.background) {
-                switch (section.background.type) {
-                    case 'color':
-                        style += ` background-color: ${section.background.color || '#ffffff'};`;
-                        break;
-                    case 'gradient':
-                        style += ` background: ${section.background.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'};`;
-                        break;
-                    case 'image':
-                        if (section.background.image) {
-                            style += ` background-image: url('${section.background.image}'); background-size: cover; background-position: center;`;
-                        }
-                        break;
-                }
-            }
-
-            return style;
-        },
-
-        getElementStyle(element) {
-            let style = '';
-
-            // Position
-            if (element.position?.type === 'absolute') {
-                style += `left: ${element.position.x}${element.position.x_unit}; top: ${element.position.y}${element.position.y_unit};`;
-            }
-
-            // Size
-            if (element.size?.width && element.size.width !== 'auto') {
-                style += ` width: ${element.size.width};`;
-            }
-            if (element.size?.height && element.size.height !== 'auto') {
-                style += ` height: ${element.size.height};`;
-            }
-
-            // Typography
-            if (element.typography) {
-                style += ` font-size: ${element.typography.font_size || '16px'};`;
-                style += ` font-weight: ${element.typography.font_weight || '400'};`;
-                style += ` text-align: ${element.typography.text_align || 'left'};`;
-            }
-
-            // Colors
-            if (element.colors) {
-                style += ` color: ${element.colors.color || '#000000'};`;
-                if (element.colors.background_color) {
-                    style += ` background-color: ${element.colors.background_color};`;
-                }
-            }
-
-            // Border
-            if (element.border) {
-                if (element.border.width && element.border.width !== '0') {
-                    style += ` border: ${element.border.width} ${element.border.style || 'solid'} ${element.colors?.border_color || '#000'};`;
-                }
-                if (element.border.radius && element.border.radius !== '0') {
-                    style += ` border-radius: ${element.border.radius};`;
-                }
-            }
-
-            // Spacing
-            if (element.spacing) {
-                if (element.spacing.padding && element.spacing.padding !== '0') {
-                    style += ` padding: ${element.spacing.padding};`;
-                }
-                if (element.spacing.margin && element.spacing.margin !== '0') {
-                    style += ` margin: ${element.spacing.margin};`;
-                }
-            }
-
-            // Z-index
-            style += ` z-index: ${element.order || 0};`;
-
-            return style;
-        },
-
-        // History
-        saveHistory() {
-            this.history = this.history.slice(0, this.historyIndex + 1);
-            this.history.push(JSON.parse(JSON.stringify(this.sections)));
-            this.historyIndex = this.history.length - 1;
-        },
-
-        undo() {
-            if (this.historyIndex > 0) {
-                this.historyIndex--;
-                this.sections = JSON.parse(JSON.stringify(this.history[this.historyIndex]));
-            }
-        },
-
-        redo() {
-            if (this.historyIndex < this.history.length - 1) {
-                this.historyIndex++;
-                this.sections = JSON.parse(JSON.stringify(this.history[this.historyIndex]));
-            }
-        },
-
-        // Export/Import
-        async showExport() {
-            this.showExportModal = true;
-            try {
-                const response = await fetch('{{ route("admin.homepage-manager.export") }}');
-                const data = await response.json();
-                if (data.success) {
-                    this.$refs.exportData.value = JSON.stringify(data.data, null, 2);
-                }
-            } catch (error) {
-                this.showNotification('เกิดข้อผิดพลาด', 'error');
-            }
-        },
-
-        copyExportData() {
-            this.$refs.exportData.select();
-            document.execCommand('copy');
-            this.showNotification('คัดลอกแล้ว', 'success');
-        },
-
-        downloadExportData() {
-            const blob = new Blob([this.$refs.exportData.value], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'homepage-export-' + new Date().toISOString().split('T')[0] + '.json';
-            a.click();
-            URL.revokeObjectURL(url);
-        },
-
-        async importHomepage() {
-            try {
-                const data = JSON.parse(this.importData);
-                const response = await fetch('{{ route("admin.homepage-manager.import") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        data: data,
-                        replace: this.replaceOnImport
-                    })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    this.showImportModal = false;
-                    location.reload();
-                }
-            } catch (error) {
-                this.showNotification('JSON ไม่ถูกต้อง', 'error');
-            }
-        },
-
-        async importTemplate(templateId) {
-            if (!confirm('ต้องการนำเข้าเทมเพลตนี้?')) return;
-
-            this.loading = true;
-            try {
-                const response = await fetch(`/admin/homepage-manager/templates/${templateId}/import`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
-                });
-                const data = await response.json();
-                if (data.success) {
-                    location.reload();
-                }
-            } catch (error) {
-                this.showNotification('เกิดข้อผิดพลาด', 'error');
-            }
-            this.loading = false;
-        },
-
-        // Save
-        async saveAll() {
-            this.saving = true;
-            // All changes are saved automatically via updateSection/updateElement
-            await new Promise(resolve => setTimeout(resolve, 500));
-            this.saving = false;
-            this.showNotification('บันทึกสำเร็จ', 'success');
-        },
-
-        // Upload
-        async uploadBackgroundImage() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const formData = new FormData();
-                formData.append('image', file);
-
-                try {
-                    const response = await fetch('{{ route("admin.homepage-manager.upload") }}', {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: formData
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                        this.selectedSection.background.image = data.url;
-                        this.updateSection();
-                    }
-                } catch (error) {
-                    this.showNotification('อัพโหลดไม่สำเร็จ', 'error');
-                }
-            };
-            input.click();
-        },
-
-        async uploadElementImage() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const formData = new FormData();
-                formData.append('image', file);
-
-                try {
-                    const response = await fetch('{{ route("admin.homepage-manager.upload") }}', {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: formData
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                        this.selectedElement.content.image_url = data.url;
-                        this.updateElement();
-                    }
-                } catch (error) {
-                    this.showNotification('อัพโหลดไม่สำเร็จ', 'error');
-                }
-            };
-            input.click();
-        },
-
-        // Notification
-        showNotification(message, type = 'info') {
-            // Simple alert for now - can be enhanced with toast library
-            if (type === 'error') {
-                console.error(message);
-            }
-        }
-    }
-}
-</script>
+@include('admin.homepage-manager.partials.scripts')
 @endsection
