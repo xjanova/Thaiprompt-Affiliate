@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.253.6] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1760 from xjanova/claude/fix-missing-class-error-01JfYwgHLBie95ZnfU3aBQQi (0dd21613)
+- fix: เพิ่ม LineFlexMessageTemplate model ที่หายไป (137a5fbe)
+### 🔧 Other Changes
+
+
 ## [v3.253.5] - 2025-11-27
 
 ### ✨ Features
