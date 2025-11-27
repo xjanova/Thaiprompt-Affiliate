@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" x-data="{ darkMode: localStorage.getItem('darkMode') === 'dark' }" :class="{ 'dark': darkMode }">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,6 +12,7 @@
     @endphp
     <title>สมัครสมาชิก - {{ $appName }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     @if(config('turnstile.enabled') && config('turnstile.points.register'))
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
@@ -90,6 +91,22 @@
         .input-glow:focus {
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
+
+        /* Dark mode support */
+        .dark .gradient-animate {
+            background: linear-gradient(-45deg, #1e1b4b, #312e81, #581c87, #1e293b);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        .dark .stat-card {
+            background: rgba(31, 41, 55, 0.95);
+        }
+
+        .dark .glass-effect {
+            background-color: rgba(31, 41, 55, 0.95);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+        }
     </style>
 </head>
 <body class="gradient-animate min-h-screen">
@@ -104,24 +121,24 @@
                         <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-2">
                             <i class="fas fa-gift"></i>
                         </div>
-                        <h3 class="text-sm font-bold text-gray-800">รับรางวัลเมื่อสมัครสมาชิก!</h3>
+                        <h3 class="text-sm font-bold text-gray-800 dark:text-white">รับรางวัลเมื่อสมัครสมาชิก!</h3>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         @foreach($signupRewards->take(4) as $reward)
-                        <div class="flex items-center p-2 rounded-lg bg-white shadow-sm">
+                        <div class="flex items-center p-2 rounded-lg bg-white dark:bg-gray-700 shadow-sm">
                             <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-sm"
                                  style="background-color: {{ $reward->badge_color }}20; color: {{ $reward->badge_color }}">
                                 {!! $reward->getIconHtml() !!}
                             </div>
                             <div class="ml-2 min-w-0">
-                                <p class="text-xs font-semibold text-gray-800 truncate">{{ $reward->name }}</p>
-                                <p class="text-xs text-gray-600">{{ $reward->getDisplayText() }}</p>
+                                <p class="text-xs font-semibold text-gray-800 dark:text-white truncate">{{ $reward->name }}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">{{ $reward->getDisplayText() }}</p>
                             </div>
                         </div>
                         @endforeach
                     </div>
                     @if($signupRewards->count() > 4)
-                    <p class="text-xs text-center text-gray-500 mt-2">และอื่นๆ อีก {{ $signupRewards->count() - 4 }} รางวัล!</p>
+                    <p class="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">และอื่นๆ อีก {{ $signupRewards->count() - 4 }} รางวัล!</p>
                     @endif
                 </div>
                 @endif
@@ -130,26 +147,26 @@
                 <div class="glass-effect rounded-xl shadow-lg p-4">
                     <div class="grid grid-cols-3 gap-3">
                         <div class="text-center">
-                            <div class="text-green-600 text-xs font-semibold mb-1">
+                            <div class="text-green-600 dark:text-green-400 text-xs font-semibold mb-1">
                                 <i class="fas fa-users"></i> สมาชิก
                             </div>
-                            <div class="text-xl font-bold text-gray-800" id="memberCountMobile">0</div>
+                            <div class="text-xl font-bold text-gray-800 dark:text-white" id="memberCountMobile">0</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-blue-600 text-xs font-semibold mb-1">
+                            <div class="text-blue-600 dark:text-blue-400 text-xs font-semibold mb-1">
                                 <i class="fas fa-money-bill-wave"></i> รายได้
                             </div>
-                            <div class="text-xl font-bold text-gray-800">฿<span id="totalEarningsMobile">0</span></div>
+                            <div class="text-xl font-bold text-gray-800 dark:text-white">฿<span id="totalEarningsMobile">0</span></div>
                         </div>
                         <div class="text-center">
-                            <div class="text-purple-600 text-xs font-semibold mb-1">
+                            <div class="text-purple-600 dark:text-purple-400 text-xs font-semibold mb-1">
                                 <i class="fas fa-fire"></i> วันนี้
                             </div>
-                            <div class="text-xl font-bold text-gray-800" id="todaySignupsMobile">0</div>
+                            <div class="text-xl font-bold text-gray-800 dark:text-white" id="todaySignupsMobile">0</div>
                         </div>
                     </div>
-                    <div class="mt-3 pt-3 border-t border-gray-200">
-                        <div class="flex items-center justify-center text-xs text-gray-600">
+                    <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                        <div class="flex items-center justify-center text-xs text-gray-600 dark:text-gray-400">
                             <div class="w-2 h-2 bg-green-500 rounded-full mr-2 pulse-animate"></div>
                             <span class="font-medium">อัพเดทแบบเรียลไทม์</span>
                         </div>
@@ -161,7 +178,7 @@
                     <div class="flex items-center mb-2">
                         <img src="" alt="User" class="w-10 h-10 rounded-full mr-3" id="mobileTestimonialAvatar">
                         <div>
-                            <p class="font-bold text-gray-800 text-sm" id="mobileTestimonialName"></p>
+                            <p class="font-bold text-gray-800 dark:text-white text-sm" id="mobileTestimonialName"></p>
                             <div class="flex text-yellow-400 text-xs">
                                 <i class="fas fa-star"></i>
                                 <i class="fas fa-star"></i>
@@ -171,7 +188,7 @@
                             </div>
                         </div>
                     </div>
-                    <p class="text-gray-600 italic text-sm" id="mobileTestimonialText"></p>
+                    <p class="text-gray-600 dark:text-gray-300 italic text-sm" id="mobileTestimonialText"></p>
                 </div>
             </div>
 
@@ -184,21 +201,21 @@
                                 <img src="{{ asset($logo) }}" alt="{{ $appName }} Logo" style="width: {{ $logoAuthWidth }}px; height: {{ $logoAuthHeight }}px;" class="object-contain">
                             </div>
                         @else
-                            <h1 class="text-3xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">{{ $appName }}</h1>
+                            <h1 class="text-3xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent mb-2">{{ $appName }}</h1>
                         @endif
-                        <p class="text-gray-600 text-base md:text-lg font-semibold mb-2">สมัครสมาชิก</p>
-                        <p class="text-gray-500 text-sm md:text-base">เริ่มต้นสร้างรายได้วันนี้</p>
+                        <p class="text-gray-600 dark:text-gray-300 text-base md:text-lg font-semibold mb-2">สมัครสมาชิก</p>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm md:text-base">เริ่มต้นสร้างรายได้วันนี้</p>
                         <div class="mt-3 md:mt-4 inline-flex items-center px-3 md:px-4 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white rounded-full text-xs md:text-sm font-semibold pulse-animate">
                             <i class="fas fa-check-circle mr-2"></i>
                             ฟรี! ไม่มีค่าใช้จ่าย
                         </div>
 
                         @if(!empty($defaultSponsorName) && empty($referralCode))
-                            <div class="mt-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-3 md:p-4">
-                                <div class="flex items-center justify-center text-indigo-700">
+                            <div class="mt-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 border border-indigo-200 dark:border-indigo-700 rounded-xl p-3 md:p-4">
+                                <div class="flex items-center justify-center text-indigo-700 dark:text-indigo-300">
                                     <i class="fas fa-link text-xl md:text-2xl mr-2 md:mr-3"></i>
                                     <div class="text-left">
-                                        <p class="text-xs font-medium text-indigo-600">คุณกำลังต่อสายงานกับ</p>
+                                        <p class="text-xs font-medium text-indigo-600 dark:text-indigo-400">คุณกำลังต่อสายงานกับ</p>
                                         <p class="text-sm md:text-base font-bold">{{ $defaultSponsorName }}</p>
                                     </div>
                                 </div>
@@ -207,7 +224,7 @@
                     </div>
 
                     @if ($errors->any())
-                        <div class="mb-4 bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg shadow-md">
+                        <div class="mb-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg shadow-md">
                             <div class="flex items-center mb-2">
                                 <i class="fas fa-exclamation-triangle mr-2"></i>
                                 <strong>พบข้อผิดพลาด:</strong>
@@ -229,23 +246,23 @@
                     @if($lineRequired && $showLineRegister)
                         <!-- LINE Required Registration Mode -->
                         <div class="text-center space-y-6">
-                            <div class="p-4 md:p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl">
+                            <div class="p-4 md:p-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border-2 border-green-200 dark:border-green-700 rounded-xl">
                                 <div class="mb-4">
                                     <div class="w-16 h-16 md:w-20 md:h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <svg class="w-10 h-10 md:w-12 md:h-12 text-white" viewBox="0 0 24 24" fill="currentColor">
                                             <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
                                         </svg>
                                     </div>
-                                    <h3 class="text-lg md:text-xl font-bold text-gray-800 mb-2">ต้องการ LINE เพื่อสมัครสมาชิก</h3>
-                                    <p class="text-sm md:text-base text-gray-600">กรุณาทำตามขั้นตอนด้านล่างเพื่อสมัครสมาชิก</p>
+                                    <h3 class="text-lg md:text-xl font-bold text-gray-800 dark:text-white mb-2">ต้องการ LINE เพื่อสมัครสมาชิก</h3>
+                                    <p class="text-sm md:text-base text-gray-600 dark:text-gray-300">กรุณาทำตามขั้นตอนด้านล่างเพื่อสมัครสมาชิก</p>
                                 </div>
 
-                                <div class="bg-white rounded-lg p-4 md:p-6 space-y-4">
+                                <div class="bg-white dark:bg-gray-700 rounded-lg p-4 md:p-6 space-y-4">
                                     <div class="flex items-start text-left space-x-3">
                                         <div class="flex-shrink-0 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
                                         <div class="flex-1">
-                                            <p class="font-semibold text-gray-800 text-sm md:text-base">เพิ่มเพื่อน LINE Official Account</p>
-                                            <p class="text-xs md:text-sm text-gray-600 mt-1">สแกน QR Code หรือกดปุ่มเพิ่มเพื่อนด้านล่าง</p>
+                                            <p class="font-semibold text-gray-800 dark:text-white text-sm md:text-base">เพิ่มเพื่อน LINE Official Account</p>
+                                            <p class="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">สแกน QR Code หรือกดปุ่มเพิ่มเพื่อนด้านล่าง</p>
                                         </div>
                                     </div>
 
@@ -272,8 +289,8 @@
                                     <div class="flex items-start text-left space-x-3">
                                         <div class="flex-shrink-0 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
                                         <div class="flex-1">
-                                            <p class="font-semibold text-gray-800 text-sm md:text-base">กดปุ่มสมัครด้วย LINE</p>
-                                            <p class="text-xs md:text-sm text-gray-600 mt-1">หลังจากเพิ่มเพื่อนแล้ว กดปุ่มด้านล่างเพื่อสมัครสมาชิก</p>
+                                            <p class="font-semibold text-gray-800 dark:text-white text-sm md:text-base">กดปุ่มสมัครด้วย LINE</p>
+                                            <p class="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">หลังจากเพิ่มเพื่อนแล้ว กดปุ่มด้านล่างเพื่อสมัครสมาชิก</p>
                                         </div>
                                     </div>
                                 </div>
@@ -281,14 +298,14 @@
 
                             <!-- LINE Register Button -->
                             <a href="{{ route('line.login') }}{{ request('ref') ? '?ref=' . request('ref') : '' }}"
-                               class="block w-full px-6 py-4 border-2 border-green-500 rounded-xl text-green-700 bg-white hover:bg-green-50 font-bold text-base md:text-lg shadow-md hover:shadow-lg transition duration-300 group transform hover:scale-105">
+                               class="block w-full px-6 py-4 border-2 border-green-500 rounded-xl text-green-700 dark:text-green-400 bg-white dark:bg-gray-700 hover:bg-green-50 dark:hover:bg-green-900/30 font-bold text-base md:text-lg shadow-md hover:shadow-lg transition duration-300 group transform hover:scale-105">
                                 <svg class="w-6 h-6 md:w-7 md:h-7 inline-block mr-3" viewBox="0 0 24 24" fill="#06C755">
                                     <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
                                 </svg>
-                                <span class="group-hover:text-green-800 transition">สมัครสมาชิกด้วย LINE</span>
+                                <span class="group-hover:text-green-800 dark:group-hover:text-green-300 transition">สมัครสมาชิกด้วย LINE</span>
                             </a>
 
-                            <div class="text-xs md:text-sm text-gray-500 italic">
+                            <div class="text-xs md:text-sm text-gray-500 dark:text-gray-400 italic">
                                 <i class="fas fa-info-circle mr-1"></i>
                                 ต้องเพิ่มเพื่อน LINE Official Account ก่อนจึงจะสมัครสมาชิกได้
                             </div>
@@ -317,7 +334,7 @@
                         @csrf
 
                         @if (!empty($referralCode))
-                            <div class="mb-4 bg-gradient-to-r from-green-50 to-blue-50 border-l-4 border-green-500 text-green-700 px-3 md:px-4 py-3 rounded-lg shadow-md">
+                            <div class="mb-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/30 dark:to-blue-900/30 border-l-4 border-green-500 text-green-700 dark:text-green-200 px-3 md:px-4 py-3 rounded-lg shadow-md">
                                 <div class="flex items-center">
                                     <i class="fas fa-user-check text-xl md:text-2xl mr-3"></i>
                                     <div>
@@ -330,63 +347,63 @@
 
                         <div class="space-y-3 md:space-y-4">
                             <div>
-                                <label for="name" class="block text-xs md:text-sm font-semibold text-gray-700 mb-2">
+                                <label for="name" class="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
                                     <i class="fas fa-user mr-1 text-purple-500"></i> ชื่อ-นามสกุล
                                 </label>
                                 <input type="text" name="name" id="name" value="{{ old('name') }}"
-                                       class="w-full px-3 md:px-4 py-2 md:py-3 border-2 border-gray-200 rounded-xl input-glow focus:ring-0 focus:border-purple-500 transition-all text-sm md:text-base @error('name') border-red-500 @enderror"
+                                       class="w-full px-3 md:px-4 py-2 md:py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl input-glow focus:ring-0 focus:border-purple-500 transition-all text-sm md:text-base dark:bg-gray-700 dark:text-white @error('name') border-red-500 @enderror"
                                        placeholder="กรอกชื่อ-นามสกุลของคุณ"
                                        required autofocus>
                                 @error('name')
-                                    <p class="mt-1 text-xs md:text-sm text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
+                                    <p class="mt-1 text-xs md:text-sm text-red-600 dark:text-red-400"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <div>
-                                <label for="email" class="block text-xs md:text-sm font-semibold text-gray-700 mb-2">
+                                <label for="email" class="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
                                     <i class="fas fa-envelope mr-1 text-purple-500"></i> อีเมล
                                 </label>
                                 <input type="email" name="email" id="email" value="{{ old('email') }}"
-                                       class="w-full px-3 md:px-4 py-2 md:py-3 border-2 border-gray-200 rounded-xl input-glow focus:ring-0 focus:border-purple-500 transition-all text-sm md:text-base @error('email') border-red-500 @enderror"
+                                       class="w-full px-3 md:px-4 py-2 md:py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl input-glow focus:ring-0 focus:border-purple-500 transition-all text-sm md:text-base dark:bg-gray-700 dark:text-white @error('email') border-red-500 @enderror"
                                        placeholder="your@email.com"
                                        required>
                                 @error('email')
-                                    <p class="mt-1 text-xs md:text-sm text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
+                                    <p class="mt-1 text-xs md:text-sm text-red-600 dark:text-red-400"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <div>
-                                <label for="password" class="block text-xs md:text-sm font-semibold text-gray-700 mb-2">
+                                <label for="password" class="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
                                     <i class="fas fa-lock mr-1 text-purple-500"></i> รหัสผ่าน
                                 </label>
                                 <input type="password" name="password" id="password"
-                                       class="w-full px-3 md:px-4 py-2 md:py-3 border-2 border-gray-200 rounded-xl input-glow focus:ring-0 focus:border-purple-500 transition-all text-sm md:text-base @error('password') border-red-500 @enderror"
+                                       class="w-full px-3 md:px-4 py-2 md:py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl input-glow focus:ring-0 focus:border-purple-500 transition-all text-sm md:text-base dark:bg-gray-700 dark:text-white @error('password') border-red-500 @enderror"
                                        placeholder="สร้างรหัสผ่านที่ปลอดภัย"
                                        required>
                                 @error('password')
-                                    <p class="mt-1 text-xs md:text-sm text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
+                                    <p class="mt-1 text-xs md:text-sm text-red-600 dark:text-red-400"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <div>
-                                <label for="password_confirmation" class="block text-xs md:text-sm font-semibold text-gray-700 mb-2">
+                                <label for="password_confirmation" class="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
                                     <i class="fas fa-lock mr-1 text-purple-500"></i> ยืนยันรหัสผ่าน
                                 </label>
                                 <input type="password" name="password_confirmation" id="password_confirmation"
-                                       class="w-full px-3 md:px-4 py-2 md:py-3 border-2 border-gray-200 rounded-xl input-glow focus:ring-0 focus:border-purple-500 transition-all text-sm md:text-base"
+                                       class="w-full px-3 md:px-4 py-2 md:py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl input-glow focus:ring-0 focus:border-purple-500 transition-all text-sm md:text-base dark:bg-gray-700 dark:text-white"
                                        placeholder="กรอกรหัสผ่านอีกครั้ง"
                                        required>
                             </div>
 
                             <div>
-                                <label for="referral_code" class="block text-xs md:text-sm font-semibold text-gray-700 mb-2">
+                                <label for="referral_code" class="block text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
                                     <i class="fas fa-gift mr-1 text-purple-500"></i> รหัสแนะนำ (ถ้ามี)
                                 </label>
                                 <input type="text" name="referral_code" id="referral_code" value="{{ old('referral_code', $referralCode ?? '') }}"
-                                       class="w-full px-3 md:px-4 py-2 md:py-3 border-2 border-gray-200 rounded-xl input-glow focus:ring-0 focus:border-purple-500 transition-all text-sm md:text-base @error('referral_code') border-red-500 @enderror"
+                                       class="w-full px-3 md:px-4 py-2 md:py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl input-glow focus:ring-0 focus:border-purple-500 transition-all text-sm md:text-base dark:bg-gray-700 dark:text-white @error('referral_code') border-red-500 @enderror"
                                        placeholder="กรอกรหัสแนะนำจากผู้แนะนำ">
                                 @error('referral_code')
-                                    <p class="mt-1 text-xs md:text-sm text-red-600"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
+                                    <p class="mt-1 text-xs md:text-sm text-red-600 dark:text-red-400"><i class="fas fa-exclamation-circle mr-1"></i>{{ $message }}</p>
                                 @enderror
                             </div>
                         </div>
@@ -409,26 +426,26 @@
                         @if($showLineRegister)
                         <div class="mt-4 md:mt-6">
                             <div class="relative flex items-center justify-center">
-                                <div class="border-t border-gray-300 w-full"></div>
-                                <span class="glass-effect px-3 md:px-4 text-gray-500 text-xs md:text-sm font-medium absolute">หรือ</span>
+                                <div class="border-t border-gray-300 dark:border-gray-600 w-full"></div>
+                                <span class="glass-effect px-3 md:px-4 text-gray-500 dark:text-gray-400 text-xs md:text-sm font-medium absolute">หรือ</span>
                             </div>
 
                             <a href="{{ route('line.login') }}{{ request('ref') ? '?ref=' . request('ref') : '' }}"
-                               class="mt-4 md:mt-6 w-full flex items-center justify-center px-4 md:px-6 py-3 md:py-4 border-2 border-gray-300 rounded-xl text-gray-700 bg-white hover:bg-gray-50 font-bold text-base md:text-lg shadow-md hover:shadow-lg transition duration-300 group transform hover:scale-105">
+                               class="mt-4 md:mt-6 w-full flex items-center justify-center px-4 md:px-6 py-3 md:py-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 font-bold text-base md:text-lg shadow-md hover:shadow-lg transition duration-300 group transform hover:scale-105">
                                 <svg class="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" viewBox="0 0 24 24" fill="#06C755">
                                     <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
                                 </svg>
-                                <span class="group-hover:text-gray-900 transition">สมัครด้วย LINE</span>
+                                <span class="group-hover:text-gray-900 dark:group-hover:text-white transition">สมัครด้วย LINE</span>
                             </a>
                         </div>
                         @endif
                     @endif
 
                     <div class="mt-4 md:mt-6 text-center space-y-2 md:space-y-3">
-                        <a href="{{ route('login') }}" class="block text-purple-600 hover:text-purple-800 text-xs md:text-sm font-semibold transition-colors">
+                        <a href="{{ route('login') }}" class="block text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 text-xs md:text-sm font-semibold transition-colors">
                             <i class="fas fa-sign-in-alt mr-1"></i> มีบัญชีแล้ว? เข้าสู่ระบบ
                         </a>
-                        <a href="{{ route('home') }}" class="block text-gray-600 hover:text-gray-800 text-xs md:text-sm transition-colors">
+                        <a href="{{ route('home') }}" class="block text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs md:text-sm transition-colors">
                             <i class="fas fa-arrow-left mr-1"></i> กลับหน้าแรก
                         </a>
                     </div>
@@ -438,60 +455,60 @@
                 <div class="hidden lg:block space-y-6 fade-in-up" style="animation-delay: 0.2s;">
                     <!-- Live Stats -->
                     <div class="stat-card rounded-2xl shadow-2xl p-8">
-                        <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                        <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
                             <i class="fas fa-chart-line text-green-500 mr-3"></i>
                             สถิติสด (Live Stats)
                         </h3>
 
                         <div class="space-y-6">
-                            <div class="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl">
+                            <div class="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl">
                                 <div class="flex items-center">
                                     <div class="bg-green-500 text-white rounded-full w-12 h-12 flex items-center justify-center mr-4">
                                         <i class="fas fa-users text-xl"></i>
                                     </div>
                                     <div>
-                                        <p class="text-sm text-gray-600 font-medium">สมาชิกทั้งหมด</p>
-                                        <p class="text-3xl font-bold text-gray-800" id="memberCount">0</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">สมาชิกทั้งหมด</p>
+                                        <p class="text-3xl font-bold text-gray-800 dark:text-white" id="memberCount">0</p>
                                     </div>
                                 </div>
-                                <div class="text-green-600 text-sm font-semibold pulse-animate">
+                                <div class="text-green-600 dark:text-green-400 text-sm font-semibold pulse-animate">
                                     <i class="fas fa-arrow-up mr-1"></i>+<span id="memberIncrement">0</span>
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl">
+                            <div class="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl">
                                 <div class="flex items-center">
                                     <div class="bg-blue-500 text-white rounded-full w-12 h-12 flex items-center justify-center mr-4">
                                         <i class="fas fa-money-bill-wave text-xl"></i>
                                     </div>
                                     <div>
-                                        <p class="text-sm text-gray-600 font-medium">รายได้สะสม</p>
-                                        <p class="text-3xl font-bold text-gray-800">฿<span id="totalEarnings">0</span></p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">รายได้สะสม</p>
+                                        <p class="text-3xl font-bold text-gray-800 dark:text-white">฿<span id="totalEarnings">0</span></p>
                                     </div>
                                 </div>
-                                <div class="text-blue-600 text-sm font-semibold pulse-animate">
+                                <div class="text-blue-600 dark:text-blue-400 text-sm font-semibold pulse-animate">
                                     <i class="fas fa-arrow-up mr-1"></i>+฿<span id="earningsIncrement">0</span>
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl">
+                            <div class="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-xl">
                                 <div class="flex items-center">
                                     <div class="bg-purple-500 text-white rounded-full w-12 h-12 flex items-center justify-center mr-4">
                                         <i class="fas fa-user-plus text-xl"></i>
                                     </div>
                                     <div>
-                                        <p class="text-sm text-gray-600 font-medium">กำลังสมัครวันนี้</p>
-                                        <p class="text-3xl font-bold text-gray-800" id="todaySignups">0</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">กำลังสมัครวันนี้</p>
+                                        <p class="text-3xl font-bold text-gray-800 dark:text-white" id="todaySignups">0</p>
                                     </div>
                                 </div>
-                                <div class="text-purple-600 text-sm font-semibold">
+                                <div class="text-purple-600 dark:text-purple-400 text-sm font-semibold">
                                     <i class="fas fa-fire mr-1"></i>Hot!
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mt-6 pt-6 border-t border-gray-200">
-                            <div class="flex items-center text-sm text-gray-600">
+                        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
+                            <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
                                 <div class="w-2 h-2 bg-green-500 rounded-full mr-2 pulse-animate"></div>
                                 <span class="font-medium">อัพเดทแบบเรียลไทม์</span>
                             </div>
@@ -500,8 +517,8 @@
 
                     {{-- รางวัลการสมัครสมาชิก (Desktop) --}}
                     @if(isset($signupRewards) && $signupRewards->count() > 0)
-                    <div class="stat-card rounded-2xl shadow-2xl p-8 border-2 border-green-300">
-                        <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <div class="stat-card rounded-2xl shadow-2xl p-8 border-2 border-green-300 dark:border-green-700">
+                        <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
                             <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full w-10 h-10 flex items-center justify-center mr-3">
                                 <i class="fas fa-gift"></i>
                             </div>
@@ -510,15 +527,15 @@
 
                         <div class="space-y-4">
                             @foreach($signupRewards as $reward)
-                            <div class="flex items-start p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:from-green-50 hover:to-emerald-50 transition border border-gray-200">
+                            <div class="flex items-start p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white dark:from-gray-700 dark:to-gray-600 hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-900/30 dark:hover:to-emerald-900/30 transition border border-gray-200 dark:border-gray-600">
                                 <div class="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl text-xl"
                                      style="background-color: {{ $reward->badge_color }}20; color: {{ $reward->badge_color }}">
                                     {!! $reward->getIconHtml() !!}
                                 </div>
                                 <div class="ml-3 flex-1 min-w-0">
-                                    <p class="font-semibold text-gray-800">{{ $reward->name }}</p>
+                                    <p class="font-semibold text-gray-800 dark:text-white">{{ $reward->name }}</p>
                                     @if($reward->description)
-                                    <p class="text-sm text-gray-600">{{ $reward->description }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $reward->description }}</p>
                                     @endif
                                     <div class="mt-1 inline-flex items-center px-2 py-1 rounded-full text-xs font-bold"
                                          style="background-color: {{ $reward->badge_color }}20; color: {{ $reward->badge_color }}">
@@ -529,8 +546,8 @@
                             @endforeach
                         </div>
 
-                        <div class="mt-6 pt-4 border-t border-gray-200">
-                            <div class="flex items-center text-sm text-green-600">
+                        <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+                            <div class="flex items-center text-sm text-green-600 dark:text-green-400">
                                 <i class="fas fa-check-circle mr-2"></i>
                                 <span class="font-medium">รับทันทีเมื่อสมัครสมาชิกสำเร็จ!</span>
                             </div>
@@ -539,49 +556,49 @@
                     @else
                     <!-- Benefits (แสดงเมื่อไม่มี rewards) -->
                     <div class="stat-card rounded-2xl shadow-2xl p-8">
-                        <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                        <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
                             <i class="fas fa-star text-yellow-500 mr-3"></i>
                             ทำไมต้องเลือกเรา?
                         </h3>
 
                         <div class="space-y-4">
                             <div class="flex items-start">
-                                <div class="bg-purple-100 text-purple-600 rounded-lg w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0">
+                                <div class="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded-lg w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0">
                                     <i class="fas fa-percentage"></i>
                                 </div>
                                 <div>
-                                    <p class="font-semibold text-gray-800">คอมมิชชั่นสูง</p>
-                                    <p class="text-sm text-gray-600">รับค่าคอมมิชชั่นสูงสุดในตลาด</p>
+                                    <p class="font-semibold text-gray-800 dark:text-white">คอมมิชชั่นสูง</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">รับค่าคอมมิชชั่นสูงสุดในตลาด</p>
                                 </div>
                             </div>
 
                             <div class="flex items-start">
-                                <div class="bg-green-100 text-green-600 rounded-lg w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0">
+                                <div class="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400 rounded-lg w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0">
                                     <i class="fas fa-clock"></i>
                                 </div>
                                 <div>
-                                    <p class="font-semibold text-gray-800">ถอนเงินรวดเร็ว</p>
-                                    <p class="text-sm text-gray-600">ระบบถอนเงินอัตโนมัติ ภายใน 24 ชม.</p>
+                                    <p class="font-semibold text-gray-800 dark:text-white">ถอนเงินรวดเร็ว</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">ระบบถอนเงินอัตโนมัติ ภายใน 24 ชม.</p>
                                 </div>
                             </div>
 
                             <div class="flex items-start">
-                                <div class="bg-blue-100 text-blue-600 rounded-lg w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0">
+                                <div class="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0">
                                     <i class="fas fa-headset"></i>
                                 </div>
                                 <div>
-                                    <p class="font-semibold text-gray-800">ซัพพอร์ต 24/7</p>
-                                    <p class="text-sm text-gray-600">ทีมงานพร้อมช่วยเหลือตลอด 24 ชั่วโมง</p>
+                                    <p class="font-semibold text-gray-800 dark:text-white">ซัพพอร์ต 24/7</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">ทีมงานพร้อมช่วยเหลือตลอด 24 ชั่วโมง</p>
                                 </div>
                             </div>
 
                             <div class="flex items-start">
-                                <div class="bg-pink-100 text-pink-600 rounded-lg w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0">
+                                <div class="bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-400 rounded-lg w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0">
                                     <i class="fas fa-shield-alt"></i>
                                 </div>
                                 <div>
-                                    <p class="font-semibold text-gray-800">ปลอดภัย 100%</p>
-                                    <p class="text-sm text-gray-600">ระบบรักษาความปลอดภัยระดับสูง</p>
+                                    <p class="font-semibold text-gray-800 dark:text-white">ปลอดภัย 100%</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">ระบบรักษาความปลอดภัยระดับสูง</p>
                                 </div>
                             </div>
                         </div>
@@ -593,7 +610,7 @@
                         <div class="flex items-center mb-4">
                             <img src="" alt="User" class="w-12 h-12 rounded-full mr-3" id="desktopTestimonialAvatar">
                             <div>
-                                <p class="font-bold text-gray-800" id="desktopTestimonialName"></p>
+                                <p class="font-bold text-gray-800 dark:text-white" id="desktopTestimonialName"></p>
                                 <div class="flex text-yellow-400">
                                     <i class="fas fa-star"></i>
                                     <i class="fas fa-star"></i>
@@ -603,7 +620,7 @@
                                 </div>
                             </div>
                         </div>
-                        <p class="text-gray-600 italic" id="desktopTestimonialText"></p>
+                        <p class="text-gray-600 dark:text-gray-300 italic" id="desktopTestimonialText"></p>
                     </div>
                 </div>
             </div>
