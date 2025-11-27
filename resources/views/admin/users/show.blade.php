@@ -13,10 +13,12 @@
 <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6 mb-6">
     <div class="flex items-center justify-between mb-6">
         <div class="flex items-center">
-            <div class="h-16 w-16 rounded-full flex items-center justify-center text-2xl font-bold"
-                 style="background-color: color-mix(in srgb, var(--arrow-x-primary) 15%, transparent); color: var(--arrow-x-primary)">
-                {{ strtoupper(substr($user->name, 0, 1)) }}
-            </div>
+            {{-- Avatar - ใช้ profile_picture_url accessor พร้อม fallback --}}
+            <img src="{{ $user->profile_picture_url }}"
+                 alt="{{ $user->name }}"
+                 class="h-16 w-16 rounded-full object-cover"
+                 onerror="this.onerror=null; this.outerHTML='<div class=\'h-16 w-16 rounded-full flex items-center justify-center text-2xl font-bold\' style=\'background-color: color-mix(in srgb, var(--arrow-x-primary) 15%, transparent); color: var(--arrow-x-primary)\'>{{ strtoupper(substr($user->name, 0, 1)) }}</div>';">
+
             <div class="ml-4">
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $user->name }}</h2>
                 <p class="text-gray-600 dark:text-gray-400">{{ $user->email }}</p>

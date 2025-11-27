@@ -187,9 +187,11 @@
             <button @click="profileOpen = !profileOpen"
                     type="button"
                     class="flex items-center gap-2 p-2 pr-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-105 active:scale-95">
-                <div class="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <span class="text-white text-sm font-bold drop-shadow">{{ substr($user->name, 0, 1) }}</span>
-                </div>
+                {{-- Avatar - ใช้ profile_picture_url accessor พร้อม fallback --}}
+                <img src="{{ $user->profile_picture_url }}"
+                     alt="{{ $user->name }}"
+                     class="w-8 h-8 rounded-lg object-cover shadow-lg"
+                     onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=F59E0B&color=fff&size=64';">
                 <span class="hidden md:block text-white font-medium text-sm drop-shadow">{{ $user->name }}</span>
                 <i class="fas fa-chevron-down text-white/60 text-xs drop-shadow transition-transform duration-200" :class="profileOpen ? 'rotate-180' : ''"></i>
             </button>
@@ -209,9 +211,11 @@
                 {{-- User Info Header --}}
                 <div class="px-4 py-4 bg-gradient-to-br from-indigo-600/30 to-purple-600/30 border-b border-white/20">
                     <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                            <span class="text-white text-lg font-bold drop-shadow">{{ substr($user->name, 0, 1) }}</span>
-                        </div>
+                        {{-- Avatar ใหญ่ - ใช้ profile_picture_url accessor พร้อม fallback --}}
+                        <img src="{{ $user->profile_picture_url }}"
+                             alt="{{ $user->name }}"
+                             class="w-12 h-12 rounded-xl object-cover shadow-lg"
+                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=F59E0B&color=fff&size=96';">
                         <div class="flex-1 min-w-0">
                             <p class="font-bold text-white text-sm drop-shadow truncate">{{ $user->name }}</p>
                             <p class="text-xs text-white/70 truncate">{{ $user->email }}</p>
