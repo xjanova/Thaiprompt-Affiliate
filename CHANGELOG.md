@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.255.16] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1780 from xjanova/claude/fix-team-menu-018sN5P9XyKWs9BGaW1j9m3Q (9969322a)
+- fix: แก้ไขเมนู ทีมงาน และ ผู้มุ่งหวัง ให้แสดงหน้าแนะนำแทนการ redirect (5264d93c)
+### 🔧 Other Changes
+
+
 ## [v3.255.15] - 2025-11-27
 
 ### ✨ Features
