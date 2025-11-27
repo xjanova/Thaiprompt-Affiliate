@@ -27,6 +27,12 @@ class CheckRole
             return $next($request);
         }
 
+        // Check if user is admin (can access user/seller routes for management)
+        // Admin สามารถเข้าถึง user routes เพื่อทดสอบและจัดการระบบ
+        if ($user->role === 'admin' || $user->role === 'super_admin') {
+            return $next($request);
+        }
+
         // Check if user's role matches any of the allowed roles
         foreach ($roles as $role) {
             if ($user->role === $role) {
