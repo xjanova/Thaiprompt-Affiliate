@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\Commission;
+use App\Models\MarketplaceCommission;
 use App\Models\MlmCommission;
 use App\Services\ImageUploadService;
 use App\Services\MembershipRetentionService;
@@ -629,7 +629,9 @@ class DashboardController extends Controller
     /**
      * แสดงรายการ Commissions ของ User
      *
-     * แสดงคอมมิชชั่นทั่วไปจากตาราง commissions (ไม่ใช่ MLM commissions)
+     * รวมคอมมิชชั่นจากทุกระบบ:
+     * - MLM Commissions
+     * - Marketplace Commissions
      *
      * @return \Illuminate\View\View
      */
@@ -637,12 +639,59 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // ดึงคอมมิชชั่นทั่วไปจากตาราง commissions
-        $commissions = $user->commissions()
-            ->latest()
+        // ดึงคอมมิชชั่นจาก MLM
+        $mlmCommissions = $user->mlmCommissions()
+            ->select([
+                'id',
+                'user_id',
+                'source_id as order_id',
+                'type',
+                'commission_amount as amount',
+                'percentage',
+                'status',
+                'notes',
+                'created_at',
+                'updated_at',
+            ])
+            ->selectRaw("'mlm' as source");
+
+        // ดึงคอมมิชชั่นจาก Marketplace
+        $marketplaceCommissions = $user->marketplaceCommissions()
+            ->select([
+                'id',
+                'user_id',
+                'order_id',
+                'commission_type as type',
+                'net_commission as amount',
+                'commission_rate as percentage',
+                'status',
+                'notes',
+                'created_at',
+                'updated_at',
+            ])
+            ->selectRaw("'marketplace' as source");
+
+        // รวมและ paginate
+        $commissions = $mlmCommissions
+            ->union($marketplaceCommissions)
+            ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        return view('user.commissions', compact('commissions'));
+        // คำนวณสถิติ
+        $mlmStats = $user->mlmCommissions();
+        $marketplaceStats = $user->marketplaceCommissions();
+
+        $stats = [
+            'total' => $mlmStats->count() + $marketplaceStats->count(),
+            'pending' => $mlmStats->clone()->where('status', 'pending')->count()
+                + $marketplaceStats->clone()->where('status', 'pending')->count(),
+            'approved' => $mlmStats->clone()->where('status', 'approved')->count()
+                + $marketplaceStats->clone()->where('status', 'approved')->count(),
+            'paid' => $mlmStats->clone()->where('status', 'paid')->count()
+                + $marketplaceStats->clone()->where('status', 'paid')->count(),
+        ];
+
+        return view('user.commissions', compact('commissions', 'stats'));
     }
 
     /**

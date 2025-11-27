@@ -35,11 +35,13 @@ class MembershipRetentionTransaction extends Model
     }
 
     /**
-     * Get the commission associated with the transaction
+     * Get the MLM commission associated with the transaction
+     *
+     * อ้างอิงไปยัง mlm_commissions table
      */
     public function commission()
     {
-        return $this->belongsTo(Commission::class);
+        return $this->belongsTo(MlmCommission::class, 'commission_id');
     }
 
     /**

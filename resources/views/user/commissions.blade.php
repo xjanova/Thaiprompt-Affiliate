@@ -7,34 +7,34 @@
     <!-- Header -->
     <x-arrow-x.card-v3 class="p-6">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">คอมมิชชั่นของฉัน</h1>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ดูประวัติคอมมิชชั่นทั้งหมด</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ดูประวัติคอมมิชชั่นจากทุกระบบ (MLM และ Marketplace)</p>
     </x-arrow-x.card-v3>
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <x-arrow-x.stats.card-3d
-            :value="$commissions->total()"
+            :value="$stats['total']"
             label="ทั้งหมด"
             icon="fas fa-chart-bar"
             gradient="from-purple-500 to-indigo-600"
         />
 
         <x-arrow-x.stats.card-3d
-            :value="Auth::user()->commissions()->where('status', 'pending')->count()"
+            :value="$stats['pending']"
             label="รอดำเนินการ"
             icon="fas fa-clock"
             gradient="from-yellow-500 to-orange-600"
         />
 
         <x-arrow-x.stats.card-3d
-            :value="Auth::user()->commissions()->where('status', 'approved')->count()"
+            :value="$stats['approved']"
             label="อนุมัติแล้ว"
             icon="fas fa-check-circle"
             gradient="from-green-500 to-emerald-600"
         />
 
         <x-arrow-x.stats.card-3d
-            :value="Auth::user()->commissions()->where('status', 'paid')->count()"
+            :value="$stats['paid']"
             label="จ่ายแล้ว"
             icon="fas fa-money-bill-wave"
             gradient="from-blue-500 to-cyan-600"
@@ -52,7 +52,7 @@
                                 วันที่
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Order ID
+                                แหล่งที่มา
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                 ประเภท
@@ -75,37 +75,64 @@
                         @foreach($commissions as $commission)
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                    {{ $commission->created_at->format('d/m/Y H:i') }}
+                                    {{ \Carbon\Carbon::parse($commission->created_at)->format('d/m/Y H:i') }}
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    {{ $commission->order_id ?? '-' }}
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    @if($commission->source === 'mlm')
+                                        <span class="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
+                                            <i class="fas fa-network-wired mr-1"></i> MLM
+                                        </span>
+                                    @else
+                                        <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+                                            <i class="fas fa-store mr-1"></i> Marketplace
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                     <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">
-                                        {{ ucfirst($commission->type) }}
+                                        @php
+                                            $typeLabels = [
+                                                'direct' => 'Direct',
+                                                'unilevel_direct' => 'Unilevel Direct',
+                                                'unilevel_indirect' => 'Unilevel Indirect',
+                                                'binary_pair' => 'Binary Pair',
+                                                'binary_matching' => 'Binary Matching',
+                                                'sponsor_bonus' => 'Sponsor Bonus',
+                                                'rank_bonus' => 'Rank Bonus',
+                                                'leadership_bonus' => 'Leadership Bonus',
+                                                'matching_bonus' => 'Matching Bonus',
+                                                'pool_bonus' => 'Pool Bonus',
+                                                'mlm_unilevel' => 'MLM Unilevel',
+                                                'mlm_binary' => 'MLM Binary',
+                                                'bonus' => 'Bonus',
+                                            ];
+                                        @endphp
+                                        {{ $typeLabels[$commission->type] ?? ucfirst(str_replace('_', ' ', $commission->type)) }}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                     ฿{{ number_format($commission->amount, 2) }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    {{ $commission->percentage }}%
+                                    {{ $commission->percentage ? $commission->percentage . '%' : '-' }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                                         @if($commission->status === 'pending') bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400
                                         @elseif($commission->status === 'approved') bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400
                                         @elseif($commission->status === 'paid') bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400
+                                        @elseif($commission->status === 'cancelled') bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-400
                                         @else bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400
                                         @endif">
                                         @if($commission->status === 'pending') รอดำเนินการ
                                         @elseif($commission->status === 'approved') อนุมัติแล้ว
                                         @elseif($commission->status === 'paid') จ่ายแล้ว
+                                        @elseif($commission->status === 'cancelled') ยกเลิก
                                         @else ปฏิเสธ
                                         @endif
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
                                     {{ $commission->notes ?? '-' }}
                                 </td>
                             </tr>
