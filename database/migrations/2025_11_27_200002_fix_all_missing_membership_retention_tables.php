@@ -57,9 +57,11 @@ return new class extends Migration
                 $table->foreignId('user_id')
                     ->constrained('users')
                     ->onDelete('cascade');
-                $table->foreignId('commission_id')
-                    ->nullable()
-                    ->constrained('commissions')
+                // ใช้ mlm_commissions แทน commissions (ตาราง commissions ถูกลบแล้ว)
+                $table->unsignedBigInteger('commission_id')->nullable();
+                $table->foreign('commission_id')
+                    ->references('id')
+                    ->on('mlm_commissions')
                     ->onDelete('set null');
                 $table->string('transaction_type'); // 'purchase', 'commission', 'repair', 'advance_renewal'
                 $table->decimal('points', 10, 2);
