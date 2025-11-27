@@ -10,7 +10,7 @@
     $accentColor = \App\Models\Setting::get('accent_color', '#EC4899');
 @endphp
 
-{{-- 📚 WIKI KNOWLEDGE BASE - V3 VERSION (Tailwind + Alpine.js) --}}
+{{-- 📚 WIKI KNOWLEDGE BASE - MILLENNIUM THEME VERSION (Tailwind + Alpine.js + RGB Glow) --}}
 <div
     x-data="{
         currentCategory: 'story',
@@ -203,27 +203,28 @@
         }
     }"
     x-init="init()"
-    class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-gray-950 dark:via-slate-900 dark:to-purple-950 relative overflow-hidden"
+    class="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-gray-100 dark:from-slate-950 dark:via-slate-900 dark:to-gray-950 relative overflow-hidden"
 >
-    {{-- V3 Floating Glow Effects --}}
+    {{-- Millennium RGB Glow Effects (Pink, Cyan, Purple, Gold) --}}
     <div class="fixed inset-0 pointer-events-none overflow-hidden">
-        <div class="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-purple-500/20 dark:from-blue-600/10 dark:to-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
-        <div class="absolute top-1/2 -left-40 w-80 h-80 bg-gradient-to-br from-pink-400/20 to-rose-500/20 dark:from-pink-600/10 dark:to-rose-600/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
-        <div class="absolute -bottom-40 right-1/3 w-72 h-72 bg-gradient-to-br from-cyan-400/20 to-blue-500/20 dark:from-cyan-600/10 dark:to-blue-600/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+        <div class="absolute -top-40 -right-40 w-96 h-96 bg-[#FF0080]/10 dark:bg-[#FF0080]/5 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute top-1/2 -left-40 w-80 h-80 bg-[#00F0FF]/10 dark:bg-[#00F0FF]/5 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+        <div class="absolute -bottom-40 right-1/3 w-72 h-72 bg-[#7F00FF]/10 dark:bg-[#7F00FF]/5 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+        <div class="absolute top-1/4 right-1/4 w-64 h-64 bg-[#FFD700]/10 dark:bg-[#FFD700]/5 rounded-full blur-3xl animate-pulse" style="animation-delay: 3s;"></div>
     </div>
 
-    {{-- Reading Progress Bar - ติดด้านบน --}}
+    {{-- Reading Progress Bar - ติดด้านบน (Millennium RGB) --}}
     <div class="fixed top-0 left-0 right-0 h-1 bg-gray-200 dark:bg-gray-700 z-50">
         <div
-            class="h-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 transition-all duration-300 shadow-lg shadow-blue-500/50"
+            class="h-full bg-gradient-to-r from-[#FF0080] via-[#00F0FF] to-[#FFD700] transition-all duration-300 shadow-lg shadow-[#FF0080]/50"
             :style="`width: ${scrollProgress}%`"
         ></div>
     </div>
 
-    {{-- Mobile Menu Toggle Button --}}
+    {{-- Mobile Menu Toggle Button (Millennium RGB) --}}
     <button
         @click="mobileMenuOpen = !mobileMenuOpen"
-        class="lg:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95"
+        class="lg:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-gradient-to-br from-[#FF0080] via-[#7F00FF] to-[#00F0FF] hover:from-[#FF0080]/90 hover:via-[#7F00FF]/90 hover:to-[#00F0FF]/90 text-white rounded-full shadow-2xl shadow-[#FF0080]/30 flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95"
         aria-label="เปิด/ปิดเมนู"
     >
         <svg x-show="!mobileMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,11 +253,11 @@
                    lg:rounded-3xl lg:shadow-2xl lg:border lg:border-white/20 dark:lg:border-gray-700/50
                    lg:ring-1 lg:ring-black/5 dark:lg:ring-white/5"
         >
-            {{-- Sidebar Header - V3 Premium Gradient --}}
-            <div class="sticky top-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 text-white p-6 rounded-t-3xl lg:rounded-3xl shadow-2xl shadow-purple-500/30 relative overflow-hidden">
-                {{-- Glow overlay --}}
+            {{-- Sidebar Header - Millennium RGB Gradient --}}
+            <div class="sticky top-0 bg-gradient-to-br from-[#FF0080] via-[#7F00FF] to-[#00F0FF] text-white p-6 rounded-t-3xl lg:rounded-3xl shadow-2xl shadow-[#FF0080]/30 relative overflow-hidden">
+                {{-- RGB Glow overlay --}}
                 <div class="absolute inset-0 bg-gradient-to-t from-black/10 to-white/10"></div>
-                <div class="absolute -top-20 -right-20 w-40 h-40 bg-white/20 rounded-full blur-2xl"></div>
+                <div class="absolute -top-20 -right-20 w-40 h-40 bg-[#FFD700]/30 rounded-full blur-2xl"></div>
                 <div class="relative flex items-center gap-3 mb-4">
                     <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-3xl backdrop-blur-sm shadow-lg border border-white/30">
                         📚
@@ -323,7 +324,7 @@
                                 <a
                                     @click.prevent="changeCategory(item.id)"
                                     href="#"
-                                    class="block px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                    class="block px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-[#FF0080] dark:hover:text-[#00F0FF] hover:bg-[#FF0080]/10 dark:hover:bg-[#00F0FF]/10 rounded-lg transition-colors"
                                     x-text="item.label"
                                 ></a>
                             </template>
@@ -365,21 +366,21 @@
 
         {{-- Main Content Area --}}
         <main class="min-h-screen">
-            {{-- Search Bar - V3 Glassmorphism --}}
+            {{-- Search Bar - Millennium RGB Glassmorphism --}}
             <div class="mb-8">
                 <div class="relative group">
-                    {{-- Glow effect on focus --}}
-                    <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl opacity-0 group-focus-within:opacity-50 blur transition-opacity duration-300"></div>
+                    {{-- RGB Glow effect on focus --}}
+                    <div class="absolute -inset-1 bg-gradient-to-r from-[#FF0080] via-[#00F0FF] to-[#FFD700] rounded-3xl opacity-0 group-focus-within:opacity-50 blur transition-opacity duration-300"></div>
                     <input
                         type="text"
                         x-model="searchQuery"
                         placeholder="🔍 ค้นหาในคู่มือ... (เช่น MLM, Wallet, API)"
                         class="relative w-full px-6 py-5 pr-14 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-2 border-white/30 dark:border-gray-700/50 rounded-2xl
-                               focus:border-purple-400 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20
+                               focus:border-[#FF0080] dark:focus:border-[#00F0FF] focus:ring-4 focus:ring-[#FF0080]/20
                                text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400
                                transition-all duration-300 shadow-xl"
                     >
-                    <button class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white rounded-xl flex items-center justify-center hover:scale-110 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300">
+                    <button class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-br from-[#FF0080] via-[#7F00FF] to-[#00F0FF] text-white rounded-xl flex items-center justify-center hover:scale-110 hover:shadow-lg hover:shadow-[#FF0080]/30 transition-all duration-300">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
@@ -387,17 +388,17 @@
                 </div>
             </div>
 
-            {{-- Content Card - V3 Glassmorphism --}}
+            {{-- Content Card - Millennium Glassmorphism --}}
             <div class="relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 ring-1 ring-black/5 dark:ring-white/5 overflow-hidden">
 
-                {{-- Loading State - V3 Premium --}}
+                {{-- Loading State - Millennium RGB Premium --}}
                 <div x-show="loading" class="flex flex-col items-center justify-center py-32" style="display: none;">
                     <div class="relative">
-                        <div class="w-20 h-20 border-4 border-purple-200 dark:border-purple-900 rounded-full"></div>
-                        <div class="absolute inset-0 w-20 h-20 border-4 border-transparent border-t-purple-600 rounded-full animate-spin"></div>
-                        <div class="absolute inset-2 w-16 h-16 border-4 border-transparent border-t-blue-500 rounded-full animate-spin" style="animation-direction: reverse; animation-duration: 0.8s;"></div>
+                        <div class="w-20 h-20 border-4 border-[#FF0080]/20 dark:border-[#FF0080]/10 rounded-full"></div>
+                        <div class="absolute inset-0 w-20 h-20 border-4 border-transparent border-t-[#FF0080] rounded-full animate-spin"></div>
+                        <div class="absolute inset-2 w-16 h-16 border-4 border-transparent border-t-[#00F0FF] rounded-full animate-spin" style="animation-direction: reverse; animation-duration: 0.8s;"></div>
                     </div>
-                    <p class="mt-6 text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text font-bold text-lg">กำลังโหลดเนื้อหา...</p>
+                    <p class="mt-6 text-transparent bg-gradient-to-r from-[#FF0080] via-[#7F00FF] to-[#00F0FF] bg-clip-text font-bold text-lg">กำลังโหลดเนื้อหา...</p>
                 </div>
 
                 {{-- Content Area --}}
@@ -411,7 +412,7 @@
                     {{-- ภาพรวม & สรุปฟีเจอร์ --}}
                     <div x-show="currentCategory === 'overview'" style="display: none;">
                         <div class="mb-8 pb-8 border-b border-gray-200 dark:border-gray-700">
-                            <h1 class="text-4xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+                            <h1 class="text-4xl font-black bg-gradient-to-r from-[#FF0080] via-[#7F00FF] to-[#00F0FF] bg-clip-text text-transparent mb-4">
                                 🚀 ภาพรวมระบบ Thaiprompt Affiliate
                             </h1>
                             <p class="text-xl text-gray-600 dark:text-gray-400">
@@ -441,7 +442,7 @@
 
                         {{-- ฟีเจอร์หลัก --}}
                         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-                            <span class="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-xl flex items-center justify-center text-xl">✨</span>
+                            <span class="w-10 h-10 bg-gradient-to-br from-[#FF0080] via-[#7F00FF] to-[#00F0FF] text-white rounded-xl flex items-center justify-center text-xl shadow-lg shadow-[#FF0080]/30">✨</span>
                             ฟีเจอร์หลักของระบบ
                         </h2>
 
@@ -590,7 +591,7 @@
                             {{-- Binary System --}}
                             <div class="border-2 border-purple-200 dark:border-purple-800 rounded-xl p-6">
                                 <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-                                    <span class="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 text-white rounded-xl flex items-center justify-center">🌳</span>
+                                    <span class="w-10 h-10 bg-gradient-to-br from-[#FF0080] to-[#7F00FF] text-white rounded-xl flex items-center justify-center shadow-lg shadow-[#FF0080]/30">🌳</span>
                                     Binary System (ระบบทวิภาค)
                                 </h3>
                                 <p class="text-gray-700 dark:text-gray-300 mb-4">
@@ -690,19 +691,19 @@
                             </div>
 
                             @auth
-                            <div class="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-2xl shadow-xl">
+                            <div class="bg-gradient-to-r from-[#FF0080] via-[#7F00FF] to-[#00F0FF] text-white p-6 rounded-2xl shadow-xl shadow-[#FF0080]/30">
                                 <h4 class="text-xl font-bold mb-3">🚀 เริ่มต้นสร้างทีม MLM ของคุณวันนี้!</h4>
                                 <p class="mb-4 opacity-90">
                                     ใช้ลิงก์แนะนำของคุณเพื่อเชิญเพื่อนร่วมทีมและรับคอมมิชชั่น
                                 </p>
                                 <div class="flex flex-wrap gap-3">
-                                    <a href="{{ route('user.mlm.dashboard') }}" class="px-6 py-2 bg-white text-purple-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                                    <a href="{{ route('user.mlm.dashboard') }}" class="px-6 py-2 bg-white text-[#FF0080] rounded-lg font-semibold hover:bg-gray-100 transition-colors">
                                         MLM Dashboard
                                     </a>
-                                    <a href="{{ route('user.mlm.referral') }}" class="px-6 py-2 bg-purple-800 hover:bg-purple-900 text-white rounded-lg font-semibold transition-colors">
+                                    <a href="{{ route('user.mlm.referral') }}" class="px-6 py-2 bg-[#7F00FF] hover:bg-[#6600CC] text-white rounded-lg font-semibold transition-colors">
                                         ลิงก์แนะนำ
                                     </a>
-                                    <a href="{{ route('user.mlm.team') }}" class="px-6 py-2 bg-pink-700 hover:bg-pink-800 text-white rounded-lg font-semibold transition-colors">
+                                    <a href="{{ route('user.mlm.team') }}" class="px-6 py-2 bg-[#00F0FF]/20 hover:bg-[#00F0FF]/30 text-white rounded-lg font-semibold transition-colors border border-white/30">
                                         ดูทีม
                                     </a>
                                 </div>
