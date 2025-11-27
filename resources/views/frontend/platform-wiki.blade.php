@@ -847,6 +847,25 @@
                 </ul>
             </li>
             <li><a href="#investment">📈 Investment & Staking</a></li>
+            <li><a href="#tpix-blockchain">🔗 TPIX Blockchain</a>
+                <ul class="sub-menu">
+                    <li><a href="#tpix-overview">Token Overview</a></li>
+                    <li><a href="#tpix-distribution">Token Distribution</a></li>
+                    <li><a href="#tpix-utility">TPIX Utility</a></li>
+                    <li><a href="#tpix-dex">DEX & Liquidity</a></li>
+                    <li><a href="#tpix-staking">Staking Pools</a></li>
+                    <li><a href="#tpix-carbon">Carbon Credit</a></li>
+                </ul>
+            </li>
+            <li><a href="#food-passport">🥬 Food Passport</a>
+                <ul class="sub-menu">
+                    <li><a href="#food-passport-why">ทำไมต้องมี</a></li>
+                    <li><a href="#food-passport-journey">Supply Chain Journey</a></li>
+                    <li><a href="#food-passport-data">ข้อมูลที่บันทึก</a></li>
+                    <li><a href="#food-passport-qr">QR Code</a></li>
+                    <li><a href="#food-passport-carbon">Carbon Calculator</a></li>
+                </ul>
+            </li>
             <li><a href="#ai-integration">🤖 AI & LINE Bot</a>
                 <ul class="sub-menu">
                     <li><a href="#ai-bot-marketplace">AI Bot Marketplace</a></li>
@@ -3447,6 +3466,586 @@ Step 9: Payment Settlement
             </div>
         </section>
 
+        <!-- TPIX Blockchain Ecosystem Section -->
+        <section id="tpix-blockchain" class="wiki-section">
+            <h2>🔗 TPIX Blockchain Ecosystem - ระบบ Token เศรษฐกิจดิจิทัล</h2>
+
+            <p>
+                <strong>TPIX (ThaiPrompt Index)</strong> คือ Token ดิจิทัลที่เชื่อมโยงทุกระบบในแพลตฟอร์ม
+                ออกแบบบน <strong>Polygon Edge</strong> (Private Blockchain) เพื่อความเร็วและค่าธรรมเนียมต่ำ
+            </p>
+
+            <h3 id="tpix-overview">📊 TPIX Token Overview</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
+                <div class="stat-card">
+                    <div class="stat-number">7B</div>
+                    <div class="stat-label">Total Supply</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">7000</div>
+                    <div class="stat-label">Chain ID</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">~2s</div>
+                    <div class="stat-label">Block Time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">Near-0</div>
+                    <div class="stat-label">Gas Fee</div>
+                </div>
+            </div>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>รายการ</th>
+                        <th>รายละเอียด</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>ชื่อ Token</strong></td>
+                        <td>TPIX (ThaiPrompt Index)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Blockchain</strong></td>
+                        <td>Polygon Edge (Private/Consortium)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Consensus</strong></td>
+                        <td>IBFT 2.0 (Proof of Authority)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total Supply</strong></td>
+                        <td>7,000,000,000 TPIX (Fixed - ไม่ Mint เพิ่ม)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Token Standard</strong></td>
+                        <td>ERC-20 Compatible</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 id="tpix-distribution">💰 Token Distribution</h3>
+
+            <div class="feature-card">
+                <h4 class="text-center mb-4">การกระจาย TPIX 7,000,000,000 Token</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
+                        <div class="text-2xl font-bold text-blue-600">30%</div>
+                        <div class="font-semibold">Ecosystem Development</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">2,100,000,000 TPIX</div>
+                        <ul class="text-xs mt-2 space-y-1">
+                            <li>• DEX Liquidity</li>
+                            <li>• Staking Rewards</li>
+                            <li>• Developer Grants</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 bg-purple-50 dark:bg-purple-900/30 rounded-xl">
+                        <div class="text-2xl font-bold text-purple-600">25%</div>
+                        <div class="font-semibold">Team & Advisors</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">1,750,000,000 TPIX</div>
+                        <ul class="text-xs mt-2 space-y-1">
+                            <li>• 4-year vesting</li>
+                            <li>• 1-year cliff</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 bg-green-50 dark:bg-green-900/30 rounded-xl">
+                        <div class="text-2xl font-bold text-green-600">20%</div>
+                        <div class="font-semibold">Community Rewards</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">1,400,000,000 TPIX</div>
+                        <ul class="text-xs mt-2 space-y-1">
+                            <li>• Airdrops</li>
+                            <li>• Referral Programs</li>
+                            <li>• Loyalty Rewards</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 bg-orange-50 dark:bg-orange-900/30 rounded-xl">
+                        <div class="text-2xl font-bold text-orange-600">15%</div>
+                        <div class="font-semibold">Private Sale</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">1,050,000,000 TPIX</div>
+                        <ul class="text-xs mt-2 space-y-1">
+                            <li>• Strategic Investors</li>
+                            <li>• Early Backers</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-center">
+                    <div class="text-xl font-bold text-gray-600">10% Reserve</div>
+                    <div class="text-sm">700,000,000 TPIX - Emergency & Future Development</div>
+                </div>
+            </div>
+
+            <h3 id="tpix-utility">🎯 TPIX Utility - ใช้ทำอะไรได้บ้าง?</h3>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>Use Case</th>
+                        <th>รายละเอียด</th>
+                        <th>ส่วนลด/โบนัส</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>🛒 ชำระค่าสินค้า</strong></td>
+                        <td>ใช้ TPIX จ่ายแทนเงินบาทใน E-Commerce</td>
+                        <td class="text-green-600 font-bold">ลด 5-10%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>📈 Staking</strong></td>
+                        <td>ล็อค TPIX รับดอกเบี้ย</td>
+                        <td class="text-green-600 font-bold">8-15% APY</td>
+                    </tr>
+                    <tr>
+                        <td><strong>💱 DEX Trading</strong></td>
+                        <td>แลกเปลี่ยน TPIX/THB บน DEX</td>
+                        <td>0.3% fee</td>
+                    </tr>
+                    <tr>
+                        <td><strong>💰 รับ Commission</strong></td>
+                        <td>เลือกรับค่าคอมเป็น TPIX</td>
+                        <td class="text-green-600 font-bold">โบนัส +10%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🌱 Carbon Credit</strong></td>
+                        <td>ซื้อ Carbon Credit ด้วย TPIX</td>
+                        <td>Direct Purchase</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🗳️ Governance</strong></td>
+                        <td>โหวตทิศทางแพลตฟอร์ม</td>
+                        <td>1 TPIX = 1 Vote</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 id="tpix-dex">💱 TPIX DEX - Decentralized Exchange</h3>
+
+            <p>
+                DEX ในตัวใช้ <strong>AMM (Automated Market Maker)</strong> แบบ Constant Product (x * y = k)
+                เหมือน Uniswap/PancakeSwap แต่ทำงานบน TPIX Chain
+            </p>
+
+            <div class="feature-card">
+                <h4 class="mb-4">🏊 Liquidity Pools</h4>
+                <table class="wiki-table">
+                    <thead>
+                        <tr>
+                            <th>Pool</th>
+                            <th>TVL เป้าหมาย</th>
+                            <th>APY</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>TPIX/THB</strong></td>
+                            <td>10,000,000 ฿</td>
+                            <td class="text-green-600 font-bold">12%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>TPIX/USDT</strong></td>
+                            <td>5,000,000 ฿</td>
+                            <td class="text-green-600 font-bold">10%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>TPIX/BNB</strong></td>
+                            <td>2,000,000 ฿</td>
+                            <td class="text-green-600 font-bold">15%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 id="tpix-staking">📈 Staking Pools</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
+                <div class="feature-card text-center">
+                    <div class="text-3xl mb-2">🥉</div>
+                    <div class="text-xl font-bold">Flexible Pool</div>
+                    <div class="text-3xl font-bold text-blue-600 my-2">8% APY</div>
+                    <ul class="text-sm text-left mt-4 space-y-1">
+                        <li>• ถอนได้ทุกเมื่อ</li>
+                        <li>• ไม่มีขั้นต่ำ</li>
+                        <li>• รับดอกเบี้ยรายวัน</li>
+                    </ul>
+                </div>
+                <div class="feature-card text-center border-2 border-purple-500">
+                    <div class="text-3xl mb-2">🥈</div>
+                    <div class="text-xl font-bold">30-Day Lock</div>
+                    <div class="text-3xl font-bold text-purple-600 my-2">12% APY</div>
+                    <ul class="text-sm text-left mt-4 space-y-1">
+                        <li>• ล็อค 30 วัน</li>
+                        <li>• ขั้นต่ำ 1,000 TPIX</li>
+                        <li>• รับดอกเบี้ยรายสัปดาห์</li>
+                    </ul>
+                </div>
+                <div class="feature-card text-center border-2 border-yellow-500">
+                    <div class="text-3xl mb-2">🥇</div>
+                    <div class="text-xl font-bold">90-Day Lock</div>
+                    <div class="text-3xl font-bold text-yellow-600 my-2">15% APY</div>
+                    <ul class="text-sm text-left mt-4 space-y-1">
+                        <li>• ล็อค 90 วัน</li>
+                        <li>• ขั้นต่ำ 10,000 TPIX</li>
+                        <li>• Governance Voting Rights</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3 id="tpix-carbon">🌱 Carbon Credit Integration</h3>
+
+            <p>
+                TPIX เชื่อมโยงกับระบบ <strong>Carbon Credit</strong> ผ่าน Food Passport
+                ฟาร์มที่ลด Carbon Footprint สามารถสร้าง Carbon Credit และขายบน TPIX DEX
+            </p>
+
+            <div class="info-box success">
+                <h4>♻️ Carbon Credit Flow</h4>
+                <ol class="mt-2 space-y-2">
+                    <li><strong>1. ฟาร์มบันทึกข้อมูล:</strong> ใช้ Food Passport บันทึกกิจกรรมลด Carbon</li>
+                    <li><strong>2. ระบบคำนวณ:</strong> AI คำนวณ Carbon Footprint Reduction</li>
+                    <li><strong>3. Mint Credit:</strong> สร้าง Carbon Credit Token (1 Credit = 1 Ton CO2)</li>
+                    <li><strong>4. Trade on DEX:</strong> ขาย Carbon Credit แลก TPIX</li>
+                    <li><strong>5. Buyer Offset:</strong> องค์กรซื้อ Credit เพื่อ Offset</li>
+                </ol>
+            </div>
+
+            <div class="info-box">
+                <h4>🔗 TPIX เชื่อมโยงกับระบบอื่น</h4>
+                <ul class="mt-2 space-y-1">
+                    <li>• <strong>Wallet:</strong> Sync ยอด TPIX กับ THB Wallet อัตโนมัติ</li>
+                    <li>• <strong>E-Commerce:</strong> ชำระค่าสินค้าด้วย TPIX ลด 5%</li>
+                    <li>• <strong>MLM Commission:</strong> รับค่าคอมเป็น TPIX โบนัส +10%</li>
+                    <li>• <strong>Food Passport:</strong> Carbon Credit Trading</li>
+                    <li>• <strong>Games:</strong> รางวัลเกมจ่ายเป็น TPIX/NFT</li>
+                </ul>
+            </div>
+
+            <h3 id="tpix-models">🗄️ Database Models ที่เกี่ยวข้อง</h3>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>หน้าที่</th>
+                        <th>Fields สำคัญ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>TpixWallet</code></td>
+                        <td>กระเป๋า TPIX ของผู้ใช้</td>
+                        <td>user_id, address, balance, private_key_encrypted</td>
+                    </tr>
+                    <tr>
+                        <td><code>TpixTransaction</code></td>
+                        <td>ประวัติธุรกรรม</td>
+                        <td>from_address, to_address, amount, tx_hash, status</td>
+                    </tr>
+                    <tr>
+                        <td><code>TpixPrice</code></td>
+                        <td>ราคา TPIX ย้อนหลัง</td>
+                        <td>price_thb, price_usd, timestamp</td>
+                    </tr>
+                    <tr>
+                        <td><code>StakingPool</code></td>
+                        <td>Pool สำหรับ Staking</td>
+                        <td>name, apy, lock_days, min_amount, total_staked</td>
+                    </tr>
+                    <tr>
+                        <td><code>StakingPosition</code></td>
+                        <td>ตำแหน่ง Stake</td>
+                        <td>user_id, pool_id, amount, start_date, rewards_earned</td>
+                    </tr>
+                    <tr>
+                        <td><code>LiquidityPool</code></td>
+                        <td>Pool DEX</td>
+                        <td>token_a, token_b, reserve_a, reserve_b, fee_rate</td>
+                    </tr>
+                    <tr>
+                        <td><code>CarbonCredit</code></td>
+                        <td>Carbon Credit Token</td>
+                        <td>farm_id, amount_tons, verification_status, tx_hash</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Food Passport Section -->
+        <section id="food-passport" class="wiki-section">
+            <h2>🥬 Food Passport - ระบบตรวจสอบย้อนกลับอาหาร</h2>
+
+            <p>
+                <strong>Food Passport</strong> คือระบบ <strong>Farm-to-Fork Traceability</strong>
+                ที่ติดตามสินค้าเกษตรตั้งแต่ฟาร์มจนถึงผู้บริโภค พร้อมบันทึกลง Blockchain
+            </p>
+
+            <h3 id="food-passport-why">🎯 ทำไมต้องมี Food Passport?</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div class="info-box warning">
+                    <h4>⚠️ ปัญหาในปัจจุบัน</h4>
+                    <ul class="mt-2 space-y-1">
+                        <li>• ไม่รู้ที่มาของอาหาร</li>
+                        <li>• สารเคมีตกค้าง</li>
+                        <li>• การปลอมแปลงสินค้า Organic</li>
+                        <li>• ไม่มีความโปร่งใสใน Supply Chain</li>
+                    </ul>
+                </div>
+                <div class="info-box success">
+                    <h4>✅ Food Passport แก้ปัญหา</h4>
+                    <ul class="mt-2 space-y-1">
+                        <li>• Scan QR เห็นที่มาทันที</li>
+                        <li>• บันทึกการใช้ปุ๋ย/ยาทุกครั้ง</li>
+                        <li>• Blockchain ป้องกันการปลอมแปลง</li>
+                        <li>• Carbon Footprint โปร่งใส</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3 id="food-passport-journey">🚚 Supply Chain Journey</h3>
+
+            <div class="feature-card">
+                <div class="grid grid-cols-2 md:grid-cols-6 gap-2 text-center">
+                    <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
+                        <div class="text-2xl">🌾</div>
+                        <div class="text-xs font-bold mt-1">1. FARM</div>
+                        <div class="text-xs text-gray-600">ปลูก/เลี้ยง</div>
+                    </div>
+                    <div class="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl">
+                        <div class="text-2xl">🧺</div>
+                        <div class="text-xs font-bold mt-1">2. HARVEST</div>
+                        <div class="text-xs text-gray-600">เก็บเกี่ยว</div>
+                    </div>
+                    <div class="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
+                        <div class="text-2xl">🏭</div>
+                        <div class="text-xs font-bold mt-1">3. PROCESS</div>
+                        <div class="text-xs text-gray-600">แปรรูป</div>
+                    </div>
+                    <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+                        <div class="text-2xl">🚛</div>
+                        <div class="text-xs font-bold mt-1">4. DISTRIBUTE</div>
+                        <div class="text-xs text-gray-600">กระจายสินค้า</div>
+                    </div>
+                    <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
+                        <div class="text-2xl">🏪</div>
+                        <div class="text-xs font-bold mt-1">5. RETAIL</div>
+                        <div class="text-xs text-gray-600">ร้านค้า</div>
+                    </div>
+                    <div class="p-3 bg-pink-100 dark:bg-pink-900/30 rounded-xl">
+                        <div class="text-2xl">👨‍👩‍👧</div>
+                        <div class="text-xs font-bold mt-1">6. CONSUMER</div>
+                        <div class="text-xs text-gray-600">ผู้บริโภค</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 id="food-passport-data">📝 ข้อมูลที่บันทึกในแต่ละขั้นตอน</h3>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>ขั้นตอน</th>
+                        <th>ข้อมูลที่บันทึก</th>
+                        <th>ผู้บันทึก</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>🌾 Farm</strong></td>
+                        <td>ที่ตั้งฟาร์ม, ใบรับรอง (GAP/Organic), วันปลูก, พันธุ์พืช</td>
+                        <td>เกษตรกร</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🧪 การดูแล</strong></td>
+                        <td>ปุ๋ยที่ใช้, ยาฆ่าแมลง (ถ้ามี), การให้น้ำ, สภาพอากาศ</td>
+                        <td>เกษตรกร</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🧺 Harvest</strong></td>
+                        <td>วันเก็บเกี่ยว, น้ำหนัก, รูปถ่าย, AI Quality Check</td>
+                        <td>เกษตรกร</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🏭 Processing</strong></td>
+                        <td>กระบวนการแปรรูป, อุณหภูมิ, เวลา, Batch Number</td>
+                        <td>โรงงาน</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🚛 Transport</strong></td>
+                        <td>อุณหภูมิ (IoT), เส้นทาง, เวลา, พนักงานขนส่ง</td>
+                        <td>Logistics</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🏪 Retail</strong></td>
+                        <td>วันรับสินค้า, สถานที่จัดเก็บ, วันหมดอายุ</td>
+                        <td>ร้านค้า</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 id="food-passport-qr">📱 QR Code - สิ่งที่ผู้บริโภคเห็น</h3>
+
+            <div class="feature-card">
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md mx-auto border-2 border-gray-200">
+                    <div class="text-center mb-4">
+                        <div class="text-4xl">🥬</div>
+                        <h4 class="text-xl font-bold">ผักกาดหอม Organic</h4>
+                        <p class="text-sm text-gray-600">สวนผักลุงทอง, เชียงใหม่</p>
+                    </div>
+                    <div class="border-t pt-4 space-y-3">
+                        <div class="flex justify-between text-sm">
+                            <span>📍 Journey:</span>
+                            <span class="font-mono">ฟาร์ม → โรงคัด → ขนส่ง → ร้าน</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>📅 วันปลูก:</span>
+                            <span>1 ต.ค. 2567</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>📅 วันเก็บ:</span>
+                            <span>15 พ.ย. 2567</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>🧪 ยาฆ่าแมลง:</span>
+                            <span class="text-green-600 font-bold">ไม่ใช้ ✓</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>🌱 ปุ๋ย:</span>
+                            <span class="text-green-600 font-bold">อินทรีย์ 100% ✓</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>🌍 Carbon:</span>
+                            <span>0.12 kg CO2e / กก.</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>🏆 Eco Score:</span>
+                            <span class="text-green-600 font-bold text-xl">A</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>⭐ Rating:</span>
+                            <span>4.8/5 (234 reviews)</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 gap-2">
+                        <button class="w-full py-2 bg-blue-500 text-white text-sm rounded-lg">ดูรายละเอียด</button>
+                        <button class="w-full py-2 bg-green-500 text-white text-sm rounded-lg">ซื้อเลย</button>
+                    </div>
+                </div>
+            </div>
+
+            <h3 id="food-passport-carbon">🌍 Carbon Footprint Calculator</h3>
+
+            <div class="info-box">
+                <h4>🧮 ปัจจัยที่ใช้คำนวณ Carbon Footprint</h4>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    <div>
+                        <div class="font-bold">🌾 การเพาะปลูก</div>
+                        <ul class="text-sm">
+                            <li>• ประเภทฟาร์ม (Organic/ทั่วไป)</li>
+                            <li>• พื้นที่ปลูก</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="font-bold">🧪 ปัจจัยการผลิต</div>
+                        <ul class="text-sm">
+                            <li>• ปริมาณปุ๋ยเคมี</li>
+                            <li>• ปริมาณยาฆ่าแมลง</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="font-bold">⚡ พลังงาน</div>
+                        <ul class="text-sm">
+                            <li>• การใช้เครื่องจักร</li>
+                            <li>• ระบบให้น้ำ</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="font-bold">🚛 การขนส่ง</div>
+                        <ul class="text-sm">
+                            <li>• ระยะทาง</li>
+                            <li>• ประเภทพาหนะ</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="font-bold">❄️ การจัดเก็บ</div>
+                        <ul class="text-sm">
+                            <li>• ห้องเย็น</li>
+                            <li>• ระยะเวลา</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="font-bold">📦 บรรจุภัณฑ์</div>
+                        <ul class="text-sm">
+                            <li>• ประเภทวัสดุ</li>
+                            <li>• น้ำหนัก</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <h3 id="food-passport-models">🗄️ Database Models ที่เกี่ยวข้อง</h3>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>หน้าที่</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>Farm</code></td>
+                        <td>ข้อมูลฟาร์ม (ที่ตั้ง, เจ้าของ, พื้นที่, ประเภท)</td>
+                    </tr>
+                    <tr>
+                        <td><code>FarmCertification</code></td>
+                        <td>ใบรับรอง (Organic, GAP, GMP)</td>
+                    </tr>
+                    <tr>
+                        <td><code>FoodProduct</code></td>
+                        <td>สินค้าเกษตร (พืช, ผัก, ผลไม้, เนื้อสัตว์)</td>
+                    </tr>
+                    <tr>
+                        <td><code>SupplyChainStep</code></td>
+                        <td>แต่ละขั้นตอนใน Supply Chain</td>
+                    </tr>
+                    <tr>
+                        <td><code>QrCode</code></td>
+                        <td>QR Code ของสินค้าแต่ละชิ้น</td>
+                    </tr>
+                    <tr>
+                        <td><code>CarbonFootprint</code></td>
+                        <td>ข้อมูล Carbon ของแต่ละสินค้า</td>
+                    </tr>
+                    <tr>
+                        <td><code>IoTReading</code></td>
+                        <td>ข้อมูลจาก Sensor (อุณหภูมิ, ความชื้น)</td>
+                    </tr>
+                    <tr>
+                        <td><code>ConsumerScan</code></td>
+                        <td>ประวัติการ Scan QR จากผู้บริโภค</td>
+                    </tr>
+                    <tr>
+                        <td><code>FoodReview</code></td>
+                        <td>รีวิวจากผู้บริโภค</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="info-box success">
+                <h4>🔗 Food Passport เชื่อมโยงกับระบบอื่น</h4>
+                <ul class="mt-2 space-y-1">
+                    <li>• <strong>TPIX Blockchain:</strong> บันทึก Hash ทุก Transaction</li>
+                    <li>• <strong>Carbon Credit:</strong> ฟาร์ม Organic สร้าง Carbon Credit ขายได้</li>
+                    <li>• <strong>E-Commerce:</strong> ขายสินค้า Traceability ในตลาด</li>
+                    <li>• <strong>MLM:</strong> สินค้า Food Passport ได้ PV x2</li>
+                    <li>• <strong>AI Vision:</strong> ตรวจคุณภาพสินค้าอัตโนมัติ</li>
+                </ul>
+            </div>
+        </section>
+
         <!-- AI & LINE Bot Section -->
         <section id="ai-integration" class="wiki-section">
             <h2>🤖 AI & LINE Bot Integration - อนาคตของการดูแลลูกค้า</h2>
@@ -4776,10 +5375,158 @@ class Affiliate extends Model {
             <h2>💎 สำหรับนักลงทุน (For Investors)</h2>
 
             <p>
-                หากคุณสนใจลงทุนในแพลตฟอร์ม นี่คือข้อมูลสำคัญที่คุณควรรู้:
+                หากคุณสนใจลงทุนในแพลตฟอร์ม นี่คือข้อมูลสำคัญที่คุณควรรู้
+                พร้อม <strong>หลักฐานทางเทคนิค</strong> ที่ตรวจสอบได้จากระบบจริง:
             </p>
 
-            <h3>📊 Market Opportunity</h3>
+            <h3 id="investor-technical-proof">🔬 Technical Proof - หลักฐานจากระบบจริง</h3>
+
+            <div class="info-box">
+                <h4>📊 ตัวเลขจาก Codebase (ตรวจสอบได้)</h4>
+                <p class="text-sm mb-4">ข้อมูลต่อไปนี้มาจากการวิเคราะห์ source code โดยตรง:</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
+                <div class="stat-card">
+                    <div class="stat-number">438</div>
+                    <div class="stat-label">Eloquent Models</div>
+                    <div class="text-xs text-gray-500 mt-1">ครอบคลุม 15+ domains</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">141+</div>
+                    <div class="stat-label">Business Services</div>
+                    <div class="text-xs text-gray-500 mt-1">72,000+ บรรทัดโค้ด</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">500+</div>
+                    <div class="stat-label">API Endpoints</div>
+                    <div class="text-xs text-gray-500 mt-1">RESTful + Sanctum Auth</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">200+</div>
+                    <div class="stat-label">Database Tables</div>
+                    <div class="text-xs text-gray-500 mt-1">MySQL 8.0+</div>
+                </div>
+            </div>
+
+            <h4>🗂️ Model Distribution by Domain</h4>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>โดเมน</th>
+                        <th>จำนวน Models</th>
+                        <th>ตัวอย่าง Models</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>👤 User & Auth</strong></td>
+                        <td>25+</td>
+                        <td>User, Role, Permission, UserProfile, UserSetting</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🔄 MLM System</strong></td>
+                        <td>35+</td>
+                        <td>Affiliate, Commission, Rank, PvHistory, BinaryNode</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🛒 E-Commerce</strong></td>
+                        <td>45+</td>
+                        <td>Product, Order, Cart, Payment, Seller, Review</td>
+                    </tr>
+                    <tr>
+                        <td><strong>💰 Wallet & Finance</strong></td>
+                        <td>30+</td>
+                        <td>Wallet, Transaction, Withdrawal, TpixWallet</td>
+                    </tr>
+                    <tr>
+                        <td><strong>💬 LINE Bot</strong></td>
+                        <td>25+</td>
+                        <td>LineBotAiSetting, LineSignupSession, LineMessage</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🔗 TPIX Blockchain</strong></td>
+                        <td>20+</td>
+                        <td>TpixTransaction, StakingPool, LiquidityPool</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🥬 Food Passport</strong></td>
+                        <td>15+</td>
+                        <td>Farm, FoodProduct, SupplyChainStep, CarbonFootprint</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🤖 AI Bot</strong></td>
+                        <td>20+</td>
+                        <td>AiBotProfile, AiInstallation, AiChat, AiPrompt</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🎮 Games</strong></td>
+                        <td>15+</td>
+                        <td>TarotCard, TarotReading, LotteryTicket, Prize</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🏨 Hotel</strong></td>
+                        <td>20+</td>
+                        <td>Hotel, Room, Booking, HotelPayment, RoomType</td>
+                    </tr>
+                    <tr>
+                        <td><strong>📅 Service Booking</strong></td>
+                        <td>15+</td>
+                        <td>Service, ServiceProvider, Appointment</td>
+                    </tr>
+                    <tr>
+                        <td><strong>📦 Others</strong></td>
+                        <td>173+</td>
+                        <td>Notification, ActivityLog, Setting, Media</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>⚙️ Core Services (Business Logic)</h4>
+
+            <div class="feature-card">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h5 class="font-bold mb-2">💰 Financial Services</h5>
+                        <ul class="text-sm space-y-1">
+                            <li>• <code>WalletService</code> - 18,468 lines</li>
+                            <li>• <code>MlmCommissionService</code> - 8,500+ lines</li>
+                            <li>• <code>PaymentService</code> - 5,200+ lines</li>
+                            <li>• <code>WithdrawalService</code> - 3,800+ lines</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h5 class="font-bold mb-2">🔄 MLM Services</h5>
+                        <ul class="text-sm space-y-1">
+                            <li>• <code>RankingService</code> - 10,028 lines</li>
+                            <li>• <code>BinaryTreeService</code> - 4,500+ lines</li>
+                            <li>• <code>PvCalculationService</code> - 2,800+ lines</li>
+                            <li>• <code>PoolBonusService</code> - 1,900+ lines</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h5 class="font-bold mb-2">📧 Communication Services</h5>
+                        <ul class="text-sm space-y-1">
+                            <li>• <code>EmailService</code> - 11,285 lines</li>
+                            <li>• <code>NotificationService</code> - 14,104 lines</li>
+                            <li>• <code>LineMessageService</code> - 6,200+ lines</li>
+                            <li>• <code>SmsService</code> - 2,100+ lines</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h5 class="font-bold mb-2">🤖 AI Services</h5>
+                        <ul class="text-sm space-y-1">
+                            <li>• <code>AiChatService</code> - 7,800+ lines</li>
+                            <li>• <code>TarotService</code> - 3,500+ lines</li>
+                            <li>• <code>AiVisionService</code> - 2,400+ lines</li>
+                            <li>• <code>RagService</code> - 4,100+ lines</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <h3 id="investor-market">📊 Market Opportunity</h3>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-6">
                 <div class="stat-card">
@@ -4787,7 +5534,7 @@ class Affiliate extends Model {
                     <div class="stat-label">MLM Market Size (Thailand)</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number">฿650B</div>
+                    <div class="stat-number">฿700B</div>
                     <div class="stat-label">E-Commerce Market Size</div>
                 </div>
                 <div class="stat-card">
@@ -4796,7 +5543,219 @@ class Affiliate extends Model {
                 </div>
             </div>
 
-            <h3>💰 Investment Terms</h3>
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>ตลาด</th>
+                        <th>มูลค่า (บาท/ปี)</th>
+                        <th>ส่วนแบ่งเป้าหมาย</th>
+                        <th>Revenue Potential</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>E-Commerce ไทย</strong></td>
+                        <td>700,000 ล้าน</td>
+                        <td>0.5%</td>
+                        <td class="text-green-600 font-bold">3,500 ล้าน</td>
+                    </tr>
+                    <tr>
+                        <td><strong>MLM/Direct Sales</strong></td>
+                        <td>80,000 ล้าน</td>
+                        <td>2%</td>
+                        <td class="text-green-600 font-bold">1,600 ล้าน</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Food Traceability</strong></td>
+                        <td>15,000 ล้าน</td>
+                        <td>5%</td>
+                        <td class="text-green-600 font-bold">750 ล้าน</td>
+                    </tr>
+                    <tr>
+                        <td><strong>AI Chatbot</strong></td>
+                        <td>5,000 ล้าน</td>
+                        <td>3%</td>
+                        <td class="text-green-600 font-bold">150 ล้าน</td>
+                    </tr>
+                    <tr class="bg-blue-50 dark:bg-blue-900/30">
+                        <td colspan="3"><strong>รวมศักยภาพ</strong></td>
+                        <td class="text-blue-600 font-bold text-xl">~6,000 ล้าน/ปี</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 id="investor-revenue">💰 Revenue Model - 8 ช่องทางรายได้</h3>
+
+            <div class="feature-card">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="p-4 border rounded-xl">
+                        <h5 class="font-bold text-lg mb-2">1. 🛒 E-Commerce Commission</h5>
+                        <p class="text-sm text-gray-600">2-5% จากทุกการขาย</p>
+                        <p class="text-xs mt-2">GMV เป้าหมาย: 100M/เดือน → <strong class="text-green-600">2-5M/เดือน</strong></p>
+                    </div>
+                    <div class="p-4 border rounded-xl">
+                        <h5 class="font-bold text-lg mb-2">2. 📦 SaaS Subscription</h5>
+                        <p class="text-sm text-gray-600">ค่าบริการรายเดือน</p>
+                        <ul class="text-xs mt-2 space-y-1">
+                            <li>• Seller Pro: 299฿ × 1,000 = <strong>299K</strong></li>
+                            <li>• AI Bot: 990฿ × 500 = <strong>495K</strong></li>
+                            <li>• Enterprise: 9,900฿ × 50 = <strong>495K</strong></li>
+                        </ul>
+                    </div>
+                    <div class="p-4 border rounded-xl">
+                        <h5 class="font-bold text-lg mb-2">3. 🤖 AI Bot Marketplace</h5>
+                        <p class="text-sm text-gray-600">ขาย Bot สำเร็จรูป</p>
+                        <ul class="text-xs mt-2 space-y-1">
+                            <li>• One-time: 1,990-99,000฿</li>
+                            <li>• Revenue Share: 10-30%</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 border rounded-xl">
+                        <h5 class="font-bold text-lg mb-2">4. 💳 Payment Fee</h5>
+                        <p class="text-sm text-gray-600">0.5-1% จาก Transaction</p>
+                        <p class="text-xs mt-2">Volume: 200M/เดือน → <strong class="text-green-600">1-2M/เดือน</strong></p>
+                    </div>
+                    <div class="p-4 border rounded-xl">
+                        <h5 class="font-bold text-lg mb-2">5. 🔗 TPIX Economics</h5>
+                        <p class="text-sm text-gray-600">Token และ DEX</p>
+                        <ul class="text-xs mt-2 space-y-1">
+                            <li>• DEX Trading Fee: 0.3%</li>
+                            <li>• Staking Fee: 10% of rewards</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 border rounded-xl">
+                        <h5 class="font-bold text-lg mb-2">6. 🥬 Food Passport</h5>
+                        <p class="text-sm text-gray-600">บริการ Traceability</p>
+                        <ul class="text-xs mt-2 space-y-1">
+                            <li>• Farm Registration: 1,990฿/ปี</li>
+                            <li>• QR Code: 0.50฿/ชิ้น</li>
+                            <li>• Carbon Credit: 5% commission</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 border rounded-xl">
+                        <h5 class="font-bold text-lg mb-2">7. 🏨 Booking Commission</h5>
+                        <p class="text-sm text-gray-600">8-15% จาก Hotel/Service</p>
+                        <p class="text-xs mt-2">Volume: 10M/เดือน → <strong class="text-green-600">800K-1.5M/เดือน</strong></p>
+                    </div>
+                    <div class="p-4 border rounded-xl">
+                        <h5 class="font-bold text-lg mb-2">8. 🎮 Games & Entertainment</h5>
+                        <p class="text-sm text-gray-600">Tarot, Lottery, Mini Games</p>
+                        <ul class="text-xs mt-2 space-y-1">
+                            <li>• Tarot: 50K × 50฿ = <strong>2.5M/เดือน</strong></li>
+                            <li>• Lottery: 5% commission</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <h3 id="investor-unit-economics">📈 Unit Economics</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div class="feature-card">
+                    <h4 class="font-bold mb-4">Customer Acquisition Cost (CAC)</h4>
+                    <table class="wiki-table">
+                        <tbody>
+                            <tr>
+                                <td>Paid Ads</td>
+                                <td class="text-right">150 บาท/user</td>
+                            </tr>
+                            <tr>
+                                <td>Referral (MLM)</td>
+                                <td class="text-right text-green-600">50 บาท/user</td>
+                            </tr>
+                            <tr>
+                                <td>Organic</td>
+                                <td class="text-right text-green-600">0 บาท/user</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="feature-card">
+                    <h4 class="font-bold mb-4">Lifetime Value (LTV)</h4>
+                    <table class="wiki-table">
+                        <tbody>
+                            <tr>
+                                <td>E-Commerce User</td>
+                                <td class="text-right">1,500 บาท (3 ปี)</td>
+                            </tr>
+                            <tr>
+                                <td>Subscription User</td>
+                                <td class="text-right">7,176 บาท (2 ปี)</td>
+                            </tr>
+                            <tr>
+                                <td>AI Bot Customer</td>
+                                <td class="text-right">17,820 บาท (1.5 ปี)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="info-box success">
+                <h4>✅ LTV/CAC Ratio (ยิ่งสูงยิ่งดี)</h4>
+                <div class="grid grid-cols-3 gap-4 mt-4 text-center">
+                    <div>
+                        <div class="text-3xl font-bold text-green-600">10x</div>
+                        <div class="text-sm">E-Commerce</div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold text-green-600">48x</div>
+                        <div class="text-sm">Subscription</div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold text-green-600">119x</div>
+                        <div class="text-sm">AI Bot</div>
+                    </div>
+                </div>
+                <p class="text-sm mt-4 text-center">* Industry benchmark คือ 3x ขึ้นไปถือว่าดี</p>
+            </div>
+
+            <h3 id="investor-projection">📊 Revenue Projection (Conservative)</h3>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>ปี</th>
+                        <th>GMV (ล้านบาท)</th>
+                        <th>Revenue (ล้านบาท)</th>
+                        <th>หมายเหตุ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Year 1</td>
+                        <td>50</td>
+                        <td>5</td>
+                        <td>MVP Launch</td>
+                    </tr>
+                    <tr>
+                        <td>Year 2</td>
+                        <td>200</td>
+                        <td>20</td>
+                        <td>Product-Market Fit</td>
+                    </tr>
+                    <tr>
+                        <td>Year 3</td>
+                        <td>800</td>
+                        <td>80</td>
+                        <td>Scale Up</td>
+                    </tr>
+                    <tr>
+                        <td>Year 4</td>
+                        <td>2,000</td>
+                        <td>200</td>
+                        <td>Market Leader</td>
+                    </tr>
+                    <tr class="bg-green-50 dark:bg-green-900/30">
+                        <td>Year 5</td>
+                        <td>5,000</td>
+                        <td class="text-green-600 font-bold text-xl">500</td>
+                        <td>Regional Expansion</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 id="investor-terms">💰 Investment Terms</h3>
 
             <table class="wiki-table">
                 <thead>
@@ -4829,23 +5788,60 @@ class Affiliate extends Model {
                 </tbody>
             </table>
 
-            <h3>🎯 Competitive Advantages</h3>
+            <h3 id="investor-advantages">🎯 Competitive Advantages</h3>
 
             <div class="feature-card">
                 <h4 class="text-xl font-bold mb-4">ทำไมเราถึงชนะคู่แข่ง?</h4>
                 <ol class="space-y-3">
-                    <li><strong>1. Technology Stack:</strong> ใช้เทคโนโลยีที่ทันสมัยกว่า (AI, Blockchain Concept)</li>
-                    <li><strong>2. User Experience:</strong> UI/UX ที่ดีกว่า ใช้งานง่ายกว่า</li>
-                    <li><strong>3. Transparency:</strong> ระบบโปร่งใส ตรวจสอบได้ทุกขั้นตอน</li>
-                    <li><strong>4. Low Cost:</strong> ค่าใช้จ่ายต่ำกว่า เพราะใช้ Automation</li>
-                    <li><strong>5. Network Effect:</strong> ยิ่งมีคนใช้ ยิ่งมีค่า (เหมือน Facebook)</li>
+                    <li><strong>1. Technology Stack:</strong> ใช้เทคโนโลยีที่ทันสมัยกว่า (AI, Blockchain Concept) - 438 Models, 141 Services</li>
+                    <li><strong>2. All-in-One Platform:</strong> ไม่ต้องใช้หลายแอป - MLM + E-Commerce + Wallet + AI รวมในที่เดียว</li>
+                    <li><strong>3. Transparency:</strong> ระบบโปร่งใส ตรวจสอบได้ทุกขั้นตอน บันทึกลง Blockchain</li>
+                    <li><strong>4. Low Cost:</strong> ค่าใช้จ่ายต่ำกว่า เพราะใช้ AI Automation - ลดค่า Customer Service 70%</li>
+                    <li><strong>5. Network Effect:</strong> ยิ่งมีคนใช้ ยิ่งมีค่า - MLM สร้าง Viral Growth</li>
+                    <li><strong>6. Thai-First:</strong> พัฒนาโดยคนไทย เข้าใจตลาดไทย - เงินหมุนเวียนในประเทศ</li>
+                    <li><strong>7. Carbon Credit:</strong> รายได้จาก ESG/Sustainability - ตลาด Carbon Credit โตปีละ 30%</li>
                 </ol>
             </div>
 
-            <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-8 text-center my-8">
+            <h3 id="investor-risk">⚠️ Risk & Mitigation</h3>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>ความเสี่ยง</th>
+                        <th>ระดับ</th>
+                        <th>การจัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Regulatory Risk</strong></td>
+                        <td><span class="badge badge-yellow">Medium</span></td>
+                        <td>ปรึกษา ก.ล.ต., Legal Review, KYC/AML</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Competition</strong></td>
+                        <td><span class="badge badge-red">High</span></td>
+                        <td>Focus Thai Market, Innovation, Network Effect</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Technical Failure</strong></td>
+                        <td><span class="badge badge-green">Low</span></td>
+                        <td>99.9% SLA, Backup, DR Plan, 24/7 Monitoring</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Token Volatility</strong></td>
+                        <td><span class="badge badge-yellow">Medium</span></td>
+                        <td>Utility-first, Staking Incentives, Buyback</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 rounded-2xl p-8 text-center my-8">
                 <h3 class="text-3xl font-bold mb-4">📧 Contact for Investment</h3>
-                <p class="text-gray-700 mb-6">
-                    สนใจลงทุนหรือต้องการข้อมูลเพิ่มเติม?
+                <p class="text-gray-700 dark:text-gray-300 mb-6">
+                    สนใจลงทุนหรือต้องการข้อมูลเพิ่มเติม? <br>
+                    <span class="text-sm">พร้อมให้ข้อมูล Technical Due Diligence</span>
                 </p>
                 <a href="{{ route('contact') }}" class="inline-block px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-lg font-bold rounded-full hover:shadow-2xl transition">
                     ติดต่อเรา →
@@ -4861,9 +5857,11 @@ class Affiliate extends Model {
     <h4>Quick Jump</h4>
     <ul>
         <li><a href="#introduction">บทนำ</a></li>
-        <li><a href="#problems">ปัญหา</a></li>
         <li><a href="#mlm-system">MLM</a></li>
         <li><a href="#ecommerce">E-Commerce</a></li>
+        <li><a href="#tpix-blockchain">TPIX</a></li>
+        <li><a href="#food-passport">Food Passport</a></li>
+        <li><a href="#for-investors">นักลงทุน</a></li>
     </ul>
 </div>
 
