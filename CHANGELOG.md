@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.225.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1704 from xjanova/claude/gps-monitor-fullscreen-016ZAYsgyUpQiAqYaQK51cgc (b97c3bdc)
+- feat: add fullscreen mode to GPS Monitoring Center (8d3f674f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.224.1] - 2025-11-27
 
 ### ✨ Features
