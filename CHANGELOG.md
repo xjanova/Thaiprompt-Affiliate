@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.231.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1711 from xjanova/claude/improve-workflow-diagram-01DvS7GA4AwJosArsFMc55Ya (81dd1777)
+- feat: เพิ่มระบบวาดผังสายงานแบบ n8n Style (Workflow Diagram) (f1853f7a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.230.1] - 2025-11-27
 
 ### ✨ Features
