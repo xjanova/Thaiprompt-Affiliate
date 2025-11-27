@@ -878,6 +878,14 @@
             <li><a href="#case-studies">📚 กรณีศึกษา</a></li>
             <li><a href="#roadmap">🗺️ แผนอนาคต</a></li>
             <li><a href="#for-investors">💎 สำหรับนักลงทุน</a></li>
+            <li><a href="#tpix-whitepaper">🪙 TPIX Whitepaper</a>
+                <ul class="sub-menu">
+                    <li><a href="#tpix-overview">Overview</a></li>
+                    <li><a href="#tpix-tokenomics">Tokenomics</a></li>
+                    <li><a href="#tpix-usecases">Use Cases</a></li>
+                    <li><a href="#tpix-roadmap">Roadmap</a></li>
+                </ul>
+            </li>
         </ul>
     </aside>
 
@@ -4849,6 +4857,394 @@ class Affiliate extends Model {
                 </p>
                 <a href="{{ route('contact') }}" class="inline-block px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-lg font-bold rounded-full hover:shadow-2xl transition">
                     ติดต่อเรา →
+                </a>
+            </div>
+        </section>
+
+        <!-- TPIX Whitepaper Section -->
+        <section id="tpix-whitepaper" class="wiki-section">
+            <h2>🪙 TPIX Whitepaper - Native Cryptocurrency for Thaiprompt Affiliate</h2>
+
+            <p>
+                <strong>TPIX (Thaiprompt Index)</strong> คือ Native Cryptocurrency ของแพลตฟอร์ม Thaiprompt Affiliate
+                ที่มี Blockchain ของตัวเอง ออกแบบมาเพื่อรองรับระบบ Affiliate Rewards, E-Commerce, และ DeFi อย่างครบวงจร
+            </p>
+
+            <div class="info-box success">
+                <h4>📊 TPIX at a Glance</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-600 dark:text-green-400">7,000,000,000</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">Total Supply</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">2 วินาที</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">Block Time</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">~1,500 TPS</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">Transactions/Second</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-pink-600 dark:text-pink-400">~10 วินาที</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">Finality Time</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 id="tpix-overview">🌐 TPIX Network Overview</h3>
+
+            <p>
+                TPIX Network เป็น Private Blockchain ที่ใช้ <strong>IBFT (Istanbul Byzantine Fault Tolerant)</strong> Consensus
+                พร้อมรองรับ <strong>EVM (Ethereum Virtual Machine)</strong> ทำให้สามารถ Deploy Smart Contracts ด้วย Solidity ได้
+            </p>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>คุณสมบัติ</th>
+                        <th>รายละเอียด</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Network Name</strong></td>
+                        <td>TPIX Network</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Native Coin</strong></td>
+                        <td>Thaiprompt Index (TPIX)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Chain ID</strong></td>
+                        <td>7000</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total Supply</strong></td>
+                        <td>7,000,000,000 TPIX (Fixed Supply)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Decimals</strong></td>
+                        <td>18</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Block Time</strong></td>
+                        <td>~2 seconds</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Consensus</strong></td>
+                        <td>IBFT (Istanbul Byzantine Fault Tolerant)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Smart Contracts</strong></td>
+                        <td>EVM Compatible (Solidity)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Finality</strong></td>
+                        <td>~10 seconds (5 blocks)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>TPS</strong></td>
+                        <td>~1,500 transactions/second</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Avg Gas Price</strong></td>
+                        <td>1 Gwei</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Avg Transaction Cost</strong></td>
+                        <td>~0.000021 TPIX</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 id="tpix-tokenomics">📊 Tokenomics - การกระจายเหรียญ</h3>
+
+            <p>
+                TPIX มี Total Supply คงที่ที่ <strong>7,000,000,000 TPIX</strong> ไม่มีการ Mint เพิ่ม
+                เพื่อรักษามูลค่าและป้องกันเงินเฟ้อ
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 my-6">
+                <div class="feature-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <h4 class="text-xl font-bold">🌱 Ecosystem Development</h4>
+                    <div class="text-4xl font-bold my-4">30%</div>
+                    <p class="text-sm opacity-90">2,100,000,000 TPIX</p>
+                    <p class="text-sm mt-2 opacity-80">พัฒนาระบบ, Infrastructure, และการขยายธุรกิจ</p>
+                </div>
+
+                <div class="feature-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+                    <h4 class="text-xl font-bold">🎁 Affiliate Rewards</h4>
+                    <div class="text-4xl font-bold my-4">25%</div>
+                    <p class="text-sm opacity-90">1,750,000,000 TPIX</p>
+                    <p class="text-sm mt-2 opacity-80">รางวัลสำหรับสมาชิก Affiliate และกิจกรรมต่างๆ</p>
+                </div>
+
+                <div class="feature-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
+                    <h4 class="text-xl font-bold">💰 Staking Rewards</h4>
+                    <div class="text-4xl font-bold my-4">20%</div>
+                    <p class="text-sm opacity-90">1,400,000,000 TPIX</p>
+                    <p class="text-sm mt-2 opacity-80">ผลตอบแทนสำหรับการ Stake TPIX</p>
+                </div>
+
+                <div class="feature-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white;">
+                    <h4 class="text-xl font-bold">👥 Team & Advisors</h4>
+                    <div class="text-4xl font-bold my-4">15%</div>
+                    <p class="text-sm opacity-90">1,050,000,000 TPIX</p>
+                    <p class="text-sm mt-2 opacity-80">ทีมพัฒนาและที่ปรึกษา (Vesting 2 ปี)</p>
+                </div>
+
+                <div class="feature-card" style="background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); color: white;">
+                    <h4 class="text-xl font-bold">📣 Marketing & Partnerships</h4>
+                    <div class="text-4xl font-bold my-4">10%</div>
+                    <p class="text-sm opacity-90">700,000,000 TPIX</p>
+                    <p class="text-sm mt-2 opacity-80">การตลาดและพันธมิตรธุรกิจ</p>
+                </div>
+            </div>
+
+            <h3 id="tpix-usecases">💡 Use Cases - การใช้งาน TPIX</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div class="feature-card">
+                    <div class="feature-icon">🎁</div>
+                    <h4>ระบบรางวัล Affiliate</h4>
+                    <p>ผู้ใช้สามารถรับ TPIX จากการทำกิจกรรมต่างๆ:</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• รับ 100 TPIX เมื่อสมัครสมาชิกใหม่</li>
+                        <li>• รับ 50 TPIX เมื่อแนะนำเพื่อน</li>
+                        <li>• Cashback 5% เป็น TPIX จากการซื้อสินค้า</li>
+                        <li>• รับ 25 TPIX จากการทำ Quest สำเร็จ</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🛒</div>
+                    <h4>ชำระเงินภายในระบบ</h4>
+                    <p>ใช้ TPIX ชำระค่าสินค้าและบริการ:</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• ซื้อ AI Bot Packages</li>
+                        <li>• ซื้อ Trading Bot Subscriptions</li>
+                        <li>• ชำระค่า Hotel Booking</li>
+                        <li>• ซื้อ Digital Products</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h4>Decentralized Exchange (DEX)</h4>
+                    <p>ซื้อขาย tokens และเพิ่ม liquidity:</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• Swap tokens ด้วย AMM</li>
+                        <li>• เพิ่ม Liquidity รับค่าธรรมเนียม 0.3%</li>
+                        <li>• Farming & Yield Optimization</li>
+                        <li>• ติดตาม Impermanent Loss</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">💎</div>
+                    <h4>Staking Pools</h4>
+                    <p>Stake TPIX เพื่อรับผลตอบแทน:</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• APY สูงสุด 120% ต่อปี</li>
+                        <li>• Lock periods หลากหลาย (7-365 วัน)</li>
+                        <li>• Auto-compound rewards</li>
+                        <li>• Unstake ได้ทันที (flexible staking)</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🏭</div>
+                    <h4>Token Economy</h4>
+                    <p>สร้าง custom tokens สำหรับธุรกิจ:</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• Point Token (สะสมแต้ม)</li>
+                        <li>• Voucher Token (บัตรกำนัล)</li>
+                        <li>• Reward Token (รางวัล)</li>
+                        <li>• Membership Token (สมาชิก VIP)</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🌾</div>
+                    <h4>FoodPassport System</h4>
+                    <p>ตรวจสอบคุณภาพอาหารบน Blockchain:</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• Traceability จากฟาร์มถึงผู้บริโภค</li>
+                        <li>• Certificate Management เป็น NFT</li>
+                        <li>• Smart Contracts ชำระเงินอัตโนมัติ</li>
+                        <li>• รับ TPIX เมื่อรายงานข้อมูลคุณภาพ</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🚚</div>
+                    <h4>Multi-Service Delivery</h4>
+                    <p>แพลตฟอร์มส่งอาหารและบริการ:</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• Food & Grocery Delivery</li>
+                        <li>• Cashback 3% ทุกออเดอร์</li>
+                        <li>• Rider ได้รับ TPIX จากการส่ง</li>
+                        <li>• Merchant Settlement ทันที</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🌱</div>
+                    <h4>IoT Smart Farm & Carbon Credit</h4>
+                    <p>ฟาร์มอัจฉริยะและคาร์บอนเครดิต:</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• Real-time Monitoring ด้วย IoT</li>
+                        <li>• ขายข้อมูลเกษตรเป็น TPIX</li>
+                        <li>• Carbon Credit Trading</li>
+                        <li>• รับ TPIX จากการลดคาร์บอน</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>⚙️ Technology Stack</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
+                <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                    <h4 class="font-bold mb-2 text-blue-600 dark:text-blue-400">🔗 Blockchain</h4>
+                    <ul class="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                        <li>• Polygon Edge (Go)</li>
+                        <li>• IBFT Consensus</li>
+                        <li>• EVM Compatible</li>
+                        <li>• LevelDB Storage</li>
+                    </ul>
+                </div>
+                <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                    <h4 class="font-bold mb-2 text-green-600 dark:text-green-400">🖥️ Backend</h4>
+                    <ul class="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                        <li>• Laravel 11</li>
+                        <li>• PHP 8.2+</li>
+                        <li>• MySQL 8.0+</li>
+                        <li>• Redis</li>
+                    </ul>
+                </div>
+                <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                    <h4 class="font-bold mb-2 text-purple-600 dark:text-purple-400">📜 Smart Contracts</h4>
+                    <ul class="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                        <li>• Solidity ^0.8.20</li>
+                        <li>• Hardhat</li>
+                        <li>• OpenZeppelin</li>
+                        <li>• ethers.js</li>
+                    </ul>
+                </div>
+                <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                    <h4 class="font-bold mb-2 text-pink-600 dark:text-pink-400">🏗️ Infrastructure</h4>
+                    <ul class="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                        <li>• Docker</li>
+                        <li>• Blockscout Explorer</li>
+                        <li>• Prometheus</li>
+                        <li>• Grafana</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3 id="tpix-roadmap">🗺️ TPIX Roadmap (2023-2026)</h3>
+
+            <div class="space-y-6 my-6">
+                <div class="feature-card border-l-4 border-green-500">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2 py-1 text-xs font-bold rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">✅ COMPLETED</span>
+                        <span class="font-bold">Phase 1: Concept & Foundation (Q1-Q2 2023)</span>
+                    </div>
+                    <ul class="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                        <li>✅ Whitepaper & Tokenomics Design</li>
+                        <li>✅ Technical Architecture Planning</li>
+                        <li>✅ Team Formation</li>
+                        <li>✅ Initial Funding & Partnerships</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card border-l-4 border-green-500">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2 py-1 text-xs font-bold rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">✅ COMPLETED</span>
+                        <span class="font-bold">Phase 2: Blockchain Development (Q3-Q4 2023)</span>
+                    </div>
+                    <ul class="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                        <li>✅ Blockchain core implementation</li>
+                        <li>✅ TPIX native coin (7B fixed supply)</li>
+                        <li>✅ IBFT consensus mechanism</li>
+                        <li>✅ EVM integration & Testnet deployment</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card border-l-4 border-green-500">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2 py-1 text-xs font-bold rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">✅ COMPLETED</span>
+                        <span class="font-bold">Phase 3: Platform Integration (Q1-Q2 2024)</span>
+                    </div>
+                    <ul class="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                        <li>✅ Laravel service integration</li>
+                        <li>✅ REST API endpoints</li>
+                        <li>✅ Block explorer (Blockscout)</li>
+                        <li>✅ Monitoring (Prometheus + Grafana)</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card border-l-4 border-yellow-500">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2 py-1 text-xs font-bold rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">🚧 IN PROGRESS</span>
+                        <span class="font-bold">Phase 4: Ecosystem Expansion (Q3-Q4 2024)</span>
+                    </div>
+                    <ul class="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                        <li>🚧 DEX (Decentralized Exchange)</li>
+                        <li>✅ Staking Pools</li>
+                        <li>✅ Faucet service (แจก TPIX ฟรี)</li>
+                        <li>🚧 SDK development (PHP, JS, Python)</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card border-l-4 border-yellow-500">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2 py-1 text-xs font-bold rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">🚧 IN PROGRESS</span>
+                        <span class="font-bold">Phase 5: Real-World Applications (Q1-Q2 2025)</span>
+                    </div>
+                    <ul class="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                        <li>🚧 FoodPassport Integration</li>
+                        <li>📅 Multi-Service Delivery Platform</li>
+                        <li>📅 IoT Smart Farm System</li>
+                        <li>✅ AI Bot Marketplace</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card border-l-4 border-gray-400">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2 py-1 text-xs font-bold rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">📅 PLANNED</span>
+                        <span class="font-bold">Phase 6: Mainnet & Scaling (Q3-Q4 2025)</span>
+                    </div>
+                    <ul class="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                        <li>📅 Mainnet launch</li>
+                        <li>📅 Mobile wallet app</li>
+                        <li>📅 Bridge to other blockchains</li>
+                        <li>📅 Governance system (DAO)</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card border-l-4 border-gray-400">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2 py-1 text-xs font-bold rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">📅 PLANNED</span>
+                        <span class="font-bold">Phase 7-8: Global Expansion (2026)</span>
+                    </div>
+                    <ul class="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                        <li>📅 International Exchange Listings</li>
+                        <li>📅 Cross-chain Interoperability</li>
+                        <li>📅 AI-Powered Trading Tools</li>
+                        <li>📅 Decentralized Identity (DID)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl p-8 text-center my-8">
+                <h3 class="text-3xl font-bold mb-4 text-gray-800 dark:text-gray-100">📄 อ่าน Full Whitepaper</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-6">
+                    ต้องการข้อมูลเชิงลึกเพิ่มเติม? อ่าน TPIX Whitepaper ฉบับเต็ม
+                </p>
+                <a href="{{ route('tpix.whitepaper') }}" class="inline-block px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-lg font-bold rounded-full hover:shadow-2xl transition">
+                    ดู Whitepaper ฉบับเต็ม →
                 </a>
             </div>
         </section>
