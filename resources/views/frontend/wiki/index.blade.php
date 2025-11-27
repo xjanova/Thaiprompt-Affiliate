@@ -328,6 +328,7 @@
                     <span>⚡</span> ลิงก์ด่วน
                 </h3>
                 <div class="space-y-2">
+                    @auth
                     <a href="{{ route('user.tickets.create') }}" class="block px-3 py-2 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors">
                         🎫 สร้าง Support Ticket
                     </a>
@@ -337,6 +338,17 @@
                     <a href="{{ route('user.mlm.dashboard') }}" class="block px-3 py-2 text-xs bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-colors">
                         💎 MLM Dashboard
                     </a>
+                    @else
+                    <a href="{{ route('login') }}" class="block px-3 py-2 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors">
+                        🔐 เข้าสู่ระบบ
+                    </a>
+                    <a href="{{ route('register') }}" class="block px-3 py-2 text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors">
+                        📝 สมัครสมาชิก
+                    </a>
+                    <a href="{{ route('marketplace.index') }}" class="block px-3 py-2 text-xs bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-colors">
+                        🛒 ตลาดสินค้า
+                    </a>
+                    @endauth
                 </div>
             </div>
         </aside>
