@@ -181,7 +181,7 @@ function homepageManager() {
          */
         async loadSections() {
             try {
-                const response = await fetch('{{ route("admin.homepage-manager.sections.get") }}');
+                const response = await fetch('{{ route("admin.homepage-manager.sections.data") }}');
                 const data = await response.json();
                 if (data.success) {
                     this.sections = data.data.map(s => ({ ...s, expanded: true }));

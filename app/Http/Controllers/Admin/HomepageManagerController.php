@@ -869,6 +869,28 @@ class HomepageManagerController extends Controller
     }
 
     /**
+     * แสดงหน้าจัดการ Sections
+     *
+     * แสดง sections ทั้งหมดในรูปแบบตาราง พร้อม filter, search และจัดเรียงลำดับ
+     *
+     * @return View
+     */
+    public function sectionsIndex(): View
+    {
+        // ดึงประเภท section
+        $sectionTypes = HomepageSection::TYPES;
+
+        // ดึงประเภท animations
+        $animations = HomepageSection::ANIMATIONS;
+
+        return view('admin.homepage-manager.sections', [
+            'sectionTypes' => $sectionTypes,
+            'animations' => $animations,
+            'pageTitle' => 'จัดการ Sections หน้าแรก',
+        ]);
+    }
+
+    /**
      * ดึงข้อมูล sections ของ template สำหรับ preview
      *
      * @param HomepageTemplate $template
