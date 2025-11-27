@@ -118,6 +118,8 @@ class RegistrationController extends Controller
                 // สร้าง provider
                 $provider = ServiceProvider::create([
                     'user_id' => $user->id,
+                    'owner_id' => $user->id, // self-owned provider
+                    'name' => $validated['display_name'], // ชื่อจริงใช้ display_name
                     'display_name' => $validated['display_name'],
                     'description' => $validated['description'] ?? null,
                     'phone' => $validated['phone'],
@@ -128,6 +130,7 @@ class RegistrationController extends Controller
                     'bank_account_number' => $validated['bank_account_number'],
                     'bank_account_name' => $validated['bank_account_name'],
                     'auto_accept' => $validated['auto_accept'] ?? false,
+                    'auto_accept_bookings' => $validated['auto_accept'] ?? false,
                     'status' => 'offline',
                     'verification_status' => 'pending',
                     'is_active' => false, // รอการอนุมัติก่อน

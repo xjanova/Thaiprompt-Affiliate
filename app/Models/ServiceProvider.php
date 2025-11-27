@@ -17,31 +17,47 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $id
  * @property int $user_id
  * @property int $owner_id
- * @property string $name
+ * @property string $name ชื่อ-นามสกุล
+ * @property string|null $display_name ชื่อที่ใช้แสดง
  * @property string $phone
  * @property string|null $email
  * @property string|null $avatar
+ * @property string|null $profile_photo รูปโปรไฟล์
  * @property string|null $bio
+ * @property string|null $description คำอธิบาย/แนะนำตัว
  * @property float $rating คะแนนเฉลี่ย 0-5
  * @property int $total_reviews
  * @property int $total_bookings
  * @property int $total_accepted จำนวนงานที่รับ
  * @property int $total_rejected จำนวนงานที่ปฏิเสธ
+ * @property float $total_earnings รายได้สะสม
  * @property float $acceptance_rate อัตราการรับงาน %
  * @property int $average_response_minutes เวลาเฉลี่ยในการตอบกลับ
  * @property string $status available|busy|offline
  * @property bool $is_verified
+ * @property string $verification_status pending|approved|rejected
  * @property bool $is_active
  * @property string|null $line_user_id LINE User ID
  * @property string|null $line_notify_token
  * @property \Carbon\Carbon|null $line_oa_linked_at
  * @property array|null $notification_settings
+ * @property bool $notification_email
+ * @property bool $notification_line
+ * @property bool $notification_sms
  * @property bool $auto_accept_bookings
  * @property float|null $auto_accept_max_distance_km
  * @property int|null $auto_accept_max_daily_bookings
+ * @property float|null $max_distance_km
+ * @property string|null $working_hours_start
+ * @property string|null $working_hours_end
  * @property float|null $current_latitude
  * @property float|null $current_longitude
  * @property \Carbon\Carbon|null $last_location_update
+ * @property string|null $id_card_number เลขบัตรประชาชน
+ * @property string|null $id_card_photo รูปบัตรประชาชน
+ * @property string|null $bank_name ชื่อธนาคาร
+ * @property string|null $bank_account_number เลขบัญชี
+ * @property string|null $bank_account_name ชื่อบัญชี
  */
 class ServiceProvider extends Model
 {
@@ -53,39 +69,57 @@ class ServiceProvider extends Model
         'user_id',
         'owner_id',
         'name',
+        'display_name',
         'phone',
         'email',
         'avatar',
+        'profile_photo',
         'bio',
+        'description',
         'rating',
         'total_reviews',
         'total_bookings',
         'total_accepted',
         'total_rejected',
+        'total_earnings',
         'acceptance_rate',
         'average_response_minutes',
         'status',
         'is_verified',
+        'verification_status',
         'is_active',
         'line_user_id',
         'line_notify_token',
         'line_oa_linked_at',
         'notification_settings',
+        'notification_email',
+        'notification_line',
+        'notification_sms',
         'auto_accept_bookings',
+        'auto_accept',
         'auto_accept_max_distance_km',
         'auto_accept_max_daily_bookings',
+        'max_distance_km',
+        'working_hours_start',
+        'working_hours_end',
         'current_latitude',
         'current_longitude',
         'last_location_update',
         'id_card_number',
         'id_card_image',
+        'id_card_photo',
         'license_image',
+        'bank_name',
+        'bank_account_number',
+        'bank_account_name',
     ];
 
     protected $casts = [
         'rating' => 'decimal:1',
         'acceptance_rate' => 'decimal:2',
+        'total_earnings' => 'decimal:2',
         'auto_accept_max_distance_km' => 'decimal:2',
+        'max_distance_km' => 'decimal:2',
         'current_latitude' => 'decimal:8',
         'current_longitude' => 'decimal:8',
         'total_reviews' => 'integer',
@@ -97,6 +131,10 @@ class ServiceProvider extends Model
         'is_verified' => 'boolean',
         'is_active' => 'boolean',
         'auto_accept_bookings' => 'boolean',
+        'auto_accept' => 'boolean',
+        'notification_email' => 'boolean',
+        'notification_line' => 'boolean',
+        'notification_sms' => 'boolean',
         'notification_settings' => 'array',
         'line_oa_linked_at' => 'datetime',
         'last_location_update' => 'datetime',
@@ -148,6 +186,19 @@ class ServiceProvider extends Model
             'service_provider_areas',
             'provider_id',
             'area_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * หมวดหมู่บริการที่ให้บริการ
+     */
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ServiceCategory::class,
+            'service_provider_categories',
+            'provider_id',
+            'category_id'
         )->withTimestamps();
     }
 
