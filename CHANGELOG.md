@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.255.5] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1769 from xjanova/claude/fix-config-reset-deploy-015FbomxFzkwX23HKeBUeWSg (241da97a)
+- fix: ป้องกันการรีเซ็ตค่า MLM settings เมื่อ deploy (da3691da)
+### 🔧 Other Changes
+
+
 ## [v3.255.4] - 2025-11-27
 
 ### ✨ Features
