@@ -68,11 +68,12 @@
     <div class="p-4 bg-gray-800/50 border-t border-white/10">
         <div class="flex items-center justify-between gap-2">
             @auth
-                <!-- User Info -->
+                <!-- User Info - ใช้ profile_picture_url accessor พร้อม fallback -->
                 <a href="{{ route('user.dashboard') }}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-all flex-1">
-                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                        {{ substr(auth()->user()->name, 0, 2) }}
-                    </div>
+                    <img src="{{ auth()->user()->profile_picture_url }}"
+                         alt="{{ auth()->user()->name }}"
+                         class="w-8 h-8 rounded-full object-cover"
+                         onerror="this.onerror=null; this.outerHTML='<div class=\'w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs\'>{{ substr(auth()->user()->name, 0, 2) }}</div>';">
                     <span class="text-white text-xs font-medium truncate">{{ auth()->user()->name }}</span>
                 </a>
 

@@ -354,9 +354,12 @@
 
         <div class="sidebar-user">
             <div class="user-info">
-                <div class="user-avatar">
-                    {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
-                </div>
+                {{-- Avatar - ใช้ profile_picture_url accessor พร้อม fallback --}}
+                <img src="{{ auth()->user()->profile_picture_url }}"
+                     alt="{{ auth()->user()->name }}"
+                     class="user-avatar"
+                     style="object-fit: cover;"
+                     onerror="this.onerror=null; this.outerHTML='<div class=\'user-avatar\'>{{ strtoupper(substr(auth()->user()->name, 0, 2)) }}</div>';">
                 <div class="user-details">
                     <h4>{{ auth()->user()->name }}</h4>
                     <p>

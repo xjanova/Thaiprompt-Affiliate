@@ -15,9 +15,12 @@
 
         <!-- User Info Display -->
         <div class="bg-white/60 dark:bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-6 flex items-center border border-gray-200 dark:border-white/20">
-            <div class="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xl font-bold text-indigo-600 dark:text-indigo-300">
-                {{ strtoupper(substr($user->name, 0, 1)) }}
-            </div>
+            {{-- Avatar - ใช้ profile_picture_url accessor พร้อม fallback --}}
+            <img src="{{ $user->profile_picture_url }}"
+                 alt="{{ $user->name }}"
+                 class="h-12 w-12 rounded-full object-cover"
+                 onerror="this.onerror=null; this.outerHTML='<div class=\'h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xl font-bold text-indigo-600 dark:text-indigo-300\'>{{ strtoupper(substr($user->name, 0, 1)) }}</div>';">
+
             <div class="ml-4">
                 <h3 class="font-semibold text-gray-900 dark:text-white">{{ $user->name }}</h3>
                 <p class="text-sm text-gray-600 dark:text-gray-400">{{ $user->email }}</p>
