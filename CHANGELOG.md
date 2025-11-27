@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.235.0] - 2025-11-27
+
+### ✨ Features
+- feat: เพิ่มการรองรับ Lemon8 และ LINE VOOM ใน Video Automation (3354b1af)
+### 🐛 Bug Fixes
+- Merge pull request #1717 from xjanova/claude/admin-video-automation-01PTBssQpv6pxHexs9AynGAe (658fcf73)
+- fix: แก้ไข VideoAutomationSeeder ให้ตรงกับ migration (1f154554)
+### 🔧 Other Changes
+
+
 ## [v3.234.1] - 2025-11-27
 
 ### ✨ Features
