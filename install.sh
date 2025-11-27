@@ -1,16 +1,25 @@
 #!/bin/bash
 
 ################################################################################
-# TP-Affiliate Ultimate Installation Script v3.0
+# TP-Affiliate Ultimate Installation Script v3.1
 # ไฟล์เดียวจบ - ติดตั้งครบทุกอย่าง ไม่ต้องรันอะไรเพิ่ม
 #
 # Features:
 # ✅ รวมทุกฟีเจอร์ในไฟล์เดียว (fix-permissions, clear-cache, etc.)
-# ✅ แยก migration เฉพาะที่จำเป็นสำหรับการติดตั้งใหม่
-# ✅ Safe Seeder - รันต่อได้แม้เจอ error
-# ✅ แสดงผลทุกขั้นตอนแบบละเอียด
+# ✅ ใช้ DatabaseSeeder โดยตรง - ตรงกับ codebase เสมอ
+# ✅ 3 โหมดการติดตั้ง: minimal, standard, full
+# ✅ Pre-flight checks: disk space, memory, php limits
+# ✅ Non-interactive mode (--auto) สำหรับ CI/CD
 # ✅ Resume support - ติดตั้งค้างไว้ได้
 # ✅ Auto-retry - ลองใหม่อัตโนมัติถ้าล้มเหลว
+#
+# Usage:
+#   ./install.sh                    # Interactive mode
+#   ./install.sh --auto             # Non-interactive with defaults
+#   ./install.sh --mode=minimal     # Minimal installation (no demo data)
+#   ./install.sh --mode=standard    # Standard installation (recommended)
+#   ./install.sh --mode=full        # Full installation (all demo data)
+#   ./install.sh --help             # Show help
 ################################################################################
 
 set -e  # Exit on error (except in safe seeder)
@@ -74,6 +83,169 @@ CACHE_FILE=".install_cache"
 PROGRESS_FILE=".install_progress"
 SEEDER_LOG="storage/logs/seeder_install.log"
 MAX_RETRY=3
+SCRIPT_VERSION="3.1.0"
+
+# Default values for CLI options
+AUTO_MODE=false
+INSTALL_MODE="standard"  # minimal, standard, full
+SKIP_DEMO=false
+FORCE_REINSTALL=false
+MIN_DISK_SPACE_MB=500
+MIN_PHP_MEMORY="256M"
+
+################################################################################
+# ฟังก์ชันแสดง Help
+################################################################################
+show_help() {
+    echo ""
+    echo -e "${CYAN}${BOLD}TP-Affiliate Installation Script v${SCRIPT_VERSION}${NC}"
+    echo ""
+    echo -e "${WHITE}Usage:${NC}"
+    echo "  ./install.sh [options]"
+    echo ""
+    echo -e "${WHITE}Options:${NC}"
+    echo "  --help, -h              แสดงข้อความช่วยเหลือนี้"
+    echo "  --auto, -a              โหมด non-interactive (ใช้ค่า default หรือจาก cache)"
+    echo "  --mode=MODE             โหมดการติดตั้ง: minimal, standard (default), full"
+    echo "  --skip-demo             ข้ามการติดตั้ง demo data"
+    echo "  --force                 บังคับติดตั้งใหม่ (ลบ progress เดิม)"
+    echo ""
+    echo -e "${WHITE}Installation Modes:${NC}"
+    echo "  ${CYAN}minimal${NC}    - Core settings เท่านั้น (เหมาะสำหรับ production)"
+    echo "               ไม่รวม: demo users, demo products, test data"
+    echo ""
+    echo "  ${CYAN}standard${NC}   - แนะนำสำหรับการใช้งานทั่วไป"
+    echo "               รวม: core settings, demo users, essential data"
+    echo ""
+    echo "  ${CYAN}full${NC}       - ติดตั้งทุกอย่างรวม demo data ทั้งหมด"
+    echo "               รวม: ทุกอย่าง + demo products, test orders, etc."
+    echo ""
+    echo -e "${WHITE}Examples:${NC}"
+    echo "  ./install.sh                      # Interactive mode"
+    echo "  ./install.sh --auto               # ใช้ค่า default ทั้งหมด"
+    echo "  ./install.sh --mode=minimal       # Production setup"
+    echo "  ./install.sh --auto --mode=full   # CI/CD with full demo"
+    echo ""
+    exit 0
+}
+
+################################################################################
+# Parse CLI Arguments
+################################################################################
+parse_arguments() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --help|-h)
+                show_help
+                ;;
+            --auto|-a)
+                AUTO_MODE=true
+                shift
+                ;;
+            --mode=*)
+                INSTALL_MODE="${1#*=}"
+                if [[ ! "$INSTALL_MODE" =~ ^(minimal|standard|full)$ ]]; then
+                    print_error "Invalid mode: $INSTALL_MODE"
+                    print_info "Valid modes: minimal, standard, full"
+                    exit 1
+                fi
+                shift
+                ;;
+            --skip-demo)
+                SKIP_DEMO=true
+                shift
+                ;;
+            --force)
+                FORCE_REINSTALL=true
+                shift
+                ;;
+            *)
+                print_warning "Unknown option: $1"
+                shift
+                ;;
+        esac
+    done
+}
+
+################################################################################
+# ฟังก์ชัน Pre-flight Checks
+################################################################################
+check_disk_space() {
+    print_step "ตรวจสอบ disk space..."
+
+    # Get available disk space in MB
+    AVAILABLE_MB=$(df -m . | awk 'NR==2 {print $4}')
+
+    if [ "$AVAILABLE_MB" -lt "$MIN_DISK_SPACE_MB" ]; then
+        print_error "Disk space ไม่เพียงพอ!"
+        print_info "ต้องการ: ${MIN_DISK_SPACE_MB}MB"
+        print_info "มี: ${AVAILABLE_MB}MB"
+        return 1
+    fi
+
+    print_success "Disk space: ${AVAILABLE_MB}MB available ✓"
+    return 0
+}
+
+check_php_memory() {
+    print_step "ตรวจสอบ PHP memory_limit..."
+
+    PHP_MEMORY=$(php -r "echo ini_get('memory_limit');" 2>/dev/null || echo "128M")
+
+    # Convert to MB for comparison
+    MEMORY_VALUE=$(echo "$PHP_MEMORY" | sed 's/[^0-9]//g')
+    MEMORY_UNIT=$(echo "$PHP_MEMORY" | sed 's/[0-9]//g' | tr '[:lower:]' '[:upper:]')
+
+    case $MEMORY_UNIT in
+        G) MEMORY_MB=$((MEMORY_VALUE * 1024)) ;;
+        M) MEMORY_MB=$MEMORY_VALUE ;;
+        K) MEMORY_MB=$((MEMORY_VALUE / 1024)) ;;
+        *) MEMORY_MB=128 ;;
+    esac
+
+    # -1 means unlimited
+    if [ "$MEMORY_MB" -eq -1 ] || [ "$MEMORY_MB" -ge 256 ]; then
+        print_success "PHP memory_limit: $PHP_MEMORY ✓"
+        return 0
+    else
+        print_warning "PHP memory_limit: $PHP_MEMORY (แนะนำ 256M หรือมากกว่า)"
+        return 0  # Warning only, don't block
+    fi
+}
+
+check_php_max_execution_time() {
+    print_step "ตรวจสอบ PHP max_execution_time..."
+
+    MAX_EXEC=$(php -r "echo ini_get('max_execution_time');" 2>/dev/null || echo "30")
+
+    if [ "$MAX_EXEC" -eq 0 ] || [ "$MAX_EXEC" -ge 300 ]; then
+        print_success "PHP max_execution_time: ${MAX_EXEC}s ✓"
+        return 0
+    elif [ "$MAX_EXEC" -ge 120 ]; then
+        print_warning "PHP max_execution_time: ${MAX_EXEC}s (แนะนำ 300s)"
+        return 0
+    else
+        print_warning "PHP max_execution_time: ${MAX_EXEC}s (อาจเกิด timeout ระหว่างติดตั้ง)"
+        print_info "แก้ไขใน php.ini: max_execution_time = 300"
+        return 0  # Warning only
+    fi
+}
+
+run_preflight_checks() {
+    print_subheader "🔍 Pre-flight Checks"
+
+    local all_passed=true
+
+    check_disk_space || all_passed=false
+    check_php_memory
+    check_php_max_execution_time
+
+    if [ "$all_passed" = false ]; then
+        error_exit "Pre-flight checks failed. กรุณาแก้ไขปัญหาข้างต้นก่อนติดตั้ง"
+    fi
+
+    print_success "ผ่าน Pre-flight checks ทั้งหมด ✓"
+}
 
 ################################################################################
 # ฟังก์ชัน Error Handling
@@ -247,6 +419,16 @@ run_safe_seeder() {
 }
 
 ################################################################################
+# Parse CLI Arguments (ต้องทำก่อน banner)
+################################################################################
+parse_arguments "$@"
+
+# Handle --force flag
+if [ "$FORCE_REINSTALL" = true ]; then
+    rm -f "$PROGRESS_FILE" "$CACHE_FILE" 2>/dev/null || true
+fi
+
+################################################################################
 # Header Banner
 ################################################################################
 clear
@@ -259,15 +441,28 @@ echo -e "${GREEN}║${NC}       ${MAGENTA}${BOLD}██║   ██╔═══�
 echo -e "${GREEN}║${NC}       ${MAGENTA}${BOLD}██║   ██║           ██║  ██║██║     ██║${NC}              ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}       ${MAGENTA}${BOLD}╚═╝   ╚═╝           ╚═╝  ╚═╝╚═╝     ╚═╝${NC}              ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}                                                                ${GREEN}║${NC}"
-echo -e "${GREEN}║${NC}    ${BLUE}${BOLD}🚀 TP-Affiliate Ultimate Installation v3.0${NC}              ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}    ${BLUE}${BOLD}🚀 TP-Affiliate Ultimate Installation v${SCRIPT_VERSION}${NC}              ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}    ${YELLOW}${BOLD}⚡ ไฟล์เดียวจบ - ติดตั้งครบทุกอย่าง${NC}                     ${GREEN}║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
+
+# Show current settings
+if [ "$AUTO_MODE" = true ]; then
+    echo -e "${CYAN}${BOLD}⚡ Auto Mode: เปิดใช้งาน${NC}"
+fi
+echo -e "${BLUE}📦 Installation Mode: ${YELLOW}${BOLD}$INSTALL_MODE${NC}"
+case $INSTALL_MODE in
+    minimal)  echo -e "   ${WHITE}→ Core settings เท่านั้น (production-ready)${NC}" ;;
+    standard) echo -e "   ${WHITE}→ Core + demo users + essential data (แนะนำ)${NC}" ;;
+    full)     echo -e "   ${WHITE}→ ทุกอย่าง รวม demo data ทั้งหมด${NC}" ;;
+esac
+echo ""
+
 echo -e "${BLUE}ระบบติดตั้งนี้จะทำทุกอย่างให้คุณอัตโนมัติ:${NC}"
-echo -e "  • ตรวจสอบ system requirements"
+echo -e "  • ตรวจสอบ system requirements + pre-flight checks"
 echo -e "  • ติดตั้ง dependencies (Composer + npm)"
 echo -e "  • ตั้งค่า database และ migrations"
-echo -e "  • รัน seeders อย่างปลอดภัย (ถ้า error ก็รันต่อได้)"
+echo -e "  • รัน seeders ผ่าน DatabaseSeeder (ตรงกับ codebase เสมอ)"
 echo -e "  • ตั้งค่า permissions และ optimization"
 echo -e "  • สร้าง Super Admin account"
 echo ""
@@ -281,16 +476,22 @@ if [ -f "$PROGRESS_FILE" ]; then
     print_warning "พบการติดตั้งค้างไว้!"
     list_checkpoints
 
-    read -p "ต้องการดำเนินการต่อจาก checkpoint สุดท้าย? (y/n) [y]: " RESUME
-    RESUME=${RESUME:-y}
-
-    if [[ ! $RESUME =~ ^[Yy]$ ]]; then
-        print_info "เริ่มติดตั้งใหม่ทั้งหมด..."
-        clear_checkpoints
-        clear_cache
-    else
-        print_success "ดำเนินการต่อจาก checkpoint สุดท้าย..."
+    if [ "$AUTO_MODE" = true ]; then
+        # Auto mode: ดำเนินการต่ออัตโนมัติ
+        print_success "Auto Mode: ดำเนินการต่อจาก checkpoint สุดท้าย..."
         echo ""
+    else
+        read -p "ต้องการดำเนินการต่อจาก checkpoint สุดท้าย? (y/n) [y]: " RESUME
+        RESUME=${RESUME:-y}
+
+        if [[ ! $RESUME =~ ^[Yy]$ ]]; then
+            print_info "เริ่มติดตั้งใหม่ทั้งหมด..."
+            clear_checkpoints
+            clear_cache
+        else
+            print_success "ดำเนินการต่อจาก checkpoint สุดท้าย..."
+            echo ""
+        fi
     fi
 fi
 
@@ -299,6 +500,9 @@ fi
 ################################################################################
 if ! is_step_completed "STEP_1_SYSTEM_CHECK"; then
 print_header "📋 STEP 1: ตรวจสอบ System Requirements"
+
+# Run pre-flight checks first
+run_preflight_checks
 
 # Check PHP
 print_step "ตรวจสอบ PHP..."
@@ -326,7 +530,14 @@ for ext in "${REQUIRED_EXTENSIONS[@]}"; do
 done
 
 if [ ${#MISSING_EXTENSIONS[@]} -ne 0 ]; then
-    error_exit "ขาด PHP extensions: ${MISSING_EXTENSIONS[*]}"
+    echo ""
+    print_error "ขาด PHP extensions: ${MISSING_EXTENSIONS[*]}"
+    echo ""
+    print_info "วิธีติดตั้ง:"
+    print_info "  Ubuntu/Debian: sudo apt-get install php-${MISSING_EXTENSIONS[0]}"
+    print_info "  CentOS/RHEL:   sudo yum install php-${MISSING_EXTENSIONS[0]}"
+    print_info "  macOS:         brew install php"
+    error_exit "กรุณาติดตั้ง PHP extensions ที่ขาดหายไป"
 fi
 
 # Check Composer
@@ -335,7 +546,13 @@ if command -v composer &> /dev/null; then
     COMPOSER_VERSION=$(composer --version --no-ansi 2>/dev/null | grep -oP '\d+\.\d+\.\d+' | head -1)
     print_success "Composer: $COMPOSER_VERSION ✓"
 else
-    error_exit "ไม่พบ Composer! ติดตั้งที่: https://getcomposer.org/"
+    echo ""
+    print_error "ไม่พบ Composer!"
+    echo ""
+    print_info "วิธีติดตั้ง:"
+    print_info "  curl -sS https://getcomposer.org/installer | php"
+    print_info "  sudo mv composer.phar /usr/local/bin/composer"
+    error_exit "กรุณาติดตั้ง Composer ก่อน: https://getcomposer.org/"
 fi
 
 # Check Node.js (optional)
@@ -346,6 +563,7 @@ if command -v node &> /dev/null && command -v npm &> /dev/null; then
     print_success "Node.js: $NODE_VERSION, npm: $NPM_VERSION ✓"
 else
     print_warning "ไม่พบ Node.js/npm (จะติดตั้ง frontend assets ไม่ได้)"
+    print_info "  ติดตั้ง: https://nodejs.org/ หรือ nvm"
 fi
 
 # Check Git
@@ -355,6 +573,15 @@ if command -v git &> /dev/null; then
     print_success "Git: $GIT_VERSION ✓"
 else
     print_warning "ไม่พบ Git (บางฟีเจอร์อาจใช้งานไม่ได้)"
+fi
+
+# Check MySQL client (optional but recommended)
+print_step "ตรวจสอบ MySQL client..."
+if command -v mysql &> /dev/null; then
+    MYSQL_VERSION=$(mysql --version | grep -oP '\d+\.\d+\.\d+' | head -1)
+    print_success "MySQL client: $MYSQL_VERSION ✓"
+else
+    print_warning "ไม่พบ MySQL client (จะทดสอบ connection ผ่าน PHP แทน)"
 fi
 
 print_success "ผ่านการตรวจสอบ System Requirements ทั้งหมด! ✓"
@@ -367,167 +594,222 @@ fi
 if ! is_step_completed "STEP_2_CONFIG"; then
 print_header "⚙️  STEP 2: การตั้งค่าแอปพลิเคชัน"
 
-# โหลด cache ถ้ามี
-if [ -f "$CACHE_FILE" ]; then
-    print_info "💾 พบการตั้งค่าที่บันทึกไว้"
-    read -p "ใช้ค่าที่บันทึกไว้? (y/n) [y]: " USE_CACHE
-    USE_CACHE=${USE_CACHE:-y}
-    if [[ ! $USE_CACHE =~ ^[Yy]$ ]]; then
-        rm -f "$CACHE_FILE"
+# Auto Mode: ใช้ค่าจาก cache หรือ defaults
+if [ "$AUTO_MODE" = true ]; then
+    print_info "🤖 Auto Mode: ใช้ค่าจาก cache หรือ defaults"
+    echo ""
+
+    # โหลดค่าทั้งหมดจาก cache หรือใช้ defaults
+    APP_NAME=$(load_from_cache "APP_NAME" "TP-Affiliate")
+    APP_URL=$(load_from_cache "APP_URL" "http://localhost")
+    APP_ENV=$(load_from_cache "APP_ENV" "production")
+    APP_DEBUG=$( [ "$APP_ENV" == "local" ] && echo "true" || echo "false" )
+
+    DB_HOST=$(load_from_cache "DB_HOST" "127.0.0.1")
+    DB_PORT=$(load_from_cache "DB_PORT" "3306")
+    DB_DATABASE=$(load_from_cache "DB_DATABASE" "thaiprompt_affiliate")
+    DB_USERNAME=$(load_from_cache "DB_USERNAME" "root")
+    DB_PASSWORD=$(load_from_cache "DB_PASSWORD" "")
+
+    ADMIN_NAME=$(load_from_cache "ADMIN_NAME" "Admin")
+    ADMIN_EMAIL=$(load_from_cache "ADMIN_EMAIL" "admin@example.com")
+    ADMIN_PASSWORD=$(load_from_cache "ADMIN_PASSWORD" "")
+
+    # ถ้าไม่มี password ให้สร้างใหม่
+    if [ -z "$ADMIN_PASSWORD" ]; then
+        ADMIN_PASSWORD=$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c 12)
+        print_warning "สร้าง Admin Password อัตโนมัติ: $ADMIN_PASSWORD"
+        print_info "กรุณาจดจำ password นี้!"
+        save_to_cache "ADMIN_PASSWORD" "$ADMIN_PASSWORD"
     fi
-fi
 
-echo "กรุณากรอกข้อมูลต่อไปนี้:"
-echo ""
+    # แสดงค่าที่ใช้
+    echo -e "${CYAN}การตั้งค่าที่ใช้:${NC}"
+    echo "  App Name: $APP_NAME"
+    echo "  App URL: $APP_URL"
+    echo "  Environment: $APP_ENV"
+    echo "  Database: $DB_DATABASE@$DB_HOST:$DB_PORT"
+    echo "  Admin Email: $ADMIN_EMAIL"
+    echo ""
 
-# Application Name
-CACHED_APP_NAME=$(load_from_cache "APP_NAME" "TP-Affiliate")
-read -p "ชื่อแอปพลิเคชัน [$CACHED_APP_NAME]: " APP_NAME
-APP_NAME=${APP_NAME:-$CACHED_APP_NAME}
-save_to_cache "APP_NAME" "$APP_NAME"
-
-# Application URL
-CACHED_APP_URL=$(load_from_cache "APP_URL" "")
-if [ -n "$CACHED_APP_URL" ]; then
-    read -p "URL แอปพลิเคชัน [$CACHED_APP_URL]: " APP_URL
-    APP_URL=${APP_URL:-$CACHED_APP_URL}
 else
-    read -p "URL แอปพลิเคชัน (เช่น https://example.com): " APP_URL
-fi
-while [ -z "$APP_URL" ]; do
-    print_error "URL แอปพลิเคชันจำเป็นต้องระบุ!"
-    read -p "URL แอปพลิเคชัน: " APP_URL
-done
-save_to_cache "APP_URL" "$APP_URL"
+    # Interactive Mode (เหมือนเดิม)
 
-# Environment
-echo ""
-echo "เลือก environment:"
-echo "  1) Production (แนะนำ)"
-echo "  2) Local/Development"
-CACHED_ENV=$(load_from_cache "APP_ENV" "production")
-DEFAULT_ENV_CHOICE=$( [ "$CACHED_ENV" == "local" ] && echo "2" || echo "1" )
-read -p "Environment [$DEFAULT_ENV_CHOICE]: " ENV_CHOICE
-ENV_CHOICE=${ENV_CHOICE:-$DEFAULT_ENV_CHOICE}
+    # โหลด cache ถ้ามี
+    if [ -f "$CACHE_FILE" ]; then
+        print_info "💾 พบการตั้งค่าที่บันทึกไว้"
+        read -p "ใช้ค่าที่บันทึกไว้? (y/n) [y]: " USE_CACHE
+        USE_CACHE=${USE_CACHE:-y}
+        if [[ ! $USE_CACHE =~ ^[Yy]$ ]]; then
+            rm -f "$CACHE_FILE"
+        fi
+    fi
 
-if [ "$ENV_CHOICE" == "2" ]; then
-    APP_ENV="local"
-    APP_DEBUG="true"
-else
-    APP_ENV="production"
-    APP_DEBUG="false"
-fi
-save_to_cache "APP_ENV" "$APP_ENV"
-print_success "Environment: $APP_ENV"
+    echo "กรุณากรอกข้อมูลต่อไปนี้:"
+    echo ""
 
-# Database Configuration
-print_subheader "🗄️  Database Configuration"
+    # Application Name
+    CACHED_APP_NAME=$(load_from_cache "APP_NAME" "TP-Affiliate")
+    read -p "ชื่อแอปพลิเคชัน [$CACHED_APP_NAME]: " APP_NAME
+    APP_NAME=${APP_NAME:-$CACHED_APP_NAME}
+    save_to_cache "APP_NAME" "$APP_NAME"
 
-CACHED_DB_HOST=$(load_from_cache "DB_HOST" "127.0.0.1")
-read -p "Database Host [$CACHED_DB_HOST]: " DB_HOST
-DB_HOST=${DB_HOST:-$CACHED_DB_HOST}
-save_to_cache "DB_HOST" "$DB_HOST"
+    # Application URL
+    CACHED_APP_URL=$(load_from_cache "APP_URL" "")
+    if [ -n "$CACHED_APP_URL" ]; then
+        read -p "URL แอปพลิเคชัน [$CACHED_APP_URL]: " APP_URL
+        APP_URL=${APP_URL:-$CACHED_APP_URL}
+    else
+        read -p "URL แอปพลิเคชัน (เช่น https://example.com): " APP_URL
+    fi
+    while [ -z "$APP_URL" ]; do
+        print_error "URL แอปพลิเคชันจำเป็นต้องระบุ!"
+        read -p "URL แอปพลิเคชัน: " APP_URL
+    done
+    save_to_cache "APP_URL" "$APP_URL"
 
-CACHED_DB_PORT=$(load_from_cache "DB_PORT" "3306")
-read -p "Database Port [$CACHED_DB_PORT]: " DB_PORT
-DB_PORT=${DB_PORT:-$CACHED_DB_PORT}
-save_to_cache "DB_PORT" "$DB_PORT"
+    # Environment
+    echo ""
+    echo "เลือก environment:"
+    echo "  1) Production (แนะนำ)"
+    echo "  2) Local/Development"
+    CACHED_ENV=$(load_from_cache "APP_ENV" "production")
+    DEFAULT_ENV_CHOICE=$( [ "$CACHED_ENV" == "local" ] && echo "2" || echo "1" )
+    read -p "Environment [$DEFAULT_ENV_CHOICE]: " ENV_CHOICE
+    ENV_CHOICE=${ENV_CHOICE:-$DEFAULT_ENV_CHOICE}
 
-CACHED_DB_DATABASE=$(load_from_cache "DB_DATABASE" "")
-if [ -n "$CACHED_DB_DATABASE" ]; then
-    read -p "ชื่อ Database [$CACHED_DB_DATABASE]: " DB_DATABASE
-    DB_DATABASE=${DB_DATABASE:-$CACHED_DB_DATABASE}
-else
-    read -p "ชื่อ Database: " DB_DATABASE
-fi
-while [ -z "$DB_DATABASE" ]; do
-    print_error "ชื่อ Database จำเป็นต้องระบุ!"
-    read -p "ชื่อ Database: " DB_DATABASE
-done
-save_to_cache "DB_DATABASE" "$DB_DATABASE"
+    if [ "$ENV_CHOICE" == "2" ]; then
+        APP_ENV="local"
+        APP_DEBUG="true"
+    else
+        APP_ENV="production"
+        APP_DEBUG="false"
+    fi
+    save_to_cache "APP_ENV" "$APP_ENV"
+    print_success "Environment: $APP_ENV"
 
-CACHED_DB_USERNAME=$(load_from_cache "DB_USERNAME" "root")
-read -p "Database Username [$CACHED_DB_USERNAME]: " DB_USERNAME
-DB_USERNAME=${DB_USERNAME:-$CACHED_DB_USERNAME}
-save_to_cache "DB_USERNAME" "$DB_USERNAME"
+    # Database Configuration
+    print_subheader "🗄️  Database Configuration"
 
-CACHED_DB_PASSWORD=$(load_from_cache "DB_PASSWORD" "")
-if [ -n "$CACHED_DB_PASSWORD" ]; then
-    read -p "ใช้ password ที่บันทึกไว้? (y/n) [y]: " USE_SAVED_PASS
-    USE_SAVED_PASS=${USE_SAVED_PASS:-y}
-    if [[ $USE_SAVED_PASS =~ ^[Yy]$ ]]; then
-        DB_PASSWORD="$CACHED_DB_PASSWORD"
+    CACHED_DB_HOST=$(load_from_cache "DB_HOST" "127.0.0.1")
+    read -p "Database Host [$CACHED_DB_HOST]: " DB_HOST
+    DB_HOST=${DB_HOST:-$CACHED_DB_HOST}
+    save_to_cache "DB_HOST" "$DB_HOST"
+
+    CACHED_DB_PORT=$(load_from_cache "DB_PORT" "3306")
+    read -p "Database Port [$CACHED_DB_PORT]: " DB_PORT
+    DB_PORT=${DB_PORT:-$CACHED_DB_PORT}
+    save_to_cache "DB_PORT" "$DB_PORT"
+
+    CACHED_DB_DATABASE=$(load_from_cache "DB_DATABASE" "")
+    if [ -n "$CACHED_DB_DATABASE" ]; then
+        read -p "ชื่อ Database [$CACHED_DB_DATABASE]: " DB_DATABASE
+        DB_DATABASE=${DB_DATABASE:-$CACHED_DB_DATABASE}
+    else
+        read -p "ชื่อ Database: " DB_DATABASE
+    fi
+    while [ -z "$DB_DATABASE" ]; do
+        print_error "ชื่อ Database จำเป็นต้องระบุ!"
+        read -p "ชื่อ Database: " DB_DATABASE
+    done
+    save_to_cache "DB_DATABASE" "$DB_DATABASE"
+
+    CACHED_DB_USERNAME=$(load_from_cache "DB_USERNAME" "root")
+    read -p "Database Username [$CACHED_DB_USERNAME]: " DB_USERNAME
+    DB_USERNAME=${DB_USERNAME:-$CACHED_DB_USERNAME}
+    save_to_cache "DB_USERNAME" "$DB_USERNAME"
+
+    CACHED_DB_PASSWORD=$(load_from_cache "DB_PASSWORD" "")
+    if [ -n "$CACHED_DB_PASSWORD" ]; then
+        read -p "ใช้ password ที่บันทึกไว้? (y/n) [y]: " USE_SAVED_PASS
+        USE_SAVED_PASS=${USE_SAVED_PASS:-y}
+        if [[ $USE_SAVED_PASS =~ ^[Yy]$ ]]; then
+            DB_PASSWORD="$CACHED_DB_PASSWORD"
+        else
+            read -sp "Database Password: " DB_PASSWORD
+            echo ""
+            save_to_cache "DB_PASSWORD" "$DB_PASSWORD"
+        fi
     else
         read -sp "Database Password: " DB_PASSWORD
         echo ""
         save_to_cache "DB_PASSWORD" "$DB_PASSWORD"
     fi
-else
-    read -sp "Database Password: " DB_PASSWORD
-    echo ""
-    save_to_cache "DB_PASSWORD" "$DB_PASSWORD"
 fi
 
-# Test Database Connection
+# Test Database Connection (ทำทั้ง auto และ interactive mode)
 print_step "ทดสอบการเชื่อมต่อ database..."
-if mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" -e "SELECT 1;" &>/dev/null; then
-    print_success "เชื่อมต่อ database สำเร็จ! ✓"
 
-    # สร้าง database ถ้ายังไม่มี
-    mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS \`$DB_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || true
+# ลองเชื่อมต่อผ่าน mysql client ก่อน
+if command -v mysql &> /dev/null; then
+    if mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" -e "SELECT 1;" &>/dev/null; then
+        print_success "เชื่อมต่อ database สำเร็จ! ✓"
+
+        # สร้าง database ถ้ายังไม่มี
+        mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS \`$DB_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || true
+    else
+        if [ "$AUTO_MODE" = true ]; then
+            print_warning "เชื่อมต่อ database ล้มเหลว - จะลองอีกครั้งตอน migrate"
+        else
+            error_exit "เชื่อมต่อ database ล้มเหลว! ตรวจสอบ credentials"
+        fi
+    fi
 else
-    error_exit "เชื่อมต่อ database ล้มเหลว! ตรวจสอบ credentials"
+    # ไม่มี mysql client - ใช้ PHP ทดสอบแทน
+    print_info "ไม่พบ MySQL client - จะทดสอบผ่าน PHP"
 fi
 
-# Super Admin Account
-print_subheader "👤 Super Admin Account"
+# Super Admin Account (Interactive mode only - auto mode ได้ตั้งค่าไปแล้ว)
+if [ "$AUTO_MODE" != true ]; then
+    print_subheader "👤 Super Admin Account"
 
-CACHED_ADMIN_NAME=$(load_from_cache "ADMIN_NAME" "")
-if [ -n "$CACHED_ADMIN_NAME" ]; then
-    read -p "ชื่อ Admin [$CACHED_ADMIN_NAME]: " ADMIN_NAME
-    ADMIN_NAME=${ADMIN_NAME:-$CACHED_ADMIN_NAME}
-else
-    read -p "ชื่อ Admin: " ADMIN_NAME
-fi
-while [ -z "$ADMIN_NAME" ]; do
-    print_error "ชื่อ Admin จำเป็นต้องระบุ!"
-    read -p "ชื่อ Admin: " ADMIN_NAME
-done
-save_to_cache "ADMIN_NAME" "$ADMIN_NAME"
+    CACHED_ADMIN_NAME=$(load_from_cache "ADMIN_NAME" "")
+    if [ -n "$CACHED_ADMIN_NAME" ]; then
+        read -p "ชื่อ Admin [$CACHED_ADMIN_NAME]: " ADMIN_NAME
+        ADMIN_NAME=${ADMIN_NAME:-$CACHED_ADMIN_NAME}
+    else
+        read -p "ชื่อ Admin: " ADMIN_NAME
+    fi
+    while [ -z "$ADMIN_NAME" ]; do
+        print_error "ชื่อ Admin จำเป็นต้องระบุ!"
+        read -p "ชื่อ Admin: " ADMIN_NAME
+    done
+    save_to_cache "ADMIN_NAME" "$ADMIN_NAME"
 
-CACHED_ADMIN_EMAIL=$(load_from_cache "ADMIN_EMAIL" "")
-if [ -n "$CACHED_ADMIN_EMAIL" ]; then
-    read -p "Email Admin [$CACHED_ADMIN_EMAIL]: " ADMIN_EMAIL
-    ADMIN_EMAIL=${ADMIN_EMAIL:-$CACHED_ADMIN_EMAIL}
-else
-    read -p "Email Admin: " ADMIN_EMAIL
-fi
-while [ -z "$ADMIN_EMAIL" ]; do
-    print_error "Email Admin จำเป็นต้องระบุ!"
-    read -p "Email Admin: " ADMIN_EMAIL
-done
-if [[ ! "$ADMIN_EMAIL" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
-    error_exit "รูปแบบ email ไม่ถูกต้อง!"
-fi
-save_to_cache "ADMIN_EMAIL" "$ADMIN_EMAIL"
+    CACHED_ADMIN_EMAIL=$(load_from_cache "ADMIN_EMAIL" "")
+    if [ -n "$CACHED_ADMIN_EMAIL" ]; then
+        read -p "Email Admin [$CACHED_ADMIN_EMAIL]: " ADMIN_EMAIL
+        ADMIN_EMAIL=${ADMIN_EMAIL:-$CACHED_ADMIN_EMAIL}
+    else
+        read -p "Email Admin: " ADMIN_EMAIL
+    fi
+    while [ -z "$ADMIN_EMAIL" ]; do
+        print_error "Email Admin จำเป็นต้องระบุ!"
+        read -p "Email Admin: " ADMIN_EMAIL
+    done
+    if [[ ! "$ADMIN_EMAIL" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+        error_exit "รูปแบบ email ไม่ถูกต้อง!"
+    fi
+    save_to_cache "ADMIN_EMAIL" "$ADMIN_EMAIL"
 
-read -sp "Password Admin (อย่างน้อย 8 ตัวอักษร): " ADMIN_PASSWORD
-echo ""
-while [ ${#ADMIN_PASSWORD} -lt 8 ]; do
-    print_error "Password ต้องมีอย่างน้อย 8 ตัวอักษร!"
-    read -sp "Password Admin: " ADMIN_PASSWORD
+    read -sp "Password Admin (อย่างน้อย 8 ตัวอักษร): " ADMIN_PASSWORD
     echo ""
-done
+    while [ ${#ADMIN_PASSWORD} -lt 8 ]; do
+        print_error "Password ต้องมีอย่างน้อย 8 ตัวอักษร!"
+        read -sp "Password Admin: " ADMIN_PASSWORD
+        echo ""
+    done
 
-read -sp "ยืนยัน Password: " ADMIN_PASSWORD_CONFIRM
-echo ""
-while [ "$ADMIN_PASSWORD" != "$ADMIN_PASSWORD_CONFIRM" ]; do
-    print_error "Password ไม่ตรงกัน!"
-    read -sp "Password Admin: " ADMIN_PASSWORD
-    echo ""
     read -sp "ยืนยัน Password: " ADMIN_PASSWORD_CONFIRM
     echo ""
-done
+    while [ "$ADMIN_PASSWORD" != "$ADMIN_PASSWORD_CONFIRM" ]; do
+        print_error "Password ไม่ตรงกัน!"
+        read -sp "Password Admin: " ADMIN_PASSWORD
+        echo ""
+        read -sp "ยืนยัน Password: " ADMIN_PASSWORD_CONFIRM
+        echo ""
+    done
+fi
 
 print_success "บันทึกการตั้งค่าเรียบร้อย ✓"
 save_checkpoint "STEP_2_CONFIG"
@@ -682,192 +964,104 @@ save_checkpoint "STEP_6_MIGRATIONS"
 fi
 
 ################################################################################
-# STEP 7: Database Seeders (Safe Mode)
+# STEP 7: Database Seeders
 ################################################################################
 if ! is_step_completed "STEP_7_SEEDERS"; then
-print_header "🌱 STEP 7: Database Seeders (Safe Mode)"
+print_header "🌱 STEP 7: Database Seeders"
 
 # สร้าง log directory
 mkdir -p storage/logs
 echo "# Seeder Installation Log - $(date)" > "$SEEDER_LOG"
+echo "# Installation Mode: $INSTALL_MODE" >> "$SEEDER_LOG"
 
 echo ""
-print_info "⚠️  Safe Seeder Mode: ถ้าเจอ error จะแจ้งแต่รันต่อไป"
+print_info "📦 โหมดการติดตั้ง: ${BOLD}$INSTALL_MODE${NC}"
+
+case $INSTALL_MODE in
+    minimal)
+        echo -e "   ${WHITE}→ ติดตั้งเฉพาะ core settings (ไม่มี demo data)${NC}"
+        ;;
+    standard)
+        echo -e "   ${WHITE}→ ติดตั้ง core + demo users + essential data${NC}"
+        ;;
+    full)
+        echo -e "   ${WHITE}→ ติดตั้งทุกอย่างรวม demo data ทั้งหมด${NC}"
+        ;;
+esac
 echo ""
 
-# ถามว่าต้องการติดตั้ง demo data หรือไม่
-read -p "ต้องการติดตั้งข้อมูลทดสอบ (Demo Data)? (y/n) [y]: " INSTALL_DEMO
-INSTALL_DEMO=${INSTALL_DEMO:-y}
-echo ""
-
-# รายการ Seeders ที่จำเป็น (Essential Seeders Only)
-print_subheader "📋 Core Settings & Configuration"
-CORE_SEEDERS=(
-    "AppNameSettingSeeder"
-    "TwoFactorSettingsSeeder"
-    "ArrowXThemeSeeder"
-    "ThemePresetSeeder"
-    "AppManagementSeeder"
-    "CookieSettingsSeeder"
-    "WindowsUiSeeder"
-    "AppControlSectionSeeder"
-    "ComponentSettingSeeder"
-    "ApiEndpointSeeder"
-)
-
-SUCCESSFUL_SEEDERS=()
-FAILED_SEEDERS=()
-
-for seeder in "${CORE_SEEDERS[@]}"; do
-    if run_safe_seeder "$seeder"; then
-        SUCCESSFUL_SEEDERS+=("$seeder")
-    else
-        FAILED_SEEDERS+=("$seeder")
+# ถามเฉพาะเมื่อไม่ใช่ auto mode
+if [ "$AUTO_MODE" != true ] && [ "$INSTALL_MODE" = "standard" ]; then
+    read -p "ต้องการติดตั้งข้อมูลทดสอบ (Demo Data)? (y/n) [y]: " INSTALL_DEMO
+    INSTALL_DEMO=${INSTALL_DEMO:-y}
+    if [[ ! $INSTALL_DEMO =~ ^[Yy]$ ]]; then
+        INSTALL_MODE="minimal"
+        print_info "เปลี่ยนเป็นโหมด: minimal (ไม่ติดตั้ง demo data)"
     fi
-done
-
-# Demo Data (ถ้าต้องการ)
-if [[ $INSTALL_DEMO =~ ^[Yy]$ ]]; then
-    print_subheader "👥 Demo Users & Data"
-    DEMO_SEEDERS=(
-        "DemoUsersSeeder"
-        "TestUsersSeeder"
-        "KycVerificationSeeder"
-        "LineSignupSessionSeeder"
-    )
-
-    for seeder in "${DEMO_SEEDERS[@]}"; do
-        if run_safe_seeder "$seeder"; then
-            SUCCESSFUL_SEEDERS+=("$seeder")
-        else
-            FAILED_SEEDERS+=("$seeder")
-        fi
-    done
+    echo ""
 fi
 
-# Content & Pages
-print_subheader "📄 Content & Pages"
-CONTENT_SEEDERS=(
-    "DemoPagesSeeder"
-    "SeoMetaSeeder"
-)
+print_subheader "🚀 กำลังรัน DatabaseSeeder"
 
-for seeder in "${CONTENT_SEEDERS[@]}"; do
-    if run_safe_seeder "$seeder"; then
-        SUCCESSFUL_SEEDERS+=("$seeder")
-    else
-        FAILED_SEEDERS+=("$seeder")
-    fi
-done
+print_info "ใช้ DatabaseSeeder โดยตรง - ตรงกับ codebase เสมอ"
+print_info "Seeders จะรันตามลำดับใน DatabaseSeeder.php"
+echo ""
 
-# Communication Templates
-print_subheader "💬 Communication Templates"
-COMM_SEEDERS=(
-    "EmailTemplateSeeder"
-    "LineOaSettingSeeder"
-    "LineSignupTemplateSeeder"
-    "LineSignupFlowSeeder"
-    "LineSignupRewardSeeder"
-    "LineBotAiSeeder"
-    "LineBotKeywordSeeder"
-)
+# รัน DatabaseSeeder ผ่าน artisan
+print_step "กำลังรัน php artisan db:seed..."
+echo ""
 
-for seeder in "${COMM_SEEDERS[@]}"; do
-    if run_safe_seeder "$seeder"; then
-        SUCCESSFUL_SEEDERS+=("$seeder")
-    else
-        FAILED_SEEDERS+=("$seeder")
-    fi
-done
+# ตั้งค่า environment variable สำหรับ seeder mode
+export SEEDER_MODE="$INSTALL_MODE"
 
-# AI & Integrations
-print_subheader "🤖 AI & Integrations"
-AI_SEEDERS=(
-    "AICoreFeatureSeeder"
-    "AiProvidersSeeder"
-    "AiGenSeeder"
-)
+SEED_START_TIME=$(date +%s)
 
-for seeder in "${AI_SEEDERS[@]}"; do
-    if run_safe_seeder "$seeder"; then
-        SUCCESSFUL_SEEDERS+=("$seeder")
-    else
-        FAILED_SEEDERS+=("$seeder")
-    fi
-done
+# รัน seeder พร้อมแสดง progress
+if php artisan db:seed --force 2>&1 | tee -a "$SEEDER_LOG"; then
+    SEED_END_TIME=$(date +%s)
+    SEED_DURATION=$((SEED_END_TIME - SEED_START_TIME))
 
-# Payment Systems
-print_subheader "💳 Payment Systems"
-PAYMENT_SEEDERS=(
-    "PaymentGatewaySeeder"
-    "PaySolutionsGatewaySeeder"
-    "CryptoCurrencySeeder"
-    "TPIXCurrencySeeder"
-    "TPIXStakingPoolSeeder"
-    "NFCCardSeeder"
-)
+    echo ""
+    print_success "รัน DatabaseSeeder สำเร็จ! ✓"
+    print_info "⏱️  ใช้เวลา: ${SEED_DURATION} วินาที"
 
-for seeder in "${PAYMENT_SEEDERS[@]}"; do
-    if run_safe_seeder "$seeder"; then
-        SUCCESSFUL_SEEDERS+=("$seeder")
-    else
-        FAILED_SEEDERS+=("$seeder")
-    fi
-done
+    # นับจำนวน seeders ที่รัน
+    SEEDER_COUNT=$(grep -c "INFO" "$SEEDER_LOG" 2>/dev/null || echo "70+")
+    print_info "📊 Seeders ที่รัน: $SEEDER_COUNT"
+else
+    SEED_EXIT_CODE=$?
+    echo ""
+    print_warning "DatabaseSeeder รันไม่สำเร็จทั้งหมด (exit code: $SEED_EXIT_CODE)"
+    print_info "บาง seeders อาจล้มเหลว แต่ระบบยังใช้งานได้"
+    print_info "📝 ดูรายละเอียดได้ที่: $SEEDER_LOG"
 
-# MLM System
-print_subheader "📊 MLM System"
-MLM_SEEDERS=(
-    "MlmGlobalSettingsSeeder"
-    "MlmGlobalSettingSeeder"
-    "MlmPlanSeeder"
-    "MlmPackageSeeder"
-    "RankSeeder"
-    "RecruitTemplateSeeder"
-)
-
-for seeder in "${MLM_SEEDERS[@]}"; do
-    if run_safe_seeder "$seeder"; then
-        SUCCESSFUL_SEEDERS+=("$seeder")
-    else
-        FAILED_SEEDERS+=("$seeder")
-    fi
-done
-
-# E-commerce (ถ้าต้องการ)
-if [[ $INSTALL_DEMO =~ ^[Yy]$ ]]; then
-    print_subheader "🛒 E-commerce & Products"
-    ECOMMERCE_SEEDERS=(
-        "ProductCategorySeeder"
-        "ProductSeeder"
-        "OfficialShopProductsSeeder"
-        "WalletTopupPackagesSeeder"
-    )
-
-    for seeder in "${ECOMMERCE_SEEDERS[@]}"; do
-        if run_safe_seeder "$seeder"; then
-            SUCCESSFUL_SEEDERS+=("$seeder")
-        else
-            FAILED_SEEDERS+=("$seeder")
+    # ถาม user ว่าต้องการดำเนินการต่อหรือไม่
+    if [ "$AUTO_MODE" != true ]; then
+        read -p "ต้องการดำเนินการติดตั้งต่อหรือไม่? (y/n) [y]: " CONTINUE_INSTALL
+        CONTINUE_INSTALL=${CONTINUE_INSTALL:-y}
+        if [[ ! $CONTINUE_INSTALL =~ ^[Yy]$ ]]; then
+            error_exit "การติดตั้งถูกยกเลิกโดยผู้ใช้"
         fi
-    done
+    fi
 fi
 
-# สรุปผล Seeders
+# Unset environment variable
+unset SEEDER_MODE
+
+# แสดงสรุป
 echo ""
 print_header "📊 สรุปผล Database Seeders"
 echo ""
-echo -e "${GREEN}✓ สำเร็จ:${NC} ${#SUCCESSFUL_SEEDERS[@]} seeders"
-echo -e "${RED}✗ ล้มเหลว:${NC} ${#FAILED_SEEDERS[@]} seeders"
+echo -e "${GREEN}✓ Installation Mode:${NC} $INSTALL_MODE"
+echo -e "${GREEN}✓ Seeder Log:${NC} $SEEDER_LOG"
 echo ""
 
-if [ ${#FAILED_SEEDERS[@]} -gt 0 ]; then
-    print_warning "Seeders ที่ล้มเหลว:"
-    for seeder in "${FAILED_SEEDERS[@]}"; do
-        echo "  ✗ $seeder"
-    done
+# แนะนำการรัน seeder เพิ่มเติมถ้าต้องการ
+if [ "$INSTALL_MODE" = "minimal" ]; then
+    print_info "💡 หากต้องการติดตั้ง demo data ภายหลัง:"
+    echo "   php artisan db:seed --class=DemoUsersSeeder"
+    echo "   php artisan db:seed --class=ProductSeeder"
     echo ""
-    print_info "📝 ดูรายละเอียดได้ที่: $SEEDER_LOG"
 fi
 
 save_checkpoint "STEP_7_SEEDERS"
