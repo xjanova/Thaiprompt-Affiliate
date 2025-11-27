@@ -1,8 +1,10 @@
 #!/bin/bash
 
 ################################################################################
-# TP-Affiliate Ultimate Installation Script v3.1
+# TP-Affiliate Ultimate Installation Script v3.2
 # ไฟล์เดียวจบ - ติดตั้งครบทุกอย่าง ไม่ต้องรันอะไรเพิ่ม
+#
+# 🎯 สำหรับผู้ใช้ทั่วไป: ใช้ --wizard เพื่อติดตั้งอย่างง่าย
 #
 # Features:
 # ✅ รวมทุกฟีเจอร์ในไฟล์เดียว (fix-permissions, clear-cache, etc.)
@@ -12,14 +14,21 @@
 # ✅ Non-interactive mode (--auto) สำหรับ CI/CD
 # ✅ Resume support - ติดตั้งค้างไว้ได้
 # ✅ Auto-retry - ลองใหม่อัตโนมัติถ้าล้มเหลว
+# ✅ [NEW] Wizard Mode - ติดตั้งง่ายสำหรับผู้ใช้ทั่วไป
+# ✅ [NEW] Auto Clone - ดึงไฟล์จาก GitHub อัตโนมัติ
+# ✅ [NEW] Deploy Ready Check - ตรวจสอบพร้อมสำหรับ deploy-pro.sh
 #
 # Usage:
 #   ./install.sh                    # Interactive mode
+#   ./install.sh --wizard           # 🌟 แนะนำ! Wizard mode สำหรับผู้ใช้ทั่วไป
 #   ./install.sh --auto             # Non-interactive with defaults
 #   ./install.sh --mode=minimal     # Minimal installation (no demo data)
 #   ./install.sh --mode=standard    # Standard installation (recommended)
 #   ./install.sh --mode=full        # Full installation (all demo data)
 #   ./install.sh --help             # Show help
+#
+# Remote Installation (ยังไม่มีไฟล์):
+#   curl -fsSL https://raw.githubusercontent.com/xjanova/Thaiprompt-Affiliate/claude/Main/install.sh | bash -s -- --wizard
 ################################################################################
 
 set -e  # Exit on error (except in safe seeder)
@@ -83,13 +92,19 @@ CACHE_FILE=".install_cache"
 PROGRESS_FILE=".install_progress"
 SEEDER_LOG="storage/logs/seeder_install.log"
 MAX_RETRY=3
-SCRIPT_VERSION="3.1.0"
+SCRIPT_VERSION="3.2.0"
+
+# GitHub Repository Configuration
+REPO_URL="https://github.com/xjanova/Thaiprompt-Affiliate.git"
+REPO_BRANCH="claude/Main"
 
 # Default values for CLI options
 AUTO_MODE=false
+WIZARD_MODE=false
 INSTALL_MODE="standard"  # minimal, standard, full
 SKIP_DEMO=false
 FORCE_REINSTALL=false
+DO_CLONE=false
 MIN_DISK_SPACE_MB=500
 MIN_PHP_MEMORY="256M"
 
@@ -100,12 +115,16 @@ show_help() {
     echo ""
     echo -e "${CYAN}${BOLD}TP-Affiliate Installation Script v${SCRIPT_VERSION}${NC}"
     echo ""
+    echo -e "${GREEN}${BOLD}🌟 แนะนำสำหรับผู้ใช้ทั่วไป: ./install.sh --wizard${NC}"
+    echo ""
     echo -e "${WHITE}Usage:${NC}"
     echo "  ./install.sh [options]"
     echo ""
     echo -e "${WHITE}Options:${NC}"
     echo "  --help, -h              แสดงข้อความช่วยเหลือนี้"
+    echo "  ${GREEN}--wizard, -w${NC}            🌟 Wizard Mode - ติดตั้งง่ายสำหรับผู้ใช้ทั่วไป"
     echo "  --auto, -a              โหมด non-interactive (ใช้ค่า default หรือจาก cache)"
+    echo "  --clone                 Clone repository จาก GitHub ก่อนติดตั้ง"
     echo "  --mode=MODE             โหมดการติดตั้ง: minimal, standard (default), full"
     echo "  --skip-demo             ข้ามการติดตั้ง demo data"
     echo "  --force                 บังคับติดตั้งใหม่ (ลบ progress เดิม)"
@@ -121,10 +140,15 @@ show_help() {
     echo "               รวม: ทุกอย่าง + demo products, test orders, etc."
     echo ""
     echo -e "${WHITE}Examples:${NC}"
+    echo "  ./install.sh --wizard             # 🌟 แนะนำ! ติดตั้งแบบง่าย"
     echo "  ./install.sh                      # Interactive mode"
     echo "  ./install.sh --auto               # ใช้ค่า default ทั้งหมด"
+    echo "  ./install.sh --clone --wizard     # Clone + ติดตั้ง (เริ่มต้นจากศูนย์)"
     echo "  ./install.sh --mode=minimal       # Production setup"
     echo "  ./install.sh --auto --mode=full   # CI/CD with full demo"
+    echo ""
+    echo -e "${WHITE}Remote Installation (ยังไม่มีไฟล์ในเครื่อง):${NC}"
+    echo "  curl -fsSL https://raw.githubusercontent.com/xjanova/Thaiprompt-Affiliate/claude/Main/install.sh | bash -s -- --wizard --clone"
     echo ""
     exit 0
 }
@@ -138,8 +162,16 @@ parse_arguments() {
             --help|-h)
                 show_help
                 ;;
+            --wizard|-w)
+                WIZARD_MODE=true
+                shift
+                ;;
             --auto|-a)
                 AUTO_MODE=true
+                shift
+                ;;
+            --clone)
+                DO_CLONE=true
                 shift
                 ;;
             --mode=*)
@@ -245,6 +277,552 @@ run_preflight_checks() {
     fi
 
     print_success "ผ่าน Pre-flight checks ทั้งหมด ✓"
+}
+
+################################################################################
+# ฟังก์ชัน Auto-Install Dependencies
+################################################################################
+
+# ติดตั้ง Composer อัตโนมัติ
+install_composer() {
+    print_info "🔧 กำลังติดตั้ง Composer อัตโนมัติ..."
+
+    # Download and install Composer
+    if curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php; then
+        if php /tmp/composer-setup.php --quiet --install-dir=/tmp; then
+            # Try to move to system path (may require sudo)
+            if sudo mv /tmp/composer.phar /usr/local/bin/composer 2>/dev/null; then
+                print_success "ติดตั้ง Composer ไปที่ /usr/local/bin/composer ✓"
+                rm -f /tmp/composer-setup.php
+                return 0
+            elif mv /tmp/composer.phar ./composer.phar 2>/dev/null; then
+                # Fallback: install locally
+                print_success "ติดตั้ง Composer ไปที่ ./composer.phar ✓"
+                print_info "ใช้คำสั่ง: php composer.phar แทน composer"
+                # Create alias function for this session
+                composer() { php "$(pwd)/composer.phar" "$@"; }
+                export -f composer
+                rm -f /tmp/composer-setup.php
+                return 0
+            fi
+        fi
+    fi
+
+    print_error "ติดตั้ง Composer ล้มเหลว"
+    rm -f /tmp/composer-setup.php /tmp/composer.phar
+    return 1
+}
+
+# ติดตั้ง Node.js อัตโนมัติผ่าน nvm หรือ direct download
+install_nodejs() {
+    print_info "🔧 กำลังติดตั้ง Node.js อัตโนมัติ..."
+
+    local NODE_VERSION="20"  # LTS version
+
+    # Method 1: Try using nvm if available
+    if [ -f "$HOME/.nvm/nvm.sh" ]; then
+        print_info "พบ nvm - ใช้ nvm ติดตั้ง Node.js..."
+        source "$HOME/.nvm/nvm.sh"
+        if nvm install $NODE_VERSION && nvm use $NODE_VERSION; then
+            print_success "ติดตั้ง Node.js v$NODE_VERSION ผ่าน nvm ✓"
+            return 0
+        fi
+    fi
+
+    # Method 2: Install nvm first, then Node.js
+    print_info "กำลังติดตั้ง nvm..."
+    if curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash; then
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+
+        if command -v nvm &> /dev/null; then
+            print_success "ติดตั้ง nvm ✓"
+            print_info "กำลังติดตั้ง Node.js v$NODE_VERSION..."
+
+            if nvm install $NODE_VERSION && nvm use $NODE_VERSION; then
+                print_success "ติดตั้ง Node.js v$NODE_VERSION ✓"
+                return 0
+            fi
+        fi
+    fi
+
+    # Method 3: Direct download for Linux (fallback)
+    if [[ "$(uname)" == "Linux" ]]; then
+        print_info "ลองติดตั้ง Node.js โดยตรง..."
+        local ARCH=$(uname -m)
+        local NODE_ARCH=""
+
+        case $ARCH in
+            x86_64) NODE_ARCH="x64" ;;
+            aarch64) NODE_ARCH="arm64" ;;
+            armv7l) NODE_ARCH="armv7l" ;;
+            *) NODE_ARCH="x64" ;;
+        esac
+
+        local NODE_URL="https://nodejs.org/dist/v${NODE_VERSION}.0.0/node-v${NODE_VERSION}.0.0-linux-${NODE_ARCH}.tar.xz"
+        local NODE_DIR="/usr/local/lib/nodejs"
+
+        if curl -fsSL "$NODE_URL" -o /tmp/node.tar.xz; then
+            if sudo mkdir -p "$NODE_DIR" && sudo tar -xJf /tmp/node.tar.xz -C "$NODE_DIR" --strip-components=1 2>/dev/null; then
+                export PATH="$NODE_DIR/bin:$PATH"
+                print_success "ติดตั้ง Node.js v$NODE_VERSION ✓"
+                rm -f /tmp/node.tar.xz
+                return 0
+            fi
+        fi
+        rm -f /tmp/node.tar.xz
+    fi
+
+    print_warning "ไม่สามารถติดตั้ง Node.js อัตโนมัติได้"
+    print_info "กรุณาติดตั้งเอง: https://nodejs.org/"
+    return 1
+}
+
+# ติดตั้ง PHP extensions (แนะนำคำสั่ง)
+suggest_php_extensions() {
+    local extensions=("$@")
+    local os_type=""
+
+    # Detect OS
+    if [ -f /etc/debian_version ]; then
+        os_type="debian"
+    elif [ -f /etc/redhat-release ]; then
+        os_type="redhat"
+    elif [[ "$(uname)" == "Darwin" ]]; then
+        os_type="macos"
+    fi
+
+    echo ""
+    print_info "📦 คำสั่งติดตั้ง PHP extensions:"
+    echo ""
+
+    case $os_type in
+        debian)
+            local php_ver=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
+            local ext_list=""
+            for ext in "${extensions[@]}"; do
+                ext_list+=" php${php_ver}-${ext}"
+            done
+            echo -e "  ${YELLOW}sudo apt-get update${NC}"
+            echo -e "  ${YELLOW}sudo apt-get install$ext_list${NC}"
+            ;;
+        redhat)
+            local ext_list=""
+            for ext in "${extensions[@]}"; do
+                ext_list+=" php-${ext}"
+            done
+            echo -e "  ${YELLOW}sudo yum install$ext_list${NC}"
+            echo -e "  หรือ ${YELLOW}sudo dnf install$ext_list${NC}"
+            ;;
+        macos)
+            echo -e "  ${YELLOW}brew install php${NC}"
+            echo "  (Homebrew PHP มักมี extensions ครบ)"
+            ;;
+        *)
+            echo "  ติดตั้งตาม package manager ของระบบ"
+            ;;
+    esac
+    echo ""
+
+    # ถามว่าต้องการลองติดตั้งอัตโนมัติหรือไม่
+    if [ "$AUTO_MODE" != true ] && [ "$os_type" = "debian" ]; then
+        read -p "ต้องการให้ลองติดตั้งอัตโนมัติหรือไม่? (ต้องใช้ sudo) (y/n) [y]: " TRY_INSTALL
+        TRY_INSTALL=${TRY_INSTALL:-y}
+        if [[ $TRY_INSTALL =~ ^[Yy]$ ]]; then
+            local php_ver=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
+            local ext_list=""
+            for ext in "${extensions[@]}"; do
+                ext_list+=" php${php_ver}-${ext}"
+            done
+            print_info "กำลังติดตั้ง PHP extensions..."
+            if sudo apt-get update -qq && sudo apt-get install -y $ext_list; then
+                print_success "ติดตั้ง PHP extensions สำเร็จ ✓"
+                return 0
+            else
+                print_error "ติดตั้งล้มเหลว"
+                return 1
+            fi
+        fi
+    fi
+
+    return 1
+}
+
+################################################################################
+# ฟังก์ชัน Clone Repository (สำหรับติดตั้งจากศูนย์)
+################################################################################
+clone_repository() {
+    print_header "📥 ดาวน์โหลด TP-Affiliate จาก GitHub"
+
+    # ตรวจสอบว่ามี git หรือไม่
+    if ! command -v git &> /dev/null; then
+        print_error "ไม่พบ Git!"
+        print_info "กำลังติดตั้ง Git..."
+
+        if [ -f /etc/debian_version ]; then
+            sudo apt-get update -qq && sudo apt-get install -y git
+        elif [ -f /etc/redhat-release ]; then
+            sudo yum install -y git || sudo dnf install -y git
+        elif [[ "$(uname)" == "Darwin" ]]; then
+            xcode-select --install 2>/dev/null || brew install git
+        else
+            error_exit "กรุณาติดตั้ง Git ก่อน: https://git-scm.com/"
+        fi
+    fi
+
+    # ตรวจสอบว่าอยู่ในโปรเจคแล้วหรือยัง
+    if [ -f "artisan" ] && [ -f "composer.json" ]; then
+        print_info "พบโปรเจค Laravel อยู่แล้วในไดเรกทอรีนี้"
+
+        if [ "$AUTO_MODE" = true ] || [ "$WIZARD_MODE" = true ]; then
+            print_info "ใช้ไฟล์ที่มีอยู่แล้ว..."
+            return 0
+        fi
+
+        read -p "ต้องการใช้ไฟล์ที่มีอยู่หรือ clone ใหม่? (use/clone) [use]: " CLONE_CHOICE
+        CLONE_CHOICE=${CLONE_CHOICE:-use}
+        if [ "$CLONE_CHOICE" = "use" ]; then
+            return 0
+        fi
+    fi
+
+    # หาตำแหน่งติดตั้ง
+    local INSTALL_DIR
+    if [ "$WIZARD_MODE" = true ]; then
+        INSTALL_DIR="thaiprompt-affiliate"
+        print_info "จะติดตั้งในโฟลเดอร์: $INSTALL_DIR"
+    else
+        read -p "ไดเรกทอรีที่จะติดตั้ง [thaiprompt-affiliate]: " INSTALL_DIR
+        INSTALL_DIR=${INSTALL_DIR:-thaiprompt-affiliate}
+    fi
+
+    # Clone repository
+    print_step "กำลัง clone จาก $REPO_URL..."
+    print_info "Branch: $REPO_BRANCH"
+    echo ""
+
+    if [ -d "$INSTALL_DIR" ]; then
+        print_warning "โฟลเดอร์ $INSTALL_DIR มีอยู่แล้ว"
+        if [ "$AUTO_MODE" = true ]; then
+            rm -rf "$INSTALL_DIR"
+        else
+            read -p "ต้องการลบและ clone ใหม่หรือไม่? (y/n) [n]: " DELETE_EXISTING
+            if [[ $DELETE_EXISTING =~ ^[Yy]$ ]]; then
+                rm -rf "$INSTALL_DIR"
+            else
+                print_info "ใช้โฟลเดอร์ที่มีอยู่..."
+                cd "$INSTALL_DIR"
+                return 0
+            fi
+        fi
+    fi
+
+    # Clone with retry
+    local CLONE_ATTEMPT=1
+    local MAX_CLONE_ATTEMPTS=3
+
+    while [ $CLONE_ATTEMPT -le $MAX_CLONE_ATTEMPTS ]; do
+        if git clone -b "$REPO_BRANCH" --depth 1 "$REPO_URL" "$INSTALL_DIR" 2>&1; then
+            print_success "Clone สำเร็จ! ✓"
+            cd "$INSTALL_DIR"
+            return 0
+        else
+            print_warning "Clone ล้มเหลว (ครั้งที่ $CLONE_ATTEMPT/$MAX_CLONE_ATTEMPTS)"
+            CLONE_ATTEMPT=$((CLONE_ATTEMPT + 1))
+            if [ $CLONE_ATTEMPT -le $MAX_CLONE_ATTEMPTS ]; then
+                print_info "รอ 3 วินาที แล้วลองใหม่..."
+                sleep 3
+            fi
+        fi
+    done
+
+    error_exit "Clone repository ล้มเหลว กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต"
+}
+
+################################################################################
+# ฟังก์ชัน Wizard Mode (สำหรับผู้ใช้ทั่วไป)
+################################################################################
+run_wizard_mode() {
+    clear
+    echo ""
+    echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║${NC}                                                                ${GREEN}║${NC}"
+    echo -e "${GREEN}║${NC}    ${MAGENTA}${BOLD}🧙 TP-Affiliate Installation Wizard${NC}                       ${GREEN}║${NC}"
+    echo -e "${GREEN}║${NC}                                                                ${GREEN}║${NC}"
+    echo -e "${GREEN}║${NC}    ${CYAN}ติดตั้งง่ายๆ แค่ตอบคำถามไม่กี่ข้อ${NC}                        ${GREEN}║${NC}"
+    echo -e "${GREEN}║${NC}                                                                ${GREEN}║${NC}"
+    echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+
+    print_info "Wizard จะช่วยคุณ:"
+    echo "  1. ติดตั้ง dependencies ที่จำเป็นอัตโนมัติ"
+    echo "  2. ตั้งค่า database"
+    echo "  3. สร้าง admin account"
+    echo "  4. เตรียมระบบให้พร้อมใช้งาน"
+    echo ""
+
+    # Step 1: Database Configuration
+    print_subheader "📋 ขั้นตอนที่ 1: ตั้งค่า Database"
+    echo ""
+    echo -e "${YELLOW}คุณต้องมี MySQL/MariaDB database พร้อมใช้งาน${NC}"
+    echo "ถ้ายังไม่มี database กรุณาสร้างก่อน เช่น:"
+    echo -e "  ${CYAN}mysql -u root -p -e \"CREATE DATABASE thaiprompt_affiliate;\"${NC}"
+    echo ""
+
+    # ตรวจสอบว่ามี cache หรือไม่
+    if [ -f "$CACHE_FILE" ]; then
+        print_info "💾 พบการตั้งค่าเดิม ใช้ค่านี้เลยหรือตั้งใหม่?"
+        read -p "ใช้การตั้งค่าเดิม? (y/n) [y]: " USE_OLD
+        USE_OLD=${USE_OLD:-y}
+        if [[ $USE_OLD =~ ^[Yy]$ ]]; then
+            # โหลดค่าจาก cache
+            DB_HOST=$(load_from_cache "DB_HOST" "127.0.0.1")
+            DB_PORT=$(load_from_cache "DB_PORT" "3306")
+            DB_DATABASE=$(load_from_cache "DB_DATABASE" "thaiprompt_affiliate")
+            DB_USERNAME=$(load_from_cache "DB_USERNAME" "root")
+            DB_PASSWORD=$(load_from_cache "DB_PASSWORD" "")
+            ADMIN_EMAIL=$(load_from_cache "ADMIN_EMAIL" "admin@example.com")
+            APP_URL=$(load_from_cache "APP_URL" "http://localhost")
+
+            print_success "โหลดการตั้งค่าเรียบร้อย"
+            echo ""
+            echo "  Database: $DB_DATABASE@$DB_HOST:$DB_PORT"
+            echo "  Admin Email: $ADMIN_EMAIL"
+            echo "  App URL: $APP_URL"
+            echo ""
+
+            # ข้ามไปถาม password admin
+            goto_admin_password=true
+        fi
+    fi
+
+    if [ "$goto_admin_password" != true ]; then
+        # ถาม Database config
+        echo ""
+        print_step "กรอกข้อมูล Database:"
+
+        read -p "  Database Host [127.0.0.1]: " DB_HOST
+        DB_HOST=${DB_HOST:-127.0.0.1}
+
+        read -p "  Database Port [3306]: " DB_PORT
+        DB_PORT=${DB_PORT:-3306}
+
+        read -p "  Database Name [thaiprompt_affiliate]: " DB_DATABASE
+        DB_DATABASE=${DB_DATABASE:-thaiprompt_affiliate}
+
+        read -p "  Database Username [root]: " DB_USERNAME
+        DB_USERNAME=${DB_USERNAME:-root}
+
+        read -sp "  Database Password: " DB_PASSWORD
+        echo ""
+
+        # บันทึก cache
+        save_to_cache "DB_HOST" "$DB_HOST"
+        save_to_cache "DB_PORT" "$DB_PORT"
+        save_to_cache "DB_DATABASE" "$DB_DATABASE"
+        save_to_cache "DB_USERNAME" "$DB_USERNAME"
+        save_to_cache "DB_PASSWORD" "$DB_PASSWORD"
+
+        # Step 2: App Configuration
+        print_subheader "📋 ขั้นตอนที่ 2: ตั้งค่าแอปพลิเคชัน"
+
+        read -p "  App Name [TP-Affiliate]: " APP_NAME
+        APP_NAME=${APP_NAME:-TP-Affiliate}
+        save_to_cache "APP_NAME" "$APP_NAME"
+
+        read -p "  App URL (เช่น https://example.com) [http://localhost]: " APP_URL
+        APP_URL=${APP_URL:-http://localhost}
+        save_to_cache "APP_URL" "$APP_URL"
+
+        # Step 3: Admin Account
+        print_subheader "📋 ขั้นตอนที่ 3: สร้าง Admin Account"
+
+        read -p "  Admin Name [Admin]: " ADMIN_NAME
+        ADMIN_NAME=${ADMIN_NAME:-Admin}
+        save_to_cache "ADMIN_NAME" "$ADMIN_NAME"
+
+        read -p "  Admin Email: " ADMIN_EMAIL
+        while [ -z "$ADMIN_EMAIL" ]; do
+            print_error "  กรุณากรอก Email!"
+            read -p "  Admin Email: " ADMIN_EMAIL
+        done
+        save_to_cache "ADMIN_EMAIL" "$ADMIN_EMAIL"
+    fi
+
+    # ถาม Admin Password (ถามเสมอ)
+    print_step "ตั้ง Admin Password:"
+    read -sp "  Admin Password (อย่างน้อย 8 ตัว): " ADMIN_PASSWORD
+    echo ""
+    while [ ${#ADMIN_PASSWORD} -lt 8 ]; do
+        print_error "  Password ต้องมีอย่างน้อย 8 ตัวอักษร!"
+        read -sp "  Admin Password: " ADMIN_PASSWORD
+        echo ""
+    done
+
+    read -sp "  ยืนยัน Password: " ADMIN_PASSWORD_CONFIRM
+    echo ""
+    while [ "$ADMIN_PASSWORD" != "$ADMIN_PASSWORD_CONFIRM" ]; do
+        print_error "  Password ไม่ตรงกัน!"
+        read -sp "  Admin Password: " ADMIN_PASSWORD
+        echo ""
+        read -sp "  ยืนยัน Password: " ADMIN_PASSWORD_CONFIRM
+        echo ""
+    done
+
+    # Set default values for wizard mode
+    APP_ENV="production"
+    APP_DEBUG="false"
+    INSTALL_MODE="standard"
+
+    # Summary
+    echo ""
+    print_subheader "📋 สรุปการตั้งค่า"
+    echo ""
+    echo "  🌐 App Name: $APP_NAME"
+    echo "  🔗 App URL: $APP_URL"
+    echo "  🗄️  Database: $DB_DATABASE@$DB_HOST:$DB_PORT"
+    echo "  👤 Admin: $ADMIN_EMAIL"
+    echo "  📦 Mode: $INSTALL_MODE"
+    echo ""
+
+    read -p "ดำเนินการติดตั้งต่อ? (y/n) [y]: " CONTINUE_INSTALL
+    CONTINUE_INSTALL=${CONTINUE_INSTALL:-y}
+    if [[ ! $CONTINUE_INSTALL =~ ^[Yy]$ ]]; then
+        print_info "ยกเลิกการติดตั้ง"
+        exit 0
+    fi
+
+    echo ""
+    print_success "เริ่มการติดตั้ง..."
+    echo ""
+
+    # ทำเครื่องหมายว่าผ่าน wizard แล้ว ไม่ต้องถามซ้ำใน STEP 2
+    save_checkpoint "WIZARD_COMPLETED"
+}
+
+################################################################################
+# ฟังก์ชัน Deploy Ready Check (ตรวจสอบพร้อมสำหรับ deploy-pro.sh)
+################################################################################
+check_deploy_ready() {
+    print_header "🚀 ตรวจสอบความพร้อมสำหรับ Deploy"
+
+    local all_ready=true
+    local issues=()
+
+    # Check .env file
+    print_step "ตรวจสอบ .env file..."
+    if [ -f ".env" ]; then
+        print_success ".env file ✓"
+
+        # Check APP_KEY
+        if grep -q "^APP_KEY=base64:" ".env"; then
+            print_success "  APP_KEY ✓"
+        else
+            issues+=("APP_KEY ยังไม่ได้ตั้งค่า (รัน: php artisan key:generate)")
+            all_ready=false
+        fi
+
+        # Check database config
+        if grep -q "^DB_DATABASE=" ".env" && ! grep -q "^DB_DATABASE=$" ".env"; then
+            print_success "  Database config ✓"
+        else
+            issues+=("Database ยังไม่ได้ตั้งค่า")
+            all_ready=false
+        fi
+    else
+        issues+=(".env file ไม่พบ")
+        all_ready=false
+    fi
+
+    # Check vendor directory
+    print_step "ตรวจสอบ Composer dependencies..."
+    if [ -d "vendor" ] && [ -f "vendor/autoload.php" ]; then
+        print_success "Composer dependencies ✓"
+    else
+        issues+=("Composer dependencies ยังไม่ได้ติดตั้ง (รัน: composer install)")
+        all_ready=false
+    fi
+
+    # Check node_modules
+    print_step "ตรวจสอบ Node dependencies..."
+    if [ -d "node_modules" ]; then
+        print_success "Node dependencies ✓"
+    else
+        issues+=("Node dependencies ยังไม่ได้ติดตั้ง (รัน: npm install)")
+        all_ready=false
+    fi
+
+    # Check public/build
+    print_step "ตรวจสอบ Build assets..."
+    if [ -d "public/build" ]; then
+        print_success "Build assets ✓"
+    else
+        issues+=("Build assets ยังไม่ได้สร้าง (รัน: npm run build)")
+        all_ready=false
+    fi
+
+    # Check storage permissions
+    print_step "ตรวจสอบ Storage permissions..."
+    if [ -w "storage" ] && [ -w "bootstrap/cache" ]; then
+        print_success "Storage permissions ✓"
+    else
+        issues+=("Storage permissions ไม่ถูกต้อง")
+        all_ready=false
+    fi
+
+    # Check storage link
+    print_step "ตรวจสอบ Storage link..."
+    if [ -L "public/storage" ]; then
+        print_success "Storage link ✓"
+    else
+        issues+=("Storage link ยังไม่ได้สร้าง (รัน: php artisan storage:link)")
+        all_ready=false
+    fi
+
+    # Check database connection
+    print_step "ตรวจสอบ Database connection..."
+    if php artisan tinker --execute="DB::connection()->getPdo();" &>/dev/null; then
+        print_success "Database connection ✓"
+    else
+        issues+=("Database connection ล้มเหลว")
+        all_ready=false
+    fi
+
+    # Check deploy-pro.sh exists
+    print_step "ตรวจสอบ deploy-pro.sh..."
+    if [ -f "deploy-pro.sh" ]; then
+        print_success "deploy-pro.sh ✓"
+    else
+        issues+=("deploy-pro.sh ไม่พบ")
+        all_ready=false
+    fi
+
+    echo ""
+
+    if [ "$all_ready" = true ]; then
+        echo -e "${GREEN}${BOLD}╔════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${GREEN}${BOLD}║${NC}                                                                ${GREEN}${BOLD}║${NC}"
+        echo -e "${GREEN}${BOLD}║${NC}    ${GREEN}✅ พร้อมสำหรับ Deploy!${NC}                                      ${GREEN}${BOLD}║${NC}"
+        echo -e "${GREEN}${BOLD}║${NC}                                                                ${GREEN}${BOLD}║${NC}"
+        echo -e "${GREEN}${BOLD}║${NC}    คุณสามารถรัน deploy-pro.sh ได้แล้ว:                        ${GREEN}${BOLD}║${NC}"
+        echo -e "${GREEN}${BOLD}║${NC}    ${YELLOW}./deploy-pro.sh${NC}                                           ${GREEN}${BOLD}║${NC}"
+        echo -e "${GREEN}${BOLD}║${NC}                                                                ${GREEN}${BOLD}║${NC}"
+        echo -e "${GREEN}${BOLD}╚════════════════════════════════════════════════════════════════╝${NC}"
+        return 0
+    else
+        echo -e "${YELLOW}${BOLD}╔════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${YELLOW}${BOLD}║${NC}                                                                ${YELLOW}${BOLD}║${NC}"
+        echo -e "${YELLOW}${BOLD}║${NC}    ${YELLOW}⚠️ ยังไม่พร้อมสำหรับ Deploy${NC}                                 ${YELLOW}${BOLD}║${NC}"
+        echo -e "${YELLOW}${BOLD}║${NC}                                                                ${YELLOW}${BOLD}║${NC}"
+        echo -e "${YELLOW}${BOLD}╚════════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        print_info "ปัญหาที่พบ:"
+        for issue in "${issues[@]}"; do
+            echo -e "  ${RED}•${NC} $issue"
+        done
+        echo ""
+        return 1
+    fi
 }
 
 ################################################################################
@@ -429,6 +1007,20 @@ if [ "$FORCE_REINSTALL" = true ]; then
 fi
 
 ################################################################################
+# Handle --clone flag (Clone repository before installation)
+################################################################################
+if [ "$DO_CLONE" = true ]; then
+    clone_repository
+fi
+
+################################################################################
+# Handle --wizard flag (Run wizard mode for simple setup)
+################################################################################
+if [ "$WIZARD_MODE" = true ]; then
+    run_wizard_mode
+fi
+
+################################################################################
 # Header Banner
 ################################################################################
 clear
@@ -447,6 +1039,9 @@ echo -e "${GREEN}╚════════════════════
 echo ""
 
 # Show current settings
+if [ "$WIZARD_MODE" = true ]; then
+    echo -e "${GREEN}${BOLD}🧙 Wizard Mode: เปิดใช้งาน${NC}"
+fi
 if [ "$AUTO_MODE" = true ]; then
     echo -e "${CYAN}${BOLD}⚡ Auto Mode: เปิดใช้งาน${NC}"
 fi
@@ -532,12 +1127,25 @@ done
 if [ ${#MISSING_EXTENSIONS[@]} -ne 0 ]; then
     echo ""
     print_error "ขาด PHP extensions: ${MISSING_EXTENSIONS[*]}"
-    echo ""
-    print_info "วิธีติดตั้ง:"
-    print_info "  Ubuntu/Debian: sudo apt-get install php-${MISSING_EXTENSIONS[0]}"
-    print_info "  CentOS/RHEL:   sudo yum install php-${MISSING_EXTENSIONS[0]}"
-    print_info "  macOS:         brew install php"
-    error_exit "กรุณาติดตั้ง PHP extensions ที่ขาดหายไป"
+
+    # ลองติดตั้งอัตโนมัติ
+    if suggest_php_extensions "${MISSING_EXTENSIONS[@]}"; then
+        # ตรวจสอบอีกครั้งหลังติดตั้ง
+        print_info "ตรวจสอบ PHP extensions อีกครั้ง..."
+        STILL_MISSING=()
+        for ext in "${MISSING_EXTENSIONS[@]}"; do
+            if ! php -r "exit(extension_loaded('$ext') ? 0 : 1);"; then
+                STILL_MISSING+=("$ext")
+            fi
+        done
+        if [ ${#STILL_MISSING[@]} -eq 0 ]; then
+            print_success "ติดตั้ง PHP extensions ครบทุกตัวแล้ว ✓"
+        else
+            error_exit "ยังขาด PHP extensions: ${STILL_MISSING[*]}"
+        fi
+    else
+        error_exit "กรุณาติดตั้ง PHP extensions ที่ขาดหายไป"
+    fi
 fi
 
 # Check Composer
@@ -545,25 +1153,68 @@ print_step "ตรวจสอบ Composer..."
 if command -v composer &> /dev/null; then
     COMPOSER_VERSION=$(composer --version --no-ansi 2>/dev/null | grep -oP '\d+\.\d+\.\d+' | head -1)
     print_success "Composer: $COMPOSER_VERSION ✓"
+elif [ -f "./composer.phar" ]; then
+    COMPOSER_VERSION=$(php ./composer.phar --version --no-ansi 2>/dev/null | grep -oP '\d+\.\d+\.\d+' | head -1)
+    print_success "Composer (local): $COMPOSER_VERSION ✓"
+    # Create alias for this session
+    composer() { php "$(pwd)/composer.phar" "$@"; }
+    export -f composer
 else
-    echo ""
-    print_error "ไม่พบ Composer!"
-    echo ""
-    print_info "วิธีติดตั้ง:"
-    print_info "  curl -sS https://getcomposer.org/installer | php"
-    print_info "  sudo mv composer.phar /usr/local/bin/composer"
-    error_exit "กรุณาติดตั้ง Composer ก่อน: https://getcomposer.org/"
+    print_warning "ไม่พบ Composer!"
+
+    # ลองติดตั้งอัตโนมัติ
+    if [ "$AUTO_MODE" = true ]; then
+        install_composer || error_exit "ติดตั้ง Composer ล้มเหลว"
+    else
+        read -p "ต้องการติดตั้ง Composer อัตโนมัติหรือไม่? (y/n) [y]: " INSTALL_COMPOSER
+        INSTALL_COMPOSER=${INSTALL_COMPOSER:-y}
+        if [[ $INSTALL_COMPOSER =~ ^[Yy]$ ]]; then
+            install_composer || error_exit "ติดตั้ง Composer ล้มเหลว"
+        else
+            error_exit "ต้องมี Composer เพื่อติดตั้ง dependencies"
+        fi
+    fi
+
+    # ตรวจสอบอีกครั้ง
+    if command -v composer &> /dev/null || [ -f "./composer.phar" ]; then
+        print_success "Composer พร้อมใช้งาน ✓"
+    else
+        error_exit "Composer ยังไม่พร้อมใช้งาน"
+    fi
 fi
 
-# Check Node.js (optional)
+# Check Node.js (optional but recommended)
 print_step "ตรวจสอบ Node.js..."
 if command -v node &> /dev/null && command -v npm &> /dev/null; then
     NODE_VERSION=$(node --version)
     NPM_VERSION=$(npm --version)
     print_success "Node.js: $NODE_VERSION, npm: $NPM_VERSION ✓"
 else
-    print_warning "ไม่พบ Node.js/npm (จะติดตั้ง frontend assets ไม่ได้)"
-    print_info "  ติดตั้ง: https://nodejs.org/ หรือ nvm"
+    print_warning "ไม่พบ Node.js/npm"
+
+    # ลองติดตั้งอัตโนมัติ
+    if [ "$AUTO_MODE" = true ]; then
+        print_info "Auto Mode: ลองติดตั้ง Node.js อัตโนมัติ..."
+        if install_nodejs; then
+            NODE_VERSION=$(node --version 2>/dev/null || echo "installed")
+            print_success "Node.js: $NODE_VERSION ✓"
+        else
+            print_warning "ข้าม Node.js - frontend assets จะต้องติดตั้งเอง"
+        fi
+    else
+        read -p "ต้องการติดตั้ง Node.js อัตโนมัติหรือไม่? (y/n) [y]: " INSTALL_NODE
+        INSTALL_NODE=${INSTALL_NODE:-y}
+        if [[ $INSTALL_NODE =~ ^[Yy]$ ]]; then
+            if install_nodejs; then
+                NODE_VERSION=$(node --version 2>/dev/null || echo "installed")
+                print_success "Node.js: $NODE_VERSION ✓"
+            else
+                print_warning "ข้าม Node.js - frontend assets จะต้องติดตั้งเอง"
+            fi
+        else
+            print_info "ข้าม Node.js - frontend assets จะต้องติดตั้งเอง"
+        fi
+    fi
 fi
 
 # Check Git
@@ -594,8 +1245,32 @@ fi
 if ! is_step_completed "STEP_2_CONFIG"; then
 print_header "⚙️  STEP 2: การตั้งค่าแอปพลิเคชัน"
 
+# Wizard Mode: ข้ามขั้นตอนนี้ถ้าตั้งค่าใน wizard แล้ว
+if is_step_completed "WIZARD_COMPLETED"; then
+    print_info "🧙 Wizard Mode: ใช้การตั้งค่าจาก wizard"
+    echo ""
+
+    # โหลดค่าจาก wizard cache
+    APP_NAME=$(load_from_cache "APP_NAME" "TP-Affiliate")
+    APP_URL=$(load_from_cache "APP_URL" "http://localhost")
+    APP_ENV="production"
+    APP_DEBUG="false"
+
+    DB_HOST=$(load_from_cache "DB_HOST" "127.0.0.1")
+    DB_PORT=$(load_from_cache "DB_PORT" "3306")
+    DB_DATABASE=$(load_from_cache "DB_DATABASE" "thaiprompt_affiliate")
+    DB_USERNAME=$(load_from_cache "DB_USERNAME" "root")
+    DB_PASSWORD=$(load_from_cache "DB_PASSWORD" "")
+
+    ADMIN_NAME=$(load_from_cache "ADMIN_NAME" "Admin")
+    ADMIN_EMAIL=$(load_from_cache "ADMIN_EMAIL" "admin@example.com")
+    # ADMIN_PASSWORD ถูกตั้งค่าไว้แล้วจาก wizard
+
+    print_success "โหลดการตั้งค่าจาก wizard ✓"
+    echo ""
+
 # Auto Mode: ใช้ค่าจาก cache หรือ defaults
-if [ "$AUTO_MODE" = true ]; then
+elif [ "$AUTO_MODE" = true ]; then
     print_info "🤖 Auto Mode: ใช้ค่าจาก cache หรือ defaults"
     echo ""
 
@@ -1307,11 +1982,54 @@ echo -e "      ${GREEN}→${NC} แก้ไขใน: ${YELLOW}.env${NC}"
 echo ""
 echo -e "${CYAN}${BOLD}═══════════════════════════════════════════════════════════════${NC}"
 echo ""
+
+################################################################################
+# Deploy Ready Check
+################################################################################
+print_subheader "🚀 ตรวจสอบความพร้อมสำหรับ Deploy"
+
+# ตรวจสอบอย่างเงียบๆ
+DEPLOY_READY=true
+
+if [ ! -f ".env" ] || ! grep -q "^APP_KEY=base64:" ".env"; then
+    DEPLOY_READY=false
+fi
+
+if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then
+    DEPLOY_READY=false
+fi
+
+if [ ! -d "node_modules" ]; then
+    DEPLOY_READY=false
+fi
+
+if [ ! -d "public/build" ]; then
+    DEPLOY_READY=false
+fi
+
+if [ "$DEPLOY_READY" = true ]; then
+    echo -e "${GREEN}${BOLD}✅ พร้อมสำหรับ Production Deployment!${NC}"
+    echo ""
+    echo -e "  คุณสามารถใช้ ${YELLOW}deploy-pro.sh${NC} เพื่ออัปเดตในอนาคต:"
+    echo -e "  ${CYAN}./deploy-pro.sh${NC}"
+else
+    echo -e "${YELLOW}${BOLD}⚠️ บางส่วนอาจยังไม่พร้อมสำหรับ Production${NC}"
+    echo ""
+    echo "  ตรวจสอบให้แน่ใจว่าได้รัน npm install และ npm run build แล้ว"
+fi
+
+echo ""
 echo -e "${GREEN}${BOLD}    🎊 ยินดีด้วย! พร้อมใช้งานแล้ว 🎊${NC}"
 echo ""
 echo -e "${CYAN}📝 Log Files:${NC}"
 echo -e "  • ติดตั้งทั่วไป: ${YELLOW}storage/logs/laravel.log${NC}"
 echo -e "  • Seeder log: ${YELLOW}$SEEDER_LOG${NC}"
+echo ""
+echo -e "${CYAN}📖 คำสั่งที่มีประโยชน์:${NC}"
+echo -e "  • ${YELLOW}./deploy-pro.sh${NC}        - Deploy/อัปเดตในอนาคต"
+echo -e "  • ${YELLOW}php artisan serve${NC}      - ทดสอบด้วย built-in server"
+echo -e "  • ${YELLOW}./clear-cache.sh${NC}       - เคลียร์ cache ทั้งหมด"
+echo -e "  • ${YELLOW}./fix-permissions.sh${NC}   - แก้ไข permissions"
 echo ""
 echo -e "${MAGENTA}Happy deploying! 🚀${NC}"
 echo ""
