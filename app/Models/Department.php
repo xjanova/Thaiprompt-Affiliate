@@ -11,6 +11,7 @@ class Department extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'store_id',
         'name',
         'code',
         'description',
@@ -27,6 +28,14 @@ class Department extends Model
         'is_active' => 'boolean',
         'budget' => 'integer',
     ];
+
+    /**
+     * ร้านค้าที่แผนกนี้สังกัด
+     */
+    public function store()
+    {
+        return $this->belongsTo(VendorStore::class, 'store_id');
+    }
 
     /**
      * Get the parent department
@@ -90,5 +99,25 @@ class Department extends Model
     public function jobPostings()
     {
         return $this->hasMany(JobPosting::class);
+    }
+
+    /**
+     * Scope: ตามร้านค้า
+     */
+    public function scopeByStore($query, $storeId)
+    {
+        return $query->where('store_id', $storeId);
+    }
+
+    /**
+     * Scope: ร้านค้าปัจจุบัน
+     */
+    public function scopeForCurrentStore($query)
+    {
+        $store = auth()->user()?->vendorStore;
+        if ($store) {
+            return $query->where('store_id', $store->id);
+        }
+        return $query->whereNull('store_id');
     }
 }

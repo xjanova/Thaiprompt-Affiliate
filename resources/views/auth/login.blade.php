@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" x-data="{ darkMode: localStorage.getItem('darkMode') === 'dark' }" :class="{ 'dark': darkMode }">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,6 +13,7 @@
     @endphp
     <title>เข้าสู่ระบบ - {{ $appName }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @if(config('turnstile.enabled') && config('turnstile.points.login'))
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     @endif
@@ -71,6 +72,22 @@
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Dark mode support */
+        .dark .glass-effect {
+            background: rgba(31, 41, 55, 0.95);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+
+        .dark .animated-gradient {
+            background: linear-gradient(-45deg, #1e1b4b, #312e81, #581c87, #1e293b);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        .dark .particle {
+            background: rgba(139, 92, 246, 0.2);
         }
 
         /* Glow effect for logo */
@@ -166,15 +183,15 @@
                              style="width: {{ $logoAuthWidth }}px; height: {{ $logoAuthHeight }}px;"
                              class="logo-glow float-animation object-contain">
                     </div>
-                    <h1 class="text-5xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
+                    <h1 class="text-5xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent mb-3">
                         {{ $appName }}
                     </h1>
-                    <p class="text-gray-600 text-lg font-medium">ระบบบริหารจัดการพันธมิตร</p>
+                    <p class="text-gray-600 dark:text-gray-300 text-lg font-medium">ระบบบริหารจัดการพันธมิตร</p>
                     <div class="w-24 h-1 bg-gradient-to-r from-indigo-600 to-purple-600 mx-auto mt-4 rounded-full"></div>
                 </div>
 
                 @if (session('info'))
-                    <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 text-blue-800 px-5 py-4 rounded-lg shadow-md">
+                    <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-l-4 border-blue-500 text-blue-800 dark:text-blue-200 px-5 py-4 rounded-lg shadow-md">
                         <div class="flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
@@ -185,7 +202,7 @@
                 @endif
 
                 @if ($errors->any())
-                    <div class="mb-6 bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 text-red-800 px-5 py-4 rounded-lg shadow-md">
+                    <div class="mb-6 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/30 dark:to-pink-900/30 border-l-4 border-red-500 text-red-800 dark:text-red-200 px-5 py-4 rounded-lg shadow-md">
                         <div class="flex items-start">
                             <svg class="w-5 h-5 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
@@ -203,7 +220,7 @@
                     @csrf
 
                     <div>
-                        <label for="email" class="block text-sm font-bold text-gray-700 mb-2">
+                        <label for="email" class="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2">
                             <span class="flex items-center">
                                 <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
@@ -213,13 +230,13 @@
                             </span>
                         </label>
                         <input type="email" name="email" id="email" value="{{ old('email') }}"
-                               class="premium-input w-full px-5 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-700 font-medium shadow-sm"
+                               class="premium-input w-full px-5 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-700 dark:text-white dark:bg-gray-700 font-medium shadow-sm"
                                placeholder="example@email.com"
                                required autofocus>
                     </div>
 
                     <div>
-                        <label for="password" class="block text-sm font-bold text-gray-700 mb-2">
+                        <label for="password" class="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2">
                             <span class="flex items-center">
                                 <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
@@ -228,7 +245,7 @@
                             </span>
                         </label>
                         <input type="password" name="password" id="password"
-                               class="premium-input w-full px-5 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-700 font-medium shadow-sm"
+                               class="premium-input w-full px-5 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-700 dark:text-white dark:bg-gray-700 font-medium shadow-sm"
                                placeholder="••••••••"
                                required>
                     </div>
@@ -236,8 +253,8 @@
                     <div class="flex items-center justify-between">
                         <label class="flex items-center cursor-pointer group">
                             <input type="checkbox" name="remember"
-                                   class="w-5 h-5 rounded border-2 border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500 transition">
-                            <span class="ml-3 text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition">จดจำฉัน</span>
+                                   class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-2 focus:ring-indigo-500 transition">
+                            <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">จดจำฉัน</span>
                         </label>
                     </div>
 
@@ -270,24 +287,24 @@
                 @if($showLineLogin)
                 <div class="mt-6">
                     <div class="relative flex items-center justify-center">
-                        <div class="border-t border-gray-300 w-full"></div>
-                        <span class="bg-white px-4 text-gray-500 text-sm font-medium absolute">หรือ</span>
+                        <div class="border-t border-gray-300 dark:border-gray-600 w-full"></div>
+                        <span class="bg-white dark:bg-gray-800 px-4 text-gray-500 dark:text-gray-400 text-sm font-medium absolute">หรือ</span>
                     </div>
 
                     <a href="{{ route('line.login') }}"
-                       class="mt-6 w-full flex items-center justify-center px-6 py-4 border-2 border-gray-300 rounded-xl text-gray-700 bg-white hover:bg-gray-50 font-bold text-lg shadow-md hover:shadow-lg transition duration-300 group">
+                       class="mt-6 w-full flex items-center justify-center px-6 py-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 font-bold text-lg shadow-md hover:shadow-lg transition duration-300 group">
                         <svg class="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="#06C755">
                             <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
                         </svg>
-                        <span class="group-hover:text-gray-900 transition">เข้าสู่ระบบด้วย LINE</span>
+                        <span class="group-hover:text-gray-900 dark:group-hover:text-white transition">เข้าสู่ระบบด้วย LINE</span>
                     </a>
                 </div>
                 @endif
 
-                <div class="mt-8 pt-6 border-t border-gray-200">
+                <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600">
                     <div class="text-center">
                         <a href="{{ route('register') }}"
-                           class="inline-flex items-center text-indigo-600 hover:text-purple-600 font-semibold transition duration-300 group">
+                           class="inline-flex items-center text-indigo-600 dark:text-indigo-400 hover:text-purple-600 dark:hover:text-purple-400 font-semibold transition duration-300 group">
                             <span class="mr-2">ยังไม่มีบัญชี?</span>
                             <span class="underline">สมัครสมาชิก</span>
                             <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -311,7 +328,7 @@
 
             <!-- Footer Text -->
             <div class="mt-8 text-center">
-                <p class="text-white/80 text-sm font-medium">
+                <p class="text-white/80 dark:text-gray-400 text-sm font-medium">
                     ระบบปลอดภัยด้วยการเข้ารหัสระดับสูง 🔒
                 </p>
             </div>

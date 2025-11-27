@@ -102,6 +102,16 @@
 
     {{-- Right Section: Search, Notifications, Dark Mode, Profile --}}
     <div class="flex items-center gap-2 md:gap-4">
+        {{-- 🇹🇭 Wiki Button - ลิงก์ไปหน้า Wiki หลัก (แสดงทุกขนาดหน้าจอ) --}}
+        <a href="{{ route('wiki.index') }}"
+           class="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all duration-300 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/30 transform hover:scale-105 relative group"
+           title="🇹🇭 เรื่องราว ThaiPrompt - ทำไมต้องมีระบบของคนไทย">
+            <span class="text-sm sm:text-base group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">🇹🇭</span>
+            <span class="hidden xs:inline group-hover:translate-x-0.5 transition-transform duration-300">wiki</span>
+            <span class="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 rounded-full animate-ping"></span>
+            <span class="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 rounded-full"></span>
+        </a>
+
         {{-- Search Bar (Hidden on Mobile) --}}
         @if($showSearch)
             <div class="hidden md:block" x-data="{ searchOpen: false }">
@@ -119,7 +129,7 @@
                     {{-- Search Results Dropdown --}}
                     <div x-show="searchOpen && searchQuery.length > 0"
                          x-transition
-                         class="absolute top-full left-0 right-0 mt-2 glass-dropdown rounded-xl shadow-2xl border border-white/30 overflow-hidden max-h-96 overflow-y-auto">
+                         class="absolute top-full left-0 right-0 mt-2 glass-dropdown rounded-xl shadow-2xl border border-white/30 overflow-hidden max-h-96 overflow-y-auto z-[9999]">
                         <div class="p-4 bg-black/20">
                             <p class="text-white/80 text-sm">
                                 <i class="fas fa-search mr-2"></i>
@@ -177,15 +187,18 @@
             <button @click="profileOpen = !profileOpen"
                     type="button"
                     class="flex items-center gap-2 p-2 pr-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-105 active:scale-95">
-                <div class="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <span class="text-white text-sm font-bold drop-shadow">{{ substr($user->name, 0, 1) }}</span>
-                </div>
+                {{-- Avatar - ใช้ profile_picture_url accessor พร้อม fallback --}}
+                <img src="{{ $user->profile_picture_url }}"
+                     alt="{{ $user->name }}"
+                     class="w-8 h-8 rounded-lg object-cover shadow-lg"
+                     onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=F59E0B&color=fff&size=64';">
                 <span class="hidden md:block text-white font-medium text-sm drop-shadow">{{ $user->name }}</span>
                 <i class="fas fa-chevron-down text-white/60 text-xs drop-shadow transition-transform duration-200" :class="profileOpen ? 'rotate-180' : ''"></i>
             </button>
 
             {{-- Profile Dropdown --}}
             <div x-show="profileOpen"
+                 x-cloak
                  @click.outside="profileOpen = false"
                  x-transition:enter="transition ease-out duration-200"
                  x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
@@ -193,15 +206,16 @@
                  x-transition:leave="transition ease-in duration-150"
                  x-transition:leave-start="opacity-100 scale-100"
                  x-transition:leave-end="opacity-0 scale-95"
-                 class="absolute top-full right-0 mt-2 w-72 glass-dropdown rounded-2xl shadow-2xl border border-white/30 overflow-hidden"
-                 style="display: none;">
+                 class="absolute top-full right-0 mt-2 w-72 glass-dropdown rounded-2xl shadow-2xl border border-white/30 overflow-hidden z-[9999]">
 
                 {{-- User Info Header --}}
                 <div class="px-4 py-4 bg-gradient-to-br from-indigo-600/30 to-purple-600/30 border-b border-white/20">
                     <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                            <span class="text-white text-lg font-bold drop-shadow">{{ substr($user->name, 0, 1) }}</span>
-                        </div>
+                        {{-- Avatar ใหญ่ - ใช้ profile_picture_url accessor พร้อม fallback --}}
+                        <img src="{{ $user->profile_picture_url }}"
+                             alt="{{ $user->name }}"
+                             class="w-12 h-12 rounded-xl object-cover shadow-lg"
+                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=F59E0B&color=fff&size=96';">
                         <div class="flex-1 min-w-0">
                             <p class="font-bold text-white text-sm drop-shadow truncate">{{ $user->name }}</p>
                             <p class="text-xs text-white/70 truncate">{{ $user->email }}</p>

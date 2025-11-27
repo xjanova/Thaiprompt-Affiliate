@@ -2,6 +2,325 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.246.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1744 from xjanova/claude/add-tpix-whitepaper-wiki-0122E9ywHPzwrU6FKGuSC11H (3d890422)
+- fix: แก้ไข route user.profile.index เป็น user.profile (e66a26b1)
+### 🔧 Other Changes
+
+
+## [v3.246.0] - 2025-11-27
+
+### ✨ Features
+- feat: สร้าง wiki-arrow-x layout และอัปเดต Wiki ให้ใช้ layout ใหม่ (9da2d7ef)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1742 from xjanova/claude/add-tpix-whitepaper-wiki-0122E9ywHPzwrU6FKGuSC11H (fc1c2704)
+- docs: เพิ่ม Millennium RGB Colors เป็น BANNED ใน DEPRECATED_THEMES.md (c4ee973a)
+
+## [v3.245.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1743 from xjanova/claude/cleanup-legacy-code-01GWq6zMFeyjDv1VFhpENiYu (9e4d88b6)
+- feat: ปรับปรุง Wiki เพิ่มเนื้อหาละเอียดสำหรับนักลงทุน (6638f4b3)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.244.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1741 from xjanova/claude/add-tpix-whitepaper-wiki-0122E9ywHPzwrU6FKGuSC11H (c99a2d09)
+- style: เปลี่ยน Wiki เป็นธีม Arrow x v3 (Glass Fusion) (bb91ce76)
+- style: อัปเดต Wiki เป็นธีม Millennium RGB (26294b29)
+
+## [v3.244.0] - 2025-11-27
+
+### ✨ Features
+- feat: อัปเดตธีม Wiki เป็น V3 Style (2be152b7)
+### 🐛 Bug Fixes
+- fix: แก้ไข Quick Links สำหรับ guest users ในหน้า Wiki (3a425d35)
+### 🔧 Other Changes
+- Merge pull request #1740 from xjanova/claude/add-tpix-whitepaper-wiki-0122E9ywHPzwrU6FKGuSC11H (98fccd51)
+
+## [v3.243.0] - 2025-11-27
+
+### ✨ Features
+- feat: เพิ่ม TPIX Whitepaper section ใน Platform Wiki (fa8b11a5)
+### 🐛 Bug Fixes
+- fix: แก้ไข PHP syntax error ใน millennium-taskbar.blade.php (95c286fa)
+### 🔧 Other Changes
+- Merge pull request #1739 from xjanova/claude/add-tpix-whitepaper-wiki-0122E9ywHPzwrU6FKGuSC11H (fc0cbdfb)
+
+## [v3.242.4] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1738 from xjanova/claude/fix-wiki-theme-section-01Fojdu1D8YJdYXEWLb5r5mu (1a4dd092)
+- fix: แก้ไขธีม Wiki สำหรับ guest users และเพิ่ม Investor section (6220e45e)
+### 🔧 Other Changes
+
+
+## [v3.242.3] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1737 from xjanova/claude/cleanup-legacy-code-01GWq6zMFeyjDv1VFhpENiYu (576299e0)
+- docs: เพิ่ม Investor Wiki ฉบับสมบูรณ์ 13 หัวข้อ (b4181d4b)
+
+## [v3.242.2] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1736 from xjanova/claude/fix-ranks-dashboard-null-01P4ZSwNvXnso4vk2k24giGh (ee9cdd0b)
+- fix: add null-safe operators for $currentRank in ranks dashboard (c5b3d5c7)
+### 🔧 Other Changes
+
+
+## [v3.242.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1735 from xjanova/claude/add-wiki-topbar-button-01KivMonV9rWS94uFW3qgD7R (3df0e1a1)
+- fix: change Wiki to wiki (lowercase) (06ae6d26)
+### 🔧 Other Changes
+
+
+## [v3.242.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1734 from xjanova/claude/fix-n8n-workflow-update-01DTGiBG6J6AuZxH94U8XP3J (ceb2c380)
+- feat: improve workflow diagram and add bloodline feature (b9b169bf)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.241.5] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1733 from xjanova/claude/add-wiki-topbar-button-01KivMonV9rWS94uFW3qgD7R (8bb3a602)
+- fix: make Wiki button visible on all screen sizes (32a18199)
+### 🔧 Other Changes
+
+
+## [v3.241.4] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1732 from xjanova/claude/fix-avatar-upload-01RVw6m3uPkjCUUMB4KnPcFM (bd4482ef)
+- fix: use x-cloak instead of inline style for profile dropdown (cd879360)
+### 🔧 Other Changes
+
+
+## [v3.241.3] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1731 from xjanova/claude/fix-theme-styling-01TpdPN3y6DGR5crRK3DGfCW (eb537b81)
+- fix: add dark mode support to auth login and register pages (1b44cca0)
+### 🔧 Other Changes
+
+
+## [v3.241.2] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1730 from xjanova/claude/fix-avatar-upload-01RVw6m3uPkjCUUMB4KnPcFM (228c3f43)
+- fix: use profile_picture_url accessor for avatar display (a4797bb5)
+### 🔧 Other Changes
+
+
+## [v3.241.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1729 from xjanova/claude/fix-stack-overflow-laravel-01234c42whNuJFgFzC2vihoK (5f859cb4)
+- fix: prevent stack overflow caused by self-referencing component in docblock (3f53db84)
+### 🔧 Other Changes
+
+
+## [v3.241.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1728 from xjanova/claude/add-wiki-topbar-button-01KivMonV9rWS94uFW3qgD7R (c8036e70)
+- feat: add Wiki button to admin navbar topbar (85e571c6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.240.3] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1727 from xjanova/claude/setup-ai-content-seeder-01TTw8W5eCma3WALbPMnfZWV (f8fe7254)
+- fix: resolve duplicate slug error in AiContentWriterSeeder (a2ed2ce6)
+### 🔧 Other Changes
+
+
+## [v3.240.2] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1726 from xjanova/claude/fix-user-menu-tasks-011UPmcxgLAXSWZCv9QMiYYy (21053bc8)
+- fix: แก้ไข 403 errors และปรับปรุง middleware (2953aae9)
+### 🔧 Other Changes
+
+
+## [v3.240.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1725 from xjanova/claude/reduce-dashboard-animations-01FjS5bdAmA7MpBsoEbKWPDT (6bf3d97b)
+- fix: reduce dashboard animations and effects for cleaner UI (157f76ea)
+### 🔧 Other Changes
+
+
+## [v3.240.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1724 from xjanova/claude/improve-install-script-015Naufs9jJ4kab7G11vyJQw (3f32fa70)
+- feat: enhance deploy-pro.sh with production reliability features (528cb21e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.239.0] - 2025-11-27
+
+### ✨ Features
+- feat: add wizard mode and remote clone support for easy installation (86069dbd)
+- feat: add auto-installation for missing dependencies (38ad9849)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1723 from xjanova/claude/improve-install-script-015Naufs9jJ4kab7G11vyJQw (80b5d03d)
+
+## [v3.238.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1722 from xjanova/claude/cleanup-legacy-code-01GWq6zMFeyjDv1VFhpENiYu (7b2fc738)
+- chore: reorganize documentation structure (35e55d0c)
+
+## [v3.238.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1721 from xjanova/claude/modernize-pos-dual-display-01P9FL14vnUGJ1QuC431GHyA (3cc524ec)
+- feat: add free ERP staff management for all stores with multi-tenant support (94696f6a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.237.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1720 from xjanova/claude/cleanup-legacy-code-01GWq6zMFeyjDv1VFhpENiYu (54982075)
+- chore: cleanup legacy code and unused files (ee748062)
+
+## [v3.237.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1719 from xjanova/claude/improve-install-script-015Naufs9jJ4kab7G11vyJQw (a3f614ac)
+- feat: improve install.sh with CLI args, pre-flight checks, and unified seeder (cd11f847)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.236.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1718 from xjanova/claude/modernize-pos-dual-display-01P9FL14vnUGJ1QuC431GHyA (a15e382c)
+- feat: add POS staff management with touch-friendly UI, hidden menu, and clock-in system (3d9e5265)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.235.0] - 2025-11-27
+
+### ✨ Features
+- feat: เพิ่มการรองรับ Lemon8 และ LINE VOOM ใน Video Automation (3354b1af)
+### 🐛 Bug Fixes
+- Merge pull request #1717 from xjanova/claude/admin-video-automation-01PTBssQpv6pxHexs9AynGAe (658fcf73)
+- fix: แก้ไข VideoAutomationSeeder ให้ตรงกับ migration (1f154554)
+### 🔧 Other Changes
+
+
+## [v3.234.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไขปัญหา z-index dropdown menu ไม่อยู่บนสุด (ddb849a5)
+- fix: ย้ายปุ่ม Wiki ให้แสดงเสมอใน topbar (0afd7708)
+### 🔧 Other Changes
+- Merge pull request #1716 from xjanova/claude/create-app-documentation-01EM3ad9dVwYAmLdYFAD2BRt (c1992591)
+
+## [v3.234.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1715 from xjanova/claude/modernize-pos-dual-display-01P9FL14vnUGJ1QuC431GHyA (eb867b04)
+- feat: enhance POS cashier with fullscreen mode, camera scanning, and PV/points display (8669cd1a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.233.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1714 from xjanova/claude/create-commissions-table-01AomNkFGmyhjnVXbNUbgmTP (8d6ab9c4)
+- refactor: ปรับปรุงระบบคอมมิชชั่นให้ใช้ตารางใหม่ (f950d02e)
+
+## [v3.233.0] - 2025-11-27
+
+### ✨ Features
+- feat: เพิ่ม platforms view และ scheduler สำหรับ Video Automation (b2f39e84)
+- feat: เพิ่ม safeguards ป้องกันการลบไฟล์ก่อน YouTube โพสต์สำเร็จ (4bd796d7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1713 from xjanova/claude/admin-video-automation-01PTBssQpv6pxHexs9AynGAe (e77ef86e)
+
 ## [v3.232.0] - 2025-11-27
 
 ### ✨ Features

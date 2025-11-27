@@ -1289,6 +1289,7 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
         Route::post('/{member}/toggle-qualification', [\App\Http\Controllers\Admin\MlmMemberController::class, 'toggleQualification'])->name('toggle-qualification');
         Route::get('/{member}/genealogy', [\App\Http\Controllers\Admin\MlmMemberController::class, 'genealogy'])->name('genealogy');
         Route::get('/{member}/tree-data', [\App\Http\Controllers\Admin\MlmMemberController::class, 'getTreeData'])->name('tree-data');
+        Route::get('/{member}/bloodline-data', [\App\Http\Controllers\Admin\MlmMemberController::class, 'getBloodlineData'])->name('bloodline-data');
         Route::get('/{member}/statistics', [\App\Http\Controllers\Admin\MlmMemberController::class, 'statistics'])->name('statistics');
     });
 
@@ -1351,6 +1352,10 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     // MLM Genealogy Viewer
     Route::get('/genealogy', [\App\Http\Controllers\Admin\MlmPlanController::class, 'genealogy'])->name('genealogy.index');
     Route::get('/genealogy/workflow', [\App\Http\Controllers\Admin\MlmPlanController::class, 'genealogyWorkflow'])->name('genealogy.workflow');
+
+    // MLM Bloodline Viewer (ผังสายเลือด - แสดงเส้นทางจาก root ถึงสมาชิก)
+    Route::get('/genealogy/bloodline', [\App\Http\Controllers\Admin\MlmPlanController::class, 'bloodline'])->name('genealogy.bloodline');
+    Route::get('/genealogy/bloodline/workflow', [\App\Http\Controllers\Admin\MlmPlanController::class, 'bloodlineWorkflow'])->name('genealogy.bloodline.workflow');
 
     // MLM Placement Examples
     Route::get('/placement-examples', function () {

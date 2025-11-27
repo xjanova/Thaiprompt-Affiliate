@@ -75,7 +75,7 @@
         3. Stats Cards (4 การ์ดหลัก) - ใช้ Arrow X 3D Stats Cards
     ====================================== --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {{-- Wallet Balance --}}
+        {{-- Wallet Balance (ปิด glow ลดความฟุ้ง) --}}
         <x-arrow-x.stats.card-3d
             :value="'฿' . number_format($stats['wallet_balance'], 2)"
             label="ยอดคงเหลือ"
@@ -83,6 +83,7 @@
             gradient="from-green-500 to-emerald-600"
             :change="$stats['wallet_change'] != 0 ? $stats['wallet_change'] : null"
             href="{{ route('user.wallet.index') }}"
+            :glow="false"
         />
 
         {{-- Pending Commission --}}
@@ -93,6 +94,7 @@
             gradient="from-blue-500 to-cyan-600"
             :change="$stats['commission_change'] != 0 ? $stats['commission_change'] : null"
             href="{{ route('user.commissions') }}"
+            :glow="false"
         />
 
         {{-- Total Referrals --}}
@@ -103,6 +105,7 @@
             gradient="from-purple-500 to-pink-600"
             :change="$stats['referrals_change'] != 0 ? $stats['referrals_change'] : null"
             href="{{ route('user.mlm.team') }}"
+            :glow="false"
         />
 
         {{-- Rank Points --}}
@@ -125,6 +128,7 @@
             icon="fas fa-star"
             :gradient="$rankCardGradient"
             href="{{ route('user.ranks.progress') }}"
+            :glow="false"
         />
     </div>
 
@@ -136,8 +140,8 @@
         {{-- Left Column (2 cols) - Chart & Quick Actions --}}
         <div class="lg:col-span-2 space-y-6">
 
-            {{-- Revenue Chart - ใช้ Arrow X Card --}}
-            <x-arrow-x.card-v3 class="p-6">
+            {{-- Revenue Chart - ใช้ Arrow X Card (ปิด glow ลดความฟุ้ง) --}}
+            <x-arrow-x.card-v3 class="p-6" :glow="false" :hover="false">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <i class="fas fa-chart-line text-blue-600 dark:text-blue-400"></i>
                     <span>รายได้ 12 เดือนย้อนหลัง</span>
@@ -147,8 +151,8 @@
                 </div>
             </x-arrow-x.card-v3>
 
-            {{-- Quick Actions - ใช้ Arrow X Card --}}
-            <x-arrow-x.card-v3 class="p-6">
+            {{-- Quick Actions - ใช้ Arrow X Card (ลด animations) --}}
+            <x-arrow-x.card-v3 class="p-6" :glow="false" :hover="false">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <i class="fas fa-bolt text-yellow-500"></i>
                     <span>เมนูด่วน</span>
@@ -156,36 +160,36 @@
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {{-- Deposit --}}
                     <a href="{{ route('user.wallet.deposit') }}"
-                       class="group flex flex-col items-center p-4 glass-neu rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                        <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform duration-200">
-                            <i class="fas fa-plus text-white text-xl"></i>
+                       class="group flex flex-col items-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl hover:bg-white/70 dark:hover:bg-gray-700/70 transition-colors duration-150">
+                        <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mb-3 shadow-md">
+                            <i class="fas fa-plus text-white text-lg"></i>
                         </div>
                         <span class="text-sm font-semibold text-gray-900 dark:text-white text-center">เติมเงิน</span>
                     </a>
 
                     {{-- Withdraw --}}
                     <a href="{{ route('user.wallet.withdraw') }}"
-                       class="group flex flex-col items-center p-4 glass-neu rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                        <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform duration-200">
-                            <i class="fas fa-hand-holding-usd text-white text-xl"></i>
+                       class="group flex flex-col items-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl hover:bg-white/70 dark:hover:bg-gray-700/70 transition-colors duration-150">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mb-3 shadow-md">
+                            <i class="fas fa-hand-holding-usd text-white text-lg"></i>
                         </div>
                         <span class="text-sm font-semibold text-gray-900 dark:text-white text-center">ถอนเงิน</span>
                     </a>
 
                     {{-- Invite --}}
                     <a href="{{ route('user.mlm.referral') }}"
-                       class="group flex flex-col items-center p-4 glass-neu rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                        <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform duration-200">
-                            <i class="fas fa-user-plus text-white text-xl"></i>
+                       class="group flex flex-col items-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl hover:bg-white/70 dark:hover:bg-gray-700/70 transition-colors duration-150">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full flex items-center justify-center mb-3 shadow-md">
+                            <i class="fas fa-user-plus text-white text-lg"></i>
                         </div>
                         <span class="text-sm font-semibold text-gray-900 dark:text-white text-center">เชิญเพื่อน</span>
                     </a>
 
                     {{-- Profile --}}
                     <a href="{{ route('user.profile') }}"
-                       class="group flex flex-col items-center p-4 glass-neu rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                        <div class="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform duration-200">
-                            <i class="fas fa-user-edit text-white text-xl"></i>
+                       class="group flex flex-col items-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl hover:bg-white/70 dark:hover:bg-gray-700/70 transition-colors duration-150">
+                        <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center mb-3 shadow-md">
+                            <i class="fas fa-user-edit text-white text-lg"></i>
                         </div>
                         <span class="text-sm font-semibold text-gray-900 dark:text-white text-center">โปรไฟล์</span>
                     </a>
@@ -217,7 +221,7 @@
                 ];
                 $progressGradient = $progressGradients[$rankLevel] ?? 'from-purple-500 to-pink-500';
             @endphp
-            <x-arrow-x.card-v3 class="p-6">
+            <x-arrow-x.card-v3 class="p-6" :glow="false" :hover="false">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <span class="text-2xl">{{ $rankBadge }}</span>
                     <span>ความคืบหน้า Rank</span>
@@ -291,8 +295,8 @@
             </x-arrow-x.card-v3>
             @endif
 
-            {{-- Recent Activities - ใช้ Arrow X Card --}}
-            <x-arrow-x.card-v3 class="p-6">
+            {{-- Recent Activities - ใช้ Arrow X Card (ปิด glow ลดความฟุ้ง) --}}
+            <x-arrow-x.card-v3 class="p-6" :glow="false" :hover="false">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                     <i class="fas fa-history text-blue-600 dark:text-blue-400"></i>
                     <span>กิจกรรมล่าสุด</span>

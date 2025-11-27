@@ -151,7 +151,19 @@
             ['icon' => '📈', 'label' => 'วิเคราะห์', 'url' => route('seller.analytics.index'), 'color' => 'from-purple-600 to-pink-600'],
             ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => route('seller.profile'), 'color' => 'from-indigo-600 to-purple-600'],
         ];
-    } else { // user
+    } elseif ($type === 'guest') {
+        // Guest Menu Items - สำหรับผู้ที่ยังไม่ได้ล็อกอิน
+        $menuItems = [
+            ['icon' => '🏠', 'label' => 'หน้าแรก', 'url' => route('home'), 'color' => 'from-blue-600 to-cyan-600'],
+            ['icon' => '📚', 'label' => 'คู่มือและความช่วยเหลือ', 'url' => route('wiki.index'), 'color' => 'from-purple-600 to-pink-600', 'highlight' => true],
+            ['icon' => '🇹🇭', 'label' => 'เรื่องราว ThaiPrompt', 'url' => route('wiki.index') . '#story', 'color' => 'from-amber-500 to-orange-600', 'highlight' => true],
+            ['icon' => '🛒', 'label' => 'ตลาดสินค้า', 'url' => route('marketplace.index'), 'color' => 'from-green-600 to-emerald-600'],
+            ['icon' => '🏨', 'label' => 'จองโรงแรม', 'url' => route('hotels.index'), 'color' => 'from-orange-600 to-amber-600'],
+            ['icon' => '🤖', 'label' => 'AI Marketplace', 'url' => route('ai-marketplace.index'), 'color' => 'from-violet-600 to-purple-600'],
+            ['icon' => '🔐', 'label' => 'เข้าสู่ระบบ', 'url' => route('login'), 'color' => 'from-indigo-600 to-blue-600'],
+            ['icon' => '📝', 'label' => 'สมัครสมาชิก', 'url' => route('register'), 'color' => 'from-pink-600 to-rose-600', 'highlight' => true],
+        ];
+    } else { // user (default)
         $menuItems = [
             ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('user.dashboard'), 'color' => 'from-indigo-600 to-purple-600'],
             ['icon' => '💰', 'label' => 'เส้นทางเศรษฐี', 'url' => route('user.wealth-guide'), 'color' => 'from-yellow-600 via-amber-600 to-orange-600', 'highlight' => true],

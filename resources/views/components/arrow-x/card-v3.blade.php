@@ -30,13 +30,13 @@
 ])
 
 <div {{ $attributes->merge(['class' => 'group relative']) }}>
-    {{-- Glow Effect Background --}}
+    {{-- Glow Effect Background (ลดความฟุ้ง V3.2) --}}
     @if($glow)
-        <div class="absolute inset-0 bg-gradient-to-br {{ $gradient }} rounded-2xl blur-xl opacity-60 transition-all duration-500 group-hover:opacity-80 -z-10"></div>
+        <div class="absolute inset-0 bg-gradient-to-br {{ $gradient }} rounded-2xl blur-lg opacity-20 transition-all duration-200 group-hover:opacity-30 -z-10"></div>
     @endif
 
     {{-- Card Container --}}
-    <div class="glass-fusion border border-white/30 rounded-2xl overflow-hidden shadow-2xl transition-all duration-500 {{ $hover ? 'transform group-hover:scale-[1.02]' : '' }}">
+    <div class="glass-fusion border border-white/30 rounded-2xl overflow-hidden shadow-xl transition-all duration-200 {{ $hover ? 'transform group-hover:scale-[1.01]' : '' }}">
         {{-- Header --}}
         @if($title || $icon)
             <div class="px-6 py-4 border-b border-white/30 flex items-center gap-3">

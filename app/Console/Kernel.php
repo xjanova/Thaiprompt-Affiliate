@@ -205,6 +205,58 @@ class Kernel extends ConsoleKernel
             ->onFailure(function () {
                 \Log::error('[AI Rental] Audit log cleanup failed');
             });
+
+        // ========================================
+        // Video Automation System - สร้างวิดีโออัตโนมัติ
+        // ========================================
+
+        // ประมวลผล Schedules - ตรวจสอบ schedule ที่ถึงเวลาทุก 5 นาที
+        $schedule->command('video-automation:process --schedules --limit=5')
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[Video Automation] Schedule processing completed');
+            })
+            ->onFailure(function () {
+                \Log::error('[Video Automation] Schedule processing failed');
+            });
+
+        // ประมวลผล Pending Jobs - ทำงานทุก 2 นาที
+        $schedule->command('video-automation:process --pending --limit=3')
+            ->everyTwoMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[Video Automation] Pending jobs processing completed');
+            })
+            ->onFailure(function () {
+                \Log::error('[Video Automation] Pending jobs processing failed');
+            });
+
+        // Retry Failed Jobs - ทุก 30 นาที
+        $schedule->command('video-automation:process --retry --limit=5')
+            ->everyThirtyMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[Video Automation] Failed jobs retry completed');
+            })
+            ->onFailure(function () {
+                \Log::error('[Video Automation] Failed jobs retry failed');
+            });
+
+        // Cleanup Source Files - ลบไฟล์ต้นฉบับหลังโพสต์สำเร็จ ทุกชั่วโมง
+        $schedule->command('video-automation:process --cleanup --limit=10')
+            ->hourly()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[Video Automation] Source files cleanup completed');
+            })
+            ->onFailure(function () {
+                \Log::error('[Video Automation] Source files cleanup failed');
+            });
     }
 
     /**

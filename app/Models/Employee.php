@@ -12,6 +12,7 @@ class Employee extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'store_id',
         'user_id',
         'employee_id',
         'department_id',
@@ -91,6 +92,14 @@ class Employee extends Model
         'certifications' => 'array',
         'languages' => 'array',
     ];
+
+    /**
+     * ร้านค้าที่พนักงานสังกัด
+     */
+    public function store()
+    {
+        return $this->belongsTo(VendorStore::class, 'store_id');
+    }
 
     /**
      * Get the user associated with this employee
@@ -283,5 +292,41 @@ class Employee extends Model
     public function scopeByPosition($query, $positionId)
     {
         return $query->where('position_id', $positionId);
+    }
+
+    /**
+     * Scope: ตามร้านค้า (สำหรับ multi-tenant)
+     */
+    public function scopeByStore($query, $storeId)
+    {
+        return $query->where('store_id', $storeId);
+    }
+
+    /**
+     * Scope: ร้านค้าปัจจุบัน (จาก VendorStore ของ User ที่ login)
+     */
+    public function scopeForCurrentStore($query)
+    {
+        $store = auth()->user()?->vendorStore;
+        if ($store) {
+            return $query->where('store_id', $store->id);
+        }
+        return $query->whereNull('store_id');
+    }
+
+    /**
+     * ดึง POS Staff Assignment (ถ้ามี)
+     */
+    public function posAssignment()
+    {
+        return $this->hasOne(PosStaffAssignment::class);
+    }
+
+    /**
+     * ดึงบันทึกการลงเวลา POS
+     */
+    public function posClockRecords()
+    {
+        return $this->hasMany(PosClockRecord::class);
     }
 }

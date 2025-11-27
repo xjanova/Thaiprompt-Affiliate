@@ -11,6 +11,7 @@ class Position extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'store_id',
         'title',
         'code',
         'description',
@@ -28,6 +29,14 @@ class Position extends Model
         'min_salary' => 'decimal:2',
         'max_salary' => 'decimal:2',
     ];
+
+    /**
+     * ร้านค้าที่ตำแหน่งนี้สังกัด
+     */
+    public function store()
+    {
+        return $this->belongsTo(VendorStore::class, 'store_id');
+    }
 
     /**
      * Get the department this position belongs to
@@ -70,5 +79,25 @@ class Position extends Model
             return number_format($this->min_salary, 2) . ' - ' . number_format($this->max_salary, 2);
         }
         return 'Not specified';
+    }
+
+    /**
+     * Scope: ตามร้านค้า
+     */
+    public function scopeByStore($query, $storeId)
+    {
+        return $query->where('store_id', $storeId);
+    }
+
+    /**
+     * Scope: ร้านค้าปัจจุบัน
+     */
+    public function scopeForCurrentStore($query)
+    {
+        $store = auth()->user()?->vendorStore;
+        if ($store) {
+            return $query->where('store_id', $store->id);
+        }
+        return $query->whereNull('store_id');
     }
 }

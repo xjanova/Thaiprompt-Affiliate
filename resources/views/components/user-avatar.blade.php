@@ -16,15 +16,10 @@
  * - ring: bool - แสดงขอบ ring [default: true]
  * - ringColor: string - สี ring [default: white]
  *
- * @example
- * {{-- แสดง avatar ของผู้ใช้ปัจจุบัน --}}
- * <x-user-avatar />
- *
- * {{-- แสดง avatar ของผู้ใช้ที่ระบุ --}}
- * <x-user-avatar :user="$user" size="lg" />
- *
- * {{-- แสดง avatar พร้อม ring สีม่วง --}}
- * <x-user-avatar :user="$user" ring ringColor="purple" />
+ * @example (ใช้ component ในรูปแบบ Blade component)
+ * แสดง avatar ของผู้ใช้ปัจจุบัน: user-avatar (ไม่ต้องส่ง props)
+ * แสดง avatar ของผู้ใช้ที่ระบุ: user-avatar :user="$user" size="lg"
+ * แสดง avatar พร้อม ring สีม่วง: user-avatar :user="$user" ring ringColor="purple"
  *
  * @version 1.0.0
  * @author Claude AI

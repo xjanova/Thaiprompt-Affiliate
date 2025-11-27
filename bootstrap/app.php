@@ -14,14 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
         then: function () {
-            // Admin routes with auth and admin middleware
-            Route::middleware(['web', 'auth', 'admin'])
-                ->prefix('admin')
-                ->name('admin.')
-                ->group(base_path('routes/admin.php'));
-
             // Hotel admin routes
             Route::middleware('web')->group(base_path('routes/hotel-admin.php'));
+
+            // Provider routes (Service Booking)
+            Route::middleware('web')->group(base_path('routes/provider.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
@@ -42,6 +39,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+            'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+            'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'super_admin' => \App\Http\Middleware\SuperAdminMiddleware::class,
             'hotel-admin' => \App\Http\Middleware\HotelAdminMiddleware::class,

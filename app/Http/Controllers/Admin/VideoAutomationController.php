@@ -1092,6 +1092,8 @@ class VideoAutomationController extends Controller
     /**
      * ลบไฟล์ต้นฉบับของการโพสต์
      *
+     * ⚠️ จะลบได้ต่อเมื่อโพสต์สำเร็จเท่านั้น!
+     *
      * @param int $id
      * @return JsonResponse
      */
@@ -1107,7 +1109,22 @@ class VideoAutomationController extends Controller
                 ], 400);
             }
 
-            $history->deleteSourceFiles();
+            // ⚠️ ตรวจสอบว่าโพสต์สำเร็จหรือไม่
+            if (!$history->canDeleteSourceFiles()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่สามารถลบไฟล์ได้ - ต้องโพสต์สำเร็จก่อน (มี Post ID และ URL)',
+                ], 400);
+            }
+
+            $result = $history->deleteSourceFiles();
+
+            if (!$result) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่สามารถลบไฟล์ได้ - กรุณาตรวจสอบสถานะการโพสต์',
+                ], 400);
+            }
 
             return response()->json([
                 'success' => true,

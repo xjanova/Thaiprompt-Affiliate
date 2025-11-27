@@ -49,6 +49,7 @@
     'gradient' => 'from-blue-500 to-cyan-600',
     'change' => null,
     'href' => null,
+    'glow' => true, // ปิดได้ถ้าต้องการลดความฟุ้ง
 ])
 
 @php
@@ -62,9 +63,11 @@
     <div class="group">
 @endif
 
-        <div class="relative transform-gpu transition-all duration-500 group-hover:scale-[1.02]">
-            {{-- Glow Effect พื้นหลังเรืองแสง --}}
-            <div class="absolute inset-0 bg-gradient-to-br {{ $gradient }} rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
+        <div class="relative transform-gpu transition-all duration-200 group-hover:scale-[1.01]">
+            {{-- Glow Effect พื้นหลังเรืองแสง (ปิดได้) --}}
+            @if($glow)
+            <div class="absolute inset-0 bg-gradient-to-br {{ $gradient }} rounded-2xl blur-lg opacity-30 group-hover:opacity-40 transition-opacity"></div>
+            @endif
 
             {{-- Card Body --}}
             <div class="relative glass-fusion rounded-2xl p-6 border border-white/30 shadow-2xl">

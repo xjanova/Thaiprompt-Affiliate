@@ -68,20 +68,32 @@
                 </div>
 
                 {{-- View Mode Toggle --}}
-                <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl p-1">
-                    <a href="{{ route('admin.mlm.genealogy.index') }}"
-                       class="view-toggle-btn">
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl p-1">
+                        <a href="{{ route('admin.mlm.genealogy.index') }}"
+                           class="view-toggle-btn">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+                            </svg>
+                            Classic
+                        </a>
+                        <span class="view-toggle-btn active">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                            </svg>
+                            Workflow
+                        </span>
+                    </div>
+
+                    <div class="h-6 w-px bg-white/20 hidden sm:block"></div>
+
+                    <a href="{{ route('admin.mlm.genealogy.bloodline') }}"
+                       class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-xl font-medium transition-all flex items-center gap-2 shadow-lg text-sm">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                         </svg>
-                        Classic
+                        ผังสายเลือด
                     </a>
-                    <span class="view-toggle-btn active">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
-                        </svg>
-                        Workflow
-                    </span>
                 </div>
             </div>
         </div>
@@ -121,6 +133,14 @@
             </div>
 
             <div class="flex flex-col sm:flex-row items-start sm:items-end gap-3">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ประเภทผัง</label>
+                    <select id="tree-type-selector"
+                            class="px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all shadow-sm min-w-[140px]">
+                        <option value="binary">Binary (2 ขา)</option>
+                        <option value="unilevel" selected>Unilevel (ไม่จำกัด)</option>
+                    </select>
+                </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ความลึก</label>
                     <select id="depth-selector"
@@ -237,6 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let diagram = null;
     const container = document.getElementById('workflow-diagram');
     const memberSelector = document.getElementById('member-selector');
+    const treeTypeSelector = document.getElementById('tree-type-selector');
     const depthSelector = document.getElementById('depth-selector');
     const btnView = document.getElementById('btn-view-genealogy');
     const btnExport = document.getElementById('btn-export');
@@ -291,6 +312,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     async function loadGenealogy() {
         const memberId = memberSelector.value;
+        const treeType = treeTypeSelector.value;
         const depth = depthSelector.value;
 
         if (!memberId) {
@@ -300,7 +322,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // แสดงชื่อสมาชิกที่เลือก
         const selectedOption = memberSelector.options[memberSelector.selectedIndex];
-        currentMemberName.textContent = selectedOption.text;
+        const treeTypeText = treeType === 'binary' ? 'Binary' : 'Unilevel';
+        currentMemberName.textContent = `${selectedOption.text} (${treeTypeText})`;
         currentMemberInfo.classList.remove('hidden');
 
         // สร้าง diagram ถ้ายังไม่มี
@@ -313,13 +336,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Fetch tree data จาก API
         try {
-            const response = await fetch(`/admin/mlm/members/${memberId}/tree-data?type=unilevel&depth=${depth}`);
+            const response = await fetch(`/admin/mlm/members/${memberId}/tree-data?type=${treeType}&depth=${depth}`);
             const result = await response.json();
 
             if (result.success && result.data) {
+                // กำหนด spacing ตามประเภทผัง
+                const horizontalSpacing = treeType === 'binary'
+                    ? (window.innerWidth < 768 ? 180 : 240)
+                    : (window.innerWidth < 768 ? 220 : 280);
+
                 // โหลดเป็น tree data
                 diagram.loadTreeData(result.data, {
-                    horizontalSpacing: window.innerWidth < 768 ? 220 : 280,
+                    horizontalSpacing: horizontalSpacing,
                     verticalSpacing: window.innerWidth < 768 ? 120 : 150
                 });
             } else {
@@ -358,6 +386,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event Listeners
     btnView.addEventListener('click', loadGenealogy);
     btnExport.addEventListener('click', exportData);
+
+    treeTypeSelector.addEventListener('change', function() {
+        if (diagram && memberSelector.value) {
+            loadGenealogy();
+        }
+    });
 
     depthSelector.addEventListener('change', function() {
         if (diagram && memberSelector.value) {
