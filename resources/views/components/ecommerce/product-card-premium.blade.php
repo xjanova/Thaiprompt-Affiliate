@@ -298,10 +298,11 @@ function productCardComponent(productId) {
             this.isAddingToCart = true;
 
             try {
-                const response = await fetch('/api/cart/add', {
+                const response = await fetch('/cart/add', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
                     body: JSON.stringify({
@@ -311,8 +312,8 @@ function productCardComponent(productId) {
                 });
 
                 if (response.ok) {
-                    // Dispatch event เพื่ออัพเดท cart count
-                    this.$dispatch('cart-updated');
+                    // 🛒 Dispatch event ไปที่ window เพื่ออัพเดท cart badge ทันที
+                    window.dispatchEvent(new CustomEvent('cart-updated'));
 
                     // แสดงการแจ้งเตือน
                     this.$dispatch('notify', {
@@ -320,12 +321,13 @@ function productCardComponent(productId) {
                         type: 'success'
                     });
                 } else {
-                    throw new Error('ไม่สามารถเพิ่มสินค้าได้');
+                    const data = await response.json();
+                    throw new Error(data.message || 'ไม่สามารถเพิ่มสินค้าได้');
                 }
             } catch (error) {
                 console.error('Add to cart error:', error);
                 this.$dispatch('notify', {
-                    message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+                    message: error.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่',
                     type: 'error'
                 });
             } finally {

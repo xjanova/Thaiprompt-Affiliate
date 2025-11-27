@@ -460,6 +460,7 @@ function officialProductManager() {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
                     body: JSON.stringify({
@@ -471,11 +472,13 @@ function officialProductManager() {
                 const data = await response.json();
 
                 if (data.success) {
+                    // 🛒 Dispatch event ไปที่ window เพื่ออัพเดท cart badge ทันที
+                    window.dispatchEvent(new CustomEvent('cart-updated'));
+
                     this.$dispatch('notify', {
                         message: 'เพิ่มสินค้าลงตะกร้าสำเร็จ',
                         type: 'success'
                     });
-                    this.$dispatch('cart-updated', { count: data.cart_count });
                 } else {
                     throw new Error(data.message || 'เกิดข้อผิดพลาด');
                 }
