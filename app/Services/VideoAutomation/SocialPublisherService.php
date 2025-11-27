@@ -113,6 +113,8 @@ class SocialPublisherService
             'tiktok' => $this->publishToTikTok($project, $job),
             'twitter' => $this->publishToTwitter($project, $job),
             'threads' => $this->publishToThreads($project, $job),
+            'lemon8' => $this->publishToLemon8($project, $job),
+            'line_voom' => $this->publishToLineVoom($project, $job),
             default => [
                 'success' => false,
                 'error' => "ไม่รองรับ platform: {$platformType}",
@@ -508,6 +510,170 @@ class SocialPublisherService
             'success' => false,
             'error' => 'Threads upload ยังไม่พร้อมใช้งาน - กำลังพัฒนา',
         ];
+    }
+
+    /**
+     * โพสไปยัง Lemon8
+     *
+     * Lemon8 เป็น platform จาก ByteDance (เจ้าเดียวกับ TikTok)
+     * รองรับการโพสวีดีโอและรูปภาพ พร้อมแคปชัน
+     *
+     * @param VideoAutoProject $project
+     * @param VideoAutoJob|null $job
+     * @return array
+     */
+    protected function publishToLemon8(VideoAutoProject $project, ?VideoAutoJob $job = null): array
+    {
+        $platform = VideoAutoPlatform::ofType('lemon8')
+            ->active()
+            ->connected()
+            ->first();
+
+        if (!$platform) {
+            return [
+                'success' => false,
+                'error' => 'ยังไม่ได้เชื่อมต่อ Lemon8',
+            ];
+        }
+
+        try {
+            $videoUrl = $project->generated_video_url;
+            $accessToken = $platform->decrypted_access_token;
+
+            // Lemon8 API (คล้าย TikTok Content Posting API)
+            // ใช้ ByteDance Open Platform
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type' => 'application/json',
+            ])->post('https://open.lemon8.com/v2/post/publish/video/init/', [
+                'post_info' => [
+                    'title' => $project->video_title ?: $project->name,
+                    'description' => $project->video_description ?: '',
+                    'privacy_level' => 'PUBLIC',
+                ],
+                'source_info' => [
+                    'source' => 'PULL_FROM_URL',
+                    'video_url' => $videoUrl,
+                ],
+            ]);
+
+            if (!$response->successful()) {
+                throw new \Exception('ไม่สามารถเริ่ม upload ได้: ' . $response->body());
+            }
+
+            $publishId = $response->json('data.publish_id');
+
+            // รอให้ upload เสร็จ
+            $maxAttempts = 30;
+            $attempt = 0;
+
+            while ($attempt < $maxAttempts) {
+                sleep(5);
+                $attempt++;
+
+                $statusResponse = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $accessToken,
+                ])->post('https://open.lemon8.com/v2/post/publish/status/fetch/', [
+                    'publish_id' => $publishId,
+                ]);
+
+                $status = $statusResponse->json('data.status');
+
+                if ($status === 'PUBLISH_COMPLETE') {
+                    $platform->recordPost(true);
+                    $postId = $statusResponse->json('data.post_id');
+                    $job?->logInfo('โพส Lemon8 สำเร็จ', ['post_id' => $postId]);
+
+                    return [
+                        'success' => true,
+                        'publish_id' => $publishId,
+                        'post_id' => $postId,
+                        'url' => "https://www.lemon8-app.com/post/{$postId}",
+                    ];
+                } elseif ($status === 'FAILED') {
+                    throw new \Exception('Publish ล้มเหลว');
+                }
+            }
+
+            throw new \Exception('Timeout: รอนานเกินไป');
+
+        } catch (\Exception $e) {
+            $platform?->recordPost(false);
+            $job?->logError('โพส Lemon8 ล้มเหลว', ['error' => $e->getMessage()]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * โพสไปยัง LINE VOOM
+     *
+     * LINE VOOM เป็น platform วีดีโอสั้นของ LINE
+     * ใช้ LINE Messaging API หรือ LINE Official Account API
+     *
+     * @param VideoAutoProject $project
+     * @param VideoAutoJob|null $job
+     * @return array
+     */
+    protected function publishToLineVoom(VideoAutoProject $project, ?VideoAutoJob $job = null): array
+    {
+        $platform = VideoAutoPlatform::ofType('line_voom')
+            ->active()
+            ->connected()
+            ->first();
+
+        if (!$platform) {
+            return [
+                'success' => false,
+                'error' => 'ยังไม่ได้เชื่อมต่อ LINE VOOM',
+            ];
+        }
+
+        try {
+            $videoUrl = $project->generated_video_url;
+            $accessToken = $platform->decrypted_access_token;
+
+            // LINE Content API สำหรับ LINE VOOM
+            // ใช้ LINE Official Account API
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type' => 'application/json',
+            ])->post('https://api.line.me/v2/bot/voom/post', [
+                'type' => 'video',
+                'originalContentUrl' => $videoUrl,
+                'previewImageUrl' => $project->thumbnail_url ?? $project->video_thumbnail ?? '',
+                'caption' => [
+                    'text' => ($project->video_title ?: $project->name) . "\n\n" . ($project->video_description ?: ''),
+                ],
+                'visibility' => 'public',
+            ]);
+
+            if ($response->successful()) {
+                $platform->recordPost(true);
+                $postId = $response->json('postId');
+                $job?->logInfo('โพส LINE VOOM สำเร็จ', ['post_id' => $postId]);
+
+                return [
+                    'success' => true,
+                    'post_id' => $postId,
+                    'url' => "https://voom.line.me/post/{$postId}",
+                ];
+            }
+
+            throw new \Exception('Publish ล้มเหลว: ' . $response->body());
+
+        } catch (\Exception $e) {
+            $platform?->recordPost(false);
+            $job?->logError('โพส LINE VOOM ล้มเหลว', ['error' => $e->getMessage()]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
     }
 
     /**

@@ -161,6 +161,21 @@ class VideoAutoPlatform extends Model
             'supports_video' => true,
             'max_video_duration' => 300, // 5 นาที
         ],
+        'lemon8' => [
+            'name' => 'Lemon8',
+            'icon' => 'fas fa-lemon',
+            'color' => '#FFE135',
+            'supports_video' => true,
+            'supports_photo' => true,
+            'max_video_duration' => 600, // 10 นาที (เหมือน TikTok)
+        ],
+        'line_voom' => [
+            'name' => 'LINE VOOM',
+            'icon' => 'fab fa-line',
+            'color' => '#06C755',
+            'supports_video' => true,
+            'max_video_duration' => 300, // 5 นาที
+        ],
     ];
 
     /**
