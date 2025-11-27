@@ -2115,9 +2115,13 @@ Route::prefix('homepage-manager')->name('homepage-manager.')->group(function () 
     Route::get('/', [HomepageManagerController::class, 'index'])->name('index');
     Route::get('/preview', [HomepageManagerController::class, 'preview'])->name('preview');
 
+    // หน้า Templates Gallery (UI)
+    Route::get('/templates', [HomepageManagerController::class, 'templatesIndex'])->name('templates.index');
+    Route::get('/templates/{template}/preview', [HomepageManagerController::class, 'previewTemplate'])->name('templates.preview');
+
     // API สำหรับดึงข้อมูล
     Route::get('/sections', [HomepageManagerController::class, 'getSections'])->name('sections.get');
-    Route::get('/templates', [HomepageManagerController::class, 'getTemplates'])->name('templates.get');
+    Route::get('/api/templates', [HomepageManagerController::class, 'getTemplates'])->name('templates.get');
 
     // Section Management
     Route::post('/sections', [HomepageManagerController::class, 'storeSection'])->name('sections.store');
