@@ -844,6 +844,54 @@ class HomepageManagerController extends Controller
     }
 
     /**
+     * แสดงหน้า Templates Gallery
+     *
+     * แสดง templates ทั้งหมดในรูปแบบ Gallery พร้อม filter และ search
+     *
+     * @return View
+     */
+    public function templatesIndex(): View
+    {
+        // ดึง templates ทั้งหมดที่ active
+        $templates = HomepageTemplate::active()
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get();
+
+        // ดึงหมวดหมู่สำหรับ filter
+        $categories = HomepageTemplate::CATEGORIES;
+
+        return view('admin.homepage-manager.templates', [
+            'templates' => $templates,
+            'categories' => $categories,
+            'pageTitle' => 'คลัง Templates หน้าแรก',
+        ]);
+    }
+
+    /**
+     * ดึงข้อมูล sections ของ template สำหรับ preview
+     *
+     * @param HomepageTemplate $template
+     * @return JsonResponse
+     */
+    public function previewTemplate(HomepageTemplate $template): JsonResponse
+    {
+        try {
+            $sectionsData = $template->getSectionsData();
+
+            return response()->json([
+                'success' => true,
+                'sections' => $sectionsData,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * ล้างหน้าแรกทั้งหมด
      *
      * @return JsonResponse
