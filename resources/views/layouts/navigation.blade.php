@@ -184,6 +184,16 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
 
             <!-- Desktop Navigation Links - Centered -->
             <div class="hidden sm:flex flex-1 justify-center items-center gap-3">
+                {{-- 🇹🇭 Wiki Button - แสดงเสมอ (ไม่ขึ้นกับ database menu) --}}
+                <a href="{{ route('wiki.index') }}"
+                   class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition-all duration-300 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/30 transform hover:scale-105"
+                   title="🇹🇭 เรื่องราว ThaiPrompt - ทำไมต้องมีระบบของคนไทย">
+                    <span class="text-lg group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">🇹🇭</span>
+                    <span class="group-hover:translate-x-0.5 transition-transform duration-300">Wiki</span>
+                    <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
+                    <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                </a>
+
                 @if($menuItems && $menuItems->count() > 0)
                     @foreach($menuItems as $menuItem)
                         @if($menuItem->shouldDisplay())
@@ -274,14 +284,6 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300">ℹ️</span>
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">เกี่ยวกับเรา</span>
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-slate-600 to-gray-600 group-hover:w-full transition-all duration-300"></span>
-                    </a>
-                    <a href="{{ route('wiki.index') }}"
-                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition-all duration-300 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/30 transform hover:scale-105"
-                       title="🇹🇭 เรื่องราว ThaiPrompt - ทำไมต้องมีระบบของคนไทย">
-                        <span class="text-lg group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">🇹🇭</span>
-                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">Wiki</span>
-                        <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
-                        <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
                     </a>
                     <a href="{{ route('demo.audio-spectrum') }}"
                        class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-pink-50 hover:to-violet-50 dark:hover:from-pink-900/30 dark:hover:to-violet-900/30"
