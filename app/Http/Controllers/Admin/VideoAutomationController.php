@@ -9,6 +9,7 @@ use App\Models\VideoAutoTemplate;
 use App\Models\VideoAutoProject;
 use App\Models\VideoAutoJob;
 use App\Models\VideoAutoSchedule;
+use App\Models\VideoAutoPublishHistory;
 use App\Services\VideoAutomation\VideoAutomationService;
 use App\Services\VideoAutomation\SunoApiService;
 use App\Services\VideoAutomation\FreepikApiService;
@@ -933,6 +934,235 @@ class VideoAutomationController extends Controller
                 'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    // =========================================
+    // Publish History
+    // =========================================
+
+    /**
+     * แสดงรายการประวัติการโพสต์
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function publishHistory(Request $request)
+    {
+        $query = VideoAutoPublishHistory::with(['project', 'schedule', 'publishedBy']);
+
+        // ค้นหา
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('music_title', 'like', "%{$search}%")
+                    ->orWhere('music_artist', 'like', "%{$search}%");
+            });
+        }
+
+        // กรองตาม platform
+        if ($request->filled('platform')) {
+            $query->where('platform', $request->get('platform'));
+        }
+
+        // กรองตาม status
+        if ($request->filled('status')) {
+            $query->where('status', $request->get('status'));
+        }
+
+        // กรองตามช่วงเวลา
+        if ($request->filled('date')) {
+            switch ($request->get('date')) {
+                case 'today':
+                    $query->whereDate('published_at', today());
+                    break;
+                case 'week':
+                    $query->whereBetween('published_at', [now()->subDays(7), now()]);
+                    break;
+                case 'month':
+                    $query->whereBetween('published_at', [now()->subDays(30), now()]);
+                    break;
+            }
+        }
+
+        $histories = $query->latest('published_at')->paginate(20);
+
+        // สถิติ
+        $stats = [
+            'total' => VideoAutoPublishHistory::count(),
+            'published' => VideoAutoPublishHistory::where('status', 'published')->count(),
+            'failed' => VideoAutoPublishHistory::where('status', 'failed')->count(),
+            'total_views' => VideoAutoPublishHistory::sum('views'),
+            'total_likes' => VideoAutoPublishHistory::sum('likes'),
+        ];
+
+        // สถิติแยกตาม platform
+        $platformStats = VideoAutoPublishHistory::selectRaw('platform, count(*) as count, sum(views) as views, sum(likes) as likes')
+            ->where('status', 'published')
+            ->groupBy('platform')
+            ->get()
+            ->keyBy('platform');
+
+        return view('admin.video-automation.publish-history.index', [
+            'histories' => $histories,
+            'stats' => $stats,
+            'platformStats' => $platformStats,
+            'platforms' => VideoAutoPublishHistory::PLATFORMS,
+            'statuses' => VideoAutoPublishHistory::STATUSES,
+            'pageTitle' => 'ประวัติการโพสต์',
+        ]);
+    }
+
+    /**
+     * แสดงรายละเอียดประวัติการโพสต์
+     *
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
+    public function showPublishHistory(int $id)
+    {
+        $history = VideoAutoPublishHistory::with(['project', 'job', 'schedule', 'publishedBy'])
+            ->findOrFail($id);
+
+        return view('admin.video-automation.publish-history.show', [
+            'history' => $history,
+            'pageTitle' => 'รายละเอียดการโพสต์: ' . Str::limit($history->title, 30),
+        ]);
+    }
+
+    /**
+     * อัพเดท engagement ของการโพสต์
+     *
+     * @param Request $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function updatePublishEngagement(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'views' => 'nullable|integer|min:0',
+            'likes' => 'nullable|integer|min:0',
+            'comments' => 'nullable|integer|min:0',
+            'shares' => 'nullable|integer|min:0',
+        ]);
+
+        try {
+            $history = VideoAutoPublishHistory::findOrFail($id);
+            $history->updateEngagement($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'อัพเดทข้อมูลเรียบร้อยแล้ว',
+                'data' => $history,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ลบประวัติการโพสต์
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function deletePublishHistory(int $id): JsonResponse
+    {
+        try {
+            $history = VideoAutoPublishHistory::findOrFail($id);
+            $history->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ลบประวัติเรียบร้อยแล้ว',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ลบไฟล์ต้นฉบับของการโพสต์
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function deletePublishSourceFiles(int $id): JsonResponse
+    {
+        try {
+            $history = VideoAutoPublishHistory::findOrFail($id);
+
+            if ($history->source_deleted) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไฟล์ถูกลบไปแล้ว',
+                ], 400);
+            }
+
+            $history->deleteSourceFiles();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ลบไฟล์ต้นฉบับเรียบร้อยแล้ว',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงสถิติประวัติการโพสต์ (API)
+     *
+     * @return JsonResponse
+     */
+    public function getPublishStats(): JsonResponse
+    {
+        $stats = [
+            'total' => VideoAutoPublishHistory::count(),
+            'published' => VideoAutoPublishHistory::where('status', 'published')->count(),
+            'failed' => VideoAutoPublishHistory::where('status', 'failed')->count(),
+            'pending' => VideoAutoPublishHistory::where('status', 'pending')->count(),
+            'total_views' => VideoAutoPublishHistory::sum('views'),
+            'total_likes' => VideoAutoPublishHistory::sum('likes'),
+            'total_comments' => VideoAutoPublishHistory::sum('comments'),
+            'total_shares' => VideoAutoPublishHistory::sum('shares'),
+        ];
+
+        // ประวัติล่าสุด
+        $recent = VideoAutoPublishHistory::with('project')
+            ->where('status', 'published')
+            ->latest('published_at')
+            ->limit(5)
+            ->get();
+
+        // สถิติรายวัน (7 วันล่าสุด)
+        $dailyStats = VideoAutoPublishHistory::selectRaw('DATE(published_at) as date, count(*) as count, sum(views) as views')
+            ->where('status', 'published')
+            ->whereBetween('published_at', [now()->subDays(7), now()])
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'stats' => $stats,
+                'recent' => $recent,
+                'dailyStats' => $dailyStats,
+            ],
+        ]);
     }
 
     // =========================================

@@ -2896,6 +2896,20 @@ Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () 
         Route::delete('/schedules/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deleteSchedule'])
             ->name('schedules.delete');
 
+        // Publish History (ประวัติการโพสต์)
+        Route::get('/publish-history', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'publishHistory'])
+            ->name('publish-history');
+        Route::get('/publish-history/stats', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'getPublishStats'])
+            ->name('publish-history.stats');
+        Route::get('/publish-history/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'showPublishHistory'])
+            ->name('publish-history.show');
+        Route::put('/publish-history/{id}/engagement', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'updatePublishEngagement'])
+            ->name('publish-history.engagement');
+        Route::delete('/publish-history/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deletePublishHistory'])
+            ->name('publish-history.delete');
+        Route::delete('/publish-history/{id}/source-files', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deletePublishSourceFiles'])
+            ->name('publish-history.delete-source');
+
         // Documentation (คู่มือการใช้งาน)
         Route::get('/documentation', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'documentation'])
             ->name('documentation');
