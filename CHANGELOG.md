@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.241.5] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1733 from xjanova/claude/add-wiki-topbar-button-01KivMonV9rWS94uFW3qgD7R (8bb3a602)
+- fix: make Wiki button visible on all screen sizes (32a18199)
+### 🔧 Other Changes
+
+
 ## [v3.241.4] - 2025-11-27
 
 ### ✨ Features
