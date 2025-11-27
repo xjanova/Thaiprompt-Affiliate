@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.244.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1741 from xjanova/claude/add-tpix-whitepaper-wiki-0122E9ywHPzwrU6FKGuSC11H (c99a2d09)
+- style: เปลี่ยน Wiki เป็นธีม Arrow x v3 (Glass Fusion) (bb91ce76)
+- style: อัปเดต Wiki เป็นธีม Millennium RGB (26294b29)
+
 ## [v3.244.0] - 2025-11-27
 
 ### ✨ Features
