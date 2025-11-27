@@ -1,16 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.wiki-arrow-x')
 
 @section('title', 'คู่มือและความช่วยเหลือ - Thaiprompt Affiliate')
 
 @section('content')
-@php
-    // สีหลักของระบบ
-    $primaryColor = \App\Models\Setting::get('primary_color', '#3B82F6');
-    $secondaryColor = \App\Models\Setting::get('secondary_color', '#8B5CF6');
-    $accentColor = \App\Models\Setting::get('accent_color', '#EC4899');
-@endphp
-
-{{-- 📚 WIKI KNOWLEDGE BASE - V3 VERSION (Tailwind + Alpine.js) --}}
+{{-- 📚 WIKI KNOWLEDGE BASE - Arrow X V3 (Tailwind + Alpine.js) --}}
 <div
     x-data="{
         currentCategory: 'story',
