@@ -897,7 +897,7 @@ return [
                 ['label' => '🔍 ค้นหาบริการ', 'route' => 'user.services.index', 'description' => 'เลือกบริการที่ต้องการ'],
                 ['label' => '📅 การจองของฉัน', 'route' => 'user.bookings.index', 'description' => 'ดูประวัติการจอง'],
                 ['label' => '⭐ รีวิวบริการ', 'route' => 'user.service-reviews.index', 'description' => 'รีวิวและให้คะแนน'],
-                ['label' => '👷 สมัครเป็นผู้ให้บริการ', 'route' => 'provider.register', 'description' => 'ลงทะเบียนเป็น Provider', 'badge' => '💼', 'badge_color' => 'bg-gradient-to-r from-green-500 to-emerald-500'],
+                ['label' => '👷 สมัครเป็นผู้ให้บริการ', 'route' => 'provider.register', 'description' => 'ลงทะเบียนเป็น Provider', 'badge' => '💼', 'badge_color' => 'bg-gradient-to-r from-green-500 to-emerald-500', 'condition' => 'hideIfProvider'],
             ],
         ],
 
