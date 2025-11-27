@@ -16,6 +16,7 @@
  */
 --}}
 
+{{-- Cart Button - อยู่ใน Navbar --}}
 <div x-data="{
     open: false,
     loading: false,
@@ -155,6 +156,8 @@
             if (response.ok) {
                 // รีโหลดตะกร้า
                 await this.loadCart();
+                // Dispatch event เพื่ออัพเดท badge
+                window.dispatchEvent(new CustomEvent('cart-updated'));
             }
         } catch (error) {
             console.error('Error removing item:', error);
@@ -248,7 +251,8 @@ x-init="
 "
 @keydown.escape.window="if (open) closePanel()"
 @keydown.arrow-down.prevent="if (open) selectNext()"
-@keydown.arrow-up.prevent="if (open) selectPrevious()">
+@keydown.arrow-up.prevent="if (open) selectPrevious()"
+class="relative">
 
     {{-- Cart Button พร้อม Glassmorphism Style --}}
     <button
@@ -281,37 +285,35 @@ x-init="
         ></span>
     </button>
 
-    {{-- Teleport Backdrop และ Panel ไปที่ body เพื่อให้ครอบคลุมทั้งหน้าจอ --}}
-    <template x-teleport="body">
-        {{-- Backdrop Overlay --}}
-        <div
-            x-show="open"
-            x-transition:enter="transition ease-out duration-300"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
-            x-transition:leave="transition ease-in duration-200"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
-            @click="closePanel()"
-            class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]"
-            style="display: none;"
-            aria-hidden="true">
-        </div>
+    {{-- Backdrop Overlay - ใช้ fixed positioning กับ isolation --}}
+    <div
+        x-show="open"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        @click="closePanel()"
+        class="cart-backdrop"
+        style="display: none;"
+        aria-hidden="true">
+    </div>
 
-        {{-- Slide Panel จากขวา --}}
-        <div
-            x-show="open"
-            x-transition:enter="transition ease-out duration-300"
-            x-transition:enter-start="translate-x-full"
-            x-transition:enter-end="translate-x-0"
-            x-transition:leave="transition ease-in duration-200"
-            x-transition:leave-start="translate-x-0"
-            x-transition:leave-end="translate-x-full"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="cart-panel-title"
-            class="fixed top-0 right-0 h-full w-full max-w-md z-[9999] flex flex-col bg-gradient-to-b from-gray-900/95 to-gray-800/95 backdrop-blur-xl border-l border-white/10 shadow-2xl"
-            style="display: none;">
+    {{-- Slide Panel จากขวา --}}
+    <div
+        x-show="open"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="translate-x-full"
+        x-transition:enter-end="translate-x-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="translate-x-0"
+        x-transition:leave-end="translate-x-full"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cart-panel-title"
+        class="cart-slide-panel"
+        style="display: none;">
 
         {{-- Header --}}
         <div class="flex-shrink-0 px-6 py-4 border-b border-white/10 bg-black/20">
@@ -448,6 +450,47 @@ x-init="
                 </a>
             </div>
         </div>
-        </div>
-    </template>
+    </div>
 </div>
+
+{{-- CSS สำหรับ Cart Panel - ใช้ fixed positioning ที่ทำงานได้ทั่วทั้งหน้าจอ --}}
+<style>
+.cart-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 9998;
+}
+
+.cart-slide-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    max-width: 28rem;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(to bottom, rgba(17, 24, 39, 0.95), rgba(31, 41, 55, 0.95));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
