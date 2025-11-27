@@ -139,7 +139,13 @@
                 <div class="flex items-center gap-4">
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="text-2xl">{{ $item['feature']->icon ?? '🤖' }}</span>
+                            <span class="text-2xl">
+                                @if(str_starts_with($item['feature']->icon ?? '', 'fa'))
+                                    <i class="{{ $item['feature']->icon }}"></i>
+                                @else
+                                    {{ $item['feature']->icon ?? '🤖' }}
+                                @endif
+                            </span>
                             <span class="font-medium text-gray-900 dark:text-white text-sm">
                                 {{ $item['feature']->feature_name }}
                             </span>
@@ -259,7 +265,13 @@
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-2">
-                                <span class="text-xl">{{ $usage->feature->icon ?? '🤖' }}</span>
+                                <span class="text-xl">
+                                    @if(str_starts_with($usage->feature->icon ?? '', 'fa'))
+                                        <i class="{{ $usage->feature->icon }}"></i>
+                                    @else
+                                        {{ $usage->feature->icon ?? '🤖' }}
+                                    @endif
+                                </span>
                                 <span class="text-sm font-medium text-gray-900 dark:text-white">
                                     {{ Str::limit($usage->feature->feature_name, 20) }}
                                 </span>

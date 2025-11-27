@@ -138,7 +138,13 @@
                 <div class="grid grid-cols-2 gap-3">
                     @forelse($tenant->featureAccess()->with('feature')->active()->get() as $access)
                         <div class="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                            <span class="text-xl">{{ $access->feature->icon }}</span>
+                            <span class="text-xl">
+                                @if(str_starts_with($access->feature->icon ?? '', 'fa'))
+                                    <i class="{{ $access->feature->icon }}"></i>
+                                @else
+                                    {{ $access->feature->icon }}
+                                @endif
+                            </span>
                             <span class="text-sm text-gray-900 dark:text-white font-medium">{{ $access->feature->feature_name }}</span>
                         </div>
                     @empty

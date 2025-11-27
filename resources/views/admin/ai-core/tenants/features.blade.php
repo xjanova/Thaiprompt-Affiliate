@@ -58,7 +58,13 @@
                 <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                     <div class="flex items-start justify-between mb-3">
                         <div class="flex items-center gap-3">
-                            <span class="text-3xl">{{ $feature->icon }}</span>
+                            <span class="text-3xl">
+                                @if(str_starts_with($feature->icon ?? '', 'fa'))
+                                    <i class="{{ $feature->icon }}"></i>
+                                @else
+                                    {{ $feature->icon }}
+                                @endif
+                            </span>
                             <div>
                                 <h3 class="font-bold text-gray-900 dark:text-white">{{ $feature->feature_name }}</h3>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">{{ $feature->feature_key }}</p>
