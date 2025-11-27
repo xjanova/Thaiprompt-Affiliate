@@ -1132,7 +1132,7 @@
                 </a>
 
                 {{-- Sections --}}
-                <a href="{{ route('admin.homepage-manager.sections.get') }}"
+                <a href="{{ route('admin.homepage-manager.sections.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.homepage-manager.sections.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-layer-group w-4 text-center drop-shadow"></i>
@@ -1140,7 +1140,7 @@
                 </a>
 
                 {{-- Templates --}}
-                <a href="{{ route('admin.homepage-manager.templates.get') }}"
+                <a href="{{ route('admin.homepage-manager.templates.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.homepage-manager.templates.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-clone w-4 text-center drop-shadow"></i>
