@@ -73,11 +73,16 @@ class ServiceBookingController extends Controller
     /**
      * งานใหม่ที่รอการตอบกลับ
      *
-     * @return \Illuminate\View\View
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function pending()
     {
         $provider = $this->getCurrentProvider();
+
+        if (!$provider) {
+            return redirect()->route('provider.register')
+                ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
+        }
 
         $pendingBookings = ServiceBooking::where('provider_id', $provider->id)
             ->whereIn('status', ['notifying_provider', 'waiting_provider'])
@@ -96,11 +101,16 @@ class ServiceBookingController extends Controller
      * รายละเอียดงาน
      *
      * @param ServiceBooking $booking
-     * @return \Illuminate\View\View
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function show(ServiceBooking $booking)
     {
         $provider = $this->getCurrentProvider();
+
+        if (!$provider) {
+            return redirect()->route('provider.register')
+                ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
+        }
 
         // ตรวจสอบว่าเป็นงานของ provider นี้
         if ($booking->provider_id !== $provider->id) {
@@ -137,6 +147,11 @@ class ServiceBookingController extends Controller
     {
         $provider = $this->getCurrentProvider();
 
+        if (!$provider) {
+            return redirect()->route('provider.register')
+                ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
+        }
+
         // ตรวจสอบว่าเป็นงานของ provider นี้
         if ($booking->provider_id !== $provider->id) {
             abort(403);
@@ -170,6 +185,11 @@ class ServiceBookingController extends Controller
     {
         $provider = $this->getCurrentProvider();
 
+        if (!$provider) {
+            return redirect()->route('provider.register')
+                ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
+        }
+
         // ตรวจสอบว่าเป็นงานของ provider นี้
         if ($booking->provider_id !== $provider->id) {
             abort(403);
@@ -202,6 +222,11 @@ class ServiceBookingController extends Controller
     {
         $provider = $this->getCurrentProvider();
 
+        if (!$provider) {
+            return redirect()->route('provider.register')
+                ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
+        }
+
         if ($booking->provider_id !== $provider->id) {
             abort(403);
         }
@@ -229,6 +254,11 @@ class ServiceBookingController extends Controller
     {
         $provider = $this->getCurrentProvider();
 
+        if (!$provider) {
+            return redirect()->route('provider.register')
+                ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
+        }
+
         if ($booking->provider_id !== $provider->id) {
             abort(403);
         }
@@ -255,6 +285,11 @@ class ServiceBookingController extends Controller
     public function complete(ServiceBooking $booking)
     {
         $provider = $this->getCurrentProvider();
+
+        if (!$provider) {
+            return redirect()->route('provider.register')
+                ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
+        }
 
         if ($booking->provider_id !== $provider->id) {
             abort(403);
@@ -285,6 +320,13 @@ class ServiceBookingController extends Controller
     public function updateLocation(Request $request, ServiceBooking $booking)
     {
         $provider = $this->getCurrentProvider();
+
+        if (!$provider) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน',
+            ], 403);
+        }
 
         if ($booking->provider_id !== $provider->id) {
             abort(403);
@@ -338,6 +380,13 @@ class ServiceBookingController extends Controller
     public function toggleAvailability(Request $request)
     {
         $provider = $this->getCurrentProvider();
+
+        if (!$provider) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน',
+            ], 403);
+        }
 
         if ($provider->isAvailable()) {
             $provider->setOffline();
@@ -490,11 +539,16 @@ class ServiceBookingController extends Controller
      * หน้า Live Tracking - ดูตำแหน่งลูกค้าและเส้นทาง
      *
      * @param ServiceBooking $booking
-     * @return \Illuminate\View\View
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function track(ServiceBooking $booking)
     {
         $provider = $this->getCurrentProvider();
+
+        if (!$provider) {
+            return redirect()->route('provider.register')
+                ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
+        }
 
         // ตรวจสอบว่าเป็นงานของ provider นี้
         if ($booking->provider_id !== $provider->id) {
