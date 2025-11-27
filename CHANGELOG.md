@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.251.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1751 from xjanova/claude/integrate-learning-center-01JZghbMEDhmcuGKseeEuoHq (072af1ff)
+- feat: รีดีไซน์ระบบ Academy Knowledge (Learning Center) ใหม่ทั้งหมด (5a7bb73e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.250.0] - 2025-11-27
 
 ### ✨ Features
