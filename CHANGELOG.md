@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.255.13] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1777 from xjanova/claude/fix-migration-table-error-013xDmeZXyf2v8mmkiG11oBw (ccc62be0)
+- fix: change commission_id FK to reference mlm_commissions instead of dropped commissions table (673e6779)
+### 🔧 Other Changes
+
+
 ## [v3.255.12] - 2025-11-27
 
 ### ✨ Features
