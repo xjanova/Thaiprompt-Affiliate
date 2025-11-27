@@ -500,7 +500,8 @@ function homepageManager() {
             if (!this.selectedSection) return;
 
             try {
-                await fetch(`{{ url('admin/homepage-manager/sections') }}/${this.selectedSection.id}`, {
+                const updateUrl = '{{ route("admin.homepage-manager.sections.update", ["section" => "__SECTION_ID__"]) }}'.replace('__SECTION_ID__', this.selectedSection.id);
+                await fetch(updateUrl, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -521,7 +522,8 @@ function homepageManager() {
             if (!this.selectedElement || !this.elementSection) return;
 
             try {
-                await fetch(`{{ url('admin/homepage-manager/elements') }}/${this.selectedElement.id}`, {
+                const updateUrl = '{{ route("admin.homepage-manager.elements.update", ["element" => "__ELEMENT_ID__"]) }}'.replace('__ELEMENT_ID__', this.selectedElement.id);
+                await fetch(updateUrl, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -552,7 +554,8 @@ function homepageManager() {
          * Update section order
          */
         async updateSectionOrder() {
-            const orders = this.sections.map((s, i) => ({ id: s.id, order: i }));
+            // ส่งเฉพาะ array ของ section IDs ตามลำดับใหม่
+            const sections = this.sections.map(s => s.id);
 
             try {
                 await fetch('{{ route("admin.homepage-manager.sections.reorder") }}', {
@@ -561,7 +564,7 @@ function homepageManager() {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
-                    body: JSON.stringify({ orders })
+                    body: JSON.stringify({ sections })
                 });
                 this.saveToHistory();
             } catch (error) {
@@ -574,7 +577,8 @@ function homepageManager() {
          */
         async duplicateSection(section) {
             try {
-                const response = await fetch(`{{ url('admin/homepage-manager/sections') }}/${section.id}/duplicate`, {
+                const duplicateUrl = '{{ route("admin.homepage-manager.sections.duplicate", ["section" => "__SECTION_ID__"]) }}'.replace('__SECTION_ID__', section.id);
+                const response = await fetch(duplicateUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -609,7 +613,8 @@ function homepageManager() {
             if (!confirm('ต้องการลบ Section นี้?')) return;
 
             try {
-                await fetch(`{{ url('admin/homepage-manager/sections') }}/${section.id}`, {
+                const deleteUrl = '{{ route("admin.homepage-manager.sections.destroy", ["section" => "__SECTION_ID__"]) }}'.replace('__SECTION_ID__', section.id);
+                await fetch(deleteUrl, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -692,7 +697,8 @@ function homepageManager() {
          */
         async duplicateElement(element) {
             try {
-                const response = await fetch(`{{ url('admin/homepage-manager/elements') }}/${element.id}/duplicate`, {
+                const duplicateUrl = '{{ route("admin.homepage-manager.elements.duplicate", ["element" => "__ELEMENT_ID__"]) }}'.replace('__ELEMENT_ID__', element.id);
+                const response = await fetch(duplicateUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -717,7 +723,8 @@ function homepageManager() {
             if (!confirm('ต้องการลบ Element นี้?')) return;
 
             try {
-                await fetch(`{{ url('admin/homepage-manager/elements') }}/${element.id}`, {
+                const deleteUrl = '{{ route("admin.homepage-manager.elements.destroy", ["element" => "__ELEMENT_ID__"]) }}'.replace('__ELEMENT_ID__', element.id);
+                await fetch(deleteUrl, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -859,7 +866,8 @@ function homepageManager() {
 
             this.loading = true;
             try {
-                await fetch(`{{ url('admin/homepage-manager/templates') }}/${templateId}/apply`, {
+                const importUrl = '{{ route("admin.homepage-manager.templates.import", ["template" => "__TEMPLATE_ID__"]) }}'.replace('__TEMPLATE_ID__', templateId);
+                await fetch(importUrl, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -1034,14 +1042,77 @@ function homepageManager() {
         },
 
         /**
-         * Upload handlers (placeholder)
+         * Upload background image for section
          */
         uploadBackgroundImage() {
-            this.showToast('ฟีเจอร์อัปโหลดรูปภาพกำลังพัฒนา', 'info');
+            this.uploadImage((url) => {
+                if (this.selectedSection) {
+                    if (!this.selectedSection.background) {
+                        this.selectedSection.background = {};
+                    }
+                    this.selectedSection.background.image = url;
+                    this.updateSection();
+                    this.showToast('อัปโหลดรูปภาพสำเร็จ', 'success');
+                }
+            });
         },
 
+        /**
+         * Upload image for element
+         */
         uploadElementImage() {
-            this.showToast('ฟีเจอร์อัปโหลดรูปภาพกำลังพัฒนา', 'info');
+            this.uploadImage((url) => {
+                if (this.selectedElement) {
+                    if (!this.selectedElement.content) {
+                        this.selectedElement.content = {};
+                    }
+                    this.selectedElement.content.image_url = url;
+                    this.updateElement();
+                    this.showToast('อัปโหลดรูปภาพสำเร็จ', 'success');
+                }
+            });
+        },
+
+        /**
+         * Generic upload image function
+         */
+        uploadImage(callback) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // ตรวจสอบขนาดไฟล์ (max 10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    this.showToast('ไฟล์มีขนาดใหญ่เกิน 10MB', 'error');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('image', file);
+
+                try {
+                    const response = await fetch('{{ route("admin.homepage-manager.upload") }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: formData
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        callback(data.url);
+                    } else {
+                        this.showToast(data.message || 'อัปโหลดล้มเหลว', 'error');
+                    }
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    this.showToast('เกิดข้อผิดพลาดในการอัปโหลด', 'error');
+                }
+            };
+            input.click();
         },
     };
 }
