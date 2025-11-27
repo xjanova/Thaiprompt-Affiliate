@@ -129,6 +129,26 @@ return [
         ],
 
         [
+            'id' => 'ai-content-writer',
+            'label' => 'AI Content Writer',
+            'icon' => '✍️',
+            'route' => null,
+            'order' => 4.4,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500',
+            'submenu' => [
+                ['label' => '📊 Dashboard', 'route' => 'admin.ai-content-writer.dashboard'],
+                ['label' => '✨ Playground', 'route' => 'admin.ai-content-writer.playground', 'description' => 'ทดสอบสร้าง Content'],
+                ['label' => '📄 เทมเพลต', 'route' => 'admin.ai-content-writer.templates', 'description' => 'จัดการเทมเพลต'],
+                ['label' => '📁 โปรเจกต์', 'route' => 'admin.ai-content-writer.projects', 'description' => 'โปรเจกต์ Content'],
+                ['label' => '📜 ประวัติการสร้าง', 'route' => 'admin.ai-content-writer.generations', 'description' => 'ดูประวัติ'],
+                ['label' => '📈 Usage Logs', 'route' => 'admin.ai-content-writer.usage-logs', 'description' => 'ติดตามการใช้งาน'],
+                ['label' => '⚙️ ตั้งค่า', 'route' => 'admin.ai-content-writer.settings', 'description' => 'API Keys'],
+            ],
+        ],
+
+        [
             'id' => 'smart-sliders',
             'label' => 'Smart Slider Pro',
             'icon' => '🎨',
