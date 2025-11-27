@@ -635,8 +635,11 @@ Route::prefix('chatbot')->name('chatbot.')->middleware('auth')->group(function (
     // Bot Management
     Route::get('/', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'index'])->name('index');
     Route::get('/create', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'store'])->name('store');
     Route::get('/{id}', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'show'])->name('show');
     Route::get('/{id}/edit', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'update'])->name('update');
+    Route::delete('/{id}', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'destroy'])->name('destroy');
     Route::get('/{id}/keywords', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'keywords'])->name('keywords');
     Route::get('/{id}/integrations', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'integrations'])->name('integrations');
     Route::get('/{id}/auto-content', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'autoContent'])->name('auto-content');
