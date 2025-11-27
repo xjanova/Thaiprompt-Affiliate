@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.255.8] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1772 from xjanova/claude/fix-store-icon-01U2sn6TLUgNNN5kbVTQuQDg (5f62bfce)
+- fix: แก้ไขปัญหา Font Awesome icon ไม่แสดงผล (fas fa-store) (a99c6dd0)
+### 🔧 Other Changes
+
+
 ## [v3.255.7] - 2025-11-27
 
 ### ✨ Features
