@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.244.0] - 2025-11-27
+
+### ✨ Features
+- feat: อัปเดตธีม Wiki เป็น V3 Style (2be152b7)
+### 🐛 Bug Fixes
+- fix: แก้ไข Quick Links สำหรับ guest users ในหน้า Wiki (3a425d35)
+### 🔧 Other Changes
+- Merge pull request #1740 from xjanova/claude/add-tpix-whitepaper-wiki-0122E9ywHPzwrU6FKGuSC11H (98fccd51)
+
 ## [v3.243.0] - 2025-11-27
 
 ### ✨ Features
