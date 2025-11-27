@@ -8,6 +8,7 @@ use App\Models\NFCTransaction;
 use App\Models\User;
 use App\Services\NFC\NFCCardService;
 use App\Services\NFC\NFCCardEncryptionService;
+use App\Services\NfcTemplateRecordsBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -1250,9 +1251,8 @@ class NFCCardController extends Controller
 
             $template = $templates[$templateKey];
 
-            // สร้าง NDEF records
-            $recordsBuilder = $template['records_builder'];
-            $records = $recordsBuilder($data);
+            // สร้าง NDEF records โดยใช้ NfcTemplateRecordsBuilder
+            $records = NfcTemplateRecordsBuilder::build($templateKey, $data);
 
             return response()->json([
                 'success' => true,

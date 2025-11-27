@@ -10,6 +10,10 @@ return [
     | Templates สำเร็จรูปสำหรับเขียนข้อมูลลงบัตร NFC
     | แต่ละ template จะมี NDEF records ที่กำหนดไว้ล่วงหน้า
     |
+    | หมายเหตุ: records_builder ถูกย้ายไปที่ App\Services\NfcTemplateRecordsBuilder
+    | เพื่อให้ config สามารถ serialize ได้ (php artisan config:cache)
+    | ใช้งาน: NfcTemplateRecordsBuilder::build($templateKey, $data)
+    |
     */
 
     'templates' => [
@@ -33,16 +37,7 @@ return [
                 'rank' => ['label' => 'ยศ/ระดับ', 'type' => 'text', 'required' => false],
                 'expiry_date' => ['label' => 'วันหมดอายุ', 'type' => 'date', 'required' => false],
             ],
-            'records_builder' => function ($data) {
-                return [
-                    ['type' => 'text', 'data' => "MEMBER:{$data['member_id']}"],
-                    ['type' => 'text', 'data' => "NAME:{$data['member_name']}"],
-                    ['type' => 'text', 'data' => "CARD:{$data['card_number']}"],
-                    ['type' => 'text', 'data' => "RANK:" . ($data['rank'] ?? 'Member')],
-                    ['type' => 'text', 'data' => "EXPIRE:" . ($data['expiry_date'] ?? 'N/A')],
-                    ['type' => 'url', 'data' => url("/nfc/verify/{$data['card_number']}")],
-                ];
-            },
+            'records_builder' => 'member_card',
         ],
 
         /**
@@ -66,48 +61,7 @@ return [
                 'website' => ['label' => 'เว็บไซต์', 'type' => 'url', 'required' => false],
                 'address' => ['label' => 'ที่อยู่', 'type' => 'textarea', 'required' => false],
             ],
-            'records_builder' => function ($data) {
-                $records = [
-                    ['type' => 'text', 'data' => "NAME:{$data['name']}"],
-                    ['type' => 'text', 'data' => "TEL:{$data['phone']}"],
-                    ['type' => 'text', 'data' => "EMAIL:{$data['email']}"],
-                ];
-
-                if (!empty($data['position'])) {
-                    $records[] = ['type' => 'text', 'data' => "POSITION:{$data['position']}"];
-                }
-
-                if (!empty($data['company'])) {
-                    $records[] = ['type' => 'text', 'data' => "COMPANY:{$data['company']}"];
-                }
-
-                if (!empty($data['website'])) {
-                    $records[] = ['type' => 'url', 'data' => $data['website']];
-                }
-
-                // vCard
-                $vcard = "BEGIN:VCARD\nVERSION:3.0\n";
-                $vcard .= "FN:{$data['name']}\n";
-                if (!empty($data['company'])) {
-                    $vcard .= "ORG:{$data['company']}\n";
-                }
-                if (!empty($data['position'])) {
-                    $vcard .= "TITLE:{$data['position']}\n";
-                }
-                $vcard .= "TEL:{$data['phone']}\n";
-                $vcard .= "EMAIL:{$data['email']}\n";
-                if (!empty($data['website'])) {
-                    $vcard .= "URL:{$data['website']}\n";
-                }
-                if (!empty($data['address'])) {
-                    $vcard .= "ADR:{$data['address']}\n";
-                }
-                $vcard .= "END:VCARD";
-
-                $records[] = ['type' => 'text', 'data' => $vcard, 'mediaType' => 'text/vcard'];
-
-                return $records;
-            },
+            'records_builder' => 'business_card',
         ],
 
         /**
@@ -130,27 +84,7 @@ return [
                 'description' => ['label' => 'รายละเอียด', 'type' => 'textarea', 'required' => false],
                 'product_url' => ['label' => 'URL สินค้า', 'type' => 'url', 'required' => false],
             ],
-            'records_builder' => function ($data) {
-                $records = [
-                    ['type' => 'text', 'data' => "PRODUCT:{$data['product_name']}"],
-                    ['type' => 'text', 'data' => "SKU:{$data['sku']}"],
-                    ['type' => 'text', 'data' => "PRICE:{$data['price']} THB"],
-                ];
-
-                if (!empty($data['category'])) {
-                    $records[] = ['type' => 'text', 'data' => "CATEGORY:{$data['category']}"];
-                }
-
-                if (!empty($data['description'])) {
-                    $records[] = ['type' => 'text', 'data' => "DESC:{$data['description']}"];
-                }
-
-                if (!empty($data['product_url'])) {
-                    $records[] = ['type' => 'url', 'data' => $data['product_url']];
-                }
-
-                return $records;
-            },
+            'records_builder' => 'product_info',
         ],
 
         /**
@@ -173,15 +107,7 @@ return [
                 'valid_from' => ['label' => 'วันที่เริ่มใช้งาน', 'type' => 'date', 'required' => false],
                 'valid_until' => ['label' => 'วันหมดอายุ', 'type' => 'date', 'required' => false],
             ],
-            'records_builder' => function ($data) {
-                return [
-                    ['type' => 'text', 'data' => "EMP:{$data['employee_id']}"],
-                    ['type' => 'text', 'data' => "NAME:{$data['employee_name']}"],
-                    ['type' => 'text', 'data' => "DEPT:" . ($data['department'] ?? 'N/A')],
-                    ['type' => 'text', 'data' => "ACCESS:" . ($data['access_level'] ?? 'Standard')],
-                    ['type' => 'text', 'data' => "VALID:" . ($data['valid_from'] ?? 'N/A') . " - " . ($data['valid_until'] ?? 'N/A')],
-                ];
-            },
+            'records_builder' => 'access_card',
         ],
 
         /**
@@ -207,15 +133,7 @@ return [
                 ],
                 'hidden' => ['label' => 'Hidden Network', 'type' => 'checkbox', 'required' => false],
             ],
-            'records_builder' => function ($data) {
-                // WiFi NDEF format: WIFI:T:WPA;S:MyNetwork;P:MyPassword;H:false;;
-                $hidden = isset($data['hidden']) && $data['hidden'] ? 'true' : 'false';
-                $wifiString = "WIFI:T:{$data['encryption']};S:{$data['ssid']};P:{$data['password']};H:{$hidden};;";
-
-                return [
-                    ['type' => 'text', 'data' => $wifiString, 'mediaType' => 'application/vnd.wfa.wsc'],
-                ];
-            },
+            'records_builder' => 'wifi_share',
         ],
 
         /**
@@ -234,17 +152,7 @@ return [
                 'title' => ['label' => 'ชื่อลิงก์', 'type' => 'text', 'required' => false],
                 'url' => ['label' => 'URL', 'type' => 'url', 'required' => true, 'placeholder' => 'https://example.com'],
             ],
-            'records_builder' => function ($data) {
-                $records = [];
-
-                if (!empty($data['title'])) {
-                    $records[] = ['type' => 'text', 'data' => $data['title']];
-                }
-
-                $records[] = ['type' => 'url', 'data' => $data['url']];
-
-                return $records;
-            },
+            'records_builder' => 'url_shortcut',
         ],
 
         /**
@@ -267,33 +175,7 @@ return [
                 'twitter' => ['label' => 'Twitter/X', 'type' => 'url', 'required' => false, 'placeholder' => 'https://twitter.com/...'],
                 'tiktok' => ['label' => 'TikTok', 'type' => 'url', 'required' => false, 'placeholder' => 'https://tiktok.com/@...'],
             ],
-            'records_builder' => function ($data) {
-                $records = [
-                    ['type' => 'text', 'data' => "NAME:{$data['name']}"],
-                ];
-
-                if (!empty($data['facebook'])) {
-                    $records[] = ['type' => 'url', 'data' => $data['facebook']];
-                }
-
-                if (!empty($data['line'])) {
-                    $records[] = ['type' => 'text', 'data' => "LINE:{$data['line']}"];
-                }
-
-                if (!empty($data['instagram'])) {
-                    $records[] = ['type' => 'url', 'data' => $data['instagram']];
-                }
-
-                if (!empty($data['twitter'])) {
-                    $records[] = ['type' => 'url', 'data' => $data['twitter']];
-                }
-
-                if (!empty($data['tiktok'])) {
-                    $records[] = ['type' => 'url', 'data' => $data['tiktok']];
-                }
-
-                return $records;
-            },
+            'records_builder' => 'social_links',
         ],
 
     ],
