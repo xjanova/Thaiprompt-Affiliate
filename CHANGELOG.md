@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.249.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: เพิ่ม legacy wiki CSS definitions สำหรับหน้า Wiki (ac6c2697)
+- fix: แก้ไขคอนทราสต์ตัวหนังสือบน topbar หน้า Wiki สำหรับ light mode (7ea765f0)
+### 🔧 Other Changes
+- Merge pull request #1749 from xjanova/claude/cleanup-legacy-code-01GWq6zMFeyjDv1VFhpENiYu (354b594c)
+
 ## [v3.249.0] - 2025-11-27
 
 ### ✨ Features
