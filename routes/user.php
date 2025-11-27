@@ -234,6 +234,10 @@ Route::prefix('tpix')->name('tpix.')->group(function () {
 Route::prefix('tokens')->name('tokens.')->group(function () {
     // Token Marketplace
     Route::get('/', [\App\Http\Controllers\User\TokenController::class, 'index'])->name('index');
+
+    // Tutorial (สอนการสร้างเหรียญลูก) - ต้องอยู่ก่อน /{id} เพื่อป้องกัน conflict
+    Route::get('/tutorial', [\App\Http\Controllers\User\TokenController::class, 'tutorial'])->name('tutorial');
+
     Route::get('/{id}', [\App\Http\Controllers\User\TokenController::class, 'show'])->name('show');
 
     // My Tokens (Creator View)
