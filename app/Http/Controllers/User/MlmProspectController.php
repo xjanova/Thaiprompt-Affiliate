@@ -20,9 +20,19 @@ class MlmProspectController extends Controller
         $user = auth()->user();
         $mlmMember = $user->mlmMember;
 
+        // ถ้าไม่ได้เป็น MLM member ให้แสดงหน้าแนะนำแทนที่จะ redirect
         if (!$mlmMember) {
-            return redirect()->route('user.dashboard')
-                ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
+            return view('user.prospects.index', [
+                'prospects' => collect([]),
+                'stats' => [
+                    'total' => 0,
+                    'pending' => 0,
+                    'clicked' => 0,
+                    'registered' => 0,
+                    'expired' => 0,
+                ],
+                'notMlmMember' => true,
+            ]);
         }
 
         $status = $request->input('status');
@@ -44,9 +54,12 @@ class MlmProspectController extends Controller
         $user = auth()->user();
         $mlmMember = $user->mlmMember;
 
+        // ถ้าไม่ได้เป็น MLM member ให้แสดงหน้าแนะนำ
         if (!$mlmMember) {
-            return redirect()->route('user.dashboard')
-                ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
+            return view('user.prospects.create', [
+                'mlmMember' => null,
+                'notMlmMember' => true,
+            ]);
         }
 
         return view('user.prospects.create', compact('mlmMember'));
