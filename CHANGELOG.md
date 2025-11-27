@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.224.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1703 from xjanova/claude/create-app-documentation-01EM3ad9dVwYAmLdYFAD2BRt (755fcf83)
+- docs: สร้างเอกสารเล่าเรื่องราว ThaiPrompt Ultra App (79e83c9c)
+
 ## [v3.224.0] - 2025-11-27
 
 ### ✨ Features
