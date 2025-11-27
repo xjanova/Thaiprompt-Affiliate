@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.242.4] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1738 from xjanova/claude/fix-wiki-theme-section-01Fojdu1D8YJdYXEWLb5r5mu (1a4dd092)
+- fix: แก้ไขธีม Wiki สำหรับ guest users และเพิ่ม Investor section (6220e45e)
+### 🔧 Other Changes
+
+
 ## [v3.242.3] - 2025-11-27
 
 ### ✨ Features
