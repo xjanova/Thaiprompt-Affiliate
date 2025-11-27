@@ -76,13 +76,118 @@
         background: rgba(139, 92, 246, 0.5);
         border-radius: 3px;
     }
+
+    /* Fullscreen Mode */
+    .gps-fullscreen-mode {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 9999 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: none !important;
+        max-height: none !important;
+        border-radius: 0 !important;
+    }
+
+    .gps-fullscreen-mode #gps-monitor-map {
+        height: 100vh !important;
+        min-height: 100vh !important;
+        border-radius: 0 !important;
+    }
+
+    .gps-fullscreen-mode .gps-header-section {
+        display: none !important;
+    }
+
+    .gps-fullscreen-mode .gps-sidebar-section {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 10001;
+        transition: transform 0.3s ease;
+    }
+
+    .gps-fullscreen-mode .gps-sidebar-section.sidebar-hidden {
+        transform: translateX(-100%);
+    }
+
+    .gps-fullscreen-mode .gps-map-section {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        height: 100vh;
+    }
+
+    /* Fullscreen Exit Button (ปุ่มลอยที่มุมบนขวา) */
+    .fullscreen-exit-btn {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10002;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    .fullscreen-exit-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 30px rgba(239, 68, 68, 0.6);
+    }
+
+    /* Fullscreen Toggle Sidebar Button */
+    .fullscreen-toggle-sidebar {
+        position: fixed;
+        top: 50%;
+        left: 0;
+        transform: translateY(-50%);
+        z-index: 10001;
+        padding: 16px 8px;
+        background: rgba(139, 92, 246, 0.9);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-left: none;
+        border-radius: 0 12px 12px 0;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .fullscreen-toggle-sidebar:hover {
+        background: rgba(139, 92, 246, 1);
+        padding-right: 12px;
+    }
+
+    /* Fullscreen button active state */
+    .fullscreen-btn-active {
+        ring: 2px;
+        ring-color: #a855f7;
+        background: rgba(139, 92, 246, 0.3) !important;
+    }
 </style>
 @endpush
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900" x-data="gpsMonitoringCenter()">
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 gps-monitor-wrapper"
+     x-data="gpsMonitoringCenter()"
+     :class="{ 'gps-fullscreen-mode': isFullscreen }">
     {{-- Header --}}
-    <div class="sticky top-0 z-50 data-flow-bg">
+    <div class="sticky top-0 z-50 data-flow-bg gps-header-section">
         <div class="bg-black/50 backdrop-blur-xl border-b border-white/10">
             <div class="max-w-full mx-auto px-6 py-4">
                 <div class="flex items-center justify-between">
@@ -143,7 +248,8 @@
 
     <div class="flex">
         {{-- Sidebar Filters --}}
-        <div class="w-80 flex-shrink-0 h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar p-4 space-y-4">
+        <div class="w-80 flex-shrink-0 h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar p-4 space-y-4 gps-sidebar-section"
+             :class="{ 'sidebar-hidden': isFullscreen && sidebarHidden }">
             {{-- Entity Type Filter --}}
             <div class="glass-panel rounded-2xl p-4">
                 <h3 class="text-white font-semibold mb-3 flex items-center gap-2">
@@ -293,9 +399,35 @@
         </div>
 
         {{-- Main Map Area --}}
-        <div class="flex-1 relative">
+        <div class="flex-1 relative gps-map-section">
             {{-- Map --}}
             <div id="gps-monitor-map" class="w-full rounded-l-3xl overflow-hidden border-l border-white/10"></div>
+
+            {{-- Fullscreen Exit Button (แสดงเฉพาะตอน fullscreen) --}}
+            <button x-show="isFullscreen"
+                    x-cloak
+                    @click="toggleFullscreen()"
+                    class="fullscreen-exit-btn flex items-center gap-2"
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 scale-90"
+                    x-transition:enter-end="opacity-100 scale-100">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3v3a2 2 0 0 1-2 2H3"/>
+                    <path d="M21 8h-3a2 2 0 0 1-2-2V3"/>
+                    <path d="M3 16h3a2 2 0 0 1 2 2v3"/>
+                    <path d="M16 21v-3a2 2 0 0 1 2-2h3"/>
+                </svg>
+                <span>ออกจากเต็มจอ (ESC)</span>
+            </button>
+
+            {{-- Fullscreen Toggle Sidebar Button (แสดงเฉพาะตอน fullscreen) --}}
+            <button x-show="isFullscreen"
+                    x-cloak
+                    @click="sidebarHidden = !sidebarHidden"
+                    class="fullscreen-toggle-sidebar"
+                    x-transition>
+                <i class="fas" :class="sidebarHidden ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+            </button>
 
             {{-- Floating Radar Overlay --}}
             <div class="absolute top-4 right-4 w-32 h-32 pointer-events-none">
@@ -327,10 +459,31 @@
 
             {{-- Map Controls --}}
             <div class="absolute bottom-4 right-4 flex flex-col gap-2">
+                {{-- Fullscreen Button --}}
+                <button @click="toggleFullscreen()"
+                        class="p-3 bg-gray-900/80 hover:bg-gray-800 text-white rounded-xl backdrop-blur-lg transition"
+                        :class="{ 'ring-2 ring-purple-500 bg-purple-600/30': isFullscreen }"
+                        :title="isFullscreen ? 'ออกจากเต็มจอ (ESC)' : 'เต็มจอ'">
+                    {{-- Enter Fullscreen Icon --}}
+                    <svg x-show="!isFullscreen" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+                        <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+                        <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+                        <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+                    </svg>
+                    {{-- Exit Fullscreen Icon --}}
+                    <svg x-show="isFullscreen" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3v3a2 2 0 0 1-2 2H3"/>
+                        <path d="M21 8h-3a2 2 0 0 1-2-2V3"/>
+                        <path d="M3 16h3a2 2 0 0 1 2 2v3"/>
+                        <path d="M16 21v-3a2 2 0 0 1 2-2h3"/>
+                    </svg>
+                </button>
+                <div class="h-px bg-white/20 my-1"></div>
                 <button @click="fitAllMarkers()"
                         class="p-3 bg-gray-900/80 hover:bg-gray-800 text-white rounded-xl backdrop-blur-lg transition"
                         title="แสดงทั้งหมด">
-                    <i class="fas fa-expand"></i>
+                    <i class="fas fa-expand-arrows-alt"></i>
                 </button>
                 <button @click="centerOnBangkok()"
                         class="p-3 bg-gray-900/80 hover:bg-gray-800 text-white rounded-xl backdrop-blur-lg transition"
@@ -433,6 +586,9 @@ function gpsMonitoringCenter() {
         showHeatmap: false,
         useClustering: true,
         markerClusterer: null,
+        isFullscreen: false,
+        sidebarHidden: false,
+        wrapper: null,
 
         // Data
         providerMarkers: [],
@@ -477,8 +633,153 @@ function gpsMonitoringCenter() {
         refreshIntervalId: null,
 
         init() {
+            // เก็บ reference ของ wrapper element
+            this.wrapper = this.$el;
+
+            // โหลด Google Maps และตั้งค่าการ refresh อัตโนมัติ
             this.loadGoogleMaps();
             this.setupAutoRefresh();
+
+            // ตั้งค่า event listeners สำหรับ fullscreen
+            this.setupFullscreenListeners();
+        },
+
+        /**
+         * ตั้งค่า event listeners สำหรับการเปลี่ยนแปลง fullscreen
+         */
+        setupFullscreenListeners() {
+            // รองรับ vendor prefixes
+            document.addEventListener('fullscreenchange', () => this.handleFullscreenChange());
+            document.addEventListener('webkitfullscreenchange', () => this.handleFullscreenChange());
+            document.addEventListener('mozfullscreenchange', () => this.handleFullscreenChange());
+            document.addEventListener('MSFullscreenChange', () => this.handleFullscreenChange());
+
+            // รองรับการกด ESC เพื่อออกจาก fullscreen (สำหรับ CSS fallback)
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && this.isFullscreen) {
+                    this.exitFullscreen();
+                }
+            });
+        },
+
+        /**
+         * Toggle fullscreen mode
+         */
+        toggleFullscreen() {
+            if (this.isFullscreen) {
+                this.exitFullscreen();
+            } else {
+                this.enterFullscreen();
+            }
+        },
+
+        /**
+         * เข้าสู่โหมด fullscreen
+         */
+        enterFullscreen() {
+            const element = this.wrapper;
+
+            // ฟังก์ชันสำหรับ CSS fallback
+            const useCSSFullscreen = () => {
+                this.isFullscreen = true;
+                this.sidebarHidden = true; // ซ่อน sidebar โดย default
+                this.resizeMapAfterFullscreen();
+            };
+
+            // ลองใช้ Browser Fullscreen API
+            if (element.requestFullscreen) {
+                element.requestFullscreen().catch(() => useCSSFullscreen());
+            } else if (element.webkitRequestFullscreen) {
+                element.webkitRequestFullscreen();
+                useCSSFullscreen();
+            } else if (element.mozRequestFullScreen) {
+                element.mozRequestFullScreen();
+            } else if (element.msRequestFullscreen) {
+                element.msRequestFullscreen();
+            } else {
+                // Fallback: ใช้ CSS fullscreen
+                useCSSFullscreen();
+            }
+        },
+
+        /**
+         * ออกจากโหมด fullscreen
+         */
+        exitFullscreen() {
+            // ตรวจสอบว่าอยู่ใน Browser fullscreen หรือไม่
+            const fullscreenElement = document.fullscreenElement ||
+                                      document.webkitFullscreenElement ||
+                                      document.mozFullScreenElement ||
+                                      document.msFullscreenElement;
+
+            if (fullscreenElement) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            } else {
+                // CSS fallback - ออกจาก fullscreen โดยตรง
+                this.isFullscreen = false;
+                this.sidebarHidden = false;
+                this.resizeMapAfterFullscreen();
+            }
+        },
+
+        /**
+         * จัดการเมื่อ fullscreen state เปลี่ยนแปลง
+         */
+        handleFullscreenChange() {
+            const fullscreenElement = document.fullscreenElement ||
+                                      document.webkitFullscreenElement ||
+                                      document.mozFullScreenElement ||
+                                      document.msFullscreenElement;
+
+            const wasFullscreen = this.isFullscreen;
+            this.isFullscreen = (fullscreenElement === this.wrapper);
+
+            // ถ้าเพิ่งเข้า fullscreen - ซ่อน sidebar โดย default
+            if (this.isFullscreen && !wasFullscreen) {
+                this.sidebarHidden = true;
+            }
+
+            // ถ้าออกจาก fullscreen - แสดง sidebar
+            if (!this.isFullscreen && wasFullscreen) {
+                this.sidebarHidden = false;
+            }
+
+            // ปรับขนาด map หลังจาก fullscreen เปลี่ยนแปลง
+            this.resizeMapAfterFullscreen();
+        },
+
+        /**
+         * ปรับขนาด map หลัง fullscreen เปลี่ยนแปลง
+         */
+        resizeMapAfterFullscreen() {
+            // รอให้ DOM อัปเดตก่อน
+            setTimeout(() => {
+                if (this.map) {
+                    google.maps.event.trigger(this.map, 'resize');
+
+                    // ถ้ามี markers - fit bounds
+                    const allMarkers = [...this.providerMarkers, ...this.userMarkers, ...this.serviceMarkers];
+                    if (allMarkers.length > 0) {
+                        // เก็บ center และ zoom เดิม
+                        const currentCenter = this.map.getCenter();
+                        const currentZoom = this.map.getZoom();
+
+                        // รีเซ็ตกลับไปที่เดิม
+                        setTimeout(() => {
+                            this.map.setCenter(currentCenter);
+                            this.map.setZoom(currentZoom);
+                        }, 100);
+                    }
+                }
+            }, 150);
         },
 
         loadGoogleMaps() {
@@ -849,6 +1150,12 @@ function gpsMonitoringCenter() {
         },
 
         destroy() {
+            // ออกจาก fullscreen ถ้ายังอยู่
+            if (this.isFullscreen) {
+                this.exitFullscreen();
+            }
+
+            // ยกเลิก auto refresh
             if (this.refreshIntervalId) {
                 clearInterval(this.refreshIntervalId);
             }
