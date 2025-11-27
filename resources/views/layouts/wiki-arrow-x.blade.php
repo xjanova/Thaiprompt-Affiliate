@@ -43,9 +43,11 @@
 
         /**
          * Glass Fusion Effect - Arrow X V3 Standard
+         * Light mode: พื้นหลังขาวโปร่งใสเพื่อให้ตัวหนังสือสีเข้มมีคอนทราสต์ดี
+         * Dark mode: พื้นหลังมืดโปร่งใส
          */
         .glass-fusion {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
@@ -132,7 +134,7 @@
                                 TP
                             </div>
                         @endif
-                        <span class="hidden sm:block text-white font-bold text-lg drop-shadow">
+                        <span class="hidden sm:block text-gray-800 dark:text-white font-bold text-lg dark:drop-shadow">
                             {{ config('app.name', 'TP-Affiliate') }}
                         </span>
                     </a>
@@ -140,13 +142,13 @@
 
                 {{-- Navigation Links --}}
                 <nav class="hidden md:flex items-center gap-6">
-                    <a href="{{ route('home') }}" class="text-white/80 hover:text-white font-medium transition-colors drop-shadow">
+                    <a href="{{ route('home') }}" class="text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white font-medium transition-colors dark:drop-shadow">
                         <i class="fas fa-home mr-2"></i>หน้าแรก
                     </a>
-                    <a href="{{ route('wiki.index') }}" class="text-white font-medium transition-colors drop-shadow border-b-2 border-white pb-1">
+                    <a href="{{ route('wiki.index') }}" class="text-gray-900 dark:text-white font-medium transition-colors dark:drop-shadow border-b-2 border-gray-900 dark:border-white pb-1">
                         <i class="fas fa-book mr-2"></i>Wiki
                     </a>
-                    <a href="{{ route('marketplace.index') }}" class="text-white/80 hover:text-white font-medium transition-colors drop-shadow">
+                    <a href="{{ route('marketplace.index') }}" class="text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white font-medium transition-colors dark:drop-shadow">
                         <i class="fas fa-store mr-2"></i>Marketplace
                     </a>
                 </nav>
@@ -156,16 +158,16 @@
                     {{-- Dark Mode Toggle --}}
                     <button @click="toggleTheme()"
                             type="button"
-                            class="p-2.5 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-110 active:scale-95 text-white"
+                            class="p-2.5 rounded-xl glass-neu hover:bg-gray-200/50 dark:hover:bg-white/20 transition-all hover:scale-110 active:scale-95 text-gray-700 dark:text-white"
                             :title="isDark ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด'">
-                        <i x-show="!isDark" class="fas fa-moon drop-shadow"></i>
+                        <i x-show="!isDark" class="fas fa-moon dark:drop-shadow"></i>
                         <i x-show="isDark" class="fas fa-sun text-yellow-300 drop-shadow"></i>
                     </button>
 
                     {{-- Auth Buttons --}}
                     @guest
                         <a href="{{ route('login') }}"
-                           class="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-white/90 hover:text-white font-medium transition-colors">
+                           class="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-white/90 hover:text-gray-900 dark:hover:text-white font-medium transition-colors">
                             <i class="fas fa-sign-in-alt"></i>
                             <span>เข้าสู่ระบบ</span>
                         </a>
@@ -178,13 +180,13 @@
                         {{-- User Dropdown --}}
                         <div x-data="{ open: false }" class="relative">
                             <button @click="open = !open"
-                                    class="flex items-center gap-2 p-2 pr-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-105 active:scale-95">
+                                    class="flex items-center gap-2 p-2 pr-3 rounded-xl glass-neu hover:bg-gray-200/50 dark:hover:bg-white/20 transition-all hover:scale-105 active:scale-95">
                                 <img src="{{ auth()->user()->profile_picture_url }}"
                                      alt="{{ auth()->user()->name }}"
                                      class="w-8 h-8 rounded-lg object-cover shadow-lg"
                                      onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr(auth()->user()->name, 0, 1)) }}&background=8B5CF6&color=fff&size=64';">
-                                <span class="hidden md:block text-white font-medium text-sm drop-shadow">{{ auth()->user()->name }}</span>
-                                <i class="fas fa-chevron-down text-white/60 text-xs drop-shadow transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+                                <span class="hidden md:block text-gray-800 dark:text-white font-medium text-sm dark:drop-shadow">{{ auth()->user()->name }}</span>
+                                <i class="fas fa-chevron-down text-gray-500 dark:text-white/60 text-xs dark:drop-shadow transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
                             </button>
 
                             {{-- Dropdown Menu --}}
@@ -236,17 +238,17 @@
     </main>
 
     {{-- Footer --}}
-    <footer class="glass-fusion border-t border-white/20 dark:border-gray-700/50 py-8 mt-12">
+    <footer class="glass-fusion border-t border-gray-200 dark:border-white/20 dark:border-gray-700/50 py-8 mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="text-white/60 text-sm">
+                <div class="text-gray-600 dark:text-white/60 text-sm">
                     &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
                 </div>
                 <div class="flex items-center gap-6">
-                    <a href="{{ route('wiki.index') }}" class="text-white/60 hover:text-white text-sm transition-colors">Wiki</a>
-                    <a href="{{ route('marketplace.index') }}" class="text-white/60 hover:text-white text-sm transition-colors">Marketplace</a>
+                    <a href="{{ route('wiki.index') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Wiki</a>
+                    <a href="{{ route('marketplace.index') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Marketplace</a>
                     @auth
-                    <a href="{{ route('user.dashboard') }}" class="text-white/60 hover:text-white text-sm transition-colors">Dashboard</a>
+                    <a href="{{ route('user.dashboard') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Dashboard</a>
                     @endauth
                 </div>
             </div>
