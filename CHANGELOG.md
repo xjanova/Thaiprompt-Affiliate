@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.251.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1752 from xjanova/claude/fix-null-property-error-01CiHT8eU3eaY8niHDDdLnZX (53599b9b)
+- fix: add null checks to prevent 'read property on null' error in ServiceBookingController (a41a785e)
+### 🔧 Other Changes
+
+
 ## [v3.251.0] - 2025-11-27
 
 ### ✨ Features
