@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.240.3] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1727 from xjanova/claude/setup-ai-content-seeder-01TTw8W5eCma3WALbPMnfZWV (f8fe7254)
+- fix: resolve duplicate slug error in AiContentWriterSeeder (a2ed2ce6)
+### 🔧 Other Changes
+
+
 ## [v3.240.2] - 2025-11-27
 
 ### ✨ Features
