@@ -2151,6 +2151,9 @@ Route::prefix('homepage-manager')->name('homepage-manager.')->group(function () 
 
     // Clear All
     Route::post('/clear', [HomepageManagerController::class, 'clearAll'])->name('clear');
+
+    // Save All Sections
+    Route::post('/save-all', [HomepageManagerController::class, 'saveAll'])->name('save-all');
 });
 
 // Hotel Owner Management (Super Admin)

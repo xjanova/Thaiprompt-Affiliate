@@ -892,6 +892,65 @@ class HomepageManagerController extends Controller
     }
 
     /**
+     * บันทึก sections ทั้งหมดพร้อมกัน
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function saveAll(Request $request): JsonResponse
+    {
+        try {
+            $sectionsData = $request->input('sections', []);
+
+            DB::transaction(function () use ($sectionsData) {
+                foreach ($sectionsData as $index => $sectionData) {
+                    $section = HomepageSection::find($sectionData['id'] ?? null);
+
+                    if ($section) {
+                        // อัพเดท section ที่มีอยู่
+                        $section->update([
+                            'title' => $sectionData['title'] ?? $section->title,
+                            'type' => $sectionData['type'] ?? $section->type,
+                            'settings' => $sectionData['settings'] ?? $section->settings,
+                            'is_active' => $sectionData['is_active'] ?? $section->is_active,
+                            'order' => $index,
+                        ]);
+
+                        // อัพเดท elements ของ section
+                        if (isset($sectionData['elements']) && is_array($sectionData['elements'])) {
+                            foreach ($sectionData['elements'] as $elementIndex => $elementData) {
+                                $element = HomepageElement::find($elementData['id'] ?? null);
+
+                                if ($element) {
+                                    $element->update([
+                                        'type' => $elementData['type'] ?? $element->type,
+                                        'content' => $elementData['content'] ?? $element->content,
+                                        'settings' => $elementData['settings'] ?? $element->settings,
+                                        'order' => $elementIndex,
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Clear cache
+            $this->service->clearCache();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกข้อมูลหน้าแรกสำเร็จ',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * ล้างหน้าแรกทั้งหมด
      *
      * @return JsonResponse

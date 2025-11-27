@@ -198,7 +198,7 @@ function homepageManager() {
          */
         async loadTemplates() {
             try {
-                const response = await fetch('{{ route("admin.homepage-manager.templates") }}');
+                const response = await fetch('{{ route("admin.homepage-manager.templates.get") }}');
                 const data = await response.json();
                 if (data.success) {
                     this.templates = data.data || [];
@@ -783,8 +783,8 @@ function homepageManager() {
 
             this.loading = true;
             try {
-                await fetch('{{ route("admin.homepage-manager.clear-all") }}', {
-                    method: 'DELETE',
+                await fetch('{{ route("admin.homepage-manager.clear") }}', {
+                    method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     }
@@ -882,7 +882,7 @@ function homepageManager() {
             }
 
             try {
-                await fetch('{{ route("admin.homepage-manager.templates.store") }}', {
+                await fetch('{{ route("admin.homepage-manager.templates.save") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
