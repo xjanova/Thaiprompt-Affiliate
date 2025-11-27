@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.253.5] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1759 from xjanova/claude/fix-config-serialization-018QXSHEK553GzKS3MyVsMZT (316ba11c)
+- fix: แก้ไข config serialization error สำหรับ nfc-templates (1a11e2fd)
+### 🔧 Other Changes
+
+
 ## [v3.253.4] - 2025-11-27
 
 ### ✨ Features
