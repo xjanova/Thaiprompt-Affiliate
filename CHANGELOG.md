@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.254.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1762 from xjanova/claude/add-homepage-templates-01X1m9WhSDDgVUkSvb31xFBk (356846d2)
+- feat: เพิ่มหน้า Templates Gallery สำหรับ Homepage Manager (fac67779)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.253.7] - 2025-11-27
 
 ### ✨ Features
