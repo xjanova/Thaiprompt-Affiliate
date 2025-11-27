@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.242.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1734 from xjanova/claude/fix-n8n-workflow-update-01DTGiBG6J6AuZxH94U8XP3J (ceb2c380)
+- feat: improve workflow diagram and add bloodline feature (b9b169bf)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.241.5] - 2025-11-27
 
 ### ✨ Features
