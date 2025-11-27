@@ -267,4 +267,104 @@ class MlmGenealogyService
             ];
         });
     }
+
+    /**
+     * ดึงข้อมูลสายเลือด (Bloodline) ของสมาชิก
+     * แสดงเส้นทางจาก root (บริษัท/สมาชิกแรก) ลงมาถึงสมาชิกที่ระบุ
+     *
+     * @param MlmMember $member สมาชิกที่ต้องการดูสายเลือด
+     * @param string $treeType ประเภทผัง ('unilevel' หรือ 'binary')
+     * @return array ข้อมูลสายเลือดเป็น tree structure
+     */
+    public function getBloodlineData(MlmMember $member, $treeType = 'unilevel')
+    {
+        // ดึงรายชื่อ ancestors ทั้งหมดเรียงจาก root ลงมาถึงสมาชิก
+        $ancestors = $this->getAncestorChain($member, $treeType);
+
+        // สร้าง tree structure จากบนลงล่าง
+        return $this->buildBloodlineTree($ancestors, $member, $treeType);
+    }
+
+    /**
+     * ดึง ancestors chain จาก root ลงมาถึงสมาชิก
+     */
+    protected function getAncestorChain(MlmMember $member, $treeType)
+    {
+        $ancestors = [];
+
+        if ($treeType === 'binary') {
+            // เดินขึ้นไป binary parent
+            $current = $member->binaryParent;
+            while ($current) {
+                array_unshift($ancestors, $current);
+                $current = $current->binaryParent;
+            }
+        } else {
+            // เดินขึ้นไป unilevel sponsor
+            $current = $member->unilevelSponsor;
+            while ($current) {
+                array_unshift($ancestors, $current);
+                $current = $current->unilevelSponsor;
+            }
+        }
+
+        return $ancestors;
+    }
+
+    /**
+     * สร้าง tree structure สำหรับ Bloodline
+     */
+    protected function buildBloodlineTree(array $ancestors, MlmMember $targetMember, $treeType)
+    {
+        // ถ้าไม่มี ancestors แสดงว่าเป็น root member
+        if (empty($ancestors)) {
+            return $this->formatMemberNode($targetMember, $treeType, true);
+        }
+
+        // สร้าง tree จาก root ลงมา
+        $root = array_shift($ancestors);
+        $rootNode = $this->formatMemberNode($root, $treeType, false);
+
+        // สร้าง chain ของ nodes
+        $currentNode = &$rootNode;
+        foreach ($ancestors as $ancestor) {
+            $childNode = $this->formatMemberNode($ancestor, $treeType, false);
+            $currentNode['children'] = [$childNode];
+            $currentNode = &$currentNode['children'][0];
+        }
+
+        // เพิ่ม target member เป็น leaf node สุดท้าย
+        $targetNode = $this->formatMemberNode($targetMember, $treeType, true);
+        $currentNode['children'] = [$targetNode];
+
+        return $rootNode;
+    }
+
+    /**
+     * Format member data สำหรับ node ใน Bloodline tree
+     */
+    protected function formatMemberNode(MlmMember $member, $treeType, $isTarget = false)
+    {
+        $user = $member->user;
+
+        return [
+            'id' => $member->id,
+            'name' => $user->name ?? 'Unknown',
+            'member_code' => $member->member_code,
+            'label' => $user->name ?? 'Unknown',
+            'subtitle' => $member->member_code,
+            'total_pv' => $member->total_pv ?? 0,
+            'monthly_pv' => $member->monthly_pv ?? 0,
+            'direct_referrals' => $member->total_direct_referrals ?? 0,
+            'total_team_members' => $member->total_team_members ?? 0,
+            'retention_status' => $member->retention_status ?? 'active',
+            'status' => $member->retention_status ?? 'active',
+            'rank_name' => $member->rank->name ?? null,
+            'left_pv' => $member->left_leg_pv ?? 0,
+            'right_pv' => $member->right_leg_pv ?? 0,
+            'is_target' => $isTarget, // สมาชิกที่ต้องการดูสายเลือด
+            'position' => $treeType === 'binary' ? $member->binary_position : null,
+            'children' => [],
+        ];
+    }
 }

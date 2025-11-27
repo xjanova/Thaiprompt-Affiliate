@@ -44,6 +44,31 @@ class MlmPlanController extends Controller
         return view('admin.mlm.genealogy.workflow', compact('members'));
     }
 
+    /**
+     * แสดงผังสายเลือด (Bloodline) แบบ Classic
+     * แสดงเส้นทางจาก root (บริษัท) ลงมาถึงสมาชิกที่เลือก
+     *
+     * @return \Illuminate\View\View
+     */
+    public function bloodline()
+    {
+        $members = \App\Models\MlmMember::with('user')->orderBy('created_at', 'desc')->limit(100)->get();
+        return view('admin.mlm.genealogy.bloodline', compact('members'));
+    }
+
+    /**
+     * แสดงผังสายเลือด (Bloodline) แบบ Workflow (n8n style)
+     * แสดงเส้นทางจาก root (บริษัท) ลงมาถึงสมาชิกที่เลือก
+     * รองรับการลาก nodes และเส้นเชื่อมต่อได้อิสระ
+     *
+     * @return \Illuminate\View\View
+     */
+    public function bloodlineWorkflow()
+    {
+        $members = \App\Models\MlmMember::with('user')->orderBy('created_at', 'desc')->limit(100)->get();
+        return view('admin.mlm.genealogy.bloodline-workflow', compact('members'));
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

@@ -829,18 +829,17 @@ class WorkflowDiagram {
         // Hide context menu
         this.hideContextMenu();
 
-        // Check if clicked on a port (for connection drawing)
-        if (target.classList.contains('wf-port') && this.options.editable) {
-            e.stopPropagation();
-            this.startConnectionDrawing(target, point);
-            return;
-        }
+        // บันทึกเวลาเริ่มคลิก สำหรับตรวจสอบว่าเป็นคลิกหรือลาก
+        this.clickStartTime = Date.now();
+        this.clickStartPoint = { x: point.x, y: point.y };
+        this.hasMoved = false;
 
-        // Check if clicked on a node
+        // Check if clicked on a node (รวม port ด้วย - ลากได้ทั้งการ์ด)
         const nodeGroup = target.closest('.wf-node');
         if (nodeGroup) {
             e.stopPropagation();
             const nodeId = nodeGroup.dataset.nodeId;
+            this.clickedNodeId = nodeId;
 
             // Handle selection
             if (e.ctrlKey || e.metaKey) {
@@ -856,7 +855,7 @@ class WorkflowDiagram {
                 this.selectNode(nodeId);
             }
 
-            // Start dragging
+            // Start dragging - ลากได้ทั้งการ์ด ไม่จำกัดแค่ตำแหน่งใดตำแหน่งหนึ่ง
             if (this.options.editable) {
                 this.startNodeDrag(nodeId, point);
             }
@@ -886,6 +885,15 @@ class WorkflowDiagram {
     onMouseMove(e) {
         const point = this.getMousePoint(e);
 
+        // ตรวจสอบว่ามีการเลื่อนเกิน threshold หรือไม่ (สำหรับแยก click vs drag)
+        if (this.clickStartPoint) {
+            const dx = Math.abs(point.x - this.clickStartPoint.x);
+            const dy = Math.abs(point.y - this.clickStartPoint.y);
+            if (dx > 5 || dy > 5) {
+                this.hasMoved = true;
+            }
+        }
+
         // Update temp connection if drawing
         if (this.isDrawingConnection) {
             this.updateTempConnection(point);
@@ -913,6 +921,21 @@ class WorkflowDiagram {
 
     onMouseUp(e) {
         const point = this.getMousePoint(e);
+        const clickDuration = Date.now() - (this.clickStartTime || 0);
+
+        // ตรวจสอบว่าเป็นการคลิกเพื่อดูรายละเอียด (ไม่ได้ลาก และคลิกเร็ว)
+        if (this.clickedNodeId && !this.hasMoved && clickDuration < 300) {
+            const node = this.nodes.get(this.clickedNodeId);
+            if (node) {
+                this.showNodeDetail(node);
+            }
+        }
+
+        // Reset click state
+        this.clickedNodeId = null;
+        this.clickStartTime = null;
+        this.clickStartPoint = null;
+        this.hasMoved = false;
 
         // Finish connection drawing
         if (this.isDrawingConnection) {
@@ -1003,12 +1026,18 @@ class WorkflowDiagram {
             const touch = e.touches[0];
             const point = this.getTouchPoint(touch);
 
+            // บันทึกเวลาเริ่มแตะ สำหรับตรวจสอบว่าเป็น tap หรือ drag
+            this.touchStartTime = Date.now();
+            this.touchStartPoint = { x: point.x, y: point.y };
+            this.touchHasMoved = false;
+
             // Simulate mouse down
             const target = document.elementFromPoint(touch.clientX, touch.clientY);
             const nodeGroup = target?.closest('.wf-node');
 
             if (nodeGroup) {
                 const nodeId = nodeGroup.dataset.nodeId;
+                this.touchedNodeId = nodeId;
                 this.clearSelection();
                 this.selectNode(nodeId);
                 if (this.options.editable) {
@@ -1030,6 +1059,15 @@ class WorkflowDiagram {
         if (e.touches.length === 1) {
             const touch = e.touches[0];
             const point = this.getTouchPoint(touch);
+
+            // ตรวจสอบว่ามีการเลื่อนเกิน threshold หรือไม่
+            if (this.touchStartPoint) {
+                const dx = Math.abs(point.x - this.touchStartPoint.x);
+                const dy = Math.abs(point.y - this.touchStartPoint.y);
+                if (dx > 10 || dy > 10) {
+                    this.touchHasMoved = true;
+                }
+            }
 
             if (this.isDragging && this.dragNode) {
                 this.updateNodeDrag(point);
@@ -1064,6 +1102,22 @@ class WorkflowDiagram {
             this.lastTouchCenter = null;
         }
         if (e.touches.length === 0) {
+            const touchDuration = Date.now() - (this.touchStartTime || 0);
+
+            // ตรวจสอบว่าเป็นการแตะเพื่อดูรายละเอียด (ไม่ได้ลาก และแตะเร็ว)
+            if (this.touchedNodeId && !this.touchHasMoved && touchDuration < 300) {
+                const node = this.nodes.get(this.touchedNodeId);
+                if (node) {
+                    this.showNodeDetail(node);
+                }
+            }
+
+            // Reset touch state
+            this.touchedNodeId = null;
+            this.touchStartTime = null;
+            this.touchStartPoint = null;
+            this.touchHasMoved = false;
+
             this.finishNodeDrag();
             this.finishPan();
         }
@@ -1572,28 +1626,146 @@ class WorkflowDiagram {
      */
     showNodeDetail(node) {
         const accentColor = node.color || '#6366f1';
+        const data = node.data || {};
+
+        // กำหนด label ภาษาไทยสำหรับ fields
+        const fieldLabels = {
+            'pv': 'คะแนน PV',
+            'total_pv': 'PV รวม',
+            'monthly_pv': 'PV เดือนนี้',
+            'referrals': 'แนะนำตรง',
+            'direct_referrals': 'แนะนำตรง',
+            'total_direct_referrals': 'แนะนำตรง',
+            'team': 'ทีมงาน',
+            'total_team_members': 'ทีมงานทั้งหมด',
+            'status': 'สถานะ',
+            'retention_status': 'สถานะ',
+            'rank': 'ระดับ',
+            'rank_name': 'ระดับ',
+            'email': 'อีเมล',
+            'phone': 'โทรศัพท์',
+            'sponsor': 'สปอนเซอร์',
+            'sponsor_name': 'สปอนเซอร์',
+            'joined_at': 'วันที่สมัคร',
+            'created_at': 'วันที่สมัคร',
+            'left_pv': 'PV ซ้าย',
+            'right_pv': 'PV ขวา',
+            'member_code': 'รหัสสมาชิก'
+        };
+
+        // กำหนด icon สำหรับแต่ละ field
+        const fieldIcons = {
+            'pv': '⭐',
+            'total_pv': '⭐',
+            'monthly_pv': '📊',
+            'referrals': '👥',
+            'direct_referrals': '👥',
+            'team': '🏢',
+            'total_team_members': '🏢',
+            'status': '🔖',
+            'retention_status': '🔖',
+            'rank': '🏆',
+            'rank_name': '🏆',
+            'email': '📧',
+            'phone': '📱',
+            'sponsor': '👤',
+            'sponsor_name': '👤',
+            'joined_at': '📅',
+            'created_at': '📅',
+            'left_pv': '◀️',
+            'right_pv': '▶️',
+            'member_code': '🔢'
+        };
+
+        // กำหนดสถานะภาษาไทย
+        const statusLabels = {
+            'active': '✅ แอคทีฟ',
+            'grace_period': '⏳ ช่วงผ่อนผัน',
+            'inactive': '❌ ไม่แอคทีฟ',
+            'suspended': '🚫 ถูกระงับ'
+        };
+
+        // เลือก fields ที่สำคัญมาแสดง
+        const importantFields = ['member_code', 'pv', 'total_pv', 'monthly_pv', 'referrals', 'direct_referrals', 'total_direct_referrals', 'team', 'total_team_members', 'rank', 'rank_name', 'left_pv', 'right_pv', 'status', 'retention_status', 'sponsor_name', 'email', 'phone', 'joined_at', 'created_at'];
+
+        const displayData = {};
+        importantFields.forEach(key => {
+            if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
+                displayData[key] = data[key];
+            }
+        });
 
         this.modalContent.innerHTML = `
             <div>
-                <div style="background: linear-gradient(135deg, ${accentColor}, ${accentColor}cc); padding: 24px; color: white;">
+                <div style="background: linear-gradient(135deg, ${accentColor}, ${accentColor}cc); padding: 24px; color: white; position: relative;">
                     <button onclick="this.closest('.wf-modal').classList.remove('show')" style="
-                        position: absolute; top: 16px; right: 16px; width: 32px; height: 32px;
-                        border: none; background: rgba(255,255,255,0.2); border-radius: 8px;
-                        color: white; font-size: 18px; cursor: pointer;
-                    ">×</button>
-                    <div style="font-size: 20px; font-weight: 700;">${this.escapeHtml(node.label || node.name || 'Node')}</div>
-                    <div style="opacity: 0.9; font-size: 14px; margin-top: 4px;">${this.escapeHtml(node.subtitle || '')}</div>
-                </div>
-                <div style="padding: 24px;">
-                    ${node.description ? `<p style="color: #64748b; margin-bottom: 16px;">${this.escapeHtml(node.description)}</p>` : ''}
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-                        ${Object.entries(node.data || {}).map(([key, value]) => `
-                            <div style="background: #f8fafc; padding: 12px; border-radius: 8px;">
-                                <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">${this.escapeHtml(key)}</div>
-                                <div style="font-size: 16px; font-weight: 600; color: #1e293b;">${this.escapeHtml(String(value))}</div>
-                            </div>
-                        `).join('')}
+                        position: absolute; top: 16px; right: 16px; width: 36px; height: 36px;
+                        border: none; background: rgba(255,255,255,0.2); border-radius: 10px;
+                        color: white; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+                        transition: background 0.2s;
+                    " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">×</button>
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px;">
+                            👤
+                        </div>
+                        <div>
+                            <div style="font-size: 22px; font-weight: 700;">${this.escapeHtml(node.label || node.name || 'สมาชิก')}</div>
+                            <div style="opacity: 0.9; font-size: 14px; margin-top: 4px;">${this.escapeHtml(node.subtitle || data.member_code || '')}</div>
+                            ${data.rank_name ? `<div style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-top: 8px; display: inline-block;">${this.escapeHtml(data.rank_name)}</div>` : ''}
+                        </div>
                     </div>
+                </div>
+                <div style="padding: 24px; max-height: 400px; overflow-y: auto;">
+                    ${node.description ? `<p style="color: #64748b; margin-bottom: 16px; padding: 12px; background: #f8fafc; border-radius: 8px; border-left: 4px solid ${accentColor};">${this.escapeHtml(node.description)}</p>` : ''}
+
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                        ${Object.entries(displayData).map(([key, value]) => {
+                            const label = fieldLabels[key] || key;
+                            const icon = fieldIcons[key] || '📌';
+                            let displayValue = value;
+
+                            // จัดรูปแบบค่าตามประเภท
+                            if (key === 'status' || key === 'retention_status') {
+                                displayValue = statusLabels[value] || value;
+                            } else if (typeof value === 'number') {
+                                displayValue = this.formatNumber(value);
+                            } else if (key.includes('_at') && value) {
+                                try {
+                                    const date = new Date(value);
+                                    if (!isNaN(date)) {
+                                        displayValue = date.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+                                    }
+                                } catch(e) {}
+                            }
+
+                            return `
+                                <div style="background: #f8fafc; padding: 14px; border-radius: 12px; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+                                    <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; margin-bottom: 4px;">
+                                        <span>${icon}</span>
+                                        <span>${this.escapeHtml(label)}</span>
+                                    </div>
+                                    <div style="font-size: 16px; font-weight: 600; color: #1e293b;">${this.escapeHtml(String(displayValue))}</div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    ${data.id ? `
+                        <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+                            <a href="/admin/mlm/members/${data.id}" style="
+                                display: flex; align-items: center; justify-content: center; gap: 8px;
+                                padding: 12px 20px; background: linear-gradient(135deg, ${accentColor}, ${accentColor}dd);
+                                color: white; border-radius: 12px; text-decoration: none; font-weight: 600;
+                                transition: transform 0.2s, box-shadow 0.2s;
+                            " onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(99,102,241,0.3)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                ดูรายละเอียดเพิ่มเติม
+                            </a>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;

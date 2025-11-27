@@ -161,4 +161,24 @@ class MlmMemberController extends Controller
             'statistics' => $statistics,
         ]);
     }
+
+    /**
+     * ดึงข้อมูลสายเลือด (Bloodline) สำหรับ API
+     * แสดงเส้นทางจาก root ลงมาถึงสมาชิกที่เลือก
+     *
+     * @param MlmMember $member
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getBloodlineData(MlmMember $member, Request $request)
+    {
+        $treeType = $request->get('type', 'unilevel');
+
+        $bloodlineData = $this->genealogyService->getBloodlineData($member, $treeType);
+
+        return response()->json([
+            'success' => true,
+            'data' => $bloodlineData,
+        ]);
+    }
 }
