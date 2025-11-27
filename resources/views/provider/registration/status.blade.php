@@ -1,24 +1,26 @@
 {{--
-    หน้าสถานะการลงทะเบียนผู้ให้บริการ
+    หน้าสถานะการลงทะเบียนผู้ให้บริการ - Arrow X V3 Theme
     แสดงสถานะการตรวจสอบและอนุมัติ
 --}}
-@extends('layouts.app')
+@extends('layouts.provider-arrow-x')
 
 @section('title', 'สถานะการลงทะเบียน')
 
+@section('page-title', 'สถานะการลงทะเบียน')
+
 @section('content')
-<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="backdrop-blur-xl bg-white/90 dark:bg-gray-800/90 border border-white/20 dark:border-gray-700/50 rounded-2xl shadow-xl overflow-hidden">
+<div class="max-w-2xl mx-auto">
+    <div class="glass-fusion border border-white/20 rounded-2xl shadow-xl overflow-hidden">
         {{-- Header --}}
         <div class="p-6 text-center
             @if($provider->verification_status === 'pending')
-                bg-gradient-to-r from-yellow-500 to-orange-500
+                bg-gradient-to-r from-yellow-500/80 to-orange-500/80
             @elseif($provider->verification_status === 'approved')
-                bg-gradient-to-r from-green-500 to-emerald-500
+                bg-gradient-to-r from-green-500/80 to-emerald-500/80
             @else
-                bg-gradient-to-r from-red-500 to-pink-500
+                bg-gradient-to-r from-red-500/80 to-pink-500/80
             @endif
-            text-white">
+            text-white border-b border-white/20">
 
             @if($provider->verification_status === 'pending')
                 <div class="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full mb-4">
@@ -45,11 +47,11 @@
         <div class="p-6 space-y-6">
             {{-- Status Timeline --}}
             <div class="space-y-4">
-                <h3 class="font-bold text-gray-900 dark:text-white">สถานะการสมัคร</h3>
+                <h3 class="font-bold text-white">สถานะการสมัคร</h3>
 
                 <div class="relative">
                     {{-- Timeline Line --}}
-                    <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+                    <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-white/20"></div>
 
                     {{-- Step 1: Submitted --}}
                     <div class="relative flex items-start gap-4 pb-6">
@@ -57,8 +59,8 @@
                             <i class="fas fa-check text-white text-sm"></i>
                         </div>
                         <div>
-                            <p class="font-semibold text-gray-900 dark:text-white">ส่งใบสมัคร</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                            <p class="font-semibold text-white">ส่งใบสมัคร</p>
+                            <p class="text-sm text-white/60">
                                 {{ $provider->created_at->thaidate('j F Y H:i น.') }}
                             </p>
                         </div>
@@ -75,13 +77,13 @@
                                 <i class="fas fa-check text-white text-sm"></i>
                             </div>
                         @else
-                            <div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center z-10">
+                            <div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center z-10">
                                 <span class="text-white text-sm">2</span>
                             </div>
                         @endif
                         <div>
-                            <p class="font-semibold text-gray-900 dark:text-white">กำลังตรวจสอบ</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                            <p class="font-semibold text-white">กำลังตรวจสอบ</p>
+                            <p class="text-sm text-white/60">
                                 @if($provider->verification_status === 'pending')
                                     ทีมงานกำลังตรวจสอบข้อมูลของคุณ
                                 @else
@@ -102,12 +104,12 @@
                                 <i class="fas fa-times text-white text-sm"></i>
                             </div>
                         @else
-                            <div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center z-10">
+                            <div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center z-10">
                                 <span class="text-white text-sm">3</span>
                             </div>
                         @endif
                         <div>
-                            <p class="font-semibold text-gray-900 dark:text-white">
+                            <p class="font-semibold text-white">
                                 @if($provider->verification_status === 'approved')
                                     อนุมัติแล้ว
                                 @elseif($provider->verification_status === 'rejected')
@@ -116,7 +118,7 @@
                                     รอผลการตรวจสอบ
                                 @endif
                             </p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                            <p class="text-sm text-white/60">
                                 @if($provider->verification_status === 'approved')
                                     {{ $provider->verified_at?->thaidate('j F Y H:i น.') ?? 'ผ่านการอนุมัติแล้ว' }}
                                 @elseif($provider->verification_status === 'rejected')
@@ -135,27 +137,27 @@
             </div>
 
             {{-- Provider Info Summary --}}
-            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                <h3 class="font-bold text-gray-900 dark:text-white mb-4">ข้อมูลที่ลงทะเบียน</h3>
+            <div class="border-t border-white/20 pt-6">
+                <h3 class="font-bold text-white mb-4">ข้อมูลที่ลงทะเบียน</h3>
 
                 <div class="space-y-3 text-sm">
                     <div class="flex items-center justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">ชื่อที่แสดง</span>
-                        <span class="font-semibold text-gray-900 dark:text-white">{{ $provider->display_name }}</span>
+                        <span class="text-white/60">ชื่อที่แสดง</span>
+                        <span class="font-semibold text-white">{{ $provider->display_name ?? $provider->name }}</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">เบอร์โทร</span>
-                        <span class="font-semibold text-gray-900 dark:text-white">{{ $provider->phone }}</span>
+                        <span class="text-white/60">เบอร์โทร</span>
+                        <span class="font-semibold text-white">{{ $provider->phone }}</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">หมวดหมู่</span>
-                        <span class="font-semibold text-gray-900 dark:text-white">
+                        <span class="text-white/60">หมวดหมู่</span>
+                        <span class="font-semibold text-white">
                             {{ $provider->categories->pluck('name')->join(', ') ?: '-' }}
                         </span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">พื้นที่บริการ</span>
-                        <span class="font-semibold text-gray-900 dark:text-white">
+                        <span class="text-white/60">พื้นที่บริการ</span>
+                        <span class="font-semibold text-white">
                             {{ $provider->areas->count() }} พื้นที่
                         </span>
                     </div>
@@ -163,23 +165,23 @@
             </div>
 
             {{-- Actions --}}
-            <div class="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-3">
+            <div class="border-t border-white/20 pt-6 space-y-3">
                 @if($provider->verification_status === 'approved')
                     <a href="{{ route('provider.bookings.index') }}"
-                       class="block w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-xl text-center transition-all duration-200">
+                       class="block w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold rounded-xl text-center transition-all duration-200 shadow-lg hover:shadow-xl">
                         <i class="fas fa-play mr-2"></i>
                         เริ่มรับงาน
                     </a>
                 @elseif($provider->verification_status === 'rejected')
                     <a href="{{ route('provider.register') }}"
-                       class="block w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl text-center transition-all duration-200">
+                       class="block w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl text-center transition-all duration-200 shadow-lg hover:shadow-xl">
                         <i class="fas fa-redo mr-2"></i>
                         สมัครใหม่
                     </a>
                 @endif
 
                 <a href="{{ route('user.dashboard') }}"
-                   class="block w-full py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl text-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200">
+                   class="block w-full py-3 bg-white/10 border border-white/30 text-white font-semibold rounded-xl text-center hover:bg-white/20 transition-all duration-200">
                     <i class="fas fa-arrow-left mr-2"></i>
                     กลับหน้าหลัก
                 </a>
@@ -187,14 +189,14 @@
 
             {{-- Help --}}
             @if($provider->verification_status === 'pending')
-                <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                <div class="p-4 bg-blue-500/20 border border-blue-400/30 rounded-xl">
                     <div class="flex items-start gap-3">
-                        <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 text-xl mt-0.5"></i>
+                        <i class="fas fa-info-circle text-blue-300 text-xl mt-0.5"></i>
                         <div>
-                            <p class="font-semibold text-blue-800 dark:text-blue-300">ต้องการความช่วยเหลือ?</p>
-                            <p class="text-sm text-blue-700 dark:text-blue-400">
+                            <p class="font-semibold text-blue-200">ต้องการความช่วยเหลือ?</p>
+                            <p class="text-sm text-blue-200/80">
                                 หากรอนานเกิน 2 วันทำการ หรือต้องการสอบถามข้อมูลเพิ่มเติม
-                                กรุณาติดต่อ <a href="#" class="underline">ฝ่ายสนับสนุน</a>
+                                กรุณาติดต่อ <a href="#" class="underline hover:text-white">ฝ่ายสนับสนุน</a>
                             </p>
                         </div>
                     </div>
@@ -204,3 +206,16 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+/**
+ * Glass Fusion Effect สำหรับ Cards
+ */
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+</style>
+@endpush
