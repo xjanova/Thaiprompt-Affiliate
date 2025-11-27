@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.243.0] - 2025-11-27
+
+### ✨ Features
+- feat: เพิ่ม TPIX Whitepaper section ใน Platform Wiki (fa8b11a5)
+### 🐛 Bug Fixes
+- fix: แก้ไข PHP syntax error ใน millennium-taskbar.blade.php (95c286fa)
+### 🔧 Other Changes
+- Merge pull request #1739 from xjanova/claude/add-tpix-whitepaper-wiki-0122E9ywHPzwrU6FKGuSC11H (fc0cbdfb)
+
 ## [v3.242.4] - 2025-11-27
 
 ### ✨ Features
