@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.232.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1712 from xjanova/claude/admin-video-automation-01PTBssQpv6pxHexs9AynGAe (e96b2595)
+- feat: เพิ่มระบบ Publish History สำหรับ Video Automation (ad46a5f9)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.231.0] - 2025-11-27
 
 ### ✨ Features
