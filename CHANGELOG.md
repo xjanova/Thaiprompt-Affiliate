@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.253.3] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1757 from xjanova/claude/fix-wiki-page-01UsNTxikT1vNrphtcQpzkL8 (169b30f7)
+- fix: เปลี่ยน Wiki pages เป็น AJAX loading แทน @include ทั้งหมด (090a533f)
+### 🔧 Other Changes
+
+
 ## [v3.253.2] - 2025-11-27
 
 ### ✨ Features
