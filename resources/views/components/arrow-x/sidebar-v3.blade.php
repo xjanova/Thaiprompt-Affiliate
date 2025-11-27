@@ -1091,6 +1091,56 @@
             </div>
         </div>
 
+        {{-- Homepage Manager - จัดการหน้าแรก 🏠 --}}
+        <div class="space-y-1"
+             x-data="{ homepageOpen: {{ request()->routeIs('admin.homepage-manager.*') ? 'true' : 'false' }} }">
+            {{-- Homepage Header Button --}}
+            <button @click="homepageOpen = !homepageOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.homepage-manager.*') ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-home w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">จัดการหน้าแรก</span>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="ml-auto px-1.5 py-0.5 bg-orange-500 text-white text-[10px] font-bold rounded-full shadow-lg">NEW</span>
+                <i x-show="$store.sidebar.shouldExpand && homepageOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !homepageOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Homepage Submenu --}}
+            <div x-show="homepageOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Visual Builder --}}
+                <a href="{{ route('admin.homepage-manager.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.homepage-manager.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-palette w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Visual Builder</span>
+                </a>
+
+                {{-- Preview --}}
+                <a href="{{ route('admin.homepage-manager.preview') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.homepage-manager.preview') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-eye w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ดูตัวอย่าง</span>
+                </a>
+
+                {{-- Sections --}}
+                <a href="{{ route('admin.homepage-manager.sections.get') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.homepage-manager.sections.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-layer-group w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">จัดการ Sections</span>
+                </a>
+
+                {{-- Templates --}}
+                <a href="{{ route('admin.homepage-manager.templates.get') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.homepage-manager.templates.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-clone w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Templates</span>
+                </a>
+            </div>
+        </div>
+
         {{-- Content Management 📄 --}}
         <div class="space-y-1"
              x-data="{ contentOpen: {{ request()->routeIs('admin.pages.*') || request()->routeIs('admin.articles.*') ? 'true' : 'false' }} }">
