@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.250.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1750 from xjanova/claude/admin-video-automation-01PTBssQpv6pxHexs9AynGAe (19bf34a6)
+- feat: เพิ่ม Video Automation เข้าเมนู Admin ให้ครบถ้วน (ebec42ec)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.249.1] - 2025-11-27
 
 ### ✨ Features
