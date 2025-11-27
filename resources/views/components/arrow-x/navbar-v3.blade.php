@@ -198,6 +198,7 @@
 
             {{-- Profile Dropdown --}}
             <div x-show="profileOpen"
+                 x-cloak
                  @click.outside="profileOpen = false"
                  x-transition:enter="transition ease-out duration-200"
                  x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
@@ -205,8 +206,7 @@
                  x-transition:leave="transition ease-in duration-150"
                  x-transition:leave-start="opacity-100 scale-100"
                  x-transition:leave-end="opacity-0 scale-95"
-                 class="absolute top-full right-0 mt-2 w-72 glass-dropdown rounded-2xl shadow-2xl border border-white/30 overflow-hidden z-[9999]"
-                 style="display: none;">
+                 class="absolute top-full right-0 mt-2 w-72 glass-dropdown rounded-2xl shadow-2xl border border-white/30 overflow-hidden z-[9999]">
 
                 {{-- User Info Header --}}
                 <div class="px-4 py-4 bg-gradient-to-br from-indigo-600/30 to-purple-600/30 border-b border-white/20">
