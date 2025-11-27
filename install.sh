@@ -248,6 +248,175 @@ run_preflight_checks() {
 }
 
 ################################################################################
+# ฟังก์ชัน Auto-Install Dependencies
+################################################################################
+
+# ติดตั้ง Composer อัตโนมัติ
+install_composer() {
+    print_info "🔧 กำลังติดตั้ง Composer อัตโนมัติ..."
+
+    # Download and install Composer
+    if curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php; then
+        if php /tmp/composer-setup.php --quiet --install-dir=/tmp; then
+            # Try to move to system path (may require sudo)
+            if sudo mv /tmp/composer.phar /usr/local/bin/composer 2>/dev/null; then
+                print_success "ติดตั้ง Composer ไปที่ /usr/local/bin/composer ✓"
+                rm -f /tmp/composer-setup.php
+                return 0
+            elif mv /tmp/composer.phar ./composer.phar 2>/dev/null; then
+                # Fallback: install locally
+                print_success "ติดตั้ง Composer ไปที่ ./composer.phar ✓"
+                print_info "ใช้คำสั่ง: php composer.phar แทน composer"
+                # Create alias function for this session
+                composer() { php "$(pwd)/composer.phar" "$@"; }
+                export -f composer
+                rm -f /tmp/composer-setup.php
+                return 0
+            fi
+        fi
+    fi
+
+    print_error "ติดตั้ง Composer ล้มเหลว"
+    rm -f /tmp/composer-setup.php /tmp/composer.phar
+    return 1
+}
+
+# ติดตั้ง Node.js อัตโนมัติผ่าน nvm หรือ direct download
+install_nodejs() {
+    print_info "🔧 กำลังติดตั้ง Node.js อัตโนมัติ..."
+
+    local NODE_VERSION="20"  # LTS version
+
+    # Method 1: Try using nvm if available
+    if [ -f "$HOME/.nvm/nvm.sh" ]; then
+        print_info "พบ nvm - ใช้ nvm ติดตั้ง Node.js..."
+        source "$HOME/.nvm/nvm.sh"
+        if nvm install $NODE_VERSION && nvm use $NODE_VERSION; then
+            print_success "ติดตั้ง Node.js v$NODE_VERSION ผ่าน nvm ✓"
+            return 0
+        fi
+    fi
+
+    # Method 2: Install nvm first, then Node.js
+    print_info "กำลังติดตั้ง nvm..."
+    if curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash; then
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+
+        if command -v nvm &> /dev/null; then
+            print_success "ติดตั้ง nvm ✓"
+            print_info "กำลังติดตั้ง Node.js v$NODE_VERSION..."
+
+            if nvm install $NODE_VERSION && nvm use $NODE_VERSION; then
+                print_success "ติดตั้ง Node.js v$NODE_VERSION ✓"
+                return 0
+            fi
+        fi
+    fi
+
+    # Method 3: Direct download for Linux (fallback)
+    if [[ "$(uname)" == "Linux" ]]; then
+        print_info "ลองติดตั้ง Node.js โดยตรง..."
+        local ARCH=$(uname -m)
+        local NODE_ARCH=""
+
+        case $ARCH in
+            x86_64) NODE_ARCH="x64" ;;
+            aarch64) NODE_ARCH="arm64" ;;
+            armv7l) NODE_ARCH="armv7l" ;;
+            *) NODE_ARCH="x64" ;;
+        esac
+
+        local NODE_URL="https://nodejs.org/dist/v${NODE_VERSION}.0.0/node-v${NODE_VERSION}.0.0-linux-${NODE_ARCH}.tar.xz"
+        local NODE_DIR="/usr/local/lib/nodejs"
+
+        if curl -fsSL "$NODE_URL" -o /tmp/node.tar.xz; then
+            if sudo mkdir -p "$NODE_DIR" && sudo tar -xJf /tmp/node.tar.xz -C "$NODE_DIR" --strip-components=1 2>/dev/null; then
+                export PATH="$NODE_DIR/bin:$PATH"
+                print_success "ติดตั้ง Node.js v$NODE_VERSION ✓"
+                rm -f /tmp/node.tar.xz
+                return 0
+            fi
+        fi
+        rm -f /tmp/node.tar.xz
+    fi
+
+    print_warning "ไม่สามารถติดตั้ง Node.js อัตโนมัติได้"
+    print_info "กรุณาติดตั้งเอง: https://nodejs.org/"
+    return 1
+}
+
+# ติดตั้ง PHP extensions (แนะนำคำสั่ง)
+suggest_php_extensions() {
+    local extensions=("$@")
+    local os_type=""
+
+    # Detect OS
+    if [ -f /etc/debian_version ]; then
+        os_type="debian"
+    elif [ -f /etc/redhat-release ]; then
+        os_type="redhat"
+    elif [[ "$(uname)" == "Darwin" ]]; then
+        os_type="macos"
+    fi
+
+    echo ""
+    print_info "📦 คำสั่งติดตั้ง PHP extensions:"
+    echo ""
+
+    case $os_type in
+        debian)
+            local php_ver=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
+            local ext_list=""
+            for ext in "${extensions[@]}"; do
+                ext_list+=" php${php_ver}-${ext}"
+            done
+            echo -e "  ${YELLOW}sudo apt-get update${NC}"
+            echo -e "  ${YELLOW}sudo apt-get install$ext_list${NC}"
+            ;;
+        redhat)
+            local ext_list=""
+            for ext in "${extensions[@]}"; do
+                ext_list+=" php-${ext}"
+            done
+            echo -e "  ${YELLOW}sudo yum install$ext_list${NC}"
+            echo -e "  หรือ ${YELLOW}sudo dnf install$ext_list${NC}"
+            ;;
+        macos)
+            echo -e "  ${YELLOW}brew install php${NC}"
+            echo "  (Homebrew PHP มักมี extensions ครบ)"
+            ;;
+        *)
+            echo "  ติดตั้งตาม package manager ของระบบ"
+            ;;
+    esac
+    echo ""
+
+    # ถามว่าต้องการลองติดตั้งอัตโนมัติหรือไม่
+    if [ "$AUTO_MODE" != true ] && [ "$os_type" = "debian" ]; then
+        read -p "ต้องการให้ลองติดตั้งอัตโนมัติหรือไม่? (ต้องใช้ sudo) (y/n) [y]: " TRY_INSTALL
+        TRY_INSTALL=${TRY_INSTALL:-y}
+        if [[ $TRY_INSTALL =~ ^[Yy]$ ]]; then
+            local php_ver=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
+            local ext_list=""
+            for ext in "${extensions[@]}"; do
+                ext_list+=" php${php_ver}-${ext}"
+            done
+            print_info "กำลังติดตั้ง PHP extensions..."
+            if sudo apt-get update -qq && sudo apt-get install -y $ext_list; then
+                print_success "ติดตั้ง PHP extensions สำเร็จ ✓"
+                return 0
+            else
+                print_error "ติดตั้งล้มเหลว"
+                return 1
+            fi
+        fi
+    fi
+
+    return 1
+}
+
+################################################################################
 # ฟังก์ชัน Error Handling
 ################################################################################
 error_exit() {
@@ -532,12 +701,25 @@ done
 if [ ${#MISSING_EXTENSIONS[@]} -ne 0 ]; then
     echo ""
     print_error "ขาด PHP extensions: ${MISSING_EXTENSIONS[*]}"
-    echo ""
-    print_info "วิธีติดตั้ง:"
-    print_info "  Ubuntu/Debian: sudo apt-get install php-${MISSING_EXTENSIONS[0]}"
-    print_info "  CentOS/RHEL:   sudo yum install php-${MISSING_EXTENSIONS[0]}"
-    print_info "  macOS:         brew install php"
-    error_exit "กรุณาติดตั้ง PHP extensions ที่ขาดหายไป"
+
+    # ลองติดตั้งอัตโนมัติ
+    if suggest_php_extensions "${MISSING_EXTENSIONS[@]}"; then
+        # ตรวจสอบอีกครั้งหลังติดตั้ง
+        print_info "ตรวจสอบ PHP extensions อีกครั้ง..."
+        STILL_MISSING=()
+        for ext in "${MISSING_EXTENSIONS[@]}"; do
+            if ! php -r "exit(extension_loaded('$ext') ? 0 : 1);"; then
+                STILL_MISSING+=("$ext")
+            fi
+        done
+        if [ ${#STILL_MISSING[@]} -eq 0 ]; then
+            print_success "ติดตั้ง PHP extensions ครบทุกตัวแล้ว ✓"
+        else
+            error_exit "ยังขาด PHP extensions: ${STILL_MISSING[*]}"
+        fi
+    else
+        error_exit "กรุณาติดตั้ง PHP extensions ที่ขาดหายไป"
+    fi
 fi
 
 # Check Composer
@@ -545,25 +727,68 @@ print_step "ตรวจสอบ Composer..."
 if command -v composer &> /dev/null; then
     COMPOSER_VERSION=$(composer --version --no-ansi 2>/dev/null | grep -oP '\d+\.\d+\.\d+' | head -1)
     print_success "Composer: $COMPOSER_VERSION ✓"
+elif [ -f "./composer.phar" ]; then
+    COMPOSER_VERSION=$(php ./composer.phar --version --no-ansi 2>/dev/null | grep -oP '\d+\.\d+\.\d+' | head -1)
+    print_success "Composer (local): $COMPOSER_VERSION ✓"
+    # Create alias for this session
+    composer() { php "$(pwd)/composer.phar" "$@"; }
+    export -f composer
 else
-    echo ""
-    print_error "ไม่พบ Composer!"
-    echo ""
-    print_info "วิธีติดตั้ง:"
-    print_info "  curl -sS https://getcomposer.org/installer | php"
-    print_info "  sudo mv composer.phar /usr/local/bin/composer"
-    error_exit "กรุณาติดตั้ง Composer ก่อน: https://getcomposer.org/"
+    print_warning "ไม่พบ Composer!"
+
+    # ลองติดตั้งอัตโนมัติ
+    if [ "$AUTO_MODE" = true ]; then
+        install_composer || error_exit "ติดตั้ง Composer ล้มเหลว"
+    else
+        read -p "ต้องการติดตั้ง Composer อัตโนมัติหรือไม่? (y/n) [y]: " INSTALL_COMPOSER
+        INSTALL_COMPOSER=${INSTALL_COMPOSER:-y}
+        if [[ $INSTALL_COMPOSER =~ ^[Yy]$ ]]; then
+            install_composer || error_exit "ติดตั้ง Composer ล้มเหลว"
+        else
+            error_exit "ต้องมี Composer เพื่อติดตั้ง dependencies"
+        fi
+    fi
+
+    # ตรวจสอบอีกครั้ง
+    if command -v composer &> /dev/null || [ -f "./composer.phar" ]; then
+        print_success "Composer พร้อมใช้งาน ✓"
+    else
+        error_exit "Composer ยังไม่พร้อมใช้งาน"
+    fi
 fi
 
-# Check Node.js (optional)
+# Check Node.js (optional but recommended)
 print_step "ตรวจสอบ Node.js..."
 if command -v node &> /dev/null && command -v npm &> /dev/null; then
     NODE_VERSION=$(node --version)
     NPM_VERSION=$(npm --version)
     print_success "Node.js: $NODE_VERSION, npm: $NPM_VERSION ✓"
 else
-    print_warning "ไม่พบ Node.js/npm (จะติดตั้ง frontend assets ไม่ได้)"
-    print_info "  ติดตั้ง: https://nodejs.org/ หรือ nvm"
+    print_warning "ไม่พบ Node.js/npm"
+
+    # ลองติดตั้งอัตโนมัติ
+    if [ "$AUTO_MODE" = true ]; then
+        print_info "Auto Mode: ลองติดตั้ง Node.js อัตโนมัติ..."
+        if install_nodejs; then
+            NODE_VERSION=$(node --version 2>/dev/null || echo "installed")
+            print_success "Node.js: $NODE_VERSION ✓"
+        else
+            print_warning "ข้าม Node.js - frontend assets จะต้องติดตั้งเอง"
+        fi
+    else
+        read -p "ต้องการติดตั้ง Node.js อัตโนมัติหรือไม่? (y/n) [y]: " INSTALL_NODE
+        INSTALL_NODE=${INSTALL_NODE:-y}
+        if [[ $INSTALL_NODE =~ ^[Yy]$ ]]; then
+            if install_nodejs; then
+                NODE_VERSION=$(node --version 2>/dev/null || echo "installed")
+                print_success "Node.js: $NODE_VERSION ✓"
+            else
+                print_warning "ข้าม Node.js - frontend assets จะต้องติดตั้งเอง"
+            fi
+        else
+            print_info "ข้าม Node.js - frontend assets จะต้องติดตั้งเอง"
+        fi
+    fi
 fi
 
 # Check Git
