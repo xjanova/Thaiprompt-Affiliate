@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.254.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1763 from xjanova/claude/fix-db-auth-error-01169L3YaNGFecUR7xw9D32y (4f8aab25)
+- fix: แก้ไขปัญหา database query error ตอน route:cache (bf32c36a)
+### 🔧 Other Changes
+
+
 ## [v3.254.0] - 2025-11-27
 
 ### ✨ Features
