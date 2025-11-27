@@ -168,6 +168,12 @@ class VideoAutoPublishHistory extends Model
             'color' => 'green',
             'bg' => 'bg-green-500',
         ],
+        'lemon8' => [
+            'label' => 'Lemon8',
+            'icon' => 'fas fa-lemon',
+            'color' => 'yellow',
+            'bg' => 'bg-yellow-400',
+        ],
         'other' => [
             'label' => 'อื่นๆ',
             'icon' => 'fas fa-globe',
