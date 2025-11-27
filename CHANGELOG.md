@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.240.2] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1726 from xjanova/claude/fix-user-menu-tasks-011UPmcxgLAXSWZCv9QMiYYy (21053bc8)
+- fix: แก้ไข 403 errors และปรับปรุง middleware (2953aae9)
+### 🔧 Other Changes
+
+
 ## [v3.240.1] - 2025-11-27
 
 ### ✨ Features
