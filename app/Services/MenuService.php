@@ -116,10 +116,14 @@ class MenuService
             }
 
             // ตรวจสอบเงื่อนไขพิเศษ: condition
-            // รองรับ conditions ต่างๆ เช่น hasProviderAccess
+            // รองรับ conditions ต่างๆ เช่น hasProviderAccess, hideIfProvider
+            // ⚠️ Admin bypass: Admin เห็นเมนูทั้งหมดเสมอ (ไม่ถูกกรองโดย condition)
             if (!empty($menu['condition']) && $user) {
-                if (!$this->checkCondition($menu['condition'], $user)) {
-                    return false;
+                // Admin เห็นเมนูทั้งหมด ไม่ต้องเช็ค condition
+                if (!$this->userHasAdminAccess($user)) {
+                    if (!$this->checkCondition($menu['condition'], $user)) {
+                        return false;
+                    }
                 }
             }
 
@@ -157,7 +161,13 @@ class MenuService
         switch ($condition) {
             case 'hasProviderAccess':
                 // ตรวจสอบว่า user เป็น service provider หรือไม่
+                // แสดงเมนูเฉพาะเมื่อเป็น approved provider
                 return $this->userHasProviderAccess($user);
+
+            case 'hideIfProvider':
+                // ซ่อนเมนูเมื่อเป็น provider แล้ว (เช่น เมนูสมัครเป็นผู้ให้บริการ)
+                // แสดงเมนูเฉพาะเมื่อยังไม่เป็น provider
+                return !$this->userHasProviderAccess($user);
 
             case 'hasSellerAccess':
                 // ตรวจสอบว่า user เป็น seller หรือไม่
