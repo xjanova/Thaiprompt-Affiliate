@@ -1,15 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.wiki-arrow-x')
 
-@section('title', 'คู่มือและความช่วยเหลือ - Thaiprompt Affiliate')
+@section('title', 'คู่มือและความช่วยเหลือ')
 
 @section('content')
-@php
-    // สีหลักของระบบ
-    $primaryColor = \App\Models\Setting::get('primary_color', '#3B82F6');
-    $secondaryColor = \App\Models\Setting::get('secondary_color', '#8B5CF6');
-    $accentColor = \App\Models\Setting::get('accent_color', '#EC4899');
-@endphp
-
 {{-- 📚 WIKI KNOWLEDGE BASE - ARROW X V3 THEME (Glass Fusion + Blue-Purple Gradient) --}}
 <div
     x-data="{
@@ -203,17 +196,10 @@
         }
     }"
     x-init="init()"
-    class="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-gray-100 dark:from-slate-950 dark:via-slate-900 dark:to-gray-950 relative overflow-hidden"
+    class="relative"
 >
-    {{-- Arrow X V3 Glow Effects (Blue-Purple Gradient) --}}
-    <div class="fixed inset-0 pointer-events-none overflow-hidden">
-        <div class="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-3xl"></div>
-        <div class="absolute top-1/2 -left-40 w-80 h-80 bg-purple-600/10 dark:bg-purple-600/5 rounded-full blur-3xl"></div>
-        <div class="absolute -bottom-40 right-1/3 w-72 h-72 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-3xl"></div>
-    </div>
-
     {{-- Reading Progress Bar - Arrow X V3 --}}
-    <div class="fixed top-0 left-0 right-0 h-1 bg-gray-200 dark:bg-gray-700 z-50">
+    <div class="fixed top-16 left-0 right-0 h-1 bg-white/20 dark:bg-gray-700/50 z-40">
         <div
             class="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-300 shadow-lg shadow-purple-500/50"
             :style="`width: ${scrollProgress}%`"
