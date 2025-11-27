@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers\Pos;
 
+use App\Events\PosCartUpdated;
+use App\Events\PosDisplayClear;
+use App\Events\PosTransactionCompleted;
 use App\Http\Controllers\Controller;
+use App\Models\PosAdvertisement;
 use App\Models\PosDevice;
 use App\Models\PosSession;
 use App\Models\PosTransaction;
@@ -10,6 +14,7 @@ use App\Models\PosTransactionItem;
 use App\Models\PosCategory;
 use App\Models\Product;
 use App\Models\PosSetting;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -281,6 +286,17 @@ class PosCashierController extends Controller
 
             DB::commit();
 
+            // Broadcast transaction completed ไปยัง Customer Display
+            // ใช้ try-catch เพื่อไม่ให้ broadcast failure กระทบกับ response
+            try {
+                if ($device->dual_screen_enabled) {
+                    broadcast(new PosTransactionCompleted($device->device_code, $transaction));
+                }
+            } catch (\Exception $broadcastError) {
+                // Log error แต่ไม่ fail transaction
+                \Log::warning('Failed to broadcast transaction completed: ' . $broadcastError->getMessage());
+            }
+
             return response()->json([
                 'success' => true,
                 'transaction' => $transaction->load('items'),
@@ -314,5 +330,226 @@ class PosCashierController extends Controller
         $settings = PosSetting::where('store_id', $transaction->store_id)->first();
 
         return view('pos.cashier.receipt', compact('transaction', 'settings'));
+    }
+
+    /**
+     * ดึงรายการโฆษณาสำหรับ Customer Display
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getAdvertisements(Request $request): JsonResponse
+    {
+        $deviceCode = $request->get('device_code');
+
+        if (!$deviceCode) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาระบุ device_code',
+            ], 400);
+        }
+
+        $device = PosDevice::where('device_code', $deviceCode)->first();
+
+        if (!$device) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบ device',
+            ], 404);
+        }
+
+        // ดึงโฆษณาที่ active และตรงตามเงื่อนไข
+        $advertisements = PosAdvertisement::where('store_id', $device->store_id)
+            ->active()
+            ->scheduled()
+            ->forDevice($device->id)
+            ->ordered()
+            ->get()
+            ->filter(fn ($ad) => $ad->isActiveNow())
+            ->map(fn ($ad) => [
+                'id' => $ad->id,
+                'title' => $ad->title,
+                'description' => $ad->description,
+                'type' => $ad->type,
+                'image_url' => $ad->image_url ? asset($ad->image_url) : null,
+                'video_url' => $ad->video_url,
+                'html_content' => $ad->html_content,
+                'promotion_code' => $ad->promotion_code,
+                'discount_amount' => $ad->discount_amount,
+                'discount_percentage' => $ad->discount_percentage,
+                'duration_seconds' => $ad->duration_seconds,
+                'show_on_idle_only' => $ad->show_on_idle_only,
+                'link_url' => $ad->link_url,
+            ])
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $advertisements,
+        ]);
+    }
+
+    /**
+     * บันทึกการแสดงโฆษณา
+     *
+     * @param Request $request
+     * @param PosAdvertisement $advertisement
+     * @return JsonResponse
+     */
+    public function recordAdView(Request $request, PosAdvertisement $advertisement): JsonResponse
+    {
+        $advertisement->incrementViewCount();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'บันทึกสำเร็จ',
+        ]);
+    }
+
+    /**
+     * ดึงการตั้งค่าสำหรับ Customer Display
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getDisplaySettings(Request $request): JsonResponse
+    {
+        $deviceCode = $request->get('device_code');
+
+        if (!$deviceCode) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาระบุ device_code',
+            ], 400);
+        }
+
+        $device = PosDevice::where('device_code', $deviceCode)
+            ->with('store')
+            ->first();
+
+        if (!$device) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบ device',
+            ], 404);
+        }
+
+        $settings = PosSetting::where('store_id', $device->store_id)->first();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'device' => [
+                    'id' => $device->id,
+                    'name' => $device->device_name,
+                    'code' => $device->device_code,
+                    'dual_screen_enabled' => $device->dual_screen_enabled,
+                ],
+                'store' => [
+                    'id' => $device->store->id ?? null,
+                    'name' => $device->store->name ?? 'ร้านค้า',
+                    'logo' => $device->store->logo ? asset($device->store->logo) : null,
+                    'phone' => $device->store->phone ?? null,
+                    'address' => $device->store->address ?? null,
+                ],
+                'settings' => [
+                    'customer_display_message' => $settings->customer_display_message ?? null,
+                    'customer_display_ads_enabled' => $settings->customer_display_ads_enabled ?? false,
+                    'ad_rotation_seconds' => $settings->ad_rotation_seconds ?? 10,
+                    'tax_enabled' => $settings->tax_enabled ?? false,
+                    'tax_percentage' => $settings->tax_percentage ?? 7,
+                    'tax_inclusive' => $settings->tax_inclusive ?? true,
+                    'service_charge_enabled' => $settings->service_charge_enabled ?? false,
+                    'service_charge_percentage' => $settings->service_charge_percentage ?? 0,
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Display Heartbeat - อัพเดทสถานะออนไลน์ของ display
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function displayHeartbeat(Request $request): JsonResponse
+    {
+        $deviceCode = $request->get('device_code');
+
+        if (!$deviceCode) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาระบุ device_code',
+            ], 400);
+        }
+
+        $device = PosDevice::where('device_code', $deviceCode)->first();
+
+        if ($device) {
+            $device->updateOnlineStatus(true, $request->ip());
+        }
+
+        return response()->json([
+            'success' => true,
+            'timestamp' => now()->toISOString(),
+        ]);
+    }
+
+    /**
+     * อัพเดทตะกร้าสินค้าและ broadcast ไปยัง Customer Display
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function updateCart(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'device_code' => 'required|string',
+            'items' => 'required|array',
+            'items.*.name' => 'required|string',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.price' => 'required|numeric|min:0',
+            'subtotal' => 'required|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0',
+            'tax' => 'nullable|numeric|min:0',
+            'serviceCharge' => 'nullable|numeric|min:0',
+            'total' => 'required|numeric|min:0',
+        ]);
+
+        // Broadcast ไปยัง Customer Display
+        broadcast(new PosCartUpdated($validated['device_code'], $validated));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'อัพเดทตะกร้าสำเร็จ',
+        ]);
+    }
+
+    /**
+     * ล้าง Customer Display
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function clearDisplay(Request $request): JsonResponse
+    {
+        $deviceCode = $request->get('device_code');
+        $showThankYou = $request->boolean('show_thank_you', true);
+        $thankYouDuration = $request->integer('thank_you_duration', 5);
+
+        if (!$deviceCode) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาระบุ device_code',
+            ], 400);
+        }
+
+        // Broadcast ไปยัง Customer Display
+        broadcast(new PosDisplayClear($deviceCode, $showThankYou, $thankYouDuration));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ส่งคำสั่งล้างหน้าจอสำเร็จ',
+        ]);
     }
 }

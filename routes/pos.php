@@ -35,3 +35,27 @@ Route::middleware(['auth'])->group(function () {
 
 // Customer Display (public, no auth required)
 Route::get('/customer-display', [PosCashierController::class, 'customerDisplay'])->name('customer-display');
+
+// Customer Display API endpoints (public, no auth required)
+Route::prefix('api/display')->name('api.display.')->group(function () {
+    // ดึงรายการโฆษณาสำหรับ device
+    Route::get('/advertisements', [PosCashierController::class, 'getAdvertisements'])->name('advertisements');
+
+    // อัพเดทสถิติการแสดงโฆษณา
+    Route::post('/advertisements/{advertisement}/view', [PosCashierController::class, 'recordAdView'])->name('advertisements.view');
+
+    // ดึงการตั้งค่าสำหรับ device
+    Route::get('/settings', [PosCashierController::class, 'getDisplaySettings'])->name('settings');
+
+    // Heartbeat - อัพเดทสถานะออนไลน์ของ device
+    Route::post('/heartbeat', [PosCashierController::class, 'displayHeartbeat'])->name('heartbeat');
+});
+
+// Cashier to Display sync endpoints (requires authentication)
+Route::middleware(['auth'])->prefix('api/display')->name('api.display.')->group(function () {
+    // อัพเดทตะกร้าสินค้าไปยัง Customer Display
+    Route::post('/cart/update', [PosCashierController::class, 'updateCart'])->name('cart.update');
+
+    // ล้างหน้าจอ Customer Display
+    Route::post('/clear', [PosCashierController::class, 'clearDisplay'])->name('clear');
+});
