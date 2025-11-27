@@ -1,8 +1,8 @@
 <div class="wiki-content-section">
     <!-- Hero Section -->
-    <div style="background: linear-gradient(135deg, rgb(var(--primary-rgb)) 0%, rgb(var(--secondary-rgb)) 50%, rgb(var(--accent-rgb)) 100%); padding: 3rem 2rem; border-radius: 20px; margin-bottom: 3rem; color: white; text-align: center;">
-        <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; color: white;">💰 Digital Wallet & Crypto Ecosystem</h1>
-        <p style="font-size: 1.25rem; opacity: 0.95; max-width: 800px; margin: 0 auto;">ระบบกระเป๋าเงินดิจิทัลและ Cryptocurrency แบบครบวงจร ปลอดภัย โปร่งใส รองรับหลายสกุลเงิน</p>
+    <div class="bg-gradient-to-br from-primary-500 via-secondary-500 to-accent-500 p-8 md:p-12 rounded-2xl mb-12 text-white text-center shadow-xl">
+        <h1 class="text-3xl md:text-4xl font-extrabold mb-4 text-white">💰 Digital Wallet & Crypto Ecosystem</h1>
+        <p class="text-lg md:text-xl opacity-95 max-w-3xl mx-auto">ระบบกระเป๋าเงินดิจิทัลและ Cryptocurrency แบบครบวงจร ปลอดภัย โปร่งใส รองรับหลายสกุลเงิน</p>
     </div>
 
     <!-- Tab Navigation -->
@@ -11,7 +11,7 @@
         <section class="wiki-section">
             <h2>💰 Digital Wallet System - ระบบกระเป๋าเงินดิจิทัล</h2>
 
-            <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+            <p class="text-lg mb-8 text-gray-700 dark:text-gray-300">
                 ระบบ Wallet ของเราคือ <strong>ศูนย์กลางการเงิน</strong> ที่จัดการทุกธุรกรรมทางการเงินในแพลตฟอร์ม
                 ออกแบบมาให้ <strong>ปลอดภัย, โปร่งใส, และใช้งานง่าย</strong> เทียบเท่าระบบธนาคาร
             </p>
@@ -20,7 +20,7 @@
 
             <div class="info-box warning">
                 <h4>💡 ปัญหาของระบบเงินสดแบบเดิม</h4>
-                <ul style="list-style: none; padding-left: 0;">
+                <ul class="list-none pl-0">
                     <li>❌ ต้องไปธนาคารถอนเงิน (เสียเวลา)</li>
                     <li>❌ ค่าธรรมเนียมโอนเงินสูง</li>
                     <li>❌ ไม่สะดวกในการทำธุรกรรม</li>
@@ -33,13 +33,11 @@
 
             <p>กระเป๋าเงินของเรารองรับ <strong>หลายสกุลเงิน</strong> ในที่เดียว ทั้ง <strong>เงินบาท (THB)</strong>, <strong>Points</strong>, และ <strong>Cryptocurrency</strong> พร้อมระบบแลกเปลี่ยนอัตโนมัติ</p>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin: 2rem 0;">
-                <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(34, 197, 94); border-radius: 12px; padding: 2rem; transition: all 0.3s ease;"
-                     onmouseover="this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.boxShadow='none'; this.style.transform='translateY(0)'">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">💵</div>
-                    <h4 style="font-weight: 700; margin-bottom: 1rem;">THB Wallet</h4>
-                    <ul style="list-style: none; padding-left: 0; font-size: 0.95rem; line-height: 1.8;">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 my-8">
+                <div class="bg-white dark:bg-gray-800 border-l-4 border-green-500 rounded-xl p-8 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <div class="text-5xl mb-4">💵</div>
+                    <h4 class="font-bold mb-4">THB Wallet</h4>
+                    <ul class="list-none pl-0 text-sm leading-relaxed">
                         <li>✅ เงินบาทไทย</li>
                         <li>✅ ใช้จ่ายในระบบ</li>
                         <li>✅ ถอนเข้าบัญชีธนาคาร</li>
@@ -47,12 +45,10 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(59, 130, 246); border-radius: 12px; padding: 2rem; transition: all 0.3s ease;"
-                     onmouseover="this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.boxShadow='none'; this.style.transform='translateY(0)'">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
-                    <h4 style="font-weight: 700; margin-bottom: 1rem;">Points Wallet</h4>
-                    <ul style="list-style: none; padding-left: 0; font-size: 0.95rem; line-height: 1.8;">
+                <div class="bg-white dark:bg-gray-800 border-l-4 border-blue-500 rounded-xl p-8 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <div class="text-5xl mb-4">⭐</div>
+                    <h4 class="font-bold mb-4">Points Wallet</h4>
+                    <ul class="list-none pl-0 text-sm leading-relaxed">
                         <li>✅ คะแนนสะสม</li>
                         <li>✅ แลกของรางวัล</li>
                         <li>✅ แลกเป็นเงิน THB</li>
@@ -60,12 +56,10 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(249, 115, 22); border-radius: 12px; padding: 2rem; transition: all 0.3s ease;"
-                     onmouseover="this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.boxShadow='none'; this.style.transform='translateY(0)'">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">₿</div>
-                    <h4 style="font-weight: 700; margin-bottom: 1rem;">Crypto Wallet</h4>
-                    <ul style="list-style: none; padding-left: 0; font-size: 0.95rem; line-height: 1.8;">
+                <div class="bg-white dark:bg-gray-800 border-l-4 border-orange-500 rounded-xl p-8 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <div class="text-5xl mb-4">₿</div>
+                    <h4 class="font-bold mb-4">Crypto Wallet</h4>
+                    <ul class="list-none pl-0 text-sm leading-relaxed">
                         <li>✅ BTC, ETH, USDT</li>
                         <li>✅ ฝาก-ถอน Crypto</li>
                         <li>✅ แลกเปลี่ยนสกุลเงิน</li>
@@ -81,7 +75,7 @@
                     <div class="feature-icon">💵</div>
                     <h4>Balance Management</h4>
                     <p><strong>จัดการยอดเงินแบบ Real-time</strong></p>
-                    <ul style="font-size: 0.9rem;">
+                    <ul class="text-sm">
                         <li>• Main Balance (ยอดหลัก)</li>
                         <li>• Pending Balance (รอโอน)</li>
                         <li>• Locked Balance (ถูกล็อค)</li>
@@ -93,7 +87,7 @@
                     <div class="feature-icon">📝</div>
                     <h4>Transaction Logging</h4>
                     <p><strong>บันทึกทุกการเปลี่ยนแปลง</strong></p>
-                    <ul style="font-size: 0.9rem;">
+                    <ul class="text-sm">
                         <li>• ประเภทธุรกรรม (Type)</li>
                         <li>• จำนวนเงิน (Amount)</li>
                         <li>• ผู้ทำรายการ (User)</li>
@@ -106,7 +100,7 @@
 
             <div class="info-box">
                 <h4>Flow การถอนเงิน:</h4>
-                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; font-family: monospace; font-size: 0.9rem; line-height: 1.8;">
+                <div class="bg-gray-100 dark:bg-gray-700 p-6 rounded-lg mt-4 font-mono text-sm leading-relaxed">
 1. User กรอกจำนวนเงินที่ต้องการถอน<br>
 &nbsp;&nbsp;&nbsp;↓<br>
 2. ระบบเช็ค Balance (พอหรือไม่?)<br>
@@ -146,7 +140,7 @@
         <section class="wiki-section">
             <h2>₿ Cryptocurrency Integration - ระบบ Crypto แบบครบวงจร</h2>
 
-            <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+            <p class="text-lg mb-8 text-gray-700 dark:text-gray-300">
                 ระบบ Crypto ของเราเป็น <strong>Non-Custodial Wallet</strong> ที่ให้คุณ <strong>ครอบครองกุญแจส่วนตัว</strong> (Private Key) เอง
                 พร้อมฟีเจอร์ <strong>ซื้อ-ขาย-แลกเปลี่ยน</strong> Cryptocurrency ได้ภายในระบบ
             </p>
@@ -183,63 +177,63 @@
 
             <h3>💰 Supported Cryptocurrencies</h3>
 
-            <p style="margin-bottom: 2rem;">รองรับ <strong>20+ สกุลเงินดิจิทัล</strong> ชั้นนำทั่วโลก</p>
+            <p class="mb-8">รองรับ <strong>20+ สกุลเงินดิจิทัล</strong> ชั้นนำทั่วโลก</p>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 my-8">
                 <div class="wiki-card">
-                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">₿</div>
-                    <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Bitcoin (BTC)</h4>
-                    <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">King of Crypto</p>
-                    <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">Bitcoin Mainnet</div>
+                    <div class="text-5xl mb-2">₿</div>
+                    <h4 class="font-bold mb-2">Bitcoin (BTC)</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">King of Crypto</p>
+                    <div class="text-xs text-gray-500 dark:text-gray-500">Bitcoin Mainnet</div>
                 </div>
 
                 <div class="wiki-card">
-                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">Ξ</div>
-                    <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Ethereum (ETH)</h4>
-                    <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">Smart Contracts</p>
-                    <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">ERC-20</div>
+                    <div class="text-5xl mb-2">Ξ</div>
+                    <h4 class="font-bold mb-2">Ethereum (ETH)</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Smart Contracts</p>
+                    <div class="text-xs text-gray-500 dark:text-gray-500">ERC-20</div>
                 </div>
 
                 <div class="wiki-card">
-                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">₮</div>
-                    <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Tether (USDT)</h4>
-                    <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">Stablecoin</p>
-                    <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">TRC-20 / ERC-20</div>
+                    <div class="text-5xl mb-2">₮</div>
+                    <h4 class="font-bold mb-2">Tether (USDT)</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Stablecoin</p>
+                    <div class="text-xs text-gray-500 dark:text-gray-500">TRC-20 / ERC-20</div>
                 </div>
 
                 <div class="wiki-card">
-                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">🪙</div>
-                    <h4 style="font-weight: 700; margin-bottom: 0.5rem;">USDC</h4>
-                    <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">USD Coin</p>
-                    <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">ERC-20</div>
+                    <div class="text-5xl mb-2">🪙</div>
+                    <h4 class="font-bold mb-2">USDC</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">USD Coin</p>
+                    <div class="text-xs text-gray-500 dark:text-gray-500">ERC-20</div>
                 </div>
 
                 <div class="wiki-card">
-                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">🅱</div>
-                    <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Binance Coin (BNB)</h4>
-                    <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">Binance Ecosystem</p>
-                    <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">BEP-20</div>
+                    <div class="text-5xl mb-2">🅱</div>
+                    <h4 class="font-bold mb-2">Binance Coin (BNB)</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Binance Ecosystem</p>
+                    <div class="text-xs text-gray-500 dark:text-gray-500">BEP-20</div>
                 </div>
 
                 <div class="wiki-card">
-                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">◎</div>
-                    <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Solana (SOL)</h4>
-                    <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">High Performance</p>
-                    <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">Solana Mainnet</div>
+                    <div class="text-5xl mb-2">◎</div>
+                    <h4 class="font-bold mb-2">Solana (SOL)</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">High Performance</p>
+                    <div class="text-xs text-gray-500 dark:text-gray-500">Solana Mainnet</div>
                 </div>
 
                 <div class="wiki-card">
-                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">🔷</div>
-                    <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Polygon (MATIC)</h4>
-                    <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">Layer 2 Solution</p>
-                    <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">Polygon Mainnet</div>
+                    <div class="text-5xl mb-2">🔷</div>
+                    <h4 class="font-bold mb-2">Polygon (MATIC)</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Layer 2 Solution</p>
+                    <div class="text-xs text-gray-500 dark:text-gray-500">Polygon Mainnet</div>
                 </div>
 
                 <div class="wiki-card">
-                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">🌊</div>
-                    <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Ripple (XRP)</h4>
-                    <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">Fast Payments</p>
-                    <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">XRP Ledger</div>
+                    <div class="text-5xl mb-2">🌊</div>
+                    <h4 class="font-bold mb-2">Ripple (XRP)</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Fast Payments</p>
+                    <div class="text-xs text-gray-500 dark:text-gray-500">XRP Ledger</div>
                 </div>
             </div>
 
@@ -250,9 +244,9 @@
 
             <h3>💸 Crypto Withdrawal (ถอน Crypto)</h3>
 
-            <div class="feature-card" style="margin: 2rem 0;">
-                <h4 style="margin-bottom: 1.5rem;">ขั้นตอนการถอน Crypto:</h4>
-                <ol style="line-height: 2;">
+            <div class="feature-card my-8">
+                <h4 class="mb-6">ขั้นตอนการถอน Crypto:</h4>
+                <ol class="leading-loose">
                     <li><strong>1. เลือก Crypto:</strong> เลือกสกุลเงินที่ต้องการถอน (BTC, ETH, USDT, etc.)</li>
                     <li><strong>2. กรอก Address:</strong> วาง Wallet Address ปลายทาง (ตรวจสอบให้ถูกต้อง!)</li>
                     <li><strong>3. เลือก Network:</strong> เลือก Network (ERC-20, TRC-20, BEP-20)</li>
@@ -266,7 +260,7 @@
 
             <div class="info-box warning">
                 <h4>⚠️ คำเตือนสำคัญ</h4>
-                <ul style="line-height: 2;">
+                <ul class="leading-loose">
                     <li><strong>⛔ ตรวจสอบ Address:</strong> Address ผิดจะทำให้เงินหายถาวร (ไม่สามารถกู้คืนได้)</li>
                     <li><strong>🌐 เลือก Network ให้ถูก:</strong> ส่งผิด Network (เช่น ERC-20 ไป TRC-20) จะหายเงิน</li>
                     <li><strong>💰 ค่า Gas Fee:</strong> ระวังค่าธรรมเนียมสูงในช่วงที่เครือข่ายติดขัด</li>
@@ -281,16 +275,16 @@
         <section class="wiki-section">
             <h2>💱 Crypto Exchange Features - ระบบแลกเปลี่ยน Crypto</h2>
 
-            <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+            <p class="text-lg mb-8 text-gray-700 dark:text-gray-300">
                 แลกเปลี่ยน Cryptocurrency ได้ทันที ภายในระบบ ด้วยค่าธรรมเนียมต่ำเพียง <strong>0.5%</strong>
             </p>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin: 2rem 0;">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">
                 <div class="feature-card">
                     <div class="feature-icon">💱</div>
                     <h4>Instant Exchange</h4>
                     <p>แลกเปลี่ยน Crypto ได้ทันที ไม่ต้องรอ</p>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ แลกระหว่าง Crypto ↔ Crypto</li>
                         <li>✅ แลก Crypto ↔ THB</li>
                         <li>✅ ราคาอัพเดททุก 10 วินาที</li>
@@ -302,7 +296,7 @@
                     <div class="feature-icon">📊</div>
                     <h4>Live Price Tracking</h4>
                     <p>ติดตามราคา Real-time ด้วย Chart</p>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ กราฟราคา TradingView</li>
                         <li>✅ 24h Change, Volume</li>
                         <li>✅ Price Alert (แจ้งเตือนราคา)</li>
@@ -314,7 +308,7 @@
                     <div class="feature-icon">🔄</div>
                     <h4>Auto-Swap</h4>
                     <p>แลกเปลี่ยนอัตโนมัติตามเงื่อนไข</p>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ ตั้งเงื่อนไข "ถ้าราคาถึง X บาท ให้ขาย"</li>
                         <li>✅ Stop Loss / Take Profit</li>
                         <li>✅ DCA (Dollar Cost Averaging)</li>
@@ -326,7 +320,7 @@
                     <div class="feature-icon">🏦</div>
                     <h4>Fiat On-Ramp</h4>
                     <p>ซื้อ Crypto ด้วยเงินบาท</p>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ โอนเงินผ่านธนาคาร</li>
                         <li>✅ QR Code PromptPay</li>
                         <li>✅ บัตรเครดิต/เดบิต</li>
@@ -339,7 +333,7 @@
 
             <div class="info-box">
                 <h4>📝 Scenario: แลก BTC → USDT</h4>
-                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; font-family: monospace; font-size: 0.9rem; line-height: 1.8;">
+                <div class="bg-gray-100 dark:bg-gray-700 p-6 rounded-lg mt-4 font-mono text-sm leading-relaxed">
 สมมติคุณมี 0.01 BTC (ราคา ฿1,500,000)<br><br>
 
 1. เลือก From: BTC<br>
@@ -352,7 +346,7 @@
 4. หักค่าธรรมเนียม 0.5%:<br>
 &nbsp;&nbsp;&nbsp;$450 × 0.995 = $447.75 USDT<br>
 &nbsp;&nbsp;&nbsp;↓<br>
-5. คุณได้รับ: <strong style="color: rgb(var(--primary-rgb));">447.75 USDT</strong><br>
+5. คุณได้รับ: <strong class="text-primary-500">447.75 USDT</strong><br>
 &nbsp;&nbsp;&nbsp;↓<br>
 6. เสร็จภายใน 30 วินาที
                 </div>
@@ -364,7 +358,7 @@
                 <div class="feature-card">
                     <div class="feature-icon">🤖</div>
                     <h4>Auto Trading Bot</h4>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ Binance Integration</li>
                         <li>✅ Bybit Integration</li>
                         <li>✅ Strategy Backtesting</li>
@@ -375,7 +369,7 @@
                 <div class="feature-card">
                     <div class="feature-icon">📊</div>
                     <h4>Technical Analysis</h4>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ 50+ Indicators</li>
                         <li>✅ Chart Patterns</li>
                         <li>✅ Signal Generation</li>
@@ -386,7 +380,7 @@
                 <div class="feature-card">
                     <div class="feature-icon">💼</div>
                     <h4>Portfolio Management</h4>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ Asset Tracking</li>
                         <li>✅ P&L Calculator</li>
                         <li>✅ Performance Charts</li>
@@ -402,20 +396,20 @@
         <section class="wiki-section">
             <h2>📈 Investment & Staking - ระบบลงทุนและ Staking</h2>
 
-            <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+            <p class="text-lg mb-8 text-gray-700 dark:text-gray-300">
                 นำ Crypto มา <strong>Stake</strong> เพื่อรับผลตอบแทนแบบ Passive Income พร้อมระบบจัดการพอร์ตและปันผลอัตโนมัติ
             </p>
 
             <h3>💎 Staking Plans</h3>
 
             <div class="wiki-grid wiki-grid-3">
-                <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05)); border: 2px solid rgb(var(--primary-rgb)); border-radius: 16px; padding: 2rem;">
-                    <div style="text-align: center; margin-bottom: 1.5rem;">
-                        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🥉</div>
-                        <h4 style="font-size: 1.25rem; font-weight: 700;">Flexible Staking</h4>
-                        <p style="font-size: 0.9rem; color: var(--wiki-text-secondary);">ถอนได้ทุกเมื่อ</p>
+                <div class="bg-gradient-to-br from-primary-50 to-primary-100/50 dark:from-primary-900/30 dark:to-primary-800/20 border-2 border-primary-500 rounded-2xl p-8">
+                    <div class="text-center mb-6">
+                        <div class="text-4xl mb-2">🥉</div>
+                        <h4 class="text-xl font-bold">Flexible Staking</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">ถอนได้ทุกเมื่อ</p>
                     </div>
-                    <ul style="list-style: none; padding-left: 0; line-height: 2; font-size: 0.95rem;">
+                    <ul class="list-none pl-0 leading-loose text-sm">
                         <li>✅ APY: <strong>3-5%</strong></li>
                         <li>✅ ไม่มี Lock Period</li>
                         <li>✅ รับดอกเบี้ยรายวัน</li>
@@ -423,13 +417,13 @@
                     </ul>
                 </div>
 
-                <div style="background: linear-gradient(135deg, rgba(var(--secondary-rgb), 0.1), rgba(var(--secondary-rgb), 0.05)); border: 2px solid rgb(var(--secondary-rgb)); border-radius: 16px; padding: 2rem;">
-                    <div style="text-align: center; margin-bottom: 1.5rem;">
-                        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🥈</div>
-                        <h4 style="font-size: 1.25rem; font-weight: 700;">Fixed 30 Days</h4>
-                        <p style="font-size: 0.9rem; color: var(--wiki-text-secondary);">ล็อค 30 วัน</p>
+                <div class="bg-gradient-to-br from-secondary-50 to-secondary-100/50 dark:from-secondary-900/30 dark:to-secondary-800/20 border-2 border-secondary-500 rounded-2xl p-8">
+                    <div class="text-center mb-6">
+                        <div class="text-4xl mb-2">🥈</div>
+                        <h4 class="text-xl font-bold">Fixed 30 Days</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">ล็อค 30 วัน</p>
                     </div>
-                    <ul style="list-style: none; padding-left: 0; line-height: 2; font-size: 0.95rem;">
+                    <ul class="list-none pl-0 leading-loose text-sm">
                         <li>✅ APY: <strong>8-10%</strong></li>
                         <li>✅ Lock Period: 30 วัน</li>
                         <li>✅ รับดอกเบี้ยรายวัน</li>
@@ -437,13 +431,13 @@
                     </ul>
                 </div>
 
-                <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0.05)); border: 2px solid rgb(var(--accent-rgb)); border-radius: 16px; padding: 2rem;">
-                    <div style="text-align: center; margin-bottom: 1.5rem;">
-                        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🥇</div>
-                        <h4 style="font-size: 1.25rem; font-weight: 700;">Fixed 90 Days</h4>
-                        <p style="font-size: 0.9rem; color: var(--wiki-text-secondary);">ล็อค 90 วัน</p>
+                <div class="bg-gradient-to-br from-accent-50 to-accent-100/50 dark:from-accent-900/30 dark:to-accent-800/20 border-2 border-accent-500 rounded-2xl p-8">
+                    <div class="text-center mb-6">
+                        <div class="text-4xl mb-2">🥇</div>
+                        <h4 class="text-xl font-bold">Fixed 90 Days</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">ล็อค 90 วัน</p>
                     </div>
-                    <ul style="list-style: none; padding-left: 0; line-height: 2; font-size: 0.95rem;">
+                    <ul class="list-none pl-0 leading-loose text-sm">
                         <li>✅ APY: <strong>15-20%</strong></li>
                         <li>✅ Lock Period: 90 วัน</li>
                         <li>✅ รับดอกเบี้ยรายวัน</li>
@@ -456,8 +450,8 @@
 
             <div class="info-box success">
                 <h4>ระบบปันผลและผลตอบแทน</h4>
-                <p style="margin-bottom: 1rem;">นอกจาก Staking Rewards แล้ว ยังมีระบบปันผลจากกำไรของแพลตฟอร์ม</p>
-                <ul style="line-height: 2;">
+                <p class="mb-4">นอกจาก Staking Rewards แล้ว ยังมีระบบปันผลจากกำไรของแพลตฟอร์ม</p>
+                <ul class="leading-loose">
                     <li><strong>รายวัน:</strong> Staking Interest อัตโนมัติเข้า Wallet</li>
                     <li><strong>รายสัปดาห์:</strong> Trading Fee Revenue Share (สำหรับ VIP Members)</li>
                     <li><strong>รายเดือน:</strong> Platform Profit Sharing (ตามสัดส่วนการถือหุ้น)</li>
@@ -471,7 +465,7 @@
                 <div class="feature-card">
                     <div class="feature-icon">📊</div>
                     <h4>Asset Allocation</h4>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <ul class="text-sm leading-relaxed">
                         <li>• กระจายความเสี่ยงอัตโนมัติ</li>
                         <li>• Rebalancing ตามกลยุทธ์</li>
                         <li>• แนะนำสัดส่วนที่เหมาะสม</li>
@@ -481,7 +475,7 @@
                 <div class="feature-card">
                     <div class="feature-icon">📈</div>
                     <h4>Performance Tracking</h4>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <ul class="text-sm leading-relaxed">
                         <li>• ติดตาม P&L Real-time</li>
                         <li>• เปรียบเทียบกับ Benchmark</li>
                         <li>• กราฟแสดงผลย้อนหลัง</li>
@@ -491,7 +485,7 @@
                 <div class="feature-card">
                     <div class="feature-icon">⚠️</div>
                     <h4>Risk Management</h4>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <ul class="text-sm leading-relaxed">
                         <li>• คำนวณความเสี่ยงพอร์ต</li>
                         <li>• แจ้งเตือนเมื่อเสี่ยงสูง</li>
                         <li>• แนะนำการป้องกันความเสี่ยง</li>
@@ -501,7 +495,7 @@
 
             <div class="info-box tip">
                 <h4>💡 เคล็ดลับการลงทุน</h4>
-                <ul style="line-height: 2;">
+                <ul class="leading-loose">
                     <li><strong>กระจายความเสี่ยง:</strong> อย่าใส่เงินทั้งหมดในสินทรัพย์เดียว</li>
                     <li><strong>DCA Strategy:</strong> ลงทุนเป็นงวดๆ แทนที่จะลงครั้งเดียว</li>
                     <li><strong>HODL:</strong> ถือระยะยาวมักให้ผลตอบแทนดีกว่า Trading บ่อย</li>
@@ -516,7 +510,7 @@
         <section class="wiki-section">
             <h2>🔐 Security Features - ระบบรักษาความปลอดภัย</h2>
 
-            <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+            <p class="text-lg mb-8 text-gray-700 dark:text-gray-300">
                 ความปลอดภัยของเงินและทรัพย์สินของคุณคือ <strong>ความสำคัญอันดับหนึ่ง</strong> ของเรา
                 เราใช้มาตรฐานความปลอดภัยระดับธนาคาร + Blockchain
             </p>
@@ -526,9 +520,9 @@
             <table class="wiki-table">
                 <thead>
                     <tr>
-                        <th style="width: 30%;">Security Layer</th>
-                        <th style="width: 40%;">วิธีการ</th>
-                        <th style="width: 30%;">จุดประสงค์</th>
+                        <th class="w-1/4">Security Layer</th>
+                        <th class="w-2/5">วิธีการ</th>
+                        <th class="w-1/3">จุดประสงค์</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -600,7 +594,7 @@
             <div class="wiki-grid wiki-grid-3">
                 <div class="info-box success">
                     <h4>✅ Best Practices</h4>
-                    <ul style="line-height: 2;">
+                    <ul class="leading-loose">
                         <li>เปิดใช้ 2FA ทุกครั้ง</li>
                         <li>ใช้รหัสผ่านที่แข็งแรง</li>
                         <li>อย่าแชร์ Private Key</li>
@@ -611,7 +605,7 @@
 
                 <div class="info-box warning">
                     <h4>⚠️ สิ่งที่ไม่ควรทำ</h4>
-                    <ul style="line-height: 2;">
+                    <ul class="leading-loose">
                         <li>อย่าแชร์ PIN กับใคร</li>
                         <li>อย่าคลิกลิงก์ Phishing</li>
                         <li>อย่าใช้ Public WiFi ทำธุรกรรม</li>
@@ -621,10 +615,10 @@
                 </div>
             </div>
 
-            <div style="background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb)), rgb(var(--accent-rgb))); padding: 2.5rem; border-radius: 16px; color: white; text-align: center; margin: 3rem 0;">
-                <div style="font-size: 3.5rem; margin-bottom: 1rem;">🔐</div>
-                <h3 style="font-size: 2rem; font-weight: 800; margin-bottom: 1rem; color: white;">Bank-Level Security</h3>
-                <p style="font-size: 1.1rem; opacity: 0.95; max-width: 700px; margin: 0 auto;">
+            <div class="bg-gradient-to-br from-primary-500 via-secondary-500 to-accent-500 p-10 rounded-2xl text-white text-center my-12 shadow-xl">
+                <div class="text-6xl mb-4">🔐</div>
+                <h3 class="text-3xl font-extrabold mb-4 text-white">Bank-Level Security</h3>
+                <p class="text-lg opacity-95 max-w-2xl mx-auto">
                     เราใช้มาตรฐานความปลอดภัยระดับธนาคาร รวมถึง SSL Encryption, Multi-Factor Authentication,
                     และ Cold Storage เพื่อปกป้องทรัพย์สินของคุณ 24/7
                 </p>
@@ -633,7 +627,7 @@
             <div class="info-box">
                 <h4>📞 ติดต่อทีมรักษาความปลอดภัย</h4>
                 <p>หากพบความผิดปกติหรือต้องการความช่วยเหลือด้านความปลอดภัย:</p>
-                <ul style="line-height: 2; margin-top: 1rem;">
+                <ul class="leading-loose mt-4">
                     <li><strong>Email:</strong> security@thaiprompt.com</li>
                     <li><strong>Hotline:</strong> 02-xxx-xxxx (24/7)</li>
                     <li><strong>Line:</strong> @thaiprompt-security</li>
