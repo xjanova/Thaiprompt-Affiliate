@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.255.9] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1773 from xjanova/claude/fix-chatbot-store-route-015Dsv5T88o1D9U78gmPKPJg (c8ad8bcf)
+- fix: เพิ่ม route และ method สำหรับ chatbot.store, update, destroy (88c432a6)
+### 🔧 Other Changes
+
+
 ## [v3.255.8] - 2025-11-27
 
 ### ✨ Features
