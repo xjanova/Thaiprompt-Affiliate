@@ -3,6 +3,34 @@
 @section('title', 'ผู้มุ่งหวังของฉัน')
 
 @section('content')
+{{-- แสดงข้อความแนะนำถ้าไม่ได้เป็น MLM Member --}}
+@if(isset($notMlmMember) && $notMlmMember)
+<div class="mb-6">
+    <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl shadow-xl p-8 text-white">
+        <div class="flex flex-col md:flex-row items-center gap-6">
+            <div class="flex-shrink-0">
+                <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="flex-1 text-center md:text-left">
+                <h2 class="text-2xl font-bold mb-2">คุณยังไม่ได้เป็นสมาชิก MLM</h2>
+                <p class="text-amber-100 mb-4">เพื่อใช้งานฟีเจอร์ผู้มุ่งหวังและสร้างทีมงาน กรุณาสมัครเป็นสมาชิก MLM ก่อน</p>
+                <a href="{{ route('user.mlm.dashboard') }}"
+                   class="inline-flex items-center px-6 py-3 bg-white text-amber-600 font-bold rounded-xl hover:bg-amber-50 transition-all shadow-lg hover:shadow-xl">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                    ไปหน้า MLM Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 <div class="space-y-6" x-data="prospectsManager()">
     {{-- Header Section with Gradient --}}
     <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 dark:from-purple-700 dark:via-indigo-700 dark:to-blue-700 rounded-2xl shadow-xl p-6 md:p-8">

@@ -125,9 +125,13 @@ class MlmDashboardController extends Controller
         $user = Auth::user();
         $member = $user->mlmMembers()->with('plan')->first();
 
+        // ถ้าไม่ได้เป็น MLM member ให้แสดงหน้าแนะนำแทนที่จะ redirect
         if (!$member) {
-            return redirect()->route('user.mlm.dashboard')
-                ->with('error', 'You are not enrolled in any MLM plan yet.');
+            return view('user.mlm.team', [
+                'member' => null,
+                'directReferrals' => collect([]),
+                'notMlmMember' => true,
+            ]);
         }
 
         $directReferrals = $member->unilevelChildren()
