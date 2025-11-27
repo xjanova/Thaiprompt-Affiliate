@@ -1,10 +1,10 @@
 {{--
 /**
- * Cart Badge V3 Component - Glassmorphism Style สำหรับ Navbar V3
+ * Cart Badge V3 Component - Slide Panel Style สำหรับ Navbar V3
  *
  * Component นี้แสดงไอคอนตะกร้าสินค้าแบบ modern พร้อม:
+ * - ✅ Slide-in panel จากขวา
  * - ✅ Glassmorphism effects
- * - ✅ Mini cart dropdown
  * - ✅ Real-time cart count
  * - ✅ Offline mode support (cache)
  * - ✅ Keyboard navigation
@@ -205,9 +205,18 @@
         });
     },
 
-    closeDropdown() {
+    openPanel() {
+        this.open = true;
+        this.loadCart();
+        // ป้องกัน body scroll เมื่อเปิด panel
+        document.body.style.overflow = 'hidden';
+    },
+
+    closePanel() {
         this.open = false;
         this.selectedIndex = -1;
+        // คืนค่า body scroll
+        document.body.style.overflow = '';
     }
 }"
 x-init="
@@ -237,17 +246,16 @@ x-init="
         }
     });
 "
-@keydown.escape.window="if (open) closeDropdown()"
+@keydown.escape.window="if (open) closePanel()"
 @keydown.arrow-down.prevent="if (open) selectNext()"
-@keydown.arrow-up.prevent="if (open) selectPrevious()"
-class="relative">
+@keydown.arrow-up.prevent="if (open) selectPrevious()">
 
     {{-- Cart Button พร้อม Glassmorphism Style --}}
     <button
         id="cart-button"
-        @click="open = !open; if(open) loadCart()"
+        @click="openPanel()"
         :aria-expanded="open.toString()"
-        aria-haspopup="true"
+        aria-haspopup="dialog"
         :aria-label="cartCount > 0 ? `ตะกร้าสินค้า ${cartCount} รายการ` : 'ตะกร้าสินค้า'"
         type="button"
         class="relative p-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
@@ -273,130 +281,168 @@ class="relative">
         ></span>
     </button>
 
-    {{-- Mini Cart Dropdown พร้อม Glassmorphism --}}
+    {{-- Backdrop Overlay --}}
     <div
         x-show="open"
-        @click.away="closeDropdown()"
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0 scale-95"
-        x-transition:enter-end="opacity-100 scale-100"
-        x-transition:leave="transition ease-in duration-75"
-        x-transition:leave-start="opacity-100 scale-100"
-        x-transition:leave-end="opacity-0 scale-95"
-        role="menu"
-        aria-labelledby="cart-button"
-        aria-orientation="vertical"
-        class="absolute right-0 z-50 w-96 mt-2 glass-dropdown rounded-xl shadow-2xl border border-white/30 max-h-[32rem] overflow-hidden"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        @click="closePanel()"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
+        style="display: none;"
+        aria-hidden="true">
+    </div>
+
+    {{-- Slide Panel จากขวา --}}
+    <div
+        x-show="open"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="translate-x-full"
+        x-transition:enter-end="translate-x-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="translate-x-0"
+        x-transition:leave-end="translate-x-full"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cart-panel-title"
+        class="fixed top-0 right-0 h-full w-full max-w-md z-[101] flex flex-col bg-gradient-to-b from-gray-900/95 to-gray-800/95 backdrop-blur-xl border-l border-white/10 shadow-2xl"
         style="display: none;">
 
         {{-- Header --}}
-        <div class="px-4 py-3 border-b border-white/20 bg-black/20">
+        <div class="flex-shrink-0 px-6 py-4 border-b border-white/10 bg-black/20">
             <div class="flex items-center justify-between">
-                <h3 class="text-lg font-bold text-white drop-shadow">
-                    <i class="fas fa-shopping-cart mr-2 text-orange-400"></i>
-                    ตะกร้าสินค้า
-                </h3>
-                <span x-show="cartCount > 0" class="text-sm text-white/70" x-text="`${cartCount} รายการ`"></span>
+                <h2 id="cart-panel-title" class="text-xl font-bold text-white flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-shopping-cart text-white"></i>
+                    </div>
+                    <span>ตะกร้าสินค้า</span>
+                    <span x-show="cartCount > 0"
+                          class="px-2.5 py-1 text-sm bg-white/10 rounded-full"
+                          x-text="`${cartCount} รายการ`"></span>
+                </h2>
+                <button
+                    @click="closePanel()"
+                    type="button"
+                    class="p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                    aria-label="ปิด">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
             </div>
 
             {{-- Offline Warning --}}
-            <div x-show="!isOnline" class="flex items-center gap-2 px-3 py-2 mt-2 glass-neu rounded-lg text-xs text-white/80">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path>
-                </svg>
-                <span>📴 ออฟไลน์ - แสดงข้อมูลจากแคช</span>
+            <div x-show="!isOnline" class="flex items-center gap-2 px-4 py-2 mt-3 bg-yellow-500/20 border border-yellow-500/30 rounded-xl text-sm text-yellow-200">
+                <i class="fas fa-wifi-slash"></i>
+                <span>ออฟไลน์ - แสดงข้อมูลจากแคช</span>
             </div>
         </div>
 
         {{-- Cart Items List --}}
-        <div class="overflow-y-auto max-h-72" x-ref="cartList">
+        <div class="flex-1 overflow-y-auto" x-ref="cartList">
             {{-- Loading --}}
             <template x-if="loading">
-                <div class="flex items-center justify-center py-8">
-                    <svg class="animate-spin h-8 w-8 text-white/60" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                <div class="flex items-center justify-center py-16">
+                    <div class="text-center">
+                        <svg class="animate-spin h-12 w-12 text-orange-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p class="text-white/60">กำลังโหลดตะกร้า...</p>
+                    </div>
                 </div>
             </template>
 
             {{-- Empty State --}}
             <template x-if="!loading && cartItems.length === 0">
-                <div class="text-center py-8 text-white/60">
-                    <div class="w-16 h-16 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center">
-                        <i class="fas fa-shopping-cart text-3xl text-white/40"></i>
+                <div class="flex flex-col items-center justify-center py-16 px-6">
+                    <div class="w-24 h-24 mb-6 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center">
+                        <i class="fas fa-shopping-cart text-4xl text-gray-500"></i>
                     </div>
-                    <p class="mb-2">ตะกร้าว่างเปล่า</p>
+                    <h3 class="text-xl font-bold text-white mb-2">ตะกร้าว่างเปล่า</h3>
+                    <p class="text-white/60 text-center mb-6">ยังไม่มีสินค้าในตะกร้า<br>ไปเลือกซื้อสินค้ากันเถอะ!</p>
                     <a href="{{ route('official-shop.index') }}"
-                       class="inline-flex items-center gap-2 px-4 py-2 text-sm text-white bg-gradient-to-r from-orange-500 to-red-500 rounded-lg hover:shadow-lg transition-all">
+                       @click="closePanel()"
+                       class="inline-flex items-center gap-2 px-6 py-3 text-white bg-gradient-to-r from-orange-500 to-red-500 rounded-xl hover:shadow-lg hover:shadow-orange-500/30 transition-all font-medium">
                         <i class="fas fa-store"></i>
                         ไปช้อปปิ้ง
                     </a>
                 </div>
             </template>
 
-            {{-- Cart Item --}}
-            <template x-for="(item, index) in cartItems" :key="item.id">
-                <div
-                    :data-index="index"
-                    :class="{
-                        'ring-2 ring-white/50 ring-inset': selectedIndex === index
-                    }"
-                    role="menuitem"
-                    :tabindex="selectedIndex === index ? 0 : -1"
-                    class="px-4 py-3 border-b border-white/10 hover:bg-white/10 transition-all">
-                    <div class="flex items-start gap-3">
-                        {{-- Product Image --}}
-                        <div class="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-white/10">
-                            <img :src="item.image || '/images/no-image.png'"
-                                 :alt="item.name"
-                                 class="w-full h-full object-cover"
-                                 onerror="this.src='/images/no-image.png'">
-                        </div>
+            {{-- Cart Items --}}
+            <div x-show="!loading && cartItems.length > 0" class="divide-y divide-white/10">
+                <template x-for="(item, index) in cartItems" :key="item.id">
+                    <div
+                        :data-index="index"
+                        :class="{
+                            'bg-white/5': selectedIndex === index
+                        }"
+                        role="listitem"
+                        :tabindex="selectedIndex === index ? 0 : -1"
+                        class="p-4 hover:bg-white/5 transition-all">
+                        <div class="flex gap-4">
+                            {{-- Product Image --}}
+                            <div class="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-white/5 border border-white/10">
+                                <img :src="item.image || '/images/no-image.png'"
+                                     :alt="item.name"
+                                     class="w-full h-full object-cover"
+                                     onerror="this.src='/images/no-image.png'">
+                            </div>
 
-                        {{-- Product Info --}}
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-white truncate" x-text="truncate(item.name, 25)"></p>
-                            <p class="text-xs text-white/60 mt-0.5">
-                                <span x-text="formatPrice(item.price)"></span>
-                                <span class="mx-1">x</span>
-                                <span x-text="item.quantity"></span>
-                            </p>
-                            <p class="text-sm font-bold text-orange-400 mt-1" x-text="formatPrice(item.price * item.quantity)"></p>
-                        </div>
+                            {{-- Product Info --}}
+                            <div class="flex-1 min-w-0">
+                                <p class="text-base font-medium text-white mb-1 line-clamp-2" x-text="item.name"></p>
+                                <div class="flex items-center gap-2 text-sm text-white/60 mb-2">
+                                    <span x-text="formatPrice(item.price)"></span>
+                                    <span>×</span>
+                                    <span x-text="item.quantity" class="font-medium text-white"></span>
+                                </div>
+                                <p class="text-lg font-bold text-orange-400" x-text="formatPrice(item.price * item.quantity)"></p>
+                            </div>
 
-                        {{-- Remove Button --}}
-                        <button
-                            @click.stop="removeItem(item.id)"
-                            type="button"
-                            class="flex-shrink-0 p-1.5 rounded-lg text-white/60 hover:text-red-400 hover:bg-red-500/20 transition-all"
-                            title="ลบสินค้า">
-                            <i class="fas fa-times text-sm"></i>
-                        </button>
+                            {{-- Remove Button --}}
+                            <button
+                                @click.stop="removeItem(item.id)"
+                                type="button"
+                                class="flex-shrink-0 self-start p-2 rounded-xl text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                                title="ลบสินค้า">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </template>
+                </template>
+            </div>
         </div>
 
         {{-- Footer with Total and Buttons --}}
-        <div class="px-4 py-3 border-t border-white/20 bg-black/20">
-            {{-- Total --}}
-            <div x-show="cartCount > 0" class="flex items-center justify-between mb-3">
-                <span class="text-sm text-white/80">รวมทั้งหมด:</span>
-                <span class="text-lg font-bold text-white" x-text="formatPrice(cartTotal)"></span>
+        <div class="flex-shrink-0 border-t border-white/10 bg-black/30 p-6">
+            {{-- Total Summary --}}
+            <div x-show="cartCount > 0" class="mb-4 p-4 bg-white/5 rounded-xl">
+                <div class="flex items-center justify-between text-white/70 mb-2">
+                    <span>จำนวนสินค้า</span>
+                    <span x-text="`${cartCount} ชิ้น`"></span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-lg font-medium text-white">รวมทั้งหมด</span>
+                    <span class="text-2xl font-bold text-orange-400" x-text="formatPrice(cartTotal)"></span>
+                </div>
             </div>
 
             {{-- Action Buttons --}}
-            <div class="flex gap-2">
-                <a href="{{ route('cart.index') }}"
-                   class="flex-1 px-4 py-2.5 text-center text-sm font-medium text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all">
-                    ดูตะกร้า
-                </a>
+            <div class="flex flex-col gap-3">
                 <a href="{{ route('checkout.index') }}"
                    x-show="cartCount > 0"
-                   class="flex-1 px-4 py-2.5 text-center text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 rounded-xl shadow-lg hover:shadow-orange-500/30 transition-all">
-                    <i class="fas fa-credit-card mr-1"></i>
-                    ชำระเงิน
+                   @click="closePanel()"
+                   class="w-full py-3.5 text-center text-base font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 rounded-xl shadow-lg hover:shadow-orange-500/30 transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-credit-card"></i>
+                    ดำเนินการชำระเงิน
+                </a>
+                <a href="{{ route('cart.index') }}"
+                   @click="closePanel()"
+                   class="w-full py-3 text-center text-base font-medium text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all">
+                    ดูตะกร้าแบบเต็ม
                 </a>
             </div>
         </div>
