@@ -1,17 +1,17 @@
 {{--
 /**
- * Dashboard Rank Header - Welcome Header ที่เปลี่ยนตาม Rank (V3.1 - ลดความฟุ้ง)
+ * Dashboard Rank Header - Welcome Header ที่เปลี่ยนตาม Rank (V3.2 - Minimal)
  *
- * ออกแบบให้สวยงามแต่ไม่รบกวนสายตา:
+ * V3.2: ลดความฟุ้งลงอีก - เอา blur ออก
  * - Gradient พื้นหลังตาม Rank
- * - ลด animations ที่ไม่จำเป็น
- * - เอา particles ออก
+ * - ไม่มี blur effects
+ * - ไม่มี animations
  *
  * @var int $rankLevel ระดับ Rank (1-8)
  * @var \App\Models\User $user
  * @var \App\Models\Rank|null $currentRank
- * @version 3.1.0 (ลดความฟุ้ง)
- * @date 2025-11-26
+ * @version 3.2.0 (Minimal)
+ * @date 2025-11-27
  */
 --}}
 
@@ -49,10 +49,10 @@
     class="bg-gradient-to-br {{ $headerGradient }} overflow-hidden relative
         {{ $rankLevel >= 6 ? 'ring-1 ring-white/20' : '' }}">
 
-    {{-- Background Pattern - เรียบง่าย --}}
-    <div class="absolute inset-0 opacity-10">
-        <div class="absolute top-0 left-0 w-64 h-64 bg-white rounded-full filter blur-3xl"></div>
-        <div class="absolute bottom-0 right-0 w-64 h-64 bg-white rounded-full filter blur-3xl"></div>
+    {{-- Background Pattern - Minimal V3.2 (ไม่มี blur) --}}
+    <div class="absolute inset-0 opacity-5">
+        <div class="absolute top-0 left-0 w-48 h-48 bg-white rounded-full"></div>
+        <div class="absolute bottom-0 right-0 w-48 h-48 bg-white rounded-full"></div>
     </div>
 
     {{-- Main Content --}}
