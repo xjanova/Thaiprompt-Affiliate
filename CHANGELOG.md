@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.237.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1719 from xjanova/claude/improve-install-script-015Naufs9jJ4kab7G11vyJQw (a3f614ac)
+- feat: improve install.sh with CLI args, pre-flight checks, and unified seeder (cd11f847)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.236.0] - 2025-11-27
 
 ### ✨ Features
