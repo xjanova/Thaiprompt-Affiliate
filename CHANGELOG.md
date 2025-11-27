@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.234.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไขปัญหา z-index dropdown menu ไม่อยู่บนสุด (ddb849a5)
+- fix: ย้ายปุ่ม Wiki ให้แสดงเสมอใน topbar (0afd7708)
+### 🔧 Other Changes
+- Merge pull request #1716 from xjanova/claude/create-app-documentation-01EM3ad9dVwYAmLdYFAD2BRt (c1992591)
+
 ## [v3.234.0] - 2025-11-27
 
 ### ✨ Features
