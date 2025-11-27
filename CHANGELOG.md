@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.230.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไข routeToUrl() ให้ fallback เป็น path แทน '#' (eb735817)
+- fix: ปรับปรุงเมนู User สำหรับระบบจองบริการ (6b915057)
+- fix: แก้ไขเมนู User สำหรับระบบจองบริการไม่ทำงาน (5c483a3c)
+### 🔧 Other Changes
+- Merge pull request #1710 from xjanova/claude/fix-user-menu-tasks-011UPmcxgLAXSWZCv9QMiYYy (a1e24fb3)
+
 ## [v3.230.0] - 2025-11-27
 
 ### ✨ Features
