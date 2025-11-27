@@ -47,6 +47,20 @@ class YouTubeApiService
     protected ?VideoAutoPlatform $platform = null;
 
     /**
+     * Flag เพื่อติดตามว่า platform ถูก set มาจาก constructor หรือไม่
+     *
+     * @var bool
+     */
+    protected bool $platformWasProvided = false;
+
+    /**
+     * Flag ป้องกัน lazy load ซ้ำ
+     *
+     * @var bool
+     */
+    protected bool $platformLoaded = false;
+
+    /**
      * สร้าง instance ใหม่
      *
      * @param VideoAutoPlatform|null $platform
@@ -55,14 +69,37 @@ class YouTubeApiService
     {
         if ($platform) {
             $this->platform = $platform;
-        } else {
-            // ใช้ default YouTube platform
-            $this->platform = VideoAutoPlatform::ofType('youtube')
-                ->active()
-                ->connected()
-                ->orderByDesc('is_default')
-                ->first();
+            $this->platformWasProvided = true;
+            $this->platformLoaded = true;
         }
+        // ไม่ query database ใน constructor แล้ว - ใช้ lazy loading แทน
+    }
+
+    /**
+     * ดึง platform แบบ lazy loading
+     *
+     * จะ query database เมื่อจำเป็นเท่านั้น ไม่ใช่ตอน construct
+     *
+     * @return VideoAutoPlatform|null
+     */
+    protected function getPlatform(): ?VideoAutoPlatform
+    {
+        // ถ้ายังไม่เคย load และไม่ได้ provide มา ให้ load จาก database
+        if (!$this->platformLoaded && !$this->platformWasProvided) {
+            try {
+                $this->platform = VideoAutoPlatform::ofType('youtube')
+                    ->active()
+                    ->connected()
+                    ->orderByDesc('is_default')
+                    ->first();
+            } catch (\Exception $e) {
+                // ถ้า database ยังไม่พร้อม (เช่น ตอน route:cache) ให้ return null
+                $this->platform = null;
+            }
+            $this->platformLoaded = true;
+        }
+
+        return $this->platform;
     }
 
     /**
@@ -72,9 +109,11 @@ class YouTubeApiService
      */
     public function isConfigured(): bool
     {
-        return $this->platform
-            && $this->platform->status === 'connected'
-            && !empty($this->platform->decrypted_access_token);
+        $platform = $this->getPlatform();
+
+        return $platform
+            && $platform->status === 'connected'
+            && !empty($platform->decrypted_access_token);
     }
 
     /**
@@ -103,6 +142,8 @@ class YouTubeApiService
             ];
         }
 
+        $platform = $this->getPlatform();
+
         try {
             $job?->logInfo('เริ่มอัปโหลดวีดีโอไป YouTube', [
                 'video_path' => $videoPath,
@@ -115,11 +156,13 @@ class YouTubeApiService
             }
 
             // Refresh token ถ้าหมดอายุ
-            if ($this->platform->is_token_expired) {
+            if ($platform->is_token_expired) {
                 $refreshResult = $this->refreshAccessToken();
                 if (!$refreshResult['success']) {
                     return $refreshResult;
                 }
+                // Reload platform หลัง refresh
+                $platform = $this->getPlatform();
             }
 
             // เตรียม metadata
@@ -163,7 +206,7 @@ class YouTubeApiService
             }
 
             // บันทึกสถิติ
-            $this->platform->recordPost(true);
+            $platform->recordPost(true);
 
             $job?->logInfo('อัปโหลดวีดีโอสำเร็จ', [
                 'video_id' => $uploadResult['data']['id'] ?? null,
@@ -184,7 +227,7 @@ class YouTubeApiService
 
             $job?->logError('YouTube API exception', ['message' => $e->getMessage()]);
 
-            $this->platform?->recordPost(false);
+            $platform?->recordPost(false);
 
             return [
                 'success' => false,
@@ -202,8 +245,10 @@ class YouTubeApiService
      */
     protected function initiateUpload(array $metadata, int $fileSize): array
     {
+        $platform = $this->getPlatform();
+
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->platform->decrypted_access_token,
+            'Authorization' => 'Bearer ' . $platform->decrypted_access_token,
             'Content-Type' => 'application/json',
             'X-Upload-Content-Length' => $fileSize,
             'X-Upload-Content-Type' => 'video/*',
@@ -241,6 +286,8 @@ class YouTubeApiService
      */
     protected function uploadVideoFile(string $uploadUri, string $videoPath, ?VideoAutoJob $job = null): array
     {
+        $platform = $this->getPlatform();
+
         $fileSize = filesize($videoPath);
         $chunkSize = 10 * 1024 * 1024; // 10 MB chunks
         $handle = fopen($videoPath, 'rb');
@@ -252,7 +299,7 @@ class YouTubeApiService
             $endByte = $uploadedBytes + $chunkLength - 1;
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->platform->decrypted_access_token,
+                'Authorization' => 'Bearer ' . $platform->decrypted_access_token,
                 'Content-Type' => 'video/*',
                 'Content-Length' => $chunkLength,
                 'Content-Range' => "bytes {$uploadedBytes}-{$endByte}/{$fileSize}",
@@ -306,6 +353,8 @@ class YouTubeApiService
     public function uploadThumbnail(string $videoId, string $thumbnailPath, ?VideoAutoJob $job = null): array
     {
         try {
+            $platform = $this->getPlatform();
+
             if (!file_exists($thumbnailPath)) {
                 return [
                     'success' => false,
@@ -314,7 +363,7 @@ class YouTubeApiService
             }
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->platform->decrypted_access_token,
+                'Authorization' => 'Bearer ' . $platform->decrypted_access_token,
             ])
                 ->attach('media', file_get_contents($thumbnailPath), basename($thumbnailPath))
                 ->post($this->baseUrl . '/thumbnails/set?videoId=' . $videoId);
@@ -345,9 +394,11 @@ class YouTubeApiService
     public function refreshAccessToken(): array
     {
         try {
+            $platform = $this->getPlatform();
+
             $clientId = VideoAutoSetting::getValue('youtube_client_id');
             $clientSecret = VideoAutoSetting::getValue('youtube_client_secret');
-            $refreshToken = $this->platform->decrypted_refresh_token;
+            $refreshToken = $platform->decrypted_refresh_token;
 
             if (!$refreshToken) {
                 return [
@@ -364,7 +415,7 @@ class YouTubeApiService
             ]);
 
             if (!$response->successful()) {
-                $this->platform->updateConnectionStatus('expired', 'Token refresh failed');
+                $platform->updateConnectionStatus('expired', 'Token refresh failed');
 
                 return [
                     'success' => false,
@@ -375,10 +426,13 @@ class YouTubeApiService
             $data = $response->json();
 
             // อัพเดท platform
-            $this->platform->access_token = $data['access_token'];
-            $this->platform->token_expires_at = now()->addSeconds($data['expires_in'] ?? 3600);
-            $this->platform->status = 'connected';
-            $this->platform->save();
+            $platform->access_token = $data['access_token'];
+            $platform->token_expires_at = now()->addSeconds($data['expires_in'] ?? 3600);
+            $platform->status = 'connected';
+            $platform->save();
+
+            // Reset flag เพื่อให้ getPlatform() ดึงข้อมูลใหม่ครั้งถัดไป
+            $this->platformLoaded = false;
 
             return ['success' => true];
 
@@ -497,7 +551,9 @@ class YouTubeApiService
      */
     public function testConnection(): array
     {
-        if (!$this->platform) {
+        $platform = $this->getPlatform();
+
+        if (!$platform) {
             return [
                 'success' => false,
                 'message' => 'ยังไม่ได้เชื่อมต่อบัญชี YouTube',
@@ -512,7 +568,7 @@ class YouTubeApiService
         }
 
         // ทดสอบด้วยการดึงข้อมูล channel
-        $channelInfo = $this->getChannelInfo($this->platform->decrypted_access_token);
+        $channelInfo = $this->getChannelInfo($platform->decrypted_access_token);
 
         if ($channelInfo) {
             return [

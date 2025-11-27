@@ -16,18 +16,35 @@ use Illuminate\Support\Facades\Log;
 class SocialPublisherService
 {
     /**
-     * YouTube Service
+     * YouTube Service (lazy loaded)
      *
-     * @var YouTubeApiService
+     * @var YouTubeApiService|null
      */
-    protected YouTubeApiService $youtubeService;
+    protected ?YouTubeApiService $youtubeService = null;
 
     /**
      * สร้าง instance ใหม่
+     *
+     * ไม่ได้สร้าง YouTubeApiService ใน constructor แล้ว
+     * ใช้ lazy loading เพื่อหลีกเลี่ยง database query ตอน route:cache
      */
     public function __construct()
     {
-        $this->youtubeService = new YouTubeApiService();
+        // ไม่สร้าง service ใน constructor - ใช้ lazy loading แทน
+    }
+
+    /**
+     * ดึง YouTube service แบบ lazy loading
+     *
+     * @return YouTubeApiService
+     */
+    protected function getYouTubeService(): YouTubeApiService
+    {
+        if ($this->youtubeService === null) {
+            $this->youtubeService = new YouTubeApiService();
+        }
+
+        return $this->youtubeService;
     }
 
     /**
@@ -154,7 +171,7 @@ class SocialPublisherService
             'thumbnail' => $project->video_thumbnail,
         ];
 
-        return $this->youtubeService->uploadVideo($videoPath, $metadata, $job);
+        return $this->getYouTubeService()->uploadVideo($videoPath, $metadata, $job);
     }
 
     /**
