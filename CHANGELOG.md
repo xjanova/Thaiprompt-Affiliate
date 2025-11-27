@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.255.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1764 from xjanova/claude/fix-db-auth-error-01BuBXJRVcndV7NpLPhnVNJj (a554a86d)
+- feat: สร้าง Homepage Manager Visual Editor เวอร์ชันเต็มรูปแบบ (abc4376a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.254.1] - 2025-11-27
 
 ### ✨ Features
