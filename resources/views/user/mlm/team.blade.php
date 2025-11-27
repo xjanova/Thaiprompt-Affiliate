@@ -57,7 +57,7 @@
                     <div class="text-2xl font-bold text-gray-800 dark:text-white">{{ $directReferrals->total() }}</div>
                 </div>
             </div>
-        </div>
+        </x-arrow-x.card-v3>
 
         <x-arrow-x.card-v3 class="p-6">
             <div class="flex items-center gap-3">
@@ -71,7 +71,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </x-arrow-x.card-v3>
 
         <x-arrow-x.card-v3 class="p-6">
             <div class="flex items-center gap-3">
@@ -85,7 +85,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </x-arrow-x.card-v3>
 
         <x-arrow-x.card-v3 class="p-6">
             <div class="flex items-center gap-3">
@@ -101,7 +101,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </x-arrow-x.card-v3>
     </div>
 
     <!-- Team Members List -->
