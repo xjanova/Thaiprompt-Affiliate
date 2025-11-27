@@ -270,10 +270,234 @@
                 gap: 0.5rem;
             }
         }
+
+        /* Touch Friendly - Larger touch targets */
+        .touch-btn {
+            min-height: 56px;
+            min-width: 56px;
+        }
+
+        .touch-btn-lg {
+            min-height: 72px;
+        }
+
+        /* Hidden Sidebar Menu */
+        .sidebar-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 300px;
+            z-index: 100;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-menu.open {
+            transform: translateX(0);
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 99;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* PIN Input Numpad */
+        .numpad-btn {
+            font-size: 1.5rem;
+            font-weight: bold;
+            transition: all 0.15s ease;
+        }
+
+        .numpad-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Staff Clock Animation */
+        .clock-pulse {
+            animation: clockPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes clockPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            50% { box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
+        }
+
+        /* Menu Item Hover */
+        .menu-item {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, #22c55e, #10b981);
+            transform: scaleY(0);
+            transition: transform 0.2s ease;
+        }
+
+        .menu-item:hover::before,
+        .menu-item.active::before {
+            transform: scaleY(1);
+        }
     </style>
 </head>
 <body class="pos-bg-gradient pos-grid-pattern min-h-screen text-white overflow-hidden">
     <div class="h-screen flex flex-col" x-data="posSystem()" x-init="init()">
+
+        <!-- ========================================
+             SIDEBAR OVERLAY
+             ======================================== -->
+        <div class="sidebar-overlay"
+             :class="{ 'open': menuOpen }"
+             @click="menuOpen = false">
+        </div>
+
+        <!-- ========================================
+             HIDDEN SIDEBAR MENU
+             เมนูซ่อนสำหรับนำทางไปหน้าอื่น
+             ======================================== -->
+        <aside class="sidebar-menu glass-panel border-r border-white/10 flex flex-col"
+               :class="{ 'open': menuOpen }">
+
+            <!-- Menu Header -->
+            <div class="p-6 border-b border-white/10">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-white">เมนู</h2>
+                    <button @click="menuOpen = false" class="p-2 rounded-xl glass-panel-light hover:bg-white/10 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Staff Info Card -->
+                <div class="glass-panel-light rounded-xl p-4">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-xl font-bold">
+                            <span x-text="staffInitial">?</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-white truncate" x-text="staffName || 'ยังไม่ได้ลงเวลา'"></p>
+                            <p class="text-xs text-gray-400" x-text="staffCode || 'กรุณา Clock-In'"></p>
+                        </div>
+                    </div>
+
+                    <!-- Clock In/Out Button -->
+                    <button @click="showClockModal = true"
+                            class="w-full py-3 rounded-xl font-bold text-sm transition-all touch-btn"
+                            :class="isClockedIn ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30' : 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 clock-pulse'">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span x-text="isClockedIn ? 'Clock-Out' : 'Clock-In'"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Menu Items -->
+            <nav class="flex-1 py-4 overflow-y-auto custom-scrollbar">
+                <div class="space-y-1 px-3">
+                    <!-- Main POS -->
+                    <a href="{{ route('pos.cashier') }}" class="menu-item active flex items-center gap-3 px-4 py-4 rounded-xl text-white bg-white/5 touch-btn">
+                        <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        <span class="font-medium">หน้าขาย</span>
+                    </a>
+
+                    <!-- Orders History -->
+                    <a href="#" @click.prevent="hasPermission('reports') ? window.location.href = '/admin/pos/transactions' : showPermissionDenied()"
+                       class="menu-item flex items-center gap-3 px-4 py-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition touch-btn">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        <span>ประวัติรายการ</span>
+                    </a>
+
+                    <!-- Inventory -->
+                    <a href="#" @click.prevent="hasPermission('inventory') ? window.location.href = '/admin/products' : showPermissionDenied()"
+                       class="menu-item flex items-center gap-3 px-4 py-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition touch-btn">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                        <span>สินค้าคงคลัง</span>
+                    </a>
+
+                    <!-- Customers -->
+                    <a href="#" @click.prevent="hasPermission('customers') ? window.location.href = '/admin/customers' : showPermissionDenied()"
+                       class="menu-item flex items-center gap-3 px-4 py-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition touch-btn">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span>ลูกค้า</span>
+                    </a>
+
+                    <!-- Reports -->
+                    <a href="#" @click.prevent="hasPermission('reports') ? window.location.href = '/admin/pos/reports' : showPermissionDenied()"
+                       class="menu-item flex items-center gap-3 px-4 py-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition touch-btn">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <span>รายงาน</span>
+                    </a>
+
+                    <!-- Settings -->
+                    <a href="#" @click.prevent="hasPermission('settings') ? window.location.href = '/admin/pos/settings' : showPermissionDenied()"
+                       class="menu-item flex items-center gap-3 px-4 py-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition touch-btn">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span>ตั้งค่า</span>
+                    </a>
+
+                    <div class="border-t border-white/10 my-3"></div>
+
+                    <!-- Open Cash Drawer -->
+                    <button @click="hasPermission('drawer') ? openCashDrawer() : showPermissionDenied()"
+                            class="menu-item w-full flex items-center gap-3 px-4 py-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition touch-btn text-left">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        <span>เปิดลิ้นชักเก็บเงิน</span>
+                    </button>
+
+                    <!-- Back to Admin -->
+                    <a href="/admin" class="menu-item flex items-center gap-3 px-4 py-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 transition touch-btn">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                        <span>กลับหน้าแอดมิน</span>
+                    </a>
+                </div>
+            </nav>
+
+            <!-- Menu Footer -->
+            <div class="p-4 border-t border-white/10">
+                <div class="text-center text-xs text-gray-500">
+                    <p>{{ $device->device_code }}</p>
+                    <p class="mt-1">v3.0 - TP POS System</p>
+                </div>
+            </div>
+        </aside>
 
         <!-- ========================================
              HEADER BAR
@@ -281,8 +505,16 @@
              ======================================== -->
         <header class="glass-panel border-b border-white/10 px-4 py-3 no-print fullscreen-hide z-50">
             <div class="flex items-center justify-between">
-                <!-- Left: Device & Store Info -->
+                <!-- Left: Menu Button & Device Info -->
                 <div class="flex items-center gap-4">
+                    <!-- Hamburger Menu Button -->
+                    <button @click="menuOpen = !menuOpen"
+                            class="p-3 rounded-xl glass-panel-light hover:bg-white/10 transition touch-btn">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center neon-green">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -805,6 +1037,86 @@
                 </button>
             </div>
         </div>
+
+        <!-- ========================================
+             CLOCK-IN/OUT MODAL
+             ======================================== -->
+        <div x-show="showClockModal"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+             @click.self="showClockModal = false">
+            <div class="glass-panel rounded-3xl p-6 w-full max-w-sm success-pop">
+                <!-- Header -->
+                <div class="text-center mb-6">
+                    <div class="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center"
+                         :class="isClockedIn ? 'bg-red-500/20 border-2 border-red-500/50' : 'bg-green-500/20 border-2 border-green-500/50'">
+                        <svg class="w-10 h-10" :class="isClockedIn ? 'text-red-400' : 'text-green-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-white" x-text="isClockedIn ? 'Clock-Out' : 'Clock-In'"></h3>
+                    <p class="text-gray-400 text-sm mt-1">กรุณาใส่รหัส PIN 4-6 หลัก</p>
+                </div>
+
+                <!-- PIN Display -->
+                <div class="mb-6">
+                    <div class="flex justify-center gap-2 mb-4">
+                        <template x-for="i in 6" :key="i">
+                            <div class="w-10 h-12 rounded-xl glass-panel-light flex items-center justify-center text-2xl font-bold"
+                                 :class="pinCode.length >= i ? 'text-green-400' : 'text-gray-600'">
+                                <span x-text="pinCode.length >= i ? '●' : ''"></span>
+                            </div>
+                        </template>
+                    </div>
+                    <p x-show="pinError" class="text-center text-red-400 text-sm" x-text="pinError"></p>
+                </div>
+
+                <!-- Numpad -->
+                <div class="grid grid-cols-3 gap-3 mb-6">
+                    <template x-for="num in ['1','2','3','4','5','6','7','8','9','⌫','0','✓']" :key="num">
+                        <button @click="handleNumpad(num)"
+                                class="numpad-btn h-16 rounded-xl glass-panel-light hover:bg-white/10 transition touch-btn"
+                                :class="{
+                                    'bg-red-500/20 text-red-400': num === '⌫',
+                                    'bg-green-500/20 text-green-400': num === '✓',
+                                    'text-white': num !== '⌫' && num !== '✓'
+                                }">
+                            <span x-text="num"></span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Cancel Button -->
+                <button @click="showClockModal = false; pinCode = ''; pinError = ''"
+                        class="w-full py-3 rounded-xl glass-panel-light text-gray-400 hover:text-white transition">
+                    ยกเลิก
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================
+             PERMISSION DENIED TOAST
+             ======================================== -->
+        <div x-show="showPermissionToast"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 transform translate-y-4"
+             x-transition:enter-end="opacity-100 transform translate-y-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 transform translate-y-0"
+             x-transition:leave-end="opacity-0 transform translate-y-4"
+             class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50">
+            <div class="glass-panel rounded-xl px-6 py-4 flex items-center gap-3 border border-red-500/30">
+                <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <span class="text-red-400 font-medium">ไม่มีสิทธิ์เข้าถึงเมนูนี้</span>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -832,6 +1144,21 @@
                 isFullscreen: false,
                 isProcessing: false,
                 showSuccessModal: false,
+
+                // Menu & Navigation
+                menuOpen: false,
+
+                // Staff / Clock System
+                showClockModal: false,
+                isClockedIn: false,
+                staffId: null,
+                staffName: null,
+                staffCode: null,
+                staffPermissions: ['sales', 'clock'], // Default permissions
+                clockInTime: null,
+                pinCode: '',
+                pinError: '',
+                showPermissionToast: false,
 
                 // Calculated values
                 subtotal: 0,
@@ -873,6 +1200,9 @@
                 async init() {
                     this.calculateTotals();
 
+                    // โหลดข้อมูลพนักงานจาก localStorage
+                    this.loadStaffFromStorage();
+
                     // Listen for fullscreen changes
                     const fullscreenHandler = () => {
                         this.isFullscreen = !!document.fullscreenElement;
@@ -893,7 +1223,20 @@
                         }
                     }
 
+                    // Close menu when pressing Escape
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape') {
+                            if (this.menuOpen) this.menuOpen = false;
+                            if (this.showClockModal) {
+                                this.showClockModal = false;
+                                this.pinCode = '';
+                                this.pinError = '';
+                            }
+                        }
+                    });
+
                     console.log('🖥️ POS System initialized');
+                    console.log('📱 Touch-friendly mode enabled');
                 },
 
                 // ========================================
@@ -1325,6 +1668,185 @@
                         document.documentElement.classList.add('dark');
                         localStorage.setItem('darkMode', 'dark');
                     }
+                },
+
+                // ========================================
+                // STAFF / CLOCK SYSTEM
+                // ========================================
+
+                get staffInitial() {
+                    if (this.staffName) {
+                        return this.staffName.charAt(0).toUpperCase();
+                    }
+                    return '?';
+                },
+
+                handleNumpad(key) {
+                    if (key === '⌫') {
+                        // Backspace
+                        this.pinCode = this.pinCode.slice(0, -1);
+                        this.pinError = '';
+                    } else if (key === '✓') {
+                        // Submit
+                        this.submitPin();
+                    } else {
+                        // Add digit
+                        if (this.pinCode.length < 6) {
+                            this.pinCode += key;
+                            this.pinError = '';
+                        }
+                    }
+                },
+
+                async submitPin() {
+                    if (this.pinCode.length < 4) {
+                        this.pinError = 'กรุณาใส่ PIN อย่างน้อย 4 หลัก';
+                        return;
+                    }
+
+                    try {
+                        // ในการใช้งานจริง จะส่งไปตรวจสอบ PIN กับ server
+                        // ตัวอย่างนี้จำลองการทำงาน
+                        const response = await this.verifyPin(this.pinCode);
+
+                        if (response.success) {
+                            if (this.isClockedIn) {
+                                // Clock Out
+                                await this.clockOut();
+                            } else {
+                                // Clock In
+                                await this.clockIn(response.staff);
+                            }
+                            this.showClockModal = false;
+                            this.pinCode = '';
+                        } else {
+                            this.pinError = response.message || 'รหัส PIN ไม่ถูกต้อง';
+                            this.pinCode = '';
+                        }
+                    } catch (error) {
+                        console.error('PIN verification error:', error);
+                        this.pinError = 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+                        this.pinCode = '';
+                    }
+                },
+
+                async verifyPin(pin) {
+                    // ในการใช้งานจริง จะเรียก API
+                    // Demo: ใช้ PIN "1234" สำหรับทดสอบ
+                    if (pin === '1234') {
+                        return {
+                            success: true,
+                            staff: {
+                                id: 1,
+                                name: '{{ auth()->user()->name }}',
+                                code: 'POS-001',
+                                permissions: ['sales', 'refund', 'discount', 'reports', 'inventory', 'customers', 'settings', 'drawer', 'clock']
+                            }
+                        };
+                    }
+
+                    // ลองเรียก API จริง (ถ้ามี)
+                    try {
+                        const response = await fetch('/pos/api/staff/verify-pin', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({
+                                pin: pin,
+                                device_id: this.deviceId
+                            })
+                        });
+
+                        return await response.json();
+                    } catch (e) {
+                        // Fallback for demo
+                        return { success: false, message: 'รหัส PIN ไม่ถูกต้อง' };
+                    }
+                },
+
+                async clockIn(staff) {
+                    this.isClockedIn = true;
+                    this.staffId = staff.id;
+                    this.staffName = staff.name;
+                    this.staffCode = staff.code;
+                    this.staffPermissions = staff.permissions || ['sales'];
+                    this.clockInTime = new Date();
+
+                    // บันทึกลง localStorage
+                    localStorage.setItem('pos_staff', JSON.stringify({
+                        id: staff.id,
+                        name: staff.name,
+                        code: staff.code,
+                        permissions: staff.permissions,
+                        clockInTime: this.clockInTime.toISOString()
+                    }));
+
+                    // เสียง feedback
+                    this.playSuccessSound();
+
+                    console.log('✅ Clock-In:', staff.name);
+                },
+
+                async clockOut() {
+                    this.isClockedIn = false;
+                    this.staffId = null;
+                    this.staffName = null;
+                    this.staffCode = null;
+                    this.staffPermissions = ['sales', 'clock'];
+                    this.clockInTime = null;
+
+                    // ลบจาก localStorage
+                    localStorage.removeItem('pos_staff');
+
+                    // เสียง feedback
+                    this.playBeepSound();
+
+                    console.log('👋 Clock-Out');
+                },
+
+                loadStaffFromStorage() {
+                    const stored = localStorage.getItem('pos_staff');
+                    if (stored) {
+                        try {
+                            const staff = JSON.parse(stored);
+                            this.isClockedIn = true;
+                            this.staffId = staff.id;
+                            this.staffName = staff.name;
+                            this.staffCode = staff.code;
+                            this.staffPermissions = staff.permissions || ['sales'];
+                            this.clockInTime = new Date(staff.clockInTime);
+                        } catch (e) {
+                            localStorage.removeItem('pos_staff');
+                        }
+                    }
+                },
+
+                // ========================================
+                // PERMISSIONS
+                // ========================================
+
+                hasPermission(permission) {
+                    // Admin always has all permissions
+                    if (this.staffPermissions.includes('all')) {
+                        return true;
+                    }
+                    return this.staffPermissions.includes(permission);
+                },
+
+                showPermissionDenied() {
+                    this.showPermissionToast = true;
+                    setTimeout(() => {
+                        this.showPermissionToast = false;
+                    }, 3000);
+                },
+
+                openCashDrawer() {
+                    // ส่งคำสั่งเปิดลิ้นชัก (ถ้ามี hardware)
+                    console.log('🗃️ Opening cash drawer...');
+                    this.playBeepSound();
+                    // ในการใช้งานจริง จะส่งคำสั่งไปยัง printer/drawer
                 }
             };
         }
