@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.253.4] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1758 from xjanova/claude/fix-missing-invoices-table-01Vc9Fx24hdB2vtMJGeqzSC9 (8eed409b)
+- fix: เพิ่ม migration สำหรับสร้างตารางระบบบัญชีที่ขาดหายไป (4908dbe4)
+### 🔧 Other Changes
+
+
 ## [v3.253.3] - 2025-11-27
 
 ### ✨ Features
