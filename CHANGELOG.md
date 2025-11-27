@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.247.0] - 2025-11-27
+
+### ✨ Features
+- feat: เพิ่ม 3 หมวดหมู่ Wiki ใหม่ (investor, api, faq) (4ef25637)
+### 🐛 Bug Fixes
+- fix: แก้ไข closing tag ผิดใน academy.blade.php (</section> -> </div>) (fc7c193a)
+### 🔧 Other Changes
+- Merge pull request #1745 from xjanova/claude/cleanup-legacy-code-01GWq6zMFeyjDv1VFhpENiYu (fbca7abc)
+- Merge origin/claude/Main - รวม Wiki 20 หมวดหมู่และ features ใหม่ (b2d64f6e)
+- refactor: ปรับปรุง Wiki ใช้ modular content files (58d1e100)
+
 ## [v3.246.1] - 2025-11-27
 
 ### ✨ Features
