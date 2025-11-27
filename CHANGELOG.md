@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.241.4] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1732 from xjanova/claude/fix-avatar-upload-01RVw6m3uPkjCUUMB4KnPcFM (bd4482ef)
+- fix: use x-cloak instead of inline style for profile dropdown (cd879360)
+### 🔧 Other Changes
+
+
 ## [v3.241.3] - 2025-11-27
 
 ### ✨ Features
