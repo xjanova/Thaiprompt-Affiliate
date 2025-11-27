@@ -25,7 +25,7 @@
     'showSearch' => true,
 ])
 
-<header class="glass-fusion border-b border-white/30 flex items-center justify-between px-4 md:px-6 relative z-10"
+<header class="glass-fusion border-b border-white/30 flex items-center justify-between px-4 md:px-6 relative z-50"
          style="height: var(--arrow-x-navbar-height, 64px)">
     {{-- Left Section: Page Title --}}
     <div class="flex items-center gap-4">
