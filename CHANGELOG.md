@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.246.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1744 from xjanova/claude/add-tpix-whitepaper-wiki-0122E9ywHPzwrU6FKGuSC11H (3d890422)
+- fix: แก้ไข route user.profile.index เป็น user.profile (e66a26b1)
+### 🔧 Other Changes
+
+
 ## [v3.246.0] - 2025-11-27
 
 ### ✨ Features
