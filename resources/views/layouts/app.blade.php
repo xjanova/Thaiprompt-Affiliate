@@ -69,11 +69,13 @@
     @php
         // Get user theme preference (use millennium as default for guests)
         $userTheme = auth()->check() ? (auth()->user()->menu_theme_preference ?? 'millennium') : 'millennium';
+        // กำหนด taskbar type ตาม auth status - guest จะใช้ type 'guest' เพื่อแสดง menu ที่เหมาะสม
+        $taskbarType = auth()->check() ? 'user' : 'guest';
     @endphp
 
     @if($userTheme === 'classic_x')
         <!-- Classic X Sidebar -->
-        <x-classic-x-sidebar type="user" />
+        <x-classic-x-sidebar type="{{ $taskbarType }}" />
 
         <!-- Classic X Content Wrapper -->
         <div class="classic-x-content" id="classicXContent">
@@ -90,7 +92,7 @@
         <x-classic-x-floating-buttons />
     @else
         <!-- Millennium Taskbar -->
-        <x-millennium-taskbar type="user" />
+        <x-millennium-taskbar type="{{ $taskbarType }}" />
 
         <div class="min-h-screen">
             <!-- Page Content -->

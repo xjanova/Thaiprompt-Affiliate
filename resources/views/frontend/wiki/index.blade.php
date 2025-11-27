@@ -56,6 +56,7 @@
             { id: 'crypto', icon: '₿', label: 'Crypto & Blockchain', color: 'from-yellow-600 to-amber-600' },
             { id: 'wallet', icon: '💳', label: 'Wallet System', color: 'from-indigo-600 to-blue-600' },
             { id: 'academy', icon: '🎓', label: 'Academy & Learning', color: 'from-teal-600 to-cyan-600' },
+            { id: 'investor', icon: '📈', label: 'Investor Guide', color: 'from-emerald-600 to-green-600', highlight: true },
             { id: 'api', icon: '🔌', label: 'API & Integration', color: 'from-slate-600 to-gray-600' },
             { id: 'faq', icon: '❓', label: 'FAQ & Troubleshooting', color: 'from-pink-600 to-fuchsia-600' }
         ],
@@ -1094,6 +1095,161 @@
                                     </ul>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    {{-- 📈 Investor Guide - คู่มือนักลงทุน --}}
+                    <div x-show="currentCategory === 'investor'" style="display: none;">
+                        <h1 class="text-4xl font-black bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent mb-6">
+                            📈 Investor Guide - คู่มือนักลงทุน
+                        </h1>
+
+                        <div class="prose prose-lg dark:prose-invert max-w-none space-y-8">
+                            {{-- การแนะนำสำหรับนักลงทุน --}}
+                            <div class="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 border-l-4 border-emerald-600 p-6 rounded-r-xl">
+                                <h3 class="text-xl font-bold text-emerald-900 dark:text-emerald-100 mb-3">🌟 ยินดีต้อนรับนักลงทุน</h3>
+                                <p class="text-gray-700 dark:text-gray-300 mb-0">
+                                    ThaiPrompt Affiliate เปิดโอกาสให้นักลงทุนร่วมเป็นส่วนหนึ่งของระบบนิเวศที่เติบโตอย่างยั่งยืน ผ่านการลงทุนใน TPIX Token และโปรแกรม ROI ที่หลากหลาย
+                                </p>
+                            </div>
+
+                            {{-- ช่องทางการลงทุน --}}
+                            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {{-- TPIX Token --}}
+                                <div class="bg-white dark:bg-gray-800 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-6 hover:shadow-2xl transition-all duration-300">
+                                    <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center text-3xl mb-4 shadow-lg">
+                                        ₿
+                                    </div>
+                                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">TPIX Token</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                        Token หลักของระบบ สามารถใช้ซื้อสินค้า, Staking, และแลกเปลี่ยนใน DEX
+                                    </p>
+                                    <ul class="text-sm space-y-2 text-gray-700 dark:text-gray-300 mb-4">
+                                        <li>✅ Staking APY สูงสุด 30%</li>
+                                        <li>✅ ใช้ซื้อสินค้าในระบบ</li>
+                                        <li>✅ แลกเปลี่ยนใน DEX</li>
+                                        <li>✅ Governance Rights</li>
+                                    </ul>
+                                    @auth
+                                    <a href="{{ route('user.crypto-wallet.index') }}" class="inline-block px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold text-sm transition-colors">
+                                        เริ่มลงทุน TPIX →
+                                    </a>
+                                    @else
+                                    <a href="{{ route('register') }}" class="inline-block px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold text-sm transition-colors">
+                                        สมัครเพื่อลงทุน →
+                                    </a>
+                                    @endauth
+                                </div>
+
+                                {{-- ROI Investment --}}
+                                <div class="bg-white dark:bg-gray-800 border-2 border-green-200 dark:border-green-800 rounded-2xl p-6 hover:shadow-2xl transition-all duration-300">
+                                    <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center text-3xl mb-4 shadow-lg">
+                                        💰
+                                    </div>
+                                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ROI Investment</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                        โปรแกรมลงทุนพร้อมผลตอบแทนรายวัน/รายเดือน
+                                    </p>
+                                    <ul class="text-sm space-y-2 text-gray-700 dark:text-gray-300 mb-4">
+                                        <li>📊 ROI 5-15% ต่อเดือน</li>
+                                        <li>📅 จ่ายผลตอบแทนทุกวัน</li>
+                                        <li>🔐 ปลอดภัยด้วย Smart Contract</li>
+                                        <li>💎 โบนัสสำหรับ VIP</li>
+                                    </ul>
+                                    @auth
+                                    <a href="{{ route('user.investments.index') }}" class="inline-block px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold text-sm transition-colors">
+                                        ดูแผนการลงทุน →
+                                    </a>
+                                    @else
+                                    <a href="{{ route('register') }}" class="inline-block px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold text-sm transition-colors">
+                                        สมัครเพื่อลงทุน →
+                                    </a>
+                                    @endauth
+                                </div>
+
+                                {{-- MLM Affiliate --}}
+                                <div class="bg-white dark:bg-gray-800 border-2 border-purple-200 dark:border-purple-800 rounded-2xl p-6 hover:shadow-2xl transition-all duration-300">
+                                    <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center text-3xl mb-4 shadow-lg">
+                                        💎
+                                    </div>
+                                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">MLM Affiliate</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                        สร้างรายได้จากการแนะนำสมาชิกใหม่
+                                    </p>
+                                    <ul class="text-sm space-y-2 text-gray-700 dark:text-gray-300 mb-4">
+                                        <li>👥 คอมมิชชั่นหลายชั้น</li>
+                                        <li>🏆 โบนัส Rank & Achievement</li>
+                                        <li>🎁 Matching Bonus</li>
+                                        <li>🌳 Binary + Unilevel</li>
+                                    </ul>
+                                    @auth
+                                    <a href="{{ route('user.mlm.dashboard') }}" class="inline-block px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold text-sm transition-colors">
+                                        เริ่มต้น MLM →
+                                    </a>
+                                    @else
+                                    <a href="{{ route('register') }}" class="inline-block px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold text-sm transition-colors">
+                                        สมัครเพื่อเข้าร่วม →
+                                    </a>
+                                    @endauth
+                                </div>
+                            </div>
+
+                            {{-- สถิติระบบ --}}
+                            <div class="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-8 rounded-2xl shadow-2xl">
+                                <h3 class="text-2xl font-bold mb-6 text-center">📊 สถิติระบบ ThaiPrompt</h3>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                    <div class="text-center">
+                                        <div class="text-3xl font-black text-emerald-400">{{ number_format($stats['total_users'] ?? 0) }}</div>
+                                        <div class="text-sm text-gray-400 mt-1">ผู้ใช้ทั้งหมด</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-3xl font-black text-purple-400">{{ number_format($stats['total_affiliates'] ?? 0) }}</div>
+                                        <div class="text-sm text-gray-400 mt-1">Affiliate Members</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-3xl font-black text-amber-400">{{ $stats['version'] ?? 'v3.0' }}</div>
+                                        <div class="text-sm text-gray-400 mt-1">เวอร์ชั่นระบบ</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-3xl font-black text-blue-400">24/7</div>
+                                        <div class="text-sm text-gray-400 mt-1">Support</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Risk Warning --}}
+                            <div class="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-800 rounded-xl p-6">
+                                <h4 class="text-lg font-bold text-red-800 dark:text-red-300 mb-3 flex items-center gap-2">
+                                    <span>⚠️</span> คำเตือนความเสี่ยง
+                                </h4>
+                                <p class="text-sm text-red-700 dark:text-red-400 mb-3">
+                                    การลงทุนมีความเสี่ยง ผู้ลงทุนควรศึกษาข้อมูลก่อนตัดสินใจลงทุน:
+                                </p>
+                                <ul class="text-sm text-red-700 dark:text-red-400 space-y-1">
+                                    <li>• ราคา Cryptocurrency มีความผันผวนสูง</li>
+                                    <li>• ผลตอบแทนในอดีตไม่ได้รับประกันอนาคต</li>
+                                    <li>• ลงทุนเฉพาะจำนวนที่พร้อมจะสูญเสียได้</li>
+                                    <li>• ปรึกษาที่ปรึกษาทางการเงินก่อนลงทุน</li>
+                                </ul>
+                            </div>
+
+                            {{-- CTA for Investors --}}
+                            @guest
+                            <div class="bg-gradient-to-r from-emerald-600 to-green-600 text-white p-8 rounded-2xl shadow-xl text-center">
+                                <h4 class="text-2xl font-bold mb-3">🚀 พร้อมเริ่มต้นการลงทุนหรือยัง?</h4>
+                                <p class="mb-6 opacity-90">
+                                    สมัครสมาชิกฟรีวันนี้ เพื่อเข้าถึงโอกาสการลงทุนทั้งหมด
+                                </p>
+                                <div class="flex flex-wrap justify-center gap-4">
+                                    <a href="{{ route('register') }}" class="px-8 py-3 bg-white text-emerald-600 rounded-xl font-bold hover:bg-gray-100 transition-colors shadow-lg">
+                                        📝 สมัครสมาชิกฟรี
+                                    </a>
+                                    <a href="{{ route('login') }}" class="px-8 py-3 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl font-bold transition-colors shadow-lg">
+                                        🔐 เข้าสู่ระบบ
+                                    </a>
+                                </div>
+                            </div>
+                            @endguest
                         </div>
                     </div>
 
