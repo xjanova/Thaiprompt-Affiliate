@@ -281,35 +281,37 @@ x-init="
         ></span>
     </button>
 
-    {{-- Backdrop Overlay --}}
-    <div
-        x-show="open"
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
-        @click="closePanel()"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
-        style="display: none;"
-        aria-hidden="true">
-    </div>
+    {{-- Teleport Backdrop และ Panel ไปที่ body เพื่อให้ครอบคลุมทั้งหน้าจอ --}}
+    <template x-teleport="body">
+        {{-- Backdrop Overlay --}}
+        <div
+            x-show="open"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            @click="closePanel()"
+            class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]"
+            style="display: none;"
+            aria-hidden="true">
+        </div>
 
-    {{-- Slide Panel จากขวา --}}
-    <div
-        x-show="open"
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="translate-x-full"
-        x-transition:enter-end="translate-x-0"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="translate-x-0"
-        x-transition:leave-end="translate-x-full"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cart-panel-title"
-        class="fixed top-0 right-0 h-full w-full max-w-md z-[101] flex flex-col bg-gradient-to-b from-gray-900/95 to-gray-800/95 backdrop-blur-xl border-l border-white/10 shadow-2xl"
-        style="display: none;">
+        {{-- Slide Panel จากขวา --}}
+        <div
+            x-show="open"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="translate-x-full"
+            x-transition:enter-end="translate-x-0"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="translate-x-0"
+            x-transition:leave-end="translate-x-full"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cart-panel-title"
+            class="fixed top-0 right-0 h-full w-full max-w-md z-[9999] flex flex-col bg-gradient-to-b from-gray-900/95 to-gray-800/95 backdrop-blur-xl border-l border-white/10 shadow-2xl"
+            style="display: none;">
 
         {{-- Header --}}
         <div class="flex-shrink-0 px-6 py-4 border-b border-white/10 bg-black/20">
@@ -446,5 +448,6 @@ x-init="
                 </a>
             </div>
         </div>
-    </div>
+        </div>
+    </template>
 </div>
