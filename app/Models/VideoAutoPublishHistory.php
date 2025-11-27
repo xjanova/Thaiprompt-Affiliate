@@ -507,12 +507,26 @@ class VideoAutoPublishHistory extends Model
     /**
      * ลบไฟล์ต้นฉบับ
      *
+     * ⚠️ จะลบได้เฉพาะเมื่อโพสต์สำเร็จเท่านั้น!
+     *
+     * @param bool $force บังคับลบแม้ยังไม่โพสต์สำเร็จ
      * @return bool
      */
-    public function deleteSourceFiles(): bool
+    public function deleteSourceFiles(bool $force = false): bool
     {
+        // ถ้าลบไปแล้ว
         if ($this->source_deleted) {
             return true;
+        }
+
+        // ⚠️ ห้ามลบถ้ายังไม่โพสต์สำเร็จ (ยกเว้น force)
+        if (!$force && $this->status !== 'published') {
+            return false;
+        }
+
+        // ⚠️ ต้องมี platform_post_id และ platform_url เพื่อยืนยันว่าโพสต์สำเร็จจริง
+        if (!$force && (empty($this->platform_post_id) || empty($this->platform_url))) {
+            return false;
         }
 
         // ลบไฟล์วีดีโอถ้ามี
@@ -523,6 +537,31 @@ class VideoAutoPublishHistory extends Model
         $this->source_deleted = true;
         $this->source_deleted_at = now();
         $this->save();
+
+        return true;
+    }
+
+    /**
+     * ตรวจสอบว่าสามารถลบไฟล์ต้นฉบับได้หรือไม่
+     *
+     * @return bool
+     */
+    public function canDeleteSourceFiles(): bool
+    {
+        // ต้องโพสต์สำเร็จ
+        if ($this->status !== 'published') {
+            return false;
+        }
+
+        // ต้องมี ID และ URL ของโพสต์
+        if (empty($this->platform_post_id) || empty($this->platform_url)) {
+            return false;
+        }
+
+        // ยังไม่ได้ลบ
+        if ($this->source_deleted) {
+            return false;
+        }
 
         return true;
     }

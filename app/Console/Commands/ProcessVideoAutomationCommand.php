@@ -323,6 +323,8 @@ class ProcessVideoAutomationCommand extends Command
     /**
      * ลบไฟล์ต้นฉบับหลังโพสต์สำเร็จ
      *
+     * ⚠️ จะลบได้ต่อเมื่อโพสต์ YouTube สำเร็จเท่านั้น!
+     *
      * @param int $limit
      * @param bool $dryRun
      * @return int
@@ -331,6 +333,7 @@ class ProcessVideoAutomationCommand extends Command
     {
         $this->newLine();
         $this->info('🧹 กำลังลบไฟล์ต้นฉบับ...');
+        $this->warn('   ⚠️ จะลบเฉพาะโปรเจกต์ที่โพสต์ YouTube สำเร็จแล้วเท่านั้น');
 
         // ดึงโปรเจกต์ที่โพสต์แล้วและต้องการลบไฟล์
         $projects = VideoAutoProject::where('status', 'published')
@@ -347,9 +350,17 @@ class ProcessVideoAutomationCommand extends Command
         }
 
         $processed = 0;
+        $skipped = 0;
 
         foreach ($projects as $project) {
             $this->line("   🗑️ โปรเจกต์: {$project->name}");
+
+            // ⚠️ ตรวจสอบว่าโพสต์ YouTube สำเร็จหรือไม่
+            if (!$project->hasSuccessfulYouTubePublish()) {
+                $this->warn("      ⏭️ ข้าม - ยังไม่มีการโพสต์ YouTube สำเร็จ");
+                $skipped++;
+                continue;
+            }
 
             if ($dryRun) {
                 $this->line("      → จะลบไฟล์ต้นฉบับ");
@@ -362,6 +373,9 @@ class ProcessVideoAutomationCommand extends Command
         }
 
         $this->info("   ✅ Cleanup: {$processed} โปรเจกต์");
+        if ($skipped > 0) {
+            $this->warn("   ⏭️ ข้าม: {$skipped} โปรเจกต์ (ยังไม่โพสต์ YouTube สำเร็จ)");
+        }
         return $processed;
     }
 

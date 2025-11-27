@@ -709,12 +709,20 @@ class VideoAutoProject extends Model
     /**
      * ลบไฟล์ต้นฉบับหลังโพสต์สำเร็จ
      *
+     * ⚠️ จะลบได้ต่อเมื่อมีการโพสต์ YouTube สำเร็จแล้วเท่านั้น!
+     *
+     * @param bool $force บังคับลบแม้ยังไม่โพสต์สำเร็จ
      * @return bool
      */
-    public function deleteSourceFiles(): bool
+    public function deleteSourceFiles(bool $force = false): bool
     {
         if ($this->source_files_deleted) {
             return true;
+        }
+
+        // ⚠️ ตรวจสอบว่าโพสต์ YouTube สำเร็จแล้ว (ยกเว้น force)
+        if (!$force && !$this->hasSuccessfulYouTubePublish()) {
+            return false;
         }
 
         $deleted = [];
@@ -757,6 +765,41 @@ class VideoAutoProject extends Model
         $this->save();
 
         return count($deleted) > 0;
+    }
+
+    /**
+     * ตรวจสอบว่ามีการโพสต์ YouTube สำเร็จหรือไม่
+     *
+     * @return bool
+     */
+    public function hasSuccessfulYouTubePublish(): bool
+    {
+        return $this->publishHistory()
+            ->where('platform', 'youtube')
+            ->where('status', 'published')
+            ->whereNotNull('platform_post_id')
+            ->whereNotNull('platform_url')
+            ->exists();
+    }
+
+    /**
+     * ตรวจสอบว่าสามารถลบไฟล์ต้นฉบับได้หรือไม่
+     *
+     * @return bool
+     */
+    public function canDeleteSourceFiles(): bool
+    {
+        // ต้องยังไม่ลบ
+        if ($this->source_files_deleted) {
+            return false;
+        }
+
+        // ต้องมีการโพสต์ YouTube สำเร็จ
+        if (!$this->hasSuccessfulYouTubePublish()) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
