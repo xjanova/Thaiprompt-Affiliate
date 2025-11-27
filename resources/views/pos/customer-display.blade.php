@@ -340,13 +340,29 @@
                                              x-text="item.quantity + 'x'"></div>
                                         <div class="flex-1 min-w-0">
                                             <h4 class="text-lg md:text-2xl font-bold truncate" x-text="item.name"></h4>
-                                            <p class="text-sm md:text-lg text-white/70"
-                                               x-text="'฿' + formatNumber(item.price) + ' / ชิ้น'"></p>
+                                            <div class="flex items-center gap-3 mt-1">
+                                                <p class="text-sm md:text-lg text-white/70"
+                                                   x-text="'฿' + formatNumber(item.price) + ' / ชิ้น'"></p>
+                                                <!-- PV/Points Badge -->
+                                                <template x-if="item.pv > 0">
+                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-500/30 text-cyan-300 border border-cyan-400/30">
+                                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                                        </svg>
+                                                        <span x-text="item.pv + ' PV'"></span>
+                                                    </span>
+                                                </template>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="text-right flex-shrink-0 ml-4">
                                         <div class="text-xl md:text-3xl font-bold"
                                              x-text="'฿' + formatNumber(item.quantity * item.price)"></div>
+                                        <!-- Total PV for this item -->
+                                        <template x-if="item.pv > 0">
+                                            <div class="text-sm text-cyan-400 mt-1"
+                                                 x-text="'+' + (item.pv * item.quantity) + ' PV'"></div>
+                                        </template>
                                     </div>
                                 </div>
                             </template>
@@ -394,6 +410,22 @@
                                               x-text="'฿' + formatNumber(total)"></span>
                                     </div>
                                 </div>
+
+                                <!-- Total PV/Points earned -->
+                                <div x-show="totalPv > 0" class="mt-4 flex items-center justify-center gap-4">
+                                    <div class="glass-card-dark rounded-xl px-4 py-2 flex items-center gap-2">
+                                        <svg class="w-5 h-5 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                        <span class="text-cyan-400 font-bold" x-text="'รับ ' + totalPv + ' PV'"></span>
+                                    </div>
+                                    <div x-show="totalPoints > 0" class="glass-card-dark rounded-xl px-4 py-2 flex items-center gap-2">
+                                        <svg class="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <span class="text-amber-400 font-bold" x-text="'รับ ' + totalPoints + ' คะแนน'"></span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -429,6 +461,25 @@
                             <div x-show="transaction.changeAmount > 0" class="col-span-2">
                                 <p class="text-white/60 text-sm md:text-base">เงินทอน</p>
                                 <p class="text-3xl md:text-4xl font-black text-yellow-300" x-text="'฿' + formatNumber(transaction.changeAmount)"></p>
+                            </div>
+                        </div>
+
+                        <!-- PV/Points Earned Display -->
+                        <div x-show="transaction.totalPv > 0 || transaction.totalPoints > 0" class="mt-6 pt-6 border-t border-white/20">
+                            <p class="text-white/60 text-sm mb-3">คุณได้รับ</p>
+                            <div class="flex items-center justify-center gap-4 flex-wrap">
+                                <div x-show="transaction.totalPv > 0" class="glass-card-dark rounded-xl px-5 py-3 flex items-center gap-2 float-animation">
+                                    <svg class="w-6 h-6 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                    </svg>
+                                    <span class="text-xl font-bold text-cyan-400" x-text="'+' + transaction.totalPv + ' PV'"></span>
+                                </div>
+                                <div x-show="transaction.totalPoints > 0" class="glass-card-dark rounded-xl px-5 py-3 flex items-center gap-2 float-animation" style="animation-delay: 0.2s;">
+                                    <svg class="w-6 h-6 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="text-xl font-bold text-amber-400" x-text="'+' + transaction.totalPoints + ' คะแนน'"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -528,6 +579,8 @@
                 tax: 0,
                 serviceCharge: 0,
                 total: 0,
+                totalPv: 0,
+                totalPoints: 0,
 
                 // Transaction Data (for completed screen)
                 transaction: {
@@ -538,6 +591,8 @@
                     paymentMethod: '',
                     totalItems: 0,
                     customerName: null,
+                    totalPv: 0,
+                    totalPoints: 0,
                 },
 
                 // Advertisement Rotation
@@ -682,6 +737,14 @@
                     this.serviceCharge = parseFloat(data.serviceCharge) || 0;
                     this.total = parseFloat(data.total) || 0;
 
+                    // คำนวณ PV และ Points รวม
+                    this.totalPv = parseFloat(data.totalPv) || this.items.reduce((sum, item) => {
+                        return sum + ((parseFloat(item.pv) || 0) * (item.quantity || 1));
+                    }, 0);
+                    this.totalPoints = parseFloat(data.totalPoints) || this.items.reduce((sum, item) => {
+                        return sum + ((parseFloat(item.points) || 0) * (item.quantity || 1));
+                    }, 0);
+
                     // เปลี่ยนเป็น cart mode ถ้ามีสินค้า
                     if (this.items.length > 0) {
                         this.displayMode = 'cart';
@@ -701,6 +764,8 @@
                         paymentMethod: data.paymentMethod,
                         totalItems: data.totalItems,
                         customerName: data.customerName,
+                        totalPv: parseFloat(data.totalPv) || this.totalPv || 0,
+                        totalPoints: parseFloat(data.totalPoints) || this.totalPoints || 0,
                     };
 
                     this.displayMode = 'completed';
@@ -730,6 +795,8 @@
                     this.tax = 0;
                     this.serviceCharge = 0;
                     this.total = 0;
+                    this.totalPv = 0;
+                    this.totalPoints = 0;
                     this.startAdRotation();
                 },
 
