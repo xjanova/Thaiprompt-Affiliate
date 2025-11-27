@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.255.6] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1770 from xjanova/claude/fix-homepage-sections-01GbD6EhfARLXQt6gutnD45u (62faab3a)
+- fix: สร้างหน้า UI สำหรับจัดการ Sections หน้าแรก (f142428d)
+### 🔧 Other Changes
+
+
 ## [v3.255.5] - 2025-11-27
 
 ### ✨ Features
