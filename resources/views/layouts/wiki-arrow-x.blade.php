@@ -202,7 +202,7 @@
                                         <i class="fas fa-tachometer-alt w-5"></i>
                                         <span>แดชบอร์ด</span>
                                     </a>
-                                    <a href="{{ route('user.profile.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-white/80 hover:text-white hover:bg-white/10 transition-all">
+                                    <a href="{{ route('user.profile') }}" class="flex items-center gap-3 px-4 py-2.5 text-white/80 hover:text-white hover:bg-white/10 transition-all">
                                         <i class="fas fa-user w-5"></i>
                                         <span>โปรไฟล์</span>
                                     </a>
