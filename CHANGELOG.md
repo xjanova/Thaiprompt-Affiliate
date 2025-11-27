@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.240.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1725 from xjanova/claude/reduce-dashboard-animations-01FjS5bdAmA7MpBsoEbKWPDT (6bf3d97b)
+- fix: reduce dashboard animations and effects for cleaner UI (157f76ea)
+### 🔧 Other Changes
+
+
 ## [v3.240.0] - 2025-11-27
 
 ### ✨ Features
