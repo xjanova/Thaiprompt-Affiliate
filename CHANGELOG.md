@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.249.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1748 from xjanova/claude/tpix-deployment-review-019vxQQwAAuS2jyFF9BkScJp (b498a547)
+- feat: เพิ่มหน้า Tutorial สร้างเหรียญลูก (Custom Token) สำหรับ User (e2a5d478)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.248.1] - 2025-11-27
 
 ### ✨ Features
