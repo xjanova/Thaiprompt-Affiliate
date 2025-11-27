@@ -656,7 +656,8 @@ function homepageManager() {
             };
 
             try {
-                const response = await fetch('{{ route("admin.homepage-manager.elements.store") }}', {
+                const storeUrl = '{{ route("admin.homepage-manager.elements.store", ["section" => "__SECTION_ID__"]) }}'.replace('__SECTION_ID__', this.selectedSection.id);
+                const response = await fetch(storeUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
