@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.257.3] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1786 from xjanova/claude/fix-team-blade-syntax-01LzX6n7FoL9nJfDJZ3diRnw (a2b2142b)
+- fix: แก้ไข Blade syntax error ใน team.blade.php (a9bbd554)
+### 🔧 Other Changes
+
+
 ## [v3.257.2] - 2025-11-27
 
 ### ✨ Features
