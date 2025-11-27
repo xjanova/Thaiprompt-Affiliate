@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.239.0] - 2025-11-27
+
+### ✨ Features
+- feat: add wizard mode and remote clone support for easy installation (86069dbd)
+- feat: add auto-installation for missing dependencies (38ad9849)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1723 from xjanova/claude/improve-install-script-015Naufs9jJ4kab7G11vyJQw (80b5d03d)
+
 ## [v3.238.1] - 2025-11-27
 
 ### ✨ Features
