@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.253.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1755 from xjanova/claude/fix-wiki-page-01UsNTxikT1vNrphtcQpzkL8 (cd0ad0bf)
+- refactor: แปลง inline styles เป็น Tailwind CSS ใน Wiki pages ทั้งหมด (ae434c2c)
+
 ## [v3.253.0] - 2025-11-27
 
 ### ✨ Features
