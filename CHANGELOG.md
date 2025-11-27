@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.242.3] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1737 from xjanova/claude/cleanup-legacy-code-01GWq6zMFeyjDv1VFhpENiYu (576299e0)
+- docs: เพิ่ม Investor Wiki ฉบับสมบูรณ์ 13 หัวข้อ (b4181d4b)
+
 ## [v3.242.2] - 2025-11-27
 
 ### ✨ Features
