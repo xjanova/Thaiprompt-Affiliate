@@ -8,6 +8,7 @@ use App\Http\Controllers\Seller\StoreController;
 use App\Http\Controllers\Seller\SellerPosController;
 use App\Http\Controllers\Seller\AnalyticsController;
 use App\Http\Controllers\Seller\SystemMonitoringController;
+use App\Http\Controllers\Seller\StaffController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -169,4 +170,34 @@ Route::prefix('pos')->name('pos.')->group(function () {
     // Advertisements
     Route::get('/advertisements', [SellerPosController::class, 'advertisements'])->name('advertisements');
     Route::post('/advertisements', [SellerPosController::class, 'advertisementStore'])->name('advertisements.store');
+});
+
+// ========================================
+// STAFF MANAGEMENT (ERP ฟรี)
+// ระบบจัดการพนักงานสำหรับเจ้าของร้าน
+// ========================================
+Route::prefix('staff')->name('staff.')->group(function () {
+    // Employees
+    Route::get('/', [StaffController::class, 'index'])->name('index');
+    Route::get('/create', [StaffController::class, 'create'])->name('create');
+    Route::post('/', [StaffController::class, 'store'])->name('store');
+    Route::get('/{employee}', [StaffController::class, 'show'])->name('show');
+    Route::get('/{employee}/edit', [StaffController::class, 'edit'])->name('edit');
+    Route::put('/{employee}', [StaffController::class, 'update'])->name('update');
+    Route::delete('/{employee}', [StaffController::class, 'destroy'])->name('destroy');
+
+    // Departments
+    Route::get('/manage/departments', [StaffController::class, 'departments'])->name('departments');
+    Route::post('/manage/departments', [StaffController::class, 'storeDepartment'])->name('departments.store');
+    Route::delete('/manage/departments/{department}', [StaffController::class, 'destroyDepartment'])->name('departments.destroy');
+
+    // Positions
+    Route::get('/manage/positions', [StaffController::class, 'positions'])->name('positions');
+    Route::post('/manage/positions', [StaffController::class, 'storePosition'])->name('positions.store');
+    Route::delete('/manage/positions/{position}', [StaffController::class, 'destroyPosition'])->name('positions.destroy');
+
+    // Work Shifts
+    Route::get('/manage/shifts', [StaffController::class, 'shifts'])->name('shifts');
+    Route::post('/manage/shifts', [StaffController::class, 'storeShift'])->name('shifts.store');
+    Route::delete('/manage/shifts/{shift}', [StaffController::class, 'destroyShift'])->name('shifts.destroy');
 });

@@ -204,6 +204,50 @@ class VendorStore extends Model
         return $this->hasMany(VendorAnalytics::class, 'store_id');
     }
 
+    // ========================================
+    // ERP RELATIONSHIPS (ระบบ HR ฟรี)
+    // ========================================
+
+    /**
+     * พนักงานทั้งหมดของร้าน
+     */
+    public function employees(): HasMany
+    {
+        return $this->hasMany(Employee::class, 'store_id');
+    }
+
+    /**
+     * พนักงานที่ยัง active
+     */
+    public function activeEmployees(): HasMany
+    {
+        return $this->employees()->where('employment_status', 'active');
+    }
+
+    /**
+     * แผนกทั้งหมดของร้าน
+     */
+    public function departments(): HasMany
+    {
+        return $this->hasMany(Department::class, 'store_id');
+    }
+
+    /**
+     * ตำแหน่งงานทั้งหมดของร้าน
+     */
+    public function positions(): HasMany
+    {
+        return $this->hasMany(Position::class, 'store_id');
+    }
+
+    /**
+     * กะการทำงานของร้าน
+     */
+    public function workShifts(): HasMany
+    {
+        return $this->hasMany(WorkShift::class, 'store_id');
+    }
+
     /**
      * Scope: Only active stores
      */
