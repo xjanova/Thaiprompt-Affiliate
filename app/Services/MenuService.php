@@ -337,13 +337,23 @@ class MenuService
     protected function routeToUrl(string $routeName, string $default = '#'): string
     {
         try {
+            // ลองใช้ route() helper โดยตรง
             if (Route::has($routeName)) {
                 return route($routeName);
             }
         } catch (\Exception $e) {
-            // ถ้า route ไม่พบ ลอง fallback เป็น path
-            $path = str_replace('.index', '', $routeName);
-            $path = str_replace('.', '/', $path);
+            // Log error สำหรับ debugging (optional)
+            // \Log::warning("Route error: {$routeName} - " . $e->getMessage());
+        }
+
+        // Fallback: แปลง route name เป็น path
+        // เช่น user.services.index -> /user/services
+        // เช่น user.bookings.index -> /user/bookings
+        $path = str_replace('.index', '', $routeName);
+        $path = str_replace('.', '/', $path);
+
+        // ตรวจสอบว่า path ไม่ว่างเปล่า
+        if (!empty($path) && $path !== $routeName) {
             return '/' . $path;
         }
 
