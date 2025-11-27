@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.233.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1714 from xjanova/claude/create-commissions-table-01AomNkFGmyhjnVXbNUbgmTP (8d6ab9c4)
+- refactor: ปรับปรุงระบบคอมมิชชั่นให้ใช้ตารางใหม่ (f950d02e)
+
 ## [v3.233.0] - 2025-11-27
 
 ### ✨ Features
