@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.234.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1715 from xjanova/claude/modernize-pos-dual-display-01P9FL14vnUGJ1QuC431GHyA (eb867b04)
+- feat: enhance POS cashier with fullscreen mode, camera scanning, and PV/points display (8669cd1a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.233.1] - 2025-11-27
 
 ### ✨ Features
