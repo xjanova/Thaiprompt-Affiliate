@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.255.4] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1768 from xjanova/claude/fix-missing-route-01SD4s6DJqcMf9kwNFPgNX7q (87e50a0f)
+- fix: แก้ไข elements.store route ให้ใช้ dynamic section ID (e6307983)
+### 🔧 Other Changes
+
+
 ## [v3.255.3] - 2025-11-27
 
 ### ✨ Features
