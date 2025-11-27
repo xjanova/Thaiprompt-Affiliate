@@ -205,37 +205,38 @@ class CartController extends Controller
      */
     public function mini()
     {
-        // ดึงสินค้าในตะกร้า (จำกัด 5 รายการล่าสุด)
+        // ดึงสินค้าในตะกร้า (ทุกรายการ เพื่อแสดงใน slide panel)
         $cartItems = ShoppingCart::with(['product' => function ($query) {
-            $query->select('id', 'name', 'price', 'image');
+            $query->select('id', 'name', 'price', 'main_image_url');
         }])
             ->where('user_id', auth()->id())
             ->latest()
-            ->take(5)
             ->get();
 
         // จัดรูปแบบข้อมูลสำหรับ JSON
         $items = $cartItems->map(function ($item) {
+            // สร้าง image URL จาก main_image_url
+            $imageUrl = null;
+            if ($item->product && $item->product->main_image_url) {
+                $imageUrl = \Storage::url($item->product->main_image_url);
+            }
+
             return [
                 'id' => $item->id,
                 'product_id' => $item->product_id,
                 'name' => $item->product->name ?? 'สินค้าไม่พบ',
                 'price' => $item->product->price ?? 0,
                 'quantity' => $item->quantity,
-                'image' => $item->product->image ?? null,
+                'image' => $imageUrl,
             ];
         });
 
         // คำนวณยอดรวม
-        $allItems = ShoppingCart::with('product')
-            ->where('user_id', auth()->id())
-            ->get();
-
-        $total = $allItems->sum(function ($item) {
+        $total = $cartItems->sum(function ($item) {
             return ($item->product->price ?? 0) * $item->quantity;
         });
 
-        $count = $allItems->sum('quantity');
+        $count = $cartItems->sum('quantity');
 
         return response()->json([
             'items' => $items,
