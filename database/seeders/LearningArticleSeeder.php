@@ -8,6 +8,12 @@ use App\Models\LearningCategory;
 use App\Models\User;
 use Illuminate\Support\Str;
 
+/**
+ * Seeder สำหรับบทความ Academy Knowledge
+ *
+ * สร้างบทความวิชาตามโครงสร้าง Wiki ของระบบ TP-Affiliate
+ * ทุกวิชาอ่านฟรีสำหรับสมาชิกที่ login
+ */
 class LearningArticleSeeder extends Seeder
 {
     /**
@@ -15,310 +21,1002 @@ class LearningArticleSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get first admin user
-        $admin = User::where('role', 'admin')->first();
+        // ดึง admin user
+        $admin = User::where('role', 'admin')->first() ?? User::first();
 
         if (!$admin) {
-            $admin = User::first();
-        }
-
-        if (!$admin) {
-            $this->command->error('No users found. Please create a user first.');
+            $this->command->error('❌ ไม่พบผู้ใช้ในระบบ กรุณาสร้างผู้ใช้ก่อน');
             return;
         }
 
-        $articles = [
-            // เริ่มต้นใช้งาน AI
-            [
-                'category_slug' => 'getting-started-ai',
-                'title' => 'รู้จักกับ AI และ ChatGPT สำหรับมือใหม่',
-                'slug' => 'introduction-to-ai-chatgpt',
-                'excerpt' => 'เรียนรู้พื้นฐาน AI และวิธีการใช้งาน ChatGPT เพื่อเพิ่มประสิทธิภาพในการทำงาน',
-                'content' => '<h2>รู้จักกับ AI และ ChatGPT</h2>
-<p>AI (Artificial Intelligence) หรือปัญญาประดิษฐ์ คือเทคโนโลยีที่ทำให้คอมพิวเตอร์สามารถเรียนรู้และทำงานที่ต้องใช้สติปัญญาของมนุษย์ได้</p>
+        $this->command->info('📚 กำลังสร้างบทความ Academy Knowledge...');
 
-<h3>ChatGPT คืออะไร?</h3>
-<p>ChatGPT เป็น AI Chatbot ที่พัฒนาโดย OpenAI สามารถสนทนา ตอบคำถาม และช่วยงานต่างๆ ได้อย่างชาญฉลาด</p>
-
-<h3>ประโยชน์ของ ChatGPT</h3>
-<ul>
-<li>ช่วยเขียนเนื้อหา บทความ และอีเมล</li>
-<li>วิเคราะห์ข้อมูลและสรุปใจความสำคัญ</li>
-<li>แปลภาษาและแก้ไขไวยากรณ์</li>
-<li>เขียนโค้ดและแก้ bug</li>
-<li>ระดมความคิดและวางแผน</li>
-</ul>
-
-<h3>วิธีเริ่มต้นใช้งาน</h3>
-<ol>
-<li>สมัครบัญชีที่ chat.openai.com</li>
-<li>เข้าสู่ระบบและเริ่มสนทนา</li>
-<li>ใช้คำสั่ง (Prompt) ที่ชัดเจน</li>
-<li>ทดลองและปรับปรุงคำถาม</li>
-</ol>',
-                'video_url' => 'https://www.youtube.com/embed/example1',
-                'thumbnail' => 'https://via.placeholder.com/800x450/667eea/ffffff?text=AI+ChatGPT',
-                'estimated_duration' => 30,
-                'difficulty' => 'beginner',
-                'is_published' => true,
-                'is_featured' => true,
-                'tags' => ['AI', 'ChatGPT', 'เริ่มต้น'],
-                'views' => 1250,
-                'order' => 1,
-            ],
-            [
-                'category_slug' => 'getting-started-ai',
-                'title' => 'Prompt Engineering: ศิลปะการเขียนคำสั่ง AI',
-                'slug' => 'prompt-engineering-basics',
-                'excerpt' => 'เทคนิคการเขียน Prompt ที่ดีเพื่อให้ AI ตอบคำถามได้ตรงประเด็นและมีประสิทธิภาพ',
-                'content' => '<h2>Prompt Engineering คืออะไร?</h2>
-<p>Prompt Engineering คือศิลปะและวิทยาศาสตร์ในการออกแบบคำสั่งให้ AI เพื่อให้ได้ผลลัพธ์ที่ดีที่สุด</p>
-
-<h3>หลักการเขียน Prompt ที่ดี</h3>
-<ul>
-<li><strong>ชัดเจน:</strong> ระบุสิ่งที่ต้องการอย่างชัดเจน</li>
-<li><strong>เฉพาะเจาจง:</strong> ให้รายละเอียดที่จำเป็น</li>
-<li><strong>มีโครงสร้าง:</strong> แบ่งคำสั่งเป็นส่วนๆ</li>
-<li><strong>ให้บริบท:</strong> อธิบายสถานการณ์และเป้าหมาย</li>
-</ul>
-
-<h3>ตัวอย่าง Prompt ที่ดี</h3>
-<pre><code>คุณคือผู้เชี่ยวชาญด้านการตลาดดิจิทัล
-ช่วยเขียนโพสต์ Facebook ประชาสัมพันธ์คอร์สออนไลน์
-- หัวข้อ: เรียนรู้การใช้ AI
-- กลุ่มเป้าหมาย: นักธุรกิจออนไลน์
-- ความยาว: 100-150 คำ
-- โทนเสียง: เป็นกันเองและสร้างแรงบันดาลใจ</code></pre>',
-                'video_url' => 'https://www.youtube.com/embed/example2',
-                'thumbnail' => 'https://via.placeholder.com/800x450/764ba2/ffffff?text=Prompt+Engineering',
-                'estimated_duration' => 45,
-                'difficulty' => 'intermediate',
-                'is_published' => true,
-                'is_featured' => true,
-                'tags' => ['Prompt', 'AI', 'เทคนิค'],
-                'views' => 980,
-                'order' => 2,
-            ],
-
-            // Affiliate Marketing
-            [
-                'category_slug' => 'affiliate-marketing',
-                'title' => 'พื้นฐาน Affiliate Marketing ฉบับมือใหม่',
-                'slug' => 'affiliate-marketing-basics',
-                'excerpt' => 'เริ่มต้นสร้างรายได้ออนไลน์ด้วย Affiliate Marketing แบบ step-by-step',
-                'content' => '<h2>Affiliate Marketing คืออะไร?</h2>
-<p>Affiliate Marketing คือการตลาดแบบพันธมิตร ที่คุณได้รับค่าคอมมิชชั่นจากการแนะนำสินค้าหรือบริการของผู้อื่น</p>
-
-<h3>ข้อดีของ Affiliate Marketing</h3>
-<ul>
-<li>ไม่ต้องมีสินค้าของตัวเอง</li>
-<li>ไม่ต้องจัดการสต๊อกหรือจัดส่ง</li>
-<li>สามารถทำที่ไหนก็ได้</li>
-<li>รายได้แบบพาสซีฟ</li>
-<li>เริ่มต้นได้ง่าย ทุนน้อย</li>
-</ul>
-
-<h3>ขั้นตอนการเริ่มต้น</h3>
-<ol>
-<li>เลือก Niche ที่สนใจและมีตลาด</li>
-<li>สมัครโปรแกรม Affiliate</li>
-<li>สร้างแพลตฟอร์มแชร์ (Blog, Social Media)</li>
-<li>สร้างเนื้อหาที่มีคุณภาพ</li>
-<li>โปรโมทลิงก์ Affiliate</li>
-<li>วิเคราะห์และปรับปรุง</li>
-</ol>',
-                'video_url' => null,
-                'thumbnail' => 'https://via.placeholder.com/800x450/f093fb/ffffff?text=Affiliate+Basics',
-                'estimated_duration' => 60,
-                'difficulty' => 'beginner',
-                'is_published' => true,
-                'is_featured' => false,
-                'tags' => ['Affiliate', 'Marketing', 'รายได้ออนไลน์'],
-                'views' => 1450,
-                'order' => 1,
-            ],
-            [
-                'category_slug' => 'affiliate-marketing',
-                'title' => 'กลยุทธ์ Affiliate Marketing ขั้นสูง',
-                'slug' => 'advanced-affiliate-strategies',
-                'excerpt' => 'เทคนิคและกลยุทธ์ขั้นสูงเพื่อเพิ่มยอดขายและคอมมิชชั่นของคุณ',
-                'content' => '<h2>กลยุทธ์ขั้นสูงสำหรับ Affiliate</h2>
-
-<h3>1. Email Marketing Automation</h3>
-<p>สร้างระบบอีเมลอัตโนมัติเพื่อ nurture ลูกค้าและเพิ่มคอนเวอร์ชั่น</p>
-
-<h3>2. SEO for Affiliate Sites</h3>
-<p>เทคนิค SEO เพื่อดึงทราฟฟิกจาก Google แบบฟรี</p>
-
-<h3>3. Retargeting Campaigns</h3>
-<p>ใช้ Facebook Pixel และ Google Ads ตามจับลูกค้า</p>
-
-<h3>4. Product Comparison Content</h3>
-<p>สร้างเนื้อหาเปรียบเทียบสินค้าที่มี conversion rate สูง</p>',
-                'video_url' => 'https://www.youtube.com/embed/example3',
-                'thumbnail' => 'https://via.placeholder.com/800x450/f5576c/ffffff?text=Advanced+Affiliate',
-                'estimated_duration' => 90,
-                'difficulty' => 'advanced',
-                'is_published' => true,
-                'is_featured' => true,
-                'tags' => ['Affiliate', 'ขั้นสูง', 'กลยุทธ์'],
-                'views' => 756,
-                'order' => 2,
-            ],
-
-            // การตลาดดิจิทัล
-            [
-                'category_slug' => 'digital-marketing',
-                'title' => 'Facebook Ads ฉบับเร่งรัด',
-                'slug' => 'facebook-ads-crash-course',
-                'excerpt' => 'เรียนรู้การยิง Facebook Ads ให้ได้ผลลัพธ์จริงภายใน 1 ชั่วโมง',
-                'content' => '<h2>Facebook Ads สำหรับมือใหม่</h2>
-<p>Facebook Ads เป็นเครื่องมือโฆษณาที่ทรงพลังที่สุดในปัจจุบัน</p>
-
-<h3>ประเภทของโฆษณา</h3>
-<ul>
-<li>Image Ads - โฆษณารูปภาพ</li>
-<li>Video Ads - โฆษณาวิดีโอ</li>
-<li>Carousel Ads - โฆษณาแบบหมุน</li>
-<li>Collection Ads - โฆษณาคอลเลคชั่น</li>
-</ul>
-
-<h3>ขั้นตอนการสร้างแคมเปญ</h3>
-<ol>
-<li>กำหนดวัตถุประสงค์</li>
-<li>เลือก Audience</li>
-<li>ตั้งงบประมาณ</li>
-<li>ออกแบบโฆษณา</li>
-<li>Launch และติดตามผล</li>
-</ol>',
-                'video_url' => 'https://www.youtube.com/embed/example4',
-                'thumbnail' => 'https://via.placeholder.com/800x450/4facfe/ffffff?text=Facebook+Ads',
-                'estimated_duration' => 75,
-                'difficulty' => 'intermediate',
-                'is_published' => true,
-                'is_featured' => true,
-                'tags' => ['Facebook', 'Ads', 'การตลาด'],
-                'views' => 2100,
-                'order' => 1,
-            ],
-
-            // สร้างเนื้อหา
-            [
-                'category_slug' => 'content-creation',
-                'title' => 'Copywriting ที่ขายได้',
-                'slug' => 'copywriting-that-sells',
-                'excerpt' => 'เทคนิคการเขียนคอปปี้ที่กระตุ้นให้คนอยากซื้อ',
-                'content' => '<h2>หลักการเขียน Copy ที่ดี</h2>
-
-<h3>AIDA Formula</h3>
-<ul>
-<li><strong>Attention:</strong> ดึงดูดความสนใจ</li>
-<li><strong>Interest:</strong> สร้างความสนใจ</li>
-<li><strong>Desire:</strong> กระตุ้นความต้องการ</li>
-<li><strong>Action:</strong> เรียกร้องให้ลงมือ</li>
-</ul>
-
-<h3>เทคนิคขั้นสูง</h3>
-<p>ใช้ความเจ็บปวดและความต้องการของลูกค้าเป็นตัวขับเคลื่อน</p>',
-                'video_url' => null,
-                'thumbnail' => 'https://via.placeholder.com/800x450/43e97b/ffffff?text=Copywriting',
-                'estimated_duration' => 50,
-                'difficulty' => 'intermediate',
-                'is_published' => true,
-                'is_featured' => false,
-                'tags' => ['Copywriting', 'เนื้อหา', 'การขาย'],
-                'views' => 890,
-                'order' => 1,
-            ],
-
-            // ธุรกิจออนไลน์
-            [
-                'category_slug' => 'online-business',
-                'title' => 'วิธีสร้างธุรกิจออนไลน์ที่ประสบความสำเร็จ',
-                'slug' => 'building-successful-online-business',
-                'excerpt' => 'แผนที่ครบวงจรในการสร้างและพัฒนาธุรกิจออนไลน์ให้เติบโตอย่างยั่งยืน',
-                'content' => '<h2>5 ขั้นตอนสร้างธุรกิจออนไลน์</h2>
-
-<h3>1. หาไอเดียและตรวจสอบตลาด</h3>
-<p>วิเคราะห์ความต้องการของตลาดและหา pain points</p>
-
-<h3>2. สร้างแบรนด์และตำแหน่งทางการตลาด</h3>
-<p>กำหนด brand identity และ positioning ที่ชัดเจน</p>
-
-<h3>3. สร้างสินค้าหรือบริการ MVP</h3>
-<p>เริ่มจาก Minimum Viable Product และปรับปรุงต่อ</p>
-
-<h3>4. Marketing และหาลูกค้า</h3>
-<p>ใช้กลยุทธ์การตลาดที่หลากหลาย</p>
-
-<h3>5. Scale และเติบโต</h3>
-<p>ขยายธุรกิจอย่างเป็นระบบ</p>',
-                'video_url' => 'https://www.youtube.com/embed/example5',
-                'thumbnail' => 'https://via.placeholder.com/800x450/fa709a/ffffff?text=Online+Business',
-                'estimated_duration' => 120,
-                'difficulty' => 'intermediate',
-                'is_published' => true,
-                'is_featured' => true,
-                'tags' => ['ธุรกิจออนไลน์', 'Startup', 'การเติบโต'],
-                'views' => 1678,
-                'order' => 1,
-            ],
-
-            // เครื่องมือและเทคโนโลยี
-            [
-                'category_slug' => 'tools-technology',
-                'title' => '10 เครื่องมือ AI ที่ทุกคนต้องมี',
-                'slug' => 'top-10-ai-tools',
-                'excerpt' => 'รวมเครื่องมือ AI ที่จะช่วยเพิ่มประสิทธิภาพการทำงานของคุณ',
-                'content' => '<h2>เครื่องมือ AI ยอดนิยม</h2>
-
-<h3>1. ChatGPT - AI Chatbot</h3>
-<p>ช่วยเขียน ค้นคว้า และวิเคราะห์</p>
-
-<h3>2. Midjourney - AI สร้างภาพ</h3>
-<p>สร้างภาพสวยงามจากคำสั่ง</p>
-
-<h3>3. Notion AI - จดบันทึกอัจฉริยะ</h3>
-<p>เขียนและจัดระเบียบงานด้วย AI</p>
-
-<h3>4. Grammarly - แก้ไขภาษาอังกฤษ</h3>
-<p>ตรวจสอบไวยากรณ์และปรับปรุงการเขียน</p>
-
-<h3>5. Canva AI - ออกแบบกราฟิก</h3>
-<p>สร้างดีไซน์สวยๆ ง่ายๆ</p>',
-                'video_url' => null,
-                'thumbnail' => 'https://via.placeholder.com/800x450/30cfd0/ffffff?text=AI+Tools',
-                'estimated_duration' => 40,
-                'difficulty' => 'beginner',
-                'is_published' => true,
-                'is_featured' => false,
-                'tags' => ['AI', 'Tools', 'เครื่องมือ'],
-                'views' => 2345,
-                'order' => 1,
-            ],
-        ];
+        $articles = $this->getAllArticles();
+        $created = 0;
+        $skipped = 0;
 
         foreach ($articles as $articleData) {
             $category = LearningCategory::where('slug', $articleData['category_slug'])->first();
 
             if (!$category) {
-                $this->command->warn("Category {$articleData['category_slug']} not found. Skipping article {$articleData['title']}");
+                $this->command->warn("   ⚠️ ไม่พบหมวดหมู่: {$articleData['category_slug']} - ข้าม");
                 continue;
             }
 
             unset($articleData['category_slug']);
 
-            LearningArticle::updateOrCreate(
-                ['slug' => $articleData['slug']],
-                array_merge($articleData, [
-                    'category_id' => $category->id,
-                    'created_by' => $admin->id,
-                    'updated_by' => $admin->id,
-                    'published_at' => now(),
-                ])
-            );
+            // เช็คว่ามีอยู่แล้วหรือไม่
+            if (LearningArticle::where('slug', $articleData['slug'])->exists()) {
+                $skipped++;
+                continue;
+            }
+
+            LearningArticle::create(array_merge($articleData, [
+                'category_id' => $category->id,
+                'created_by' => $admin->id,
+                'updated_by' => $admin->id,
+                'published_at' => now(),
+            ]));
+
+            $created++;
         }
 
-        $this->command->info('Learning articles seeded successfully!');
+        $this->command->info("✅ สร้างบทความสำเร็จ: {$created} บทความ");
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️ ข้าม {$skipped} บทความที่มีอยู่แล้ว");
+        }
+    }
+
+    /**
+     * ดึงบทความทั้งหมดตามโครงสร้าง Wiki
+     */
+    private function getAllArticles(): array
+    {
+        return array_merge(
+            $this->getOverviewArticles(),
+            $this->getGettingStartedArticles(),
+            $this->getMlmAffiliateArticles(),
+            $this->getAiBotArticles(),
+            $this->getEcommerceArticles(),
+            $this->getHotelArticles(),
+            $this->getCryptoArticles(),
+            $this->getWalletArticles(),
+            $this->getPaymentArticles(),
+            $this->getHrmArticles(),
+            $this->getAccountingArticles(),
+            $this->getSoftwareArticles(),
+            $this->getVendorArticles(),
+            $this->getTechnologyArticles(),
+            $this->getSecurityArticles(),
+            $this->getApiIntegrationArticles(),
+            $this->getFaqSupportArticles(),
+        );
+    }
+
+    /**
+     * บทความหมวด: ภาพรวม & สรุปฟีเจอร์
+     */
+    private function getOverviewArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'overview',
+                'title' => 'รู้จัก TP-Affiliate Platform',
+                'slug' => 'introduction-tp-affiliate',
+                'excerpt' => 'ทำความรู้จักกับแพลตฟอร์ม TP-Affiliate ระบบ All-in-One สำหรับธุรกิจออนไลน์',
+                'content' => $this->generatePlaceholderContent('รู้จัก TP-Affiliate Platform', [
+                    'TP-Affiliate คืออะไร?',
+                    'ฟีเจอร์หลักของระบบ',
+                    'ใครควรใช้งาน TP-Affiliate?',
+                    'ข้อดีของการใช้แพลตฟอร์มแบบ All-in-One',
+                ]),
+                'estimated_duration' => 15,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['ภาพรวม', 'เริ่มต้น', 'แนะนำ'],
+                'views' => 0,
+                'order' => 1,
+            ],
+            [
+                'category_slug' => 'overview',
+                'title' => 'สรุป 20+ ฟีเจอร์หลักของระบบ',
+                'slug' => 'all-features-summary',
+                'excerpt' => 'ภาพรวมฟีเจอร์ทั้งหมดของ TP-Affiliate ตั้งแต่ MLM, E-Commerce, AI Bot จนถึง Crypto',
+                'content' => $this->generatePlaceholderContent('สรุป 20+ ฟีเจอร์หลักของระบบ', [
+                    '🔗 MLM & Affiliate System',
+                    '🛒 E-Commerce & POS',
+                    '🤖 AI & Bot System',
+                    '💳 Wallet & Payment',
+                    '₿ Crypto & Blockchain',
+                    '🏨 Hotel Management',
+                    '👥 HRM System',
+                    '📊 Accounting',
+                    '🔒 Security Features',
+                ]),
+                'estimated_duration' => 30,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['ฟีเจอร์', 'สรุป', 'ภาพรวม'],
+                'views' => 0,
+                'order' => 2,
+            ],
+            [
+                'category_slug' => 'overview',
+                'title' => 'แผนภาพระบบและ Architecture',
+                'slug' => 'system-architecture',
+                'excerpt' => 'เข้าใจโครงสร้างและการทำงานของระบบ TP-Affiliate แบบภาพรวม',
+                'content' => $this->generatePlaceholderContent('แผนภาพระบบและ Architecture', [
+                    'System Architecture Overview',
+                    'Module Dependencies',
+                    'Data Flow',
+                    'Integration Points',
+                ]),
+                'estimated_duration' => 20,
+                'difficulty' => 'intermediate',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['Architecture', 'ระบบ', 'โครงสร้าง'],
+                'views' => 0,
+                'order' => 3,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: เริ่มต้นใช้งาน
+     */
+    private function getGettingStartedArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'getting-started',
+                'title' => 'การสมัครสมาชิกและเข้าสู่ระบบ',
+                'slug' => 'registration-and-login',
+                'excerpt' => 'วิธีสมัครสมาชิกใหม่และเข้าสู่ระบบ รวมถึงการยืนยันตัวตน',
+                'content' => $this->generatePlaceholderContent('การสมัครสมาชิกและเข้าสู่ระบบ', [
+                    'สมัครสมาชิกผ่านเว็บไซต์',
+                    'สมัครสมาชิกผ่าน LINE',
+                    'การยืนยันอีเมลและเบอร์โทร',
+                    'การเข้าสู่ระบบ',
+                    'การรีเซ็ตรหัสผ่าน',
+                ]),
+                'estimated_duration' => 10,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['สมัครสมาชิก', 'เข้าสู่ระบบ', 'เริ่มต้น'],
+                'views' => 0,
+                'order' => 1,
+            ],
+            [
+                'category_slug' => 'getting-started',
+                'title' => 'ตั้งค่าโปรไฟล์และข้อมูลส่วนตัว',
+                'slug' => 'profile-setup',
+                'excerpt' => 'วิธีตั้งค่าโปรไฟล์ ข้อมูลส่วนตัว และการ KYC',
+                'content' => $this->generatePlaceholderContent('ตั้งค่าโปรไฟล์และข้อมูลส่วนตัว', [
+                    'แก้ไขข้อมูลโปรไฟล์',
+                    'อัปโหลดรูปโปรไฟล์',
+                    'การยืนยันตัวตน (KYC)',
+                    'ตั้งค่าความปลอดภัย 2FA',
+                ]),
+                'estimated_duration' => 15,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['โปรไฟล์', 'ตั้งค่า', 'KYC'],
+                'views' => 0,
+                'order' => 2,
+            ],
+            [
+                'category_slug' => 'getting-started',
+                'title' => 'หน้า Dashboard และเมนูหลัก',
+                'slug' => 'dashboard-navigation',
+                'excerpt' => 'ทำความรู้จักกับหน้า Dashboard และการนำทางในระบบ',
+                'content' => $this->generatePlaceholderContent('หน้า Dashboard และเมนูหลัก', [
+                    'ภาพรวมหน้า Dashboard',
+                    'เมนูหลักและการนำทาง',
+                    'Widget และข้อมูลสรุป',
+                    'การปรับแต่งหน้า Dashboard',
+                ]),
+                'estimated_duration' => 10,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['Dashboard', 'เมนู', 'นำทาง'],
+                'views' => 0,
+                'order' => 3,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: MLM & Affiliate
+     */
+    private function getMlmAffiliateArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'mlm-affiliate',
+                'title' => 'รู้จักระบบ MLM & Affiliate',
+                'slug' => 'mlm-affiliate-introduction',
+                'excerpt' => 'ทำความเข้าใจระบบ Multi-Level Marketing และ Affiliate Marketing ใน TP-Affiliate',
+                'content' => $this->generatePlaceholderContent('รู้จักระบบ MLM & Affiliate', [
+                    'MLM คืออะไร?',
+                    'Affiliate Marketing คืออะไร?',
+                    'ความแตกต่างระหว่าง MLM กับ Affiliate',
+                    'แผนการตลาดที่รองรับ',
+                ]),
+                'estimated_duration' => 20,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['MLM', 'Affiliate', 'เริ่มต้น'],
+                'views' => 0,
+                'order' => 1,
+            ],
+            [
+                'category_slug' => 'mlm-affiliate',
+                'title' => 'ระบบ Binary Plan',
+                'slug' => 'binary-plan-system',
+                'excerpt' => 'วิธีการทำงานของระบบ Binary Plan และการคำนวณค่าคอมมิชชั่น',
+                'content' => $this->generatePlaceholderContent('ระบบ Binary Plan', [
+                    'Binary Plan คืออะไร?',
+                    'โครงสร้างสายงาน Binary',
+                    'การคำนวณค่าคอมมิชชั่น',
+                    'กฎการจับคู่ (Matching)',
+                    'ตัวอย่างการคำนวณ',
+                ]),
+                'estimated_duration' => 30,
+                'difficulty' => 'intermediate',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['Binary', 'MLM', 'Commission'],
+                'views' => 0,
+                'order' => 2,
+            ],
+            [
+                'category_slug' => 'mlm-affiliate',
+                'title' => 'ระบบ Unilevel Plan',
+                'slug' => 'unilevel-plan-system',
+                'excerpt' => 'วิธีการทำงานของระบบ Unilevel Plan และการคำนวณค่าคอมมิชชั่น',
+                'content' => $this->generatePlaceholderContent('ระบบ Unilevel Plan', [
+                    'Unilevel Plan คืออะไร?',
+                    'โครงสร้างสายงาน Unilevel',
+                    'จำนวนชั้นที่ได้รับคอมมิชชั่น',
+                    'อัตราค่าคอมมิชชั่นแต่ละชั้น',
+                ]),
+                'estimated_duration' => 25,
+                'difficulty' => 'intermediate',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['Unilevel', 'MLM', 'Commission'],
+                'views' => 0,
+                'order' => 3,
+            ],
+            [
+                'category_slug' => 'mlm-affiliate',
+                'title' => 'ระบบ Rank และ Bonus',
+                'slug' => 'rank-and-bonus-system',
+                'excerpt' => 'ระบบยศและโบนัสพิเศษสำหรับสมาชิกที่มียอดขายสูง',
+                'content' => $this->generatePlaceholderContent('ระบบ Rank และ Bonus', [
+                    'ระดับ Rank ทั้งหมด',
+                    'เงื่อนไขการเลื่อนขั้น',
+                    'โบนัสตำแหน่ง',
+                    'สิทธิพิเศษแต่ละ Rank',
+                ]),
+                'estimated_duration' => 20,
+                'difficulty' => 'intermediate',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['Rank', 'Bonus', 'MLM'],
+                'views' => 0,
+                'order' => 4,
+            ],
+            [
+                'category_slug' => 'mlm-affiliate',
+                'title' => 'การดู Genealogy และสายงาน',
+                'slug' => 'genealogy-network-view',
+                'excerpt' => 'วิธีดูโครงสร้างสายงานและ Genealogy ของทีม',
+                'content' => $this->generatePlaceholderContent('การดู Genealogy และสายงาน', [
+                    'หน้า Genealogy',
+                    'มุมมอง Tree View',
+                    'การค้นหาสมาชิก',
+                    'สถิติสายงาน',
+                ]),
+                'estimated_duration' => 15,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['Genealogy', 'สายงาน', 'ทีม'],
+                'views' => 0,
+                'order' => 5,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: AI & Bot System
+     */
+    private function getAiBotArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'ai-bot',
+                'title' => 'รู้จักระบบ AI ใน TP-Affiliate',
+                'slug' => 'ai-system-introduction',
+                'excerpt' => 'ภาพรวมระบบ AI ทั้งหมดใน TP-Affiliate ตั้งแต่ Chatbot, Image Generation จนถึง LINE Bot',
+                'content' => $this->generatePlaceholderContent('รู้จักระบบ AI ใน TP-Affiliate', [
+                    'AI Features ทั้งหมด',
+                    'AI Chatbot',
+                    'AI Image/Video Generation',
+                    'LINE AI Bot',
+                    'AI Provider ที่รองรับ',
+                ]),
+                'estimated_duration' => 20,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['AI', 'Chatbot', 'ภาพรวม'],
+                'views' => 0,
+                'order' => 1,
+            ],
+            [
+                'category_slug' => 'ai-bot',
+                'title' => 'การสร้างและจัดการ AI Chatbot',
+                'slug' => 'ai-chatbot-management',
+                'excerpt' => 'วิธีสร้าง ตั้งค่า และจัดการ AI Chatbot สำหรับธุรกิจ',
+                'content' => $this->generatePlaceholderContent('การสร้างและจัดการ AI Chatbot', [
+                    'สร้าง Chatbot ใหม่',
+                    'ตั้งค่า Personality',
+                    'เพิ่ม Knowledge Base',
+                    'ทดสอบและปรับปรุง',
+                ]),
+                'estimated_duration' => 30,
+                'difficulty' => 'intermediate',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['AI', 'Chatbot', 'สร้าง'],
+                'views' => 0,
+                'order' => 2,
+            ],
+            [
+                'category_slug' => 'ai-bot',
+                'title' => 'AI สร้างรูปภาพและวิดีโอ',
+                'slug' => 'ai-image-video-generation',
+                'excerpt' => 'วิธีใช้ AI สร้างรูปภาพและวิดีโอสำหรับการตลาดและ Content',
+                'content' => $this->generatePlaceholderContent('AI สร้างรูปภาพและวิดีโอ', [
+                    'Text-to-Image Generation',
+                    'Image-to-Image Editing',
+                    'AI Video Generation',
+                    'Best Practices และ Tips',
+                ]),
+                'estimated_duration' => 25,
+                'difficulty' => 'intermediate',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['AI', 'Image', 'Video'],
+                'views' => 0,
+                'order' => 3,
+            ],
+            [
+                'category_slug' => 'ai-bot',
+                'title' => 'LINE AI Bot สำหรับธุรกิจ',
+                'slug' => 'line-ai-bot-business',
+                'excerpt' => 'วิธีสร้างและใช้งาน LINE AI Bot สำหรับการขาย การสนับสนุน และการตลาด',
+                'content' => $this->generatePlaceholderContent('LINE AI Bot สำหรับธุรกิจ', [
+                    'เชื่อมต่อ LINE Official Account',
+                    'ตั้งค่า AI Bot',
+                    'สร้าง Flow การสนทนา',
+                    'ระบบรับสมัครสมาชิกผ่าน LINE',
+                    'Rich Menu และ Quick Reply',
+                ]),
+                'estimated_duration' => 35,
+                'difficulty' => 'intermediate',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['LINE', 'AI', 'Bot'],
+                'views' => 0,
+                'order' => 4,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: E-Commerce & POS
+     */
+    private function getEcommerceArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'ecommerce',
+                'title' => 'เริ่มต้นใช้งานร้านค้าออนไลน์',
+                'slug' => 'ecommerce-getting-started',
+                'excerpt' => 'คู่มือเริ่มต้นสร้างและจัดการร้านค้าออนไลน์',
+                'content' => $this->generatePlaceholderContent('เริ่มต้นใช้งานร้านค้าออนไลน์', [
+                    'สร้างร้านค้าใหม่',
+                    'ตั้งค่าข้อมูลร้าน',
+                    'เพิ่มสินค้า',
+                    'ตั้งค่าการชำระเงิน',
+                    'ตั้งค่าการจัดส่ง',
+                ]),
+                'estimated_duration' => 30,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['E-Commerce', 'ร้านค้า', 'เริ่มต้น'],
+                'views' => 0,
+                'order' => 1,
+            ],
+            [
+                'category_slug' => 'ecommerce',
+                'title' => 'การจัดการสินค้าและสต๊อก',
+                'slug' => 'product-inventory-management',
+                'excerpt' => 'วิธีจัดการสินค้า หมวดหมู่ ตัวเลือก และสต๊อกสินค้า',
+                'content' => $this->generatePlaceholderContent('การจัดการสินค้าและสต๊อก', [
+                    'เพิ่ม/แก้ไขสินค้า',
+                    'จัดการหมวดหมู่',
+                    'ตัวเลือกสินค้า (Variants)',
+                    'จัดการสต๊อก',
+                    'ราคาและโปรโมชั่น',
+                ]),
+                'estimated_duration' => 25,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['สินค้า', 'สต๊อก', 'จัดการ'],
+                'views' => 0,
+                'order' => 2,
+            ],
+            [
+                'category_slug' => 'ecommerce',
+                'title' => 'การจัดการคำสั่งซื้อ',
+                'slug' => 'order-management',
+                'excerpt' => 'วิธีจัดการคำสั่งซื้อ การยืนยัน การจัดส่ง และการคืนเงิน',
+                'content' => $this->generatePlaceholderContent('การจัดการคำสั่งซื้อ', [
+                    'รายการคำสั่งซื้อ',
+                    'การยืนยันคำสั่งซื้อ',
+                    'การจัดส่ง',
+                    'การคืนเงิน/ยกเลิก',
+                    'รายงานการขาย',
+                ]),
+                'estimated_duration' => 20,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['คำสั่งซื้อ', 'จัดส่ง', 'Order'],
+                'views' => 0,
+                'order' => 3,
+            ],
+            [
+                'category_slug' => 'ecommerce',
+                'title' => 'ระบบ Point of Sale (POS)',
+                'slug' => 'pos-system-guide',
+                'excerpt' => 'วิธีใช้งานระบบ POS สำหรับร้านค้าหน้าร้าน',
+                'content' => $this->generatePlaceholderContent('ระบบ Point of Sale (POS)', [
+                    'เปิด POS Terminal',
+                    'การขายสินค้า',
+                    'การรับชำระเงิน',
+                    'พิมพ์ใบเสร็จ',
+                    'การเปิด/ปิดกะ',
+                ]),
+                'estimated_duration' => 25,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['POS', 'ขายหน้าร้าน', 'Terminal'],
+                'views' => 0,
+                'order' => 4,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: Hotel Management
+     */
+    private function getHotelArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'hotel',
+                'title' => 'ระบบจัดการโรงแรม',
+                'slug' => 'hotel-management-overview',
+                'excerpt' => 'ภาพรวมระบบจัดการโรงแรมและที่พัก',
+                'content' => $this->generatePlaceholderContent('ระบบจัดการโรงแรม', [
+                    'ฟีเจอร์หลักของระบบ',
+                    'การตั้งค่าโรงแรม',
+                    'การจัดการห้องพัก',
+                    'ระบบการจอง',
+                ]),
+                'estimated_duration' => 20,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['Hotel', 'โรงแรม', 'จอง'],
+                'views' => 0,
+                'order' => 1,
+            ],
+            [
+                'category_slug' => 'hotel',
+                'title' => 'การจัดการห้องพักและประเภทห้อง',
+                'slug' => 'room-type-management',
+                'excerpt' => 'วิธีตั้งค่าประเภทห้องพัก ราคา และสิ่งอำนวยความสะดวก',
+                'content' => $this->generatePlaceholderContent('การจัดการห้องพักและประเภทห้อง', [
+                    'สร้างประเภทห้องพัก',
+                    'ตั้งค่าราคา',
+                    'จัดการสิ่งอำนวยความสะดวก',
+                    'รูปภาพห้องพัก',
+                ]),
+                'estimated_duration' => 25,
+                'difficulty' => 'intermediate',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['ห้องพัก', 'ประเภทห้อง', 'ราคา'],
+                'views' => 0,
+                'order' => 2,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: Crypto & Blockchain
+     */
+    private function getCryptoArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'crypto',
+                'title' => 'รู้จักระบบ Crypto ใน TP-Affiliate',
+                'slug' => 'crypto-system-introduction',
+                'excerpt' => 'ภาพรวมระบบ Cryptocurrency และ Blockchain ในแพลตฟอร์ม',
+                'content' => $this->generatePlaceholderContent('รู้จักระบบ Crypto ใน TP-Affiliate', [
+                    'Cryptocurrency ที่รองรับ',
+                    'TPIX Token คืออะไร?',
+                    'การใช้งาน Crypto ในระบบ',
+                    'ความปลอดภัยของ Crypto',
+                ]),
+                'estimated_duration' => 25,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['Crypto', 'Blockchain', 'TPIX'],
+                'views' => 0,
+                'order' => 1,
+            ],
+            [
+                'category_slug' => 'crypto',
+                'title' => 'TPIX Token และ Staking',
+                'slug' => 'tpix-token-staking',
+                'excerpt' => 'วิธีใช้งาน TPIX Token และระบบ Staking',
+                'content' => $this->generatePlaceholderContent('TPIX Token และ Staking', [
+                    'TPIX Token คืออะไร?',
+                    'วิธีซื้อ/ขาย TPIX',
+                    'Staking TPIX',
+                    'ผลตอบแทน Staking',
+                ]),
+                'estimated_duration' => 30,
+                'difficulty' => 'intermediate',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['TPIX', 'Staking', 'Token'],
+                'views' => 0,
+                'order' => 2,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: Wallet System
+     */
+    private function getWalletArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'wallet',
+                'title' => 'ระบบกระเป๋าเงิน (Wallet)',
+                'slug' => 'wallet-system-overview',
+                'excerpt' => 'ภาพรวมระบบกระเป๋าเงินและการจัดการยอดเงิน',
+                'content' => $this->generatePlaceholderContent('ระบบกระเป๋าเงิน (Wallet)', [
+                    'ประเภทกระเป๋าเงิน',
+                    'ยอดคงเหลือ',
+                    'ประวัติการทำรายการ',
+                    'การโอนเงินระหว่างกระเป๋า',
+                ]),
+                'estimated_duration' => 15,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['Wallet', 'กระเป๋าเงิน', 'ยอดเงิน'],
+                'views' => 0,
+                'order' => 1,
+            ],
+            [
+                'category_slug' => 'wallet',
+                'title' => 'การเติมเงินและถอนเงิน',
+                'slug' => 'deposit-withdrawal-guide',
+                'excerpt' => 'วิธีเติมเงินเข้ากระเป๋าและถอนเงินออก',
+                'content' => $this->generatePlaceholderContent('การเติมเงินและถอนเงิน', [
+                    'วิธีเติมเงิน',
+                    'ช่องทางเติมเงิน',
+                    'วิธีถอนเงิน',
+                    'ค่าธรรมเนียม',
+                ]),
+                'estimated_duration' => 15,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['เติมเงิน', 'ถอนเงิน', 'Wallet'],
+                'views' => 0,
+                'order' => 2,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: ช่องทางชำระเงิน
+     */
+    private function getPaymentArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'payment',
+                'title' => 'ช่องทางชำระเงินที่รองรับ',
+                'slug' => 'payment-gateways-overview',
+                'excerpt' => 'รายการช่องทางชำระเงินทั้งหมดที่ระบบรองรับ',
+                'content' => $this->generatePlaceholderContent('ช่องทางชำระเงินที่รองรับ', [
+                    'PromptPay',
+                    'บัตรเครดิต/เดบิต',
+                    'TrueMoney Wallet',
+                    'Internet Banking',
+                    'Cryptocurrency',
+                ]),
+                'estimated_duration' => 15,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['Payment', 'ชำระเงิน', 'PromptPay'],
+                'views' => 0,
+                'order' => 1,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: HRM (ระบบบุคคล)
+     */
+    private function getHrmArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'hrm',
+                'title' => 'ระบบจัดการทรัพยากรบุคคล (HRM)',
+                'slug' => 'hrm-system-overview',
+                'excerpt' => 'ภาพรวมระบบ HRM สำหรับจัดการพนักงานและทรัพยากรบุคคล',
+                'content' => $this->generatePlaceholderContent('ระบบจัดการทรัพยากรบุคคล (HRM)', [
+                    'ฟีเจอร์หลัก HRM',
+                    'การจัดการพนักงาน',
+                    'ระบบการลา',
+                    'ระบบเงินเดือน',
+                    'การฝึกอบรม',
+                ]),
+                'estimated_duration' => 25,
+                'difficulty' => 'intermediate',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['HRM', 'HR', 'พนักงาน'],
+                'views' => 0,
+                'order' => 1,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: ระบบบัญชี
+     */
+    private function getAccountingArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'accounting',
+                'title' => 'ระบบบัญชีและการเงิน',
+                'slug' => 'accounting-system-overview',
+                'excerpt' => 'ภาพรวมระบบบัญชีและการจัดการการเงิน',
+                'content' => $this->generatePlaceholderContent('ระบบบัญชีและการเงิน', [
+                    'ผังบัญชี (Chart of Accounts)',
+                    'การบันทึกรายการ',
+                    'รายงานทางการเงิน',
+                    'งบดุลและงบกำไรขาดทุน',
+                ]),
+                'estimated_duration' => 30,
+                'difficulty' => 'intermediate',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['บัญชี', 'การเงิน', 'Accounting'],
+                'views' => 0,
+                'order' => 1,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: ซอฟต์แวร์และไลเซนส์
+     */
+    private function getSoftwareArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'software',
+                'title' => 'ระบบขายซอฟต์แวร์และไลเซนส์',
+                'slug' => 'software-license-system',
+                'excerpt' => 'วิธีขายซอฟต์แวร์และจัดการไลเซนส์ในระบบ',
+                'content' => $this->generatePlaceholderContent('ระบบขายซอฟต์แวร์และไลเซนส์', [
+                    'สร้างผลิตภัณฑ์ซอฟต์แวร์',
+                    'การจัดการไลเซนส์',
+                    'White-label Solutions',
+                    'การต่ออายุและอัปเกรด',
+                ]),
+                'estimated_duration' => 25,
+                'difficulty' => 'intermediate',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['Software', 'License', 'ซอฟต์แวร์'],
+                'views' => 0,
+                'order' => 1,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: ระบบผู้ขาย (Vendor)
+     */
+    private function getVendorArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'vendor',
+                'title' => 'ระบบผู้ขายและ Marketplace',
+                'slug' => 'vendor-marketplace-system',
+                'excerpt' => 'วิธีสมัครเป็นผู้ขายและจัดการร้านค้าใน Marketplace',
+                'content' => $this->generatePlaceholderContent('ระบบผู้ขายและ Marketplace', [
+                    'สมัครเป็นผู้ขาย',
+                    'แพ็กเกจผู้ขาย',
+                    'ตั้งค่าร้านค้า',
+                    'ค่าคอมมิชชั่นและการจ่ายเงิน',
+                ]),
+                'estimated_duration' => 25,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['Vendor', 'Marketplace', 'ผู้ขาย'],
+                'views' => 0,
+                'order' => 1,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: เทคโนโลยีและสถาปัตยกรรม
+     */
+    private function getTechnologyArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'technology',
+                'title' => 'เทคโนโลยีที่ใช้ในระบบ',
+                'slug' => 'technology-stack-overview',
+                'excerpt' => 'ภาพรวมเทคโนโลยีและ Stack ที่ใช้พัฒนาระบบ',
+                'content' => $this->generatePlaceholderContent('เทคโนโลยีที่ใช้ในระบบ', [
+                    'Backend: Laravel 11',
+                    'Frontend: Tailwind CSS + Alpine.js',
+                    'Database: MySQL',
+                    'AI Integration',
+                    'Blockchain: TPIX Network',
+                ]),
+                'estimated_duration' => 20,
+                'difficulty' => 'advanced',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['Technology', 'Laravel', 'Stack'],
+                'views' => 0,
+                'order' => 1,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: ความปลอดภัย
+     */
+    private function getSecurityArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'security',
+                'title' => 'ความปลอดภัยของระบบ',
+                'slug' => 'security-features-overview',
+                'excerpt' => 'ภาพรวมระบบรักษาความปลอดภัยและการป้องกันข้อมูล',
+                'content' => $this->generatePlaceholderContent('ความปลอดภัยของระบบ', [
+                    'การยืนยันตัวตนสองขั้นตอน (2FA)',
+                    'การเข้ารหัสข้อมูล',
+                    'Session Management',
+                    'การป้องกัน XSS, CSRF, SQL Injection',
+                ]),
+                'estimated_duration' => 20,
+                'difficulty' => 'intermediate',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['Security', 'ความปลอดภัย', '2FA'],
+                'views' => 0,
+                'order' => 1,
+            ],
+            [
+                'category_slug' => 'security',
+                'title' => 'การตั้งค่า 2FA (Two-Factor Authentication)',
+                'slug' => 'two-factor-authentication-setup',
+                'excerpt' => 'วิธีตั้งค่าการยืนยันตัวตนสองขั้นตอนเพื่อเพิ่มความปลอดภัย',
+                'content' => $this->generatePlaceholderContent('การตั้งค่า 2FA', [
+                    '2FA คืออะไร?',
+                    'ติดตั้ง Authenticator App',
+                    'เปิดใช้งาน 2FA',
+                    'การใช้ Backup Codes',
+                ]),
+                'estimated_duration' => 15,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['2FA', 'Security', 'Authentication'],
+                'views' => 0,
+                'order' => 2,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: API & Integration
+     */
+    private function getApiIntegrationArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'api-integration',
+                'title' => 'API Documentation',
+                'slug' => 'api-documentation-overview',
+                'excerpt' => 'ภาพรวม API และวิธีเชื่อมต่อกับระบบ',
+                'content' => $this->generatePlaceholderContent('API Documentation', [
+                    'Authentication (API Token)',
+                    'REST API Endpoints',
+                    'Request/Response Format',
+                    'Rate Limiting',
+                    'Error Handling',
+                ]),
+                'estimated_duration' => 30,
+                'difficulty' => 'advanced',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['API', 'REST', 'Integration'],
+                'views' => 0,
+                'order' => 1,
+            ],
+            [
+                'category_slug' => 'api-integration',
+                'title' => 'Webhook และ Event Notification',
+                'slug' => 'webhook-event-notification',
+                'excerpt' => 'วิธีตั้งค่าและใช้งาน Webhook สำหรับรับ Event',
+                'content' => $this->generatePlaceholderContent('Webhook และ Event Notification', [
+                    'Webhook คืออะไร?',
+                    'การตั้งค่า Webhook',
+                    'Event Types',
+                    'การยืนยัน Signature',
+                ]),
+                'estimated_duration' => 25,
+                'difficulty' => 'advanced',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['Webhook', 'Event', 'Notification'],
+                'views' => 0,
+                'order' => 2,
+            ],
+        ];
+    }
+
+    /**
+     * บทความหมวด: FAQ & ศูนย์ช่วยเหลือ
+     */
+    private function getFaqSupportArticles(): array
+    {
+        return [
+            [
+                'category_slug' => 'faq-support',
+                'title' => 'คำถามที่พบบ่อย (FAQ)',
+                'slug' => 'frequently-asked-questions',
+                'excerpt' => 'รวมคำถามที่พบบ่อยและคำตอบ',
+                'content' => $this->generatePlaceholderContent('คำถามที่พบบ่อย (FAQ)', [
+                    'คำถามเกี่ยวกับการสมัครสมาชิก',
+                    'คำถามเกี่ยวกับการชำระเงิน',
+                    'คำถามเกี่ยวกับ MLM/Affiliate',
+                    'คำถามเกี่ยวกับการถอนเงิน',
+                    'คำถามทั่วไป',
+                ]),
+                'estimated_duration' => 15,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => true,
+                'tags' => ['FAQ', 'คำถาม', 'ช่วยเหลือ'],
+                'views' => 0,
+                'order' => 1,
+            ],
+            [
+                'category_slug' => 'faq-support',
+                'title' => 'วิธีติดต่อทีมสนับสนุน',
+                'slug' => 'contact-support-team',
+                'excerpt' => 'ช่องทางติดต่อและขอความช่วยเหลือจากทีมสนับสนุน',
+                'content' => $this->generatePlaceholderContent('วิธีติดต่อทีมสนับสนุน', [
+                    'ส่ง Ticket',
+                    'Live Chat',
+                    'LINE Official Account',
+                    'อีเมล',
+                    'เวลาทำการ',
+                ]),
+                'estimated_duration' => 10,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['Support', 'ติดต่อ', 'ช่วยเหลือ'],
+                'views' => 0,
+                'order' => 2,
+            ],
+            [
+                'category_slug' => 'faq-support',
+                'title' => 'การแก้ไขปัญหาเบื้องต้น',
+                'slug' => 'troubleshooting-guide',
+                'excerpt' => 'วิธีแก้ไขปัญหาทั่วไปที่พบบ่อย',
+                'content' => $this->generatePlaceholderContent('การแก้ไขปัญหาเบื้องต้น', [
+                    'ปัญหาการเข้าสู่ระบบ',
+                    'ปัญหาการชำระเงิน',
+                    'ปัญหาการถอนเงิน',
+                    'ปัญหาอื่นๆ',
+                ]),
+                'estimated_duration' => 15,
+                'difficulty' => 'beginner',
+                'is_published' => true,
+                'is_featured' => false,
+                'tags' => ['Troubleshooting', 'แก้ไขปัญหา', 'ช่วยเหลือ'],
+                'views' => 0,
+                'order' => 3,
+            ],
+        ];
+    }
+
+    /**
+     * สร้างเนื้อหา placeholder สำหรับบทความ
+     *
+     * @param string $title หัวข้อบทความ
+     * @param array $sections หัวข้อย่อย
+     * @return string HTML content
+     */
+    private function generatePlaceholderContent(string $title, array $sections): string
+    {
+        $html = "<div class=\"prose max-w-none dark:prose-invert\">\n";
+        $html .= "<h2>{$title}</h2>\n";
+        $html .= "<p class=\"text-lg text-gray-600 dark:text-gray-400\">เนื้อหาของบทความนี้กำลังอยู่ระหว่างการจัดทำ กรุณาติดตามการอัปเดต</p>\n\n";
+
+        $html .= "<div class=\"bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 my-4\">\n";
+        $html .= "<h3 class=\"text-blue-800 dark:text-blue-200 mt-0\">📋 หัวข้อในบทความนี้</h3>\n";
+        $html .= "<ul class=\"mb-0\">\n";
+
+        foreach ($sections as $section) {
+            $html .= "<li>{$section}</li>\n";
+        }
+
+        $html .= "</ul>\n";
+        $html .= "</div>\n\n";
+
+        $html .= "<div class=\"bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 my-4\">\n";
+        $html .= "<p class=\"mb-0\">💡 <strong>หมายเหตุ:</strong> บทความนี้เป็นส่วนหนึ่งของ Academy Knowledge ที่สามารถอ่านได้ฟรีสำหรับสมาชิกทุกท่าน</p>\n";
+        $html .= "</div>\n";
+
+        $html .= "</div>";
+
+        return $html;
     }
 }
