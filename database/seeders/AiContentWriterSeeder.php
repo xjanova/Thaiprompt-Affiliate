@@ -143,6 +143,13 @@ class AiContentWriterSeeder extends Seeder
     /**
      * สร้างเทมเพลตตัวอย่าง
      *
+     * ⚠️ IMPORTANT: ใช้ slug เป็น unique key เนื่องจาก Str::slug()
+     * จะลบตัวอักษรภาษาไทย ทำให้ชื่อที่คล้ายกันได้ slug เดียวกัน
+     * เช่น "Script YouTube แบบสั้น" และ "Script YouTube แบบยาว"
+     * จะได้ slug เป็น "script-youtube" ทั้งคู่
+     *
+     * ดังนั้นต้องกำหนด slug ที่ unique ให้กับแต่ละ template
+     *
      * @return void
      */
     protected function seedTemplates(): void
@@ -150,6 +157,7 @@ class AiContentWriterSeeder extends Seeder
         $templates = [
             // Blog Templates
             [
+                'slug' => 'seo-blog-article',
                 'name' => 'บทความ SEO Blog',
                 'description' => 'สร้างบทความ SEO ที่เหมาะกับการทำอันดับใน Google',
                 'content_type' => 'blog',
@@ -165,6 +173,7 @@ class AiContentWriterSeeder extends Seeder
                 'is_featured' => true,
             ],
             [
+                'slug' => 'how-to-article',
                 'name' => 'บทความ How-To',
                 'description' => 'สร้างบทความแนะนำวิธีการทำสิ่งต่างๆ แบบ Step-by-Step',
                 'content_type' => 'blog',
@@ -182,6 +191,7 @@ class AiContentWriterSeeder extends Seeder
 
             // Video Script Templates
             [
+                'slug' => 'youtube-shorts-script',
                 'name' => 'Script YouTube แบบสั้น',
                 'description' => 'Script สำหรับวิดีโอ YouTube Shorts หรือ TikTok',
                 'content_type' => 'video_script',
@@ -197,6 +207,7 @@ class AiContentWriterSeeder extends Seeder
                 'is_featured' => true,
             ],
             [
+                'slug' => 'youtube-long-script',
                 'name' => 'Script YouTube แบบยาว',
                 'description' => 'Script สำหรับวิดีโอ YouTube แบบเต็ม (8-15 นาที)',
                 'content_type' => 'video_script',
@@ -214,6 +225,7 @@ class AiContentWriterSeeder extends Seeder
 
             // Social Media Templates
             [
+                'slug' => 'instagram-caption',
                 'name' => 'Caption Instagram',
                 'description' => 'สร้าง Caption Instagram ที่มี Engagement สูง',
                 'content_type' => 'social_caption',
@@ -229,6 +241,7 @@ class AiContentWriterSeeder extends Seeder
                 'is_featured' => true,
             ],
             [
+                'slug' => 'twitter-thread',
                 'name' => 'Thread Twitter/X',
                 'description' => 'สร้าง Thread Twitter ที่น่าสนใจและ Viral',
                 'content_type' => 'social_caption',
@@ -246,6 +259,7 @@ class AiContentWriterSeeder extends Seeder
 
             // Marketing Templates
             [
+                'slug' => 'email-marketing',
                 'name' => 'Email Marketing',
                 'description' => 'สร้างอีเมลการตลาดที่มี Open Rate สูง',
                 'content_type' => 'email',
@@ -261,6 +275,7 @@ class AiContentWriterSeeder extends Seeder
                 'is_featured' => true,
             ],
             [
+                'slug' => 'facebook-ad-copy',
                 'name' => 'Copy โฆษณา Facebook',
                 'description' => 'สร้าง Ad Copy สำหรับ Facebook/Instagram Ads',
                 'content_type' => 'ad_copy',
@@ -278,6 +293,7 @@ class AiContentWriterSeeder extends Seeder
 
             // Product Description
             [
+                'slug' => 'ecommerce-product-description',
                 'name' => 'รายละเอียดสินค้า E-commerce',
                 'description' => 'สร้างรายละเอียดสินค้าที่น่าสนใจและขายได้',
                 'content_type' => 'product_description',
@@ -295,6 +311,7 @@ class AiContentWriterSeeder extends Seeder
 
             // General Template
             [
+                'slug' => 'general-content',
                 'name' => 'สร้าง Content ทั่วไป',
                 'description' => 'เทมเพลตทั่วไปสำหรับสร้าง Content ทุกประเภท',
                 'content_type' => 'general',
@@ -312,12 +329,12 @@ class AiContentWriterSeeder extends Seeder
         ];
 
         foreach ($templates as $template) {
-            // เช็คว่ามีอยู่แล้วหรือไม่
-            if (AiContentTemplate::where('name', $template['name'])->exists()) {
-                continue;
-            }
-
-            AiContentTemplate::create($template);
+            // ✅ ใช้ updateOrCreate กับ slug เพื่อให้ idempotent
+            // และหลีกเลี่ยงปัญหา duplicate slug
+            AiContentTemplate::updateOrCreate(
+                ['slug' => $template['slug']],
+                $template
+            );
         }
 
         $this->command->info('   📄 สร้างเทมเพลต AI Content Writer ' . count($templates) . ' รายการแล้ว');
