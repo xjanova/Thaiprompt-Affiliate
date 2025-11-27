@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.227.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1706 from xjanova/claude/check-system-admin-menu-015qPdGdftoqTSZnauKxjDyN (2e11bb48)
+- feat: เพิ่มเมนูจัดการหน้าแรก (Homepage Manager) ในแอดมิน (c295946b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.226.0] - 2025-11-27
 
 ### ✨ Features
