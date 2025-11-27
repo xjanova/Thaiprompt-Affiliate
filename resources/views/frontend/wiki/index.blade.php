@@ -62,7 +62,10 @@
             { id: 'vendor', icon: '🏪', label: 'Vendor Management', color: 'from-pink-600 to-rose-600' },
             { id: 'academy', icon: '🎓', label: 'Academy & Learning', color: 'from-teal-600 to-cyan-600' },
             { id: 'security', icon: '🔒', label: 'Security & Compliance', color: 'from-red-700 to-rose-700' },
-            { id: 'support', icon: '🎫', label: 'Support Center', color: 'from-blue-500 to-cyan-500' }
+            { id: 'support', icon: '🎫', label: 'Support Center', color: 'from-blue-500 to-cyan-500' },
+            { id: 'investor', icon: '📈', label: 'Investor Guide', color: 'from-emerald-600 to-green-600', highlight: true },
+            { id: 'api', icon: '🔌', label: 'API & Integration', color: 'from-slate-600 to-gray-600' },
+            { id: 'faq', icon: '❓', label: 'FAQ & Troubleshooting', color: 'from-pink-600 to-fuchsia-600' }
         ],
 
         // เปลี่ยนหมวดหมู่
@@ -509,6 +512,21 @@
                     {{-- Support Center --}}
                     <div x-show="currentCategory === 'support'" style="display: none;">
                         @include('frontend.wiki.content.support')
+                    </div>
+
+                    {{-- Investor Guide --}}
+                    <div x-show="currentCategory === 'investor'" style="display: none;">
+                        @include('frontend.wiki.content.investor')
+                    </div>
+
+                    {{-- API & Integration --}}
+                    <div x-show="currentCategory === 'api'" style="display: none;">
+                        @include('frontend.wiki.content.api')
+                    </div>
+
+                    {{-- FAQ & Troubleshooting --}}
+                    <div x-show="currentCategory === 'faq'" style="display: none;">
+                        @include('frontend.wiki.content.faq')
                     </div>
 
                 </div>
