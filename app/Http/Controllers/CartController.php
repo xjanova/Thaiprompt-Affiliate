@@ -153,14 +153,27 @@ class CartController extends Controller
 
     /**
      * Remove item from cart
+     *
+     * รองรับทั้ง AJAX และ redirect
      */
-    public function remove($id)
+    public function remove(Request $request, $id)
     {
         $cartItem = ShoppingCart::where('id', $id)
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
         $cartItem->delete();
+
+        // Return JSON สำหรับ AJAX requests
+        if ($request->expectsJson() || $request->ajax()) {
+            $cartCount = ShoppingCart::where('user_id', auth()->id())->sum('quantity');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ลบสินค้าออกจากตะกร้าเรียบร้อยแล้ว',
+                'cart_count' => $cartCount,
+            ]);
+        }
 
         return redirect()->route('cart.index')->with('success', 'ลบสินค้าออกจากตะกร้าเรียบร้อยแล้ว');
     }
@@ -183,5 +196,51 @@ class CartController extends Controller
         $count = ShoppingCart::where('user_id', auth()->id())->sum('quantity');
 
         return response()->json(['count' => $count]);
+    }
+
+    /**
+     * ดึงข้อมูล mini cart สำหรับแสดงใน topbar dropdown
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function mini()
+    {
+        // ดึงสินค้าในตะกร้า (จำกัด 5 รายการล่าสุด)
+        $cartItems = ShoppingCart::with(['product' => function ($query) {
+            $query->select('id', 'name', 'price', 'image');
+        }])
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->take(5)
+            ->get();
+
+        // จัดรูปแบบข้อมูลสำหรับ JSON
+        $items = $cartItems->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'product_id' => $item->product_id,
+                'name' => $item->product->name ?? 'สินค้าไม่พบ',
+                'price' => $item->product->price ?? 0,
+                'quantity' => $item->quantity,
+                'image' => $item->product->image ?? null,
+            ];
+        });
+
+        // คำนวณยอดรวม
+        $allItems = ShoppingCart::with('product')
+            ->where('user_id', auth()->id())
+            ->get();
+
+        $total = $allItems->sum(function ($item) {
+            return ($item->product->price ?? 0) * $item->quantity;
+        });
+
+        $count = $allItems->sum('quantity');
+
+        return response()->json([
+            'items' => $items,
+            'count' => $count,
+            'total' => $total,
+        ]);
     }
 }

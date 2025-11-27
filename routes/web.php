@@ -392,6 +392,7 @@ Route::middleware('auth')->prefix('cart')->name('cart.')->group(function () {
     Route::delete('/{id}', [\App\Http\Controllers\CartController::class, 'remove'])->name('remove');
     Route::delete('/', [\App\Http\Controllers\CartController::class, 'clear'])->name('clear');
     Route::get('/count', [\App\Http\Controllers\CartController::class, 'count'])->name('count');
+    Route::get('/mini', [\App\Http\Controllers\CartController::class, 'mini'])->name('mini');
 });
 
 // Checkout Routes (Authenticated)
