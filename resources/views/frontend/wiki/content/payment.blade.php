@@ -1,26 +1,26 @@
 {{-- Hero Section --}}
-<div style="background: linear-gradient(135deg, rgb(var(--primary-rgb)) 0%, rgb(var(--secondary-rgb)) 50%, rgb(var(--accent-rgb)) 100%); padding: 3rem 2rem; border-radius: 20px; margin-bottom: 3rem; color: white; text-align: center;">
-    <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; color: white;">💳 Payment Gateway & Solutions</h1>
-    <p style="font-size: 1.25rem; opacity: 0.95; max-width: 800px; margin: 0 auto;">ระบบชำระเงินครบวงจร รองรับทุกช่องทาง จากบัตรเครดิต E-Wallet Crypto จนถึงผ่อนชำระ</p>
-</section>
+<div class="bg-gradient-to-br from-primary-500 via-secondary-500 to-accent-500 p-8 md:p-12 rounded-2xl mb-12 text-center">
+    <h1 class="text-white text-2xl md:text-4xl font-extrabold mb-4 drop-shadow-lg">💳 Payment Gateway & Solutions</h1>
+    <p class="text-white/95 text-lg md:text-xl max-w-3xl mx-auto">ระบบชำระเงินครบวงจร รองรับทุกช่องทาง จากบัตรเครดิต E-Wallet Crypto จนถึงผ่อนชำระ</p>
+</div>
 
 {{-- 1: Payment Gateways --}}
 <section id="gateways" class="wiki-section">
-    <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">💳 Payment Gateway Integration</h2>
+    <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">💳 Payment Gateway Integration</h2>
 
     <div class="info-box success">
         <h4>🎯 เชื่อมต่อ Payment Gateway ชั้นนำ</h4>
         <p>รองรับ Payment Gateway หลากหลายผู้ให้บริการ รับชำระผ่านบัตรเครดิต/เดบิต โอนเงิน PromptPay และอื่นๆ</p>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🏦 Payment Providers</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">🏦 Payment Providers</h3>
 
     <div class="wiki-grid wiki-grid-3">
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">💳</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Stripe</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">International Gateway</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">💳</div>
+            <h4 class="font-bold mb-4">Stripe</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">International Gateway</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ Credit/Debit Cards (Visa, MasterCard, AMEX)</li>
                 <li>✅ Apple Pay & Google Pay</li>
                 <li>✅ Multi-currency Support</li>
@@ -30,10 +30,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🇹🇭</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Omise</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Thailand Payment Gateway</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🇹🇭</div>
+            <h4 class="font-bold mb-4">Omise</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Thailand Payment Gateway</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ Thai Credit/Debit Cards</li>
                 <li>✅ PromptPay QR</li>
                 <li>✅ Internet Banking</li>
@@ -43,10 +43,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">💙</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">PayPal</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Global Payment Platform</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">💙</div>
+            <h4 class="font-bold mb-4">PayPal</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Global Payment Platform</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ PayPal Account Payment</li>
                 <li>✅ Credit/Debit Cards</li>
                 <li>✅ PayPal Credit</li>
@@ -56,10 +56,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🔐</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">2C2P</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Southeast Asia Gateway</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🔐</div>
+            <h4 class="font-bold mb-4">2C2P</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Southeast Asia Gateway</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ Credit/Debit Cards</li>
                 <li>✅ E-Wallets (Multiple)</li>
                 <li>✅ Internet Banking</li>
@@ -69,10 +69,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">GB Prime Pay</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Thai Local Gateway</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🏦</div>
+            <h4 class="font-bold mb-4">GB Prime Pay</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Thai Local Gateway</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ Thai Credit/Debit Cards</li>
                 <li>✅ PromptPay</li>
                 <li>✅ QR Code Payment</li>
@@ -82,10 +82,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🏧</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Bank Transfer</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Direct Bank Transfer</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🏧</div>
+            <h4 class="font-bold mb-4">Bank Transfer</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Direct Bank Transfer</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ SCB, Kbank, BBL, กรุงไทย</li>
                 <li>✅ Auto-verify with Slip</li>
                 <li>✅ Manual Confirmation</li>
@@ -95,38 +95,38 @@
         </div>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🎨 Payment Features</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">🎨 Payment Features</h3>
 
     <div class="wiki-grid wiki-grid-3">
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🔐 Secure Payment</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">PCI-DSS Compliant, SSL Encryption, 3D Secure</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-primary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">🔐 Secure Payment</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">PCI-DSS Compliant, SSL Encryption, 3D Secure</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--secondary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">⚡ Instant Confirmation</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ยืนยันการชำระเงินทันที แจ้งเตือนอัตโนมัติ</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-secondary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">⚡ Instant Confirmation</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">ยืนยันการชำระเงินทันที แจ้งเตือนอัตโนมัติ</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--accent-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🔄 Auto Refund</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">คืนเงินอัตโนมัติ กรณียกเลิกออเดอร์</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-accent-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">🔄 Auto Refund</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">คืนเงินอัตโนมัติ กรณียกเลิกออเดอร์</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">💾 Save Cards</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">บันทึกบัตร 1-Click Checkout (Tokenization)</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-primary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">💾 Save Cards</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">บันทึกบัตร 1-Click Checkout (Tokenization)</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--secondary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🔔 Payment Reminder</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">แจ้งเตือนชำระเงิน SMS, Email, LINE</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-secondary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">🔔 Payment Reminder</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">แจ้งเตือนชำระเงิน SMS, Email, LINE</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--accent-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📊 Transaction Reports</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">รายงานการเงิน Export CSV, Excel</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-accent-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">📊 Transaction Reports</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">รายงานการเงิน Export CSV, Excel</p>
         </div>
     </div>
 
     <div class="info-box tip">
         <h4>💡 Payment Gateway Selection Guide</h4>
-        <ul style="line-height: 1.8;">
+        <ul class="leading-loose">
             <li><strong>ขายในไทย:</strong> แนะนำ Omise หรือ GB Prime Pay (รองรับ PromptPay, ค่าธรรมเนียมต่ำ)</li>
             <li><strong>ขายต่างประเทศ:</strong> ใช้ Stripe หรือ PayPal (รองรับหลายสกุลเงิน)</li>
             <li><strong>งบน้อย:</strong> เริ่มจาก Bank Transfer (ฟรี) + PromptPay QR</li>
@@ -137,21 +137,21 @@
 
 {{-- 2: E-Wallets & QR --}}
 <section id="ewallets" class="wiki-section">
-    <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">👛 E-Wallets & QR Payment</h2>
+    <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">👛 E-Wallets & QR Payment</h2>
 
     <div class="info-box success">
         <h4>📱 ระบบ E-Wallet ครบทุกช่องทาง</h4>
         <p>รองรับ E-Wallet ยอดนิยม TrueMoney, ShopeePay, LINE Pay, PromptPay และอื่นๆ ชำระง่ายด้วย QR Code</p>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📱 Popular E-Wallets (Thailand)</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">📱 Popular E-Wallets (Thailand)</h3>
 
     <div class="wiki-grid wiki-grid-3">
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🟠</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #FF6600;">TrueMoney Wallet</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">กระเป๋าเงินอันดับ 1</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🟠</div>
+            <h4 class="font-bold mb-4 text-orange-500">TrueMoney Wallet</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">กระเป๋าเงินอันดับ 1</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ QR Payment (Thai QR)</li>
                 <li>✅ Wallet Balance</li>
                 <li>✅ Cashback Rewards</li>
@@ -161,10 +161,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🟠</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #EE4D2D;">ShopeePay</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">E-Wallet from Shopee</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🟠</div>
+            <h4 class="font-bold mb-4 text-orange-600">ShopeePay</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">E-Wallet from Shopee</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ In-app Payment</li>
                 <li>✅ QR Code</li>
                 <li>✅ Shopee Coins</li>
@@ -174,10 +174,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">💚</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #00B900;">LINE Pay</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Pay via LINE App</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">💚</div>
+            <h4 class="font-bold mb-4 text-green-500">LINE Pay</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Pay via LINE App</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ LINE Integration</li>
                 <li>✅ QR Payment</li>
                 <li>✅ LINE Points</li>
@@ -187,10 +187,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #1E3A8A;">PromptPay</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Thailand National QR</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🏦</div>
+            <h4 class="font-bold mb-4 text-blue-900">PromptPay</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Thailand National QR</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ Thai QR Standard</li>
                 <li>✅ All Thai Banks</li>
                 <li>✅ Phone Number Transfer</li>
@@ -200,10 +200,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">💙</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #4E9BDE;">AirPay</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Mobile Wallet</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">💙</div>
+            <h4 class="font-bold mb-4 text-blue-500">AirPay</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Mobile Wallet</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ Mobile Top-up</li>
                 <li>✅ Bill Payment</li>
                 <li>✅ QR Payment</li>
@@ -213,10 +213,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">💜</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #7C3AED;">BluePay</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Digital Wallet</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">💜</div>
+            <h4 class="font-bold mb-4 text-purple-600">BluePay</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Digital Wallet</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ QR Payment</li>
                 <li>✅ P2P Transfer</li>
                 <li>✅ Bill Payment</li>
@@ -226,30 +226,30 @@
         </div>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📱 QR Code Payment Features</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">📱 QR Code Payment Features</h3>
 
     <div class="wiki-grid wiki-grid-3">
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📲 Dynamic QR Code</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">QR ใหม่ทุกครั้ง มีจำนวนเงินและรายละเอียด</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-primary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">📲 Dynamic QR Code</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">QR ใหม่ทุกครั้ง มีจำนวนเงินและรายละเอียด</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--secondary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">⚡ Instant Verification</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ตรวจสอบการชำระเงินอัตโนมัติทันที</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-secondary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">⚡ Instant Verification</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">ตรวจสอบการชำระเงินอัตโนมัติทันที</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--accent-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🔐 Secure Transaction</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ปลอดภัย ไม่ต้องกรอกข้อมูลบัตร</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-accent-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">🔐 Secure Transaction</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">ปลอดภัย ไม่ต้องกรอกข้อมูลบัตร</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📧 Auto Receipt</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ส่งใบเสร็จอัตโนมัติหลังชำระเงิน</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-primary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">📧 Auto Receipt</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">ส่งใบเสร็จอัตโนมัติหลังชำระเงิน</p>
         </div>
     </div>
 
     <div class="info-box tip">
         <h4>💡 E-Wallet Best Practices</h4>
-        <ul style="line-height: 1.8;">
+        <ul class="leading-loose">
             <li><strong>รองรับหลาย E-Wallet:</strong> เพิ่มตัวเลือกให้ลูกค้า TrueMoney, ShopeePay, LINE Pay</li>
             <li><strong>PromptPay คือต้องมี:</strong> ฟรี รวดเร็ว ทุกคนใช้ได้</li>
             <li><strong>QR Code ต้องชัดเจน:</strong> ขนาดใหญ่พอ พร้อมคำแนะนำการชำระเงิน</li>
@@ -260,21 +260,21 @@
 
 {{-- 3: Crypto Payment --}}
 <section id="crypto" class="wiki-section">
-    <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">₿ Cryptocurrency Payment</h2>
+    <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">₿ Cryptocurrency Payment</h2>
 
     <div class="info-box success">
         <h4>🚀 รับชำระเงินด้วย Crypto</h4>
         <p>รองรับการชำระเงินด้วย Bitcoin, Ethereum, USDT และ Crypto อื่นๆ แปลงเป็นเงินบาทอัตโนมัติ ลดความเสี่ยงจากอัตราแลกเปลี่ยน</p>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">💰 Supported Cryptocurrencies</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">💰 Supported Cryptocurrencies</h3>
 
     <div class="wiki-grid wiki-grid-3">
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">₿</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #F7931A;">Bitcoin (BTC)</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">King of Cryptocurrency</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">₿</div>
+            <h4 class="font-bold mb-4 text-orange-500">Bitcoin (BTC)</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">King of Cryptocurrency</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ Bitcoin Mainnet</li>
                 <li>✅ Lightning Network (Fast)</li>
                 <li>✅ Low Transaction Fee</li>
@@ -284,10 +284,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">Ξ</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #627EEA;">Ethereum (ETH)</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Smart Contract Platform</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">Ξ</div>
+            <h4 class="font-bold mb-4 text-indigo-500">Ethereum (ETH)</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Smart Contract Platform</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ Ethereum Mainnet</li>
                 <li>✅ ERC-20 Tokens</li>
                 <li>✅ Smart Contract</li>
@@ -297,10 +297,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">₮</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #26A17B;">USDT (Tether)</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Stablecoin (1 USDT = $1)</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">₮</div>
+            <h4 class="font-bold mb-4 text-green-600">USDT (Tether)</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Stablecoin (1 USDT = $1)</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ TRC-20 (TRON)</li>
                 <li>✅ ERC-20 (Ethereum)</li>
                 <li>✅ BEP-20 (BSC)</li>
@@ -310,10 +310,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🔶</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #F3BA2F;">Binance Coin (BNB)</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Binance Smart Chain</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🔶</div>
+            <h4 class="font-bold mb-4 text-yellow-500">Binance Coin (BNB)</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Binance Smart Chain</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ BEP-20 (BSC)</li>
                 <li>✅ Very Low Fee</li>
                 <li>✅ Fast Transaction</li>
@@ -323,10 +323,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">⬡</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #00D4AA;">USDC (USD Coin)</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Regulated Stablecoin</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">⬡</div>
+            <h4 class="font-bold mb-4 text-cyan-500">USDC (USD Coin)</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Regulated Stablecoin</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ ERC-20, BEP-20, TRC-20</li>
                 <li>✅ Fully Backed by USD</li>
                 <li>✅ Regulated by Circle</li>
@@ -336,10 +336,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🔴</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #EB4D5C;">TRON (TRX)</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Low Fee Blockchain</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🔴</div>
+            <h4 class="font-bold mb-4 text-red-500">TRON (TRX)</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Low Fee Blockchain</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ TRON Network</li>
                 <li>✅ Near-Zero Fee</li>
                 <li>✅ High TPS (2000+)</li>
@@ -349,30 +349,30 @@
         </div>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🔧 Crypto Payment Features</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">🔧 Crypto Payment Features</h3>
 
     <div class="wiki-grid wiki-grid-3">
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">💱 Auto Conversion</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">แปลง Crypto เป็น THB อัตโนมัติทันที</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-primary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">💱 Auto Conversion</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">แปลง Crypto เป็น THB อัตโนมัติทันที</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--secondary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🔐 Non-Custodial</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">เงินเข้า Wallet คุณโดยตรง ไม่ผ่านคนกลาง</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-secondary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">🔐 Non-Custodial</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">เงินเข้า Wallet คุณโดยตรง ไม่ผ่านคนกลาง</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--accent-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">⚡ Instant Confirmation</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ตรวจสอบ Transaction บน Blockchain</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-accent-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">⚡ Instant Confirmation</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">ตรวจสอบ Transaction บน Blockchain</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🌍 Global Payment</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">รับชำระจากทั่วโลก ไม่มีขีดจำกัด</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-primary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">🌍 Global Payment</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400">รับชำระจากทั่วโลก ไม่มีขีดจำกัด</p>
         </div>
     </div>
 
     <div class="info-box tip">
         <h4>💡 Crypto Payment Recommendations</h4>
-        <ul style="line-height: 1.8;">
+        <ul class="leading-loose">
             <li><strong>Stablecoin แนะนำ:</strong> USDT หรือ USDC (ไม่มีความผันผวนราคา แปลงเป็นบาทง่าย)</li>
             <li><strong>Network Selection:</strong> TRC-20 (TRON) หรือ BEP-20 (BSC) ค่าธรรมเนียมต่ำมาก</li>
             <li><strong>Risk Management:</strong> แปลงเป็น THB ทันทีหลังรับเงิน หรือใช้ Hedging</li>
@@ -383,21 +383,21 @@
 
 {{-- 4: Installment & BNPL --}}
 <section id="installment" class="wiki-section">
-    <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">💰 Installment & Buy Now Pay Later (BNPL)</h2>
+    <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">💰 Installment & Buy Now Pay Later (BNPL)</h2>
 
     <div class="info-box success">
         <h4>🎯 ผ่อนชำระและจ่ายทีหลัง</h4>
         <p>รองรับการผ่อนชำระ 0% และ BNPL (Buy Now Pay Later) เพิ่มกำลังซื้อของลูกค้า เพิ่มยอดขายได้มากถึง 30-50%</p>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">💳 Installment Payment (ผ่อนชำระ 0%)</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">💳 Installment Payment (ผ่อนชำระ 0%)</h3>
 
     <div class="wiki-grid wiki-grid-3">
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">💳</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Credit Card Installment</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ผ่อนผ่านบัตรเครดิต</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">💳</div>
+            <h4 class="font-bold mb-4">Credit Card Installment</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">ผ่อนผ่านบัตรเครดิต</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ 0% นาน 3, 4, 6, 10 เดือน</li>
                 <li>✅ Visa, MasterCard, AMEX</li>
                 <li>✅ ผ่อนขั้นต่ำ 3,000 บาท</li>
@@ -407,10 +407,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Bank Installment</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ผ่อนผ่านธนาคาร</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🏦</div>
+            <h4 class="font-bold mb-4">Bank Installment</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">ผ่อนผ่านธนาคาร</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ SCB Easy, Kbank Installment</li>
                 <li>✅ 0% 6-12 เดือน</li>
                 <li>✅ ไม่ต้องมีบัตรเครดิต</li>
@@ -420,10 +420,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Digital Installment</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ผ่อนแบบดิจิทัล</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">⚡</div>
+            <h4 class="font-bold mb-4">Digital Installment</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">ผ่อนแบบดิจิทัล</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ ผ่าน Mobile App</li>
                 <li>✅ ไม่ต้องไปธนาคาร</li>
                 <li>✅ อนุมัติทันที 100%</li>
@@ -433,14 +433,14 @@
         </div>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🛒 Buy Now Pay Later (BNPL)</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">🛒 Buy Now Pay Later (BNPL)</h3>
 
     <div class="wiki-grid wiki-grid-3">
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">💖</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #FF6B9D;">Atome</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Split Payment in 3</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">💖</div>
+            <h4 class="font-bold mb-4 text-pink-500">Atome</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Split Payment in 3</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ แบ่ง 3 งวด ดอกเบี้ย 0%</li>
                 <li>✅ ไม่ต้องมีบัตรเครดิต</li>
                 <li>✅ อนุมัติภายใน 5 วินาที</li>
@@ -450,10 +450,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">💚</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #00C9A7;">hoolah</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Interest-Free BNPL</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">💚</div>
+            <h4 class="font-bold mb-4 text-teal-500">hoolah</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Interest-Free BNPL</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ แบ่งจ่าย 3 งวด 0%</li>
                 <li>✅ ขั้นต่ำ 500 บาท</li>
                 <li>✅ อนุมัติทันที</li>
@@ -463,10 +463,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">💜</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #7C3AED;">Grab PayLater</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Pay within 30 days</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">💜</div>
+            <h4 class="font-bold mb-4 text-purple-600">Grab PayLater</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Pay within 30 days</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ ซื้อวันนี้ จ่ายใน 30 วัน</li>
                 <li>✅ ไม่มีดอกเบี้ย (ถ้าจ่ายทัน)</li>
                 <li>✅ วงเงินสูงสุด 30,000 บาท</li>
@@ -476,10 +476,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🧡</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #F59E0B;">Pine BNPL</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Flexible Payment</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🧡</div>
+            <h4 class="font-bold mb-4 text-amber-500">Pine BNPL</h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Flexible Payment</p>
+            <ul class="list-none p-0 text-sm leading-loose">
                 <li>✅ แบ่งจ่าย 2-6 งวด</li>
                 <li>✅ ดอกเบี้ย 0%</li>
                 <li>✅ วงเงิน 3,000-100,000 บาท</li>
@@ -489,60 +489,60 @@
         </div>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📊 Installment Plans Comparison</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">📊 Installment Plans Comparison</h3>
 
-    <table class="wiki-table">
-        <thead>
+    <table class="w-full border-collapse bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+        <thead class="bg-gray-100 dark:bg-gray-700">
             <tr>
-                <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Payment Method</th>
-                <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">ระยะเวลา</th>
-                <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">ดอกเบี้ย</th>
-                <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">ขั้นต่ำ</th>
-                <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Merchant Fee</th>
+                <th class="p-4 text-left border border-gray-200 dark:border-gray-600 font-semibold">Payment Method</th>
+                <th class="p-4 text-center border border-gray-200 dark:border-gray-600 font-semibold">ระยะเวลา</th>
+                <th class="p-4 text-center border border-gray-200 dark:border-gray-600 font-semibold">ดอกเบี้ย</th>
+                <th class="p-4 text-center border border-gray-200 dark:border-gray-600 font-semibold">ขั้นต่ำ</th>
+                <th class="p-4 text-center border border-gray-200 dark:border-gray-600 font-semibold">Merchant Fee</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">💳 Credit Card 0%</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">3-10 เดือน</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb));">0%</strong></td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">฿3,000</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">2.5-3.5%</td>
+                <td class="p-4 border border-gray-200 dark:border-gray-600">💳 Credit Card 0%</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">3-10 เดือน</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-primary-600 dark:text-primary-400">0%</strong></td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">฿3,000</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">2.5-3.5%</td>
             </tr>
             <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">💖 Atome</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">3 งวด</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--secondary-rgb));">0%</strong></td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">฿300</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">4.5%</td>
+                <td class="p-4 border border-gray-200 dark:border-gray-600">💖 Atome</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">3 งวด</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-secondary-600 dark:text-secondary-400">0%</strong></td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">฿300</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">4.5%</td>
             </tr>
             <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">💚 hoolah</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">3 งวด</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--accent-rgb));">0%</strong></td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">฿500</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">3.9% + ฿5</td>
+                <td class="p-4 border border-gray-200 dark:border-gray-600">💚 hoolah</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">3 งวด</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-accent-600 dark:text-accent-400">0%</strong></td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">฿500</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">3.9% + ฿5</td>
             </tr>
             <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">💜 Grab PayLater</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">30 วัน</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb));">0%</strong></td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">฿100</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">3-5%</td>
+                <td class="p-4 border border-gray-200 dark:border-gray-600">💜 Grab PayLater</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">30 วัน</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-primary-600 dark:text-primary-400">0%</strong></td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">฿100</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">3-5%</td>
             </tr>
             <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">🧡 Pine BNPL</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">2-6 งวด</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--secondary-rgb));">0%</strong></td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">฿3,000</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">4-6%</td>
+                <td class="p-4 border border-gray-200 dark:border-gray-600">🧡 Pine BNPL</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">2-6 งวด</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-secondary-600 dark:text-secondary-400">0%</strong></td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">฿3,000</td>
+                <td class="p-4 text-center border border-gray-200 dark:border-gray-600">4-6%</td>
             </tr>
         </tbody>
     </table>
 
     <div class="info-box tip">
         <h4>💡 Why Offer Installment & BNPL?</h4>
-        <ul style="line-height: 1.8;">
+        <ul class="leading-loose">
             <li><strong>เพิ่มยอดขาย 30-50%:</strong> ลูกค้าซื้อมากขึ้นเมื่อสามารถผ่อนได้</li>
             <li><strong>Average Order Value สูงขึ้น:</strong> ลูกค้ากล้าซื้อสินค้าราคาสูงขึ้น</li>
             <li><strong>Conversion Rate ดีขึ้น:</strong> ลดการ Abandon Cart</li>
@@ -550,5 +550,4 @@
             <li><strong>ร้านรับเงินเต็มทันที:</strong> BNPL จ่ายให้ร้านค้าเต็มจำนวนทันที</li>
         </ul>
     </div>
-</div>
-
+</section>

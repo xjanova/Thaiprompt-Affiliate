@@ -1,25 +1,25 @@
 {{-- Hero Section --}}
-<div style="background: linear-gradient(135deg, rgb(var(--primary-rgb)) 0%, rgb(var(--secondary-rgb)) 50%, rgb(var(--accent-rgb)) 100%); padding: 3rem 2rem; border-radius: 20px; margin-bottom: 3rem; color: white; text-align: center;">
-    <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; color: white;">🎓 Academy & Learning Management System (LMS)</h1>
-    <p style="font-size: 1.25rem; opacity: 0.95; max-width: 800px; margin: 0 auto;">ระบบเรียนรู้ออนไลน์แบบครบวงจร พร้อม Gamification เพิ่มแรงจูงใจและประกาศนียบัตรดิจิทัล</p>
+<div class="bg-gradient-to-br from-primary-500 via-secondary-500 to-accent-500 p-8 md:p-12 rounded-2xl mb-12 text-white text-center shadow-xl">
+    <h1 class="text-3xl md:text-4xl font-extrabold mb-4 text-white">🎓 Academy & Learning Management System (LMS)</h1>
+    <p class="text-lg md:text-xl opacity-95 max-w-3xl mx-auto">ระบบเรียนรู้ออนไลน์แบบครบวงจร พร้อม Gamification เพิ่มแรงจูงใจและประกาศนียบัตรดิจิทัล</p>
 </div>
 
 {{-- 1: Courses & Content --}}
 <section id="courses" class="wiki-section">
-    <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">📚 Learning Content & Courses</h2>
+    <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">📚 Learning Content & Courses</h2>
 
     <div class="info-box success">
         <h4>🎯 ระบบจัดการเนื้อหาการเรียนรู้</h4>
         <p>สร้างคอร์สเรียนออนไลน์ที่หลากหลาย ตั้งแต่วิดีโอบทเรียน บทความ แบบทดสอบ จนถึงคลาสสด</p>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🎬 Content Types</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6 text-gray-900 dark:text-white">🎬 Content Types</h3>
 
     <div class="wiki-grid wiki-grid-3">
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🎥</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Video Lessons</h4>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🎥</div>
+            <h4 class="font-bold mb-4">Video Lessons</h4>
+            <ul class="list-none pl-0 text-sm leading-relaxed">
                 <li>✅ HD Video Streaming</li>
                 <li>✅ Progress Tracking</li>
                 <li>✅ Playback Speed Control</li>
@@ -29,9 +29,9 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">📖</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Articles & Documents</h4>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">📖</div>
+            <h4 class="font-bold mb-4">Articles & Documents</h4>
+            <ul class="list-none pl-0 text-sm leading-relaxed">
                 <li>✅ Rich Text Editor</li>
                 <li>✅ PDF Upload</li>
                 <li>✅ Image & Diagrams</li>
@@ -41,9 +41,9 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">✍️</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Quiz & Exams</h4>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">✍️</div>
+            <h4 class="font-bold mb-4">Quiz & Exams</h4>
+            <ul class="list-none pl-0 text-sm leading-relaxed">
                 <li>✅ Multiple Choice</li>
                 <li>✅ True/False</li>
                 <li>✅ Fill in the Blank</li>
@@ -53,9 +53,9 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">📡</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Live Classes</h4>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">📡</div>
+            <h4 class="font-bold mb-4">Live Classes</h4>
+            <ul class="list-none pl-0 text-sm leading-relaxed">
                 <li>✅ Zoom/Google Meet Integration</li>
                 <li>✅ Schedule Management</li>
                 <li>✅ Auto Recording</li>
@@ -65,9 +65,9 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">📝</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Assignments</h4>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">📝</div>
+            <h4 class="font-bold mb-4">Assignments</h4>
+            <ul class="list-none pl-0 text-sm leading-relaxed">
                 <li>✅ File Upload</li>
                 <li>✅ Due Date & Reminders</li>
                 <li>✅ Peer Review</li>
@@ -77,9 +77,9 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Discussion Forums</h4>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">💬</div>
+            <h4 class="font-bold mb-4">Discussion Forums</h4>
+            <ul class="list-none pl-0 text-sm leading-relaxed">
                 <li>✅ Topic Threads</li>
                 <li>✅ Upvote/Downvote</li>
                 <li>✅ Instructor Moderation</li>
@@ -91,7 +91,7 @@
 
     <div class="info-box tip">
         <h4>💡 Course Creation Best Practices</h4>
-        <ul style="line-height: 1.8;">
+        <ul class="leading-relaxed">
             <li><strong>Microlearning:</strong> แบ่งเนื้อหาเป็นบทสั้นๆ 5-10 นาที เรียนรู้ง่าย จดจำได้ดี</li>
             <li><strong>Mix Content:</strong> ผสม Video, Text, Quiz เพื่อความหลากหลาย</li>
             <li><strong>Progressive Difficulty:</strong> เริ่มจากง่าย ค่อยๆ ยากขึ้น</li>
@@ -102,21 +102,21 @@
 
 {{-- 2: Gamification --}}
 <section id="gamification" class="wiki-section">
-    <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">🏆 Gamification System</h2>
+    <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">🏆 Gamification System</h2>
 
     <div class="info-box success">
         <h4>🎮 เพิ่มแรงจูงใจด้วยเกมมิฟิเคชั่น</h4>
         <p>สร้างความสนุกในการเรียนรู้ด้วยระบบแต้ม, เหรียญรางวัล, ลีดเดอร์บอร์ด และความท้าทาย</p>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🎁 Reward System</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6 text-gray-900 dark:text-white">🎁 Reward System</h3>
 
     <div class="wiki-grid wiki-grid-3">
-        <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05)); border: 2px solid rgb(var(--primary-rgb)); border-radius: 12px; padding: 1.5rem;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">Points System</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">สะสมแต้มจากการทำกิจกรรม</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+        <div class="bg-gradient-to-br from-primary-50 to-primary-100/50 dark:from-primary-900/30 dark:to-primary-800/20 border-2 border-primary-500 rounded-xl p-6">
+            <div class="text-5xl mb-4">⭐</div>
+            <h4 class="font-bold mb-4 text-primary-600 dark:text-primary-400">Points System</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">สะสมแต้มจากการทำกิจกรรม</p>
+            <ul class="list-none pl-0 text-sm leading-relaxed">
                 <li>🎯 เรียนจบ 1 บท: +10 แต้ม</li>
                 <li>🎯 ผ่าน Quiz: +20 แต้ม</li>
                 <li>🎯 ครบ 100%: +100 แต้ม</li>
@@ -124,11 +124,11 @@
             </ul>
         </div>
 
-        <div style="background: linear-gradient(135deg, rgba(var(--secondary-rgb), 0.1), rgba(var(--secondary-rgb), 0.05)); border: 2px solid rgb(var(--secondary-rgb)); border-radius: 12px; padding: 1.5rem;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🏅</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--secondary-rgb));">Achievement Badges</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ปลดล็อกเหรียญรางวัล</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+        <div class="bg-gradient-to-br from-secondary-50 to-secondary-100/50 dark:from-secondary-900/30 dark:to-secondary-800/20 border-2 border-secondary-500 rounded-xl p-6">
+            <div class="text-5xl mb-4">🏅</div>
+            <h4 class="font-bold mb-4 text-secondary-600 dark:text-secondary-400">Achievement Badges</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">ปลดล็อกเหรียญรางวัล</p>
+            <ul class="list-none pl-0 text-sm leading-relaxed">
                 <li>🥉 Beginner: จบ 1 คอร์ส</li>
                 <li>🥈 Intermediate: จบ 5 คอร์ส</li>
                 <li>🥇 Expert: จบ 20 คอร์ส</li>
@@ -136,11 +136,11 @@
             </ul>
         </div>
 
-        <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0.05)); border: 2px solid rgb(var(--accent-rgb)); border-radius: 12px; padding: 1.5rem;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--accent-rgb));">Leaderboard</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">แข่งขันกับผู้เรียนอื่น</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+        <div class="bg-gradient-to-br from-accent-50 to-accent-100/50 dark:from-accent-900/30 dark:to-accent-800/20 border-2 border-accent-500 rounded-xl p-6">
+            <div class="text-5xl mb-4">📊</div>
+            <h4 class="font-bold mb-4 text-accent-600 dark:text-accent-400">Leaderboard</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">แข่งขันกับผู้เรียนอื่น</p>
+            <ul class="list-none pl-0 text-sm leading-relaxed">
                 <li>🏆 Top 10 Daily</li>
                 <li>🏆 Top 20 Weekly</li>
                 <li>🏆 Top 50 Monthly</li>
@@ -149,30 +149,30 @@
         </div>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🎯 Quests & Challenges</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6 text-gray-900 dark:text-white">🎯 Quests & Challenges</h3>
 
     <div class="wiki-grid wiki-grid-3">
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid #FFD700; padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📅 Daily Quest</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">เรียน 1 บท/วัน รับ 5 แต้ม</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-yellow-400 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">📅 Daily Quest</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">เรียน 1 บท/วัน รับ 5 แต้ม</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid #C0C0C0; padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📆 Weekly Challenge</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">จบ 1 คอร์ส/สัปดาห์ รับ Badge</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-gray-400 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">📆 Weekly Challenge</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">จบ 1 คอร์ส/สัปดาห์ รับ Badge</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid #CD7F32; padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🗓️ Monthly Mission</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">จบ 5 คอร์ส รับของรางวัล</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-amber-600 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">🗓️ Monthly Mission</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">จบ 5 คอร์ส รับของรางวัล</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🔥 Streak Bonus</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">เรียนต่อเนื่อง x2 แต้ม</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-primary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">🔥 Streak Bonus</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">เรียนต่อเนื่อง x2 แต้ม</p>
         </div>
     </div>
 
     <div class="info-box tip">
         <h4>💡 Gamification Tips</h4>
-        <ul style="line-height: 1.8;">
+        <ul class="leading-relaxed">
             <li><strong>Start Small:</strong> รางวัลง่ายๆ ในช่วงแรก สร้างแรงจูงใจ</li>
             <li><strong>Progress Visible:</strong> แสดง Progress Bar ให้เห็นความคืบหน้าชัดเจน</li>
             <li><strong>Social Sharing:</strong> ให้แชร์ Badge ไปโซเชียลได้</li>
@@ -183,20 +183,20 @@
 
 {{-- 3: Certificates --}}
 <section id="certificates" class="wiki-section">
-    <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">📜 Digital Certificates</h2>
+    <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">📜 Digital Certificates</h2>
 
     <div class="info-box success">
         <h4>🎓 ประกาศนียบัตรดิจิทัลอัตโนมัติ</h4>
         <p>สร้างและออกประกาศนียบัตรอัตโนมัติเมื่อผู้เรียนผ่านคอร์ส พร้อมระบบตรวจสอบความถูกต้อง</p>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🎨 Certificate Features</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6 text-gray-900 dark:text-white">🎨 Certificate Features</h3>
 
     <div class="wiki-grid wiki-grid-3">
         <div class="wiki-card">
-            <div style="font-size: 2.5rem; margin-bottom: 1rem;">🎨</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Custom Templates</h4>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-4xl mb-4">🎨</div>
+            <h4 class="font-bold mb-4">Custom Templates</h4>
+            <ul class="list-none pl-0 text-sm leading-relaxed">
                 <li>✅ Drag & Drop Designer</li>
                 <li>✅ Multiple Templates</li>
                 <li>✅ Company Logo/Brand</li>
@@ -205,9 +205,9 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 2.5rem; margin-bottom: 1rem;">✍️</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Digital Signature</h4>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-4xl mb-4">✍️</div>
+            <h4 class="font-bold mb-4">Digital Signature</h4>
+            <ul class="list-none pl-0 text-sm leading-relaxed">
                 <li>✅ E-Signature Support</li>
                 <li>✅ QR Code Verification</li>
                 <li>✅ Blockchain Integration</li>
@@ -216,9 +216,9 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔍</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Verification System</h4>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-4xl mb-4">🔍</div>
+            <h4 class="font-bold mb-4">Verification System</h4>
+            <ul class="list-none pl-0 text-sm leading-relaxed">
                 <li>✅ Unique Certificate ID</li>
                 <li>✅ Public Verification Page</li>
                 <li>✅ LinkedIn Integration</li>
@@ -227,9 +227,9 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 2.5rem; margin-bottom: 1rem;">📧</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Auto Delivery</h4>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-4xl mb-4">📧</div>
+            <h4 class="font-bold mb-4">Auto Delivery</h4>
+            <ul class="list-none pl-0 text-sm leading-relaxed">
                 <li>✅ Email Notification</li>
                 <li>✅ PDF Download</li>
                 <li>✅ Print-ready</li>
@@ -240,7 +240,7 @@
 
     <div class="info-box tip">
         <h4>💡 Certificate Best Practices</h4>
-        <ul style="line-height: 1.8;">
+        <ul class="leading-relaxed">
             <li><strong>Professional Design:</strong> ใช้เทมเพลตที่ดูมืออาชีพ มีน้ำหนัก</li>
             <li><strong>Clear Information:</strong> ระบุชื่อคอร์ส, ชื่อผู้เรียน, วันที่ชัดเจน</li>
             <li><strong>Verification QR:</strong> ใส่ QR Code สำหรับตรวจสอบความถูกต้อง</li>
@@ -251,73 +251,73 @@
 
 {{-- 4: Analytics & Reports --}}
 <section id="analytics" class="wiki-section">
-    <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">📊 Learning Analytics & Reports</h2>
+    <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">📊 Learning Analytics & Reports</h2>
 
     <div class="info-box success">
         <h4>📈 วิเคราะห์ข้อมูลการเรียนรู้</h4>
         <p>ติดตามความคืบหน้า วิเคราะห์พฤติกรรมการเรียน และรายงานผลการเรียนรู้แบบ Real-time</p>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📊 Key Metrics</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6 text-gray-900 dark:text-white">📊 Key Metrics</h3>
 
     <div class="wiki-grid wiki-grid-4">
-        <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05)); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1.5rem; border-radius: 8px;">
-            <div style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Enrollment Rate</div>
-            <h4 style="font-size: 2rem; font-weight: 800; color: rgb(var(--primary-rgb)); margin: 0;">85%</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-top: 0.5rem;">อัตราการลงทะเบียนเรียน</p>
+        <div class="bg-gradient-to-br from-primary-50 to-primary-100/50 dark:from-primary-900/30 dark:to-primary-800/20 border-l-4 border-primary-500 p-6 rounded-lg">
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">Enrollment Rate</div>
+            <h4 class="text-3xl font-extrabold text-primary-500 m-0">85%</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">อัตราการลงทะเบียนเรียน</p>
         </div>
 
-        <div style="background: linear-gradient(135deg, rgba(var(--secondary-rgb), 0.1), rgba(var(--secondary-rgb), 0.05)); border-left: 4px solid rgb(var(--secondary-rgb)); padding: 1.5rem; border-radius: 8px;">
-            <div style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Completion Rate</div>
-            <h4 style="font-size: 2rem; font-weight: 800; color: rgb(var(--secondary-rgb)); margin: 0;">72%</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-top: 0.5rem;">อัตราการเรียนจบคอร์ส</p>
+        <div class="bg-gradient-to-br from-secondary-50 to-secondary-100/50 dark:from-secondary-900/30 dark:to-secondary-800/20 border-l-4 border-secondary-500 p-6 rounded-lg">
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">Completion Rate</div>
+            <h4 class="text-3xl font-extrabold text-secondary-500 m-0">72%</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">อัตราการเรียนจบคอร์ส</p>
         </div>
 
-        <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0.05)); border-left: 4px solid rgb(var(--accent-rgb)); padding: 1.5rem; border-radius: 8px;">
-            <div style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Avg. Score</div>
-            <h4 style="font-size: 2rem; font-weight: 800; color: rgb(var(--accent-rgb)); margin: 0;">78%</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-top: 0.5rem;">คะแนนเฉลี่ย</p>
+        <div class="bg-gradient-to-br from-accent-50 to-accent-100/50 dark:from-accent-900/30 dark:to-accent-800/20 border-l-4 border-accent-500 p-6 rounded-lg">
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">Avg. Score</div>
+            <h4 class="text-3xl font-extrabold text-accent-500 m-0">78%</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">คะแนนเฉลี่ย</p>
         </div>
 
-        <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05)); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1.5rem; border-radius: 8px;">
-            <div style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Engagement</div>
-            <h4 style="font-size: 2rem; font-weight: 800; color: rgb(var(--primary-rgb)); margin: 0;">4.5h</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-top: 0.5rem;">เวลาเรียนเฉลี่ย/สัปดาห์</p>
+        <div class="bg-gradient-to-br from-primary-50 to-primary-100/50 dark:from-primary-900/30 dark:to-primary-800/20 border-l-4 border-primary-500 p-6 rounded-lg">
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">Engagement</div>
+            <h4 class="text-3xl font-extrabold text-primary-500 m-0">4.5h</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">เวลาเรียนเฉลี่ย/สัปดาห์</p>
         </div>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📋 Report Types</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6 text-gray-900 dark:text-white">📋 Report Types</h3>
 
     <div class="wiki-grid wiki-grid-3">
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">👤 Individual Progress</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ความคืบหน้าแต่ละคน, คะแนน, เวลาเรียน</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-primary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">👤 Individual Progress</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">ความคืบหน้าแต่ละคน, คะแนน, เวลาเรียน</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--secondary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">👥 Group Performance</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">เปรียบเทียบกลุ่ม, แผนก, ทีม</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-secondary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">👥 Group Performance</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">เปรียบเทียบกลุ่ม, แผนก, ทีม</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--accent-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📚 Course Analytics</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ยอดนิยม, Drop-off rate, Engagement</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-accent-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">📚 Course Analytics</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">ยอดนิยม, Drop-off rate, Engagement</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📊 Skills Gap Analysis</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">วิเคราะห์ช่องว่างทักษะที่ต้องพัฒนา</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-primary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">📊 Skills Gap Analysis</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">วิเคราะห์ช่องว่างทักษะที่ต้องพัฒนา</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--secondary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">💰 ROI Reports</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ผลตอบแทนจากการลงทุนด้านการเรียนรู้</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-secondary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">💰 ROI Reports</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">ผลตอบแทนจากการลงทุนด้านการเรียนรู้</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--accent-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📈 Trend Analysis</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">แนวโน้มการเรียนรู้ช่วงเวลาต่างๆ</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-accent-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">📈 Trend Analysis</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">แนวโน้มการเรียนรู้ช่วงเวลาต่างๆ</p>
         </div>
     </div>
 
     <div class="info-box tip">
         <h4>💡 Analytics Best Practices</h4>
-        <ul style="line-height: 1.8;">
+        <ul class="leading-relaxed">
             <li><strong>Early Warning System:</strong> แจ้งเตือนเมื่อผู้เรียนมีสัญญาณจะ Drop out</li>
             <li><strong>Personalized Recommendations:</strong> แนะนำคอร์สตามทักษะที่ขาด</li>
             <li><strong>A/B Testing:</strong> ทดสอบเนื้อหาแบบต่างๆ ดูว่าแบบไหนได้ผลดี</li>
@@ -325,4 +325,3 @@
         </ul>
     </div>
 </div>
-

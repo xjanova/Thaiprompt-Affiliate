@@ -1,22 +1,22 @@
 <div class="wiki-content-section">
     <!-- Hero Section -->
-    <div style="background: linear-gradient(135deg, rgb(var(--primary-rgb)) 0%, rgb(var(--secondary-rgb)) 50%, rgb(var(--accent-rgb)) 100%); padding: 3rem 2rem; border-radius: 20px; margin-bottom: 3rem; color: white; text-align: center;">
-        <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; color: white;">🌳 MLM & Affiliate Marketing System</h1>
-        <p style="font-size: 1.25rem; opacity: 0.95; max-width: 800px; margin: 0 auto;">ระบบขายตรงและตลาดแบบบูรณาการ รองรับทั้ง Binary และ Unilevel พร้อมระบบคอมมิชชั่นแบบ Real-time</p>
+    <div class="bg-gradient-to-br from-primary-500 via-secondary-500 to-accent-500 p-8 md:p-12 rounded-2xl mb-12 text-white text-center shadow-xl">
+        <h1 class="text-3xl md:text-4xl font-extrabold mb-4 text-white">🌳 MLM & Affiliate Marketing System</h1>
+        <p class="text-lg md:text-xl opacity-95 max-w-3xl mx-auto">ระบบขายตรงและตลาดแบบบูรณาการ รองรับทั้ง Binary และ Unilevel พร้อมระบบคอมมิชชั่นแบบ Real-time</p>
     </div>
 
     {{-- Binary System Section --}}
     <section id="mlm-binary" class="wiki-section">
         <h2>🌳 ระบบ Binary MLM - โครงสร้างต้นไม้สองขา</h2>
 
-            <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+            <p class="text-lg mb-8 text-gray-700 dark:text-gray-300">
                 ระบบ Binary เป็นโครงสร้างแบบต้นไม้ที่<strong>แต่ละคนสามารถมีสมาชิกใต้สายงานได้เพียง 2 คน</strong>เท่านั้น (ซ้าย-ขวา)
                 ระบบจะคำนวณโบนัสจากยอดขายของสองขา และจ่ายตาม<strong>เปอร์เซ็นต์ของขาที่น้อยกว่า</strong>
             </p>
 
             <div class="info-box">
                 <h4>💡 ทำไมต้องใช้ Binary?</h4>
-                <ul style="line-height: 2;">
+                <ul class="leading-loose">
                     <li><strong>Spillover Effect:</strong> สมาชิกใหม่ที่ไม่มีที่จะวางจะ "ล้น" ไปช่วยทีมอื่น</li>
                     <li><strong>Teamwork:</strong> ทุกคนมีประโยชน์ต่อกัน เพราะต้องสร้างสมดุลทั้งสองขา</li>
                     <li><strong>Fast Growth:</strong> เติบโตเร็วมาก เพราะมีเพียง 2 ขา</li>
@@ -29,8 +29,8 @@
                 <div class="wiki-card">
                     <div class="feature-icon">🎯</div>
                     <h4>Auto Placement</h4>
-                    <p style="margin-bottom: 1rem;">วางตำแหน่งอัตโนมัติตามกฎเกณฑ์ที่กำหนด</p>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4">วางตำแหน่งอัตโนมัติตามกฎเกณฑ์ที่กำหนด</p>
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ Left Leg Preferred (วางซ้ายก่อน)</li>
                         <li>✅ Right Leg Preferred (วางขวาก่อน)</li>
                         <li>✅ Balanced Placement (สมดุล)</li>
@@ -41,8 +41,8 @@
                 <div class="wiki-card">
                     <div class="feature-icon">⚖️</div>
                     <h4>Binary Matching Bonus</h4>
-                    <p style="margin-bottom: 1rem;">คำนวณโบนัสจับคู่อัตโนมัติ</p>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4">คำนวณโบนัสจับคู่อัตโนมัติ</p>
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ Daily Binary Calculation</li>
                         <li>✅ Flush Out System (ตัดยอด)</li>
                         <li>✅ Cap & Limit Control</li>
@@ -53,8 +53,8 @@
                 <div class="wiki-card">
                     <div class="feature-icon">📊</div>
                     <h4>Real-time Analytics</h4>
-                    <p style="margin-bottom: 1rem;">ดูสถิติและรายงานแบบ Real-time</p>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4">ดูสถิติและรายงานแบบ Real-time</p>
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ Left/Right Leg Volume</li>
                         <li>✅ Active Members Count</li>
                         <li>✅ Daily/Weekly/Monthly Reports</li>
@@ -68,7 +68,7 @@
             <table class="wiki-table">
                 <thead>
                     <tr>
-                        <th style="width: 30%;">การตั้งค่า</th>
+                        <th class="w-1/4">การตั้งค่า</th>
                         <th>รายละเอียด</th>
                     </tr>
                 </thead>
@@ -98,7 +98,7 @@
 
             <div class="info-box tip">
                 <h4>💡 ตัวอย่างการคำนวณ Binary</h4>
-                <div style="background: var(--wiki-hover-bg); padding: 1.5rem; border-radius: 8px; margin-top: 1rem; font-family: monospace; font-size: 0.9rem; line-height: 1.8;">
+                <div class="bg-gray-100 dark:bg-gray-700 p-6 rounded-lg mt-4 font-mono text-sm leading-relaxed">
 สมมติคุณมี:<br>
 • ขาซ้าย (Left Leg): 100,000 PV<br>
 • ขาขวา (Right Leg): 150,000 PV<br>
@@ -106,7 +106,7 @@
 
 การคำนวณ:<br>
 1. เลือกขาที่น้อยกว่า = 100,000 PV (ขาซ้าย)<br>
-2. คำนวณโบนัส = 100,000 × 10% = <strong style="color: rgb(var(--primary-rgb));">10,000 บาท</strong><br>
+2. คำนวณโบนัส = 100,000 × 10% = <strong class="text-primary-500">10,000 บาท</strong><br>
 3. ยอดคงเหลือขาขวา = 150,000 - 100,000 = 50,000 PV (ยกไปรอบถัดไป)
                 </div>
             </div>
@@ -116,14 +116,14 @@
     <section id="mlm-unilevel" class="wiki-section">
         <h2>🎯 ระบบ Unilevel MLM - โครงสร้างหลายชั้น</h2>
 
-            <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+            <p class="text-lg mb-8 text-gray-700 dark:text-gray-300">
                 ระบบ Unilevel <strong>ไม่จำกัดจำนวนสมาชิกชั้นที่ 1</strong> (Front Line) แต่<strong>จำกัดความลึกของระดับ</strong>ที่จ่ายคอมมิชชั่น
                 เช่น จ่ายได้สูงสุด 10 ระดับ โดยแต่ละระดับจะมีเปอร์เซ็นต์การจ่ายที่แตกต่างกัน
             </p>
 
             <div class="info-box success">
                 <h4>💡 ทำไมต้องใช้ Unilevel?</h4>
-                <ul style="line-height: 2;">
+                <ul class="leading-loose">
                     <li><strong>Unlimited Width:</strong> รับสมาชิกชั้นที่ 1 ได้ไม่จำกัด</li>
                     <li><strong>Simple Structure:</strong> โครงสร้างเข้าใจง่าย ไม่ซับซ้อน</li>
                     <li><strong>Direct Bonus:</strong> ได้โบนัสตรงจากทุกคนที่แนะนำ</li>
@@ -136,8 +136,8 @@
                 <div class="feature-card">
                     <div class="feature-icon">🌐</div>
                     <h4>Unlimited Width</h4>
-                    <p style="margin-bottom: 1rem;">รับสมาชิกชั้นที่ 1 ได้ไม่จำกัด</p>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4">รับสมาชิกชั้นที่ 1 ได้ไม่จำกัด</p>
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ No Front Line Limit</li>
                         <li>✅ Unlimited Direct Referrals</li>
                         <li>✅ Team Building Flexibility</li>
@@ -148,8 +148,8 @@
                 <div class="feature-card">
                     <div class="feature-icon">📏</div>
                     <h4>Level Commissions</h4>
-                    <p style="margin-bottom: 1rem;">จ่ายคอมมิชชั่นหลายระดับ</p>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4">จ่ายคอมมิชชั่นหลายระดับ</p>
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ ระดับ 1: 10%</li>
                         <li>✅ ระดับ 2: 8%</li>
                         <li>✅ ระดับ 3: 6%</li>
@@ -160,8 +160,8 @@
                 <div class="feature-card">
                     <div class="feature-icon">👥</div>
                     <h4>Sponsor Tracking</h4>
-                    <p style="margin-bottom: 1rem;">ติดตามผู้แนะนำแบบละเอียด</p>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4">ติดตามผู้แนะนำแบบละเอียด</p>
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ Sponsor Tree View</li>
                         <li>✅ Downline Performance</li>
                         <li>✅ Team Volume Reports</li>
@@ -216,7 +216,7 @@
 
             <div class="info-box warning">
                 <h4>⚠️ ข้อควรระวัง</h4>
-                <ul style="line-height: 2;">
+                <ul class="leading-loose">
                     <li><strong>Qualifying Volume:</strong> ต้องกำหนดยอดขั้นต่ำเพื่อรับคอมมิชชั่น</li>
                     <li><strong>Compression:</strong> ควรมีระบบ Compression เมื่อมีสมาชิกที่ไม่ Active</li>
                     <li><strong>Max Payout:</strong> กำหนดเพดานการจ่ายเงินเพื่อควบคุมต้นทุน</li>
@@ -229,7 +229,7 @@
     <section id="mlm-commission" class="wiki-section">
         <h2>💰 ระบบคอมมิชชั่น - หัวใจของ MLM</h2>
 
-            <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+            <p class="text-lg mb-8 text-gray-700 dark:text-gray-300">
                 ระบบคอมมิชชั่นของเราครอบคลุม<strong>ทุกประเภทรางวัล</strong>ที่ใช้ในธุรกิจ MLM พร้อมระบบคำนวณและจ่ายแบบ Real-time
             </p>
 
@@ -237,10 +237,10 @@
 
             <div class="wiki-grid wiki-grid-3">
                 <div class="wiki-card">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">🎁</div>
+                    <div class="text-5xl mb-4">🎁</div>
                     <h4>1. Direct Commission</h4>
-                    <p style="margin-bottom: 1rem; font-size: 0.9rem;">ค่าแนะนำตรง - ได้รับทันทีเมื่อแนะนำสมาชิกใหม่</p>
-                    <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4 text-sm">ค่าแนะนำตรง - ได้รับทันทีเมื่อแนะนำสมาชิกใหม่</p>
+                    <ul class="list-none pl-0 text-sm leading-relaxed">
                         <li>• อัตรา: 5-20% ของยอดขาย</li>
                         <li>• จ่ายทันทีหรือรอบบิล</li>
                         <li>• ไม่มีเงื่อนไข Qualifying</li>
@@ -249,10 +249,10 @@
                 </div>
 
                 <div class="wiki-card">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">🤝</div>
+                    <div class="text-5xl mb-4">🤝</div>
                     <h4>2. Matching Bonus</h4>
-                    <p style="margin-bottom: 1rem; font-size: 0.9rem;">โบนัสจับคู่ - สำหรับ Binary System</p>
-                    <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4 text-sm">โบนัสจับคู่ - สำหรับ Binary System</p>
+                    <ul class="list-none pl-0 text-sm leading-relaxed">
                         <li>• อัตรา: 5-15% ของขาน้อย</li>
                         <li>• คำนวณรายวัน/รายสัปดาห์</li>
                         <li>• มี Cap สูงสุดต่อรอบ</li>
@@ -261,10 +261,10 @@
                 </div>
 
                 <div class="wiki-card">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+                    <div class="text-5xl mb-4">📊</div>
                     <h4>3. Level Commission</h4>
-                    <p style="margin-bottom: 1rem; font-size: 0.9rem;">ค่าคอมระดับ - สำหรับ Unilevel System</p>
-                    <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4 text-sm">ค่าคอมระดับ - สำหรับ Unilevel System</p>
+                    <ul class="list-none pl-0 text-sm leading-relaxed">
                         <li>• ระดับ 1-10 มีอัตราต่างกัน</li>
                         <li>• คำนวณจาก PV หรือยอดขาย</li>
                         <li>• ต้องมี Qualifying Volume</li>
@@ -273,10 +273,10 @@
                 </div>
 
                 <div class="wiki-card">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">👑</div>
+                    <div class="text-5xl mb-4">👑</div>
                     <h4>4. Rank Bonus</h4>
-                    <p style="margin-bottom: 1rem; font-size: 0.9rem;">โบนัสตามยศ - รางวัลเมื่อขึ้นยศ</p>
-                    <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4 text-sm">โบนัสตามยศ - รางวัลเมื่อขึ้นยศ</p>
+                    <ul class="list-none pl-0 text-sm leading-relaxed">
                         <li>• Silver: ฿5,000</li>
                         <li>• Gold: ฿20,000</li>
                         <li>• Platinum: ฿100,000</li>
@@ -285,10 +285,10 @@
                 </div>
 
                 <div class="wiki-card">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">🏆</div>
+                    <div class="text-5xl mb-4">🏆</div>
                     <h4>5. Leadership Bonus</h4>
-                    <p style="margin-bottom: 1rem; font-size: 0.9rem;">โบนัสผู้นำ - สำหรับ Leader ที่มียอดทีมสูง</p>
-                    <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4 text-sm">โบนัสผู้นำ - สำหรับ Leader ที่มียอดทีมสูง</p>
+                    <ul class="list-none pl-0 text-sm leading-relaxed">
                         <li>• 1-5% ของยอดทีมทั้งหมด</li>
                         <li>• คำนวณรายเดือน</li>
                         <li>• ต้องมียอดส่วนตัวขั้นต่ำ</li>
@@ -297,10 +297,10 @@
                 </div>
 
                 <div class="wiki-card">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
+                    <div class="text-5xl mb-4">🎯</div>
                     <h4>6. Pool Bonus</h4>
-                    <p style="margin-bottom: 1rem; font-size: 0.9rem;">โบนัสพูล - แบ่งปันจากกำไรบริษัท</p>
-                    <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4 text-sm">โบนัสพูล - แบ่งปันจากกำไรบริษัท</p>
+                    <ul class="list-none pl-0 text-sm leading-relaxed">
                         <li>• 3-5% ของยอดขายทั้งหมด</li>
                         <li>• แบ่งตามยศและผลงาน</li>
                         <li>• จ่ายรายเดือน/รายไตรมาส</li>
@@ -310,30 +310,30 @@
             </div>
 
             <h3>🔄 กระบวนการคำนวณและจ่ายคอมมิชชั่น</h3>
-            <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 2rem; margin: 2rem 0;">
-                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: space-between;">
-                    <div style="text-align: center; flex: 1; min-width: 120px;">
-                        <div style="background: rgb(var(--primary-rgb)); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.5rem; margin: 0 auto 0.5rem;">1</div>
-                        <h4 style="font-size: 0.9rem;">บันทึกรายการ</h4>
-                        <p style="font-size: 0.8rem; color: var(--wiki-text-muted);">Order Created</p>
+            <div class="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-8 my-8">
+                <div class="flex items-center gap-4 flex-wrap justify-between">
+                    <div class="text-center flex-1 min-w-[120px]">
+                        <div class="bg-primary-500 text-white w-12 h-12 rounded-full flex items-center justify-center font-extrabold text-2xl mx-auto mb-2">1</div>
+                        <h4 class="text-sm font-bold">บันทึกรายการ</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Order Created</p>
                     </div>
-                    <div style="font-size: 1.5rem; color: var(--wiki-text-muted);">→</div>
-                    <div style="text-align: center; flex: 1; min-width: 120px;">
-                        <div style="background: rgb(var(--secondary-rgb)); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.5rem; margin: 0 auto 0.5rem;">2</div>
-                        <h4 style="font-size: 0.9rem;">คำนวณ PV/BV</h4>
-                        <p style="font-size: 0.8rem; color: var(--wiki-text-muted);">Point Value</p>
+                    <div class="text-2xl text-gray-400">→</div>
+                    <div class="text-center flex-1 min-w-[120px]">
+                        <div class="bg-secondary-500 text-white w-12 h-12 rounded-full flex items-center justify-center font-extrabold text-2xl mx-auto mb-2">2</div>
+                        <h4 class="text-sm font-bold">คำนวณ PV/BV</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Point Value</p>
                     </div>
-                    <div style="font-size: 1.5rem; color: var(--wiki-text-muted);">→</div>
-                    <div style="text-align: center; flex: 1; min-width: 120px;">
-                        <div style="background: rgb(var(--accent-rgb)); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.5rem; margin: 0 auto 0.5rem;">3</div>
-                        <h4 style="font-size: 0.9rem;">คำนวณคอมฯ</h4>
-                        <p style="font-size: 0.8rem; color: var(--wiki-text-muted);">Calculate</p>
+                    <div class="text-2xl text-gray-400">→</div>
+                    <div class="text-center flex-1 min-w-[120px]">
+                        <div class="bg-accent-500 text-white w-12 h-12 rounded-full flex items-center justify-center font-extrabold text-2xl mx-auto mb-2">3</div>
+                        <h4 class="text-sm font-bold">คำนวณคอมฯ</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Calculate</p>
                     </div>
-                    <div style="font-size: 1.5rem; color: var(--wiki-text-muted);">→</div>
-                    <div style="text-align: center; flex: 1; min-width: 120px;">
-                        <div style="background: rgb(var(--primary-rgb)); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.5rem; margin: 0 auto 0.5rem;">4</div>
-                        <h4 style="font-size: 0.9rem;">จ่ายเข้า Wallet</h4>
-                        <p style="font-size: 0.8rem; color: var(--wiki-text-muted);">Auto Transfer</p>
+                    <div class="text-2xl text-gray-400">→</div>
+                    <div class="text-center flex-1 min-w-[120px]">
+                        <div class="bg-primary-500 text-white w-12 h-12 rounded-full flex items-center justify-center font-extrabold text-2xl mx-auto mb-2">4</div>
+                        <h4 class="text-sm font-bold">จ่ายเข้า Wallet</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Auto Transfer</p>
                     </div>
                 </div>
             </div>
@@ -348,29 +348,25 @@
     <section id="mlm-rank" class="wiki-section">
         <h2>👑 ระบบยศและโบนัส - เส้นทางสู่ความสำเร็จ</h2>
 
-            <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+            <p class="text-lg mb-8 text-gray-700 dark:text-gray-300">
                 ระบบยศ (Rank System) คือ<strong>แรงจูงใจหลัก</strong>ของธุรกิจ MLM ยิ่งขึ้นยศสูง ยิ่งได้รับสิทธิพิเศษและรายได้มากขึ้น
             </p>
 
             <div class="wiki-grid wiki-grid-4">
-                <div style="background: linear-gradient(135deg, rgba(156, 163, 175, 0.1), rgba(156, 163, 175, 0.05)); border: 3px solid #9ca3af; border-radius: 16px; padding: 2rem; text-align: center; transition: all 0.3s;"
-                     onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 32px rgba(156, 163, 175, 0.3)'"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #e5e7eb; color: var(--wiki-text-primary);">🆕 Member</div>
-                    <h4 style="font-size: 1.25rem; margin-bottom: 1rem;">สมาชิกทั่วไป</h4>
-                    <ul style="text-align: left; list-style: none; padding: 0; line-height: 2;">
+                <div class="bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800/50 dark:to-gray-800/30 border-[3px] border-gray-400 rounded-2xl p-8 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                    <div class="inline-block px-4 py-2 rounded-full font-extrabold text-lg mb-4 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200">🆕 Member</div>
+                    <h4 class="text-xl mb-4 font-bold">สมาชิกทั่วไป</h4>
+                    <ul class="text-left list-none p-0 leading-loose text-sm">
                         <li>✅ ไม่มีเงื่อนไข</li>
                         <li>✅ ค่าแนะนำ 5%</li>
                         <li>✅ ซื้อสินค้าราคาสมาชิก</li>
                     </ul>
                 </div>
 
-                <div style="background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), rgba(192, 192, 192, 0.1)); border: 3px solid #c0c0c0; border-radius: 16px; padding: 2rem; text-align: center; transition: all 0.3s;"
-                     onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 32px rgba(192, 192, 192, 0.4)'"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #c0c0c0; color: var(--wiki-text-primary);">🥈 Silver</div>
-                    <h4 style="font-size: 1.25rem; margin-bottom: 1rem;">Silver Partner</h4>
-                    <ul style="text-align: left; list-style: none; padding: 0; line-height: 2;">
+                <div class="bg-gradient-to-br from-gray-200 to-gray-100 dark:from-gray-700/50 dark:to-gray-700/30 border-[3px] border-gray-300 rounded-2xl p-8 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                    <div class="inline-block px-4 py-2 rounded-full font-extrabold text-lg mb-4 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200">🥈 Silver</div>
+                    <h4 class="text-xl mb-4 font-bold">Silver Partner</h4>
+                    <ul class="text-left list-none p-0 leading-loose text-sm">
                         <li>📌 ยอดส่วนตัว 50,000 บาท</li>
                         <li>📌 ทีม 3 คนขึ้นไป</li>
                         <li>💰 <strong>โบนัสยศ 5,000 บาท</strong></li>
@@ -378,12 +374,10 @@
                     </ul>
                 </div>
 
-                <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1)); border: 3px solid #ffd700; border-radius: 16px; padding: 2rem; text-align: center; transition: all 0.3s;"
-                     onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 32px rgba(255, 215, 0, 0.4)'"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #ffd700; color: var(--wiki-text-primary);">🥇 Gold</div>
-                    <h4 style="font-size: 1.25rem; margin-bottom: 1rem;">Gold Partner</h4>
-                    <ul style="text-align: left; list-style: none; padding: 0; line-height: 2;">
+                <div class="bg-gradient-to-br from-yellow-100 to-yellow-50 dark:from-yellow-900/30 dark:to-yellow-900/10 border-[3px] border-yellow-400 rounded-2xl p-8 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                    <div class="inline-block px-4 py-2 rounded-full font-extrabold text-lg mb-4 bg-yellow-400 text-gray-800">🥇 Gold</div>
+                    <h4 class="text-xl mb-4 font-bold">Gold Partner</h4>
+                    <ul class="text-left list-none p-0 leading-loose text-sm">
                         <li>📌 ยอดส่วนตัว 150,000 บาท</li>
                         <li>📌 ทีม 10 คนขึ้นไป</li>
                         <li>💰 <strong>โบนัสยศ 20,000 บาท</strong></li>
@@ -392,12 +386,10 @@
                     </ul>
                 </div>
 
-                <div style="background: linear-gradient(135deg, rgba(229, 228, 226, 0.2), rgba(229, 228, 226, 0.1)); border: 3px solid #e5e4e2; border-radius: 16px; padding: 2rem; text-align: center; transition: all 0.3s;"
-                     onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 32px rgba(229, 228, 226, 0.4)'"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #e5e4e2; color: var(--wiki-text-primary);">💎 Platinum</div>
-                    <h4 style="font-size: 1.25rem; margin-bottom: 1rem;">Platinum Partner</h4>
-                    <ul style="text-align: left; list-style: none; padding: 0; line-height: 2;">
+                <div class="bg-gradient-to-br from-gray-200 to-gray-100 dark:from-gray-700/40 dark:to-gray-700/20 border-[3px] border-gray-300 rounded-2xl p-8 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                    <div class="inline-block px-4 py-2 rounded-full font-extrabold text-lg mb-4 bg-gray-200 text-gray-800">💎 Platinum</div>
+                    <h4 class="text-xl mb-4 font-bold">Platinum Partner</h4>
+                    <ul class="text-left list-none p-0 leading-loose text-sm">
                         <li>📌 ยอดส่วนตัว 500,000 บาท</li>
                         <li>📌 ทีม 30 คน + มี Gold 3 คน</li>
                         <li>💰 <strong>โบนัสยศ 100,000 บาท</strong></li>
@@ -406,12 +398,10 @@
                     </ul>
                 </div>
 
-                <div style="background: linear-gradient(135deg, rgba(185, 242, 255, 0.3), rgba(185, 242, 255, 0.15)); border: 3px solid #b9f2ff; border-radius: 16px; padding: 2rem; text-align: center; transition: all 0.3s;"
-                     onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 32px rgba(185, 242, 255, 0.5)'"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #b9f2ff; color: var(--wiki-text-primary);">💠 Diamond</div>
-                    <h4 style="font-size: 1.25rem; margin-bottom: 1rem;">Diamond Partner</h4>
-                    <ul style="text-align: left; list-style: none; padding: 0; line-height: 2;">
+                <div class="bg-gradient-to-br from-cyan-100 to-cyan-50 dark:from-cyan-900/30 dark:to-cyan-900/10 border-[3px] border-cyan-300 rounded-2xl p-8 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                    <div class="inline-block px-4 py-2 rounded-full font-extrabold text-lg mb-4 bg-cyan-200 text-gray-800">💠 Diamond</div>
+                    <h4 class="text-xl mb-4 font-bold">Diamond Partner</h4>
+                    <ul class="text-left list-none p-0 leading-loose text-sm">
                         <li>📌 ยอดส่วนตัว 2,000,000 บาท</li>
                         <li>📌 ทีม 100 คน + Platinum 3 คน</li>
                         <li>💰 <strong>โบนัสยศ 500,000 บาท</strong></li>
@@ -424,8 +414,8 @@
 
             <div class="info-box success">
                 <h4>🎉 สิทธิพิเศษเพิ่มเติม</h4>
-                <p style="margin-bottom: 1rem;">นอกจากโบนัสและค่าคอมมิชชั่นแล้ว ยังมีสิทธิพิเศษอื่นๆ อีกมากมาย:</p>
-                <ul style="line-height: 2;">
+                <p class="mb-4">นอกจากโบนัสและค่าคอมมิชชั่นแล้ว ยังมีสิทธิพิเศษอื่นๆ อีกมากมาย:</p>
+                <ul class="leading-loose">
                     <li><strong>✈️ ทริปต่างประเทศ:</strong> Gold ขึ้นไป (ปีละ 1-2 ครั้ง)</li>
                     <li><strong>🏥 ประกันสุขภาพ:</strong> Platinum ขึ้นไป (วงเงิน 1-5 ล้านบาท)</li>
                     <li><strong>💼 เบี้ยเลี้ยง:</strong> Diamond ขึ้นไป (20,000 บาท/เดือน)</li>
@@ -434,10 +424,10 @@
                 </ul>
             </div>
 
-            <div style="background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb)), rgb(var(--accent-rgb))); padding: 2.5rem; border-radius: 16px; color: white; text-align: center; margin: 3rem 0;">
-                <div style="font-size: 3.5rem; margin-bottom: 1rem;">🎯</div>
-                <h3 style="font-size: 2rem; font-weight: 800; margin-bottom: 1rem; color: white;">เริ่มต้นที่ Member วันนี้ เป้าหมาย Diamond!</h3>
-                <p style="font-size: 1.1rem; opacity: 0.95; max-width: 700px; margin: 0 auto;">
+            <div class="bg-gradient-to-br from-primary-500 via-secondary-500 to-accent-500 p-10 rounded-2xl text-white text-center my-12 shadow-xl">
+                <div class="text-6xl mb-4">🎯</div>
+                <h3 class="text-3xl font-extrabold mb-4 text-white">เริ่มต้นที่ Member วันนี้ เป้าหมาย Diamond!</h3>
+                <p class="text-lg opacity-95 max-w-2xl mx-auto">
                     ทุกคนเริ่มต้นจากศูนย์ แต่ด้วยความพยายามและระบบที่ดี คุณสามารถขึ้นถึง Diamond ได้ภายใน 1-3 ปี
                 </p>
             </div>
@@ -447,14 +437,14 @@
     <section id="mlm-genealogy" class="wiki-section">
         <h2>🌳 ระบบ Genealogy - แสดงโครงสร้างองค์กร</h2>
 
-            <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+            <p class="text-lg mb-8 text-gray-700 dark:text-gray-300">
                 ระบบ Genealogy คือ<strong>การแสดงโครงสร้างองค์กรแบบ Tree View</strong> ทำให้เห็นภาพรวมของทีมและสายงาน
                 สามารถ Drill Down ดูรายละเอียดแต่ละคนได้อย่างละเอียด
             </p>
 
             <div class="info-box">
                 <h4>📊 ทำไมต้องมี Genealogy Tree?</h4>
-                <ul style="line-height: 2;">
+                <ul class="leading-loose">
                     <li><strong>เห็นภาพรวม:</strong> มองเห็นโครงสร้างทีมทั้งหมดในที่เดียว</li>
                     <li><strong>วิเคราะห์ทีม:</strong> หา Active/Inactive members ได้ง่าย</li>
                     <li><strong>วางกลยุทธ์:</strong> วางแผนการสร้างทีมและ Placement</li>
@@ -467,8 +457,8 @@
                 <div class="feature-card">
                     <div class="feature-icon">🎨</div>
                     <h4>Interactive Tree</h4>
-                    <p style="margin-bottom: 1rem;">ต้นไม้ที่โต้ตอบได้</p>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4">ต้นไม้ที่โต้ตอบได้</p>
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ Zoom In/Out (ขยาย/ย่อ)</li>
                         <li>✅ Pan & Navigate (เลื่อนดู)</li>
                         <li>✅ Click to Expand (คลิกขยาย)</li>
@@ -479,8 +469,8 @@
                 <div class="feature-card">
                     <div class="feature-icon">📈</div>
                     <h4>Performance Indicators</h4>
-                    <p style="margin-bottom: 1rem;">แสดงตัวชี้วัดผลงาน</p>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4">แสดงตัวชี้วัดผลงาน</p>
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ Active/Inactive Status</li>
                         <li>✅ Sales Volume (ยอดขาย)</li>
                         <li>✅ Team Size (ขนาดทีม)</li>
@@ -491,8 +481,8 @@
                 <div class="feature-card">
                     <div class="feature-icon">📊</div>
                     <h4>Reports & Analytics</h4>
-                    <p style="margin-bottom: 1rem;">รายงานและวิเคราะห์</p>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4">รายงานและวิเคราะห์</p>
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ Team Performance</li>
                         <li>✅ Growth Trends (แนวโน้ม)</li>
                         <li>✅ Downline Activity</li>
@@ -503,8 +493,8 @@
                 <div class="feature-card">
                     <div class="feature-icon">🎯</div>
                     <h4>Multiple Views</h4>
-                    <p style="margin-bottom: 1rem;">มุมมองหลากหลาย</p>
-                    <ul style="font-size: 0.9rem; line-height: 1.8;">
+                    <p class="mb-4">มุมมองหลากหลาย</p>
+                    <ul class="text-sm leading-relaxed">
                         <li>✅ Sponsor Tree (ผู้แนะนำ)</li>
                         <li>✅ Binary Tree (โครงสร้าง Binary)</li>
                         <li>✅ Unilevel Tree (โครงสร้าง Unilevel)</li>
@@ -515,49 +505,49 @@
 
             <h3>🎨 ตัวอย่าง Genealogy Tree</h3>
 
-            <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 2rem; margin: 2rem 0;">
-                <div style="text-align: center;">
-                    <div style="display: inline-block; background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb))); color: white; padding: 1rem 2rem; border-radius: 12px; margin-bottom: 2rem;">
-                        <div style="font-weight: 800; font-size: 1.1rem;">👑 YOU</div>
-                        <div style="font-size: 0.85rem; opacity: 0.9;">Diamond Partner</div>
-                        <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 0.25rem;">Team: 127 | Volume: ฿5.2M</div>
+            <div class="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-8 my-8">
+                <div class="text-center">
+                    <div class="inline-block bg-gradient-to-br from-primary-500 to-secondary-500 text-white px-8 py-4 rounded-xl mb-8">
+                        <div class="font-extrabold text-lg">👑 YOU</div>
+                        <div class="text-sm opacity-90">Diamond Partner</div>
+                        <div class="text-xs opacity-80 mt-1">Team: 127 | Volume: ฿5.2M</div>
                     </div>
                 </div>
 
-                <div style="display: flex; justify-content: center; gap: 3rem; margin-top: 2rem; flex-wrap: wrap;">
-                    <div style="text-align: center;">
-                        <div style="display: inline-block; background: var(--wiki-card-bg); border: 2px solid #ffd700; padding: 0.75rem 1.5rem; border-radius: 8px;">
-                            <div style="font-weight: 700;">🥇 John</div>
-                            <div style="font-size: 0.8rem; color: var(--wiki-text-muted);">Gold | ฿850K</div>
+                <div class="flex justify-center gap-12 mt-8 flex-wrap">
+                    <div class="text-center">
+                        <div class="inline-block bg-white dark:bg-gray-800 border-2 border-yellow-400 px-6 py-3 rounded-lg">
+                            <div class="font-bold">🥇 John</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Gold | ฿850K</div>
                         </div>
-                        <div style="margin-top: 1rem; display: flex; gap: 1rem; justify-content: center;">
-                            <div style="background: var(--wiki-card-bg); border: 1px solid var(--wiki-border); padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8rem;">
+                        <div class="mt-4 flex gap-4 justify-center">
+                            <div class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-md text-xs">
                                 🥈 Mary
                             </div>
-                            <div style="background: var(--wiki-card-bg); border: 1px solid var(--wiki-border); padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8rem;">
+                            <div class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-md text-xs">
                                 🥈 Peter
                             </div>
                         </div>
                     </div>
 
-                    <div style="text-align: center;">
-                        <div style="display: inline-block; background: var(--wiki-card-bg); border: 2px solid #e5e4e2; padding: 0.75rem 1.5rem; border-radius: 8px;">
-                            <div style="font-weight: 700;">💎 Sarah</div>
-                            <div style="font-size: 0.8rem; color: var(--wiki-text-muted);">Platinum | ฿1.2M</div>
+                    <div class="text-center">
+                        <div class="inline-block bg-white dark:bg-gray-800 border-2 border-gray-300 px-6 py-3 rounded-lg">
+                            <div class="font-bold">💎 Sarah</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Platinum | ฿1.2M</div>
                         </div>
-                        <div style="margin-top: 1rem; display: flex; gap: 1rem; justify-content: center;">
-                            <div style="background: var(--wiki-card-bg); border: 1px solid var(--wiki-border); padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8rem;">
+                        <div class="mt-4 flex gap-4 justify-center">
+                            <div class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-md text-xs">
                                 🥇 Lisa
                             </div>
-                            <div style="background: var(--wiki-card-bg); border: 1px solid var(--wiki-border); padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8rem;">
+                            <div class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-4 py-2 rounded-md text-xs">
                                 🥈 Tom
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px dashed var(--wiki-border);">
-                    <p style="font-size: 0.9rem; color: var(--wiki-text-secondary);">
+                <div class="text-center mt-8 pt-8 border-t border-dashed border-gray-300 dark:border-gray-600">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
                         💡 นี่เป็นเพียงตัวอย่าง ระบบจริงสามารถแสดงได้หลายระดับและมีข้อมูลละเอียดมากกว่านี้
                     </p>
                 </div>
@@ -565,7 +555,7 @@
 
             <div class="info-box tip">
                 <h4>💡 เคล็ดลับการใช้งาน Genealogy</h4>
-                <ul style="line-height: 2;">
+                <ul class="leading-loose">
                     <li><strong>ตรวจสอบทุกวัน:</strong> ดู Genealogy อย่างน้อยวันละครั้งเพื่อติดตามความเคลื่อนไหว</li>
                     <li><strong>หา Inactive Members:</strong> ติดต่อและช่วยเหลือสมาชิกที่ไม่ Active</li>
                     <li><strong>วางแผน Placement:</strong> ใช้ข้อมูลจาก Genealogy วางแผนการวางตำแหน่งสมาชิกใหม่</li>

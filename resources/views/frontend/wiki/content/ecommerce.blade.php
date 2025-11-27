@@ -1,26 +1,26 @@
 {{-- Hero Section --}}
-<div style="background: linear-gradient(135deg, rgb(var(--primary-rgb)) 0%, rgb(var(--secondary-rgb)) 50%, rgb(var(--accent-rgb)) 100%); padding: 3rem 2rem; border-radius: 20px; margin-bottom: 3rem; color: white; text-align: center;">
-    <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; color: white;">🛍️ E-Commerce & Marketplace System</h1>
-    <p style="font-size: 1.25rem; opacity: 0.95; max-width: 800px; margin: 0 auto;">ระบบอีคอมเมิร์ซและตลาดกลางออนไลน์แบบครบวงจร รองรับหลายผู้ขาย เชื่อมต่อ Marketplace ชั้นนำ</p>
-</section>
+<div class="bg-gradient-to-br from-primary-500 via-secondary-500 to-accent-500 p-8 md:p-12 rounded-2xl mb-8 text-white text-center shadow-xl">
+    <h1 class="text-3xl md:text-4xl font-extrabold mb-4 text-white">🛍️ E-Commerce & Marketplace System</h1>
+    <p class="text-lg md:text-xl opacity-95 max-w-3xl mx-auto">ระบบอีคอมเมิร์ซและตลาดกลางออนไลน์แบบครบวงจร รองรับหลายผู้ขาย เชื่อมต่อ Marketplace ชั้นนำ</p>
+</div>
 
 {{-- 1: Product Management --}}
 <section id="products" class="wiki-section">
-    <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">📦 Product Management System</h2>
+    <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">📦 Product Management System</h2>
 
     <div class="info-box success">
         <h4>🎯 ระบบจัดการสินค้าแบบครบวงจร</h4>
         <p>รองรับสินค้าหลากหลายประเภท ตั้งแต่สินค้าทั่วไป ดิจิทัล จนถึงแบบสมาชิก พร้อมระบบจัดการสต็อก หลายสาขา และรีวิวจากลูกค้า</p>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🏷️ Product Types</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">🏷️ Product Types</h3>
 
     <div class="wiki-grid wiki-grid-3">
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Physical Products</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">สินค้าที่มีตัวตน ต้องจัดส่ง</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">📦</div>
+            <h4 class="font-bold mb-3">Physical Products</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">สินค้าที่มีตัวตน ต้องจัดส่ง</p>
+            <ul class="space-y-2 text-sm">
                 <li>✅ Multi-variant (สี, ไซส์, รุ่น)</li>
                 <li>✅ Weight & Dimensions</li>
                 <li>✅ Stock Management</li>
@@ -30,10 +30,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">💾</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Digital Products</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">สินค้าดิจิทัล ดาวน์โหลดทันที</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">💾</div>
+            <h4 class="font-bold mb-3">Digital Products</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">สินค้าดิจิทัล ดาวน์โหลดทันที</p>
+            <ul class="space-y-2 text-sm">
                 <li>✅ E-books, Software, Themes</li>
                 <li>✅ Auto Delivery หลังชำระเงิน</li>
                 <li>✅ License Key Generation</li>
@@ -43,10 +43,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🔄</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Subscription Products</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">สินค้าแบบสมาชิกรายเดือน</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🔄</div>
+            <h4 class="font-bold mb-3">Subscription Products</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">สินค้าแบบสมาชิกรายเดือน</p>
+            <ul class="space-y-2 text-sm">
                 <li>✅ Monthly/Yearly Plans</li>
                 <li>✅ Auto-renewal System</li>
                 <li>✅ Trial Period Support</li>
@@ -56,38 +56,38 @@
         </div>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🎨 Product Features</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">🎨 Product Features</h3>
 
     <div class="wiki-grid wiki-grid-3">
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📸 Product Gallery</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">รูปหลายมุม, Zoom, 360° View, Video Demo</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-primary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">📸 Product Gallery</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">รูปหลายมุม, Zoom, 360° View, Video Demo</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--secondary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📊 Inventory Tracking</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">Stock Alert, Multi-warehouse, Auto-reorder</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-secondary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">📊 Inventory Tracking</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Stock Alert, Multi-warehouse, Auto-reorder</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--accent-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">⭐ Product Reviews</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">Star Rating, รูปภาพจากลูกค้า, Verified Purchase</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-accent-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">⭐ Product Reviews</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Star Rating, รูปภาพจากลูกค้า, Verified Purchase</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🔍 Search & Filter</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">Advanced Search, Multi-filter, Sort, Autocomplete</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-primary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">🔍 Search & Filter</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Advanced Search, Multi-filter, Sort, Autocomplete</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--secondary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📈 SEO Optimization</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">Meta Tags, Schema.org, URL Friendly, Sitemap</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-secondary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">📈 SEO Optimization</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Meta Tags, Schema.org, URL Friendly, Sitemap</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--accent-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🎯 Related Products</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">Cross-sell, Up-sell, Frequently Bought Together</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-accent-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">🎯 Related Products</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Cross-sell, Up-sell, Frequently Bought Together</p>
         </div>
     </div>
 
     <div class="info-box tip">
         <h4>💡 Pro Tips: Product Optimization</h4>
-        <ul style="line-height: 1.8;">
+        <ul class="space-y-2">
             <li><strong>รูปภาพคุณภาพสูง:</strong> ใช้รูป 1200x1200px ขึ้นไป พื้นหลังขาว สำหรับ Main Image</li>
             <li><strong>คำอธิบายละเอียด:</strong> เขียนอธิบายสินค้าอย่างละเอียด ใส่ Keywords สำหรับ SEO</li>
             <li><strong>Variant Management:</strong> ตั้งค่า SKU แยกตาม Variant เพื่อจัดการสต็อกง่ายขึ้น</li>
@@ -98,20 +98,20 @@
 
 {{-- 2: Cart & Checkout --}}
 <section id="cart" class="wiki-section">
-    <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">🛒 Shopping Cart & Checkout System</h2>
+    <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">🛒 Shopping Cart & Checkout System</h2>
 
     <div class="info-box success">
         <h4>🚀 Shopping Cart แบบ Real-time</h4>
         <p>ตะกร้าสินค้าที่อัพเดทแบบเรียลไทม์ บันทึกข้ามอุปกรณ์ รองรับคูปองส่วนลด และระบบ One-click Checkout</p>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🛍️ Shopping Cart Features</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">🛍️ Shopping Cart Features</h3>
 
     <div class="wiki-grid wiki-grid-3">
         <div class="wiki-card">
-            <div style="font-size: 2.5rem; margin-bottom: 1rem;">⚡</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Real-time Updates</h4>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-4xl mb-4">⚡</div>
+            <h4 class="font-bold mb-3">Real-time Updates</h4>
+            <ul class="space-y-2 text-sm">
                 <li>✅ Live Price Calculation</li>
                 <li>✅ Stock Availability Check</li>
                 <li>✅ Shipping Cost Auto-calculate</li>
@@ -120,9 +120,9 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 2.5rem; margin-bottom: 1rem;">💾</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Persistent Cart</h4>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-4xl mb-4">💾</div>
+            <h4 class="font-bold mb-3">Persistent Cart</h4>
+            <ul class="space-y-2 text-sm">
                 <li>✅ Save Cart for Logged Users</li>
                 <li>✅ Cross-device Sync</li>
                 <li>✅ Abandoned Cart Recovery</li>
@@ -131,9 +131,9 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 2.5rem; margin-bottom: 1rem;">🎫</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Coupon System</h4>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-4xl mb-4">🎫</div>
+            <h4 class="font-bold mb-3">Coupon System</h4>
+            <ul class="space-y-2 text-sm">
                 <li>✅ Percentage/Fixed Discount</li>
                 <li>✅ Free Shipping Coupon</li>
                 <li>✅ Min Purchase Requirement</li>
@@ -142,84 +142,86 @@
         </div>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📋 Checkout Flow</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">📋 Checkout Flow</h3>
 
-    <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
-        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: center;">
-            <div style="text-align: center; flex: 1; min-width: 150px;">
+    <div class="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-8 mb-8">
+        <div class="flex items-center gap-4 flex-wrap justify-center">
+            <div class="text-center flex-1 min-w-[150px]">
                 <div class="step-indicator">1</div>
-                <div style="font-weight: 700; margin-bottom: 0.25rem;">🛒 Review Cart</div>
-                <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ตรวจสอบสินค้า</div>
+                <div class="font-bold mb-1">🛒 Review Cart</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">ตรวจสอบสินค้า</div>
             </div>
-            <div style="font-size: 1.5rem; color: var(--wiki-text-muted);">→</div>
-            <div style="text-align: center; flex: 1; min-width: 150px;">
+            <div class="text-2xl text-gray-400">→</div>
+            <div class="text-center flex-1 min-w-[150px]">
                 <div class="step-indicator">2</div>
-                <div style="font-weight: 700; margin-bottom: 0.25rem;">📍 Shipping Info</div>
-                <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ที่อยู่จัดส่ง</div>
+                <div class="font-bold mb-1">📍 Shipping Info</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">ที่อยู่จัดส่ง</div>
             </div>
-            <div style="font-size: 1.5rem; color: var(--wiki-text-muted);">→</div>
-            <div style="text-align: center; flex: 1; min-width: 150px;">
+            <div class="text-2xl text-gray-400">→</div>
+            <div class="text-center flex-1 min-w-[150px]">
                 <div class="step-indicator">3</div>
-                <div style="font-weight: 700; margin-bottom: 0.25rem;">💳 Payment</div>
-                <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">เลือกวิธีชำระ</div>
+                <div class="font-bold mb-1">💳 Payment</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">เลือกวิธีชำระ</div>
             </div>
-            <div style="font-size: 1.5rem; color: var(--wiki-text-muted);">→</div>
-            <div style="text-align: center; flex: 1; min-width: 150px;">
-                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb))); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 0 auto 0.5rem;">✓</div>
-                <div style="font-weight: 700; margin-bottom: 0.25rem;">✅ Confirmation</div>
-                <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ยืนยันคำสั่งซื้อ</div>
+            <div class="text-2xl text-gray-400">→</div>
+            <div class="text-center flex-1 min-w-[150px]">
+                <div class="w-14 h-14 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 text-white flex items-center justify-center text-2xl font-extrabold mx-auto mb-2">✓</div>
+                <div class="font-bold mb-1">✅ Confirmation</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">ยืนยันคำสั่งซื้อ</div>
             </div>
         </div>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📦 Order Management</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">📦 Order Management</h3>
 
-    <table class="wiki-table">
-        <thead>
-            <tr>
-                <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Order Status</th>
-                <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Description</th>
-                <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Customer Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><span style="background: #FEF3C7; color: #92400E; padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600;">⏳ Pending</span></td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">รอชำระเงิน</td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ชำระเงินภายใน 24 ชม.</td>
-            </tr>
-            <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><span style="background: #DBEAFE; color: #1E40AF; padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600;">💰 Paid</span></td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ชำระเงินแล้ว รอจัดส่ง</td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">รอร้านค้าจัดส่ง</td>
-            </tr>
-            <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><span style="background: #E0E7FF; color: #3730A3; padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600;">📦 Processing</span></td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">กำลังเตรียมสินค้า</td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">รอติดตามพัสดุ</td>
-            </tr>
-            <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><span style="background: #DBEAFE; color: #075985; padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600;">🚚 Shipped</span></td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">จัดส่งแล้ว</td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ติดตามพัสดุได้</td>
-            </tr>
-            <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><span style="background: #D1FAE5; color: #065F46; padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600;">✅ Delivered</span></td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">จัดส่งสำเร็จ</td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">รีวิวสินค้าได้</td>
-            </tr>
-            <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><span style="background: #FEE2E2; color: #991B1B; padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600;">❌ Cancelled</span></td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ยกเลิกแล้ว</td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">รอรีฟันด์ (ถ้าชำระแล้ว)</td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="overflow-x-auto">
+        <table class="w-full border-collapse bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+            <thead class="bg-gray-100 dark:bg-gray-700">
+                <tr>
+                    <th class="p-4 text-left border border-gray-200 dark:border-gray-600">Order Status</th>
+                    <th class="p-4 text-left border border-gray-200 dark:border-gray-600">Description</th>
+                    <th class="p-4 text-left border border-gray-200 dark:border-gray-600">Customer Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600"><span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-semibold text-sm">⏳ Pending</span></td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">รอชำระเงิน</td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">ชำระเงินภายใน 24 ชม.</td>
+                </tr>
+                <tr>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600"><span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-semibold text-sm">💰 Paid</span></td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">ชำระเงินแล้ว รอจัดส่ง</td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">รอร้านค้าจัดส่ง</td>
+                </tr>
+                <tr>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600"><span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full font-semibold text-sm">📦 Processing</span></td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">กำลังเตรียมสินค้า</td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">รอติดตามพัสดุ</td>
+                </tr>
+                <tr>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600"><span class="bg-sky-100 text-sky-800 px-3 py-1 rounded-full font-semibold text-sm">🚚 Shipped</span></td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">จัดส่งแล้ว</td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">ติดตามพัสดุได้</td>
+                </tr>
+                <tr>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600"><span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-semibold text-sm">✅ Delivered</span></td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">จัดส่งสำเร็จ</td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">รีวิวสินค้าได้</td>
+                </tr>
+                <tr>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600"><span class="bg-red-100 text-red-800 px-3 py-1 rounded-full font-semibold text-sm">❌ Cancelled</span></td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">ยกเลิกแล้ว</td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">รอรีฟันด์ (ถ้าชำระแล้ว)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
     <div class="info-box tip">
         <h4>💡 Abandoned Cart Recovery Strategy</h4>
         <p>ระบบส่งอีเมลเตือนอัตโนมัติเมื่อลูกค้าทิ้งตะกร้า:</p>
-        <ul style="line-height: 1.8; margin-top: 1rem;">
+        <ul class="space-y-2 mt-4">
             <li><strong>1 ชั่วโมง:</strong> อีเมลแรก "ลืมสินค้าไว้ในตะกร้าหรือเปล่า?" + คูปองส่วนลด 5%</li>
             <li><strong>24 ชั่วโมง:</strong> อีเมลที่สอง "สินค้ากำลังจะหมด!" + Free Shipping</li>
             <li><strong>3 วัน:</strong> อีเมลสุดท้าย "โอกาสสุดท้าย!" + ส่วนลด 10%</li>
@@ -229,21 +231,21 @@
 
 {{-- 3: Shipping & Delivery --}}
 <section id="shipping" class="wiki-section">
-    <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">🚚 Shipping & Delivery System</h2>
+    <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">🚚 Shipping & Delivery System</h2>
 
     <div class="info-box success">
         <h4>📦 ระบบจัดส่งแบบครบวงจร</h4>
         <p>เชื่อมต่อกับผู้ให้บริการขนส่งชั้นนำ คำนวณค่าส่งอัตโนมัติ ติดตามพัสดุแบบเรียลไทม์ และพิมพ์ใบปะหน้าพัสดุได้เลย</p>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🚛 Shipping Providers (Thailand)</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">🚛 Shipping Providers (Thailand)</h3>
 
     <div class="wiki-grid wiki-grid-3">
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">📮</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #DC2626;">Thailand Post</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ไปรษณีย์ไทย</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">📮</div>
+            <h4 class="font-bold mb-3 text-red-600">Thailand Post</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">ไปรษณีย์ไทย</p>
+            <ul class="space-y-2 text-sm">
                 <li>✅ EMS (Express Mail)</li>
                 <li>✅ Register Parcel</li>
                 <li>✅ Economy Parcel</li>
@@ -253,10 +255,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🟢</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #059669;">Kerry Express</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">เคอรี่ เอ็กซ์เพรส</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🟢</div>
+            <h4 class="font-bold mb-3 text-emerald-600">Kerry Express</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">เคอรี่ เอ็กซ์เพรส</p>
+            <ul class="space-y-2 text-sm">
                 <li>✅ Next Day Delivery</li>
                 <li>✅ Same Day (เขตกรุงเทพฯ)</li>
                 <li>✅ COD Service</li>
@@ -266,10 +268,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #F59E0B;">Flash Express</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">แฟลช เอ็กซ์เพรส</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">⚡</div>
+            <h4 class="font-bold mb-3 text-amber-500">Flash Express</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">แฟลช เอ็กซ์เพรส</p>
+            <ul class="space-y-2 text-sm">
                 <li>✅ Fast Delivery (1-2 วัน)</li>
                 <li>✅ Real-time Tracking</li>
                 <li>✅ COD Service</li>
@@ -279,10 +281,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🔴</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #EF4444;">J&T Express</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">เจแอนด์ที เอ็กซ์เพรส</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🔴</div>
+            <h4 class="font-bold mb-3 text-red-500">J&T Express</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">เจแอนด์ที เอ็กซ์เพรส</p>
+            <ul class="space-y-2 text-sm">
                 <li>✅ Standard Delivery</li>
                 <li>✅ Nationwide Coverage</li>
                 <li>✅ COD Available</li>
@@ -292,10 +294,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🚗</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #8B5CF6;">Lalamove / Grab</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ส่งด่วนในเมือง</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🚗</div>
+            <h4 class="font-bold mb-3 text-violet-500">Lalamove / Grab</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">ส่งด่วนในเมือง</p>
+            <ul class="space-y-2 text-sm">
                 <li>✅ Same Day Delivery</li>
                 <li>✅ 2-4 Hours Delivery</li>
                 <li>✅ Real-time GPS Tracking</li>
@@ -305,10 +307,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">✈️</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #DC2626;">DHL / FedEx</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ส่งระหว่างประเทศ</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">✈️</div>
+            <h4 class="font-bold mb-3 text-red-600">DHL / FedEx</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">ส่งระหว่างประเทศ</p>
+            <ul class="space-y-2 text-sm">
                 <li>✅ International Shipping</li>
                 <li>✅ Express Worldwide</li>
                 <li>✅ Customs Clearance</li>
@@ -318,38 +320,38 @@
         </div>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📋 Shipping Features</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">📋 Shipping Features</h3>
 
     <div class="wiki-grid wiki-grid-3">
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📊 Auto Calculate Shipping</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">คำนวณค่าส่งอัตโนมัติตาม น้ำหนัก, ขนาด, ระยะทาง</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-primary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">📊 Auto Calculate Shipping</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">คำนวณค่าส่งอัตโนมัติตาม น้ำหนัก, ขนาด, ระยะทาง</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--secondary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🔍 Real-time Tracking</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ติดตามพัสดุแบบเรียลไทม์ผ่าน API</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-secondary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">🔍 Real-time Tracking</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">ติดตามพัสดุแบบเรียลไทม์ผ่าน API</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--accent-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🖨️ Print Shipping Label</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">พิมพ์ใบปะหน้าพัสดุได้เลย (A4/Sticker)</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-accent-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">🖨️ Print Shipping Label</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">พิมพ์ใบปะหน้าพัสดุได้เลย (A4/Sticker)</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">💰 COD Support</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">รองรับเก็บเงินปลายทาง (Cash on Delivery)</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-primary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">💰 COD Support</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">รองรับเก็บเงินปลายทาง (Cash on Delivery)</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--secondary-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📦 Bulk Booking</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">จองพัสดุหลายรายการพร้อมกัน</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-secondary-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">📦 Bulk Booking</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">จองพัสดุหลายรายการพร้อมกัน</p>
         </div>
-        <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--accent-rgb)); padding: 1rem; border-radius: 8px;">
-            <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🔔 Auto Notification</h4>
-            <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">แจ้งเตือนอัตโนมัติ SMS/Email/LINE</p>
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-accent-500 p-4 rounded-lg">
+            <h4 class="font-bold mb-2">🔔 Auto Notification</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">แจ้งเตือนอัตโนมัติ SMS/Email/LINE</p>
         </div>
     </div>
 
     <div class="info-box tip">
         <h4>💡 Shipping Best Practices</h4>
-        <ul style="line-height: 1.8;">
+        <ul class="space-y-2">
             <li><strong>Free Shipping Threshold:</strong> ตั้งค่าฟรีค่าส่งเมื่อซื้อครบ 500-1,000 บาท เพื่อเพิ่มยอดขาย</li>
             <li><strong>Multiple Options:</strong> ให้ลูกค้าเลือกผู้ให้บริการได้ Standard (ถูก) vs Express (เร็ว)</li>
             <li><strong>Packaging Tips:</strong> ใส่กล่องที่แข็งแรง ใส่ของกันกระแทก ปิดเทปให้เรียบร้อย</li>
@@ -360,21 +362,21 @@
 
 {{-- 4: Multi-Vendor Marketplace --}}
 <section id="marketplace" class="wiki-section">
-    <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">🏪 Multi-Vendor Marketplace System</h2>
+    <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">🏪 Multi-Vendor Marketplace System</h2>
 
     <div class="info-box success">
         <h4>🎯 ระบบตลาดกลางหลายผู้ขาย</h4>
         <p>สร้างแพลตฟอร์มตลาดออนไลน์แบบหลายผู้ขาย (Multi-Vendor) พร้อมระบบจัดการคอมมิชชั่น แดชบอร์ดผู้ขาย และรีวิวร้านค้า</p>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">👥 Vendor Management</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">👥 Vendor Management</h3>
 
     <div class="wiki-grid wiki-grid-3">
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🏪</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Vendor Registration</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ลงทะเบียนเป็นผู้ขาย</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">🏪</div>
+            <h4 class="font-bold mb-3">Vendor Registration</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">ลงทะเบียนเป็นผู้ขาย</p>
+            <ul class="space-y-2 text-sm">
                 <li>✅ KYC Verification</li>
                 <li>✅ Business Documents</li>
                 <li>✅ Bank Account Setup</li>
@@ -384,10 +386,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Vendor Dashboard</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">แดชบอร์ดผู้ขาย</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">📊</div>
+            <h4 class="font-bold mb-3">Vendor Dashboard</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">แดชบอร์ดผู้ขาย</p>
+            <ul class="space-y-2 text-sm">
                 <li>✅ Sales Analytics</li>
                 <li>✅ Order Management</li>
                 <li>✅ Product Inventory</li>
@@ -397,10 +399,10 @@
         </div>
 
         <div class="wiki-card">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem;">Vendor Rating</h4>
-            <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">คะแนนร้านค้า</p>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+            <div class="text-5xl mb-4">⭐</div>
+            <h4 class="font-bold mb-3">Vendor Rating</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">คะแนนร้านค้า</p>
+            <ul class="space-y-2 text-sm">
                 <li>✅ Star Rating System</li>
                 <li>✅ Customer Reviews</li>
                 <li>✅ Response Rate</li>
@@ -410,74 +412,76 @@
         </div>
     </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">💰 Commission System</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">💰 Commission System</h3>
 
-    <table class="wiki-table">
-        <thead>
-            <tr>
-                <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Product Category</th>
-                <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Commission Rate</th>
-                <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Example</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">📱 Electronics</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb)); font-size: 1.1rem;">5%</strong></td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ขาย 10,000 → ค่าคอม 500 บาท</td>
-            </tr>
-            <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">👕 Fashion</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--secondary-rgb)); font-size: 1.1rem;">10%</strong></td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ขาย 5,000 → ค่าคอม 500 บาท</td>
-            </tr>
-            <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">🎨 Handmade</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--accent-rgb)); font-size: 1.1rem;">8%</strong></td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ขาย 3,000 → ค่าคอม 240 บาท</td>
-            </tr>
-            <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">🍴 Food & Beverage</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb)); font-size: 1.1rem;">12%</strong></td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ขาย 2,000 → ค่าคอม 240 บาท</td>
-            </tr>
-            <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">💎 Luxury Goods</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--secondary-rgb)); font-size: 1.1rem;">15%</strong></td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ขาย 50,000 → ค่าคอม 7,500 บาท</td>
-            </tr>
-            <tr>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">💾 Digital Products</td>
-                <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--accent-rgb)); font-size: 1.1rem;">20%</strong></td>
-                <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ขาย 1,000 → ค่าคอม 200 บาท</td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="overflow-x-auto">
+        <table class="w-full border-collapse bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+            <thead class="bg-gray-100 dark:bg-gray-700">
+                <tr>
+                    <th class="p-4 text-left border border-gray-200 dark:border-gray-600">Product Category</th>
+                    <th class="p-4 text-center border border-gray-200 dark:border-gray-600">Commission Rate</th>
+                    <th class="p-4 text-left border border-gray-200 dark:border-gray-600">Example</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">📱 Electronics</td>
+                    <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-primary-600 dark:text-primary-400 text-lg">5%</strong></td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">ขาย 10,000 → ค่าคอม 500 บาท</td>
+                </tr>
+                <tr>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">👕 Fashion</td>
+                    <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-secondary-600 dark:text-secondary-400 text-lg">10%</strong></td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">ขาย 5,000 → ค่าคอม 500 บาท</td>
+                </tr>
+                <tr>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">🎨 Handmade</td>
+                    <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-accent-600 dark:text-accent-400 text-lg">8%</strong></td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">ขาย 3,000 → ค่าคอม 240 บาท</td>
+                </tr>
+                <tr>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">🍴 Food & Beverage</td>
+                    <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-primary-600 dark:text-primary-400 text-lg">12%</strong></td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">ขาย 2,000 → ค่าคอม 240 บาท</td>
+                </tr>
+                <tr>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">💎 Luxury Goods</td>
+                    <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-secondary-600 dark:text-secondary-400 text-lg">15%</strong></td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">ขาย 50,000 → ค่าคอม 7,500 บาท</td>
+                </tr>
+                <tr>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">💾 Digital Products</td>
+                    <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-accent-600 dark:text-accent-400 text-lg">20%</strong></td>
+                    <td class="p-4 border border-gray-200 dark:border-gray-600">ขาย 1,000 → ค่าคอม 200 บาท</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
-    <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📈 Marketplace Analytics</h3>
+    <h3 class="text-xl font-bold mt-8 mb-6">📈 Marketplace Analytics</h3>
 
-    <div class="wiki-grid wiki-grid-3">
-        <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05)); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1.5rem; border-radius: 8px;">
-            <div style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Total Vendors</div>
-            <h4 style="font-size: 2rem; font-weight: 800; color: rgb(var(--primary-rgb)); margin: 0;">1,250+</h4>
+    <div class="wiki-grid wiki-grid-4">
+        <div class="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/20 border-l-4 border-primary-500 p-6 rounded-lg">
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Vendors</div>
+            <h4 class="text-3xl font-extrabold text-primary-600 dark:text-primary-400">1,250+</h4>
         </div>
-        <div style="background: linear-gradient(135deg, rgba(var(--secondary-rgb), 0.1), rgba(var(--secondary-rgb), 0.05)); border-left: 4px solid rgb(var(--secondary-rgb)); padding: 1.5rem; border-radius: 8px;">
-            <div style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Products Listed</div>
-            <h4 style="font-size: 2rem; font-weight: 800; color: rgb(var(--secondary-rgb)); margin: 0;">50,000+</h4>
+        <div class="bg-gradient-to-br from-secondary-50 to-secondary-100 dark:from-secondary-900/30 dark:to-secondary-800/20 border-l-4 border-secondary-500 p-6 rounded-lg">
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">Products Listed</div>
+            <h4 class="text-3xl font-extrabold text-secondary-600 dark:text-secondary-400">50,000+</h4>
         </div>
-        <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0.05)); border-left: 4px solid rgb(var(--accent-rgb)); padding: 1.5rem; border-radius: 8px;">
-            <div style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Monthly Orders</div>
-            <h4 style="font-size: 2rem; font-weight: 800; color: rgb(var(--accent-rgb)); margin: 0;">25,000+</h4>
+        <div class="bg-gradient-to-br from-accent-50 to-accent-100 dark:from-accent-900/30 dark:to-accent-800/20 border-l-4 border-accent-500 p-6 rounded-lg">
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">Monthly Orders</div>
+            <h4 class="text-3xl font-extrabold text-accent-600 dark:text-accent-400">25,000+</h4>
         </div>
-        <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05)); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1.5rem; border-radius: 8px;">
-            <div style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">GMV (Monthly)</div>
-            <h4 style="font-size: 2rem; font-weight: 800; color: rgb(var(--primary-rgb)); margin: 0;">฿50M+</h4>
+        <div class="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/20 border-l-4 border-primary-500 p-6 rounded-lg">
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">GMV (Monthly)</div>
+            <h4 class="text-3xl font-extrabold text-primary-600 dark:text-primary-400">฿50M+</h4>
         </div>
     </div>
 
     <div class="info-box tip">
         <h4>💡 Vendor Success Tips</h4>
-        <ul style="line-height: 1.8;">
+        <ul class="space-y-2">
             <li><strong>High-Quality Images:</strong> ใช้รูปสินค้าความละเอียดสูง หลายมุม แสดงรายละเอียด</li>
             <li><strong>Competitive Pricing:</strong> ตั้งราคาแข่งขันได้ เช็คคู่แข่งเป็นประจำ</li>
             <li><strong>Fast Shipping:</strong> จัดส่งเร็ว ภายใน 24-48 ชม. หลังได้รับออเดอร์</li>
@@ -485,5 +489,4 @@
             <li><strong>Promotions:</strong> ทำโปรโมชั่นเป็นประจำ ส่วนลด, ฟรีของแถม, Bundle deals</li>
         </ul>
     </div>
-</div>
-
+</section>

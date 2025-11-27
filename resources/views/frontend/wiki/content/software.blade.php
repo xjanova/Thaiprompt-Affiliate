@@ -1,50 +1,48 @@
-{{-- Hero Section with RGB Gradient --}}
-<div style="background: linear-gradient(135deg, rgb(var(--primary-rgb)) 0%, rgb(var(--secondary-rgb)) 50%, rgb(var(--accent-rgb)) 100%); padding: 4rem 2rem; border-radius: 20px; margin-bottom: 3rem; box-shadow: 0 20px 60px rgba(var(--primary-rgb), 0.3);">
-    <div style="max-width: 900px; margin: 0 auto; text-align: center;">
-        <div style="display: inline-block; background: rgba(255,255,255,0.2); padding: 0.5rem 1.5rem; border-radius: 50px; margin-bottom: 1.5rem; backdrop-filter: blur(10px);">
-            <span style="color: white; font-weight: 600; font-size: 0.9rem;">💻 Software Sales & Licensing</span>
+{{-- Hero Section --}}
+<div class="bg-gradient-to-br from-primary-500 via-secondary-500 to-accent-500 p-8 md:p-12 rounded-2xl mb-8 shadow-xl">
+    <div class="max-w-4xl mx-auto text-center">
+        <div class="inline-block bg-white/20 px-6 py-2 rounded-full mb-4 backdrop-blur-sm">
+            <span class="text-white font-semibold text-sm">💻 Software Sales & Licensing</span>
         </div>
-        <h1 style="color: white; font-size: 3rem; font-weight: 800; margin-bottom: 1.5rem; text-shadow: 0 2px 20px rgba(0,0,0,0.2);">
+        <h1 class="text-white text-2xl md:text-4xl font-extrabold mb-4 drop-shadow-lg">
             ระบบขายซอฟต์แวร์ & License Management
         </h1>
-        <p style="color: rgba(255,255,255,0.95); font-size: 1.3rem; line-height: 1.8; margin-bottom: 2rem;">
+        <p class="text-white/95 text-lg md:text-xl mb-6 leading-relaxed">
             ระบบบริหารจัดการขายซอฟต์แวร์ ใบเสนอราคาอัตโนมัติ การจัดการ License Key<br>
             ระบบ Subscription และการต่ออายุ พร้อม Customer Portal ที่ครบครัน
         </p>
-        <div style="display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;">
-            <div style="background: rgba(255,255,255,0.2); padding: 1rem 2rem; border-radius: 12px; backdrop-filter: blur(10px);">
-                <div style="color: white; font-size: 2rem; font-weight: 700;">∞</div>
-                <div style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">Unlimited Products</div>
+        <div class="flex gap-6 justify-center flex-wrap">
+            <div class="bg-white/20 px-6 py-4 rounded-xl backdrop-blur-sm">
+                <div class="text-white text-2xl font-bold">∞</div>
+                <div class="text-white/90 text-sm">Unlimited Products</div>
             </div>
-            <div style="background: rgba(255,255,255,0.2); padding: 1rem 2rem; border-radius: 12px; backdrop-filter: blur(10px);">
-                <div style="color: white; font-size: 2rem; font-weight: 700;">Auto</div>
-                <div style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">Auto Quotation</div>
+            <div class="bg-white/20 px-6 py-4 rounded-xl backdrop-blur-sm">
+                <div class="text-white text-2xl font-bold">Auto</div>
+                <div class="text-white/90 text-sm">Auto Quotation</div>
             </div>
-            <div style="background: rgba(255,255,255,0.2); padding: 1rem 2rem; border-radius: 12px; backdrop-filter: blur(10px);">
-                <div style="color: white; font-size: 2rem; font-weight: 700;">99.9%</div>
-                <div style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">License Uptime</div>
+            <div class="bg-white/20 px-6 py-4 rounded-xl backdrop-blur-sm">
+                <div class="text-white text-2xl font-bold">99.9%</div>
+                <div class="text-white/90 text-sm">License Uptime</div>
             </div>
         </div>
     </div>
-</section>
+</div>
 
 {{-- 1: Product & Licensing --}}
 <section id="tab1" class="wiki-section">
-    <section class="wiki-section" style="margin-bottom: 3rem;">
-        <h2 style="color: rgb(var(--primary-rgb)); font-size: 2rem; font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
+    <div class="mb-8">
+        <h2 class="text-primary-600 dark:text-primary-400 text-2xl font-bold mb-6 flex items-center gap-2">
             <span>📦</span> Software Product Catalog
         </h2>
 
-        <div class="wiki-grid wiki-grid-3">
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); transition: all 0.3s ease;"
-                 onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 40px rgba(var(--primary-rgb), 0.15)'"
-                 onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">☁️</div>
-                <h4 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--wiki-text);">SaaS Products</h4>
-                <p style="color: var(--wiki-text-secondary); margin-bottom: 1rem; line-height: 1.6;">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div class="text-4xl mb-4">☁️</div>
+                <h4 class="text-lg font-bold mb-3 text-gray-900 dark:text-white">SaaS Products</h4>
+                <p class="text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
                     Cloud-based subscription software with monthly/annual billing, user-based pricing, and auto-provisioning
                 </p>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+                <ul class="text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
                     <li>Monthly/Annual Plans</li>
                     <li>Per-User/Per-Feature Pricing</li>
                     <li>Auto License Provisioning</li>
@@ -52,15 +50,13 @@
                 </ul>
             </div>
 
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); transition: all 0.3s ease;"
-                 onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 40px rgba(var(--secondary-rgb), 0.15)'"
-                 onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">💻</div>
-                <h4 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--wiki-text);">Desktop Software</h4>
-                <p style="color: var(--wiki-text-secondary); margin-bottom: 1rem; line-height: 1.6;">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-secondary-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div class="text-4xl mb-4">💻</div>
+                <h4 class="text-lg font-bold mb-3 text-gray-900 dark:text-white">Desktop Software</h4>
+                <p class="text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
                     Perpetual or subscription licenses for Windows/Mac applications with version control
                 </p>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+                <ul class="text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
                     <li>Perpetual Licenses</li>
                     <li>Version Upgrade Paths</li>
                     <li>Hardware Lock Options</li>
@@ -68,15 +64,13 @@
                 </ul>
             </div>
 
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); transition: all 0.3s ease;"
-                 onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 40px rgba(var(--accent-rgb), 0.15)'"
-                 onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">📱</div>
-                <h4 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--wiki-text);">Mobile Apps</h4>
-                <p style="color: var(--wiki-text-secondary); margin-bottom: 1rem; line-height: 1.6;">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-accent-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div class="text-4xl mb-4">📱</div>
+                <h4 class="text-lg font-bold mb-3 text-gray-900 dark:text-white">Mobile Apps</h4>
+                <p class="text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
                     iOS/Android applications with in-app purchases and subscription management
                 </p>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+                <ul class="text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
                     <li>App Store Integration</li>
                     <li>In-App Purchases</li>
                     <li>Trial Periods</li>
@@ -84,15 +78,13 @@
                 </ul>
             </div>
 
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); transition: all 0.3s ease;"
-                 onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 40px rgba(var(--primary-rgb), 0.15)'"
-                 onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🏢</div>
-                <h4 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--wiki-text);">Enterprise Solutions</h4>
-                <p style="color: var(--wiki-text-secondary); margin-bottom: 1rem; line-height: 1.6;">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div class="text-4xl mb-4">🏢</div>
+                <h4 class="text-lg font-bold mb-3 text-gray-900 dark:text-white">Enterprise Solutions</h4>
+                <p class="text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
                     Custom pricing for large organizations with volume discounts and dedicated support
                 </p>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+                <ul class="text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
                     <li>Volume Licensing</li>
                     <li>Custom Deployment</li>
                     <li>Dedicated Support</li>
@@ -101,106 +93,108 @@
             </div>
         </div>
 
-        <h3 style="color: rgb(var(--secondary-rgb)); font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem;">
+        <h3 class="text-secondary-600 dark:text-secondary-400 text-xl font-bold mb-4">
             💳 License Types & Pricing Models
         </h3>
 
-        <table class="wiki-table">
-            <thead>
-                <tr>
-                    <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">License Type</th>
-                    <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Pricing Model</th>
-                    <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Duration</th>
-                    <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Best For</th>
-                    <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Transfer</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>🔒 Perpetual</strong></td>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);">One-time payment + Optional maintenance</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Lifetime</td>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Desktop software, Professional tools</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">✅</td>
-                </tr>
-                <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>📅 Subscription</strong></td>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Monthly/Annual recurring</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">1-12 months</td>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);">SaaS, Cloud services, Updates included</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">❌</td>
-                </tr>
-                <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>📦 Volume</strong></td>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Tiered pricing (10, 50, 100+ users)</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Annual</td>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Enterprise, SME, Organizations</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Limited</td>
-                </tr>
-                <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>🎓 Educational</strong></td>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);">50-70% discount</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">1 year</td>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Students, Teachers, Schools</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">❌</td>
-                </tr>
-                <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>🆓 Freemium</strong></td>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Free + Paid upgrades</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Unlimited</td>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);">User acquisition, Basic features</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">N/A</td>
-                </tr>
-                <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>⏱️ Trial</strong></td>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Full features, Time-limited</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">7-30 days</td>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Product evaluation, Demos</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Convert only</td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="overflow-x-auto mb-8">
+            <table class="w-full border-collapse bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+                <thead class="bg-gray-100 dark:bg-gray-700">
+                    <tr>
+                        <th class="p-4 text-left border border-gray-200 dark:border-gray-600 font-semibold">License Type</th>
+                        <th class="p-4 text-left border border-gray-200 dark:border-gray-600 font-semibold">Pricing Model</th>
+                        <th class="p-4 text-center border border-gray-200 dark:border-gray-600 font-semibold">Duration</th>
+                        <th class="p-4 text-left border border-gray-200 dark:border-gray-600 font-semibold">Best For</th>
+                        <th class="p-4 text-center border border-gray-200 dark:border-gray-600 font-semibold">Transfer</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-700 dark:text-gray-300">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-4 border border-gray-200 dark:border-gray-600"><strong>🔒 Perpetual</strong></td>
+                        <td class="p-4 border border-gray-200 dark:border-gray-600">One-time payment + Optional maintenance</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">Lifetime</td>
+                        <td class="p-4 border border-gray-200 dark:border-gray-600">Desktop software, Professional tools</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">✅</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-4 border border-gray-200 dark:border-gray-600"><strong>📅 Subscription</strong></td>
+                        <td class="p-4 border border-gray-200 dark:border-gray-600">Monthly/Annual recurring</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">1-12 months</td>
+                        <td class="p-4 border border-gray-200 dark:border-gray-600">SaaS, Cloud services, Updates included</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">❌</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-4 border border-gray-200 dark:border-gray-600"><strong>📦 Volume</strong></td>
+                        <td class="p-4 border border-gray-200 dark:border-gray-600">Tiered pricing (10, 50, 100+ users)</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">Annual</td>
+                        <td class="p-4 border border-gray-200 dark:border-gray-600">Enterprise, SME, Organizations</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">Limited</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-4 border border-gray-200 dark:border-gray-600"><strong>🎓 Educational</strong></td>
+                        <td class="p-4 border border-gray-200 dark:border-gray-600">50-70% discount</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">1 year</td>
+                        <td class="p-4 border border-gray-200 dark:border-gray-600">Students, Teachers, Schools</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">❌</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-4 border border-gray-200 dark:border-gray-600"><strong>🆓 Freemium</strong></td>
+                        <td class="p-4 border border-gray-200 dark:border-gray-600">Free + Paid upgrades</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">Unlimited</td>
+                        <td class="p-4 border border-gray-200 dark:border-gray-600">User acquisition, Basic features</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">N/A</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-4 border border-gray-200 dark:border-gray-600"><strong>⏱️ Trial</strong></td>
+                        <td class="p-4 border border-gray-200 dark:border-gray-600">Full features, Time-limited</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">7-30 days</td>
+                        <td class="p-4 border border-gray-200 dark:border-gray-600">Product evaluation, Demos</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">Convert only</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-        <h3 style="color: rgb(var(--accent-rgb)); font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem;">
+        <h3 class="text-accent-600 dark:text-accent-400 text-xl font-bold mb-4">
             🔑 License Activation System
         </h3>
 
-        <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.1) 100%); padding: 2.5rem; border-radius: 16px; border-left: 4px solid rgb(var(--primary-rgb)); margin-bottom: 2rem;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem;">
+        <div class="bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-900/20 dark:to-secondary-900/20 p-8 rounded-xl border-l-4 border-primary-500 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div>
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">1️⃣</div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem;">Generate Key</h5>
-                    <p style="color: var(--wiki-text-secondary); font-size: 0.9rem; line-height: 1.6;">
+                    <div class="text-3xl mb-2">1️⃣</div>
+                    <h5 class="font-bold mb-2 text-gray-900 dark:text-white">Generate Key</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         System generates unique license key with product code, expiry, and features encoded
                     </p>
                 </div>
                 <div>
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">2️⃣</div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem;">Customer Activation</h5>
-                    <p style="color: var(--wiki-text-secondary); font-size: 0.9rem; line-height: 1.6;">
+                    <div class="text-3xl mb-2">2️⃣</div>
+                    <h5 class="font-bold mb-2 text-gray-900 dark:text-white">Customer Activation</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         Customer enters key in software, system validates online or offline with hardware fingerprint
                     </p>
                 </div>
                 <div>
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">3️⃣</div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem;">Activation Lock</h5>
-                    <p style="color: var(--wiki-text-secondary); font-size: 0.9rem; line-height: 1.6;">
+                    <div class="text-3xl mb-2">3️⃣</div>
+                    <h5 class="font-bold mb-2 text-gray-900 dark:text-white">Activation Lock</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         License bound to device with transfer limits, prevents piracy and unauthorized use
                     </p>
                 </div>
                 <div>
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">4️⃣</div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem;">Usage Monitoring</h5>
-                    <p style="color: var(--wiki-text-secondary); font-size: 0.9rem; line-height: 1.6;">
+                    <div class="text-3xl mb-2">4️⃣</div>
+                    <h5 class="font-bold mb-2 text-gray-900 dark:text-white">Usage Monitoring</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         Track usage, check expiry, send renewal reminders automatically via email/SMS
                     </p>
                 </div>
             </div>
         </div>
 
-        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--accent-rgb));">
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--accent-rgb));">💡 Best Practices</h4>
-            <ul style="line-height: 2; color: var(--wiki-text);">
+        <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-xl border-l-4 border-accent-500">
+            <h4 class="font-bold mb-3 text-accent-600 dark:text-accent-400">💡 Best Practices</h4>
+            <ul class="space-y-2 text-gray-700 dark:text-gray-300">
                 <li><strong>Hardware Fingerprinting:</strong> Bind license to MAC address, CPU ID, or hardware signature to prevent key sharing</li>
                 <li><strong>Grace Period:</strong> Allow 7-14 days grace period after expiry before disabling software completely</li>
                 <li><strong>Transfer Policy:</strong> Allow 2-3 transfers per year for hardware upgrades, require admin approval</li>
@@ -208,25 +202,25 @@
                 <li><strong>Feature Flags:</strong> Use license to enable/disable specific features dynamically (Pro, Enterprise, etc.)</li>
             </ul>
         </div>
-    </section>
+    </div>
 </section>
 
 {{-- 2: Quotation & Sales --}}
 <section id="tab2" class="wiki-section">
-    <section class="wiki-section" style="margin-bottom: 3rem;">
-        <h2 style="color: rgb(var(--primary-rgb)); font-size: 2rem; font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
+    <div class="mb-8">
+        <h2 class="text-primary-600 dark:text-primary-400 text-2xl font-bold mb-6 flex items-center gap-2">
             <span>📄</span> Auto Quotation Generation
         </h2>
 
-        <div class="wiki-grid wiki-grid-3">
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border);">
-                <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700">
+                <h4 class="text-lg font-bold mb-3 text-primary-600 dark:text-primary-400">
                     🎨 Custom Templates
                 </h4>
-                <p style="color: var(--wiki-text-secondary); line-height: 1.6; margin-bottom: 1rem;">
+                <p class="text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
                     Create professional quotations with your brand logo, colors, terms, and custom layouts
                 </p>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+                <ul class="text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
                     <li>Logo & Company Branding</li>
                     <li>Custom Header/Footer</li>
                     <li>Multi-language Support (TH/EN)</li>
@@ -236,14 +230,14 @@
                 </ul>
             </div>
 
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border);">
-                <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: rgb(var(--secondary-rgb));">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700">
+                <h4 class="text-lg font-bold mb-3 text-secondary-600 dark:text-secondary-400">
                     🧮 Pricing Calculator
                 </h4>
-                <p style="color: var(--wiki-text-secondary); line-height: 1.6; margin-bottom: 1rem;">
+                <p class="text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
                     Dynamic pricing with quantity discounts, bundle deals, and promo codes
                 </p>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+                <ul class="text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
                     <li>Quantity Discounts (10%, 20%, 30%)</li>
                     <li>Bundle Pricing</li>
                     <li>Promo Code Integration</li>
@@ -253,14 +247,14 @@
                 </ul>
             </div>
 
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border);">
-                <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: rgb(var(--accent-rgb));">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700">
+                <h4 class="text-lg font-bold mb-3 text-accent-600 dark:text-accent-400">
                     📧 Auto Email Sending
                 </h4>
-                <p style="color: var(--wiki-text-secondary); line-height: 1.6; margin-bottom: 1rem;">
+                <p class="text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
                     Automatically send quotations via email with PDF attachment and tracking
                 </p>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+                <ul class="text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
                     <li>Email Templates</li>
                     <li>PDF Attachment (Auto-generated)</li>
                     <li>Open/Click Tracking</li>
@@ -271,145 +265,147 @@
             </div>
         </div>
 
-        <h3 style="color: rgb(var(--secondary-rgb)); font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem;">
+        <h3 class="text-secondary-600 dark:text-secondary-400 text-xl font-bold mb-4">
             📊 Sales Pipeline Management
         </h3>
 
-        <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--accent-rgb), 0.1) 100%); padding: 2.5rem; border-radius: 16px; margin-bottom: 2rem;">
-            <div class="wiki-grid wiki-grid-3">
-                <div style="background: white; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-                    <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">🎯</div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem; color: rgb(var(--primary-rgb));">Lead</h5>
-                    <p style="color: var(--wiki-text-secondary); font-size: 0.85rem;">
+        <div class="bg-gradient-to-br from-primary-50 to-accent-50 dark:from-primary-900/20 dark:to-accent-900/20 p-8 rounded-xl mb-6">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl text-center shadow-md">
+                    <div class="text-2xl mb-2">🎯</div>
+                    <h5 class="font-bold mb-1 text-primary-600 dark:text-primary-400">Lead</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-xs">
                         Initial inquiry<br>Qualify prospect
                     </p>
                 </div>
-                <div style="background: white; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-                    <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">📄</div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem; color: rgb(var(--secondary-rgb));">Quotation Sent</h5>
-                    <p style="color: var(--wiki-text-secondary); font-size: 0.85rem;">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl text-center shadow-md">
+                    <div class="text-2xl mb-2">📄</div>
+                    <h5 class="font-bold mb-1 text-secondary-600 dark:text-secondary-400">Quotation Sent</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-xs">
                         Proposal delivered<br>Awaiting response
                     </p>
                 </div>
-                <div style="background: white; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-                    <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">💬</div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem; color: rgb(var(--accent-rgb));">Negotiation</h5>
-                    <p style="color: var(--wiki-text-secondary); font-size: 0.85rem;">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl text-center shadow-md">
+                    <div class="text-2xl mb-2">💬</div>
+                    <h5 class="font-bold mb-1 text-accent-600 dark:text-accent-400">Negotiation</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-xs">
                         Price discussion<br>Feature requests
                     </p>
                 </div>
-                <div style="background: white; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-                    <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">📝</div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem; color: rgb(var(--primary-rgb));">Closing</h5>
-                    <p style="color: var(--wiki-text-secondary); font-size: 0.85rem;">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl text-center shadow-md">
+                    <div class="text-2xl mb-2">📝</div>
+                    <h5 class="font-bold mb-1 text-primary-600 dark:text-primary-400">Closing</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-xs">
                         Final approval<br>Contract signing
                     </p>
                 </div>
-                <div style="background: white; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-                    <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">✅</div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem; color: rgb(var(--secondary-rgb));">Won</h5>
-                    <p style="color: var(--wiki-text-secondary); font-size: 0.85rem;">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl text-center shadow-md">
+                    <div class="text-2xl mb-2">✅</div>
+                    <h5 class="font-bold mb-1 text-secondary-600 dark:text-secondary-400">Won</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-xs">
                         Payment received<br>License issued
                     </p>
                 </div>
             </div>
         </div>
 
-        <h3 style="color: rgb(var(--accent-rgb)); font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem;">
+        <h3 class="text-accent-600 dark:text-accent-400 text-xl font-bold mb-4">
             💰 Pricing Tiers Example
         </h3>
 
-        <table class="wiki-table">
-            <thead>
-                <tr>
-                    <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Product</th>
-                    <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Starter</th>
-                    <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Professional</th>
-                    <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Enterprise</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>💼 CRM System</strong></td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">
-                        <strong style="color: rgb(var(--primary-rgb));">฿2,990/mo</strong><br>
-                        <span style="font-size: 0.85rem; color: var(--wiki-text-secondary);">Up to 5 users</span>
-                    </td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">
-                        <strong style="color: rgb(var(--secondary-rgb));">฿7,990/mo</strong><br>
-                        <span style="font-size: 0.85rem; color: var(--wiki-text-secondary);">Up to 20 users</span>
-                    </td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">
-                        <strong style="color: rgb(var(--accent-rgb));">Custom</strong><br>
-                        <span style="font-size: 0.85rem; color: var(--wiki-text-secondary);">Unlimited</span>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>📊 Analytics Pro</strong></td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">
-                        <strong style="color: rgb(var(--primary-rgb));">฿4,990/mo</strong><br>
-                        <span style="font-size: 0.85rem; color: var(--wiki-text-secondary);">Basic reports</span>
-                    </td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">
-                        <strong style="color: rgb(var(--secondary-rgb));">฿9,990/mo</strong><br>
-                        <span style="font-size: 0.85rem; color: var(--wiki-text-secondary);">Advanced AI</span>
-                    </td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">
-                        <strong style="color: rgb(var(--accent-rgb));">฿29,990/mo</strong><br>
-                        <span style="font-size: 0.85rem; color: var(--wiki-text-secondary);">Custom dashboards</span>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>🛒 E-Commerce Suite</strong></td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">
-                        <strong style="color: rgb(var(--primary-rgb));">฿3,990/mo</strong><br>
-                        <span style="font-size: 0.85rem; color: var(--wiki-text-secondary);">100 products</span>
-                    </td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">
-                        <strong style="color: rgb(var(--secondary-rgb));">฿8,990/mo</strong><br>
-                        <span style="font-size: 0.85rem; color: var(--wiki-text-secondary);">1,000 products</span>
-                    </td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">
-                        <strong style="color: rgb(var(--accent-rgb));">฿19,990/mo</strong><br>
-                        <span style="font-size: 0.85rem; color: var(--wiki-text-secondary);">Unlimited</span>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="overflow-x-auto mb-8">
+            <table class="w-full border-collapse bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+                <thead class="bg-gray-100 dark:bg-gray-700">
+                    <tr>
+                        <th class="p-4 text-left border border-gray-200 dark:border-gray-600 font-semibold">Product</th>
+                        <th class="p-4 text-center border border-gray-200 dark:border-gray-600 font-semibold">Starter</th>
+                        <th class="p-4 text-center border border-gray-200 dark:border-gray-600 font-semibold">Professional</th>
+                        <th class="p-4 text-center border border-gray-200 dark:border-gray-600 font-semibold">Enterprise</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-700 dark:text-gray-300">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-4 border border-gray-200 dark:border-gray-600"><strong>💼 CRM System</strong></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">
+                            <strong class="text-primary-600 dark:text-primary-400">฿2,990/mo</strong><br>
+                            <span class="text-sm text-gray-500">Up to 5 users</span>
+                        </td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">
+                            <strong class="text-secondary-600 dark:text-secondary-400">฿7,990/mo</strong><br>
+                            <span class="text-sm text-gray-500">Up to 20 users</span>
+                        </td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">
+                            <strong class="text-accent-600 dark:text-accent-400">Custom</strong><br>
+                            <span class="text-sm text-gray-500">Unlimited</span>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-4 border border-gray-200 dark:border-gray-600"><strong>📊 Analytics Pro</strong></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">
+                            <strong class="text-primary-600 dark:text-primary-400">฿4,990/mo</strong><br>
+                            <span class="text-sm text-gray-500">Basic reports</span>
+                        </td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">
+                            <strong class="text-secondary-600 dark:text-secondary-400">฿9,990/mo</strong><br>
+                            <span class="text-sm text-gray-500">Advanced AI</span>
+                        </td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">
+                            <strong class="text-accent-600 dark:text-accent-400">฿29,990/mo</strong><br>
+                            <span class="text-sm text-gray-500">Custom dashboards</span>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-4 border border-gray-200 dark:border-gray-600"><strong>🛒 E-Commerce Suite</strong></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">
+                            <strong class="text-primary-600 dark:text-primary-400">฿3,990/mo</strong><br>
+                            <span class="text-sm text-gray-500">100 products</span>
+                        </td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">
+                            <strong class="text-secondary-600 dark:text-secondary-400">฿8,990/mo</strong><br>
+                            <span class="text-sm text-gray-500">1,000 products</span>
+                        </td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">
+                            <strong class="text-accent-600 dark:text-accent-400">฿19,990/mo</strong><br>
+                            <span class="text-sm text-gray-500">Unlimited</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
-            <h4 style="font-weight: 700; margin-bottom: 1.5rem;">📈 Quotation Conversion Tips</h4>
-            <div class="wiki-grid wiki-grid-3">
+        <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-xl mb-6">
+            <h4 class="font-bold mb-4 text-gray-900 dark:text-white">📈 Quotation Conversion Tips</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                    <h5 style="font-weight: 700; color: rgb(var(--primary-rgb)); margin-bottom: 0.5rem;">⏱️ Time Pressure</h5>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.95rem;">
+                    <h5 class="font-bold text-primary-600 dark:text-primary-400 mb-2">⏱️ Time Pressure</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         Add expiry date (7-14 days) to create urgency. "Valid until [Date]"
                     </p>
                 </div>
                 <div>
-                    <h5 style="font-weight: 700; color: rgb(var(--secondary-rgb)); margin-bottom: 0.5rem;">🎁 Special Offers</h5>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.95rem;">
+                    <h5 class="font-bold text-secondary-600 dark:text-secondary-400 mb-2">🎁 Special Offers</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         Include limited-time discounts or free add-ons (e.g., "Free 3 months support")
                     </p>
                 </div>
                 <div>
-                    <h5 style="font-weight: 700; color: rgb(var(--accent-rgb)); margin-bottom: 0.5rem;">✅ Social Proof</h5>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.95rem;">
+                    <h5 class="font-bold text-accent-600 dark:text-accent-400 mb-2">✅ Social Proof</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         Mention existing customers/success stories in quotation footer
                     </p>
                 </div>
                 <div>
-                    <h5 style="font-weight: 700; color: rgb(var(--primary-rgb)); margin-bottom: 0.5rem;">📞 Clear CTA</h5>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.95rem;">
+                    <h5 class="font-bold text-primary-600 dark:text-primary-400 mb-2">📞 Clear CTA</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         Include easy next steps: "Click to Accept" button, phone number, chat link
                     </p>
                 </div>
             </div>
         </div>
 
-        <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.1) 100%); padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--accent-rgb));">
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--accent-rgb));">💡 Best Practices</h4>
-            <ul style="line-height: 2; color: var(--wiki-text);">
+        <div class="bg-gradient-to-br from-accent-50 to-primary-50 dark:from-accent-900/20 dark:to-primary-900/20 p-6 rounded-xl border-l-4 border-accent-500">
+            <h4 class="font-bold mb-3 text-accent-600 dark:text-accent-400">💡 Best Practices</h4>
+            <ul class="space-y-2 text-gray-700 dark:text-gray-300">
                 <li><strong>Personalization:</strong> Address customer by name, reference previous conversations, customize recommendations</li>
                 <li><strong>Itemization:</strong> Break down pricing clearly - license cost, maintenance, support, training separately</li>
                 <li><strong>Options:</strong> Provide 2-3 package options (Good, Better, Best) to give choice and upsell</li>
@@ -417,23 +413,21 @@
                 <li><strong>Follow-up:</strong> Auto-send reminder emails at 3, 7, and 14 days if no response received</li>
             </ul>
         </div>
-    </section>
+    </div>
 </section>
 
 {{-- 3: Customer Portal --}}
 <section id="tab3" class="wiki-section">
-    <section class="wiki-section" style="margin-bottom: 3rem;">
-        <h2 style="color: rgb(var(--primary-rgb)); font-size: 2rem; font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
+    <div class="mb-8">
+        <h2 class="text-primary-600 dark:text-primary-400 text-2xl font-bold mb-6 flex items-center gap-2">
             <span>👤</span> Customer Self-Service Portal
         </h2>
 
-        <div class="wiki-grid wiki-grid-3">
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); transition: all 0.3s ease;"
-                 onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 40px rgba(var(--primary-rgb), 0.15)'"
-                 onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔑</div>
-                <h4 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--wiki-text);">License Management</h4>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div class="text-4xl mb-4">🔑</div>
+                <h4 class="text-lg font-bold mb-3 text-gray-900 dark:text-white">License Management</h4>
+                <ul class="text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
                     <li>View all active licenses</li>
                     <li>Check expiry dates</li>
                     <li>Manage activations (deactivate/reactivate)</li>
@@ -443,12 +437,10 @@
                 </ul>
             </div>
 
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); transition: all 0.3s ease;"
-                 onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 40px rgba(var(--secondary-rgb), 0.15)'"
-                 onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">📥</div>
-                <h4 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--wiki-text);">Download Center</h4>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-secondary-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div class="text-4xl mb-4">📥</div>
+                <h4 class="text-lg font-bold mb-3 text-gray-900 dark:text-white">Download Center</h4>
+                <ul class="text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
                     <li>Download installers (Windows/Mac/Linux)</li>
                     <li>Access all purchased versions</li>
                     <li>Mobile app links (iOS/Android)</li>
@@ -458,12 +450,10 @@
                 </ul>
             </div>
 
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); transition: all 0.3s ease;"
-                 onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 40px rgba(var(--accent-rgb), 0.15)'"
-                 onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🎫</div>
-                <h4 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--wiki-text);">Support Tickets</h4>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-accent-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div class="text-4xl mb-4">🎫</div>
+                <h4 class="text-lg font-bold mb-3 text-gray-900 dark:text-white">Support Tickets</h4>
+                <ul class="text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
                     <li>Create new support ticket</li>
                     <li>Track ticket status</li>
                     <li>View conversation history</li>
@@ -473,12 +463,10 @@
                 </ul>
             </div>
 
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); transition: all 0.3s ease;"
-                 onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 40px rgba(var(--primary-rgb), 0.15)'"
-                 onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔄</div>
-                <h4 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--wiki-text);">Renewal Management</h4>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-primary-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div class="text-4xl mb-4">🔄</div>
+                <h4 class="text-lg font-bold mb-3 text-gray-900 dark:text-white">Renewal Management</h4>
+                <ul class="text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
                     <li>Auto-renewal settings (On/Off)</li>
                     <li>Update payment method</li>
                     <li>View renewal history</li>
@@ -488,12 +476,10 @@
                 </ul>
             </div>
 
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); transition: all 0.3s ease;"
-                 onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 40px rgba(var(--secondary-rgb), 0.15)'"
-                 onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">📊</div>
-                <h4 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--wiki-text);">Usage Analytics</h4>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-secondary-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div class="text-4xl mb-4">📊</div>
+                <h4 class="text-lg font-bold mb-3 text-gray-900 dark:text-white">Usage Analytics</h4>
+                <ul class="text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
                     <li>Track active users/devices</li>
                     <li>Feature usage statistics</li>
                     <li>API call limits (if applicable)</li>
@@ -503,12 +489,10 @@
                 </ul>
             </div>
 
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); transition: all 0.3s ease;"
-                 onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 40px rgba(var(--accent-rgb), 0.15)'"
-                 onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">👥</div>
-                <h4 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--wiki-text);">Team Management</h4>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-accent-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div class="text-4xl mb-4">👥</div>
+                <h4 class="text-lg font-bold mb-3 text-gray-900 dark:text-white">Team Management</h4>
+                <ul class="text-gray-600 dark:text-gray-400 space-y-1 ml-4 list-disc">
                     <li>Invite team members</li>
                     <li>Assign roles & permissions</li>
                     <li>Monitor team usage</li>
@@ -519,66 +503,66 @@
             </div>
         </div>
 
-        <h3 style="color: rgb(var(--secondary-rgb)); font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem;">
+        <h3 class="text-secondary-600 dark:text-secondary-400 text-xl font-bold mb-4">
             🔔 Automated Notifications
         </h3>
 
-        <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.1) 100%); padding: 2.5rem; border-radius: 16px; margin-bottom: 2rem;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
-                <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                        <div style="font-size: 2rem;">⏰</div>
-                        <h5 style="font-weight: 700; color: rgb(var(--primary-rgb));">Expiry Reminders</h5>
+        <div class="bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-900/20 dark:to-secondary-900/20 p-8 rounded-xl mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="text-3xl">⏰</div>
+                        <h5 class="font-bold text-primary-600 dark:text-primary-400">Expiry Reminders</h5>
                     </div>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.9rem;">
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         30, 14, 7, and 1 day before license expires via email and in-app notification
                     </p>
                 </div>
 
-                <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                        <div style="font-size: 2rem;">🆕</div>
-                        <h5 style="font-weight: 700; color: rgb(var(--secondary-rgb));">Update Alerts</h5>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="text-3xl">🆕</div>
+                        <h5 class="font-bold text-secondary-600 dark:text-secondary-400">Update Alerts</h5>
                     </div>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.9rem;">
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         New version released, new features available, security patches ready to install
                     </p>
                 </div>
 
-                <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                        <div style="font-size: 2rem;">💳</div>
-                        <h5 style="font-weight: 700; color: rgb(var(--accent-rgb));">Payment Status</h5>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="text-3xl">💳</div>
+                        <h5 class="font-bold text-accent-600 dark:text-accent-400">Payment Status</h5>
                     </div>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.9rem;">
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         Payment successful, failed payment, payment method expiring, invoice ready
                     </p>
                 </div>
 
-                <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                        <div style="font-size: 2rem;">✅</div>
-                        <h5 style="font-weight: 700; color: rgb(var(--primary-rgb));">Ticket Updates</h5>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="text-3xl">✅</div>
+                        <h5 class="font-bold text-primary-600 dark:text-primary-400">Ticket Updates</h5>
                     </div>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.9rem;">
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         Support ticket reply, ticket resolved, new knowledge base article matches your issue
                     </p>
                 </div>
             </div>
         </div>
 
-        <h3 style="color: rgb(var(--accent-rgb)); font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem;">
+        <h3 class="text-accent-600 dark:text-accent-400 text-xl font-bold mb-4">
             📱 Mobile App Access
         </h3>
 
-        <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); margin-bottom: 2rem;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem;">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem; color: rgb(var(--primary-rgb));">📱 iOS App</h5>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.95rem; margin-bottom: 0.5rem;">
+                    <h5 class="font-bold mb-2 text-primary-600 dark:text-primary-400">📱 iOS App</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-2 leading-relaxed">
                         Full customer portal access on iPhone/iPad
                     </p>
-                    <ul style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.85rem; margin-left: 1.2rem;">
+                    <ul class="text-gray-600 dark:text-gray-400 text-sm ml-4 list-disc space-y-1">
                         <li>Face ID/Touch ID login</li>
                         <li>Push notifications</li>
                         <li>Offline license check</li>
@@ -586,11 +570,11 @@
                 </div>
 
                 <div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem; color: rgb(var(--secondary-rgb));">🤖 Android App</h5>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.95rem; margin-bottom: 0.5rem;">
+                    <h5 class="font-bold mb-2 text-secondary-600 dark:text-secondary-400">🤖 Android App</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-2 leading-relaxed">
                         Complete portal features on Android devices
                     </p>
-                    <ul style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.85rem; margin-left: 1.2rem;">
+                    <ul class="text-gray-600 dark:text-gray-400 text-sm ml-4 list-disc space-y-1">
                         <li>Fingerprint authentication</li>
                         <li>Firebase notifications</li>
                         <li>QR code activation</li>
@@ -598,11 +582,11 @@
                 </div>
 
                 <div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem; color: rgb(var(--accent-rgb));">🌐 Progressive Web App</h5>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.95rem; margin-bottom: 0.5rem;">
+                    <h5 class="font-bold mb-2 text-accent-600 dark:text-accent-400">🌐 Progressive Web App</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-2 leading-relaxed">
                         No installation required, works everywhere
                     </p>
-                    <ul style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.85rem; margin-left: 1.2rem;">
+                    <ul class="text-gray-600 dark:text-gray-400 text-sm ml-4 list-disc space-y-1">
                         <li>Add to home screen</li>
                         <li>Offline mode</li>
                         <li>Cross-platform</li>
@@ -611,9 +595,9 @@
             </div>
         </div>
 
-        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--primary-rgb));">
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">💡 Customer Portal Benefits</h4>
-            <ul style="line-height: 2; color: var(--wiki-text);">
+        <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-xl border-l-4 border-primary-500">
+            <h4 class="font-bold mb-3 text-primary-600 dark:text-primary-400">💡 Customer Portal Benefits</h4>
+            <ul class="space-y-2 text-gray-700 dark:text-gray-300">
                 <li><strong>24/7 Self-Service:</strong> Customers can manage licenses, download software, and check status anytime without contacting support</li>
                 <li><strong>Reduced Support Load:</strong> 60-70% of common queries (downloads, license keys, renewals) handled automatically</li>
                 <li><strong>Faster Resolution:</strong> Instant access to documentation, FAQs, and troubleshooting reduces ticket resolution time</li>
@@ -621,143 +605,145 @@
                 <li><strong>Upsell Opportunities:</strong> In-portal upgrade prompts and feature comparisons drive plan upgrades</li>
             </ul>
         </div>
-    </section>
+    </div>
 </section>
 
 {{-- 4: Analytics & Renewals --}}
 <section id="tab4" class="wiki-section">
-    <section class="wiki-section" style="margin-bottom: 3rem;">
-        <h2 style="color: rgb(var(--primary-rgb)); font-size: 2rem; font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
+    <div class="mb-8">
+        <h2 class="text-primary-600 dark:text-primary-400 text-2xl font-bold mb-6 flex items-center gap-2">
             <span>📊</span> Sales Analytics & Revenue Metrics
         </h2>
 
-        <div class="wiki-grid wiki-grid-3">
-            <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.05) 100%); padding: 2rem; border-radius: 16px; border-left: 4px solid rgb(var(--primary-rgb));">
-                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">💰</div>
-                <h4 style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Monthly Recurring Revenue</h4>
-                <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--primary-rgb));">฿847,500</div>
-                <div style="font-size: 0.85rem; color: rgb(var(--secondary-rgb)); margin-top: 0.5rem;">▲ 18% from last month</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div class="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/20 p-6 rounded-xl border-l-4 border-primary-500">
+                <div class="text-4xl mb-2">💰</div>
+                <h4 class="text-sm text-gray-600 dark:text-gray-400 mb-1">Monthly Recurring Revenue</h4>
+                <div class="text-3xl font-extrabold text-primary-600 dark:text-primary-400">฿847,500</div>
+                <div class="text-sm text-secondary-600 dark:text-secondary-400 mt-2">▲ 18% from last month</div>
             </div>
 
-            <div style="background: linear-gradient(135deg, rgba(var(--secondary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%); padding: 2rem; border-radius: 16px; border-left: 4px solid rgb(var(--secondary-rgb));">
-                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📅</div>
-                <h4 style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Annual Recurring Revenue</h4>
-                <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--secondary-rgb));">฿10.17M</div>
-                <div style="font-size: 0.85rem; color: rgb(var(--primary-rgb)); margin-top: 0.5rem;">▲ 24% YoY growth</div>
+            <div class="bg-gradient-to-br from-secondary-50 to-secondary-100 dark:from-secondary-900/30 dark:to-secondary-800/20 p-6 rounded-xl border-l-4 border-secondary-500">
+                <div class="text-4xl mb-2">📅</div>
+                <h4 class="text-sm text-gray-600 dark:text-gray-400 mb-1">Annual Recurring Revenue</h4>
+                <div class="text-3xl font-extrabold text-secondary-600 dark:text-secondary-400">฿10.17M</div>
+                <div class="text-sm text-primary-600 dark:text-primary-400 mt-2">▲ 24% YoY growth</div>
             </div>
 
-            <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1) 0%, rgba(var(--accent-rgb), 0.05) 100%); padding: 2rem; border-radius: 16px; border-left: 4px solid rgb(var(--accent-rgb));">
-                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">👥</div>
-                <h4 style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Active Licenses</h4>
-                <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--accent-rgb));">1,847</div>
-                <div style="font-size: 0.85rem; color: rgb(var(--secondary-rgb)); margin-top: 0.5rem;">▲ 127 new this month</div>
+            <div class="bg-gradient-to-br from-accent-50 to-accent-100 dark:from-accent-900/30 dark:to-accent-800/20 p-6 rounded-xl border-l-4 border-accent-500">
+                <div class="text-4xl mb-2">👥</div>
+                <h4 class="text-sm text-gray-600 dark:text-gray-400 mb-1">Active Licenses</h4>
+                <div class="text-3xl font-extrabold text-accent-600 dark:text-accent-400">1,847</div>
+                <div class="text-sm text-secondary-600 dark:text-secondary-400 mt-2">▲ 127 new this month</div>
             </div>
 
-            <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.05) 100%); padding: 2rem; border-radius: 16px; border-left: 4px solid rgb(var(--primary-rgb));">
-                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔄</div>
-                <h4 style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Renewal Rate</h4>
-                <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--primary-rgb));">87.4%</div>
-                <div style="font-size: 0.85rem; color: rgb(var(--secondary-rgb)); margin-top: 0.5rem;">▲ 3.2% improvement</div>
+            <div class="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/20 p-6 rounded-xl border-l-4 border-primary-500">
+                <div class="text-4xl mb-2">🔄</div>
+                <h4 class="text-sm text-gray-600 dark:text-gray-400 mb-1">Renewal Rate</h4>
+                <div class="text-3xl font-extrabold text-primary-600 dark:text-primary-400">87.4%</div>
+                <div class="text-sm text-secondary-600 dark:text-secondary-400 mt-2">▲ 3.2% improvement</div>
             </div>
 
-            <div style="background: linear-gradient(135deg, rgba(var(--secondary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%); padding: 2rem; border-radius: 16px; border-left: 4px solid rgb(var(--secondary-rgb));">
-                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📉</div>
-                <h4 style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Churn Rate</h4>
-                <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--secondary-rgb));">4.2%</div>
-                <div style="font-size: 0.85rem; color: rgb(var(--primary-rgb)); margin-top: 0.5rem;">▼ 1.1% lower (good)</div>
+            <div class="bg-gradient-to-br from-secondary-50 to-secondary-100 dark:from-secondary-900/30 dark:to-secondary-800/20 p-6 rounded-xl border-l-4 border-secondary-500">
+                <div class="text-4xl mb-2">📉</div>
+                <h4 class="text-sm text-gray-600 dark:text-gray-400 mb-1">Churn Rate</h4>
+                <div class="text-3xl font-extrabold text-secondary-600 dark:text-secondary-400">4.2%</div>
+                <div class="text-sm text-primary-600 dark:text-primary-400 mt-2">▼ 1.1% lower (good)</div>
             </div>
 
-            <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1) 0%, rgba(var(--accent-rgb), 0.05) 100%); padding: 2rem; border-radius: 16px; border-left: 4px solid rgb(var(--accent-rgb));">
-                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⏱️</div>
-                <h4 style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Average LTV</h4>
-                <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--accent-rgb));">฿127,500</div>
-                <div style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-top: 0.5rem;">Customer Lifetime Value</div>
+            <div class="bg-gradient-to-br from-accent-50 to-accent-100 dark:from-accent-900/30 dark:to-accent-800/20 p-6 rounded-xl border-l-4 border-accent-500">
+                <div class="text-4xl mb-2">⏱️</div>
+                <h4 class="text-sm text-gray-600 dark:text-gray-400 mb-1">Average LTV</h4>
+                <div class="text-3xl font-extrabold text-accent-600 dark:text-accent-400">฿127,500</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">Customer Lifetime Value</div>
             </div>
         </div>
 
-        <h3 style="color: rgb(var(--secondary-rgb)); font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem;">
+        <h3 class="text-secondary-600 dark:text-secondary-400 text-xl font-bold mb-4">
             📈 Sales Reports & Insights
         </h3>
 
-        <table class="wiki-table">
-            <thead>
-                <tr>
-                    <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Product Line</th>
-                    <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Active Licenses</th>
-                    <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">MRR</th>
-                    <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Renewal %</th>
-                    <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Avg License Value</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>💼 CRM Pro</strong></td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">524</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb));">฿287,800</strong></td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">91.2%</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">฿5,490/mo</td>
-                </tr>
-                <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>📊 Analytics Suite</strong></td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">387</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb));">฿248,700</strong></td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">89.4%</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">฿6,430/mo</td>
-                </tr>
-                <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>🛒 E-Commerce</strong></td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">612</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb));">฿198,900</strong></td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">84.7%</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">฿3,250/mo</td>
-                </tr>
-                <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>🎓 LMS Platform</strong></td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">324</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb));">฿112,100</strong></td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">86.1%</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">฿3,460/mo</td>
-                </tr>
-                <tr style="background: rgba(var(--primary-rgb), 0.05); font-weight: 700;">
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);">TOTAL</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">1,847</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb));">฿847,500</strong></td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">87.4%</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">฿4,588/mo</td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="overflow-x-auto mb-8">
+            <table class="w-full border-collapse bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+                <thead class="bg-gray-100 dark:bg-gray-700">
+                    <tr>
+                        <th class="p-4 text-left border border-gray-200 dark:border-gray-600 font-semibold">Product Line</th>
+                        <th class="p-4 text-center border border-gray-200 dark:border-gray-600 font-semibold">Active Licenses</th>
+                        <th class="p-4 text-center border border-gray-200 dark:border-gray-600 font-semibold">MRR</th>
+                        <th class="p-4 text-center border border-gray-200 dark:border-gray-600 font-semibold">Renewal %</th>
+                        <th class="p-4 text-center border border-gray-200 dark:border-gray-600 font-semibold">Avg License Value</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-700 dark:text-gray-300">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-4 border border-gray-200 dark:border-gray-600"><strong>💼 CRM Pro</strong></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">524</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-primary-600 dark:text-primary-400">฿287,800</strong></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">91.2%</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">฿5,490/mo</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-4 border border-gray-200 dark:border-gray-600"><strong>📊 Analytics Suite</strong></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">387</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-primary-600 dark:text-primary-400">฿248,700</strong></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">89.4%</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">฿6,430/mo</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-4 border border-gray-200 dark:border-gray-600"><strong>🛒 E-Commerce</strong></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">612</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-primary-600 dark:text-primary-400">฿198,900</strong></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">84.7%</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">฿3,250/mo</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="p-4 border border-gray-200 dark:border-gray-600"><strong>🎓 LMS Platform</strong></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">324</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-primary-600 dark:text-primary-400">฿112,100</strong></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">86.1%</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">฿3,460/mo</td>
+                    </tr>
+                    <tr class="bg-primary-50 dark:bg-primary-900/20 font-bold">
+                        <td class="p-4 border border-gray-200 dark:border-gray-600">TOTAL</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">1,847</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600"><strong class="text-primary-600 dark:text-primary-400">฿847,500</strong></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">87.4%</td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-600">฿4,588/mo</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-        <h3 style="color: rgb(var(--accent-rgb)); font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem;">
+        <h3 class="text-accent-600 dark:text-accent-400 text-xl font-bold mb-4">
             🔄 Renewal Forecasting & Automation
         </h3>
 
-        <div class="wiki-grid wiki-grid-3">
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border);">
-                <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700">
+                <h4 class="text-lg font-bold mb-4 text-primary-600 dark:text-primary-400">
                     📅 Upcoming Renewals
                 </h4>
-                <div style="line-height: 2; color: var(--wiki-text);">
-                    <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--wiki-border);">
+                <div class="space-y-3 text-gray-700 dark:text-gray-300">
+                    <div class="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
                         <span>Next 7 days:</span>
-                        <strong style="color: rgb(var(--accent-rgb));">147 licenses (฿89,200)</strong>
+                        <strong class="text-accent-600 dark:text-accent-400">147 licenses (฿89,200)</strong>
                     </div>
-                    <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--wiki-border);">
+                    <div class="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
                         <span>Next 30 days:</span>
-                        <strong style="color: rgb(var(--secondary-rgb));">524 licenses (฿318,500)</strong>
+                        <strong class="text-secondary-600 dark:text-secondary-400">524 licenses (฿318,500)</strong>
                     </div>
-                    <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+                    <div class="flex justify-between py-2">
                         <span>Next 90 days:</span>
-                        <strong style="color: rgb(var(--primary-rgb));">1,287 licenses (฿782,100)</strong>
+                        <strong class="text-primary-600 dark:text-primary-400">1,287 licenses (฿782,100)</strong>
                     </div>
                 </div>
             </div>
 
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border);">
-                <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: rgb(var(--secondary-rgb));">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700">
+                <h4 class="text-lg font-bold mb-4 text-secondary-600 dark:text-secondary-400">
                     🤖 Auto-Renewal Setup
                 </h4>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+                <ul class="text-gray-600 dark:text-gray-400 space-y-2 ml-4 list-disc">
                     <li>Auto-charge saved payment method 7 days before expiry</li>
                     <li>Email confirmation sent immediately</li>
                     <li>New license key generated automatically</li>
@@ -767,11 +753,11 @@
                 </ul>
             </div>
 
-            <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border);">
-                <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: rgb(var(--accent-rgb));">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-700">
+                <h4 class="text-lg font-bold mb-4 text-accent-600 dark:text-accent-400">
                     💌 Renewal Campaigns
                 </h4>
-                <ul style="color: var(--wiki-text-secondary); line-height: 1.8; margin-left: 1.2rem;">
+                <ul class="text-gray-600 dark:text-gray-400 space-y-2 ml-4 list-disc">
                     <li><strong>60 days:</strong> Early bird discount (10% off)</li>
                     <li><strong>30 days:</strong> Renewal reminder with benefits</li>
                     <li><strong>14 days:</strong> Urgent renewal notice</li>
@@ -782,77 +768,77 @@
             </div>
         </div>
 
-        <h3 style="color: rgb(var(--primary-rgb)); font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem;">
+        <h3 class="text-primary-600 dark:text-primary-400 text-xl font-bold mb-4">
             🎯 Churn Prevention Strategies
         </h3>
 
-        <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.1) 100%); padding: 2.5rem; border-radius: 16px; margin-bottom: 2rem;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2rem;">
+        <div class="bg-gradient-to-br from-accent-50 to-primary-50 dark:from-accent-900/20 dark:to-primary-900/20 p-8 rounded-xl mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div>
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🚨</div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem; color: rgb(var(--accent-rgb));">At-Risk Detection</h5>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.9rem;">
+                    <div class="text-3xl mb-2">🚨</div>
+                    <h5 class="font-bold mb-2 text-accent-600 dark:text-accent-400">At-Risk Detection</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         Track login frequency, feature usage, support tickets. Flag customers with declining engagement 60 days before renewal.
                     </p>
                 </div>
 
                 <div>
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📞</div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem; color: rgb(var(--primary-rgb));">Proactive Outreach</h5>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.9rem;">
+                    <div class="text-3xl mb-2">📞</div>
+                    <h5 class="font-bold mb-2 text-primary-600 dark:text-primary-400">Proactive Outreach</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         Account manager calls at-risk customers, offers training, addresses pain points, suggests better plan fit.
                     </p>
                 </div>
 
                 <div>
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎁</div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem; color: rgb(var(--secondary-rgb));">Retention Offers</h5>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.9rem;">
+                    <div class="text-3xl mb-2">🎁</div>
+                    <h5 class="font-bold mb-2 text-secondary-600 dark:text-secondary-400">Retention Offers</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         Provide discounts (15-25%), free upgrades, extended payment terms, or additional users at no cost for 3-6 months.
                     </p>
                 </div>
 
                 <div>
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📚</div>
-                    <h5 style="font-weight: 700; margin-bottom: 0.5rem; color: rgb(var(--accent-rgb));">Success Program</h5>
-                    <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.9rem;">
+                    <div class="text-3xl mb-2">📚</div>
+                    <h5 class="font-bold mb-2 text-accent-600 dark:text-accent-400">Success Program</h5>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         Onboarding checklists, quarterly business reviews, dedicated support for high-value customers (>฿100k/year).
                     </p>
                 </div>
             </div>
         </div>
 
-        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
-            <h4 style="font-weight: 700; margin-bottom: 1.5rem;">📊 ROI Example: Software Sales Business</h4>
-            <div style="font-family: monospace; font-size: 0.95rem; line-height: 2;">
+        <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-xl mb-6">
+            <h4 class="font-bold mb-4 text-gray-900 dark:text-white">📊 ROI Example: Software Sales Business</h4>
+            <div class="font-mono text-sm leading-relaxed text-gray-700 dark:text-gray-300">
                 <strong>Software Vendor - Medium Size</strong><br><br>
 
-                <span style="color: var(--wiki-danger);"><strong>Before Automated System:</strong></span><br>
+                <span class="text-red-600 dark:text-red-400"><strong>Before Automated System:</strong></span><br>
                 • Manual quotation creation: 30 min each × 200/mo = ฿75,000/mo cost<br>
                 • License key generation: Manual process, 15 min each = ฿35,000/mo<br>
                 • Renewal tracking: Spreadsheets, missed renewals 20% = ฿240,000/mo lost<br>
                 • Customer support: 40% tickets for keys/downloads = ฿120,000/mo<br>
-                <hr style="margin: 1rem 0; border-color: var(--wiki-border);">
+                <hr class="my-4 border-gray-300 dark:border-gray-600">
 
-                <span style="color: rgb(var(--primary-rgb));"><strong>After Software Sales System:</strong></span><br>
+                <span class="text-primary-600 dark:text-primary-400"><strong>After Software Sales System:</strong></span><br>
                 • Auto quotation: 2 min each = ฿67,500/mo saved<br>
                 • Auto license generation: Instant = ฿35,000/mo saved<br>
                 • Auto renewals: 87% renewal rate = ฿240,000/mo recovered<br>
                 • Self-service portal: 65% fewer support tickets = ฿78,000/mo saved<br>
                 • Upsells via portal: +12% upgrade rate = ฿150,000/mo new revenue<br>
-                <hr style="margin: 1rem 0; border-color: var(--wiki-border);">
+                <hr class="my-4 border-gray-300 dark:border-gray-600">
 
                 <strong>Investment:</strong> ฿9,990/month (Included in Platform)<br>
-                <strong style="color: rgb(var(--secondary-rgb));">Net Benefit:</strong> ฿560,510/month<br>
-                <strong style="color: rgb(var(--primary-rgb)); font-size: 1.2rem;">ROI: 5,611% 🚀</strong><br><br>
+                <strong class="text-secondary-600 dark:text-secondary-400">Net Benefit:</strong> ฿560,510/month<br>
+                <strong class="text-primary-600 dark:text-primary-400 text-lg">ROI: 5,611% 🚀</strong><br><br>
 
-                <em style="color: var(--wiki-text-secondary);">Payback period: Less than 1 week!</em>
+                <em class="text-gray-500 dark:text-gray-400">Payback period: Less than 1 week!</em>
             </div>
         </div>
 
-        <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.1) 100%); padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--primary-rgb));">
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">💡 Revenue Optimization Tips</h4>
-            <ul style="line-height: 2; color: var(--wiki-text);">
+        <div class="bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-900/20 dark:to-secondary-900/20 p-6 rounded-xl border-l-4 border-primary-500">
+            <h4 class="font-bold mb-3 text-primary-600 dark:text-primary-400">💡 Revenue Optimization Tips</h4>
+            <ul class="space-y-2 text-gray-700 dark:text-gray-300">
                 <li><strong>Annual Prepay Discount:</strong> Offer 15-20% discount for annual payment upfront - improves cash flow and retention</li>
                 <li><strong>Multi-Year Deals:</strong> Provide 25-30% discount for 2-3 year commitments - locks in customers and predictable revenue</li>
                 <li><strong>Usage-Based Pricing:</strong> Consider hybrid models: base fee + usage charges for high-volume customers (API calls, storage, etc.)</li>
@@ -861,6 +847,5 @@
                 <li><strong>Educational/Non-Profit Discount:</strong> 50-70% discount builds goodwill and creates future enterprise customers</li>
             </ul>
         </div>
-    </section>
-</div>
-
+    </div>
+</section>
