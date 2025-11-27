@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.233.0] - 2025-11-27
+
+### ✨ Features
+- feat: เพิ่ม platforms view และ scheduler สำหรับ Video Automation (b2f39e84)
+- feat: เพิ่ม safeguards ป้องกันการลบไฟล์ก่อน YouTube โพสต์สำเร็จ (4bd796d7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1713 from xjanova/claude/admin-video-automation-01PTBssQpv6pxHexs9AynGAe (e77ef86e)
+
 ## [v3.232.0] - 2025-11-27
 
 ### ✨ Features
