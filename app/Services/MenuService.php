@@ -105,13 +105,20 @@ class MenuService
      */
     public function filterByPermissions(array $menus, $user): array
     {
-        return array_filter($menus, function ($menu) use ($user) {
+        $filteredMenus = [];
+
+        foreach ($menus as $menu) {
             // ตรวจสอบ permissions
             if (!empty($menu['permissions']) && is_array($menu['permissions'])) {
+                $hasAllPermissions = true;
                 foreach ($menu['permissions'] as $permission) {
                     if (!$this->userHasPermission($user, $permission)) {
-                        return false;
+                        $hasAllPermissions = false;
+                        break;
                     }
+                }
+                if (!$hasAllPermissions) {
+                    continue; // ข้ามเมนูนี้
                 }
             }
 
@@ -122,7 +129,7 @@ class MenuService
                 // Admin เห็นเมนูทั้งหมด ไม่ต้องเช็ค condition
                 if (!$this->userHasAdminAccess($user)) {
                     if (!$this->checkCondition($menu['condition'], $user)) {
-                        return false;
+                        continue; // ข้ามเมนูนี้
                     }
                 }
             }
@@ -131,22 +138,25 @@ class MenuService
             // ซ่อนเมนูเมื่อ user ยืนยัน KYC แล้ว
             if (!empty($menu['hide_if_kyc_verified']) && $user) {
                 if (method_exists($user, 'isKycVerified') && $user->isKycVerified()) {
-                    return false;
+                    continue; // ข้ามเมนูนี้
                 }
             }
 
-            // กรอง submenu ด้วย
+            // กรอง submenu ด้วย (แก้ไข: อัพเดท submenu ใน $menu ก่อน push)
             if (!empty($menu['submenu'])) {
                 $menu['submenu'] = $this->filterByPermissions($menu['submenu'], $user);
 
                 // ถ้า submenu ว่างหมดให้ซ่อนเมนูหลักด้วย
                 if (empty($menu['submenu'])) {
-                    return false;
+                    continue; // ข้ามเมนูนี้
                 }
             }
 
-            return true;
-        });
+            // เพิ่มเมนูที่ผ่านการกรองเข้า array
+            $filteredMenus[] = $menu;
+        }
+
+        return $filteredMenus;
     }
 
     /**
