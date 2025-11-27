@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.238.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1721 from xjanova/claude/modernize-pos-dual-display-01P9FL14vnUGJ1QuC431GHyA (3cc524ec)
+- feat: add free ERP staff management for all stores with multi-tenant support (94696f6a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.237.1] - 2025-11-27
 
 ### ✨ Features
