@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.253.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1754 from xjanova/claude/provider-registration-page-01HLrfrnL8rYzRqia4hkzxSV (c4d24204)
+- feat: รีดีไซน์หน้าค้นหาบริการ (user/services) เป็น Arrow X V3 theme (c28f774f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.252.0] - 2025-11-27
 
 ### ✨ Features
