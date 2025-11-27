@@ -1350,6 +1350,7 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
 
     // MLM Genealogy Viewer
     Route::get('/genealogy', [\App\Http\Controllers\Admin\MlmPlanController::class, 'genealogy'])->name('genealogy.index');
+    Route::get('/genealogy/workflow', [\App\Http\Controllers\Admin\MlmPlanController::class, 'genealogyWorkflow'])->name('genealogy.workflow');
 
     // MLM Placement Examples
     Route::get('/placement-examples', function () {

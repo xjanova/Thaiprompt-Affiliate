@@ -11,6 +11,7 @@ export default defineConfig({
                 'resources/js/wealth-guide-pro.js',
                 'resources/js/service-worker-register.js', // Service Worker
                 'resources/js/echo-setup.js', // Laravel Echo
+                'resources/js/workflow-diagram.js', // n8n-style Workflow Diagram
             ],
             refresh: true,
         }),
