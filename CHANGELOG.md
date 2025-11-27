@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.236.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1718 from xjanova/claude/modernize-pos-dual-display-01P9FL14vnUGJ1QuC431GHyA (a15e382c)
+- feat: add POS staff management with touch-friendly UI, hidden menu, and clock-in system (3d9e5265)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.235.0] - 2025-11-27
 
 ### ✨ Features
