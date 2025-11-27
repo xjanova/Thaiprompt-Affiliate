@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.242.2] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1736 from xjanova/claude/fix-ranks-dashboard-null-01P4ZSwNvXnso4vk2k24giGh (ee9cdd0b)
+- fix: add null-safe operators for $currentRank in ranks dashboard (c5b3d5c7)
+### 🔧 Other Changes
+
+
 ## [v3.242.1] - 2025-11-27
 
 ### ✨ Features
