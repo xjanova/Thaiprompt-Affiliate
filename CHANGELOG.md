@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.257.5] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1788 from xjanova/claude/add-cart-topbar-01AboBspT7oFLJrEXd3hYMvc (22432a67)
+- fix: แก้ไข backdrop และ panel ให้แสดงครอบคลุมทั้งหน้าจอ (d013e9c3)
+### 🔧 Other Changes
+
+
 ## [v3.257.4] - 2025-11-27
 
 ### ✨ Features
