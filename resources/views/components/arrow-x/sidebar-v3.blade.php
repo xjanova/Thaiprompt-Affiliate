@@ -116,10 +116,22 @@
             @foreach($menus as $menu)
                 @if(isset($menu['submenu']) && count($menu['submenu']) > 0)
                     {{-- Menu with Submenu --}}
-                    <div class="space-y-1" x-data="{ menuOpen: false }">
+                    @php
+                        // ตรวจสอบว่า submenu item ใดตรงกับ URL ปัจจุบัน
+                        $isSubmenuActive = false;
+                        $currentPath = request()->path();
+                        foreach ($menu['submenu'] as $child) {
+                            $childPath = ltrim($child['url'] ?? '', '/');
+                            if ($currentPath === $childPath || str_starts_with($currentPath, $childPath . '/')) {
+                                $isSubmenuActive = true;
+                                break;
+                            }
+                        }
+                    @endphp
+                    <div class="space-y-1" x-data="{ menuOpen: {{ $isSubmenuActive ? 'true' : 'false' }} }">
                         <button @click="menuOpen = !menuOpen"
                                 type="button"
-                                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform glass-neu text-white/90 hover:bg-white/20 hover:scale-105">
+                                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ $isSubmenuActive ? 'bg-gradient-to-r from-blue-500/50 to-purple-600/50 text-white shadow-lg' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
                             @if(isset($menu['icon']))
                                 @if(str_starts_with($menu['icon'], 'fa'))
                                     <i class="{{ $menu['icon'] }} w-5 text-center drop-shadow"></i>
