@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.241.1] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1729 from xjanova/claude/fix-stack-overflow-laravel-01234c42whNuJFgFzC2vihoK (5f859cb4)
+- fix: prevent stack overflow caused by self-referencing component in docblock (3f53db84)
+### 🔧 Other Changes
+
+
 ## [v3.241.0] - 2025-11-27
 
 ### ✨ Features
