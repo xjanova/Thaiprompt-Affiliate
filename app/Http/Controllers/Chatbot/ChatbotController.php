@@ -56,6 +56,139 @@ class ChatbotController extends Controller
     }
 
     /**
+     * บันทึกบอทใหม่
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function store(Request $request)
+    {
+        // ตรวจสอบข้อมูล
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|regex:/^[a-z0-9\-_]+$/i',
+            'display_name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'provider_id' => 'required|exists:ai_providers,id',
+            'model_id' => 'required|exists:ai_models,id',
+            'system_prompt' => 'nullable|string|max:10000',
+            'temperature' => 'nullable|numeric|min:0|max:2',
+            'max_tokens' => 'nullable|integer|min:100|max:8000',
+            'top_p' => 'nullable|numeric|min:0|max:1',
+            'frequency_penalty' => 'nullable|numeric|min:-2|max:2',
+            'presence_penalty' => 'nullable|numeric|min:-2|max:2',
+            'is_public' => 'nullable|boolean',
+            'enable_knowledge_base' => 'nullable|boolean',
+            'line_oa_channel_id' => 'nullable|string|max:255',
+            'line_oa_channel_secret' => 'nullable|string|max:255',
+            'line_oa_access_token' => 'nullable|string|max:500',
+        ]);
+
+        // สร้างบอทใหม่
+        $bot = AiBotProfile::create([
+            'owner_id' => Auth::id(),
+            'name' => $validated['name'],
+            'display_name' => $validated['display_name'],
+            'description' => $validated['description'] ?? null,
+            'provider_id' => $validated['provider_id'],
+            'model_id' => $validated['model_id'],
+            'system_prompt' => $validated['system_prompt'] ?? 'You are a helpful AI assistant.',
+            'temperature' => $validated['temperature'] ?? 0.7,
+            'max_tokens' => $validated['max_tokens'] ?? 2000,
+            'top_p' => $validated['top_p'] ?? 1,
+            'frequency_penalty' => $validated['frequency_penalty'] ?? 0,
+            'presence_penalty' => $validated['presence_penalty'] ?? 0,
+            'is_public' => $request->has('is_public'),
+            'enable_knowledge_base' => $request->has('enable_knowledge_base'),
+            'line_oa_channel_id' => $validated['line_oa_channel_id'] ?? null,
+            'line_oa_channel_secret' => $validated['line_oa_channel_secret'] ?? null,
+            'line_oa_access_token' => $validated['line_oa_access_token'] ?? null,
+            'is_active' => true,
+        ]);
+
+        return redirect()
+            ->route('chatbot.show', $bot->id)
+            ->with('success', 'สร้าง Bot สำเร็จ!');
+    }
+
+    /**
+     * อัปเดตข้อมูลบอท
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function update(Request $request, $id)
+    {
+        $user = Auth::user();
+        $bot = AiBotProfile::where('owner_id', $user->id)->findOrFail($id);
+
+        // ตรวจสอบข้อมูล
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|regex:/^[a-z0-9\-_]+$/i',
+            'display_name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'provider_id' => 'required|exists:ai_providers,id',
+            'model_id' => 'required|exists:ai_models,id',
+            'system_prompt' => 'nullable|string|max:10000',
+            'temperature' => 'nullable|numeric|min:0|max:2',
+            'max_tokens' => 'nullable|integer|min:100|max:8000',
+            'top_p' => 'nullable|numeric|min:0|max:1',
+            'frequency_penalty' => 'nullable|numeric|min:-2|max:2',
+            'presence_penalty' => 'nullable|numeric|min:-2|max:2',
+            'is_public' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
+            'enable_knowledge_base' => 'nullable|boolean',
+            'line_oa_channel_id' => 'nullable|string|max:255',
+            'line_oa_channel_secret' => 'nullable|string|max:255',
+            'line_oa_access_token' => 'nullable|string|max:500',
+        ]);
+
+        // อัปเดตข้อมูลบอท
+        $bot->update([
+            'name' => $validated['name'],
+            'display_name' => $validated['display_name'],
+            'description' => $validated['description'] ?? null,
+            'provider_id' => $validated['provider_id'],
+            'model_id' => $validated['model_id'],
+            'system_prompt' => $validated['system_prompt'] ?? 'You are a helpful AI assistant.',
+            'temperature' => $validated['temperature'] ?? 0.7,
+            'max_tokens' => $validated['max_tokens'] ?? 2000,
+            'top_p' => $validated['top_p'] ?? 1,
+            'frequency_penalty' => $validated['frequency_penalty'] ?? 0,
+            'presence_penalty' => $validated['presence_penalty'] ?? 0,
+            'is_public' => $request->has('is_public'),
+            'is_active' => $request->has('is_active'),
+            'enable_knowledge_base' => $request->has('enable_knowledge_base'),
+            'line_oa_channel_id' => $validated['line_oa_channel_id'] ?? null,
+            'line_oa_channel_secret' => $validated['line_oa_channel_secret'] ?? null,
+            'line_oa_access_token' => $validated['line_oa_access_token'] ?? null,
+        ]);
+
+        return redirect()
+            ->route('chatbot.show', $bot->id)
+            ->with('success', 'อัปเดต Bot สำเร็จ!');
+    }
+
+    /**
+     * ลบบอท
+     *
+     * @param int $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function destroy($id)
+    {
+        $user = Auth::user();
+        $bot = AiBotProfile::where('owner_id', $user->id)->findOrFail($id);
+
+        // ลบบอท (soft delete)
+        $bot->delete();
+
+        return redirect()
+            ->route('chatbot.index')
+            ->with('success', 'ลบ Bot สำเร็จ!');
+    }
+
+    /**
      * แสดงรายละเอียดบอท
      */
     public function show($id)
