@@ -184,6 +184,16 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
 
             <!-- Desktop Navigation Links - Centered -->
             <div class="hidden sm:flex flex-1 justify-center items-center gap-3">
+                {{-- 🇹🇭 Wiki Button - แสดงเสมอ (ไม่ขึ้นกับ database menu) --}}
+                <a href="{{ route('wiki.index') }}"
+                   class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition-all duration-300 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/30 transform hover:scale-105"
+                   title="🇹🇭 เรื่องราว ThaiPrompt - ทำไมต้องมีระบบของคนไทย">
+                    <span class="text-lg group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">🇹🇭</span>
+                    <span class="group-hover:translate-x-0.5 transition-transform duration-300">Wiki</span>
+                    <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
+                    <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                </a>
+
                 @if($menuItems && $menuItems->count() > 0)
                     @foreach($menuItems as $menuItem)
                         @if($menuItem->shouldDisplay())
@@ -275,14 +285,6 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">เกี่ยวกับเรา</span>
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-slate-600 to-gray-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
-                    <a href="{{ route('wiki.index') }}"
-                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition-all duration-300 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/30 transform hover:scale-105"
-                       title="🇹🇭 เรื่องราว ThaiPrompt - ทำไมต้องมีระบบของคนไทย">
-                        <span class="text-lg group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">🇹🇭</span>
-                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">Wiki</span>
-                        <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
-                        <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-                    </a>
                     <a href="{{ route('demo.audio-spectrum') }}"
                        class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-pink-50 hover:to-violet-50 dark:hover:from-pink-900/30 dark:hover:to-violet-900/30"
                        style="color: {{ $headerTextColor }};"
@@ -343,7 +345,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                 @endauth
 
                 @auth
-                    <div class="ml-3 relative" x-data="{ open: false }">
+                    <div class="ml-3 relative z-50" x-data="{ open: false }">
                         <button @click="open = !open"
                                 class="flex items-center text-sm font-medium focus:outline-none transition duration-150 ease-in-out"
                                 style="color: {{ $headerTextColor }};"
@@ -357,7 +359,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
 
                         <div x-show="open"
                              @click.away="open = false"
-                             class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5"
+                             class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-[9999]"
                              style="display: none;">
                             <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">แดชบอร์ด</a>
                             <a href="{{ route('wiki.index') }}" class="block px-4 py-2 text-sm text-amber-700 hover:bg-amber-50 font-semibold">🇹🇭 Wiki - เรื่องราว ThaiPrompt</a>

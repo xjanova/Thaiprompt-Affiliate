@@ -119,7 +119,7 @@
                     {{-- Search Results Dropdown --}}
                     <div x-show="searchOpen && searchQuery.length > 0"
                          x-transition
-                         class="absolute top-full left-0 right-0 mt-2 glass-dropdown rounded-xl shadow-2xl border border-white/30 overflow-hidden max-h-96 overflow-y-auto">
+                         class="absolute top-full left-0 right-0 mt-2 glass-dropdown rounded-xl shadow-2xl border border-white/30 overflow-hidden max-h-96 overflow-y-auto z-[9999]">
                         <div class="p-4 bg-black/20">
                             <p class="text-white/80 text-sm">
                                 <i class="fas fa-search mr-2"></i>
@@ -193,7 +193,7 @@
                  x-transition:leave="transition ease-in duration-150"
                  x-transition:leave-start="opacity-100 scale-100"
                  x-transition:leave-end="opacity-0 scale-95"
-                 class="absolute top-full right-0 mt-2 w-72 glass-dropdown rounded-2xl shadow-2xl border border-white/30 overflow-hidden"
+                 class="absolute top-full right-0 mt-2 w-72 glass-dropdown rounded-2xl shadow-2xl border border-white/30 overflow-hidden z-[9999]"
                  style="display: none;">
 
                 {{-- User Info Header --}}
