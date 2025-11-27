@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.253.2] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1756 from xjanova/claude/fix-dropdown-positioning-01V9ZtDrYc4wrfaf7gnimuoe (33ee4483)
+- fix: แก้ไข dropdown menu ไม่สามารถกดได้เพราะ z-index ต่ำเกินไป (666c2167)
+### 🔧 Other Changes
+
+
 ## [v3.253.1] - 2025-11-27
 
 ### ✨ Features
