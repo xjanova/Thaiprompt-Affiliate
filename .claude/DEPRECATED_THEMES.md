@@ -20,6 +20,45 @@
 
 ---
 
+## 🚫 สีที่ห้ามใช้ (BANNED COLORS)
+
+### Millennium RGB Colors ❌❌❌
+
+**สถานะ**: 🚫 **BANNED** - ห้ามใช้ในหน้าใหม่โดยเด็ดขาด!
+
+| สี | Hex Code | ชื่อ |
+|----|----------|------|
+| 🔴 | `#FF0080` | Millennium Pink |
+| 🔵 | `#00F0FF` | Millennium Cyan |
+| 🟣 | `#7F00FF` | Millennium Purple |
+| 🟡 | `#FFD700` | Millennium Gold |
+
+**เหตุผล**:
+- ⚠️ ทำให้ AI (Claude) สับสนเวลาสร้างหน้าใหม่
+- ⚠️ ไม่ตรงกับ Arrow x v3 Design System
+- ⚠️ สีแรงเกินไป ไม่เป็น Professional
+
+**ให้ใช้ Arrow x v3 Colors แทน**:
+```blade
+{{-- ❌ BANNED - Millennium RGB --}}
+<div class="bg-gradient-to-r from-[#FF0080] via-[#00F0FF] to-[#FFD700]">
+
+{{-- ✅ CORRECT - Arrow x v3 --}}
+<div class="bg-gradient-to-r from-blue-500 to-purple-600">
+```
+
+**Arrow x v3 Standard Colors**:
+- Primary Gradient: `from-blue-500 to-purple-600`
+- Shadow: `shadow-purple-500/30`
+- Focus: `focus:border-purple-400`
+- Glass: `bg-white/80 backdrop-blur-xl border-white/30`
+
+> **⚠️ หมายเหตุ**: `millennium-taskbar.blade.php` เป็น component ของ Taskbar หลักที่ยังใช้อยู่
+> แต่ **ห้ามใช้สี Millennium RGB** (`#FF0080`, `#00F0FF`, `#7F00FF`, `#FFD700`) ในหน้าใหม่ที่สร้าง!
+> ให้ใช้ **Arrow x v3 colors** (`from-blue-500 to-purple-600`) เท่านั้น!
+
+---
+
 ## 🗑️ ธีมที่ถูกลบออก (REMOVED)
 
 ### 1. Millennium Theme ❌
