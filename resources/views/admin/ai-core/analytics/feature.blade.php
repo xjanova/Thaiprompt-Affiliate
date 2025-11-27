@@ -5,7 +5,12 @@
     <div class="mb-6">
         <a href="{{ route('admin.ai-core.analytics.index') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 inline-block">← กลับ</a>
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-            {{ $feature->icon }} {{ $feature->feature_name }} - Analytics
+            @if(str_starts_with($feature->icon ?? '', 'fa'))
+                <i class="{{ $feature->icon }}"></i>
+            @else
+                {{ $feature->icon }}
+            @endif
+            {{ $feature->feature_name }} - Analytics
         </h1>
     </div>
 

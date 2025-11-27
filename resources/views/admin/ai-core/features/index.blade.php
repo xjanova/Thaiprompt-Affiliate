@@ -191,7 +191,13 @@
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="text-2xl">{{ $feature->icon }}</div>
+                                    <div class="text-2xl">
+                                        @if(str_starts_with($feature->icon ?? '', 'fa'))
+                                            <i class="{{ $feature->icon }}"></i>
+                                        @else
+                                            {{ $feature->icon }}
+                                        @endif
+                                    </div>
                                     <div>
                                         <div class="font-semibold text-gray-900 dark:text-white">
                                             {{ $feature->feature_name }}

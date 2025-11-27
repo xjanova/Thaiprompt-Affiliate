@@ -16,7 +16,13 @@
                 </a>
                 <div>
                     <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent flex items-center gap-2">
-                        <span class="text-4xl">{{ $feature->icon }}</span>
+                        <span class="text-4xl">
+                            @if(str_starts_with($feature->icon ?? '', 'fa'))
+                                <i class="{{ $feature->icon }}"></i>
+                            @else
+                                {{ $feature->icon }}
+                            @endif
+                        </span>
                         {{ $feature->feature_name }}
                     </h1>
                     <p class="text-gray-600 dark:text-gray-400 mt-1">

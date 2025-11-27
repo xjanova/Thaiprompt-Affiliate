@@ -55,7 +55,13 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xl">{{ $quota->feature->icon }}</span>
+                                    <span class="text-xl">
+                                        @if(str_starts_with($quota->feature->icon ?? '', 'fa'))
+                                            <i class="{{ $quota->feature->icon }}"></i>
+                                        @else
+                                            {{ $quota->feature->icon }}
+                                        @endif
+                                    </span>
                                     <span class="text-sm text-gray-900 dark:text-white">{{ $quota->feature->feature_name }}</span>
                                 </div>
                             </td>
