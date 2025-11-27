@@ -2,7 +2,7 @@
 <div style="background: linear-gradient(135deg, rgb(var(--primary-rgb)) 0%, rgb(var(--secondary-rgb)) 50%, rgb(var(--accent-rgb)) 100%); padding: 3rem 2rem; border-radius: 20px; margin-bottom: 3rem; color: white; text-align: center;">
     <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; color: white;">🎓 Academy & Learning Management System (LMS)</h1>
     <p style="font-size: 1.25rem; opacity: 0.95; max-width: 800px; margin: 0 auto;">ระบบเรียนรู้ออนไลน์แบบครบวงจร พร้อม Gamification เพิ่มแรงจูงใจและประกาศนียบัตรดิจิทัล</p>
-</section>
+</div>
 
 {{-- 1: Courses & Content --}}
 <section id="courses" class="wiki-section">

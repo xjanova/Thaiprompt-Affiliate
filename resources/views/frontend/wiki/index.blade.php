@@ -1,9 +1,16 @@
-@extends('layouts.wiki-arrow-x')
+@extends('layouts.app')
 
-@section('title', 'คู่มือและความช่วยเหลือ')
+@section('title', 'คู่มือและความช่วยเหลือ - Thaiprompt Affiliate')
 
 @section('content')
-{{-- 📚 WIKI KNOWLEDGE BASE - ARROW X V3 THEME (Glass Fusion + Blue-Purple Gradient) --}}
+@php
+    // สีหลักของระบบ
+    $primaryColor = \App\Models\Setting::get('primary_color', '#3B82F6');
+    $secondaryColor = \App\Models\Setting::get('secondary_color', '#8B5CF6');
+    $accentColor = \App\Models\Setting::get('accent_color', '#EC4899');
+@endphp
+
+{{-- 📚 WIKI KNOWLEDGE BASE - V3 VERSION (Tailwind + Alpine.js) --}}
 <div
     x-data="{
         currentCategory: 'story',
@@ -23,11 +30,11 @@
             { code: 'ja', name: '日本語', flag: '🇯🇵' }
         ],
 
-        // รายการหมวดหมู่
+        // รายการหมวดหมู่ครบถ้วน 17 หมวด
         categories: [
             { id: 'story', icon: '🇹🇭', label: 'เรื่องราว ThaiPrompt', color: 'from-amber-500 to-orange-600', highlight: true },
             { id: 'overview', icon: '🚀', label: 'ภาพรวม & สรุปฟีเจอร์', color: 'from-blue-600 to-cyan-600' },
-            { id: 'getting-started', icon: '🎯', label: 'เริ่มต้นใช้งาน', color: 'from-green-600 to-emerald-600' },
+            { id: 'technology', icon: '⚙️', label: 'เทคโนโลยี & สถาปัตยกรรม', color: 'from-slate-600 to-gray-700' },
             { id: 'mlm-affiliate', icon: '💎', label: 'MLM & Affiliate', color: 'from-purple-600 to-pink-600',
               submenu: [
                 { id: 'mlm-binary', label: '🌳 Binary System' },
@@ -37,6 +44,8 @@
                 { id: 'mlm-genealogy', label: '📊 Genealogy' }
               ]
             },
+            { id: 'ecommerce', icon: '🛒', label: 'E-Commerce', color: 'from-orange-600 to-amber-600' },
+            { id: 'pos', icon: '🖥️', label: 'POS System', color: 'from-blue-600 to-indigo-600' },
             { id: 'ai-bot', icon: '🤖', label: 'AI & Bot System', color: 'from-violet-600 to-purple-600',
               submenu: [
                 { id: 'ai-chatbot', label: '🧠 AI Chatbot' },
@@ -44,11 +53,16 @@
                 { id: 'ai-line', label: '💬 LINE AI Bot' }
               ]
             },
-            { id: 'ecommerce', icon: '🛒', label: 'E-Commerce & POS', color: 'from-orange-600 to-amber-600' },
+            { id: 'crypto', icon: '₿', label: 'TPIX & Blockchain', color: 'from-yellow-600 to-amber-600' },
+            { id: 'payment', icon: '💳', label: 'Payment Gateway', color: 'from-green-600 to-emerald-600' },
             { id: 'hotel', icon: '🏨', label: 'Hotel Management', color: 'from-red-600 to-rose-600' },
-            { id: 'crypto', icon: '₿', label: 'Crypto & Blockchain', color: 'from-yellow-600 to-amber-600' },
-            { id: 'wallet', icon: '💳', label: 'Wallet System', color: 'from-indigo-600 to-blue-600' },
+            { id: 'hrm', icon: '👥', label: 'HR Management', color: 'from-cyan-600 to-blue-600' },
+            { id: 'accounting', icon: '📊', label: 'ระบบบัญชี', color: 'from-emerald-600 to-teal-600' },
+            { id: 'software', icon: '💻', label: 'Software Sales', color: 'from-indigo-600 to-violet-600' },
+            { id: 'vendor', icon: '🏪', label: 'Vendor Management', color: 'from-pink-600 to-rose-600' },
             { id: 'academy', icon: '🎓', label: 'Academy & Learning', color: 'from-teal-600 to-cyan-600' },
+            { id: 'security', icon: '🔒', label: 'Security & Compliance', color: 'from-red-700 to-rose-700' },
+            { id: 'support', icon: '🎫', label: 'Support Center', color: 'from-blue-500 to-cyan-500' },
             { id: 'investor', icon: '📈', label: 'Investor Guide', color: 'from-emerald-600 to-green-600', highlight: true },
             { id: 'api', icon: '🔌', label: 'API & Integration', color: 'from-slate-600 to-gray-600' },
             { id: 'faq', icon: '❓', label: 'FAQ & Troubleshooting', color: 'from-pink-600 to-fuchsia-600' }
@@ -196,20 +210,20 @@
         }
     }"
     x-init="init()"
-    class="relative"
+    class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900"
 >
-    {{-- Reading Progress Bar - Arrow X V3 --}}
-    <div class="fixed top-16 left-0 right-0 h-1 bg-white/20 dark:bg-gray-700/50 z-40">
+    {{-- Reading Progress Bar - ติดด้านบน --}}
+    <div class="fixed top-0 left-0 right-0 h-1 bg-gray-200 dark:bg-gray-700 z-50">
         <div
-            class="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-300 shadow-lg shadow-purple-500/50"
+            class="h-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 transition-all duration-300 shadow-lg shadow-blue-500/50"
             :style="`width: ${scrollProgress}%`"
         ></div>
     </div>
 
-    {{-- Mobile Menu Toggle Button - Arrow X V3 Glass --}}
+    {{-- Mobile Menu Toggle Button --}}
     <button
         @click="mobileMenuOpen = !mobileMenuOpen"
-        class="lg:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-white rounded-full shadow-2xl shadow-purple-500/30 flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95"
+        class="lg:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95"
         aria-label="เปิด/ปิดเมนู"
     >
         <svg x-show="!mobileMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,17 +248,14 @@
             x-transition:leave-end="opacity-0 -translate-x-full"
             class="lg:sticky lg:top-24 lg:max-h-[calc(100vh-8rem)] overflow-y-auto
                    fixed lg:relative inset-0 lg:inset-auto z-30 lg:z-auto
-                   bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl
-                   lg:rounded-3xl lg:shadow-2xl lg:border lg:border-white/20 dark:lg:border-gray-700/50
-                   lg:ring-1 lg:ring-black/5 dark:lg:ring-white/5"
+                   bg-white/95 dark:bg-gray-800/95 lg:bg-white lg:dark:bg-gray-800
+                   backdrop-blur-xl lg:backdrop-blur-none
+                   lg:rounded-2xl lg:shadow-xl lg:border lg:border-gray-200 lg:dark:border-gray-700"
         >
-            {{-- Sidebar Header - Arrow X V3 Glass Fusion --}}
-            <div class="sticky top-0 bg-gradient-to-br from-blue-500 to-purple-600 text-white p-6 rounded-t-3xl lg:rounded-3xl shadow-2xl shadow-purple-500/30 relative overflow-hidden">
-                {{-- Glass overlay --}}
-                <div class="absolute inset-0 bg-gradient-to-t from-black/10 to-white/10"></div>
-                <div class="absolute -top-20 -right-20 w-40 h-40 bg-white/20 rounded-full blur-2xl"></div>
-                <div class="relative flex items-center gap-3 mb-4">
-                    <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-3xl backdrop-blur-sm shadow-lg border border-white/30">
+            {{-- Sidebar Header --}}
+            <div class="sticky top-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 text-white p-6 rounded-t-2xl lg:rounded-2xl shadow-lg">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl backdrop-blur-sm">
                         📚
                     </div>
                     <div class="flex-1">
@@ -309,7 +320,7 @@
                                 <a
                                     @click.prevent="changeCategory(item.id)"
                                     href="#"
-                                    class="block px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+                                    class="block px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                     x-text="item.label"
                                 ></a>
                             </template>
@@ -324,7 +335,6 @@
                     <span>⚡</span> ลิงก์ด่วน
                 </h3>
                 <div class="space-y-2">
-                    @auth
                     <a href="{{ route('user.tickets.create') }}" class="block px-3 py-2 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors">
                         🎫 สร้าง Support Ticket
                     </a>
@@ -334,38 +344,25 @@
                     <a href="{{ route('user.mlm.dashboard') }}" class="block px-3 py-2 text-xs bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-colors">
                         💎 MLM Dashboard
                     </a>
-                    @else
-                    <a href="{{ route('login') }}" class="block px-3 py-2 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors">
-                        🔐 เข้าสู่ระบบ
-                    </a>
-                    <a href="{{ route('register') }}" class="block px-3 py-2 text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors">
-                        📝 สมัครสมาชิก
-                    </a>
-                    <a href="{{ route('marketplace.index') }}" class="block px-3 py-2 text-xs bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-colors">
-                        🛒 ตลาดสินค้า
-                    </a>
-                    @endauth
                 </div>
             </div>
         </aside>
 
         {{-- Main Content Area --}}
         <main class="min-h-screen">
-            {{-- Search Bar - Arrow X V3 Glass Fusion --}}
-            <div class="mb-8">
-                <div class="relative group">
-                    {{-- Glow effect on focus --}}
-                    <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl opacity-0 group-focus-within:opacity-30 blur transition-opacity duration-300"></div>
+            {{-- Search Bar --}}
+            <div class="mb-6">
+                <div class="relative">
                     <input
                         type="text"
                         x-model="searchQuery"
                         placeholder="🔍 ค้นหาในคู่มือ... (เช่น MLM, Wallet, API)"
-                        class="relative w-full px-6 py-5 pr-14 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-2 border-white/30 dark:border-gray-700/50 rounded-2xl
-                               focus:border-purple-400 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20
+                        class="w-full px-6 py-4 pr-12 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl
+                               focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20
                                text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400
-                               transition-all duration-300 shadow-xl"
+                               transition-all duration-300 shadow-lg"
                     >
-                    <button class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-xl flex items-center justify-center hover:scale-110 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300">
+                    <button class="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-lg flex items-center justify-center hover:scale-110 transition-transform">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
@@ -373,17 +370,13 @@
                 </div>
             </div>
 
-            {{-- Content Card - Arrow X V3 Glass Fusion --}}
-            <div class="relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 ring-1 ring-black/5 dark:ring-white/5 overflow-hidden">
+            {{-- Content Card --}}
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
 
-                {{-- Loading State - Arrow X V3 --}}
+                {{-- Loading State --}}
                 <div x-show="loading" class="flex flex-col items-center justify-center py-32" style="display: none;">
-                    <div class="relative">
-                        <div class="w-20 h-20 border-4 border-purple-200 dark:border-purple-900 rounded-full"></div>
-                        <div class="absolute inset-0 w-20 h-20 border-4 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
-                        <div class="absolute inset-2 w-16 h-16 border-4 border-transparent border-t-purple-600 rounded-full animate-spin" style="animation-direction: reverse; animation-duration: 0.8s;"></div>
-                    </div>
-                    <p class="mt-6 text-transparent bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text font-bold text-lg drop-shadow">กำลังโหลดเนื้อหา...</p>
+                    <div class="w-16 h-16 border-4 border-gray-200 dark:border-gray-700 border-t-blue-600 rounded-full animate-spin"></div>
+                    <p class="mt-4 text-gray-600 dark:text-gray-400 font-semibold">กำลังโหลดเนื้อหา...</p>
                 </div>
 
                 {{-- Content Area --}}
@@ -394,122 +387,14 @@
                         @include('frontend.wiki.content.story')
                     </div>
 
-                    {{-- ภาพรวม & สรุปฟีเจอร์ --}}
+                    {{-- ภาพรวม & สรุปฟีเจอร์ - ใช้ content file ที่ละเอียดกว่า --}}
                     <div x-show="currentCategory === 'overview'" style="display: none;">
-                        <div class="mb-8 pb-8 border-b border-gray-200 dark:border-gray-700">
-                            <h1 class="text-4xl font-black bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent mb-4 drop-shadow">
-                                🚀 ภาพรวมระบบ Thaiprompt Affiliate
-                            </h1>
-                            <p class="text-xl text-gray-600 dark:text-gray-400">
-                                แพลตฟอร์ม All-in-One สำหรับธุรกิจ MLM, E-Commerce, AI, และ Blockchain
-                            </p>
-                        </div>
+                        @include('frontend.wiki.content.overview')
+                    </div>
 
-                        {{-- ระบบสถิติ --}}
-                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                            <div class="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 p-6 rounded-2xl border border-blue-200 dark:border-blue-800">
-                                <div class="text-3xl font-black text-blue-600 dark:text-blue-400">{{ number_format($stats['total_users'] ?? 0) }}</div>
-                                <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">👥 ผู้ใช้งาน</div>
-                            </div>
-                            <div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-2xl border border-purple-200 dark:border-purple-800">
-                                <div class="text-3xl font-black text-purple-600 dark:text-purple-400">{{ number_format($stats['total_affiliates'] ?? 0) }}</div>
-                                <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">💎 Affiliate Members</div>
-                            </div>
-                            <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-2xl border border-green-200 dark:border-green-800">
-                                <div class="text-3xl font-black text-green-600 dark:text-green-400">{{ number_format($stats['database_models'] ?? 0) }}</div>
-                                <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">📦 Models</div>
-                            </div>
-                            <div class="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-6 rounded-2xl border border-orange-200 dark:border-orange-800">
-                                <div class="text-3xl font-black text-orange-600 dark:text-orange-400">{{ number_format($stats['http_controllers'] ?? 0) }}</div>
-                                <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">🎮 Controllers</div>
-                            </div>
-                        </div>
-
-                        {{-- ฟีเจอร์หลัก --}}
-                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-                            <span class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-xl flex items-center justify-center text-xl shadow-lg shadow-purple-500/30">✨</span>
-                            ฟีเจอร์หลักของระบบ
-                        </h2>
-
-                        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {{-- MLM & Affiliate --}}
-                            <div class="group bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-2xl border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 cursor-pointer"
-                                 @click="changeCategory('mlm-affiliate')">
-                                <div class="text-4xl mb-4">💎</div>
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">MLM & Affiliate</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                    ระบบ MLM แบบ Binary, Unilevel และ Hybrid พร้อม Commission ที่ซับซ้อน
-                                </p>
-                                <div class="flex items-center gap-2 text-purple-600 dark:text-purple-400 text-sm font-semibold group-hover:gap-3 transition-all">
-                                    อ่านเพิ่มเติม <span>→</span>
-                                </div>
-                            </div>
-
-                            {{-- AI & Bot System --}}
-                            <div class="group bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 p-6 rounded-2xl border-2 border-violet-200 dark:border-violet-800 hover:border-violet-400 dark:hover:border-violet-600 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 cursor-pointer"
-                                 @click="changeCategory('ai-bot')">
-                                <div class="text-4xl mb-4">🤖</div>
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">AI & Bot System</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                    AI Chatbot, Image/Video Generation, LINE AI Bot Integration
-                                </p>
-                                <div class="flex items-center gap-2 text-violet-600 dark:text-violet-400 text-sm font-semibold group-hover:gap-3 transition-all">
-                                    อ่านเพิ่มเติม <span>→</span>
-                                </div>
-                            </div>
-
-                            {{-- E-Commerce & POS --}}
-                            <div class="group bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-6 rounded-2xl border-2 border-orange-200 dark:border-orange-800 hover:border-orange-400 dark:hover:border-orange-600 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 cursor-pointer"
-                                 @click="changeCategory('ecommerce')">
-                                <div class="text-4xl mb-4">🛒</div>
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">E-Commerce & POS</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                    ระบบร้านค้าออนไลน์และ POS ครบวงจร พร้อมการจัดการสินค้า
-                                </p>
-                                <div class="flex items-center gap-2 text-orange-600 dark:text-orange-400 text-sm font-semibold group-hover:gap-3 transition-all">
-                                    อ่านเพิ่มเติม <span>→</span>
-                                </div>
-                            </div>
-
-                            {{-- Crypto & Blockchain --}}
-                            <div class="group bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 p-6 rounded-2xl border-2 border-yellow-200 dark:border-yellow-800 hover:border-yellow-400 dark:hover:border-yellow-600 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 cursor-pointer"
-                                 @click="changeCategory('crypto')">
-                                <div class="text-4xl mb-4">₿</div>
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Crypto & Blockchain</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                    TPIX Token, DEX, Staking, และ Crypto Wallet Integration
-                                </p>
-                                <div class="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 text-sm font-semibold group-hover:gap-3 transition-all">
-                                    อ่านเพิ่มเติม <span>→</span>
-                                </div>
-                            </div>
-
-                            {{-- Hotel Management --}}
-                            <div class="group bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 p-6 rounded-2xl border-2 border-red-200 dark:border-red-800 hover:border-red-400 dark:hover:border-red-600 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 cursor-pointer"
-                                 @click="changeCategory('hotel')">
-                                <div class="text-4xl mb-4">🏨</div>
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Hotel Management</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                    ระบบจองโรงแรม การจัดการห้องพัก และ Channel Management
-                                </p>
-                                <div class="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm font-semibold group-hover:gap-3 transition-all">
-                                    อ่านเพิ่มเติม <span>→</span>
-                                </div>
-                            </div>
-
-                            {{-- Wallet System --}}
-                            <div class="group bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 p-6 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 hover:border-indigo-400 dark:hover:border-indigo-600 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 cursor-pointer"
-                                 @click="changeCategory('wallet')">
-                                <div class="text-4xl mb-4">💳</div>
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Wallet System</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                    กระเป๋าเงิน THB และ Crypto พร้อมระบบฝาก-ถอน-โอนที่ปลอดภัย
-                                </p>
-                                <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-sm font-semibold group-hover:gap-3 transition-all">
-                                    อ่านเพิ่มเติม <span>→</span>
-                                </div>
-                            </div>
-                        </div>
+                    {{-- เทคโนโลยี & สถาปัตยกรรม --}}
+                    <div x-show="currentCategory === 'technology'" style="display: none;">
+                        @include('frontend.wiki.content.technology')
                     </div>
 
                     {{-- เริ่มต้นใช้งาน --}}
@@ -559,765 +444,89 @@
                         </div>
                     </div>
 
-                    {{-- MLM & Affiliate System --}}
+                    {{-- MLM & Affiliate System - ใช้ content file ที่ละเอียดกว่า --}}
                     <div x-show="currentCategory === 'mlm-affiliate' || currentCategory === 'mlm-binary' || currentCategory === 'mlm-unilevel' || currentCategory === 'mlm-commission' || currentCategory === 'mlm-rank' || currentCategory === 'mlm-genealogy'" style="display: none;">
-                        <h1 class="text-4xl font-black bg-gradient-to-r from-purple-600 via-pink-600 to-fuchsia-600 bg-clip-text text-transparent mb-6">
-                            💎 ระบบ MLM & Affiliate Marketing
-                        </h1>
-
-                        <div class="prose prose-lg dark:prose-invert max-w-none space-y-8">
-                            <div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-l-4 border-purple-600 p-6 rounded-r-xl">
-                                <h3 class="text-xl font-bold text-purple-900 dark:text-purple-100 mb-3">🌟 ภาพรวมระบบ MLM</h3>
-                                <p class="text-gray-700 dark:text-gray-300 mb-4">
-                                    ระบบ MLM (Multi-Level Marketing) ของ Thaiprompt Affiliate รองรับทั้ง <strong>Binary</strong>, <strong>Unilevel</strong>, และ <strong>Hybrid</strong> พร้อมระบบคอมมิชชั่นที่ซับซ้อนและยืดหยุ่น
-                                </p>
-                            </div>
-
-                            {{-- Binary System --}}
-                            <div class="border-2 border-purple-200 dark:border-purple-800 rounded-xl p-6">
-                                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-                                    <span class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">🌳</span>
-                                    Binary System (ระบบทวิภาค)
-                                </h3>
-                                <p class="text-gray-700 dark:text-gray-300 mb-4">
-                                    โครงสร้างแบบ 2 ขา (Left & Right) ที่สมดุลและเหมาะกับการสร้างทีมขนาดใหญ่
-                                </p>
-                                <div class="grid md:grid-cols-2 gap-4 mt-4">
-                                    <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                                        <h4 class="font-bold text-blue-900 dark:text-blue-100 mb-2">✅ จุดเด่น</h4>
-                                        <ul class="text-sm space-y-1 text-gray-700 dark:text-gray-300">
-                                            <li>• Spillover จากอัพไลน์</li>
-                                            <li>• Balanced commissions</li>
-                                            <li>• ทีมเติบโตเร็ว</li>
-                                        </ul>
-                                    </div>
-                                    <div class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
-                                        <h4 class="font-bold text-purple-900 dark:text-purple-100 mb-2">📊 Commission Types</h4>
-                                        <ul class="text-sm space-y-1 text-gray-700 dark:text-gray-300">
-                                            <li>• Direct Referral Bonus</li>
-                                            <li>• Pairing Bonus</li>
-                                            <li>• Matching Bonus</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                @auth
-                                <a href="{{ route('user.mlm.genealogy') }}?type=binary" class="inline-block mt-4 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors">
-                                    ดู Binary Tree →
-                                </a>
-                                @endauth
-                            </div>
-
-                            {{-- Unilevel System --}}
-                            <div class="border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6">
-                                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-                                    <span class="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-600 text-white rounded-xl flex items-center justify-center">🎯</span>
-                                    Unilevel System (ระบบชั้นเดียว)
-                                </h3>
-                                <p class="text-gray-700 dark:text-gray-300 mb-4">
-                                    โครงสร้างแบบไม่จำกัดขา เหมาะกับการสร้างเครือข่ายกว้าง
-                                </p>
-                                <div class="grid md:grid-cols-2 gap-4 mt-4">
-                                    <div class="bg-cyan-50 dark:bg-cyan-900/20 p-4 rounded-lg">
-                                        <h4 class="font-bold text-cyan-900 dark:text-cyan-100 mb-2">✨ ความยืดหยุ่น</h4>
-                                        <ul class="text-sm space-y-1 text-gray-700 dark:text-gray-300">
-                                            <li>• ไม่จำกัดจำนวนดาวน์ไลน์</li>
-                                            <li>• กำหนด Level ได้ถึง 10+ ชั้น</li>
-                                            <li>• % Commission ต่างกันแต่ละ Level</li>
-                                        </ul>
-                                    </div>
-                                    <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                                        <h4 class="font-bold text-blue-900 dark:text-blue-100 mb-2">💰 ตัวอย่าง Commission</h4>
-                                        <ul class="text-sm space-y-1 text-gray-700 dark:text-gray-300">
-                                            <li>• Level 1: 10%</li>
-                                            <li>• Level 2: 5%</li>
-                                            <li>• Level 3-5: 3%</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                @auth
-                                <a href="{{ route('user.mlm.genealogy') }}?type=unilevel" class="inline-block mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
-                                    ดู Unilevel Tree →
-                                </a>
-                                @endauth
-                            </div>
-
-                            {{-- Rank & Bonus System --}}
-                            <div class="border-2 border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
-                                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-                                    <span class="w-10 h-10 bg-gradient-to-br from-yellow-600 to-amber-600 text-white rounded-xl flex items-center justify-center">👑</span>
-                                    Rank & Bonus System (ระบบยศและโบนัส)
-                                </h3>
-                                <p class="text-gray-700 dark:text-gray-300 mb-4">
-                                    ระบบยศที่กระตุ้นให้สมาชิกทำงานและเติบโตไปพร้อมกัน
-                                </p>
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                                    <div class="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 p-3 rounded-lg text-center border-2 border-gray-300 dark:border-gray-600">
-                                        <div class="text-2xl mb-1">🥉</div>
-                                        <div class="font-bold text-sm">Bronze</div>
-                                    </div>
-                                    <div class="bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 p-3 rounded-lg text-center border-2 border-gray-400 dark:border-gray-500">
-                                        <div class="text-2xl mb-1">🥈</div>
-                                        <div class="font-bold text-sm">Silver</div>
-                                    </div>
-                                    <div class="bg-gradient-to-br from-yellow-200 to-yellow-400 dark:from-yellow-700 dark:to-yellow-800 p-3 rounded-lg text-center border-2 border-yellow-500 dark:border-yellow-600">
-                                        <div class="text-2xl mb-1">🥇</div>
-                                        <div class="font-bold text-sm">Gold</div>
-                                    </div>
-                                    <div class="bg-gradient-to-br from-purple-300 to-purple-500 dark:from-purple-700 dark:to-purple-900 p-3 rounded-lg text-center border-2 border-purple-600 dark:border-purple-800">
-                                        <div class="text-2xl mb-1">💎</div>
-                                        <div class="font-bold text-sm">Diamond</div>
-                                    </div>
-                                </div>
-                                @auth
-                                <a href="{{ route('user.ranks.dashboard') }}" class="inline-block mt-4 px-6 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-semibold transition-colors">
-                                    ดูความคืบหน้ายศ →
-                                </a>
-                                @endauth
-                            </div>
-
-                            @auth
-                            <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-2xl shadow-xl shadow-purple-500/30">
-                                <h4 class="text-xl font-bold mb-3 drop-shadow">🚀 เริ่มต้นสร้างทีม MLM ของคุณวันนี้!</h4>
-                                <p class="mb-4 opacity-90">
-                                    ใช้ลิงก์แนะนำของคุณเพื่อเชิญเพื่อนร่วมทีมและรับคอมมิชชั่น
-                                </p>
-                                <div class="flex flex-wrap gap-3">
-                                    <a href="{{ route('user.mlm.dashboard') }}" class="px-6 py-2 bg-white text-purple-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
-                                        MLM Dashboard
-                                    </a>
-                                    <a href="{{ route('user.mlm.referral') }}" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors">
-                                        ลิงก์แนะนำ
-                                    </a>
-                                    <a href="{{ route('user.mlm.team') }}" class="px-6 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-semibold transition-colors border border-white/30">
-                                        ดูทีม
-                                    </a>
-                                </div>
-                            </div>
-                            @endauth
-                        </div>
+                        @include('frontend.wiki.content.mlm-affiliate')
                     </div>
 
-                    {{-- AI & Bot System --}}
+                    {{-- AI & Bot System - ใช้ content file ที่ละเอียดกว่า --}}
                     <div x-show="currentCategory === 'ai-bot' || currentCategory === 'ai-chatbot' || currentCategory === 'ai-creation' || currentCategory === 'ai-line'" style="display: none;">
-                        <h1 class="text-4xl font-black bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent mb-6">
-                            🤖 ระบบ AI & Bot Automation
-                        </h1>
-
-                        <div class="prose prose-lg dark:prose-invert max-w-none space-y-8">
-                            <div class="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 border-l-4 border-violet-600 p-6 rounded-r-xl">
-                                <p class="text-gray-700 dark:text-gray-300 mb-0">
-                                    ระบบ AI ที่ครบครัน ตั้งแต่ Chatbot, การสร้างภาพ/วิดีโอ, ไปจนถึงการเชื่อมต่อ LINE OA
-                                </p>
-                            </div>
-
-                            {{-- AI Chatbot --}}
-                            <div class="grid md:grid-cols-2 gap-6">
-                                <div class="bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6">
-                                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                        <span>🧠</span> AI Chatbot
-                                    </h3>
-                                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                                        ระบบ chatbot อัจฉริยะที่ตอบคำถามลูกค้าอัตโนมัติ 24/7
-                                    </p>
-                                    <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                                        <li>✅ รองรับหลายภาษา (TH/EN)</li>
-                                        <li>✅ เรียนรู้จากการสนทนา</li>
-                                        <li>✅ เชื่อมต่อ Knowledge Base</li>
-                                        <li>✅ Analytics & Reports</li>
-                                    </ul>
-                                </div>
-
-                                <div class="bg-white dark:bg-gray-800 border-2 border-purple-200 dark:border-purple-800 rounded-xl p-6">
-                                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                        <span>🎨</span> AI Image/Video Generation
-                                    </h3>
-                                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                                        สร้างภาพและวิดีโอด้วย AI ในไม่กี่วินาที
-                                    </p>
-                                    <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                                        <li>🎨 Text to Image</li>
-                                        <li>🎬 Text to Video</li>
-                                        <li>🖼️ Image Enhancement</li>
-                                        <li>✂️ Background Removal</li>
-                                    </ul>
-                                    @auth
-                                    <a href="{{ route('user.ai-gen.index') }}" class="inline-block mt-3 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-colors">
-                                        ทดลองใช้ AI Gen →
-                                    </a>
-                                    @endauth
-                                </div>
-                            </div>
-
-                            {{-- LINE AI Bot --}}
-                            <div class="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-500 dark:border-green-700 rounded-xl p-6">
-                                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-                                    <span class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 text-white rounded-xl flex items-center justify-center">💬</span>
-                                    LINE OA AI Bot Integration
-                                </h3>
-                                <p class="text-gray-700 dark:text-gray-300 mb-4">
-                                    เชื่อมต่อ AI Chatbot กับ LINE Official Account ของคุณ
-                                </p>
-                                <div class="grid md:grid-cols-3 gap-4">
-                                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                                        <div class="text-2xl mb-2">📱</div>
-                                        <h4 class="font-bold text-sm mb-1">Auto Reply</h4>
-                                        <p class="text-xs text-gray-600 dark:text-gray-400">ตอบข้อความอัตโนมัติ</p>
-                                    </div>
-                                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                                        <div class="text-2xl mb-2">🎯</div>
-                                        <h4 class="font-bold text-sm mb-1">Broadcast</h4>
-                                        <p class="text-xs text-gray-600 dark:text-gray-400">ส่งข้อความหมู่</p>
-                                    </div>
-                                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                                        <div class="text-2xl mb-2">📊</div>
-                                        <h4 class="font-bold text-sm mb-1">Analytics</h4>
-                                        <p class="text-xs text-gray-600 dark:text-gray-400">วิเคราะห์การใช้งาน</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        @include('frontend.wiki.content.ai-bot')
                     </div>
 
-                    {{-- E-Commerce & POS --}}
+                    {{-- E-Commerce - ใช้ content file ที่ละเอียดกว่า --}}
                     <div x-show="currentCategory === 'ecommerce'" style="display: none;">
-                        <h1 class="text-4xl font-black bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 bg-clip-text text-transparent mb-6">
-                            🛒 ระบบ E-Commerce & POS
-                        </h1>
-
-                        <div class="prose prose-lg dark:prose-invert max-w-none space-y-8">
-                            <div class="grid md:grid-cols-2 gap-6">
-                                <div class="bg-white dark:bg-gray-800 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-6">
-                                    <h3 class="text-xl font-bold mb-4">🏪 ระบบร้านค้าออนไลน์</h3>
-                                    <ul class="space-y-2 text-sm">
-                                        <li>✅ จัดการสินค้าไม่จำกัด</li>
-                                        <li>✅ หมวดหมู่และ Tags</li>
-                                        <li>✅ Variants (สี, ไซส์)</li>
-                                        <li>✅ Stock Management</li>
-                                        <li>✅ โปรโมชั่น & คูปอง</li>
-                                        <li>✅ รีวิวและเรตติ้ง</li>
-                                    </ul>
-                                </div>
-
-                                <div class="bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6">
-                                    <h3 class="text-xl font-bold mb-4">💳 ระบบ POS</h3>
-                                    <ul class="space-y-2 text-sm">
-                                        <li>✅ ขายหน้าร้านแบบ Real-time</li>
-                                        <li>✅ รองรับ Barcode Scanner</li>
-                                        <li>✅ หลายช่องทางชำระเงิน</li>
-                                        <li>✅ พิมพ์ใบเสร็จอัตโนมัติ</li>
-                                        <li>✅ รายงานยอดขายรายวัน</li>
-                                        <li>✅ จัดการพนักงานขาย</li>
-                                    </ul>
-                                    @auth
-                                    <a href="{{ route('seller.pos.terminal') }}" class="inline-block mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors">
-                                        เปิด POS Terminal →
-                                    </a>
-                                    @endauth
-                                </div>
-                            </div>
-
-                            <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-l-4 border-green-600 p-6 rounded-r-xl">
-                                <h4 class="font-bold text-green-900 dark:text-green-100 mb-2">💡 Tips: การเชื่อมต่อ MLM</h4>
-                                <p class="text-gray-700 dark:text-gray-300 text-sm">
-                                    ระบบ E-Commerce เชื่อมต่อกับ MLM โดยอัตโนมัติ ทุกการขายจะสร้างคอมมิชชั่นให้อัพไลน์ตามโครงสร้างทีม
-                                </p>
-                            </div>
-                        </div>
+                        @include('frontend.wiki.content.ecommerce')
                     </div>
 
-                    {{-- Hotel Management --}}
+                    {{-- POS System --}}
+                    <div x-show="currentCategory === 'pos'" style="display: none;">
+                        @include('frontend.wiki.content.pos')
+                    </div>
+
+                    {{-- Hotel Management - ใช้ content file ที่ละเอียดกว่า --}}
                     <div x-show="currentCategory === 'hotel'" style="display: none;">
-                        <h1 class="text-4xl font-black bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6">
-                            🏨 ระบบจัดการโรงแรม
-                        </h1>
-
-                        <div class="prose prose-lg dark:prose-invert max-w-none space-y-8">
-                            <div class="grid md:grid-cols-3 gap-6">
-                                <div class="bg-white dark:bg-gray-800 border-2 border-red-200 dark:border-red-800 rounded-xl p-6">
-                                    <div class="text-3xl mb-3">🛏️</div>
-                                    <h3 class="text-lg font-bold mb-2">Room Management</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">จัดการห้องพัก ประเภทห้อง และราคา</p>
-                                </div>
-
-                                <div class="bg-white dark:bg-gray-800 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-6">
-                                    <div class="text-3xl mb-3">📅</div>
-                                    <h3 class="text-lg font-bold mb-2">Booking System</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">ระบบจองห้องพัก Check-in/Check-out</p>
-                                </div>
-
-                                <div class="bg-white dark:bg-gray-800 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
-                                    <div class="text-3xl mb-3">📊</div>
-                                    <h3 class="text-lg font-bold mb-2">Channel Manager</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">เชื่อมต่อ OTA (Agoda, Booking.com)</p>
-                                </div>
-                            </div>
-
-                            @auth
-                            <div class="bg-gradient-to-r from-red-600 to-rose-600 text-white p-6 rounded-2xl">
-                                <h4 class="text-xl font-bold mb-3">🎯 เริ่มต้นจัดการโรงแรม</h4>
-                                <div class="flex flex-wrap gap-3">
-                                    <a href="{{ route('hotels.bookings.index') }}" class="px-6 py-2 bg-white text-red-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
-                                        ดูการจอง
-                                    </a>
-                                    @if(auth()->user()->is_hotel_admin)
-                                    <a href="{{ route('hotel-admin.dashboard') }}" class="px-6 py-2 bg-red-800 hover:bg-red-900 text-white rounded-lg font-semibold transition-colors">
-                                        จัดการโรงแรม
-                                    </a>
-                                    @endif
-                                </div>
-                            </div>
-                            @endauth
-                        </div>
+                        @include('frontend.wiki.content.hotel')
                     </div>
 
-                    {{-- TPIX Blockchain & Crypto --}}
+                    {{-- TPIX Blockchain & Crypto - ใช้ content file ที่ละเอียดกว่า --}}
                     <div x-show="currentCategory === 'crypto'" style="display: none;">
-                        <h1 class="text-4xl font-black bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-600 bg-clip-text text-transparent mb-6">
-                            ₿ TPIX Blockchain & Cryptocurrency
-                        </h1>
-
-                        <div class="prose prose-lg dark:prose-invert max-w-none space-y-8">
-                            <div class="bg-gradient-to-r from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-900/20 dark:via-amber-900/20 dark:to-orange-900/20 border-2 border-yellow-500 dark:border-yellow-700 rounded-xl p-6">
-                                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-                                    <span class="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 text-white rounded-xl flex items-center justify-center text-2xl">🪙</span>
-                                    TPIX Token - Native Blockchain
-                                </h3>
-                                <p class="text-gray-700 dark:text-gray-300 mb-4">
-                                    <strong>TPIX (ThaiPrompt Index)</strong> เป็น Native Blockchain Token ของระบบ ใช้สำหรับ:
-                                </p>
-                                <div class="grid md:grid-cols-2 gap-4">
-                                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                                        <h4 class="font-bold mb-2">💰 Payment & Transactions</h4>
-                                        <ul class="text-sm space-y-1 text-gray-700 dark:text-gray-300">
-                                            <li>• ชำระค่าสินค้าและบริการ</li>
-                                            <li>• โอนเงินระหว่างผู้ใช้</li>
-                                            <li>• ค่าธรรมเนียมต่ำ (Gas Fee)</li>
-                                        </ul>
-                                    </div>
-                                    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                                        <h4 class="font-bold mb-2">🎁 Rewards & Staking</h4>
-                                        <ul class="text-sm space-y-1 text-gray-700 dark:text-gray-300">
-                                            <li>• MLM Commission ใน TPIX</li>
-                                            <li>• Staking APY สูง</li>
-                                            <li>• Governance Rights</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- TPIX Features --}}
-                            <div class="grid md:grid-cols-3 gap-6">
-                                <div class="bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6">
-                                    <div class="text-4xl mb-3">💱</div>
-                                    <h3 class="text-lg font-bold mb-2">TPIX DEX</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                                        Decentralized Exchange สำหรับแลกเปลี่ยน TPIX
-                                    </p>
-                                    @auth
-                                    <a href="{{ route('user.dex.swap') }}" class="text-xs px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors inline-block">
-                                        เปิด DEX →
-                                    </a>
-                                    @endauth
-                                </div>
-
-                                <div class="bg-white dark:bg-gray-800 border-2 border-purple-200 dark:border-purple-800 rounded-xl p-6">
-                                    <div class="text-4xl mb-3">🔒</div>
-                                    <h3 class="text-lg font-bold mb-2">TPIX Staking</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                                        Stake TPIX รับดอกเบี้ยสูง พร้อม Rewards
-                                    </p>
-                                    @auth
-                                    <a href="{{ route('user.staking.index') }}" class="text-xs px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors inline-block">
-                                        Stake →
-                                    </a>
-                                    @endauth
-                                </div>
-
-                                <div class="bg-white dark:bg-gray-800 border-2 border-green-200 dark:border-green-800 rounded-xl p-6">
-                                    <div class="text-4xl mb-3">💧</div>
-                                    <h3 class="text-lg font-bold mb-2">Liquidity Pools</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                                        เพิ่ม Liquidity รับ LP Tokens และ Rewards
-                                    </p>
-                                    @auth
-                                    <a href="{{ route('user.dex.pools') }}" class="text-xs px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors inline-block">
-                                        Pools →
-                                    </a>
-                                    @endauth
-                                </div>
-                            </div>
-
-                            {{-- Tokenomics --}}
-                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-2 border-gray-300 dark:border-gray-700 rounded-xl p-6">
-                                <h3 class="text-xl font-bold mb-4">📊 TPIX Tokenomics</h3>
-                                <div class="grid md:grid-cols-2 gap-6">
-                                    <div>
-                                        <h4 class="font-bold text-sm mb-3 text-gray-700 dark:text-gray-300">Token Information</h4>
-                                        <div class="space-y-2 text-sm">
-                                            <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Token Name:</span> <strong>ThaiPrompt Index</strong></div>
-                                            <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Symbol:</span> <strong>TPIX</strong></div>
-                                            <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Decimals:</span> <strong>18</strong></div>
-                                            <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Chain:</span> <strong>TPIX Blockchain</strong></div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h4 class="font-bold text-sm mb-3 text-gray-700 dark:text-gray-300">Distribution</h4>
-                                        <div class="space-y-2 text-sm">
-                                            <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">MLM Rewards:</span> <strong>40%</strong></div>
-                                            <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Staking:</span> <strong>20%</strong></div>
-                                            <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Liquidity:</span> <strong>20%</strong></div>
-                                            <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Team & Dev:</span> <strong>20%</strong></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            @auth
-                            <div class="bg-gradient-to-r from-yellow-600 to-orange-600 text-white p-6 rounded-2xl">
-                                <h4 class="text-xl font-bold mb-3">🚀 เริ่มต้นใช้งาน TPIX</h4>
-                                <div class="flex flex-wrap gap-3">
-                                    <a href="{{ route('user.tpix.wallet') }}" class="px-6 py-2 bg-white text-yellow-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
-                                        TPIX Wallet
-                                    </a>
-                                    <a href="{{ route('user.tokens.index') }}" class="px-6 py-2 bg-yellow-800 hover:bg-yellow-900 text-white rounded-lg font-semibold transition-colors">
-                                        Token Marketplace
-                                    </a>
-                                </div>
-                            </div>
-                            @endauth
-                        </div>
+                        @include('frontend.wiki.content.crypto')
                     </div>
 
-                    {{-- Wallet System --}}
-                    <div x-show="currentCategory === 'wallet'" style="display: none;">
-                        <h1 class="text-4xl font-black bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent mb-6">
-                            💳 ระบบกระเป๋าเงิน
-                        </h1>
-
-                        <div class="prose prose-lg dark:prose-invert max-w-none space-y-8">
-                            <div class="grid md:grid-cols-2 gap-6">
-                                <div class="bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6">
-                                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
-                                        <span>💵</span> กระเป๋าเงิน THB
-                                    </h3>
-                                    <ul class="space-y-2 text-sm">
-                                        <li>✅ ฝาก-ถอนเงินบาท</li>
-                                        <li>✅ โอนระหว่างผู้ใช้</li>
-                                        <li>✅ PromptPay QR Code</li>
-                                        <li>✅ Bank Transfer</li>
-                                        <li>✅ Credit/Debit Card</li>
-                                    </ul>
-                                    @auth
-                                    <a href="{{ route('user.wallet.index') }}" class="inline-block mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors">
-                                        เปิดกระเป๋า THB →
-                                    </a>
-                                    @endauth
-                                </div>
-
-                                <div class="bg-white dark:bg-gray-800 border-2 border-orange-200 dark:border-orange-800 rounded-xl p-6">
-                                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
-                                        <span>₿</span> กระเป๋า Crypto
-                                    </h3>
-                                    <ul class="space-y-2 text-sm">
-                                        <li>✅ รองรับ TPIX, BTC, ETH, USDT</li>
-                                        <li>✅ แลกเปลี่ยน Crypto</li>
-                                        <li>✅ Send/Receive</li>
-                                        <li>✅ Trading History</li>
-                                        <li>✅ Multi-Chain Support</li>
-                                    </ul>
-                                    @auth
-                                    <a href="{{ route('user.crypto-wallet.index') }}" class="inline-block mt-3 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-semibold transition-colors">
-                                        เปิดกระเป๋า Crypto →
-                                    </a>
-                                    @endauth
-                                </div>
-                            </div>
-
-                            <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-l-4 border-green-600 p-6 rounded-r-xl">
-                                <h4 class="font-bold text-green-900 dark:text-green-100 mb-2">🔒 ความปลอดภัย</h4>
-                                <p class="text-gray-700 dark:text-gray-300 text-sm">
-                                    ระบบ Wallet มีการเข้ารหัสแบบ AES-256, Two-Factor Authentication, และ Transaction Verification
-                                </p>
-                            </div>
-                        </div>
+                    {{-- Payment Gateway --}}
+                    <div x-show="currentCategory === 'payment'" style="display: none;">
+                        @include('frontend.wiki.content.payment')
                     </div>
 
-                    {{-- Academy & Learning --}}
+                    {{-- HR Management --}}
+                    <div x-show="currentCategory === 'hrm'" style="display: none;">
+                        @include('frontend.wiki.content.hrm')
+                    </div>
+
+                    {{-- Accounting System --}}
+                    <div x-show="currentCategory === 'accounting'" style="display: none;">
+                        @include('frontend.wiki.content.accounting')
+                    </div>
+
+                    {{-- Software Sales --}}
+                    <div x-show="currentCategory === 'software'" style="display: none;">
+                        @include('frontend.wiki.content.software')
+                    </div>
+
+                    {{-- Vendor Management --}}
+                    <div x-show="currentCategory === 'vendor'" style="display: none;">
+                        @include('frontend.wiki.content.vendor')
+                    </div>
+
+                    {{-- Academy & Learning - ใช้ content file ที่ละเอียดกว่า --}}
                     <div x-show="currentCategory === 'academy'" style="display: none;">
-                        <h1 class="text-4xl font-black bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent mb-6">
-                            🎓 Academy & Learning Center
-                        </h1>
+                        @include('frontend.wiki.content.academy')
+                    </div>
 
-                        <div class="prose prose-lg dark:prose-invert max-w-none space-y-8">
-                            <p class="text-gray-700 dark:text-gray-300">
-                                ศูนย์การเรียนรู้ออนไลน์ สำหรับอบรมการใช้งานระบบ MLM, E-Commerce, และ Crypto
-                            </p>
+                    {{-- Security & Compliance --}}
+                    <div x-show="currentCategory === 'security'" style="display: none;">
+                        @include('frontend.wiki.content.security')
+                    </div>
 
-                            <div class="grid md:grid-cols-3 gap-6">
-                                <div class="bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6">
-                                    <div class="text-3xl mb-3">📚</div>
-                                    <h3 class="text-lg font-bold mb-2">Courses</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">คอร์สเรียนออนไลน์</p>
-                                </div>
+                    {{-- Support Center --}}
+                    <div x-show="currentCategory === 'support'" style="display: none;">
+                        @include('frontend.wiki.content.support')
+                    </div>
 
-                                <div class="bg-white dark:bg-gray-800 border-2 border-purple-200 dark:border-purple-800 rounded-xl p-6">
-                                    <div class="text-3xl mb-3">🎬</div>
-                                    <h3 class="text-lg font-bold mb-2">Video Tutorials</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">วิดีโออบรม</p>
-                                </div>
-
-                                <div class="bg-white dark:bg-gray-800 border-2 border-green-200 dark:border-green-800 rounded-xl p-6">
-                                    <div class="text-3xl mb-3">📝</div>
-                                    <h3 class="text-lg font-bold mb-2">Certificates</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">ใบรับรองออนไลน์</p>
-                                </div>
-                            </div>
-                        </div>
+                    {{-- Investor Guide --}}
+                    <div x-show="currentCategory === 'investor'" style="display: none;">
+                        @include('frontend.wiki.content.investor')
                     </div>
 
                     {{-- API & Integration --}}
                     <div x-show="currentCategory === 'api'" style="display: none;">
-                        <h1 class="text-4xl font-black bg-gradient-to-r from-slate-600 via-gray-600 to-zinc-600 bg-clip-text text-transparent mb-6">
-                            🔌 API & Integration
-                        </h1>
-
-                        <div class="prose prose-lg dark:prose-invert max-w-none space-y-8">
-                            <div class="bg-gradient-to-br from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-900 border-l-4 border-gray-600 p-6 rounded-r-xl">
-                                <p class="text-gray-700 dark:text-gray-300">
-                                    REST API สำหรับเชื่อมต่อกับระบบภายนอก รองรับ OAuth 2.0 และ API Keys
-                                </p>
-                            </div>
-
-                            <div class="grid md:grid-cols-2 gap-6">
-                                <div class="bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6">
-                                    <h3 class="text-lg font-bold mb-3">📡 Endpoints</h3>
-                                    <ul class="text-sm space-y-2">
-                                        <li><code class="text-xs bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">/api/v1/user</code> - ข้อมูลผู้ใช้</li>
-                                        <li><code class="text-xs bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">/api/v1/mlm</code> - MLM Data</li>
-                                        <li><code class="text-xs bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">/api/v1/products</code> - สินค้า</li>
-                                        <li><code class="text-xs bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">/api/v1/wallet</code> - กระเป๋าเงิน</li>
-                                    </ul>
-                                </div>
-
-                                <div class="bg-white dark:bg-gray-800 border-2 border-green-200 dark:border-green-800 rounded-xl p-6">
-                                    <h3 class="text-lg font-bold mb-3">🔐 Authentication</h3>
-                                    <ul class="text-sm space-y-2">
-                                        <li>✅ OAuth 2.0</li>
-                                        <li>✅ API Keys</li>
-                                        <li>✅ JWT Tokens</li>
-                                        <li>✅ Rate Limiting</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- 📈 Investor Guide - คู่มือนักลงทุน --}}
-                    <div x-show="currentCategory === 'investor'" style="display: none;">
-                        <h1 class="text-4xl font-black bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent mb-6">
-                            📈 Investor Guide - คู่มือนักลงทุน
-                        </h1>
-
-                        <div class="prose prose-lg dark:prose-invert max-w-none space-y-8">
-                            {{-- การแนะนำสำหรับนักลงทุน --}}
-                            <div class="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 border-l-4 border-emerald-600 p-6 rounded-r-xl">
-                                <h3 class="text-xl font-bold text-emerald-900 dark:text-emerald-100 mb-3">🌟 ยินดีต้อนรับนักลงทุน</h3>
-                                <p class="text-gray-700 dark:text-gray-300 mb-0">
-                                    ThaiPrompt Affiliate เปิดโอกาสให้นักลงทุนร่วมเป็นส่วนหนึ่งของระบบนิเวศที่เติบโตอย่างยั่งยืน ผ่านการลงทุนใน TPIX Token และโปรแกรม ROI ที่หลากหลาย
-                                </p>
-                            </div>
-
-                            {{-- ช่องทางการลงทุน --}}
-                            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {{-- TPIX Token --}}
-                                <div class="bg-white dark:bg-gray-800 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-6 hover:shadow-2xl transition-all duration-300">
-                                    <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center text-3xl mb-4 shadow-lg">
-                                        ₿
-                                    </div>
-                                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">TPIX Token</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                        Token หลักของระบบ สามารถใช้ซื้อสินค้า, Staking, และแลกเปลี่ยนใน DEX
-                                    </p>
-                                    <ul class="text-sm space-y-2 text-gray-700 dark:text-gray-300 mb-4">
-                                        <li>✅ Staking APY สูงสุด 30%</li>
-                                        <li>✅ ใช้ซื้อสินค้าในระบบ</li>
-                                        <li>✅ แลกเปลี่ยนใน DEX</li>
-                                        <li>✅ Governance Rights</li>
-                                    </ul>
-                                    @auth
-                                    <a href="{{ route('user.crypto-wallet.index') }}" class="inline-block px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold text-sm transition-colors">
-                                        เริ่มลงทุน TPIX →
-                                    </a>
-                                    @else
-                                    <a href="{{ route('register') }}" class="inline-block px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold text-sm transition-colors">
-                                        สมัครเพื่อลงทุน →
-                                    </a>
-                                    @endauth
-                                </div>
-
-                                {{-- ROI Investment --}}
-                                <div class="bg-white dark:bg-gray-800 border-2 border-green-200 dark:border-green-800 rounded-2xl p-6 hover:shadow-2xl transition-all duration-300">
-                                    <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center text-3xl mb-4 shadow-lg">
-                                        💰
-                                    </div>
-                                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ROI Investment</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                        โปรแกรมลงทุนพร้อมผลตอบแทนรายวัน/รายเดือน
-                                    </p>
-                                    <ul class="text-sm space-y-2 text-gray-700 dark:text-gray-300 mb-4">
-                                        <li>📊 ROI 5-15% ต่อเดือน</li>
-                                        <li>📅 จ่ายผลตอบแทนทุกวัน</li>
-                                        <li>🔐 ปลอดภัยด้วย Smart Contract</li>
-                                        <li>💎 โบนัสสำหรับ VIP</li>
-                                    </ul>
-                                    @auth
-                                    <a href="{{ route('user.investments.index') }}" class="inline-block px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold text-sm transition-colors">
-                                        ดูแผนการลงทุน →
-                                    </a>
-                                    @else
-                                    <a href="{{ route('register') }}" class="inline-block px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold text-sm transition-colors">
-                                        สมัครเพื่อลงทุน →
-                                    </a>
-                                    @endauth
-                                </div>
-
-                                {{-- MLM Affiliate --}}
-                                <div class="bg-white dark:bg-gray-800 border-2 border-purple-200 dark:border-purple-800 rounded-2xl p-6 hover:shadow-2xl transition-all duration-300">
-                                    <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center text-3xl mb-4 shadow-lg">
-                                        💎
-                                    </div>
-                                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">MLM Affiliate</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                        สร้างรายได้จากการแนะนำสมาชิกใหม่
-                                    </p>
-                                    <ul class="text-sm space-y-2 text-gray-700 dark:text-gray-300 mb-4">
-                                        <li>👥 คอมมิชชั่นหลายชั้น</li>
-                                        <li>🏆 โบนัส Rank & Achievement</li>
-                                        <li>🎁 Matching Bonus</li>
-                                        <li>🌳 Binary + Unilevel</li>
-                                    </ul>
-                                    @auth
-                                    <a href="{{ route('user.mlm.dashboard') }}" class="inline-block px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold text-sm transition-colors">
-                                        เริ่มต้น MLM →
-                                    </a>
-                                    @else
-                                    <a href="{{ route('register') }}" class="inline-block px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold text-sm transition-colors">
-                                        สมัครเพื่อเข้าร่วม →
-                                    </a>
-                                    @endauth
-                                </div>
-                            </div>
-
-                            {{-- สถิติระบบ --}}
-                            <div class="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-8 rounded-2xl shadow-2xl">
-                                <h3 class="text-2xl font-bold mb-6 text-center">📊 สถิติระบบ ThaiPrompt</h3>
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                    <div class="text-center">
-                                        <div class="text-3xl font-black text-emerald-400">{{ number_format($stats['total_users'] ?? 0) }}</div>
-                                        <div class="text-sm text-gray-400 mt-1">ผู้ใช้ทั้งหมด</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-3xl font-black text-purple-400">{{ number_format($stats['total_affiliates'] ?? 0) }}</div>
-                                        <div class="text-sm text-gray-400 mt-1">Affiliate Members</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-3xl font-black text-amber-400">{{ $stats['version'] ?? 'v3.0' }}</div>
-                                        <div class="text-sm text-gray-400 mt-1">เวอร์ชั่นระบบ</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-3xl font-black text-blue-400">24/7</div>
-                                        <div class="text-sm text-gray-400 mt-1">Support</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- Risk Warning --}}
-                            <div class="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-800 rounded-xl p-6">
-                                <h4 class="text-lg font-bold text-red-800 dark:text-red-300 mb-3 flex items-center gap-2">
-                                    <span>⚠️</span> คำเตือนความเสี่ยง
-                                </h4>
-                                <p class="text-sm text-red-700 dark:text-red-400 mb-3">
-                                    การลงทุนมีความเสี่ยง ผู้ลงทุนควรศึกษาข้อมูลก่อนตัดสินใจลงทุน:
-                                </p>
-                                <ul class="text-sm text-red-700 dark:text-red-400 space-y-1">
-                                    <li>• ราคา Cryptocurrency มีความผันผวนสูง</li>
-                                    <li>• ผลตอบแทนในอดีตไม่ได้รับประกันอนาคต</li>
-                                    <li>• ลงทุนเฉพาะจำนวนที่พร้อมจะสูญเสียได้</li>
-                                    <li>• ปรึกษาที่ปรึกษาทางการเงินก่อนลงทุน</li>
-                                </ul>
-                            </div>
-
-                            {{-- CTA for Investors --}}
-                            @guest
-                            <div class="bg-gradient-to-r from-emerald-600 to-green-600 text-white p-8 rounded-2xl shadow-xl text-center">
-                                <h4 class="text-2xl font-bold mb-3">🚀 พร้อมเริ่มต้นการลงทุนหรือยัง?</h4>
-                                <p class="mb-6 opacity-90">
-                                    สมัครสมาชิกฟรีวันนี้ เพื่อเข้าถึงโอกาสการลงทุนทั้งหมด
-                                </p>
-                                <div class="flex flex-wrap justify-center gap-4">
-                                    <a href="{{ route('register') }}" class="px-8 py-3 bg-white text-emerald-600 rounded-xl font-bold hover:bg-gray-100 transition-colors shadow-lg">
-                                        📝 สมัครสมาชิกฟรี
-                                    </a>
-                                    <a href="{{ route('login') }}" class="px-8 py-3 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl font-bold transition-colors shadow-lg">
-                                        🔐 เข้าสู่ระบบ
-                                    </a>
-                                </div>
-                            </div>
-                            @endguest
-                        </div>
+                        @include('frontend.wiki.content.api')
                     </div>
 
                     {{-- FAQ & Troubleshooting --}}
                     <div x-show="currentCategory === 'faq'" style="display: none;">
-                        <h1 class="text-4xl font-black bg-gradient-to-r from-pink-600 via-fuchsia-600 to-purple-600 bg-clip-text text-transparent mb-6">
-                            ❓ FAQ & Troubleshooting
-                        </h1>
-
-                        <div class="prose prose-lg dark:prose-invert max-w-none space-y-6">
-                            <div class="space-y-4">
-                                {{-- FAQ Item --}}
-                                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-                                    <h3 class="text-lg font-bold mb-2 text-blue-600 dark:text-blue-400">🔹 ลืมรหัสผ่านทำอย่างไร?</h3>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">
-                                        คลิก "ลืมรหัสผ่าน" ที่หน้า Login แล้วกรอกอีเมลที่ลงทะเบียนไว้ ระบบจะส่งลิงก์รีเซ็ตรหัสผ่านไปให้
-                                    </p>
-                                </div>
-
-                                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-                                    <h3 class="text-lg font-bold mb-2 text-purple-600 dark:text-purple-400">🔹 คอมมิชชั่นจ่ายเมื่อไหร่?</h3>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">
-                                        คอมมิชชั่นจะคำนวณทันทีที่ดาวน์ไลน์ทำรายการ และจ่ายอัตโนมัติทุกวันที่ 1 และ 15 ของเดือน
-                                    </p>
-                                </div>
-
-                                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-                                    <h3 class="text-lg font-bold mb-2 text-green-600 dark:text-green-400">🔹 ถอนเงินขั้นต่ำเท่าไหร่?</h3>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">
-                                        ถอนเงินบาท ขั้นต่ำ 100 บาท / ถอน TPIX ขั้นต่ำ 10 TPIX
-                                    </p>
-                                </div>
-
-                                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-                                    <h3 class="text-lg font-bold mb-2 text-red-600 dark:text-red-400">🔹 ติดปัญหาการใช้งานติดต่อที่ไหน?</h3>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300 mb-3">
-                                        ติดต่อได้ 3 ช่องทาง:
-                                    </p>
-                                    <div class="flex flex-wrap gap-2">
-                                        @auth
-                                        <a href="{{ route('user.tickets.create') }}" class="text-xs px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
-                                            🎫 Support Ticket
-                                        </a>
-                                        @endauth
-                                        <a href="https://line.me/R/ti/p/@thaiprompt" target="_blank" class="text-xs px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors">
-                                            💬 LINE OA
-                                        </a>
-                                        <a href="mailto:support@thaiprompt.com" class="text-xs px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors">
-                                            📧 Email
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        @include('frontend.wiki.content.faq')
                     </div>
 
                 </div>
