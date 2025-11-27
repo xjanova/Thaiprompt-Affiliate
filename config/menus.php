@@ -616,6 +616,9 @@ return [
                 ['label' => '⏰ Jobs', 'route' => 'admin.video-automation.jobs', 'description' => 'ติดตามงานที่กำลังทำ'],
                 ['label' => '📅 Schedules', 'route' => 'admin.video-automation.schedules', 'description' => 'ตั้งเวลาสร้างอัตโนมัติ'],
                 ['label' => '---', 'route' => null], // Divider
+                ['label' => '🌐 Platforms', 'route' => 'admin.video-automation.platforms', 'description' => 'เชื่อมต่อ YouTube, Facebook, TikTok, Lemon8'],
+                ['label' => '📜 ประวัติการโพสต์', 'route' => 'admin.video-automation.publish-history', 'description' => 'ดูประวัติการเผยแพร่วิดีโอ'],
+                ['label' => '---', 'route' => null], // Divider
                 ['label' => '⚙️ ตั้งค่า API', 'route' => 'admin.video-automation.settings', 'description' => 'Suno AI, Freepik, YouTube'],
                 ['label' => '📖 คู่มือการใช้งาน', 'route' => 'admin.video-automation.documentation', 'description' => 'วิธีใช้งานและขอ API Key'],
             ],
