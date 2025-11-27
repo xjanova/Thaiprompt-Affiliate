@@ -21,10 +21,27 @@ class MlmPlanController extends Controller
         return view('admin.mlm.plans.create-package');
     }
 
+    /**
+     * แสดงผังสายงานแบบ Classic
+     *
+     * @return \Illuminate\View\View
+     */
     public function genealogy()
     {
         $members = \App\Models\MlmMember::with('user')->orderBy('created_at', 'desc')->limit(100)->get();
         return view('admin.mlm.genealogy.index', compact('members'));
+    }
+
+    /**
+     * แสดงผังสายงานแบบ Workflow (n8n style)
+     * รองรับการลาก nodes และเส้นเชื่อมต่อได้อิสระ
+     *
+     * @return \Illuminate\View\View
+     */
+    public function genealogyWorkflow()
+    {
+        $members = \App\Models\MlmMember::with('user')->orderBy('created_at', 'desc')->limit(100)->get();
+        return view('admin.mlm.genealogy.workflow', compact('members'));
     }
 
     public function store(Request $request)

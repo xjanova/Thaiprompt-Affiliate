@@ -54,8 +54,27 @@
                     </div>
                 </div>
 
-                {{-- Quick Actions --}}
-                <div class="flex flex-wrap gap-3">
+                {{-- View Mode Toggle & Quick Actions --}}
+                <div class="flex flex-wrap items-center gap-3">
+                    {{-- View Mode Toggle --}}
+                    <div class="flex items-center gap-1 bg-white/10 backdrop-blur-sm rounded-xl p-1">
+                        <span class="px-4 py-2 bg-white/20 text-white rounded-lg font-medium text-sm flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+                            </svg>
+                            Classic
+                        </span>
+                        <a href="{{ route('admin.mlm.genealogy.workflow') }}"
+                           class="px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg font-medium text-sm flex items-center gap-2 transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                            </svg>
+                            Workflow
+                        </a>
+                    </div>
+
+                    <div class="h-6 w-px bg-white/20"></div>
+
                     <a href="{{ route('admin.mlm.members.index') }}"
                        class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-5 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg text-sm">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
