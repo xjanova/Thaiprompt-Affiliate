@@ -43,9 +43,11 @@
 
         /**
          * Glass Fusion Effect - Arrow X V3 Standard
+         * Light mode: พื้นหลังขาวโปร่งใสเพื่อให้ตัวหนังสือสีเข้มมีคอนทราสต์ดี
+         * Dark mode: พื้นหลังมืดโปร่งใส
          */
         .glass-fusion {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
@@ -70,6 +72,203 @@
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
+        }
+
+        /**
+         * Legacy Wiki CSS Variables
+         * สำหรับ content files เก่าที่ยังใช้ CSS variables
+         */
+        :root {
+            /* Primary Colors */
+            --primary-rgb: 99, 102, 241;
+            --secondary-rgb: 139, 92, 246;
+            --accent-rgb: 236, 72, 153;
+
+            /* Wiki Theme Colors - Light Mode */
+            --wiki-bg: #f9fafb;
+            --wiki-card-bg: #ffffff;
+            --wiki-text: #1f2937;
+            --wiki-text-primary: #1f2937;
+            --wiki-text-secondary: #4b5563;
+            --wiki-text-muted: #9ca3af;
+            --wiki-border: #e5e7eb;
+            --wiki-hover-bg: #f3f4f6;
+        }
+
+        .dark {
+            /* Wiki Theme Colors - Dark Mode */
+            --wiki-bg: #111827;
+            --wiki-card-bg: #1f2937;
+            --wiki-text: #f9fafb;
+            --wiki-text-primary: #f9fafb;
+            --wiki-text-secondary: #d1d5db;
+            --wiki-text-muted: #9ca3af;
+            --wiki-border: #374151;
+            --wiki-hover-bg: #374151;
+        }
+
+        /**
+         * Legacy Wiki Grid System
+         */
+        .wiki-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+        .wiki-grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+        .wiki-grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+        .wiki-grid-4 {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        /**
+         * Legacy Wiki Card
+         */
+        .wiki-card {
+            background: var(--wiki-card-bg);
+            border: 2px solid var(--wiki-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        .wiki-card:hover {
+            border-color: rgb(var(--primary-rgb));
+            box-shadow: 0 8px 24px rgba(var(--primary-rgb), 0.15);
+            transform: translateY(-4px);
+        }
+
+        /**
+         * Legacy Feature Card
+         */
+        .feature-card {
+            background: var(--wiki-card-bg);
+            border: 2px solid var(--wiki-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            border-color: rgb(var(--primary-rgb));
+            box-shadow: 0 8px 24px rgba(var(--primary-rgb), 0.15);
+            transform: translateY(-4px);
+        }
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        /**
+         * Legacy Info Box
+         */
+        .info-box {
+            background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05));
+            border-left: 4px solid rgb(var(--primary-rgb));
+            border-radius: 0 0.75rem 0.75rem 0;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .info-box h4 {
+            color: rgb(var(--primary-rgb));
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+        .info-box.success {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
+            border-left-color: #22c55e;
+        }
+        .info-box.success h4 {
+            color: #22c55e;
+        }
+        .info-box.warning {
+            background: linear-gradient(135deg, rgba(234, 179, 8, 0.1), rgba(234, 179, 8, 0.05));
+            border-left-color: #eab308;
+        }
+        .info-box.warning h4 {
+            color: #eab308;
+        }
+        .info-box.tip {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+            border-left-color: #3b82f6;
+        }
+        .info-box.tip h4 {
+            color: #3b82f6;
+        }
+
+        /**
+         * Legacy Wiki Section
+         */
+        .wiki-section {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--wiki-border);
+        }
+        .wiki-section:last-child {
+            border-bottom: none;
+        }
+        .wiki-section h2 {
+            color: var(--wiki-text);
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+        .wiki-section h3 {
+            color: var(--wiki-text);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem;
+        }
+
+        /**
+         * Legacy Wiki Table
+         */
+        .wiki-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: var(--wiki-card-bg);
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        .wiki-table th,
+        .wiki-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--wiki-border);
+        }
+        .wiki-table th {
+            background: var(--wiki-hover-bg);
+            font-weight: 600;
+            color: var(--wiki-text);
+        }
+        .wiki-table td {
+            color: var(--wiki-text-secondary);
+        }
+        .wiki-table tbody tr:hover {
+            background: var(--wiki-hover-bg);
+        }
+
+        /**
+         * Legacy Wiki Content Section
+         */
+        .wiki-content-section {
+            color: var(--wiki-text);
+        }
+        .wiki-content-section p {
+            color: var(--wiki-text-secondary);
+            line-height: 1.8;
+        }
+        .wiki-content-section ul,
+        .wiki-content-section ol {
+            color: var(--wiki-text-secondary);
+        }
+        .wiki-content-section a {
+            color: rgb(var(--primary-rgb));
+        }
+        .wiki-content-section a:hover {
+            text-decoration: underline;
         }
     </style>
 
@@ -132,7 +331,7 @@
                                 TP
                             </div>
                         @endif
-                        <span class="hidden sm:block text-white font-bold text-lg drop-shadow">
+                        <span class="hidden sm:block text-gray-800 dark:text-white font-bold text-lg dark:drop-shadow">
                             {{ config('app.name', 'TP-Affiliate') }}
                         </span>
                     </a>
@@ -140,13 +339,13 @@
 
                 {{-- Navigation Links --}}
                 <nav class="hidden md:flex items-center gap-6">
-                    <a href="{{ route('home') }}" class="text-white/80 hover:text-white font-medium transition-colors drop-shadow">
+                    <a href="{{ route('home') }}" class="text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white font-medium transition-colors dark:drop-shadow">
                         <i class="fas fa-home mr-2"></i>หน้าแรก
                     </a>
-                    <a href="{{ route('wiki.index') }}" class="text-white font-medium transition-colors drop-shadow border-b-2 border-white pb-1">
+                    <a href="{{ route('wiki.index') }}" class="text-gray-900 dark:text-white font-medium transition-colors dark:drop-shadow border-b-2 border-gray-900 dark:border-white pb-1">
                         <i class="fas fa-book mr-2"></i>Wiki
                     </a>
-                    <a href="{{ route('marketplace.index') }}" class="text-white/80 hover:text-white font-medium transition-colors drop-shadow">
+                    <a href="{{ route('marketplace.index') }}" class="text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white font-medium transition-colors dark:drop-shadow">
                         <i class="fas fa-store mr-2"></i>Marketplace
                     </a>
                 </nav>
@@ -156,16 +355,16 @@
                     {{-- Dark Mode Toggle --}}
                     <button @click="toggleTheme()"
                             type="button"
-                            class="p-2.5 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-110 active:scale-95 text-white"
+                            class="p-2.5 rounded-xl glass-neu hover:bg-gray-200/50 dark:hover:bg-white/20 transition-all hover:scale-110 active:scale-95 text-gray-700 dark:text-white"
                             :title="isDark ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด'">
-                        <i x-show="!isDark" class="fas fa-moon drop-shadow"></i>
+                        <i x-show="!isDark" class="fas fa-moon dark:drop-shadow"></i>
                         <i x-show="isDark" class="fas fa-sun text-yellow-300 drop-shadow"></i>
                     </button>
 
                     {{-- Auth Buttons --}}
                     @guest
                         <a href="{{ route('login') }}"
-                           class="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-white/90 hover:text-white font-medium transition-colors">
+                           class="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-white/90 hover:text-gray-900 dark:hover:text-white font-medium transition-colors">
                             <i class="fas fa-sign-in-alt"></i>
                             <span>เข้าสู่ระบบ</span>
                         </a>
@@ -178,13 +377,13 @@
                         {{-- User Dropdown --}}
                         <div x-data="{ open: false }" class="relative">
                             <button @click="open = !open"
-                                    class="flex items-center gap-2 p-2 pr-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-105 active:scale-95">
+                                    class="flex items-center gap-2 p-2 pr-3 rounded-xl glass-neu hover:bg-gray-200/50 dark:hover:bg-white/20 transition-all hover:scale-105 active:scale-95">
                                 <img src="{{ auth()->user()->profile_picture_url }}"
                                      alt="{{ auth()->user()->name }}"
                                      class="w-8 h-8 rounded-lg object-cover shadow-lg"
                                      onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr(auth()->user()->name, 0, 1)) }}&background=8B5CF6&color=fff&size=64';">
-                                <span class="hidden md:block text-white font-medium text-sm drop-shadow">{{ auth()->user()->name }}</span>
-                                <i class="fas fa-chevron-down text-white/60 text-xs drop-shadow transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+                                <span class="hidden md:block text-gray-800 dark:text-white font-medium text-sm dark:drop-shadow">{{ auth()->user()->name }}</span>
+                                <i class="fas fa-chevron-down text-gray-500 dark:text-white/60 text-xs dark:drop-shadow transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
                             </button>
 
                             {{-- Dropdown Menu --}}
@@ -236,17 +435,17 @@
     </main>
 
     {{-- Footer --}}
-    <footer class="glass-fusion border-t border-white/20 dark:border-gray-700/50 py-8 mt-12">
+    <footer class="glass-fusion border-t border-gray-200 dark:border-white/20 dark:border-gray-700/50 py-8 mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="text-white/60 text-sm">
+                <div class="text-gray-600 dark:text-white/60 text-sm">
                     &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
                 </div>
                 <div class="flex items-center gap-6">
-                    <a href="{{ route('wiki.index') }}" class="text-white/60 hover:text-white text-sm transition-colors">Wiki</a>
-                    <a href="{{ route('marketplace.index') }}" class="text-white/60 hover:text-white text-sm transition-colors">Marketplace</a>
+                    <a href="{{ route('wiki.index') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Wiki</a>
+                    <a href="{{ route('marketplace.index') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Marketplace</a>
                     @auth
-                    <a href="{{ route('user.dashboard') }}" class="text-white/60 hover:text-white text-sm transition-colors">Dashboard</a>
+                    <a href="{{ route('user.dashboard') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Dashboard</a>
                     @endauth
                 </div>
             </div>
