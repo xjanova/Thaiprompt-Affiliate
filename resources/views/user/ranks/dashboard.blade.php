@@ -24,9 +24,9 @@
             1 => '🥉', 2 => '🥈', 3 => '🥇', 4 => '💎',
             5 => '💠', 6 => '👑', 7 => '🏆', 8 => '⭐',
         ];
-        $currentLevel = $currentRank->level ?? 1;
+        $currentLevel = $currentRank?->level ?? 1;
         $currentBadge = $rankBadges[$currentLevel] ?? '🏅';
-        $nextLevel = $nextRank->level ?? null;
+        $nextLevel = $nextRank?->level ?? null;
         $nextBadge = $nextLevel ? ($rankBadges[$nextLevel] ?? '🏅') : null;
     @endphp
 
@@ -73,13 +73,13 @@
                     </div>
                     <h1 class="text-4xl md:text-5xl font-bold mb-3 flex items-center justify-center lg:justify-start gap-4">
                         <span class="text-6xl">{{ $currentBadge }}</span>
-                        <span>{{ $currentRank->name_th ?? $currentRank->name ?? 'ไม่มีระดับ' }}</span>
+                        <span>{{ $currentRank?->name_th ?? $currentRank?->name ?? 'ไม่มีระดับ' }}</span>
                     </h1>
                     <p class="text-xl text-white/80 mb-4">Level {{ $currentLevel }}</p>
 
                     @if($currentRank?->description_th ?? $currentRank?->description)
                     <p class="text-white/70 max-w-2xl">
-                        {{ $currentRank->description_th ?? $currentRank->description }}
+                        {{ $currentRank?->description_th ?? $currentRank?->description }}
                     </p>
                     @endif
 
@@ -376,7 +376,7 @@
         <div class="mt-6">
             <div class="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-lg rounded-xl">
                 <span class="text-4xl">{{ $currentBadge }}</span>
-                <span class="text-2xl font-bold">{{ $currentRank->name_th ?? $currentRank->name }}</span>
+                <span class="text-2xl font-bold">{{ $currentRank?->name_th ?? $currentRank?->name ?? 'ไม่มีระดับ' }}</span>
             </div>
         </div>
     </div>
