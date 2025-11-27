@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.255.17] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1781 from xjanova/claude/fix-prospects-array-key-014eusq46416fURRQR6UxWZo (d3e8b1c6)
+- fix: แก้ไข Undefined array key 'in_progress' ในหน้าผู้มุ่งหวัง (b03b0aff)
+### 🔧 Other Changes
+
+
 ## [v3.255.16] - 2025-11-27
 
 ### ✨ Features
