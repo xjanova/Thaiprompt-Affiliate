@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.255.10] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1774 from xjanova/claude/fix-missing-table-01HDtV2fp2Aax27Wiwc6iR1e (9bc5fbea)
+- fix: add missing membership_retention_history table migration (1eb5e38c)
+### 🔧 Other Changes
+
+
 ## [v3.255.9] - 2025-11-27
 
 ### ✨ Features
