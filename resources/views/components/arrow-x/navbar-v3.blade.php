@@ -102,6 +102,16 @@
 
     {{-- Right Section: Search, Notifications, Dark Mode, Profile --}}
     <div class="flex items-center gap-2 md:gap-4">
+        {{-- 🇹🇭 Wiki Button - ลิงก์ไปหน้า Wiki หลัก --}}
+        <a href="{{ route('wiki.index') }}"
+           class="hidden md:inline-flex items-center gap-2 px-3 py-2 text-sm font-bold rounded-xl transition-all duration-300 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/30 transform hover:scale-105 relative group"
+           title="🇹🇭 เรื่องราว ThaiPrompt - ทำไมต้องมีระบบของคนไทย">
+            <span class="text-base group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">🇹🇭</span>
+            <span class="group-hover:translate-x-0.5 transition-transform duration-300">Wiki</span>
+            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></span>
+            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
+        </a>
+
         {{-- Search Bar (Hidden on Mobile) --}}
         @if($showSearch)
             <div class="hidden md:block" x-data="{ searchOpen: false }">
