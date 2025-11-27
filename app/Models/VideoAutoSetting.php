@@ -206,19 +206,49 @@ class VideoAutoSetting extends Model
     /**
      * ดึงค่า setting ตาม key
      *
+     * จะ return ค่า default ถ้า:
+     * - ไม่พบ setting
+     * - ไม่สามารถเชื่อมต่อ database ได้ (เช่น ตอน route:cache)
+     * - ตาราง video_auto_settings ยังไม่ถูกสร้าง
+     *
      * @param string $key
      * @param mixed $default
      * @return mixed
      */
     public static function getValue(string $key, $default = null)
     {
-        $setting = static::where('key', $key)->first();
+        try {
+            // ตรวจสอบว่า database พร้อมใช้งานและตารางมีอยู่
+            if (!app()->bound('db') || !static::tableExists()) {
+                return $default;
+            }
 
-        if (!$setting) {
+            $setting = static::where('key', $key)->first();
+
+            if (!$setting) {
+                return $default;
+            }
+
+            return $setting->decoded_value ?? $default;
+        } catch (\Exception $e) {
+            // เกิด error (เช่น database ไม่พร้อม, credentials ผิด, ตารางไม่มี)
+            // return default value แทนที่จะ throw exception
             return $default;
         }
+    }
 
-        return $setting->decoded_value ?? $default;
+    /**
+     * ตรวจสอบว่าตาราง video_auto_settings มีอยู่หรือไม่
+     *
+     * @return bool
+     */
+    protected static function tableExists(): bool
+    {
+        try {
+            return \Illuminate\Support\Facades\Schema::hasTable('video_auto_settings');
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
@@ -240,36 +270,63 @@ class VideoAutoSetting extends Model
     /**
      * ดึง settings ทั้งหมดของ group
      *
+     * จะ return collection ว่างถ้า database ไม่พร้อม
+     *
      * @param string $group
      * @return \Illuminate\Support\Collection
      */
     public static function getByGroup(string $group)
     {
-        return static::byGroup($group)
-            ->active()
-            ->ordered()
-            ->get()
-            ->mapWithKeys(function ($setting) {
-                return [$setting->key => $setting->decoded_value];
-            });
+        try {
+            // ตรวจสอบว่า database พร้อมใช้งานและตารางมีอยู่
+            if (!app()->bound('db') || !static::tableExists()) {
+                return collect([]);
+            }
+
+            return static::byGroup($group)
+                ->active()
+                ->ordered()
+                ->get()
+                ->mapWithKeys(function ($setting) {
+                    return [$setting->key => $setting->decoded_value];
+                });
+        } catch (\Exception $e) {
+            // เกิด error - return collection ว่าง
+            return collect([]);
+        }
     }
 
     /**
      * ดึง API settings ทั้งหมด
      *
+     * จะ return array ว่างในแต่ละ key ถ้า database ไม่พร้อม
+     *
      * @return array
      */
     public static function getApiSettings(): array
     {
-        return [
-            'suno' => static::getByGroup('suno')->toArray(),
-            'freepik' => static::getByGroup('freepik')->toArray(),
-            'youtube' => static::getByGroup('youtube')->toArray(),
-            'facebook' => static::getByGroup('facebook')->toArray(),
-            'instagram' => static::getByGroup('instagram')->toArray(),
-            'tiktok' => static::getByGroup('tiktok')->toArray(),
-            'twitter' => static::getByGroup('twitter')->toArray(),
-        ];
+        try {
+            return [
+                'suno' => static::getByGroup('suno')->toArray(),
+                'freepik' => static::getByGroup('freepik')->toArray(),
+                'youtube' => static::getByGroup('youtube')->toArray(),
+                'facebook' => static::getByGroup('facebook')->toArray(),
+                'instagram' => static::getByGroup('instagram')->toArray(),
+                'tiktok' => static::getByGroup('tiktok')->toArray(),
+                'twitter' => static::getByGroup('twitter')->toArray(),
+            ];
+        } catch (\Exception $e) {
+            // เกิด error - return array ว่าง
+            return [
+                'suno' => [],
+                'freepik' => [],
+                'youtube' => [],
+                'facebook' => [],
+                'instagram' => [],
+                'tiktok' => [],
+                'twitter' => [],
+            ];
+        }
     }
 
     /**
