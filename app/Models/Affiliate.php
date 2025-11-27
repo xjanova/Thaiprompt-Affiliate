@@ -96,16 +96,6 @@ class Affiliate extends Model
     }
 
     /**
-     * ความสัมพันธ์กับ Commissions
-     *
-     * @return HasMany
-     */
-    public function commissions(): HasMany
-    {
-        return $this->hasMany(Commission::class);
-    }
-
-    /**
      * Scope สำหรับ affiliate ที่ active
      *
      * @param \Illuminate\Database\Eloquent\Builder $query

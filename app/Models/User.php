@@ -801,15 +801,15 @@ class User extends Authenticatable
     }
 
     /**
-     * Get all general commissions for this user (from commissions table)
+     * Get all marketplace commissions for this user
      *
-     * คอมมิชชั่นทั่วไปจากตาราง commissions
+     * คอมมิชชั่นจาก Marketplace
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function commissions()
+    public function marketplaceCommissions()
     {
-        return $this->hasMany(\App\Models\Commission::class);
+        return $this->hasMany(\App\Models\MarketplaceCommission::class);
     }
 
     /**
