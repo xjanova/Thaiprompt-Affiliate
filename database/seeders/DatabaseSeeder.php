@@ -126,6 +126,7 @@ class DatabaseSeeder extends Seeder
             // 14. Bot Automation System
             BotPlatformSeeder::class,           // Social Media Platforms (Facebook, LINE, Instagram, Twitter)
             BotMarketplaceCategorySeeder::class, // Bot Marketplace Categories (Sales, Support, Marketing, etc.)
+            VideoAutomationSeeder::class,       // 🎬 Video Automation System (Templates, Settings สำหรับ Suno AI + Freepik + YouTube)
 
             // 15. Service Booking System
             ServiceCategorySeeder::class,       // หมวดหมู่บริการ (นวด, สปา, ทำความสะอาด, จัดส่ง, ช่างไฟ, ซ่อมแอร์ ฯลฯ)

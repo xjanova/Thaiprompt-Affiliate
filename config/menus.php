@@ -581,6 +581,27 @@ return [
         ],
 
         [
+            'id' => 'video-automation',
+            'label' => 'Video Automation',
+            'icon' => '🎬',
+            'route' => null,
+            'order' => 24.8,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-purple-600 to-pink-600',
+            'submenu' => [
+                ['label' => '📊 Dashboard', 'route' => 'admin.video-automation.dashboard', 'description' => 'ภาพรวมระบบ Video Automation'],
+                ['label' => '🎨 เทมเพลต', 'route' => 'admin.video-automation.templates', 'description' => 'จัดการเทมเพลตวิดีโอ'],
+                ['label' => '📁 โปรเจกต์', 'route' => 'admin.video-automation.projects', 'description' => 'สร้างและจัดการโปรเจกต์'],
+                ['label' => '⏰ Jobs', 'route' => 'admin.video-automation.jobs', 'description' => 'ติดตามงานที่กำลังทำ'],
+                ['label' => '📅 Schedules', 'route' => 'admin.video-automation.schedules', 'description' => 'ตั้งเวลาสร้างอัตโนมัติ'],
+                ['label' => '---', 'route' => null], // Divider
+                ['label' => '⚙️ ตั้งค่า API', 'route' => 'admin.video-automation.settings', 'description' => 'Suno AI, Freepik, YouTube'],
+                ['label' => '📖 คู่มือการใช้งาน', 'route' => 'admin.video-automation.documentation', 'description' => 'วิธีใช้งานและขอ API Key'],
+            ],
+        ],
+
+        [
             'id' => 'settings',
             'label' => 'ตั้งค่าระบบ',
             'icon' => '⚙️',
