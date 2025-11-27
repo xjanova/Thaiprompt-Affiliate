@@ -275,13 +275,13 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">เกี่ยวกับเรา</span>
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-slate-600 to-gray-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
-                    <a href="{{ route('platform.wiki') }}"
-                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-purple-50 hover:to-fuchsia-50 dark:hover:from-purple-900/30 dark:hover:to-fuchsia-900/30"
-                       style="color: {{ $headerTextColor }};"
-                       title="สารานุกรมความรู้ - Platform Wiki">
-                        <span class="text-lg group-hover:scale-110 transition-transform duration-300">📚</span>
-                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">Platform Wiki</span>
-                        <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 group-hover:w-full transition-all duration-300"></span>
+                    <a href="{{ route('wiki.index') }}"
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition-all duration-300 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/30 transform hover:scale-105"
+                       title="🇹🇭 เรื่องราว ThaiPrompt - ทำไมต้องมีระบบของคนไทย">
+                        <span class="text-lg group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">🇹🇭</span>
+                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">Wiki</span>
+                        <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
+                        <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
                     </a>
                     <a href="{{ route('demo.audio-spectrum') }}"
                        class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-pink-50 hover:to-violet-50 dark:hover:from-pink-900/30 dark:hover:to-violet-900/30"
@@ -360,7 +360,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                              class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5"
                              style="display: none;">
                             <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">แดชบอร์ด</a>
-                            <a href="{{ route('platform.wiki') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">📚 Platform Wiki</a>
+                            <a href="{{ route('wiki.index') }}" class="block px-4 py-2 text-sm text-amber-700 hover:bg-amber-50 font-semibold">🇹🇭 Wiki - เรื่องราว ThaiPrompt</a>
                             <a href="{{ route('demo.audio-spectrum') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">🎵 Audio Spectrum</a>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
@@ -471,10 +471,12 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                    style="color: {{ $headerTextColor }};">
                     เกี่ยวกับเรา
                 </a>
-                <a href="{{ route('platform.wiki') }}"
-                   class="block mx-3 my-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-base font-bold text-center shadow-lg"
+                <a href="{{ route('wiki.index') }}"
+                   class="block mx-3 my-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl text-base font-bold text-center shadow-lg relative overflow-hidden"
                    style="border: none;">
-                    📚 Platform Wiki - สารานุกรมความรู้
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-ping"></span>
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-xs">!</span>
+                    🇹🇭 Wiki - เรื่องราว ThaiPrompt
                 </a>
                 <a href="{{ route('demo.audio-spectrum') }}"
                    class="block mx-3 my-2 px-4 py-3 bg-gradient-to-r from-pink-600 to-violet-600 text-white rounded-lg text-base font-bold text-center shadow-lg"

@@ -13,7 +13,7 @@
 {{-- 📚 WIKI KNOWLEDGE BASE - V3 VERSION (Tailwind + Alpine.js) --}}
 <div
     x-data="{
-        currentCategory: 'overview',
+        currentCategory: 'story',
         mobileMenuOpen: false,
         searchQuery: '',
         loading: false,
@@ -32,6 +32,7 @@
 
         // รายการหมวดหมู่
         categories: [
+            { id: 'story', icon: '🇹🇭', label: 'เรื่องราว ThaiPrompt', color: 'from-amber-500 to-orange-600', highlight: true },
             { id: 'overview', icon: '🚀', label: 'ภาพรวม & สรุปฟีเจอร์', color: 'from-blue-600 to-cyan-600' },
             { id: 'getting-started', icon: '🎯', label: 'เริ่มต้นใช้งาน', color: 'from-green-600 to-emerald-600' },
             { id: 'mlm-affiliate', icon: '💎', label: 'MLM & Affiliate', color: 'from-purple-600 to-pink-600',
@@ -280,13 +281,21 @@
                         {{-- Main Menu Item --}}
                         <button
                             @click="changeCategory(category.id)"
-                            :class="currentCategory === category.id ?
-                                'bg-gradient-to-r ' + category.color + ' text-white shadow-lg scale-105' :
-                                'bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'"
-                            class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-md"
+                            :class="[
+                                currentCategory === category.id ?
+                                    'bg-gradient-to-r ' + category.color + ' text-white shadow-lg scale-105' :
+                                    (category.highlight ?
+                                        'bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 text-amber-800 dark:text-amber-300 border-2 border-amber-300 dark:border-amber-700 hover:from-amber-200 hover:to-orange-200 dark:hover:from-amber-900/50 dark:hover:to-orange-900/50' :
+                                        'bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700')
+                            ]"
+                            class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-md relative"
                         >
+                            {{-- Pulse animation for highlighted items --}}
+                            <span x-show="category.highlight && currentCategory !== category.id" class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
+                            <span x-show="category.highlight && currentCategory !== category.id" class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
                             <span class="text-xl" x-text="category.icon"></span>
                             <span class="flex-1 text-left text-sm" x-text="category.label"></span>
+                            <span x-show="category.highlight" class="text-xs px-2 py-0.5 bg-red-500 text-white rounded-full font-bold">HOT</span>
                             <svg x-show="category.submenu && currentCategory === category.id" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
@@ -365,8 +374,13 @@
                 {{-- Content Area --}}
                 <div x-show="!loading" class="p-8 lg:p-12">
 
+                    {{-- 🇹🇭 เรื่องราว ThaiPrompt - หน้าหลัก --}}
+                    <div x-show="currentCategory === 'story'">
+                        @include('frontend.wiki.content.story')
+                    </div>
+
                     {{-- ภาพรวม & สรุปฟีเจอร์ --}}
-                    <div x-show="currentCategory === 'overview'">
+                    <div x-show="currentCategory === 'overview'" style="display: none;">
                         <div class="mb-8 pb-8 border-b border-gray-200 dark:border-gray-700">
                             <h1 class="text-4xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
                                 🚀 ภาพรวมระบบ Thaiprompt Affiliate
