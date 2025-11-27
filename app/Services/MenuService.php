@@ -115,6 +115,14 @@ class MenuService
                 }
             }
 
+            // ตรวจสอบเงื่อนไขพิเศษ: condition
+            // รองรับ conditions ต่างๆ เช่น hasProviderAccess
+            if (!empty($menu['condition']) && $user) {
+                if (!$this->checkCondition($menu['condition'], $user)) {
+                    return false;
+                }
+            }
+
             // ตรวจสอบเงื่อนไขพิเศษ: hide_if_kyc_verified
             // ซ่อนเมนูเมื่อ user ยืนยัน KYC แล้ว
             if (!empty($menu['hide_if_kyc_verified']) && $user) {
@@ -135,6 +143,121 @@ class MenuService
 
             return true;
         });
+    }
+
+    /**
+     * ตรวจสอบเงื่อนไขพิเศษของเมนู
+     *
+     * @param string $condition ชื่อเงื่อนไข
+     * @param mixed $user User instance
+     * @return bool true ถ้าผ่านเงื่อนไข
+     */
+    protected function checkCondition(string $condition, $user): bool
+    {
+        switch ($condition) {
+            case 'hasProviderAccess':
+                // ตรวจสอบว่า user เป็น service provider หรือไม่
+                return $this->userHasProviderAccess($user);
+
+            case 'hasSellerAccess':
+                // ตรวจสอบว่า user เป็น seller หรือไม่
+                return $this->userHasSellerAccess($user);
+
+            case 'hasAdminAccess':
+                // ตรวจสอบว่า user เป็น admin หรือไม่
+                return $this->userHasAdminAccess($user);
+
+            default:
+                // ถ้าไม่รู้จัก condition ให้ผ่าน
+                return true;
+        }
+    }
+
+    /**
+     * ตรวจสอบว่า user เป็น Service Provider หรือไม่
+     *
+     * @param mixed $user User instance
+     * @return bool
+     */
+    protected function userHasProviderAccess($user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        // ใช้ method isApprovedProvider() ที่สร้างไว้ใน User model
+        if (method_exists($user, 'isApprovedProvider')) {
+            return $user->isApprovedProvider();
+        }
+
+        // Fallback: ตรวจสอบ relation serviceProvider
+        if (method_exists($user, 'serviceProvider')) {
+            $provider = $user->serviceProvider;
+            // ต้องมี provider และสถานะต้องเป็น approved
+            return $provider && $provider->status === 'approved';
+        }
+
+        // ตรวจสอบ is_provider flag
+        if (isset($user->is_provider)) {
+            return (bool) $user->is_provider;
+        }
+
+        // ตรวจสอบ role
+        if (method_exists($user, 'hasRole')) {
+            return $user->hasRole('provider') || $user->hasRole('service_provider');
+        }
+
+        return false;
+    }
+
+    /**
+     * ตรวจสอบว่า user เป็น Seller หรือไม่
+     *
+     * @param mixed $user User instance
+     * @return bool
+     */
+    protected function userHasSellerAccess($user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        // ตรวจสอบ is_seller flag
+        if (isset($user->is_seller)) {
+            return (bool) $user->is_seller;
+        }
+
+        // ตรวจสอบ role
+        if (method_exists($user, 'hasRole')) {
+            return $user->hasRole('seller');
+        }
+
+        return false;
+    }
+
+    /**
+     * ตรวจสอบว่า user เป็น Admin หรือไม่
+     *
+     * @param mixed $user User instance
+     * @return bool
+     */
+    protected function userHasAdminAccess($user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        // ตรวจสอบ is_admin flag
+        if (isset($user->is_admin)) {
+            return (bool) $user->is_admin;
+        }
+
+        // ตรวจสอบ role
+        if (method_exists($user, 'hasRole')) {
+            return $user->hasRole('admin') || $user->hasRole('super_admin');
+        }
+
+        return false;
     }
 
     /**

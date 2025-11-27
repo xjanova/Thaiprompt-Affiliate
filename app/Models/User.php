@@ -958,6 +958,41 @@ class User extends Authenticatable
     }
 
     /**
+     * Service Booking System Relationships
+     * ระบบจองบริการ
+     */
+
+    /**
+     * Get user's service provider profile (ถ้าเป็นผู้ให้บริการ)
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function serviceProvider()
+    {
+        return $this->hasOne(\App\Models\ServiceProvider::class, 'user_id');
+    }
+
+    /**
+     * Get user's service bookings (ในฐานะลูกค้า)
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function serviceBookings()
+    {
+        return $this->hasMany(\App\Models\ServiceBooking::class, 'customer_id');
+    }
+
+    /**
+     * ตรวจสอบว่า user เป็น service provider ที่อนุมัติแล้วหรือไม่
+     *
+     * @return bool
+     */
+    public function isApprovedProvider(): bool
+    {
+        return $this->serviceProvider && $this->serviceProvider->status === 'approved';
+    }
+
+    /**
      * Scopes
      */
 
