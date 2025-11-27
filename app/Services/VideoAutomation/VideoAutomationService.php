@@ -24,22 +24,74 @@ use Illuminate\Support\Str;
 class VideoAutomationService
 {
     /**
-     * Services
+     * Services (lazy loaded เพื่อหลีกเลี่ยง database query ตอน route:cache)
      */
-    protected SunoApiService $sunoService;
-    protected FreepikApiService $freepikService;
-    protected VideoCreatorService $videoCreatorService;
-    protected SocialPublisherService $publisherService;
+    protected ?SunoApiService $sunoService = null;
+    protected ?FreepikApiService $freepikService = null;
+    protected ?VideoCreatorService $videoCreatorService = null;
+    protected ?SocialPublisherService $publisherService = null;
 
     /**
      * สร้าง instance ใหม่
+     *
+     * ไม่สร้าง services ใน constructor แล้ว - ใช้ lazy loading แทน
+     * เพื่อหลีกเลี่ยง database query ตอนรัน php artisan route:cache
      */
     public function __construct()
     {
-        $this->sunoService = new SunoApiService();
-        $this->freepikService = new FreepikApiService();
-        $this->videoCreatorService = new VideoCreatorService();
-        $this->publisherService = new SocialPublisherService();
+        // ไม่สร้าง services ใน constructor - ใช้ lazy loading แทน
+    }
+
+    /**
+     * ดึง SunoApiService แบบ lazy loading
+     *
+     * @return SunoApiService
+     */
+    protected function getSunoService(): SunoApiService
+    {
+        if ($this->getSunoService() === null) {
+            $this->getSunoService() = new SunoApiService();
+        }
+        return $this->getSunoService();
+    }
+
+    /**
+     * ดึง FreepikApiService แบบ lazy loading
+     *
+     * @return FreepikApiService
+     */
+    protected function getFreepikService(): FreepikApiService
+    {
+        if ($this->getFreepikService() === null) {
+            $this->getFreepikService() = new FreepikApiService();
+        }
+        return $this->getFreepikService();
+    }
+
+    /**
+     * ดึง VideoCreatorService แบบ lazy loading
+     *
+     * @return VideoCreatorService
+     */
+    protected function getVideoCreatorService(): VideoCreatorService
+    {
+        if ($this->getVideoCreatorService() === null) {
+            $this->getVideoCreatorService() = new VideoCreatorService();
+        }
+        return $this->getVideoCreatorService();
+    }
+
+    /**
+     * ดึง SocialPublisherService แบบ lazy loading
+     *
+     * @return SocialPublisherService
+     */
+    protected function getPublisherService(): SocialPublisherService
+    {
+        if ($this->getPublisherService() === null) {
+            $this->getPublisherService() = new SocialPublisherService();
+        }
+        return $this->getPublisherService();
     }
 
     /**
@@ -119,7 +171,7 @@ class VideoAutomationService
                 $job?->updateProgress(90, 'กำลังโพส...');
                 $project->updateStatus('publishing');
 
-                $publishResult = $this->publisherService->publishToAll($project, [], $job);
+                $publishResult = $this->getPublisherService()->publishToAll($project, [], $job);
 
                 if ($publishResult['any_success']) {
                     $project->updateStatus('published');
@@ -184,7 +236,7 @@ class VideoAutomationService
             'instrumental' => true,
         ];
 
-        return $this->sunoService->generateMusic($prompt, $options, $job);
+        return $this->getSunoService()->generateMusic($prompt, $options, $job);
     }
 
     /**
@@ -207,7 +259,7 @@ class VideoAutomationService
         }
 
         $filename = 'music_' . $project->uuid . '.mp3';
-        $result = $this->sunoService->downloadMusic($audioUrl, $filename, $job);
+        $result = $this->getSunoService()->downloadMusic($audioUrl, $filename, $job);
 
         if ($result['success']) {
             // อัพเดท project
@@ -252,7 +304,7 @@ class VideoAutomationService
             'ratio' => $project->template?->image_ratio ?? '16:9',
         ];
 
-        return $this->freepikService->generateMultipleImages($prompts, $options, $job);
+        return $this->getFreepikService()->generateMultipleImages($prompts, $options, $job);
     }
 
     /**
@@ -265,7 +317,7 @@ class VideoAutomationService
      */
     public function downloadImages(VideoAutoProject $project, array $images, ?VideoAutoJob $job = null): array
     {
-        $result = $this->freepikService->downloadMultipleImages($images, $project->uuid, $job);
+        $result = $this->getFreepikService()->downloadMultipleImages($images, $project->uuid, $job);
 
         if ($result['success']) {
             // อัพเดท project
@@ -312,7 +364,7 @@ class VideoAutomationService
             'enable_ken_burns' => $project->template?->enable_ken_burns ?? true,
         ];
 
-        $result = $this->videoCreatorService->createVideo($project, $images, $musicPath, $options, $job);
+        $result = $this->getVideoCreatorService()->createVideo($project, $images, $musicPath, $options, $job);
 
         if ($result['success']) {
             // อัพเดท project
@@ -341,7 +393,7 @@ class VideoAutomationService
             return;
         }
 
-        $result = $this->videoCreatorService->createThumbnail($videoPath);
+        $result = $this->getVideoCreatorService()->createThumbnail($videoPath);
 
         if ($result['success']) {
             $project->video_thumbnail = $result['path'];
@@ -439,18 +491,18 @@ class VideoAutomationService
     {
         return [
             'suno' => [
-                'configured' => $this->sunoService->isConfigured(),
-                'test' => $this->sunoService->testConnection(),
+                'configured' => $this->getSunoService()->isConfigured(),
+                'test' => $this->getSunoService()->testConnection(),
             ],
             'freepik' => [
-                'configured' => $this->freepikService->isConfigured(),
-                'test' => $this->freepikService->testConnection(),
+                'configured' => $this->getFreepikService()->isConfigured(),
+                'test' => $this->getFreepikService()->testConnection(),
             ],
             'ffmpeg' => [
-                'configured' => $this->videoCreatorService->isConfigured(),
-                'test' => $this->videoCreatorService->testConnection(),
+                'configured' => $this->getVideoCreatorService()->isConfigured(),
+                'test' => $this->getVideoCreatorService()->testConnection(),
             ],
-            'platforms' => $this->publisherService->checkAllConnections(),
+            'platforms' => $this->getPublisherService()->checkAllConnections(),
         ];
     }
 
