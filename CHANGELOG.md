@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.241.3] - 2025-11-27
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1731 from xjanova/claude/fix-theme-styling-01TpdPN3y6DGR5crRK3DGfCW (eb537b81)
+- fix: add dark mode support to auth login and register pages (1b44cca0)
+### 🔧 Other Changes
+
+
 ## [v3.241.2] - 2025-11-27
 
 ### ✨ Features
