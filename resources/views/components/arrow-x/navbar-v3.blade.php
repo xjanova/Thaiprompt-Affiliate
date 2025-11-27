@@ -144,6 +144,11 @@
         {{-- Notifications (ใช้ Notification Bell V3 Component) --}}
         <x-arrow-x.navbar.notification-bell-v3 />
 
+        {{-- 🛒 Cart Badge (แสดงเฉพาะเมื่อ login แล้ว) --}}
+        @auth
+            <x-arrow-x.navbar.cart-badge-v3 />
+        @endauth
+
         {{-- Language Switcher --}}
         <x-arrow-x.language-switcher />
 
