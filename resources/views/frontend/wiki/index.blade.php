@@ -15,6 +15,11 @@
         languageMenuOpen: false,
         langMenuPosition: { top: 0, left: 0 },
 
+        // เก็บ content ที่โหลดมาแล้ว (cache)
+        loadedContent: {},
+        currentContent: '',
+        contentError: null,
+
         // รายการภาษาที่รองรับ (ฟรี, ใช้ Google Translate Widget)
         availableLanguages: [
             { code: 'th', name: 'ไทย', flag: '🇹🇭' },
@@ -22,6 +27,18 @@
             { code: 'zh-CN', name: '中文', flag: '🇨🇳' },
             { code: 'ja', name: '日本語', flag: '🇯🇵' }
         ],
+
+        // Mapping submenu IDs to parent content files
+        categoryMapping: {
+            'mlm-binary': 'mlm-affiliate',
+            'mlm-unilevel': 'mlm-affiliate',
+            'mlm-commission': 'mlm-affiliate',
+            'mlm-rank': 'mlm-affiliate',
+            'mlm-genealogy': 'mlm-affiliate',
+            'ai-chatbot': 'ai-bot',
+            'ai-creation': 'ai-bot',
+            'ai-line': 'ai-bot'
+        },
 
         // รายการหมวดหมู่ครบถ้วน 17 หมวด
         categories: [
@@ -71,22 +88,42 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         },
 
-        // โหลดเนื้อหา
+        // โหลดเนื้อหาผ่าน AJAX
         async loadContent(categoryId) {
+            var self = this;
+
+            // แปลง submenu ID เป็น parent category
+            var actualCategoryId = this.categoryMapping[categoryId] || categoryId;
+
+            // ถ้ามี cache แล้วใช้เลย
+            if (this.loadedContent[actualCategoryId]) {
+                this.currentContent = this.loadedContent[actualCategoryId];
+                this.contentError = null;
+                return;
+            }
+
             this.loading = true;
+            this.contentError = null;
 
             try {
-                // Simulate loading for demo
-                await new Promise(resolve => setTimeout(resolve, 300));
+                var response = await fetch('/wiki/content/' + actualCategoryId);
+                var data = await response.json();
 
-                // TODO: Implement actual AJAX content loading
-                // const response = await fetch(`/wiki/content/${categoryId}`);
-                // const data = await response.json();
-
-                this.loading = false;
+                if (data.success && data.content) {
+                    // เก็บ cache
+                    self.loadedContent[actualCategoryId] = data.content;
+                    self.currentContent = data.content;
+                    self.contentError = null;
+                } else {
+                    self.contentError = data.message || 'ไม่สามารถโหลดเนื้อหาได้';
+                    self.currentContent = '';
+                }
             } catch (error) {
                 console.error('Error loading content:', error);
-                this.loading = false;
+                self.contentError = 'เกิดข้อผิดพลาดในการโหลดเนื้อหา กรุณาลองใหม่อีกครั้ง';
+                self.currentContent = '';
+            } finally {
+                self.loading = false;
             }
         },
 
@@ -200,6 +237,10 @@
                 self.updateScrollProgress();
             });
             self.updateScrollProgress();
+
+            // โหลด content เริ่มต้น (story)
+            console.log('📚 Loading initial content: ' + self.currentCategory);
+            self.loadContent(self.currentCategory);
         }
     }"
     x-init="init()"
@@ -372,156 +413,41 @@
                     <p class="mt-4 text-gray-600 dark:text-gray-400 font-semibold">กำลังโหลดเนื้อหา...</p>
                 </div>
 
-                {{-- Content Area --}}
+                {{-- Content Area - AJAX Loaded --}}
                 <div x-show="!loading" class="p-8 lg:p-12">
-
-                    {{-- 🇹🇭 เรื่องราว ThaiPrompt - หน้าหลัก --}}
-                    <div x-show="currentCategory === 'story'">
-                        @include('frontend.wiki.content.story')
-                    </div>
-
-                    {{-- ภาพรวม & สรุปฟีเจอร์ - ใช้ content file ที่ละเอียดกว่า --}}
-                    <div x-show="currentCategory === 'overview'" style="display: none;">
-                        @include('frontend.wiki.content.overview')
-                    </div>
-
-                    {{-- เทคโนโลยี & สถาปัตยกรรม --}}
-                    <div x-show="currentCategory === 'technology'" style="display: none;">
-                        @include('frontend.wiki.content.technology')
-                    </div>
-
-                    {{-- เริ่มต้นใช้งาน --}}
-                    <div x-show="currentCategory === 'getting-started'" style="display: none;">
-                        <h1 class="text-4xl font-black bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-6">
-                            🎯 เริ่มต้นใช้งาน Thaiprompt Affiliate
-                        </h1>
-
-                        <div class="prose prose-lg dark:prose-invert max-w-none">
-                            <h2>ขั้นตอนการเริ่มต้น</h2>
-
-                            <div class="grid gap-6 mt-6">
-                                <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-600 p-6 rounded-r-xl">
-                                    <h3 class="text-xl font-bold text-blue-900 dark:text-blue-100 mb-2">1️⃣ สมัครสมาชิก</h3>
-                                    <p class="text-gray-700 dark:text-gray-300">
-                                        ลงทะเบียนบัญชีใหม่ด้วยอีเมลหรือเชื่อมต่อผ่าน LINE OA
-                                    </p>
-                                    <a href="{{ route('register') }}" class="inline-block mt-3 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
-                                        สมัครสมาชิก →
-                                    </a>
-                                </div>
-
-                                <div class="bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-600 p-6 rounded-r-xl">
-                                    <h3 class="text-xl font-bold text-purple-900 dark:text-purple-100 mb-2">2️⃣ ยืนยันตัวตน (KYC)</h3>
-                                    <p class="text-gray-700 dark:text-gray-300">
-                                        อัพโหลดเอกสารยืนยันตัวตนเพื่อปลดล็อคฟีเจอร์ทั้งหมด
-                                    </p>
-                                    @auth
-                                    <a href="{{ route('user.kyc.index') }}" class="inline-block mt-3 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors">
-                                        ยืนยันตัวตน →
-                                    </a>
-                                    @endauth
-                                </div>
-
-                                <div class="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-600 p-6 rounded-r-xl">
-                                    <h3 class="text-xl font-bold text-green-900 dark:text-green-100 mb-2">3️⃣ เริ่มต้นทำ MLM</h3>
-                                    <p class="text-gray-700 dark:text-gray-300">
-                                        เลือกแผน MLM และเริ่มสร้างทีมของคุณ
-                                    </p>
-                                    @auth
-                                    <a href="{{ route('user.mlm.dashboard') }}" class="inline-block mt-3 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors">
-                                        MLM Dashboard →
-                                    </a>
-                                    @endauth
-                                </div>
-                            </div>
+                    {{-- Error State --}}
+                    <div x-show="contentError" class="text-center py-16">
+                        <div class="inline-flex items-center justify-center w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full mb-6">
+                            <svg class="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
                         </div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">เกิดข้อผิดพลาด</h3>
+                        <p class="text-gray-600 dark:text-gray-400 mb-6" x-text="contentError"></p>
+                        <button
+                            @click="loadContent(currentCategory)"
+                            class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            ลองใหม่อีกครั้ง
+                        </button>
                     </div>
 
-                    {{-- MLM & Affiliate System - ใช้ content file ที่ละเอียดกว่า --}}
-                    <div x-show="currentCategory === 'mlm-affiliate' || currentCategory === 'mlm-binary' || currentCategory === 'mlm-unilevel' || currentCategory === 'mlm-commission' || currentCategory === 'mlm-rank' || currentCategory === 'mlm-genealogy'" style="display: none;">
-                        @include('frontend.wiki.content.mlm-affiliate')
-                    </div>
+                    {{-- Dynamic Content - โหลดผ่าน AJAX --}}
+                    <div x-show="!contentError && currentContent" x-html="currentContent" class="wiki-content-wrapper prose prose-lg dark:prose-invert max-w-none"></div>
 
-                    {{-- AI & Bot System - ใช้ content file ที่ละเอียดกว่า --}}
-                    <div x-show="currentCategory === 'ai-bot' || currentCategory === 'ai-chatbot' || currentCategory === 'ai-creation' || currentCategory === 'ai-line'" style="display: none;">
-                        @include('frontend.wiki.content.ai-bot')
+                    {{-- Empty State (ไม่มี content และไม่มี error) --}}
+                    <div x-show="!contentError && !currentContent && !loading" class="text-center py-16">
+                        <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full mb-6">
+                            <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">เลือกหมวดหมู่</h3>
+                        <p class="text-gray-600 dark:text-gray-400">กรุณาเลือกหมวดหมู่จากเมนูด้านซ้ายเพื่อดูเนื้อหา</p>
                     </div>
-
-                    {{-- E-Commerce - ใช้ content file ที่ละเอียดกว่า --}}
-                    <div x-show="currentCategory === 'ecommerce'" style="display: none;">
-                        @include('frontend.wiki.content.ecommerce')
-                    </div>
-
-                    {{-- POS System --}}
-                    <div x-show="currentCategory === 'pos'" style="display: none;">
-                        @include('frontend.wiki.content.pos')
-                    </div>
-
-                    {{-- Hotel Management - ใช้ content file ที่ละเอียดกว่า --}}
-                    <div x-show="currentCategory === 'hotel'" style="display: none;">
-                        @include('frontend.wiki.content.hotel')
-                    </div>
-
-                    {{-- TPIX Blockchain & Crypto - ใช้ content file ที่ละเอียดกว่า --}}
-                    <div x-show="currentCategory === 'crypto'" style="display: none;">
-                        @include('frontend.wiki.content.crypto')
-                    </div>
-
-                    {{-- Payment Gateway --}}
-                    <div x-show="currentCategory === 'payment'" style="display: none;">
-                        @include('frontend.wiki.content.payment')
-                    </div>
-
-                    {{-- HR Management --}}
-                    <div x-show="currentCategory === 'hrm'" style="display: none;">
-                        @include('frontend.wiki.content.hrm')
-                    </div>
-
-                    {{-- Accounting System --}}
-                    <div x-show="currentCategory === 'accounting'" style="display: none;">
-                        @include('frontend.wiki.content.accounting')
-                    </div>
-
-                    {{-- Software Sales --}}
-                    <div x-show="currentCategory === 'software'" style="display: none;">
-                        @include('frontend.wiki.content.software')
-                    </div>
-
-                    {{-- Vendor Management --}}
-                    <div x-show="currentCategory === 'vendor'" style="display: none;">
-                        @include('frontend.wiki.content.vendor')
-                    </div>
-
-                    {{-- Academy & Learning - ใช้ content file ที่ละเอียดกว่า --}}
-                    <div x-show="currentCategory === 'academy'" style="display: none;">
-                        @include('frontend.wiki.content.academy')
-                    </div>
-
-                    {{-- Security & Compliance --}}
-                    <div x-show="currentCategory === 'security'" style="display: none;">
-                        @include('frontend.wiki.content.security')
-                    </div>
-
-                    {{-- Support Center --}}
-                    <div x-show="currentCategory === 'support'" style="display: none;">
-                        @include('frontend.wiki.content.support')
-                    </div>
-
-                    {{-- Investor Guide --}}
-                    <div x-show="currentCategory === 'investor'" style="display: none;">
-                        @include('frontend.wiki.content.investor')
-                    </div>
-
-                    {{-- API & Integration --}}
-                    <div x-show="currentCategory === 'api'" style="display: none;">
-                        @include('frontend.wiki.content.api')
-                    </div>
-
-                    {{-- FAQ & Troubleshooting --}}
-                    <div x-show="currentCategory === 'faq'" style="display: none;">
-                        @include('frontend.wiki.content.faq')
-                    </div>
-
                 </div>
 
                 {{-- Footer Help Section --}}
