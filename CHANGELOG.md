@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.229.0] - 2025-11-27
+
+### ✨ Features
+- Merge pull request #1708 from xjanova/claude/fix-registration-qrcode-01EnxZAd1Vs12qEtPLM3EEUN (e16fa5e1)
+- feat: ปรับปรุง Mobile Bottom Navigation ให้สวยงามมีมิติ (923a41fe)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.228.0] - 2025-11-27
 
 ### ✨ Features
