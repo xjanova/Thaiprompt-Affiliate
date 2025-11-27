@@ -549,16 +549,51 @@ class MlmGlobalSettingsSeeder extends Seeder
             ],
         ];
 
-        // Clear existing settings first
-        DB::table('mlm_global_settings')->truncate();
+        // ⚠️ Smart Seeding: ใช้ updateOrCreate แทน truncate
+        // เพื่อรักษาค่าที่ผู้ใช้ตั้งค่าไว้ ไม่ให้ถูกรีเซ็ตเมื่อ deploy
+        // - ค่าที่มีอยู่แล้ว: จะไม่ถูกเปลี่ยนแปลง (preserve user customizations)
+        // - ค่าใหม่ที่ยังไม่มี: จะถูกเพิ่มเข้าไป (add new settings)
+
+        $insertedCount = 0;
+        $skippedCount = 0;
 
         foreach ($settings as $setting) {
-            DB::table('mlm_global_settings')->insert(array_merge($setting, [
-                'is_visible' => $setting['is_visible'] ?? true,
-                'is_editable' => $setting['is_editable'] ?? true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]));
+            // ตรวจสอบว่ามี setting นี้อยู่แล้วหรือไม่
+            $existing = DB::table('mlm_global_settings')
+                ->where('key', $setting['key'])
+                ->first();
+
+            if ($existing) {
+                // มีอยู่แล้ว - ไม่แก้ไข value แต่อัพเดท metadata ที่อาจเปลี่ยน
+                // (เช่น description, allowed_values, input_type)
+                DB::table('mlm_global_settings')
+                    ->where('key', $setting['key'])
+                    ->update([
+                        'type' => $setting['type'] ?? $existing->type,
+                        'input_type' => $setting['input_type'] ?? $existing->input_type,
+                        'group' => $setting['group'] ?? $existing->group,
+                        'description' => $setting['description'] ?? $existing->description,
+                        'description_th' => $setting['description_th'] ?? $existing->description_th,
+                        'placeholder' => $setting['placeholder'] ?? $existing->placeholder,
+                        'unit' => $setting['unit'] ?? $existing->unit,
+                        'allowed_values' => $setting['allowed_values'] ?? $existing->allowed_values,
+                        'sort_order' => $setting['sort_order'] ?? $existing->sort_order,
+                        // ⚠️ ไม่อัพเดท 'value' เพื่อรักษาค่าที่ผู้ใช้ตั้งไว้
+                        'updated_at' => now(),
+                    ]);
+                $skippedCount++;
+            } else {
+                // ยังไม่มี - เพิ่มใหม่
+                DB::table('mlm_global_settings')->insert(array_merge($setting, [
+                    'is_visible' => $setting['is_visible'] ?? true,
+                    'is_editable' => $setting['is_editable'] ?? true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]));
+                $insertedCount++;
+            }
         }
+
+        $this->command->info("✅ MLM Global Settings: เพิ่มใหม่ {$insertedCount} รายการ, ข้าม {$skippedCount} รายการ (รักษาค่าเดิม)");
     }
 }
