@@ -107,7 +107,7 @@
            class="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all duration-300 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/30 transform hover:scale-105 relative group"
            title="🇹🇭 เรื่องราว ThaiPrompt - ทำไมต้องมีระบบของคนไทย">
             <span class="text-sm sm:text-base group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">🇹🇭</span>
-            <span class="hidden xs:inline group-hover:translate-x-0.5 transition-transform duration-300">Wiki</span>
+            <span class="hidden xs:inline group-hover:translate-x-0.5 transition-transform duration-300">wiki</span>
             <span class="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 rounded-full animate-ping"></span>
             <span class="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 rounded-full"></span>
         </a>
