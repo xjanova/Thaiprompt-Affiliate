@@ -49,10 +49,10 @@ class VideoAutomationService
      */
     protected function getSunoService(): SunoApiService
     {
-        if ($this->getSunoService() === null) {
-            $this->getSunoService() = new SunoApiService();
+        if ($this->sunoService === null) {
+            $this->sunoService = new SunoApiService();
         }
-        return $this->getSunoService();
+        return $this->sunoService;
     }
 
     /**
@@ -62,10 +62,10 @@ class VideoAutomationService
      */
     protected function getFreepikService(): FreepikApiService
     {
-        if ($this->getFreepikService() === null) {
-            $this->getFreepikService() = new FreepikApiService();
+        if ($this->freepikService === null) {
+            $this->freepikService = new FreepikApiService();
         }
-        return $this->getFreepikService();
+        return $this->freepikService;
     }
 
     /**
@@ -75,10 +75,10 @@ class VideoAutomationService
      */
     protected function getVideoCreatorService(): VideoCreatorService
     {
-        if ($this->getVideoCreatorService() === null) {
-            $this->getVideoCreatorService() = new VideoCreatorService();
+        if ($this->videoCreatorService === null) {
+            $this->videoCreatorService = new VideoCreatorService();
         }
-        return $this->getVideoCreatorService();
+        return $this->videoCreatorService;
     }
 
     /**
@@ -88,10 +88,10 @@ class VideoAutomationService
      */
     protected function getPublisherService(): SocialPublisherService
     {
-        if ($this->getPublisherService() === null) {
-            $this->getPublisherService() = new SocialPublisherService();
+        if ($this->publisherService === null) {
+            $this->publisherService = new SocialPublisherService();
         }
-        return $this->getPublisherService();
+        return $this->publisherService;
     }
 
     /**
