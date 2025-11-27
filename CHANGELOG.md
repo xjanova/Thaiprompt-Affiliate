@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.246.0] - 2025-11-27
+
+### ✨ Features
+- feat: สร้าง wiki-arrow-x layout และอัปเดต Wiki ให้ใช้ layout ใหม่ (9da2d7ef)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1742 from xjanova/claude/add-tpix-whitepaper-wiki-0122E9ywHPzwrU6FKGuSC11H (fc1c2704)
+- docs: เพิ่ม Millennium RGB Colors เป็น BANNED ใน DEPRECATED_THEMES.md (c4ee973a)
+
 ## [v3.245.0] - 2025-11-27
 
 ### ✨ Features
