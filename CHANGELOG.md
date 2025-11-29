@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.259.0] - 2025-11-29
+
+### ✨ Features
+- Merge pull request #1790 from xjanova/claude/build-pos-system-013U77cSnm9butYA2MEgi71G (da287a1a)
+- feat: เพิ่มระบบ POS แบบ PWA ที่สมบูรณ์ (34eee3aa)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.258.0] - 2025-11-29
 
 ### ✨ Features
