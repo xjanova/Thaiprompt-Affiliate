@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.258.0] - 2025-11-29
+
+### ✨ Features
+- Merge pull request #1789 from xjanova/claude/setup-mobile-dev-01GRvj9EgA9NV2SUL7B2Wm1q (dd8b9629)
+- feat: เพิ่ม scripts และคู่มือสำหรับดึง Mobile App มาพัฒนาบน Windows (7f732691)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.257.5] - 2025-11-27
 
 ### ✨ Features
