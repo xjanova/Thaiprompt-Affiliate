@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.260.0] - 2025-11-29
+
+### ✨ Features
+- feat: เพิ่มโปรเจค TP-POS Native Cross-Platform App (.NET MAUI) (4380793d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1791 from xjanova/claude/build-pos-system-013U77cSnm9butYA2MEgi71G (bda6cbb6)
+- docs: เพิ่ม POS PWA development guide (d7ec48e0)
+
 ## [v3.259.0] - 2025-11-29
 
 ### ✨ Features
