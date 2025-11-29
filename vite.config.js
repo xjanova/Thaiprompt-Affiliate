@@ -12,6 +12,10 @@ export default defineConfig({
                 'resources/js/service-worker-register.js', // Service Worker
                 'resources/js/echo-setup.js', // Laravel Echo
                 'resources/js/workflow-diagram.js', // n8n-style Workflow Diagram
+                'resources/js/pos/app.js', // POS PWA App
+                'resources/js/pos/database.js', // POS IndexedDB
+                'resources/js/pos/sync.js', // POS Sync Service
+                'resources/js/pos/hardware.js', // POS Hardware Integration
             ],
             refresh: true,
         }),

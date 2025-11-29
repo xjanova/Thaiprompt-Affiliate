@@ -1,0 +1,144 @@
+{
+    "name": "TP-POS - ระบบขายหน้าร้าน",
+    "short_name": "TP-POS",
+    "description": "ระบบ Point of Sale ครบวงจร รองรับ Offline ทำงานได้ทุกแพลตฟอร์ม",
+    "start_url": "/pos/cashier?standalone=true",
+    "scope": "/pos/",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#0f172a",
+    "theme_color": "#22c55e",
+    "lang": "th",
+    "dir": "ltr",
+    "categories": ["business", "productivity", "shopping"],
+    "icons": [
+        {
+            "src": "/images/pos/icon-72x72.png",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/images/pos/icon-96x96.png",
+            "sizes": "96x96",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/images/pos/icon-128x128.png",
+            "sizes": "128x128",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/images/pos/icon-144x144.png",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/images/pos/icon-152x152.png",
+            "sizes": "152x152",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/images/pos/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/images/pos/icon-384x384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/images/pos/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/images/pos/screenshot-wide.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "หน้าหลัก POS"
+        },
+        {
+            "src": "/images/pos/screenshot-mobile.png",
+            "sizes": "750x1334",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "POS บนมือถือ"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "เปิดกะขาย",
+            "short_name": "เปิดกะ",
+            "description": "เปิดกะขายใหม่",
+            "url": "/pos/session/open",
+            "icons": [{ "src": "/images/pos/shortcut-open.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "รายงานวันนี้",
+            "short_name": "รายงาน",
+            "description": "ดูรายงานยอดขายวันนี้",
+            "url": "/pos/reports/today",
+            "icons": [{ "src": "/images/pos/shortcut-report.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "จัดการสินค้า",
+            "short_name": "สินค้า",
+            "description": "จัดการสินค้าและสต็อก",
+            "url": "/pos/inventory",
+            "icons": [{ "src": "/images/pos/shortcut-inventory.png", "sizes": "192x192" }]
+        }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false,
+    "handle_links": "preferred",
+    "launch_handler": {
+        "client_mode": ["navigate-existing", "auto"]
+    },
+    "edge_side_panel": {
+        "preferred_width": 400
+    },
+    "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+    "protocol_handlers": [
+        {
+            "protocol": "web+pos",
+            "url": "/pos/handle?action=%s"
+        }
+    ],
+    "share_target": {
+        "action": "/pos/share-target",
+        "method": "POST",
+        "enctype": "multipart/form-data",
+        "params": {
+            "title": "title",
+            "text": "text",
+            "url": "url",
+            "files": [
+                {
+                    "name": "products",
+                    "accept": ["application/json", "text/csv"]
+                }
+            ]
+        }
+    },
+    "file_handlers": [
+        {
+            "action": "/pos/import",
+            "accept": {
+                "application/json": [".json"],
+                "text/csv": [".csv"]
+            }
+        }
+    ]
+}
