@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TP.POS.App.Views.MainPage"
+             Title="TP-POS"
+             Shell.NavBarIsVisible="False">
+
+    <Grid BackgroundColor="{StaticResource Primary}">
+        <VerticalStackLayout
+            HorizontalOptions="Center"
+            VerticalOptions="Center"
+            Spacing="20">
+
+            <!-- Logo -->
+            <Border StrokeThickness="0"
+                    HeightRequest="120"
+                    WidthRequest="120"
+                    BackgroundColor="White"
+                    HorizontalOptions="Center">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="25"/>
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="Black" Offset="0,4" Radius="10" Opacity="0.3"/>
+                </Border.Shadow>
+                <Label Text="TP"
+                       FontSize="60"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource Primary}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"/>
+            </Border>
+
+            <!-- App Name -->
+            <Label Text="TP-POS"
+                   FontSize="36"
+                   FontAttributes="Bold"
+                   TextColor="White"
+                   HorizontalOptions="Center"/>
+
+            <Label Text="ระบบขายหน้าร้าน"
+                   FontSize="18"
+                   TextColor="White"
+                   Opacity="0.9"
+                   HorizontalOptions="Center"/>
+
+            <!-- Loading -->
+            <ActivityIndicator IsRunning="True"
+                               Color="White"
+                               HeightRequest="40"
+                               WidthRequest="40"
+                               Margin="0,30,0,0"/>
+
+            <Label Text="กำลังโหลด..."
+                   FontSize="14"
+                   TextColor="White"
+                   Opacity="0.8"
+                   HorizontalOptions="Center"/>
+
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

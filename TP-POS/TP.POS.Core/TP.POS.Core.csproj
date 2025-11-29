@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>TP.POS.Core</RootNamespace>
+    <AssemblyName>TP.POS.Core</AssemblyName>
+    <Version>1.0.0</Version>
+    <Authors>TP-Affiliate Team</Authors>
+    <Description>TP-POS Core Library - Entities, Interfaces, Business Logic</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- CommunityToolkit สำหรับ MVVM -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+  </ItemGroup>
+
+</Project>

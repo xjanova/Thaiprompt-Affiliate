@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- สีหลัก TP-POS -->
+    <Color x:Key="Primary">#22C55E</Color>
+    <Color x:Key="PrimaryDark">#16A34A</Color>
+    <Color x:Key="PrimaryLight">#86EFAC</Color>
+
+    <Color x:Key="Secondary">#3B82F6</Color>
+    <Color x:Key="SecondaryDark">#2563EB</Color>
+    <Color x:Key="SecondaryLight">#93C5FD</Color>
+
+    <!-- สีสถานะ -->
+    <Color x:Key="Success">#22C55E</Color>
+    <Color x:Key="Warning">#F59E0B</Color>
+    <Color x:Key="Danger">#EF4444</Color>
+    <Color x:Key="Info">#06B6D4</Color>
+
+    <!-- สีพื้นหลัง -->
+    <Color x:Key="Background">#F3F4F6</Color>
+    <Color x:Key="Surface">#FFFFFF</Color>
+    <Color x:Key="SurfaceVariant">#F9FAFB</Color>
+
+    <!-- สีข้อความ -->
+    <Color x:Key="TextPrimary">#111827</Color>
+    <Color x:Key="TextSecondary">#6B7280</Color>
+    <Color x:Key="TextMuted">#9CA3AF</Color>
+    <Color x:Key="TextOnPrimary">#FFFFFF</Color>
+
+    <!-- สีเส้นขอบ -->
+    <Color x:Key="Border">#E5E7EB</Color>
+    <Color x:Key="BorderDark">#D1D5DB</Color>
+
+    <!-- สีสำหรับ Dark Mode -->
+    <Color x:Key="DarkBackground">#111827</Color>
+    <Color x:Key="DarkSurface">#1F2937</Color>
+    <Color x:Key="DarkSurfaceVariant">#374151</Color>
+    <Color x:Key="DarkTextPrimary">#F9FAFB</Color>
+    <Color x:Key="DarkTextSecondary">#9CA3AF</Color>
+    <Color x:Key="DarkBorder">#4B5563</Color>
+
+    <!-- Gray Scale -->
+    <Color x:Key="Gray50">#F9FAFB</Color>
+    <Color x:Key="Gray100">#F3F4F6</Color>
+    <Color x:Key="Gray200">#E5E7EB</Color>
+    <Color x:Key="Gray300">#D1D5DB</Color>
+    <Color x:Key="Gray400">#9CA3AF</Color>
+    <Color x:Key="Gray500">#6B7280</Color>
+    <Color x:Key="Gray600">#4B5563</Color>
+    <Color x:Key="Gray700">#374151</Color>
+    <Color x:Key="Gray800">#1F2937</Color>
+    <Color x:Key="Gray900">#111827</Color>
+
+</ResourceDictionary>

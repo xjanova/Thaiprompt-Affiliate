@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>TP.POS.Infrastructure</RootNamespace>
+    <AssemblyName>TP.POS.Infrastructure</AssemblyName>
+    <Version>1.0.0</Version>
+    <Authors>TP-Affiliate Team</Authors>
+    <Description>TP-POS Infrastructure - Database, API Client, Hardware Integration</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- SQLite สำหรับ Offline Database -->
+    <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
+    <PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.8" />
+
+    <!-- HTTP Client สำหรับเรียก API -->
+    <PackageReference Include="System.Net.Http.Json" Version="8.0.0" />
+
+    <!-- JSON Serialization -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+
+    <!-- Polly สำหรับ Retry Logic -->
+    <PackageReference Include="Polly" Version="8.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TP.POS.Core\TP.POS.Core.csproj" />
+  </ItemGroup>
+
+</Project>
