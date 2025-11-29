@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:TP.POS.App.ViewModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="TP.POS.App.Views.PosPage"
+             Title="ขายสินค้า"
+             x:DataType="vm:PosViewModel"
+             Shell.NavBarIsVisible="True">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <!-- สีหลัก -->
+            <Color x:Key="PrimaryGreen">#22C55E</Color>
+            <Color x:Key="PrimaryBlue">#3B82F6</Color>
+            <Color x:Key="DangerRed">#EF4444</Color>
+            <Color x:Key="WarningAmber">#F59E0B</Color>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <!-- สินค้า (ซ้าย) -->
+            <ColumnDefinition Width="*" />
+            <!-- ตะกร้า (ขวา) -->
+            <ColumnDefinition Width="380" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ==================== ส่วนสินค้า (ซ้าย) ==================== -->
+        <Grid Grid.Column="0" BackgroundColor="#F3F4F6" Padding="15">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- แถบค้นหา -->
+            <Border Grid.Row="0"
+                    StrokeThickness="0"
+                    BackgroundColor="White"
+                    Padding="10"
+                    Margin="0,0,0,10">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+
+                <Grid ColumnDefinitions="*,Auto,Auto">
+                    <!-- ช่องค้นหา -->
+                    <Border Grid.Column="0"
+                            StrokeThickness="1"
+                            Stroke="#E5E7EB"
+                            BackgroundColor="#F9FAFB"
+                            Padding="12,8">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="8"/>
+                        </Border.StrokeShape>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Label Grid.Column="0"
+                                   Text="🔍"
+                                   FontSize="18"
+                                   VerticalOptions="Center"
+                                   Margin="0,0,10,0"/>
+                            <Entry Grid.Column="1"
+                                   Placeholder="ค้นหาสินค้า, SKU, บาร์โค้ด..."
+                                   Text="{Binding SearchText}"
+                                   FontSize="16"
+                                   VerticalOptions="Center">
+                                <Entry.Behaviors>
+                                    <toolkit:EventToCommandBehavior
+                                        EventName="TextChanged"
+                                        Command="{Binding SearchCommand}"/>
+                                </Entry.Behaviors>
+                            </Entry>
+                        </Grid>
+                    </Border>
+
+                    <!-- ปุ่มสแกน -->
+                    <Button Grid.Column="1"
+                            Text="📷 สแกน"
+                            BackgroundColor="{StaticResource PrimaryBlue}"
+                            TextColor="White"
+                            FontSize="14"
+                            Padding="15,10"
+                            Margin="10,0,0,0"
+                            Command="{Binding ScanBarcodeCommand}">
+                        <Button.Shadow>
+                            <Shadow Brush="#3B82F6" Offset="0,2" Radius="4" Opacity="0.3"/>
+                        </Button.Shadow>
+                    </Button>
+
+                    <!-- สถานะ Sync -->
+                    <Border Grid.Column="2"
+                            StrokeThickness="0"
+                            BackgroundColor="{Binding SyncStatusColor}"
+                            Padding="10,8"
+                            Margin="10,0,0,0"
+                            VerticalOptions="Center">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="20"/>
+                        </Border.StrokeShape>
+                        <Label Text="{Binding SyncStatusText}"
+                               TextColor="White"
+                               FontSize="12"/>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- หมวดหมู่ -->
+            <ScrollView Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+                <HorizontalStackLayout Spacing="8">
+                    <!-- ปุ่ม "ทั้งหมด" -->
+                    <Button Text="ทั้งหมด"
+                            BackgroundColor="{Binding AllCategoryBackground}"
+                            TextColor="{Binding AllCategoryTextColor}"
+                            FontSize="14"
+                            Padding="16,10"
+                            Command="{Binding SelectCategoryCommand}"
+                            CommandParameter="{x:Null}">
+                        <Button.Shadow>
+                            <Shadow Brush="#000" Offset="0,1" Radius="2" Opacity="0.1"/>
+                        </Button.Shadow>
+                    </Button>
+
+                    <!-- หมวดหมู่อื่นๆ -->
+                    <CollectionView ItemsSource="{Binding Categories}"
+                                    ItemsLayout="HorizontalList"
+                                    HeightRequest="45">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Button Text="{Binding Name}"
+                                        BackgroundColor="{Binding BackgroundColor}"
+                                        TextColor="{Binding TextColor}"
+                                        FontSize="14"
+                                        Padding="16,10"
+                                        Margin="0,0,8,0"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:PosViewModel}}, Path=SelectCategoryCommand}"
+                                        CommandParameter="{Binding}"/>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </HorizontalStackLayout>
+            </ScrollView>
+
+            <!-- Grid สินค้า -->
+            <CollectionView Grid.Row="2"
+                            ItemsSource="{Binding Products}"
+                            SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <GridItemsLayout Orientation="Vertical"
+                                     Span="4"
+                                     HorizontalItemSpacing="10"
+                                     VerticalItemSpacing="10"/>
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border StrokeThickness="0"
+                                BackgroundColor="White"
+                                Padding="10">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12"/>
+                            </Border.StrokeShape>
+                            <Border.Shadow>
+                                <Shadow Brush="#000" Offset="0,2" Radius="4" Opacity="0.08"/>
+                            </Border.Shadow>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:PosViewModel}}, Path=AddToCartCommand}"
+                                    CommandParameter="{Binding}"/>
+                            </Border.GestureRecognizers>
+
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+                                <!-- รูปสินค้า -->
+                                <Border Grid.Row="0"
+                                        HeightRequest="100"
+                                        StrokeThickness="0"
+                                        BackgroundColor="#F3F4F6">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="8"/>
+                                    </Border.StrokeShape>
+                                    <Image Source="{Binding ImageUrl}"
+                                           Aspect="AspectFit"
+                                           HeightRequest="90"/>
+                                </Border>
+
+                                <!-- ชื่อสินค้า -->
+                                <Label Grid.Row="1"
+                                       Text="{Binding Name}"
+                                       FontSize="14"
+                                       FontAttributes="Bold"
+                                       LineBreakMode="TailTruncation"
+                                       MaxLines="2"
+                                       Margin="0,8,0,0"/>
+
+                                <!-- SKU -->
+                                <Label Grid.Row="2"
+                                       Text="{Binding Sku}"
+                                       FontSize="11"
+                                       TextColor="#6B7280"
+                                       Margin="0,2,0,0"/>
+
+                                <!-- ราคาและสต็อก -->
+                                <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,5,0,0">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding SalePrice, StringFormat='฿{0:N0}'}"
+                                           FontSize="18"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource PrimaryGreen}"/>
+
+                                    <Border Grid.Column="1"
+                                            StrokeThickness="0"
+                                            BackgroundColor="{Binding StockStatusColor}"
+                                            Padding="6,2">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="4"/>
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding StockQuantity, StringFormat='สต็อก: {0}'}"
+                                               FontSize="10"
+                                               TextColor="White"/>
+                                    </Border>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <!-- Empty State -->
+                <CollectionView.EmptyView>
+                    <ContentView>
+                        <VerticalStackLayout HorizontalOptions="Center"
+                                             VerticalOptions="Center"
+                                             Spacing="10">
+                            <Label Text="📦" FontSize="60"/>
+                            <Label Text="ไม่พบสินค้า"
+                                   FontSize="18"
+                                   TextColor="#6B7280"/>
+                            <Label Text="ลองค้นหาด้วยคำอื่น หรือเปลี่ยนหมวดหมู่"
+                                   FontSize="14"
+                                   TextColor="#9CA3AF"/>
+                        </VerticalStackLayout>
+                    </ContentView>
+                </CollectionView.EmptyView>
+            </CollectionView>
+        </Grid>
+
+        <!-- ==================== ส่วนตะกร้า (ขวา) ==================== -->
+        <Border Grid.Column="1"
+                StrokeThickness="0"
+                BackgroundColor="White"
+                Margin="0">
+            <Grid RowDefinitions="Auto,*,Auto,Auto">
+                <!-- หัวตะกร้า -->
+                <Border Grid.Row="0"
+                        StrokeThickness="0"
+                        BackgroundColor="{StaticResource PrimaryGreen}"
+                        Padding="15">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Label Grid.Column="0"
+                               Text="🛒"
+                               FontSize="24"
+                               VerticalOptions="Center"/>
+                        <Label Grid.Column="1"
+                               Text="ตะกร้าสินค้า"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               VerticalOptions="Center"
+                               Margin="10,0,0,0"/>
+                        <Button Grid.Column="2"
+                                Text="ล้าง"
+                                BackgroundColor="#DC2626"
+                                TextColor="White"
+                                FontSize="12"
+                                Padding="10,5"
+                                Command="{Binding ClearCartCommand}"
+                                IsVisible="{Binding HasItems}"/>
+                    </Grid>
+                </Border>
+
+                <!-- รายการในตะกร้า -->
+                <CollectionView Grid.Row="1"
+                                ItemsSource="{Binding CartItems}"
+                                SelectionMode="None"
+                                Margin="10">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <SwipeView>
+                                <SwipeView.RightItems>
+                                    <SwipeItems>
+                                        <SwipeItem Text="ลบ"
+                                                   BackgroundColor="{StaticResource DangerRed}"
+                                                   Command="{Binding Source={RelativeSource AncestorType={x:Type vm:PosViewModel}}, Path=RemoveFromCartCommand}"
+                                                   CommandParameter="{Binding}"/>
+                                    </SwipeItems>
+                                </SwipeView.RightItems>
+
+                                <Border StrokeThickness="0"
+                                        BackgroundColor="#F9FAFB"
+                                        Padding="12"
+                                        Margin="0,0,0,8">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="10"/>
+                                    </Border.StrokeShape>
+
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                                        <!-- ชื่อสินค้า -->
+                                        <Label Grid.Row="0" Grid.Column="0"
+                                               Text="{Binding ProductName}"
+                                               FontSize="14"
+                                               FontAttributes="Bold"
+                                               LineBreakMode="TailTruncation"/>
+
+                                        <!-- ราคาต่อหน่วย -->
+                                        <Label Grid.Row="1" Grid.Column="0"
+                                               Text="{Binding UnitPrice, StringFormat='฿{0:N0} x'}"
+                                               FontSize="12"
+                                               TextColor="#6B7280"/>
+
+                                        <!-- ปุ่มปรับจำนวน -->
+                                        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
+                                                StrokeThickness="1"
+                                                Stroke="#E5E7EB"
+                                                Padding="5"
+                                                VerticalOptions="Center">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="8"/>
+                                            </Border.StrokeShape>
+                                            <HorizontalStackLayout Spacing="8">
+                                                <Button Text="-"
+                                                        WidthRequest="36"
+                                                        HeightRequest="36"
+                                                        BackgroundColor="#F3F4F6"
+                                                        TextColor="#374151"
+                                                        FontSize="18"
+                                                        FontAttributes="Bold"
+                                                        Padding="0"
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:PosViewModel}}, Path=DecrementCommand}"
+                                                        CommandParameter="{Binding}"/>
+                                                <Label Text="{Binding Quantity}"
+                                                       WidthRequest="30"
+                                                       FontSize="16"
+                                                       FontAttributes="Bold"
+                                                       HorizontalTextAlignment="Center"
+                                                       VerticalOptions="Center"/>
+                                                <Button Text="+"
+                                                        WidthRequest="36"
+                                                        HeightRequest="36"
+                                                        BackgroundColor="{StaticResource PrimaryGreen}"
+                                                        TextColor="White"
+                                                        FontSize="18"
+                                                        FontAttributes="Bold"
+                                                        Padding="0"
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:PosViewModel}}, Path=IncrementCommand}"
+                                                        CommandParameter="{Binding}"/>
+                                            </HorizontalStackLayout>
+                                        </Border>
+
+                                        <!-- ยอดรวมรายการ -->
+                                        <Label Grid.Row="2" Grid.ColumnSpan="2"
+                                               Text="{Binding LineTotal, StringFormat='รวม: ฿{0:N2}'}"
+                                               FontSize="14"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource PrimaryGreen}"
+                                               HorizontalOptions="End"
+                                               Margin="0,5,0,0"/>
+                                    </Grid>
+                                </Border>
+                            </SwipeView>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+
+                    <!-- Empty Cart -->
+                    <CollectionView.EmptyView>
+                        <ContentView>
+                            <VerticalStackLayout HorizontalOptions="Center"
+                                                 VerticalOptions="Center"
+                                                 Spacing="10"
+                                                 Padding="20">
+                                <Label Text="🛒" FontSize="50"/>
+                                <Label Text="ตะกร้าว่าง"
+                                       FontSize="16"
+                                       TextColor="#6B7280"
+                                       HorizontalTextAlignment="Center"/>
+                                <Label Text="แตะที่สินค้าเพื่อเพิ่มลงตะกร้า"
+                                       FontSize="13"
+                                       TextColor="#9CA3AF"
+                                       HorizontalTextAlignment="Center"/>
+                            </VerticalStackLayout>
+                        </ContentView>
+                    </CollectionView.EmptyView>
+                </CollectionView>
+
+                <!-- สรุปยอด -->
+                <Border Grid.Row="2"
+                        StrokeThickness="0"
+                        BackgroundColor="#F9FAFB"
+                        Padding="15">
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
+                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="ยอดรวม" FontSize="14" TextColor="#6B7280"/>
+                            <Label Grid.Column="1" Text="{Binding Subtotal, StringFormat='฿{0:N2}'}" FontSize="14"/>
+                        </Grid>
+                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="ส่วนลด" FontSize="14" TextColor="#6B7280"/>
+                            <Label Grid.Column="1" Text="{Binding DiscountAmount, StringFormat='-฿{0:N2}'}" FontSize="14" TextColor="{StaticResource DangerRed}"/>
+                        </Grid>
+                        <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="ภาษี 7%" FontSize="14" TextColor="#6B7280"/>
+                            <Label Grid.Column="1" Text="{Binding TaxAmount, StringFormat='฿{0:N2}'}" FontSize="14"/>
+                        </Grid>
+                        <BoxView Grid.Row="3" HeightRequest="1" Color="#E5E7EB"/>
+                    </Grid>
+                </Border>
+
+                <!-- ยอดสุทธิและปุ่มชำระ -->
+                <Border Grid.Row="3"
+                        StrokeThickness="0"
+                        BackgroundColor="White"
+                        Padding="15">
+                    <Grid RowDefinitions="Auto,Auto" RowSpacing="15">
+                        <!-- ยอดสุทธิ -->
+                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0"
+                                   Text="ยอดสุทธิ"
+                                   FontSize="20"
+                                   FontAttributes="Bold"/>
+                            <Label Grid.Column="1"
+                                   Text="{Binding TotalAmount, StringFormat='฿{0:N2}'}"
+                                   FontSize="28"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource PrimaryGreen}"/>
+                        </Grid>
+
+                        <!-- ปุ่มชำระเงิน -->
+                        <Button Grid.Row="1"
+                                Text="💳 ชำระเงิน"
+                                BackgroundColor="{StaticResource PrimaryGreen}"
+                                TextColor="White"
+                                FontSize="20"
+                                FontAttributes="Bold"
+                                HeightRequest="60"
+                                Command="{Binding CheckoutCommand}"
+                                IsEnabled="{Binding HasItems}">
+                            <Button.Shadow>
+                                <Shadow Brush="{StaticResource PrimaryGreen}" Offset="0,4" Radius="8" Opacity="0.4"/>
+                            </Button.Shadow>
+                        </Button>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Loading Overlay -->
+        <Border Grid.ColumnSpan="2"
+                StrokeThickness="0"
+                BackgroundColor="#80000000"
+                IsVisible="{Binding IsBusy}">
+            <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
+                <ActivityIndicator IsRunning="True" Color="White" HeightRequest="50" WidthRequest="50"/>
+                <Label Text="{Binding BusyMessage}" TextColor="White" FontSize="16" Margin="0,15,0,0"/>
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>

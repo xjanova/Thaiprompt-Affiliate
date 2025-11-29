@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Page Styles -->
+    <Style TargetType="Page" ApplyToDerivedTypes="True">
+        <Setter Property="BackgroundColor" Value="{StaticResource Background}" />
+    </Style>
+
+    <Style TargetType="Shell" ApplyToDerivedTypes="True">
+        <Setter Property="Shell.BackgroundColor" Value="{StaticResource Primary}" />
+        <Setter Property="Shell.ForegroundColor" Value="{StaticResource TextOnPrimary}" />
+        <Setter Property="Shell.TitleColor" Value="{StaticResource TextOnPrimary}" />
+        <Setter Property="Shell.TabBarBackgroundColor" Value="{StaticResource Surface}" />
+        <Setter Property="Shell.TabBarForegroundColor" Value="{StaticResource Primary}" />
+        <Setter Property="Shell.TabBarUnselectedColor" Value="{StaticResource TextSecondary}" />
+    </Style>
+
+    <!-- Label Styles -->
+    <Style TargetType="Label">
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+        <Setter Property="FontFamily" Value="SarabunRegular" />
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+
+    <Style x:Key="Headline" TargetType="Label">
+        <Setter Property="FontFamily" Value="SarabunBold" />
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+    </Style>
+
+    <Style x:Key="Title" TargetType="Label">
+        <Setter Property="FontFamily" Value="SarabunBold" />
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+    </Style>
+
+    <Style x:Key="Subtitle" TargetType="Label">
+        <Setter Property="FontFamily" Value="SarabunRegular" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="TextColor" Value="{StaticResource TextSecondary}" />
+    </Style>
+
+    <Style x:Key="Caption" TargetType="Label">
+        <Setter Property="FontFamily" Value="SarabunRegular" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{StaticResource TextMuted}" />
+    </Style>
+
+    <!-- Button Styles -->
+    <Style TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource TextOnPrimary}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+        <Setter Property="FontFamily" Value="SarabunBold" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Padding" Value="16,12" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource Gray300}" />
+                            <Setter Property="TextColor" Value="{StaticResource Gray500}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource PrimaryDark}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{StaticResource PrimaryDark}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SecondaryButton" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource Primary}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BorderColor" Value="{StaticResource Primary}" />
+        <Setter Property="BorderWidth" Value="2" />
+        <Setter Property="FontFamily" Value="SarabunBold" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Padding" Value="16,12" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+
+    <Style x:Key="DangerButton" TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource TextOnPrimary}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Danger}" />
+        <Setter Property="FontFamily" Value="SarabunBold" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Padding" Value="16,12" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+
+    <!-- Entry Styles -->
+    <Style TargetType="Entry">
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Surface}" />
+        <Setter Property="PlaceholderColor" Value="{StaticResource TextMuted}" />
+        <Setter Property="FontFamily" Value="SarabunRegular" />
+        <Setter Property="FontSize" Value="16" />
+    </Style>
+
+    <!-- Frame/Border Styles -->
+    <Style x:Key="Card" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Surface}" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <RoundRectangle CornerRadius="12" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ActivityIndicator -->
+    <Style TargetType="ActivityIndicator">
+        <Setter Property="Color" Value="{StaticResource Primary}" />
+    </Style>
+
+    <!-- ProgressBar -->
+    <Style TargetType="ProgressBar">
+        <Setter Property="ProgressColor" Value="{StaticResource Primary}" />
+    </Style>
+
+</ResourceDictionary>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="TP.POS.App.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:TP.POS.App.Views"
+    Shell.FlyoutBehavior="Flyout"
+    Shell.FlyoutBackgroundColor="{StaticResource Primary}">
+
+    <Shell.FlyoutHeader>
+        <Grid HeightRequest="180" BackgroundColor="{StaticResource Primary}" Padding="20">
+            <VerticalStackLayout VerticalOptions="Center">
+                <!-- Logo -->
+                <Border StrokeThickness="0"
+                        HeightRequest="80"
+                        WidthRequest="80"
+                        BackgroundColor="White"
+                        HorizontalOptions="Start">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="15"/>
+                    </Border.StrokeShape>
+                    <Label Text="TP"
+                           FontSize="36"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"/>
+                </Border>
+
+                <Label Text="TP-POS"
+                       FontSize="24"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       Margin="0,10,0,0"/>
+
+                <Label Text="ระบบขายหน้าร้าน"
+                       FontSize="14"
+                       TextColor="White"
+                       Opacity="0.8"/>
+            </VerticalStackLayout>
+        </Grid>
+    </Shell.FlyoutHeader>
+
+    <!-- หน้าขาย -->
+    <FlyoutItem Title="ขายสินค้า" Icon="cart.png">
+        <ShellContent
+            Title="ขายสินค้า"
+            ContentTemplate="{DataTemplate views:PosPage}"
+            Route="pos" />
+    </FlyoutItem>
+
+    <!-- รายการขาย -->
+    <FlyoutItem Title="ประวัติการขาย" Icon="receipt.png">
+        <ShellContent
+            Title="ประวัติการขาย"
+            ContentTemplate="{DataTemplate views:TransactionsPage}"
+            Route="transactions" />
+    </FlyoutItem>
+
+    <!-- สินค้า/สต็อก -->
+    <FlyoutItem Title="จัดการสต็อก" Icon="inventory.png">
+        <ShellContent
+            Title="จัดการสต็อก"
+            ContentTemplate="{DataTemplate views:InventoryPage}"
+            Route="inventory" />
+    </FlyoutItem>
+
+    <!-- รายงาน -->
+    <FlyoutItem Title="รายงาน" Icon="chart.png">
+        <ShellContent
+            Title="รายงาน"
+            ContentTemplate="{DataTemplate views:ReportsPage}"
+            Route="reports" />
+    </FlyoutItem>
+
+    <!-- ตั้งค่า -->
+    <FlyoutItem Title="ตั้งค่า" Icon="settings.png">
+        <ShellContent
+            Title="ตั้งค่า"
+            ContentTemplate="{DataTemplate views:SettingsPage}"
+            Route="settings" />
+    </FlyoutItem>
+
+</Shell>
