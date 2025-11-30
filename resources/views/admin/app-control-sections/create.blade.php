@@ -20,7 +20,7 @@
                     <p class="text-cyan-100 dark:text-blue-200">ออกแบบเซคชั่น UI สำหรับแอพพลิเคชั่น</p>
                 </div>
             </div>
-            <a href="{{ route('admin.app-control-sections.index') }}" class="px-6 py-3 bg-white/20 backdrop-blur-md hover:bg-white/30 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold border border-white/30">
+            <a href="{{ route('admin.app-management.control-sections.index') }}" class="px-6 py-3 bg-white/20 backdrop-blur-md hover:bg-white/30 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold border border-white/30">
                 <i class="fas fa-arrow-left mr-2"></i>กลับ
             </a>
         </div>
@@ -55,7 +55,7 @@
     </div>
 
     <!-- Form -->
-    <form method="POST" action="{{ route('admin.app-control-sections.store') }}" class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden p-8">
+    <form method="POST" action="{{ route('admin.app-management.control-sections.store') }}" class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden p-8">
         @csrf
 
         <div class="space-y-6">
@@ -299,7 +299,7 @@
 
             <!-- Submit Buttons -->
             <div class="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-slate-700">
-                <a href="{{ route('admin.app-control-sections.index') }}" class="px-6 py-3 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-gray-200 rounded-xl transition-all duration-200 font-medium">
+                <a href="{{ route('admin.app-management.control-sections.index') }}" class="px-6 py-3 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-gray-200 rounded-xl transition-all duration-200 font-medium">
                     <i class="fas fa-times mr-2"></i>ยกเลิก
                 </a>
                 <button type="submit" class="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">

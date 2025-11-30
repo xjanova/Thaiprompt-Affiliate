@@ -10,13 +10,13 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">สร้าง Emergency Alert Banner</h1>
             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">สร้างการแจ้งเตือนฉุกเฉินใหม่</p>
         </div>
-        <a href="{{ route('admin.app-banners.index') }}"
+        <a href="{{ route('admin.app-management.banners.index') }}"
            class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
             <i class="fas fa-arrow-left mr-2"></i> กลับ
         </a>
     </div>
 
-    <form action="{{ route('admin.app-banners.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+    <form action="{{ route('admin.app-management.banners.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
         @csrf
 
         <!-- Basic Information -->
@@ -602,7 +602,7 @@
 
         <!-- Submit Buttons -->
         <div class="flex items-center justify-end gap-3">
-            <a href="{{ route('admin.app-banners.index') }}"
+            <a href="{{ route('admin.app-management.banners.index') }}"
                class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
                 ยกเลิก
             </a>

@@ -16,7 +16,7 @@ class AppThemeSettingController extends Controller
     public function index()
     {
         $themeSettings = AppThemeSetting::getInstance();
-        return view('admin.app-theme.index', compact('themeSettings'));
+        return view('admin.app-management.theme.index', compact('themeSettings'));
     }
 
     /**
@@ -107,7 +107,7 @@ class AppThemeSettingController extends Controller
         $themeSettings->update($validated);
 
         return redirect()
-            ->route('admin.app-theme.index')
+            ->route('admin.app-management.theme.index')
             ->with('success', 'อัพเดทธีมแอพสำเร็จ');
     }
 

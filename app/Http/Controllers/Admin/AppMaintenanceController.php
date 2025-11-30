@@ -16,7 +16,7 @@ class AppMaintenanceController extends Controller
     public function index()
     {
         $maintenance = AppMaintenance::getInstance();
-        return view('admin.app-maintenance.index', compact('maintenance'));
+        return view('admin.app-management.app-maintenance.index', compact('maintenance'));
     }
 
     /**
@@ -67,7 +67,7 @@ class AppMaintenanceController extends Controller
         $maintenance->update($validated);
 
         return redirect()
-            ->route('admin.app-maintenance.index')
+            ->route('admin.app-management.app-maintenance.index')
             ->with('success', 'อัพเดทการตั้งค่าการปรับปรุงระบบสำเร็จ');
     }
 
