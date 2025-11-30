@@ -56,34 +56,156 @@ public function up(): void
 }
 ```
 
-#### 3. **Foreign Key Constraints**
+#### 3. **Foreign Key Constraints - ⚠️ กฎสำคัญมาก!**
+
+**ปัญหาหลัก:** Migration อ้างอิง FK ไปยังตารางที่ยังไม่ถูกสร้าง
+
+**กฎ #1: ตรวจสอบลำดับการสร้างตาราง**
+- Migration รันตามลำดับ: วันที่ → เวลา → ชื่อไฟล์ (alphabetical)
+- `2025_01_07_000001` รันก่อน `2025_11_03_000001`
+- `2025_11_08_000007` รันก่อน `2025_11_08_000008`
+
+**กฎ #2: ถ้าตารางที่อ้างอิงสร้างทีหลัง → ใช้ unsignedBigInteger**
 
 ```php
-// ✅ ถูกต้อง - ใช้ constrained() สำหรับ foreign keys
-$table->foreignId('user_id')->constrained()->onDelete('cascade');
+// ❌ ผิด - ถ้า payment_transactions ถูกสร้างใน migration ทีหลัง
+$table->foreignId('payment_transaction_id')->constrained()->onDelete('set null');
 
-// ตรวจสอบก่อนเพิ่ม foreign key
-if (!$this->foreignKeyExists('table_name', 'table_name_user_id_foreign')) {
-    $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+// ✅ ถูกต้อง - ใช้ unsignedBigInteger + conditional FK
+Schema::create('hotel_bookings', function (Blueprint $table) {
+    // ...
+    // ⚠️ ใช้ unsignedBigInteger แทน foreignId()->constrained()
+    // เพราะ payment_transactions ถูกสร้างใน migration 2025_11_03 (ทีหลัง)
+    $table->unsignedBigInteger('payment_transaction_id')->nullable();
+    // ...
+});
+
+// เพิ่ม foreign key ถ้าตารางมีอยู่แล้ว
+if (Schema::hasTable('payment_transactions')) {
+    Schema::table('hotel_bookings', function (Blueprint $table) {
+        $table->foreign('payment_transaction_id')
+            ->references('id')
+            ->on('payment_transactions')
+            ->onDelete('set null');
+    });
 }
 ```
 
-#### 4. **Index Naming Conventions**
-
-เมื่อสร้าง unique constraint หรือ index ที่มีชื่อยาว ให้กำหนดชื่อสั้นๆ:
+**กฎ #3: ตรวจสอบก่อนสร้าง migration ใหม่**
 
 ```php
-// ✅ ถูกต้อง - กำหนดชื่อ index สั้นๆ
-$table->unique(['user_id', 'crypto_currency_id', 'network'], 'cda_user_currency_network_unq');
+// ถามตัวเองก่อนใช้ foreignId()->constrained():
+// 1. ตาราง X ที่อ้างอิง ถูกสร้างเมื่อไหร่?
+// 2. Migration ปัจจุบันมีวันที่/เวลา เท่าไหร่?
+// 3. ถ้า X สร้างหลัง migration นี้ → ใช้ unsignedBigInteger
+```
 
-// ❌ ผิด - ให้ Laravel สร้างชื่ออัตโนมัติ (อาจยาวเกินไป)
-$table->unique(['user_id', 'crypto_currency_id', 'network']);
+**ตัวอย่างปัญหาที่พบบ่อย:**
+
+| Migration ปัจจุบัน | อ้างอิงไปยัง | ตารางสร้างเมื่อ | ผลลัพธ์ |
+|-------------------|-------------|----------------|---------|
+| `2025_01_07_000005` | `payment_transactions` | `2025_11_03` | ❌ ERROR |
+| `2025_10_30_000015` | `payment_methods` | `2025_10_30_000016` | ❌ ERROR |
+| `2025_11_08_000007` | `trading_trades` | `2025_11_08_000008` | ❌ ERROR |
+| `2025_11_02_100007` | `line_avatars` | `2025_11_02_100008` | ❌ ERROR |
+
+**Template สำหรับ FK ที่อ้างอิงตารางสร้างทีหลัง:**
+
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * สร้างตาราง xxx
+     * คำอธิบายภาษาไทย
+     */
+    public function up(): void
+    {
+        if (Schema::hasTable('xxx')) {
+            return;
+        }
+
+        Schema::create('xxx', function (Blueprint $table) {
+            $table->id();
+
+            // FK ที่ตารางมีอยู่แล้ว - ใช้ constrained() ได้
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+
+            // ⚠️ FK ที่ตารางสร้างทีหลัง - ใช้ unsignedBigInteger
+            $table->unsignedBigInteger('future_table_id')->nullable();
+
+            $table->timestamps();
+        });
+
+        // เพิ่ม FK หลังสร้างตาราง (ถ้าตารางที่อ้างอิงมีอยู่แล้ว)
+        if (Schema::hasTable('future_table')) {
+            Schema::table('xxx', function (Blueprint $table) {
+                $table->foreign('future_table_id')
+                    ->references('id')
+                    ->on('future_table')
+                    ->onDelete('set null');
+            });
+        }
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('xxx');
+    }
+};
+```
+
+#### 4. **Index Naming Conventions - ⚠️ ระวัง MySQL 64 char limit!**
+
+**ปัญหา:** Laravel auto-generate ชื่อ index ยาวเกิน 64 ตัวอักษร
+
+**กฎ: ถ้าชื่อตาราง + ชื่อคอลัมน์ยาว → กำหนดชื่อ index เอง**
+
+```php
+// ❌ ผิด - Laravel สร้างชื่อ: membership_retention_advance_renewals_user_id_valid_from_valid_until_index (78 chars!)
+$table->index(['user_id', 'valid_from', 'valid_until']);
+
+// ✅ ถูกต้อง - กำหนดชื่อสั้นๆ เอง
+$table->index(['user_id', 'valid_from', 'valid_until'], 'mra_user_validity_idx');
+```
+
+**ตัวอย่างปัญหาที่พบบ่อย:**
+
+| ชื่อ Auto-generated | ความยาว | ผลลัพธ์ |
+|--------------------|---------|---------|
+| `membership_retention_advance_renewals_user_id_valid_from_valid_until_index` | 78 | ❌ ERROR |
+| `installment_payments_installment_plan_id_installment_number_index` | 65 | ❌ ERROR |
+
+**วิธีตั้งชื่อ Index ที่ดี:**
+
+```php
+// ใช้ prefix สั้นๆ ของชื่อตาราง
+// mra = membership_retention_advance
+// ip = installment_payments
+// ts = trading_signals
+
+$table->index(['user_id', 'valid_from', 'valid_until'], 'mra_user_validity_idx');
+$table->index(['installment_plan_id', 'installment_number'], 'ip_plan_number_idx');
+$table->index(['bot_id', 'status'], 'ts_bot_status_idx');
+
+// สำหรับ unique
+$table->unique(['user_id', 'period_month'], 'mrt_user_period_unq');
 ```
 
 **ความยาวชื่อ index สูงสุด:**
 - MySQL: 64 characters
 - PostgreSQL: 63 characters
-- แนะนำ: ไม่เกิน 50 characters เพื่อความปลอดภัย
+- **แนะนำ: ไม่เกิน 50 characters เพื่อความปลอดภัย**
+
+**Checklist ก่อนสร้าง Index:**
+1. นับความยาว: `ชื่อตาราง` + `_` + `ชื่อคอลัมน์ทั้งหมด` + `_index`
+2. ถ้า > 50 ตัวอักษร → กำหนดชื่อเอง
+3. ใช้ prefix 2-3 ตัวอักษรแทนชื่อตารางยาว
 
 ---
 
@@ -369,13 +491,25 @@ $this->call([
 
 1. ✅ **ทุก Migration** = ต้องมี `Schema::hasTable()` check
 2. ✅ **ทุก Seeder** = ต้องอยู่ใน `DatabaseSeeder.php`
-3. ✅ **ทุก Index** = ชื่อไม่เกิน 50 characters
-4. ✅ **ทุก Foreign Key** = ใช้ `constrained()`
+3. ✅ **ทุก Index** = ชื่อไม่เกิน 50 characters (กำหนดชื่อเองถ้ายาว)
+4. ✅ **ทุก Foreign Key** = ตรวจสอบลำดับการสร้างตารางก่อน!
+   - ถ้าตารางที่อ้างอิงมีอยู่แล้ว → ใช้ `foreignId()->constrained()`
+   - ถ้าตารางที่อ้างอิงสร้างทีหลัง → ใช้ `unsignedBigInteger` + conditional FK
 5. ✅ **ทุกอย่าง** = ต้อง Idempotent (รันซ้ำได้)
+
+**⚠️ Checklist ก่อนสร้าง Migration:**
+
+```
+□ ตรวจสอบลำดับการสร้างตารางแล้ว (ไม่อ้างอิงตารางที่ยังไม่มี)
+□ มี Schema::hasTable() check แล้ว
+□ Index ที่มีชื่อยาว > 50 chars ได้กำหนดชื่อสั้นแล้ว
+□ FK ที่อ้างอิงตารางสร้างทีหลังใช้ unsignedBigInteger แล้ว
+□ Comment เป็นภาษาไทยแล้ว
+```
 
 **Remember:** Database integrity is critical. Always follow these guidelines!
 
 ---
 
-*Last Updated: 2025-11-08*
-*Version: 1.0*
+*Last Updated: 2025-11-30*
+*Version: 2.0*
