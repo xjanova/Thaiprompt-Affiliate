@@ -115,11 +115,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            // Indexes
-            $table->index('category');
-            $table->index('is_active');
-            $table->index('is_featured');
-            $table->index('display_order');
+            // Indexes (หมายเหตุ: category, is_active, is_featured, display_order
+            // มี index แล้วจากการประกาศ ->index() ที่คอลัมน์โดยตรง)
             $table->index('created_at');
         });
     }
