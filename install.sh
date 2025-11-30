@@ -2002,10 +2002,11 @@ else
             echo "คุณต้องการทำอย่างไร?"
             echo ""
             echo "  1) รัน migrate:fresh (ลบตารางทั้งหมดและสร้างใหม่)"
-            echo "  2) ยกเลิกการติดตั้ง"
+            echo "  2) ดึง migrations ใหม่จาก GitHub แล้วลองอีกครั้ง (แนะนำ)"
+            echo "  3) ยกเลิกการติดตั้ง"
             echo ""
-            read -p "เลือก (1/2) [1]: " MIGRATE_CHOICE
-            MIGRATE_CHOICE=${MIGRATE_CHOICE:-1}
+            read -p "เลือก (1/2/3) [2]: " MIGRATE_CHOICE
+            MIGRATE_CHOICE=${MIGRATE_CHOICE:-2}
 
             if [ "$MIGRATE_CHOICE" = "1" ]; then
                 print_step "กำลังรัน migrate:fresh..."
@@ -2016,6 +2017,72 @@ else
                     print_success "รัน migrate:fresh สำเร็จ ✓ (สร้าง $MIGRATION_COUNT ตาราง)"
                 else
                     error_exit "รัน migrate:fresh ล้มเหลว!"
+                fi
+            elif [ "$MIGRATE_CHOICE" = "2" ]; then
+                print_step "กำลังดึง migrations ใหม่จาก GitHub..."
+                echo ""
+
+                # ดึง migrations และ seeders ใหม่จาก GitHub
+                if [ -d ".git" ]; then
+                    # มี git repository - ใช้ git pull
+                    print_info "พบ Git repository - กำลัง pull การอัพเดทล่าสุด..."
+                    git fetch origin 2>/dev/null || true
+                    git checkout origin/main -- database/migrations/ database/seeders/ 2>/dev/null || \
+                    git checkout origin/master -- database/migrations/ database/seeders/ 2>/dev/null || \
+                    git checkout origin/claude/Main -- database/migrations/ database/seeders/ 2>/dev/null || {
+                        print_warning "ไม่สามารถดึงจาก git ได้ - ลองใช้ curl แทน..."
+                    }
+                fi
+
+                # ถ้า git ไม่สำเร็จ หรือไม่มี .git - ใช้ curl ดาวน์โหลด
+                if [ ! -d ".git" ] || [ $? -ne 0 ]; then
+                    print_info "กำลังดาวน์โหลด migrations จาก GitHub..."
+
+                    # สร้าง temp directory
+                    TEMP_DIR=$(mktemp -d)
+                    REPO_URL="https://github.com/xjanova/Thaiprompt-Affiliate"
+                    BRANCH="${REPO_BRANCH:-claude/Main}"
+
+                    # ดาวน์โหลด migrations directory
+                    if curl -sL "${REPO_URL}/archive/refs/heads/${BRANCH}.tar.gz" -o "$TEMP_DIR/repo.tar.gz" 2>/dev/null; then
+                        tar -xzf "$TEMP_DIR/repo.tar.gz" -C "$TEMP_DIR" 2>/dev/null
+
+                        # หา directory ที่ถูก extract
+                        EXTRACTED_DIR=$(ls -d "$TEMP_DIR"/Thaiprompt-Affiliate-* 2>/dev/null | head -1)
+
+                        if [ -d "$EXTRACTED_DIR/database/migrations" ]; then
+                            print_info "กำลังอัพเดท migrations..."
+                            cp -r "$EXTRACTED_DIR/database/migrations/"* database/migrations/ 2>/dev/null || true
+                            print_success "อัพเดท migrations เรียบร้อย"
+                        fi
+
+                        if [ -d "$EXTRACTED_DIR/database/seeders" ]; then
+                            print_info "กำลังอัพเดท seeders..."
+                            cp -r "$EXTRACTED_DIR/database/seeders/"* database/seeders/ 2>/dev/null || true
+                            print_success "อัพเดท seeders เรียบร้อย"
+                        fi
+                    else
+                        print_warning "ไม่สามารถดาวน์โหลดจาก GitHub ได้"
+                    fi
+
+                    # ลบ temp directory
+                    rm -rf "$TEMP_DIR" 2>/dev/null || true
+                fi
+
+                echo ""
+                print_step "กำลังรัน migrate:fresh ด้วย migrations ใหม่..."
+                echo ""
+
+                if php artisan migrate:fresh --force; then
+                    MIGRATION_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "0")
+                    echo ""
+                    print_success "รัน migrate:fresh สำเร็จ ✓ (สร้าง $MIGRATION_COUNT ตาราง)"
+                else
+                    print_error "รัน migrate:fresh ยังคงล้มเหลว!"
+                    echo ""
+                    print_info "💡 เคล็ดลับ: อาจยังมี migrations ที่มีปัญหา"
+                    print_info "   รายงาน error นี้ไปที่: https://github.com/xjanova/Thaiprompt-Affiliate/issues"
+                    error_exit "ไม่สามารถรัน migrations ได้"
                 fi
             else
                 error_exit "ยกเลิกการติดตั้งตามที่ผู้ใช้ต้องการ"
