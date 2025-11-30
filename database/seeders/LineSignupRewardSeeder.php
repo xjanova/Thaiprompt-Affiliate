@@ -27,6 +27,20 @@ class LineSignupRewardSeeder extends Seeder
     {
         $this->command->info('🌱 กำลัง seed รางวัลการสมัครสมาชิก...');
 
+        // ⚠️ ตรวจสอบว่าตารางมีอยู่หรือไม่
+        if (!Schema::hasTable('line_signup_rewards')) {
+            $this->command->warn('⚠️  ตาราง line_signup_rewards ยังไม่มี - ข้าม seeder นี้');
+            $this->command->warn('   กรุณารัน: php artisan migrate ก่อน');
+            return;
+        }
+
+        // ⚠️ ตรวจสอบว่า schema ถูกต้อง (มี signup_type column)
+        if (!Schema::hasColumn('line_signup_rewards', 'signup_type')) {
+            $this->command->warn('⚠️  ตาราง line_signup_rewards มี schema เก่า - ข้าม seeder นี้');
+            $this->command->warn('   กรุณารัน: php artisan migrate:refresh หรือ migrate:fresh');
+            return;
+        }
+
         // เช็คและลบ columns พิเศษอัตโนมัติ (ถ้ามี)
         $this->cleanupExtraColumns();
 
