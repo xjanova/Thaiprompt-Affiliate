@@ -17,10 +17,10 @@
                            Padding="40">
 
             <!-- Logo Container with Glow Effect -->
+            <!-- Note: Frame ไม่รองรับ BorderWidth ใช้ Border control แทนหากต้องการ -->
             <Frame Padding="0"
                    CornerRadius="100"
                    BorderColor="{StaticResource Primary}"
-                   BorderWidth="3"
                    Background="Transparent"
                    HasShadow="True"
                    WidthRequest="180"
@@ -56,13 +56,13 @@
                        FontAttributes="Bold"
                        TextColor="{StaticResource Primary}"
                        HorizontalOptions="Center"
-                       LetterSpacing="2"/>
+                       CharacterSpacing="2"/>
 
                 <Label Text="AFFILIATE CONTROL"
                        FontSize="16"
                        TextColor="{StaticResource Secondary}"
                        HorizontalOptions="Center"
-                       LetterSpacing="4"
+                       CharacterSpacing="4"
                        Opacity="0.9"/>
 
                 <!-- Decorative Line -->

@@ -1,27 +1,83 @@
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace ThaipromptAffiliateApp.ViewModels
 {
     /// <summary>
     /// Base ViewModel with common properties and methods
+    /// ใช้ manual INotifyPropertyChanged implementation แทน source generators
+    /// เพื่อหลีกเลี่ยง intermediatexaml bug ใน MAUI
     /// </summary>
-    public partial class BaseViewModel : ObservableObject
+    public class BaseViewModel : INotifyPropertyChanged
     {
-        [ObservableProperty]
         private bool _isBusy;
-
-        [ObservableProperty]
         private bool _isRefreshing;
-
-        [ObservableProperty]
         private string _title = string.Empty;
-
-        [ObservableProperty]
         private string _errorMessage = string.Empty;
-
-        [ObservableProperty]
         private bool _hasError;
+
+        public bool IsBusy
+        {
+            get => _isBusy;
+            set => SetProperty(ref _isBusy, value);
+        }
+
+        public bool IsRefreshing
+        {
+            get => _isRefreshing;
+            set => SetProperty(ref _isRefreshing, value);
+        }
+
+        public string Title
+        {
+            get => _title;
+            set => SetProperty(ref _title, value);
+        }
+
+        public string ErrorMessage
+        {
+            get => _errorMessage;
+            set => SetProperty(ref _errorMessage, value);
+        }
+
+        public bool HasError
+        {
+            get => _hasError;
+            set => SetProperty(ref _hasError, value);
+        }
+
+        /// <summary>
+        /// INotifyPropertyChanged event
+        /// </summary>
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        /// <summary>
+        /// Set property value and raise PropertyChanged event
+        /// </summary>
+        protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+        {
+            if (EqualityComparer<T>.Default.Equals(field, value))
+                return false;
+
+            field = value;
+            OnPropertyChanged(propertyName);
+            return true;
+        }
+
+        /// <summary>
+        /// Raise PropertyChanged event
+        /// </summary>
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        /// <summary>
+        /// Called when page appears - override in derived classes
+        /// </summary>
+        public virtual void OnAppearing()
+        {
+        }
 
         /// <summary>
         /// Execute action with busy indicator

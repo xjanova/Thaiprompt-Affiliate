@@ -1,0 +1,15 @@
+<Project>
+  <!-- Workaround for MAUI + CommunityToolkit.Mvvm source generator duplications -->
+  <!-- This removes the duplicate intermediatexaml compilation before compile -->
+  <Target Name="RemoveIntermediateXamlSourceGenerators"
+          BeforeTargets="CoreCompile"
+          DependsOnTargets="PrepareForBuild">
+    <Message Text="Removing duplicate intermediatexaml source generators..." Importance="high" />
+    <ItemGroup>
+      <!-- Remove all .cs files from intermediatexaml folders to prevent duplicates -->
+      <Compile Remove="$(IntermediateOutputPath)**\intermediatexaml\**\*.g.cs" />
+      <Compile Remove="$(IntermediateOutputPath)**\intermediatexaml\**\*.cs" />
+      <Compile Remove="@(Compile)" Condition="$([System.String]::new('%(Identity)').Contains('intermediatexaml'))" />
+    </ItemGroup>
+  </Target>
+</Project>

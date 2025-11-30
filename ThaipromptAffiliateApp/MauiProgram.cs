@@ -3,7 +3,7 @@ using ThaipromptAffiliateApp.Services;
 using ThaipromptAffiliateApp.ViewModels;
 using ThaipromptAffiliateApp.Views;
 
-namespace ThaipromptAffiliateAppApp;
+namespace ThaipromptAffiliateApp;
 
 public static class MauiProgram
 {
@@ -20,9 +20,11 @@ public static class MauiProgram
             });
 
         // Register Services
+        builder.Services.AddSingleton<HttpClient>();
         builder.Services.AddSingleton<ApiService>();
+        builder.Services.AddSingleton<IApiService>(sp => sp.GetRequiredService<ApiService>());
         builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
-        builder.Services.AddSingleton<IThemeService, ThemeService>();
+        builder.Services.AddSingleton<ThemeService>();
 
         // Register ViewModels
         builder.Services.AddTransient<HomeViewModel>();

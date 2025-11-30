@@ -23,10 +23,10 @@ public class AppConfiguration
     public string? SplashImageUrl { get; set; }
 
     [JsonPropertyName("menu_items")]
-    public List<MenuItem> MenuItems { get; set; } = new();
+    public List<AppMenuItem> MenuItems { get; set; } = new();
 
     [JsonPropertyName("theme")]
-    public AppTheme Theme { get; set; } = new();
+    public TpAppTheme Theme { get; set; } = new();
 
     [JsonPropertyName("features")]
     public AppFeatures Features { get; set; } = new();
@@ -38,7 +38,7 @@ public class AppConfiguration
 /// <summary>
 /// Menu Item Model - รายการเมนูที่ตั้งค่าได้
 /// </summary>
-public class MenuItem
+public class AppMenuItem
 {
     [JsonPropertyName("id")]
     public int Id { get; set; }
@@ -71,7 +71,7 @@ public class MenuItem
 /// <summary>
 /// App Theme Model - Theme configuration
 /// </summary>
-public class AppTheme
+public class TpAppTheme
 {
     [JsonPropertyName("primary_color")]
     public string PrimaryColor { get; set; } = "#D4AF37"; // Gold

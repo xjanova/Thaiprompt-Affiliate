@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
-using CommunityToolkit.Mvvm.ComponentModel;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.Input;
+using ThaipromptAffiliateApp.Helpers;
 using ThaipromptAffiliateApp.Models;
 using ThaipromptAffiliateApp.Services;
 
@@ -8,45 +9,105 @@ namespace ThaipromptAffiliateApp.ViewModels
 {
     /// <summary>
     /// ViewModel for dashboard page
+    /// ใช้ manual property implementation แทน source generators
     /// </summary>
-    public partial class DashboardViewModel : BaseViewModel
+    public class DashboardViewModel : BaseViewModel
     {
         private readonly IApiService _apiService;
 
-        [ObservableProperty]
         private DashboardStats? _stats;
-
-        [ObservableProperty]
         private User? _currentUser;
-
-        [ObservableProperty]
         private string _welcomeMessage = string.Empty;
-
-        [ObservableProperty]
         private ObservableCollection<Commission> _recentCommissions = new();
-
-        [ObservableProperty]
         private string _totalEarnings = "฿0.00";
-
-        [ObservableProperty]
         private string _pendingEarnings = "฿0.00";
-
-        [ObservableProperty]
         private string _approvedEarnings = "฿0.00";
-
-        [ObservableProperty]
         private string _totalReferrals = "0";
-
-        [ObservableProperty]
         private string _growthPercentage = "0%";
-
-        [ObservableProperty]
         private bool _isGrowthPositive = true;
+
+        public DashboardStats? Stats
+        {
+            get => _stats;
+            set => SetProperty(ref _stats, value);
+        }
+
+        public User? CurrentUser
+        {
+            get => _currentUser;
+            set => SetProperty(ref _currentUser, value);
+        }
+
+        public string WelcomeMessage
+        {
+            get => _welcomeMessage;
+            set => SetProperty(ref _welcomeMessage, value);
+        }
+
+        public ObservableCollection<Commission> RecentCommissions
+        {
+            get => _recentCommissions;
+            set => SetProperty(ref _recentCommissions, value);
+        }
+
+        public string TotalEarnings
+        {
+            get => _totalEarnings;
+            set => SetProperty(ref _totalEarnings, value);
+        }
+
+        public string PendingEarnings
+        {
+            get => _pendingEarnings;
+            set => SetProperty(ref _pendingEarnings, value);
+        }
+
+        public string ApprovedEarnings
+        {
+            get => _approvedEarnings;
+            set => SetProperty(ref _approvedEarnings, value);
+        }
+
+        public string TotalReferrals
+        {
+            get => _totalReferrals;
+            set => SetProperty(ref _totalReferrals, value);
+        }
+
+        public string GrowthPercentage
+        {
+            get => _growthPercentage;
+            set => SetProperty(ref _growthPercentage, value);
+        }
+
+        public bool IsGrowthPositive
+        {
+            get => _isGrowthPositive;
+            set => SetProperty(ref _isGrowthPositive, value);
+        }
+
+        // Commands
+        public ICommand LoadDataCommand { get; }
+        public ICommand RefreshCommand { get; }
+        public ICommand ViewAllCommissionsCommand { get; }
+        public ICommand ViewReferralsCommand { get; }
+        public ICommand ViewProfileCommand { get; }
+        public ICommand ShareReferralLinkCommand { get; }
+        public ICommand LogoutCommand { get; }
 
         public DashboardViewModel(IApiService apiService)
         {
             _apiService = apiService;
             Title = "แดชบอร์ด";
+
+            // Initialize commands
+            LoadDataCommand = new AsyncRelayCommand(LoadDataAsync);
+            RefreshCommand = new AsyncRelayCommand(RefreshAsync);
+            ViewAllCommissionsCommand = new AsyncRelayCommand(ViewAllCommissionsAsync);
+            ViewReferralsCommand = new AsyncRelayCommand(ViewReferralsAsync);
+            ViewProfileCommand = new AsyncRelayCommand(ViewProfileAsync);
+            ShareReferralLinkCommand = new AsyncRelayCommand(ShareReferralLinkAsync);
+            LogoutCommand = new AsyncRelayCommand(LogoutAsync);
         }
 
         /// <summary>
@@ -60,7 +121,6 @@ namespace ThaipromptAffiliateApp.ViewModels
         /// <summary>
         /// Load dashboard data
         /// </summary>
-        [RelayCommand]
         private async Task LoadDataAsync()
         {
             await ExecuteWithBusyAsync(async () =>
@@ -86,7 +146,6 @@ namespace ThaipromptAffiliateApp.ViewModels
         /// <summary>
         /// Refresh dashboard data
         /// </summary>
-        [RelayCommand]
         private async Task RefreshAsync()
         {
             await ExecuteWithRefreshAsync(async () =>
@@ -127,7 +186,6 @@ namespace ThaipromptAffiliateApp.ViewModels
         /// <summary>
         /// Navigate to commissions page
         /// </summary>
-        [RelayCommand]
         private async Task ViewAllCommissionsAsync()
         {
             await NavigateToAsync("commissions");
@@ -136,7 +194,6 @@ namespace ThaipromptAffiliateApp.ViewModels
         /// <summary>
         /// Navigate to referrals page
         /// </summary>
-        [RelayCommand]
         private async Task ViewReferralsAsync()
         {
             await NavigateToAsync("referrals");
@@ -145,7 +202,6 @@ namespace ThaipromptAffiliateApp.ViewModels
         /// <summary>
         /// Navigate to profile page
         /// </summary>
-        [RelayCommand]
         private async Task ViewProfileAsync()
         {
             await NavigateToAsync("profile");
@@ -154,7 +210,6 @@ namespace ThaipromptAffiliateApp.ViewModels
         /// <summary>
         /// Share referral link
         /// </summary>
-        [RelayCommand]
         private async Task ShareReferralLinkAsync()
         {
             try
@@ -182,7 +237,6 @@ namespace ThaipromptAffiliateApp.ViewModels
         /// <summary>
         /// Logout
         /// </summary>
-        [RelayCommand]
         private async Task LogoutAsync()
         {
             var confirmed = await ShowConfirmationAsync(

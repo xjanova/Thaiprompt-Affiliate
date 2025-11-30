@@ -1,3 +1,5 @@
+using ThaipromptAffiliateApp.ViewModels;
+
 namespace ThaipromptAffiliateApp.Views;
 
 public partial class HomePage : ContentPage
@@ -14,6 +16,9 @@ public partial class HomePage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await _viewModel.InitializeCommand.ExecuteAsync(null);
+        if (_viewModel.InitializeCommand.CanExecute(null))
+        {
+            _viewModel.InitializeCommand.Execute(null);
+        }
     }
 }

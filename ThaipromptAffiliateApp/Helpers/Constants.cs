@@ -9,19 +9,17 @@ namespace ThaipromptAffiliateApp.Helpers
         // API Configuration
         // ============================================================
 
-#if DEBUG
-        // For Android Emulator (localhost = 10.0.2.2)
-        public const string ApiBaseUrl = "http://10.0.2.2:8000/api/v1";
+        // Production API - Thaiprompt Member Site
+        // Note: ใช้ URL เดียวกันทั้ง Debug และ Release เพื่อทดสอบกับเว็บจริง
+        public const string ApiBaseUrl = "https://member123.thaiprompt.online/api/v1";
 
+        // Alternative configurations (uncomment to use):
+        // For Android Emulator (localhost = 10.0.2.2)
+        // public const string ApiBaseUrl = "http://10.0.2.2:8000/api/v1";
         // For iOS Simulator (localhost works directly)
         // public const string ApiBaseUrl = "http://localhost:8000/api/v1";
-
         // For Physical Device (use your computer's IP)
         // public const string ApiBaseUrl = "http://192.168.1.100:8000/api/v1";
-#else
-        // Production API
-        public const string ApiBaseUrl = "https://your-domain.com/api/v1";
-#endif
 
         // ============================================================
         // Secure Storage Keys

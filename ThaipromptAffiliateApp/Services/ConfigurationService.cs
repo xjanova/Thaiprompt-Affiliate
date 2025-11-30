@@ -1,5 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using ThaipromptAffiliateApp.Helpers;
+using ThaipromptAffiliateApp.Models;
 
 namespace ThaipromptAffiliateApp.Services;
 
@@ -12,8 +14,8 @@ public interface IConfigurationService
     Task<bool> SaveConfigurationAsync(AppConfiguration configuration);
     Task<AppConfiguration?> GetCachedConfigurationAsync();
     Task ClearCacheAsync();
-    Task<AppTheme?> GetThemeAsync();
-    Task<List<MenuItem>?> GetMenuItemsAsync();
+    Task<TpAppTheme?> GetThemeAsync();
+    Task<List<AppMenuItem>?> GetMenuItemsAsync();
 }
 
 public class ConfigurationService : IConfigurationService
@@ -139,7 +141,7 @@ public class ConfigurationService : IConfigurationService
     /// <summary>
     /// ดึง Theme settings
     /// </summary>
-    public async Task<AppTheme?> GetThemeAsync()
+    public async Task<TpAppTheme?> GetThemeAsync()
     {
         var config = await GetConfigurationAsync();
         return config?.Theme;
@@ -148,7 +150,7 @@ public class ConfigurationService : IConfigurationService
     /// <summary>
     /// ดึง Menu Items
     /// </summary>
-    public async Task<List<MenuItem>?> GetMenuItemsAsync()
+    public async Task<List<AppMenuItem>?> GetMenuItemsAsync()
     {
         var config = await GetConfigurationAsync();
         return config?.MenuItems?.Where(m => m.IsActive)
@@ -181,7 +183,7 @@ public class ConfigurationService : IConfigurationService
         {
             AppName = "Thaiprompt Affiliate",
             HomeUrl = "https://thaiprompt.com",
-            Theme = new AppTheme
+            Theme = new TpAppTheme
             {
                 PrimaryColor = "#D4AF37",      // Gold
                 SecondaryColor = "#DC143C",     // Crimson Red
@@ -194,9 +196,9 @@ public class ConfigurationService : IConfigurationService
                 BorderColor = "#D4AF37",        // Gold
                 UseDarkMode = true
             },
-            MenuItems = new List<MenuItem>
+            MenuItems = new List<AppMenuItem>
             {
-                new MenuItem
+                new AppMenuItem
                 {
                     Id = 1,
                     Title = "หน้าแรก",
@@ -206,7 +208,7 @@ public class ConfigurationService : IConfigurationService
                     Order = 1,
                     IsActive = true
                 },
-                new MenuItem
+                new AppMenuItem
                 {
                     Id = 2,
                     Title = "Wiki",
@@ -216,7 +218,7 @@ public class ConfigurationService : IConfigurationService
                     Order = 2,
                     IsActive = true
                 },
-                new MenuItem
+                new AppMenuItem
                 {
                     Id = 3,
                     Title = "แดชบอร์ด",
@@ -226,7 +228,7 @@ public class ConfigurationService : IConfigurationService
                     Order = 3,
                     IsActive = true
                 },
-                new MenuItem
+                new AppMenuItem
                 {
                     Id = 4,
                     Title = "คอมมิชชั่น",

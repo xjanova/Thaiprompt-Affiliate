@@ -1,16 +1,14 @@
 using ThaipromptAffiliateApp.Services;
+using ThaipromptAffiliateApp.ViewModels;
 using ThaipromptAffiliateApp.Views;
 
-namespace ThaipromptAffiliateAppApp;
+namespace ThaipromptAffiliateApp;
 
 public partial class AppShell : Shell
 {
-    private readonly IApiService _apiService;
-
     public AppShell()
     {
         InitializeComponent();
-        _apiService = App.Current!.Handler!.MauiContext!.Services.GetService<IApiService>()!;
 
         // Register routes for navigation
         Routing.RegisterRoute(nameof(LoginPage), typeof(LoginPage));
@@ -30,8 +28,11 @@ public partial class AppShell : Shell
 
         if (confirm)
         {
-            await _apiService.LogoutAsync();
-            App.Current!.MainPage = new NavigationPage(new LoginPage());
+            var apiService = Handler!.MauiContext!.Services.GetService<IApiService>()!;
+            await apiService.LogoutAsync();
+
+            var viewModel = Handler!.MauiContext!.Services.GetService<LoginViewModel>()!;
+            App.Current!.Windows[0].Page = new NavigationPage(new LoginPage(viewModel));
         }
     }
 }

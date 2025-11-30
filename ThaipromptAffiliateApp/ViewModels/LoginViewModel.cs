@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.Input;
 using ThaipromptAffiliateApp.Helpers;
 using ThaipromptAffiliateApp.Services;
@@ -7,27 +7,57 @@ namespace ThaipromptAffiliateApp.ViewModels
 {
     /// <summary>
     /// ViewModel for login page
+    /// ใช้ manual property implementation แทน source generators
     /// </summary>
-    public partial class LoginViewModel : BaseViewModel
+    public class LoginViewModel : BaseViewModel
     {
         private readonly IApiService _apiService;
 
-        [ObservableProperty]
         private string _email = string.Empty;
-
-        [ObservableProperty]
         private string _password = string.Empty;
-
-        [ObservableProperty]
         private bool _rememberMe = true;
-
-        [ObservableProperty]
         private bool _showPassword = false;
+
+        public string Email
+        {
+            get => _email;
+            set => SetProperty(ref _email, value);
+        }
+
+        public string Password
+        {
+            get => _password;
+            set => SetProperty(ref _password, value);
+        }
+
+        public bool RememberMe
+        {
+            get => _rememberMe;
+            set => SetProperty(ref _rememberMe, value);
+        }
+
+        public bool ShowPassword
+        {
+            get => _showPassword;
+            set => SetProperty(ref _showPassword, value);
+        }
+
+        // Commands
+        public ICommand LoginCommand { get; }
+        public ICommand TogglePasswordVisibilityCommand { get; }
+        public ICommand ForgotPasswordCommand { get; }
+        public ICommand RegisterCommand { get; }
 
         public LoginViewModel(IApiService apiService)
         {
             _apiService = apiService;
             Title = "เข้าสู่ระบบ";
+
+            // Initialize commands
+            LoginCommand = new AsyncRelayCommand(LoginAsync);
+            TogglePasswordVisibilityCommand = new RelayCommand(TogglePasswordVisibility);
+            ForgotPasswordCommand = new AsyncRelayCommand(ForgotPasswordAsync);
+            RegisterCommand = new AsyncRelayCommand(RegisterAsync);
 
 #if DEBUG
             // Pre-fill for development
@@ -77,7 +107,6 @@ namespace ThaipromptAffiliateApp.ViewModels
         /// <summary>
         /// Login command
         /// </summary>
-        [RelayCommand]
         private async Task LoginAsync()
         {
             if (!ValidateForm())
@@ -105,7 +134,6 @@ namespace ThaipromptAffiliateApp.ViewModels
         /// <summary>
         /// Toggle password visibility
         /// </summary>
-        [RelayCommand]
         private void TogglePasswordVisibility()
         {
             ShowPassword = !ShowPassword;
@@ -114,7 +142,6 @@ namespace ThaipromptAffiliateApp.ViewModels
         /// <summary>
         /// Navigate to forgot password page
         /// </summary>
-        [RelayCommand]
         private async Task ForgotPasswordAsync()
         {
             await NavigateToAsync("forgotpassword");
@@ -123,7 +150,6 @@ namespace ThaipromptAffiliateApp.ViewModels
         /// <summary>
         /// Navigate to register page
         /// </summary>
-        [RelayCommand]
         private async Task RegisterAsync()
         {
             await NavigateToAsync("register");

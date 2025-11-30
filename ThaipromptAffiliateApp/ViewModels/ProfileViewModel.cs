@@ -1,7 +1,6 @@
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.Input;
 using ThaipromptAffiliateApp.Services;
-using ThaipromptAffiliateApp.Views;
 
 namespace ThaipromptAffiliateApp.ViewModels;
 
@@ -168,7 +167,7 @@ public class ProfileViewModel : BaseViewModel
         if (confirm)
         {
             await _apiService.LogoutAsync();
-            App.Current!.MainPage = new NavigationPage(new LoginPage());
+            await Shell.Current.GoToAsync("///login");
         }
     }
 
