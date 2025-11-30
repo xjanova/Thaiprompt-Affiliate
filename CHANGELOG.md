@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.267.12] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1826 from xjanova/claude/review-install-system-018QjVzDZ7abVmCbrQ1YhpDb (94217a79)
+- fix: ลบ duplicate indexes ใน line_membership_signup_system (e6c8a155)
+### 🔧 Other Changes
+
+
 ## [v3.267.11] - 2025-11-30
 
 ### ✨ Features
