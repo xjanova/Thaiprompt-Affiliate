@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.265.0] - 2025-11-30
+
+### ✨ Features
+- Merge pull request #1811 from xjanova/claude/review-install-system-018QjVzDZ7abVmCbrQ1YhpDb (18fa9050)
+- feat: เพิ่ม SafeSeeder trait และปรับปรุง seeders ให้ตรวจสอบตารางก่อนรัน (3e9dcc57)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.264.14] - 2025-11-30
 
 ### ✨ Features
