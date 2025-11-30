@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.264.0] - 2025-11-30
+
+### ✨ Features
+- feat: เพิ่มการถามตำแหน่งติดตั้งก่อนเลือกโหมด (2222f4e5)
+### 🐛 Bug Fixes
+- Merge pull request #1796 from xjanova/claude/review-install-system-018QjVzDZ7abVmCbrQ1YhpDb (95748437)
+- fix: แก้ไข bug ใน ask_question function ที่ทำให้ password validation วน loop (590b44dc)
+### 🔧 Other Changes
+
+
 ## [v3.263.0] - 2025-11-30
 
 ### ✨ Features
