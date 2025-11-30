@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.267.21] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1835 from xjanova/claude/review-install-system-018QjVzDZ7abVmCbrQ1YhpDb (a1950802)
+- fix: ลด columns ใน app_theme_settings ใช้ JSON แทน - Row size too large (128116b5)
+### 🔧 Other Changes
+
+
 ## [v3.267.20] - 2025-11-30
 
 ### ✨ Features
