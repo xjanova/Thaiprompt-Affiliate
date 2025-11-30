@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.262.0] - 2025-11-30
+
+### ✨ Features
+- Merge pull request #1794 from xjanova/claude/review-install-system-018QjVzDZ7abVmCbrQ1YhpDb (b9797a5e)
+- feat: ปรับปรุงระบบ install ให้ถามทีละขั้นตอนเมื่อโฟลเดอร์ว่าง (9723bb48)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.261.1] - 2025-11-30
 
 ### ✨ Features
