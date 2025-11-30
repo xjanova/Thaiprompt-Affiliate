@@ -8,9 +8,14 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     * สร้างตาราง games สำหรับระบบเกม
      */
     public function up(): void
     {
+        if (Schema::hasTable('games')) {
+            return;
+        }
+
         Schema::create('games', function (Blueprint $table) {
             $table->id();
             $table->string('title'); // ชื่อเกม
