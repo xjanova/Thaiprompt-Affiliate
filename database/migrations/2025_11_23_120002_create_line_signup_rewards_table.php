@@ -15,27 +15,25 @@ return new class extends Migration
      * ตารางสำหรับกำหนดรางวัลที่จะให้เมื่อสมัครสมาชิก
      * รองรับรางวัลหลายประเภท: แต้ม, TPIX, คูปอง, สิทธิพิเศษ, ฯลฯ
      *
+     * ⚠️ NOTE: ตาราง line_signup_rewards ใน migration เก่า (2025_11_12_000001)
+     * มี schema สำหรับ reward claims ซึ่งผิด - ควรอยู่ใน line_signup_reward_claims
+     * Migration นี้จะ drop และสร้างใหม่ด้วย schema ที่ถูกต้องสำหรับ reward templates
+     *
      * @return void
      */
     public function up(): void
     {
-        // ถ้าตารางมีอยู่แล้ว ให้ลบ user_id ถ้ามี (ไม่ควรมีใน template table)
+        // ⚠️ ถ้าตารางมีอยู่แล้วแต่เป็น schema เก่า ให้ drop และสร้างใหม่
         if (Schema::hasTable('line_signup_rewards')) {
-            // ลบ user_id ถ้ามี (คอลัมน์นี้ไม่ควรอยู่ใน reward template table)
-            if (Schema::hasColumn('line_signup_rewards', 'user_id')) {
-                // ลบ foreign key constraint ก่อนเสมอ (ต้องลบก่อน indexes!)
-                $this->safeDropForeign('line_signup_rewards', 'line_signup_rewards_user_id_foreign');
-
-                // ลบ composite index idx_user_status ถ้ามี
-                $this->safeDropIndex('line_signup_rewards', 'idx_user_status');
-
-                // ลบ index ที่อาจมี user_id
-                $this->safeDropIndex('line_signup_rewards', 'line_signup_rewards_user_id_index');
-
-                // ลบคอลัมน์ user_id
-                $this->safeDropColumn('line_signup_rewards', 'user_id');
+            // ตรวจสอบว่าเป็น schema เก่า (มี session_id column) หรือไม่
+            if (Schema::hasColumn('line_signup_rewards', 'session_id') ||
+                !Schema::hasColumn('line_signup_rewards', 'signup_type')) {
+                // เป็น schema เก่า - ต้อง drop และสร้างใหม่
+                Schema::dropIfExists('line_signup_rewards');
+            } else {
+                // เป็น schema ใหม่แล้ว - ไม่ต้องทำอะไร
+                return;
             }
-            return;
         }
 
         Schema::create('line_signup_rewards', function (Blueprint $table) {
