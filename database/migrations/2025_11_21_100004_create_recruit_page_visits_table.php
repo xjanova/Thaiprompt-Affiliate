@@ -53,7 +53,7 @@ return new class extends Migration
             $table->json('utm_params')->nullable()->comment('UTM Parameters');
 
             // เวลาและพฤติกรรม
-            $table->timestamp('visited_at')->comment('เวลาที่เข้าชม');
+            $table->timestamp('visited_at')->useCurrent()->comment('เวลาที่เข้าชม');
             $table->integer('time_spent')->nullable()->comment('เวลาที่อยู่บนหน้า (วินาที)');
             $table->boolean('scrolled_to_bottom')->default(false)->comment('เลื่อนดูจนถึงท้ายหน้า');
             $table->boolean('clicked_register_button')->default(false)->comment('กดปุ่มสมัคร');
