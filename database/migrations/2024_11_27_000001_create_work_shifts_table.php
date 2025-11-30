@@ -18,10 +18,9 @@ return new class extends Migration
 
         Schema::create('work_shifts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('store_id')
-                ->nullable()
-                ->constrained('vendor_stores')
-                ->onDelete('cascade');
+            // ⚠️ ใช้ unsignedBigInteger แทน foreignId()->constrained()
+            // เพราะ vendor_stores ถูกสร้างใน migration 2025_11_03
+            $table->unsignedBigInteger('store_id')->nullable();
 
             // ข้อมูลกะ
             $table->string('name'); // เช่น "กะเช้า", "กะบ่าย", "กะดึก"
@@ -56,6 +55,16 @@ return new class extends Migration
             // Index
             $table->index(['store_id', 'is_active']);
         });
+
+        // เพิ่ม foreign key ถ้า vendor_stores มีอยู่แล้ว
+        if (Schema::hasTable('vendor_stores')) {
+            Schema::table('work_shifts', function (Blueprint $table) {
+                $table->foreign('store_id')
+                    ->references('id')
+                    ->on('vendor_stores')
+                    ->onDelete('cascade');
+            });
+        }
     }
 
     /**
