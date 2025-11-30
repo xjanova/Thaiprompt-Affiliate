@@ -22,13 +22,16 @@ return new class extends Migration
 
         // ใช้ raw SQL เพื่ออัพเดท ENUM column
         // Laravel ไม่รองรับการแก้ไข ENUM โดยตรงผ่าน Schema Builder
+        // ตรวจสอบว่า column type มีอยู่
+        if (!Schema::hasColumn('game_settings', 'type')) {
+            return;
+        }
+
         DB::statement("
             ALTER TABLE `game_settings`
             MODIFY COLUMN `type` ENUM('string', 'integer', 'float', 'decimal', 'boolean', 'json')
             NOT NULL DEFAULT 'string'
         ");
-
-        $this->command->info('✅ อัพเดท ENUM column สำหรับ game_settings.type สำเร็จ');
     }
 
     /**
@@ -43,13 +46,16 @@ return new class extends Migration
             return;
         }
 
+        // ตรวจสอบว่า column type มีอยู่
+        if (!Schema::hasColumn('game_settings', 'type')) {
+            return;
+        }
+
         // ย้อนกลับเป็น ENUM เดิม (อาจทำให้ข้อมูล float/decimal หายได้)
         DB::statement("
             ALTER TABLE `game_settings`
             MODIFY COLUMN `type` ENUM('string', 'integer', 'boolean', 'json')
             NOT NULL DEFAULT 'string'
         ");
-
-        $this->command->info('⚠️  ย้อนกลับ ENUM column สำหรับ game_settings.type');
     }
 };
