@@ -54,8 +54,8 @@ return new class extends Migration
                 ->comment('MLM Member ถ้าสมัครแล้ว');
 
             // เวลา
-            $table->timestamp('locked_at')->comment('เวลาที่ล็อค');
-            $table->timestamp('expires_at')->comment('เวลาหมดอายุ (locked_at + 48 hours)');
+            $table->timestamp('locked_at')->useCurrent()->comment('เวลาที่ล็อค');
+            $table->timestamp('expires_at')->useCurrent()->comment('เวลาหมดอายุ (locked_at + 48 hours)');
             $table->timestamp('converted_at')->nullable()->comment('เวลาที่สมัครสำเร็จ');
 
             // สถานะ
