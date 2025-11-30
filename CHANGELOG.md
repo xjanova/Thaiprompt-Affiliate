@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.261.0] - 2025-11-30
+
+### ✨ Features
+- Merge pull request #1792 from xjanova/claude/restore-mobile-menu-admin-01SA2ki6WGT29s1ASn4AsvGi (4e59836d)
+- feat: เพิ่มเมนู Mobile App Management ใน Admin sidebar (cdd98644)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.260.1] - 2025-11-30
 
 ### ✨ Features
