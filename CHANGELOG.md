@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.267.24] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไข drop_unused_line_oa_admin_tables - foreign key constraint error (a89b4951)
+- fix: แก้ไข lead_locks migration - MySQL timestamp default value error (3b8a053f)
+### 🔧 Other Changes
+- Merge pull request #1838 from xjanova/claude/fix-lead-locks-migration-01Xq2yQzg8FSoMGzf4ozFE7V (709c4c69)
+
 ## [v3.267.23] - 2025-11-30
 
 ### ✨ Features
