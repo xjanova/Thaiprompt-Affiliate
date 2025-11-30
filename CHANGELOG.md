@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.260.1] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไข build errors และตั้งค่า API สำหรับ MAUI App (40feb9b2)
+### 🔧 Other Changes
+
+
 ## [v3.260.0] - 2025-11-29
 
 ### ✨ Features
