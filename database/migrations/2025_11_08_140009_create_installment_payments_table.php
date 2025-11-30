@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * สร้างตาราง installment_payments
+     * ตารางการชำระเงินผ่อน
      */
     public function up(): void
     {
@@ -47,7 +48,8 @@ return new class extends Migration
             $table->index('payment_number');
             $table->index('status');
             $table->index('due_date');
-            $table->index(['installment_plan_id', 'installment_number']);
+            // ⚠️ ใช้ชื่อ index สั้นๆ เพราะ MySQL จำกัด 64 ตัวอักษร
+            $table->index(['installment_plan_id', 'installment_number'], 'ip_plan_number_idx');
         });
     }
 
