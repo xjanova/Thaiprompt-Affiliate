@@ -140,7 +140,7 @@ return new class extends Migration
                 ->comment('บันทึกการ recovery');
 
             // Timing
-            $table->timestamp('checked_at')
+            $table->timestamp('checked_at')->useCurrent()
                 ->comment('เวลาที่ตรวจสอบ');
 
             $table->timestamp('started_at')->nullable()
