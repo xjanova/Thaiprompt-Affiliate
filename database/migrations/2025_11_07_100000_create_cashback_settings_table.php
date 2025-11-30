@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง orders มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('orders')) {
+            return;
+        }
+
         Schema::create('cashback_settings', function (Blueprint $table) {
             $table->id();
             $table->enum('type', ['global', 'product'])->default('global');

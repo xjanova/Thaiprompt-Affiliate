@@ -14,6 +14,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง crypto_currencies มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('crypto_currencies')) {
+            return;
+        }
+
         Schema::table('crypto_currencies', function (Blueprint $table) {
             // Drop the existing unique constraint first
             $table->dropUnique('crypto_currencies_code_unique');

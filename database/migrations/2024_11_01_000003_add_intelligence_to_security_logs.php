@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง security_logs มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('security_logs')) {
+            return;
+        }
+
         Schema::table('security_logs', function (Blueprint $table) {
             // IP Intelligence
             $table->string('country_code', 2)->nullable()->after('ip_address'); // US, TH, CN

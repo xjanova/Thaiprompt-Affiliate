@@ -23,6 +23,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง nfc_cards มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('nfc_cards')) {
+            return;
+        }
+
         Schema::table('nfc_cards', function (Blueprint $table) {
             // NFC UID (Serial Number) - Unique identifier ของบัตร
             $this->safeAddColumn($table, 'nfc_cards', 'nfc_uid', function ($table) {

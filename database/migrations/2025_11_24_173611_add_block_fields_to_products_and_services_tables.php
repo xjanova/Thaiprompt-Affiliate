@@ -21,6 +21,16 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง services มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('services')) {
+            return;
+        }
+
+        // ตรวจสอบว่าตาราง products มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('products')) {
+            return;
+        }
+
         // เพิ่มฟิลด์ใน products table
         Schema::table('products', function (Blueprint $table) {
             // เช็คว่าคอลัมน์ยังไม่มีก่อนเพิ่ม

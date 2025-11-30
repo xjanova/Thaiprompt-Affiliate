@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง notifications มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('notifications')) {
+            return;
+        }
+
         Schema::table('notifications', function (Blueprint $table) {
             $table->boolean('show_immediately')->default(false)->after('is_important');
             $table->boolean('is_broadcast')->default(false)->after('show_immediately');

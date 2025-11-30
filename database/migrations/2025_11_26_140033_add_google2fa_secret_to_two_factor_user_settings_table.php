@@ -16,6 +16,16 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง two_factor_settings มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('two_factor_settings')) {
+            return;
+        }
+
+        // ตรวจสอบว่าตาราง two_factor_user_settings มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('two_factor_user_settings')) {
+            return;
+        }
+
         Schema::table('two_factor_user_settings', function (Blueprint $table) {
             // Google Authenticator Secret Key (encrypted)
             if (!Schema::hasColumn('two_factor_user_settings', 'google2fa_secret')) {

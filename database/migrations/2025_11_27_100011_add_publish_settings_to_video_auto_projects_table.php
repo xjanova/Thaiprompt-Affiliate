@@ -13,6 +13,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง video_auto_projects มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('video_auto_projects')) {
+            return;
+        }
+
         Schema::table('video_auto_projects', function (Blueprint $table) {
             // Thumbnail - ใช้สำหรับแสดงว่าเป็นเพลง/วีดีโออะไร
             if (!Schema::hasColumn('video_auto_projects', 'thumbnail_path')) {

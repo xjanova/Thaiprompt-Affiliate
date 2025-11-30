@@ -17,6 +17,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง line_oa_settings มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('line_oa_settings')) {
+            return;
+        }
+
         Schema::table('line_oa_settings', function (Blueprint $table) {
             // Rename existing channel_id to login_channel_id (for LINE Login)
             $table->renameColumn('channel_id', 'login_channel_id');

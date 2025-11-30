@@ -19,6 +19,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง mlm_members มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('mlm_members')) {
+            return;
+        }
+
         Schema::table('mlm_members', function (Blueprint $table) {
             // เพิ่ม original_sponsor_id - คนที่แนะนำตรงจริงๆ
             if (!Schema::hasColumn('mlm_members', 'original_sponsor_id')) {

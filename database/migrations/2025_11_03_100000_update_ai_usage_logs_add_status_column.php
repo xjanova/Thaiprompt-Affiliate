@@ -12,6 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง ai_usage_logs มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('ai_usage_logs')) {
+            return;
+        }
+
         Schema::table('ai_usage_logs', function (Blueprint $table) {
             // Check if columns exist before making changes
             if (!Schema::hasColumn('ai_usage_logs', 'status')) {

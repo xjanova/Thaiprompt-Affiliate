@@ -12,6 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง mlm_global_settings มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('mlm_global_settings')) {
+            return;
+        }
+
         Schema::table('mlm_global_settings', function (Blueprint $table) {
             // Prospect Lock Settings
             $table->integer('prospect_lock_duration_hours')->default(24)->after('unit'); // อายุล็อก (ชั่วโมง) - default 1 วัน

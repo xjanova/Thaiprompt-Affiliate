@@ -27,6 +27,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง line_bot_ai_settings มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('line_bot_ai_settings')) {
+            return;
+        }
+
         Schema::table('line_bot_ai_settings', function (Blueprint $table) {
             // การเปิดใช้งานสำหรับการรับสมัคร
             if (!Schema::hasColumn('line_bot_ai_settings', 'use_for_recruitment')) {

@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง vendor_stores มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('vendor_stores')) {
+            return;
+        }
+
         Schema::table('vendor_stores', function (Blueprint $table) {
             $table->boolean('is_featured_home')->default(false)->after('is_verified')
                 ->comment('ร้านค้าที่ถูกเลือกให้แสดงในหน้าแรก (แอดมินเลือก)');

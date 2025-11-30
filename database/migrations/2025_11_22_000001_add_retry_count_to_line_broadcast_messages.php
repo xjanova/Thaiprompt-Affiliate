@@ -16,6 +16,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง line_broadcast_messages มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('line_broadcast_messages')) {
+            return;
+        }
+
         Schema::table('line_broadcast_messages', function (Blueprint $table) {
             // เพิ่มคอลัมน์สำหรับการ retry
             $this->safeAddColumn($table, 'line_broadcast_messages', 'retry_count', function($table) {

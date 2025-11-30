@@ -13,6 +13,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง line_bot_keywords มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('line_bot_keywords')) {
+            return;
+        }
+
         if (Schema::hasColumn('line_bot_keywords', 'times_matched')) {
             return;
         }

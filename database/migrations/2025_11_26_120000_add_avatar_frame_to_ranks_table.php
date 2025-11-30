@@ -17,6 +17,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง ranks มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('ranks')) {
+            return;
+        }
+
         Schema::table('ranks', function (Blueprint $table) {
             // เพิ่มคอลัมน์ avatar_frame สำหรับเก็บ URL รูปกรอบ
             if (!Schema::hasColumn('ranks', 'avatar_frame')) {

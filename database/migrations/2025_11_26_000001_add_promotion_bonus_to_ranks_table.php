@@ -21,6 +21,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง ranks มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('ranks')) {
+            return;
+        }
+
         Schema::table('ranks', function (Blueprint $table) {
             // โบนัสเลื่อนตำแหน่งอัตโนมัติ (ได้รับครั้งเดียวเมื่อเลื่อนตำแหน่ง)
             if (!Schema::hasColumn('ranks', 'promotion_bonus')) {

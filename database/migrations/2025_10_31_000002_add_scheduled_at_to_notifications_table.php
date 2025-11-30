@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง notifications มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('notifications')) {
+            return;
+        }
+
         Schema::table('notifications', function (Blueprint $table) {
             $table->timestamp('scheduled_at')->nullable()->after('show_immediately');
             $table->boolean('is_scheduled')->default(false)->after('scheduled_at');

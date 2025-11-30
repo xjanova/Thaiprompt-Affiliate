@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง mlm_prospects มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('mlm_prospects')) {
+            return;
+        }
+
         Schema::table('mlm_prospects', function (Blueprint $table) {
             // Conversation tracking fields
             $table->timestamp('conversation_started_at')->nullable()->after('conversation_data');

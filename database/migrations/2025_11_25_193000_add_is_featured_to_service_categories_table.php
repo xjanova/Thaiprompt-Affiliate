@@ -15,6 +15,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง service_categories มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('service_categories')) {
+            return;
+        }
+
         Schema::table('service_categories', function (Blueprint $table) {
             // เช็คว่าคอลัมน์มีอยู่แล้วหรือยัง
             if (!Schema::hasColumn('service_categories', 'is_featured')) {

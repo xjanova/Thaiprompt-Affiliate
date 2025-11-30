@@ -16,6 +16,46 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง consumer_scans มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('consumer_scans')) {
+            return;
+        }
+
+        // ตรวจสอบว่าตาราง stakeholder_roles มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('stakeholder_roles')) {
+            return;
+        }
+
+        // ตรวจสอบว่าตาราง food_certifications มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('food_certifications')) {
+            return;
+        }
+
+        // ตรวจสอบว่าตาราง carbon_credits มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('carbon_credits')) {
+            return;
+        }
+
+        // ตรวจสอบว่าตาราง carbon_footprint_records มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('carbon_footprint_records')) {
+            return;
+        }
+
+        // ตรวจสอบว่าตาราง quality_checkpoints มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('quality_checkpoints')) {
+            return;
+        }
+
+        // ตรวจสอบว่าตาราง product_journey มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('product_journey')) {
+            return;
+        }
+
+        // ตรวจสอบว่าตาราง food_products มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('food_products')) {
+            return;
+        }
+
         // Food Products Table Indexes
         Schema::table('food_products', function (Blueprint $table) {
             // Primary search indexes

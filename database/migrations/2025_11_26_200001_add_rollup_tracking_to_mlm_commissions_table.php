@@ -22,6 +22,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง mlm_commissions มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('mlm_commissions')) {
+            return;
+        }
+
         Schema::table('mlm_commissions', function (Blueprint $table) {
             // ระบุว่าเป็น roll-up commission หรือไม่
             if (!Schema::hasColumn('mlm_commissions', 'is_rollup')) {

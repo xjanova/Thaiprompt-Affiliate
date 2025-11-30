@@ -19,6 +19,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง line_signup_rewards มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('line_signup_rewards')) {
+            return;
+        }
+
         // รายการ columns ที่ไม่ควรมีใน template table (ต้องตรงกับ seeder)
         $unwantedColumns = [
             'user_id',

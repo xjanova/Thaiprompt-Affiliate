@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง tickets มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('tickets')) {
+            return;
+        }
+
         Schema::table('tickets', function (Blueprint $table) {
             // SLA tracking fields
             $table->timestamp('first_response_at')->nullable()->after('last_reply_at');

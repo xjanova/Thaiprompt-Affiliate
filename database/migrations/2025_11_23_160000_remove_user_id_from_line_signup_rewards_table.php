@@ -19,6 +19,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง line_signup_rewards มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('line_signup_rewards')) {
+            return;
+        }
+
         // เช็คว่ามี column user_id หรือไม่
         if (Schema::hasColumn('line_signup_rewards', 'user_id')) {
             Schema::table('line_signup_rewards', function (Blueprint $table) {

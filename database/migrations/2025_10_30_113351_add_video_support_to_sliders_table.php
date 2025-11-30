@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง sliders มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('sliders')) {
+            return;
+        }
+
         Schema::table('sliders', function (Blueprint $table) {
             // เพิ่มฟิลด์สำหรับระบุประเภทของสไลด์
             $table->enum('media_type', ['image', 'video'])->default('image')->after('id');

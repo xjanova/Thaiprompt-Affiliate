@@ -19,6 +19,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง nfc_cards มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('nfc_cards')) {
+            return;
+        }
+
         Schema::table('nfc_cards', function (Blueprint $table) {
             // Spending Limits (วงเงินการใช้จ่าย)
             if (!Schema::hasColumn('nfc_cards', 'daily_spending_limit')) {

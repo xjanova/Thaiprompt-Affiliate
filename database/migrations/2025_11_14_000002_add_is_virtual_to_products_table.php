@@ -13,6 +13,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง products มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('products')) {
+            return;
+        }
+
         // ✅ ตรวจสอบว่ามีฟิลด์อยู่แล้วหรือไม่
         if (!Schema::hasColumn('products', 'is_virtual')) {
             Schema::table('products', function (Blueprint $table) {

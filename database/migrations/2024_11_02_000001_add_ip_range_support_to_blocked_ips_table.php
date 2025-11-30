@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง blocked_ips มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('blocked_ips')) {
+            return;
+        }
+
         Schema::table('blocked_ips', function (Blueprint $table) {
             // Add IP type field to distinguish between single IP, range, and CIDR
             $table->enum('ip_type', ['single', 'range', 'cidr'])->default('single')->after('ip_address');

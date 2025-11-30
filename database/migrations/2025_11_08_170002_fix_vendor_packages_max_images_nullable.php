@@ -14,6 +14,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง vendor_packages มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('vendor_packages')) {
+            return;
+        }
+
         Schema::table('vendor_packages', function (Blueprint $table) {
             // Make max_images_per_product nullable to allow "unlimited" (null) values
             $table->integer('max_images_per_product')->nullable()->default(10)->change();
