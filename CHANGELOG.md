@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.264.1] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1797 from xjanova/claude/restore-mobile-menu-admin-01SA2ki6WGT29s1ASn4AsvGi (35024842)
+- fix: แก้ไข view paths ใน Controllers ให้ตรงกับ folder structure (91cad2a6)
+### 🔧 Other Changes
+
+
 ## [v3.264.0] - 2025-11-30
 
 ### ✨ Features
