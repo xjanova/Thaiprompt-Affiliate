@@ -21,14 +21,12 @@ return new class extends Migration
             if (!Schema::hasColumn('products', 'vat_percentage')) {
                 $table->decimal('vat_percentage', 5, 2)
                     ->default(7.00)
-                    ->after('cashback_percentage')
                     ->comment('ภาษี VAT (%) หักจากผู้ขาย');
             }
 
             if (!Schema::hasColumn('products', 'pv_value')) {
                 $table->decimal('pv_value', 10, 2)
                     ->default(0)
-                    ->after('vat_percentage')
                     ->comment('PV สำหรับคำนวณ MLM Commission (0 = ไม่มีคอม)');
             }
         });
@@ -39,21 +37,18 @@ return new class extends Migration
                 if (!Schema::hasColumn('services', 'vat_percentage')) {
                     $table->decimal('vat_percentage', 5, 2)
                         ->default(7.00)
-                        ->after('max_pv_percentage')
                         ->comment('ภาษี VAT (%) หักจากผู้ให้บริการ');
                 }
 
                 if (!Schema::hasColumn('services', 'cashback_percentage')) {
                     $table->decimal('cashback_percentage', 5, 2)
                         ->default(0)
-                        ->after('vat_percentage')
                         ->comment('Cashback (%) ผู้ให้บริการจ่ายเอง');
                 }
 
                 if (!Schema::hasColumn('services', 'pv_value')) {
                     $table->decimal('pv_value', 10, 2)
                         ->default(0)
-                        ->after('cashback_percentage')
                         ->comment('PV สำหรับคำนวณ MLM Commission');
                 }
             });
