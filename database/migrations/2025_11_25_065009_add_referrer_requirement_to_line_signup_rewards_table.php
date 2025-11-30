@@ -29,7 +29,6 @@ return new class extends Migration
             if (!Schema::hasColumn('line_signup_rewards', 'referrer_requirement')) {
                 $table->enum('referrer_requirement', ['any', 'required', 'none'])
                     ->default('any')
-                    ->after('signup_type')
                     ->comment('เงื่อนไขผู้แนะนำ: any=ไม่กำหนด, required=ต้องมี, none=ไม่มี');
             }
         });
