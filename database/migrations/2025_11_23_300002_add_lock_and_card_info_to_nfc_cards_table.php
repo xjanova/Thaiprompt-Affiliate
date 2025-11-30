@@ -99,7 +99,7 @@ return new class extends Migration
         $this->safeAddIndex('nfc_cards', 'locked_at');
 
         // เพิ่ม foreign keys
-        if (!$this->hasForeignKey('nfc_cards', 'nfc_cards_locked_by_foreign')) {
+        if (!$this->foreignKeyExists('nfc_cards', 'nfc_cards_locked_by_foreign')) {
             Schema::table('nfc_cards', function (Blueprint $table) {
                 $table->foreign('locked_by', 'nfc_cards_locked_by_foreign')
                     ->references('id')
@@ -108,7 +108,7 @@ return new class extends Migration
             });
         }
 
-        if (!$this->hasForeignKey('nfc_cards', 'nfc_cards_unlocked_by_foreign')) {
+        if (!$this->foreignKeyExists('nfc_cards', 'nfc_cards_unlocked_by_foreign')) {
             Schema::table('nfc_cards', function (Blueprint $table) {
                 $table->foreign('unlocked_by', 'nfc_cards_unlocked_by_foreign')
                     ->references('id')
@@ -125,18 +125,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // ลบ foreign keys
-        if ($this->hasForeignKey('nfc_cards', 'nfc_cards_locked_by_foreign')) {
-            Schema::table('nfc_cards', function (Blueprint $table) {
-                $table->dropForeign('nfc_cards_locked_by_foreign');
-            });
-        }
-
-        if ($this->hasForeignKey('nfc_cards', 'nfc_cards_unlocked_by_foreign')) {
-            Schema::table('nfc_cards', function (Blueprint $table) {
-                $table->dropForeign('nfc_cards_unlocked_by_foreign');
-            });
-        }
+        // ลบ foreign keys (ใช้ safeDropForeign จาก SafeMigration trait)
+        $this->safeDropForeign('nfc_cards', 'nfc_cards_locked_by_foreign');
+        $this->safeDropForeign('nfc_cards', 'nfc_cards_unlocked_by_foreign');
 
         // ลบ indexes
         $this->safeDropIndex('nfc_cards', 'nfc_cards_is_locked_index');
@@ -158,26 +149,5 @@ return new class extends Migration
             'last_read_at',
             'read_count',
         ]);
-    }
-
-    /**
-     * ตรวจสอบว่ามี foreign key หรือไม่
-     *
-     * @param string $table
-     * @param string $foreignKey
-     * @return bool
-     */
-    protected function hasForeignKey(string $table, string $foreignKey): bool
-    {
-        $schemaManager = Schema::getConnection()->getDoctrineSchemaManager();
-        $foreignKeys = $schemaManager->listTableForeignKeys($table);
-
-        foreach ($foreignKeys as $key) {
-            if ($key->getName() === $foreignKey) {
-                return true;
-            }
-        }
-
-        return false;
     }
 };
