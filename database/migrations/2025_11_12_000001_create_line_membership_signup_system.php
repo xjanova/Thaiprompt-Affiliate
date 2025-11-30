@@ -7,11 +7,16 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * สร้างตาราง LINE Membership Signup System
+     * ระบบสมัครสมาชิกผ่าน LINE
      */
     public function up(): void
     {
         // LINE Signup Sessions - Track ongoing signup conversations
+        if (Schema::hasTable('line_signup_sessions')) {
+            return; // ถ้ามีตารางแล้วให้ข้าม
+        }
+
         Schema::create('line_signup_sessions', function (Blueprint $table) {
             $table->id();
             $table->string('line_user_id')->index();
@@ -24,10 +29,12 @@ return new class extends Migration
             $table->enum('status', ['active', 'completed', 'abandoned', 'expired'])->default('active');
             $table->string('language')->default('th');
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
-            $table->foreignId('affiliate_id')->nullable()->constrained()->onDelete('set null');
-            $table->timestamp('started_at');
+            // ⚠️ ใช้ unsignedBigInteger เพราะ affiliates อาจยังไม่มี
+            $table->unsignedBigInteger('affiliate_id')->nullable();
+            // ⚠️ timestamp ต้องมี default value ใน MySQL strict mode
+            $table->timestamp('started_at')->useCurrent();
             $table->timestamp('completed_at')->nullable();
-            $table->timestamp('last_activity_at');
+            $table->timestamp('last_activity_at')->useCurrent();
             $table->timestamps();
 
             $table->index(['line_user_id', 'status']);
@@ -43,7 +50,8 @@ return new class extends Migration
             $table->json('step_data')->nullable();
             $table->text('error_message')->nullable();
             $table->integer('attempts')->default(1);
-            $table->timestamp('started_at');
+            // ⚠️ timestamp ต้องมี default value ใน MySQL strict mode
+            $table->timestamp('started_at')->useCurrent();
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
 
