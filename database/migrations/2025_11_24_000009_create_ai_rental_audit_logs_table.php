@@ -205,7 +205,7 @@ return new class extends Migration
                 ->comment('บันทึกเพิ่มเติม');
 
             // Timestamps
-            $table->timestamp('action_at')
+            $table->timestamp('action_at')->useCurrent()
                 ->comment('เวลาที่เกิดการกระทำ');
 
             $table->timestamps();
