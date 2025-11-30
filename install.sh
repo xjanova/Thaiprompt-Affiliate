@@ -1927,11 +1927,59 @@ echo ""
 echo "📊 กำลังสร้างตารางฐานข้อมูล..."
 echo ""
 
-if php artisan migrate --force; then
+# เก็บ output ของ migration เพื่อวิเคราะห์ error
+MIGRATION_OUTPUT=$(php artisan migrate --force 2>&1)
+MIGRATION_STATUS=$?
+
+if [ $MIGRATION_STATUS -eq 0 ]; then
     MIGRATION_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "0")
     print_success "รัน migrations สำเร็จ ✓ (สร้าง $MIGRATION_COUNT ตาราง)"
 else
-    error_exit "รัน migrations ล้มเหลว!"
+    # แสดง error
+    echo ""
+    print_error "Migration ล้มเหลว:"
+    echo "$MIGRATION_OUTPUT" | tail -20
+    echo ""
+
+    # ตรวจสอบว่าเป็น foreign key error หรือ table already exists
+    if echo "$MIGRATION_OUTPUT" | grep -q -E "(Foreign key|already exists|errno: 150|constraint)"; then
+        print_warning "ดูเหมือนว่ามีตารางหรือ constraints ที่ค้างจากการติดตั้งไม่สำเร็จก่อนหน้านี้"
+        echo ""
+
+        if [ "$AUTO_MODE" = true ]; then
+            # Auto mode: ลองรัน migrate:fresh อัตโนมัติ
+            print_step "Auto mode: กำลังรัน migrate:fresh เพื่อเริ่มใหม่..."
+            if php artisan migrate:fresh --force; then
+                MIGRATION_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "0")
+                print_success "รัน migrate:fresh สำเร็จ ✓ (สร้าง $MIGRATION_COUNT ตาราง)"
+            else
+                error_exit "รัน migrate:fresh ล้มเหลว!"
+            fi
+        else
+            # Interactive mode: ถามผู้ใช้
+            echo "คุณต้องการทำอย่างไร?"
+            echo ""
+            echo "  1) รัน migrate:fresh (ลบตารางทั้งหมดและสร้างใหม่)"
+            echo "  2) ยกเลิกการติดตั้ง"
+            echo ""
+            read -p "เลือก (1/2) [1]: " MIGRATE_CHOICE
+            MIGRATE_CHOICE=${MIGRATE_CHOICE:-1}
+
+            if [ "$MIGRATE_CHOICE" = "1" ]; then
+                print_step "กำลังรัน migrate:fresh..."
+                if php artisan migrate:fresh --force; then
+                    MIGRATION_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "0")
+                    print_success "รัน migrate:fresh สำเร็จ ✓ (สร้าง $MIGRATION_COUNT ตาราง)"
+                else
+                    error_exit "รัน migrate:fresh ล้มเหลว!"
+                fi
+            else
+                error_exit "ยกเลิกการติดตั้งตามที่ผู้ใช้ต้องการ"
+            fi
+        fi
+    else
+        error_exit "รัน migrations ล้มเหลว!"
+    fi
 fi
 
 save_checkpoint "STEP_6_MIGRATIONS"
