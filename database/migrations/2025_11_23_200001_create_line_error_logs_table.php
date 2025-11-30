@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -39,7 +40,7 @@ return new class extends Migration
             $table->text('recovery_details')->nullable()->comment('รายละเอียดการแก้ไข');
 
             // Timing
-            $table->timestamp('occurred_at')->index()->comment('เวลาที่เกิด error');
+            $table->timestamp('occurred_at')->useCurrent()->index()->comment('เวลาที่เกิด error');
             $table->timestamp('resolved_at')->nullable()->comment('เวลาที่แก้ไขแล้ว');
             $table->unsignedInteger('recovery_time_seconds')->nullable()->comment('เวลาที่ใช้ในการแก้ไข (วินาที)');
 

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->id();
 
             // Timestamp for this metric snapshot
-            $table->timestamp('recorded_at')->index();
+            $table->timestamp('recorded_at')->useCurrent()->index();
 
             // System Performance Metrics
             $table->decimal('cpu_usage', 5, 2)->nullable()->comment('CPU usage percentage');
