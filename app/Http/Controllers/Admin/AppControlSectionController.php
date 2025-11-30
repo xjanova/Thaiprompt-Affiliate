@@ -15,7 +15,7 @@ class AppControlSectionController extends Controller
     public function index()
     {
         $sections = AppControlSection::orderBy('sort_order')->paginate(20);
-        return view('admin.app-control-sections.index', compact('sections'));
+        return view('admin.app-management.control-sections.index', compact('sections'));
     }
 
     /**
@@ -23,7 +23,7 @@ class AppControlSectionController extends Controller
      */
     public function create()
     {
-        return view('admin.app-control-sections.create');
+        return view('admin.app-management.control-sections.create');
     }
 
     /**
@@ -73,7 +73,7 @@ class AppControlSectionController extends Controller
         $section = AppControlSection::create($validated);
 
         return redirect()
-            ->route('admin.app-control-sections.edit', $section)
+            ->route('admin.app-management.control-sections.edit', $section)
             ->with('success', 'Control Section created successfully');
     }
 
@@ -82,7 +82,7 @@ class AppControlSectionController extends Controller
      */
     public function edit(AppControlSection $appControlSection)
     {
-        return view('admin.app-control-sections.edit', compact('appControlSection'));
+        return view('admin.app-management.control-sections.edit', compact('appControlSection'));
     }
 
     /**
@@ -132,7 +132,7 @@ class AppControlSectionController extends Controller
         $appControlSection->update($validated);
 
         return redirect()
-            ->route('admin.app-control-sections.edit', $appControlSection)
+            ->route('admin.app-management.control-sections.edit', $appControlSection)
             ->with('success', 'Control Section updated successfully');
     }
 
@@ -144,7 +144,7 @@ class AppControlSectionController extends Controller
         $appControlSection->delete();
 
         return redirect()
-            ->route('admin.app-control-sections.index')
+            ->route('admin.app-management.control-sections.index')
             ->with('success', 'Control Section deleted successfully');
     }
 

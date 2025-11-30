@@ -37,7 +37,7 @@
                     <p class="text-purple-100 dark:text-pink-200">ควบคุมฟีเจอร์ต่างๆ ของแอพพลิเคชั่น</p>
                 </div>
             </div>
-            <a href="{{ route('admin.app-features.create') }}" class="px-6 py-3 bg-white/20 backdrop-blur-md hover:bg-white/30 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold border border-white/30">
+            <a href="{{ route('admin.app-management.features.create') }}" class="px-6 py-3 bg-white/20 backdrop-blur-md hover:bg-white/30 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold border border-white/30">
                 <i class="fas fa-plus mr-2"></i>เพิ่มฟีเจอร์ใหม่
             </a>
         </div>
@@ -145,7 +145,7 @@
 
                                 <!-- Actions -->
                                 <div class="flex items-center gap-2 ml-4">
-                                    <a href="{{ route('admin.app-features.edit', $feature) }}"
+                                    <a href="{{ route('admin.app-management.features.edit', $feature) }}"
                                        class="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white rounded-lg transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
                                         <i class="fas fa-edit mr-1"></i>แก้ไข
                                     </a>
@@ -167,7 +167,7 @@
             </div>
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ยังไม่มีฟีเจอร์</h3>
             <p class="text-gray-600 dark:text-gray-400 mb-6">เริ่มต้นสร้างฟีเจอร์แรกของคุณ</p>
-            <a href="{{ route('admin.app-features.create') }}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
+            <a href="{{ route('admin.app-management.features.create') }}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
                 <i class="fas fa-plus mr-2"></i>เพิ่มฟีเจอร์ใหม่
             </a>
         </div>

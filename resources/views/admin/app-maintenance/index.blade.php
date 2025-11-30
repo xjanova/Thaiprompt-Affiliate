@@ -63,7 +63,7 @@
 
     <!-- Form Card -->
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
-        <form method="POST" action="{{ route('admin.app-maintenance.update') }}" enctype="multipart/form-data" class="p-8">
+        <form method="POST" action="{{ route('admin.app-management.app-maintenance.update') }}" enctype="multipart/form-data" class="p-8">
             @csrf
             @method('PUT')
 

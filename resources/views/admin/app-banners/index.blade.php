@@ -10,7 +10,7 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">จัดการ Emergency Alert Banner</h1>
             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ระบบแจ้งเตือนฉุกเฉินแบบลอย สำหรับแจ้งเตือนสำคัญให้ทุกคนเห็น</p>
         </div>
-        <a href="{{ route('admin.app-banners.create') }}"
+        <a href="{{ route('admin.app-management.banners.create') }}"
            class="px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg hover:from-red-700 hover:to-orange-700 shadow-md hover:shadow-lg transition-all">
             <i class="fas fa-plus mr-2"></i> สร้าง Emergency Alert ใหม่
         </a>
@@ -184,12 +184,12 @@
 
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex items-center justify-end gap-2">
-                                        <a href="{{ route('admin.app-banners.edit', $banner) }}"
+                                        <a href="{{ route('admin.app-management.banners.edit', $banner) }}"
                                            class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
                                             <i class="fas fa-edit"></i>
                                         </a>
 
-                                        <form action="{{ route('admin.app-banners.destroy', $banner) }}" method="POST" class="inline"
+                                        <form action="{{ route('admin.app-management.banners.destroy', $banner) }}" method="POST" class="inline"
                                               onsubmit="return confirm('Are you sure you want to delete this banner?');">
                                             @csrf
                                             @method('DELETE')
@@ -210,7 +210,7 @@
             <i class="fas fa-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No Emergency Alerts Yet</h3>
             <p class="text-gray-500 dark:text-gray-400 mb-4">Create your first emergency alert banner to notify your users.</p>
-            <a href="{{ route('admin.app-banners.create') }}"
+            <a href="{{ route('admin.app-management.banners.create') }}"
                class="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
                 <i class="fas fa-plus mr-2"></i> Create Emergency Alert
             </a>
