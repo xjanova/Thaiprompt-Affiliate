@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * สร้างตาราง trading_signals
+     * ตารางสัญญาณซื้อขาย
      */
     public function up(): void
     {
@@ -41,7 +42,9 @@ return new class extends Migration
 
                 // Execution
                 $table->enum('status', ['pending', 'executed', 'expired', 'cancelled', 'failed'])->default('pending');
-                $table->foreignId('trade_id')->nullable()->constrained('trading_trades')->onDelete('set null');
+                // ⚠️ ใช้ unsignedBigInteger แทน foreignId()->constrained()
+                // เพราะ trading_trades ถูกสร้างใน migration 000008 (หลัง 000007)
+                $table->unsignedBigInteger('trade_id')->nullable();
                 $table->timestamp('executed_at')->nullable();
                 $table->timestamp('expires_at')->nullable();
                 $table->text('notes')->nullable();
@@ -52,6 +55,16 @@ return new class extends Migration
                 $table->index(['trading_pair', 'signal_type']);
                 $table->index('created_at');
             });
+
+            // เพิ่ม foreign key ถ้า trading_trades มีอยู่แล้ว
+            if (Schema::hasTable('trading_trades')) {
+                Schema::table('trading_signals', function (Blueprint $table) {
+                    $table->foreign('trade_id')
+                        ->references('id')
+                        ->on('trading_trades')
+                        ->onDelete('set null');
+                });
+            }
         }
     }
 
