@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.267.40] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1854 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (f2a0b996)
+- fix: เพิ่มการตรวจสอบตารางใน LineSignupRewardSeeder (88b4f173)
+### 🔧 Other Changes
+
+
 ## [v3.267.39] - 2025-11-30
 
 ### ✨ Features
