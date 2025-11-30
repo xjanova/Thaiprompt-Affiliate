@@ -1413,6 +1413,72 @@
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่า</span>
         </a>
 
+        {{-- Mobile App Management 📱 สำหรับควบคุม App มือถือ --}}
+        <div class="space-y-1"
+             x-data="{ mobileAppOpen: {{ request()->routeIs('admin.app-management.*') ? 'true' : 'false' }} }">
+            {{-- Mobile App Header Button --}}
+            <button @click="mobileAppOpen = !mobileAppOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.app-management.*') ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-mobile-alt w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">📱 Mobile App</span>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="ml-auto px-1.5 py-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-[10px] font-bold rounded-full shadow-lg animate-pulse">LIVE</span>
+                <i x-show="$store.sidebar.shouldExpand && mobileAppOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !mobileAppOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Mobile App Submenu --}}
+            <div x-show="mobileAppOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- App Settings (ตั้งค่าหลัก) --}}
+                <a href="{{ route('admin.app-management.settings.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.app-management.settings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-cog w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่าแอป</span>
+                </a>
+
+                {{-- App Theme (ธีมสี) --}}
+                <a href="{{ route('admin.app-management.theme.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.app-management.theme.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-palette w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ธีมและสี</span>
+                </a>
+
+                {{-- App Features (คุณสมบัติ) --}}
+                <a href="{{ route('admin.app-management.features.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.app-management.features.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-puzzle-piece w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">คุณสมบัติแอป</span>
+                </a>
+
+                {{-- App Banners (แบนเนอร์โฆษณา) --}}
+                <a href="{{ route('admin.app-management.banners.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.app-management.banners.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-ad w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">แบนเนอร์โฆษณา</span>
+                </a>
+
+                {{-- App Control Sections (ควบคุม UI) --}}
+                <a href="{{ route('admin.app-management.control-sections.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.app-management.control-sections.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-th-large w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ควบคุม UI Sections</span>
+                </a>
+
+                {{-- App Maintenance (โหมดซ่อมบำรุง) --}}
+                <a href="{{ route('admin.app-management.app-maintenance.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.app-management.app-maintenance.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tools w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">โหมดซ่อมบำรุง</span>
+                </a>
+            </div>
+        </div>
+
         {{-- Site Settings (โลโก้, SEO, Social Media) --}}
         <a href="{{ route('admin.site-settings.index') }}"
            @click="$store.sidebar.closeOnMenuClick()"
