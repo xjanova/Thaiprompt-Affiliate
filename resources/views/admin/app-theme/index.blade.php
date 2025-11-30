@@ -64,7 +64,7 @@
     </div>
 
     <!-- Form -->
-    <form method="POST" action="{{ route('admin.app-theme.update') }}" enctype="multipart/form-data" class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden p-8">
+    <form method="POST" action="{{ route('admin.app-management.theme.update') }}" enctype="multipart/form-data" class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden p-8">
         @csrf
         @method('PUT')
 
