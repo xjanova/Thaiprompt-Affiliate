@@ -13,15 +13,29 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง affiliates มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('affiliates')) {
+            // ตาราง affiliates ยังไม่มี - ข้าม migration นี้
+            // columns จะถูกเพิ่มตอนสร้างตาราง affiliates
+            return;
+        }
+
         // ตรวจสอบว่ามี column อยู่แล้วหรือไม่ (เพื่อป้องกัน error)
         if (!Schema::hasColumn('affiliates', 'rank_id')) {
             Schema::table('affiliates', function (Blueprint $table) {
-                $table->foreignId('rank_id')->nullable()->after('status')
-                    ->constrained('ranks')->onDelete('set null');
+                // ใช้ unsignedBigInteger แทน foreignId()->constrained() เพื่อความปลอดภัย
+                $table->unsignedBigInteger('rank_id')->nullable()->after('status');
                 $table->integer('rank_points')->default(0)->after('rank_id');
                 $table->decimal('monthly_sales', 12, 2)->default(0)->after('rank_points');
                 $table->decimal('team_sales', 12, 2)->default(0)->after('monthly_sales');
             });
+
+            // เพิ่ม foreign key ถ้าตาราง ranks มีอยู่
+            if (Schema::hasTable('ranks')) {
+                Schema::table('affiliates', function (Blueprint $table) {
+                    $table->foreign('rank_id')->references('id')->on('ranks')->onDelete('set null');
+                });
+            }
         }
     }
 
@@ -30,11 +44,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('affiliates', function (Blueprint $table) {
-            if (Schema::hasColumn('affiliates', 'rank_id')) {
+        if (Schema::hasTable('affiliates') && Schema::hasColumn('affiliates', 'rank_id')) {
+            Schema::table('affiliates', function (Blueprint $table) {
                 $table->dropForeign(['rank_id']);
                 $table->dropColumn(['rank_id', 'rank_points', 'monthly_sales', 'team_sales']);
-            }
-        });
+            });
+        }
     }
 };

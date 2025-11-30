@@ -11,13 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง affiliates มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('affiliates')) {
+            // ตาราง affiliates ยังไม่มี - ข้าม migration นี้
+            return;
+        }
+
+        // ตรวจสอบว่ามี column อยู่แล้วหรือไม่
+        if (Schema::hasColumn('affiliates', 'binary_parent_id')) {
+            return;
+        }
+
         Schema::table('affiliates', function (Blueprint $table) {
-            // Binary tree parent (แยกจาก parent_id ของ affiliate hierarchy)
-            $table->foreignId('binary_parent_id')
-                ->nullable()
-                ->after('parent_id')
-                ->constrained('affiliates')
-                ->onDelete('set null');
+            // Binary tree parent - ใช้ unsignedBigInteger แทน foreignId()->constrained()
+            $table->unsignedBigInteger('binary_parent_id')->nullable()->after('parent_id');
 
             // Binary position: left or right
             $table->enum('binary_position', ['left', 'right'])
@@ -44,6 +51,14 @@ return new class extends Migration
             $table->index(['binary_parent_id', 'binary_position']);
             $table->index('binary_level');
         });
+
+        // เพิ่ม foreign key หลังสร้าง column
+        Schema::table('affiliates', function (Blueprint $table) {
+            $table->foreign('binary_parent_id')
+                ->references('id')
+                ->on('affiliates')
+                ->onDelete('set null');
+        });
     }
 
     /**
@@ -51,17 +66,19 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('affiliates', function (Blueprint $table) {
-            $table->dropForeign(['binary_parent_id']);
-            $table->dropIndex(['binary_parent_id', 'binary_position']);
-            $table->dropIndex(['binary_level']);
-            $table->dropColumn([
-                'binary_parent_id',
-                'binary_position',
-                'binary_level',
-                'binary_left_count',
-                'binary_right_count'
-            ]);
-        });
+        if (Schema::hasTable('affiliates') && Schema::hasColumn('affiliates', 'binary_parent_id')) {
+            Schema::table('affiliates', function (Blueprint $table) {
+                $table->dropForeign(['binary_parent_id']);
+                $table->dropIndex(['binary_parent_id', 'binary_position']);
+                $table->dropIndex(['binary_level']);
+                $table->dropColumn([
+                    'binary_parent_id',
+                    'binary_position',
+                    'binary_level',
+                    'binary_left_count',
+                    'binary_right_count'
+                ]);
+            });
+        }
     }
 };
