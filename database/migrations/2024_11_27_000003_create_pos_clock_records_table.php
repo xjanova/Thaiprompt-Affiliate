@@ -18,17 +18,11 @@ return new class extends Migration
 
         Schema::create('pos_clock_records', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('pos_staff_assignment_id')
-                ->constrained('pos_staff_assignments')
-                ->onDelete('cascade');
-            $table->foreignId('pos_session_id')
-                ->nullable()
-                ->constrained('pos_sessions')
-                ->onDelete('set null');
-            $table->foreignId('work_shift_id')
-                ->nullable()
-                ->constrained('work_shifts')
-                ->onDelete('set null');
+            // ⚠️ ใช้ unsignedBigInteger แทน foreignId()->constrained()
+            // เพราะตารางที่อ้างอิงอาจยังไม่มีในขณะที่ migration นี้รัน
+            $table->unsignedBigInteger('pos_staff_assignment_id');
+            $table->unsignedBigInteger('pos_session_id')->nullable();
+            $table->unsignedBigInteger('work_shift_id')->nullable();
 
             // การลงเวลา
             $table->date('work_date'); // วันที่ทำงาน
@@ -72,10 +66,7 @@ return new class extends Migration
 
             // การอนุมัติ (กรณีแก้ไข)
             $table->boolean('is_modified')->default(false);
-            $table->foreignId('modified_by')
-                ->nullable()
-                ->constrained('users')
-                ->onDelete('set null');
+            $table->unsignedBigInteger('modified_by')->nullable();
             $table->timestamp('modified_at')->nullable();
             $table->text('modification_reason')->nullable();
 
@@ -87,6 +78,31 @@ return new class extends Migration
             $table->index(['work_date', 'status']);
             $table->unique(['pos_staff_assignment_id', 'work_date', 'work_shift_id'], 'unique_staff_date_shift');
         });
+
+        // เพิ่ม foreign keys ถ้าตารางที่อ้างอิงมีอยู่แล้ว
+        if (Schema::hasTable('pos_staff_assignments')) {
+            Schema::table('pos_clock_records', function (Blueprint $table) {
+                $table->foreign('pos_staff_assignment_id')->references('id')->on('pos_staff_assignments')->onDelete('cascade');
+            });
+        }
+
+        if (Schema::hasTable('pos_sessions')) {
+            Schema::table('pos_clock_records', function (Blueprint $table) {
+                $table->foreign('pos_session_id')->references('id')->on('pos_sessions')->onDelete('set null');
+            });
+        }
+
+        if (Schema::hasTable('work_shifts')) {
+            Schema::table('pos_clock_records', function (Blueprint $table) {
+                $table->foreign('work_shift_id')->references('id')->on('work_shifts')->onDelete('set null');
+            });
+        }
+
+        if (Schema::hasTable('users')) {
+            Schema::table('pos_clock_records', function (Blueprint $table) {
+                $table->foreign('modified_by')->references('id')->on('users')->onDelete('set null');
+            });
+        }
     }
 
     /**
