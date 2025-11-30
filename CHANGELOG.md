@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.264.2] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1798 from xjanova/claude/check-affiliate-api-01RAcHR2VCydVx3La1LpbPzL (a4ea2ef2)
+- style: ปรับปรุง Marketplace Admin views ด้วย V3 Premium Design (442c57a7)
+
 ## [v3.264.1] - 2025-11-30
 
 ### ✨ Features
