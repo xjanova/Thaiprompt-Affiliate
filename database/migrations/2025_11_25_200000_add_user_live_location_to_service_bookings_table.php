@@ -24,15 +24,15 @@ return new class extends Migration
         Schema::table('service_bookings', function (Blueprint $table) {
             // ตำแหน่ง live ของลูกค้า (สำหรับ real-time tracking)
             if (!Schema::hasColumn('service_bookings', 'user_live_latitude')) {
-                $table->decimal('user_live_latitude', 10, 8)->nullable()->after('customer_address');
+                $table->decimal('user_live_latitude', 10, 8)->nullable();
             }
 
             if (!Schema::hasColumn('service_bookings', 'user_live_longitude')) {
-                $table->decimal('user_live_longitude', 11, 8)->nullable()->after('user_live_latitude');
+                $table->decimal('user_live_longitude', 11, 8)->nullable();
             }
 
             if (!Schema::hasColumn('service_bookings', 'user_location_updated_at')) {
-                $table->timestamp('user_location_updated_at')->nullable()->after('user_live_longitude');
+                $table->timestamp('user_location_updated_at')->nullable();
             }
         });
     }
