@@ -2,6 +2,7 @@
 
 use Database\Migrations\Concerns\SafeMigration;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -21,6 +22,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ปิด foreign key checks เพื่อให้ลบตารางได้โดยไม่ติด constraint
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
         // ลบตาราง line_flex_message_templates (ไม่ใช้แล้ว)
         $this->safeDropTable('line_flex_message_templates');
 
@@ -29,6 +33,9 @@ return new class extends Migration
 
         // ลบตาราง line_avatars (Avatar system ไม่ใช้แล้ว)
         $this->safeDropTable('line_avatars');
+
+        // เปิด foreign key checks กลับคืน
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
     }
 
     /**
