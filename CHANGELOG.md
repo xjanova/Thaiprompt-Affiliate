@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.261.1] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไข route names ทั้งหมดในส่วน Mobile App Management (05de10cd)
+- fix: แก้ไข route name ใน app-theme view ให้ถูกต้อง (0c795a9b)
+### 🔧 Other Changes
+- Merge pull request #1793 from xjanova/claude/restore-mobile-menu-admin-01SA2ki6WGT29s1ASn4AsvGi (9c5399aa)
+
 ## [v3.261.0] - 2025-11-30
 
 ### ✨ Features
