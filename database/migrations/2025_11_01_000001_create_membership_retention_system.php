@@ -113,8 +113,9 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->index(['user_id', 'valid_from', 'valid_until']);
-            $table->index('payment_status');
+            // ⚠️ ใช้ชื่อ index สั้นๆ เพราะ MySQL จำกัด 64 ตัวอักษร
+            $table->index(['user_id', 'valid_from', 'valid_until'], 'mra_user_validity_idx');
+            $table->index('payment_status', 'mra_payment_status_idx');
             });
         }
 
