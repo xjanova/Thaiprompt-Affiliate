@@ -163,8 +163,8 @@ class NFCCardSeeder extends Seeder
 
             // Auto top-up (50% เปิด auto top-up)
             'auto_topup_enabled' => $walletId && rand(1, 100) <= 50,
-            'auto_topup_threshold' => $walletId ? 1000 : null,
-            'auto_topup_amount' => $walletId ? 2000 : null,
+            'auto_topup_threshold' => $walletId ? 1000 : 100, // ใช้ default 100 ถ้าไม่มี wallet
+            'auto_topup_amount' => $walletId ? 2000 : 1000,   // ใช้ default 1000 ถ้าไม่มี wallet
         ]);
 
         $this->command->info("   ✓ สร้างบัตร: {$card->card_name} ({$card->masked_card_number})");
