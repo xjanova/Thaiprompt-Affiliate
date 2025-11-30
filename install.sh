@@ -493,22 +493,52 @@ clone_repository() {
     if [ -n "$CUSTOM_INSTALL_DIR" ]; then
         INSTALL_DIR="$CUSTOM_INSTALL_DIR"
         if [ "$INSTALL_DIR" = "." ]; then
-            print_info "จะติดตั้งในโฟลเดอร์ปัจจุบัน"
+            print_info "จะติดตั้งในโฟลเดอร์ปัจจุบัน: $(pwd)"
             # Clone โดยตรงลงในโฟลเดอร์ปัจจุบัน
             print_step "กำลัง clone จาก $REPO_URL..."
             print_info "Branch: $REPO_BRANCH"
             echo ""
 
-            # Clone to temp dir then move files
+            # Clone to temp dir then copy files (ไม่ใช้ mv เพราะอาจมีปัญหากับไฟล์ที่มีอยู่)
             local TEMP_DIR=".tp-affiliate-temp-$$"
             if git clone -b "$REPO_BRANCH" --depth 1 "$REPO_URL" "$TEMP_DIR" 2>&1; then
-                # Move all files from temp to current directory
-                shopt -s dotglob
-                mv "$TEMP_DIR"/* . 2>/dev/null || true
-                shopt -u dotglob
+                print_step "กำลังคัดลอกไฟล์ลงในโฟลเดอร์ปัจจุบัน..."
+
+                # ลบ .git ของ temp เพราะเราจะไม่ต้องการมัน (หรือจะ init ใหม่ทีหลัง)
+                rm -rf "$TEMP_DIR/.git"
+
+                # คัดลอกไฟล์ทั้งหมด (รวม hidden files) ลงในโฟลเดอร์ปัจจุบัน
+                # ใช้ cp -a เพื่อรักษา attributes และ copy hidden files
+                shopt -s dotglob nullglob
+                for item in "$TEMP_DIR"/*; do
+                    if [ -e "$item" ]; then
+                        local basename=$(basename "$item")
+                        # ถ้าไฟล์/โฟลเดอร์มีอยู่แล้ว ให้ลบก่อน (ยกเว้น .env ที่ผู้ใช้อาจตั้งค่าไว้)
+                        if [ "$basename" != ".env" ] && [ -e "./$basename" ]; then
+                            rm -rf "./$basename"
+                        fi
+                        # คัดลอกไฟล์ (ไม่ทับ .env ถ้ามีอยู่)
+                        if [ "$basename" = ".env" ] && [ -e "./.env" ]; then
+                            print_info "พบ .env ที่มีอยู่แล้ว - ข้ามการทับ"
+                        else
+                            cp -a "$item" ./
+                        fi
+                    fi
+                done
+                shopt -u dotglob nullglob
+
+                # ลบ temp directory
                 rm -rf "$TEMP_DIR"
-                print_success "Clone สำเร็จ! ✓"
-                return 0
+
+                # ตรวจสอบว่าไฟล์สำคัญถูกคัดลอกมาหรือไม่
+                if [ -d "./public" ] && [ -f "./artisan" ]; then
+                    print_success "Clone และคัดลอกไฟล์สำเร็จ! ✓"
+                    print_info "ไฟล์สำคัญ: public/, artisan, .env.example ✓"
+                    return 0
+                else
+                    print_warning "บางไฟล์อาจไม่ถูกคัดลอก กรุณาตรวจสอบ"
+                    return 0
+                fi
             else
                 rm -rf "$TEMP_DIR"
                 error_exit "Clone repository ล้มเหลว"
@@ -1256,7 +1286,9 @@ if detect_empty_folder; then
             export CUSTOM_INSTALL_DIR="$INSTALL_DIR"
             print_success "จะติดตั้งในโฟลเดอร์: $INSTALL_DIR"
         else
-            print_success "จะติดตั้งในโฟลเดอร์ปัจจุบัน"
+            # ติดตั้งในโฟลเดอร์ปัจจุบัน - set CUSTOM_INSTALL_DIR="."
+            export CUSTOM_INSTALL_DIR="."
+            print_success "จะติดตั้งในโฟลเดอร์ปัจจุบัน: $(pwd)"
         fi
         echo ""
 
