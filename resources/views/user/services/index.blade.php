@@ -145,9 +145,17 @@
             @foreach($categories->take(16) as $category)
             <a href="{{ route('user.services.index', ['category' => $category->id]) }}"
                class="group flex flex-col items-center p-4 rounded-2xl glass-fusion hover:scale-105 transition-all duration-200 {{ ($filters['category'] ?? null) == $category->id ? 'ring-2 ring-purple-500' : '' }}">
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-2 group-hover:scale-110 transition-transform"
-                     style="background: {{ $category->color ?? '#8B5CF6' }}; color: white;">
-                    <i class="{{ $category->icon ?? 'fas fa-concierge-bell' }}"></i>
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform overflow-hidden">
+                    @if($category->icon && str_ends_with($category->icon, '.svg'))
+                        {{-- SVG Icon --}}
+                        <img src="{{ asset($category->icon) }}" alt="{{ $category->name }}" class="w-full h-full object-cover">
+                    @else
+                        {{-- Font Awesome Icon (fallback) --}}
+                        <div class="w-full h-full flex items-center justify-center text-xl"
+                             style="background: {{ $category->color ?? '#8B5CF6' }}; color: white;">
+                            <i class="{{ $category->icon ?? 'fa-solid fa-concierge-bell' }}"></i>
+                        </div>
+                    @endif
                 </div>
                 <span class="text-xs font-semibold text-white text-center line-clamp-2">{{ $category->name }}</span>
                 <span class="text-xs text-white/60">({{ $category->services_count ?? 0 }})</span>
@@ -177,9 +185,13 @@
                              alt="{{ $service->name }}"
                              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                     @else
-                        <div class="w-full h-full flex items-center justify-center text-6xl text-white/50"
+                        <div class="w-full h-full flex items-center justify-center"
                              style="background: {{ $service->category->color ?? '#8B5CF6' }}20;">
-                            <i class="{{ $service->category->icon ?? 'fas fa-concierge-bell' }}"></i>
+                            @if($service->category->icon && str_ends_with($service->category->icon, '.svg'))
+                                <img src="{{ asset($service->category->icon) }}" alt="{{ $service->category->name }}" class="w-16 h-16 opacity-80">
+                            @else
+                                <i class="{{ $service->category->icon ?? 'fa-solid fa-concierge-bell' }} text-6xl text-white/50"></i>
+                            @endif
                         </div>
                     @endif
 
@@ -213,7 +225,11 @@
                     <div class="flex items-center justify-between">
                         <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full"
                               style="background: {{ $service->category->color ?? '#8B5CF6' }}30; color: {{ $service->category->color ?? '#8B5CF6' }}">
-                            <i class="{{ $service->category->icon ?? 'fas fa-tag' }}"></i>
+                            @if($service->category->icon && str_ends_with($service->category->icon, '.svg'))
+                                <img src="{{ asset($service->category->icon) }}" alt="" class="w-4 h-4">
+                            @else
+                                <i class="{{ $service->category->icon ?? 'fa-solid fa-tag' }}"></i>
+                            @endif
                             {{ $service->category->name ?? '' }}
                         </span>
                         <div class="flex items-center gap-1 text-yellow-400">
@@ -372,9 +388,13 @@
                                      class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                      loading="lazy">
                             @else
-                                <div class="w-full h-full flex items-center justify-center text-6xl text-white/30"
+                                <div class="w-full h-full flex items-center justify-center"
                                      style="background: {{ $service->category->color ?? '#8B5CF6' }}20;">
-                                    <i class="{{ $service->category->icon ?? 'fas fa-concierge-bell' }}"></i>
+                                    @if($service->category->icon && str_ends_with($service->category->icon, '.svg'))
+                                        <img src="{{ asset($service->category->icon) }}" alt="{{ $service->category->name }}" class="w-20 h-20 opacity-60">
+                                    @else
+                                        <i class="{{ $service->category->icon ?? 'fa-solid fa-concierge-bell' }} text-6xl text-white/30"></i>
+                                    @endif
                                 </div>
                             @endif
 
@@ -382,7 +402,11 @@
                             <div class="absolute top-3 left-3">
                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full text-xs font-semibold shadow"
                                       style="color: {{ $service->category->color ?? '#8B5CF6' }}">
-                                    <i class="{{ $service->category->icon ?? 'fas fa-tag' }}"></i>
+                                    @if($service->category->icon && str_ends_with($service->category->icon, '.svg'))
+                                        <img src="{{ asset($service->category->icon) }}" alt="" class="w-4 h-4">
+                                    @else
+                                        <i class="{{ $service->category->icon ?? 'fa-solid fa-tag' }}"></i>
+                                    @endif
                                     {{ $service->category->name ?? 'อื่นๆ' }}
                                 </span>
                             </div>
@@ -461,9 +485,13 @@
                                  class="w-full h-full object-cover"
                                  loading="lazy">
                         @else
-                            <div class="w-full h-full flex items-center justify-center text-5xl text-white/30"
+                            <div class="w-full h-full flex items-center justify-center"
                                  style="background: {{ $service->category->color ?? '#8B5CF6' }}20;">
-                                <i class="{{ $service->category->icon ?? 'fas fa-concierge-bell' }}"></i>
+                                @if($service->category->icon && str_ends_with($service->category->icon, '.svg'))
+                                    <img src="{{ asset($service->category->icon) }}" alt="{{ $service->category->name }}" class="w-16 h-16 opacity-60">
+                                @else
+                                    <i class="{{ $service->category->icon ?? 'fa-solid fa-concierge-bell' }} text-5xl text-white/30"></i>
+                                @endif
                             </div>
                         @endif
                     </div>
@@ -474,7 +502,11 @@
                             <div class="min-w-0">
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mb-2"
                                       style="background: {{ $service->category->color ?? '#8B5CF6' }}30; color: {{ $service->category->color ?? '#8B5CF6' }}">
-                                    <i class="{{ $service->category->icon ?? 'fas fa-tag' }}"></i>
+                                    @if($service->category->icon && str_ends_with($service->category->icon, '.svg'))
+                                        <img src="{{ asset($service->category->icon) }}" alt="" class="w-4 h-4">
+                                    @else
+                                        <i class="{{ $service->category->icon ?? 'fa-solid fa-tag' }}"></i>
+                                    @endif
                                     {{ $service->category->name ?? '' }}
                                 </span>
                                 <h3 class="font-bold text-lg text-white group-hover:text-purple-300 transition-colors">
