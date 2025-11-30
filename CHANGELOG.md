@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.267.41] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1855 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (40563538)
+- fix: แก้ไข NFCCardSeeder - auto_topup columns ไม่สามารถเป็น null (97276bfc)
+### 🔧 Other Changes
+
+
 ## [v3.267.40] - 2025-11-30
 
 ### ✨ Features
