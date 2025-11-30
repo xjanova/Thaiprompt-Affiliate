@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.267.0] - 2025-11-30
+
+### ✨ Features
+- Merge pull request #1814 from xjanova/claude/fix-user-services-icons-01YaFKrymH6XAAMFxsRN9TWf (f78214ae)
+- feat: เพิ่มไอคอน SVG สำหรับหมวดหมู่บริการที่สวยงาม (a115c95a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.266.0] - 2025-11-30
 
 ### ✨ Features
