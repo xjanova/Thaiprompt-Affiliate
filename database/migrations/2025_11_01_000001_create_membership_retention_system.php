@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * สร้างตารางระบบรักษายอดสมาชิก (Membership Retention System)
      */
     public function up(): void
     {
@@ -54,19 +54,31 @@ return new class extends Migration
         // ตาราง membership_retention_transactions - รายการซื้อขายที่นับเข้าระบบรักษายอด
         if (!Schema::hasTable('membership_retention_transactions')) {
             Schema::create('membership_retention_transactions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('commission_id')->nullable()->constrained()->onDelete('set null');
-            $table->string('transaction_type'); // 'purchase', 'commission', 'repair', 'advance_renewal'
-            $table->decimal('points', 10, 2);
-            $table->string('period_month', 7); // YYYY-MM
-            $table->text('description')->nullable();
-            $table->json('metadata')->nullable();
-            $table->timestamps();
+                $table->id();
+                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                // ⚠️ ใช้ unsignedBigInteger แทน foreignId()->constrained()
+                // เพราะ commissions ถูกสร้างใน migration 2025_11_18 (ทีหลัง)
+                $table->unsignedBigInteger('commission_id')->nullable();
+                $table->string('transaction_type'); // 'purchase', 'commission', 'repair', 'advance_renewal'
+                $table->decimal('points', 10, 2);
+                $table->string('period_month', 7); // YYYY-MM
+                $table->text('description')->nullable();
+                $table->json('metadata')->nullable();
+                $table->timestamps();
 
-            $table->index(['user_id', 'period_month']);
-            $table->index('transaction_type');
+                $table->index(['user_id', 'period_month']);
+                $table->index('transaction_type');
             });
+
+            // เพิ่ม foreign key ถ้า commissions มีอยู่แล้ว
+            if (Schema::hasTable('commissions')) {
+                Schema::table('membership_retention_transactions', function (Blueprint $table) {
+                    $table->foreign('commission_id')
+                        ->references('id')
+                        ->on('commissions')
+                        ->onDelete('set null');
+                });
+            }
         }
 
         // ตาราง membership_retention_repairs - การซื้อซ่อมสิทธิ์
