@@ -488,7 +488,35 @@ clone_repository() {
 
     # หาตำแหน่งติดตั้ง
     local INSTALL_DIR
-    if [ "$WIZARD_MODE" = true ]; then
+
+    # ใช้โฟลเดอร์ที่เลือกไว้จากขั้นตอนก่อนหน้า (ถ้ามี)
+    if [ -n "$CUSTOM_INSTALL_DIR" ]; then
+        INSTALL_DIR="$CUSTOM_INSTALL_DIR"
+        if [ "$INSTALL_DIR" = "." ]; then
+            print_info "จะติดตั้งในโฟลเดอร์ปัจจุบัน"
+            # Clone โดยตรงลงในโฟลเดอร์ปัจจุบัน
+            print_step "กำลัง clone จาก $REPO_URL..."
+            print_info "Branch: $REPO_BRANCH"
+            echo ""
+
+            # Clone to temp dir then move files
+            local TEMP_DIR=".tp-affiliate-temp-$$"
+            if git clone -b "$REPO_BRANCH" --depth 1 "$REPO_URL" "$TEMP_DIR" 2>&1; then
+                # Move all files from temp to current directory
+                shopt -s dotglob
+                mv "$TEMP_DIR"/* . 2>/dev/null || true
+                shopt -u dotglob
+                rm -rf "$TEMP_DIR"
+                print_success "Clone สำเร็จ! ✓"
+                return 0
+            else
+                rm -rf "$TEMP_DIR"
+                error_exit "Clone repository ล้มเหลว"
+            fi
+        else
+            print_info "จะติดตั้งในโฟลเดอร์: $INSTALL_DIR"
+        fi
+    elif [ "$WIZARD_MODE" = true ]; then
         INSTALL_DIR="thaiprompt-affiliate"
         print_info "จะติดตั้งในโฟลเดอร์: $INSTALL_DIR"
     else
@@ -594,6 +622,8 @@ show_wizard_progress() {
 }
 
 # ถามคำถามแบบ interactive พร้อม validation
+# ใช้ >&2 เพื่อ output prompt ไปที่ stderr แทน stdout
+# เพื่อให้ capture เฉพาะ result ได้ถูกต้อง
 ask_question() {
     local prompt="$1"
     local default="$2"
@@ -603,27 +633,27 @@ ask_question() {
 
     if [ "$is_password" = true ]; then
         while true; do
-            echo -ne "  ${CYAN}?${NC} $prompt"
-            [ -n "$default" ] && echo -ne " ${WHITE}[$default]${NC}"
-            echo -ne ": "
+            echo -ne "  ${CYAN}?${NC} $prompt" >&2
+            [ -n "$default" ] && echo -ne " ${WHITE}[$default]${NC}" >&2
+            echo -ne ": " >&2
             read -s result
-            echo ""
+            echo "" >&2
 
             if [ -z "$result" ] && [ -n "$default" ]; then
                 result="$default"
             fi
 
             if [ "$required" = true ] && [ -z "$result" ]; then
-                print_error "    กรุณากรอกข้อมูล!"
+                print_error "    กรุณากรอกข้อมูล!" >&2
                 continue
             fi
             break
         done
     else
         while true; do
-            echo -ne "  ${CYAN}?${NC} $prompt"
-            [ -n "$default" ] && echo -ne " ${WHITE}[$default]${NC}"
-            echo -ne ": "
+            echo -ne "  ${CYAN}?${NC} $prompt" >&2
+            [ -n "$default" ] && echo -ne " ${WHITE}[$default]${NC}" >&2
+            echo -ne ": " >&2
             read result
 
             if [ -z "$result" ] && [ -n "$default" ]; then
@@ -631,7 +661,7 @@ ask_question() {
             fi
 
             if [ "$required" = true ] && [ -z "$result" ]; then
-                print_error "    กรุณากรอกข้อมูล!"
+                print_error "    กรุณากรอกข้อมูล!" >&2
                 continue
             fi
             break
@@ -1179,7 +1209,7 @@ detect_empty_folder() {
     return 1  # มีไฟล์ Laravel แล้ว
 }
 
-# ถ้าโฟลเดอร์ว่างและไม่ได้ระบุ mode ใดๆ → เปิด wizard mode อัตโนมัติ
+# ถ้าโฟลเดอร์ว่างและไม่ได้ระบุ mode ใดๆ → ถามทีละขั้นตอน
 if detect_empty_folder; then
     if [ "$AUTO_MODE" != true ] && [ "$WIZARD_MODE" != true ]; then
         clear
@@ -1194,7 +1224,46 @@ if detect_empty_folder; then
         echo ""
         echo "เราจะช่วยคุณติดตั้ง TP-Affiliate ตั้งแต่ต้น"
         echo ""
-        echo -e "${CYAN}คุณต้องการติดตั้งแบบไหน?${NC}"
+
+        ########################################################################
+        # ขั้นตอนที่ 1: ถามตำแหน่งติดตั้ง
+        ########################################################################
+        echo -e "${CYAN}${BOLD}📁 ขั้นตอนที่ 1: เลือกตำแหน่งติดตั้ง${NC}"
+        echo ""
+        echo -e "  ${GREEN}1${NC}) ติดตั้งในโฟลเดอร์ปัจจุบัน ($(pwd))"
+        echo -e "  ${GREEN}2${NC}) สร้างโฟลเดอร์ใหม่"
+        echo ""
+        read -p "เลือกตัวเลือก [1]: " FOLDER_CHOICE
+        FOLDER_CHOICE=${FOLDER_CHOICE:-1}
+
+        INSTALL_DIR="."
+        if [ "$FOLDER_CHOICE" = "2" ]; then
+            echo ""
+            read -p "ชื่อโฟลเดอร์ที่ต้องการสร้าง [thaiprompt-affiliate]: " INSTALL_DIR
+            INSTALL_DIR=${INSTALL_DIR:-thaiprompt-affiliate}
+
+            if [ -d "$INSTALL_DIR" ]; then
+                echo ""
+                print_warning "โฟลเดอร์ '$INSTALL_DIR' มีอยู่แล้ว"
+                read -p "ต้องการใช้โฟลเดอร์นี้หรือไม่? (y/n) [y]: " USE_EXISTING
+                USE_EXISTING=${USE_EXISTING:-y}
+                if [[ ! $USE_EXISTING =~ ^[Yy]$ ]]; then
+                    read -p "ชื่อโฟลเดอร์ใหม่: " INSTALL_DIR
+                fi
+            fi
+
+            # บันทึกชื่อโฟลเดอร์สำหรับใช้ใน clone_repository
+            export CUSTOM_INSTALL_DIR="$INSTALL_DIR"
+            print_success "จะติดตั้งในโฟลเดอร์: $INSTALL_DIR"
+        else
+            print_success "จะติดตั้งในโฟลเดอร์ปัจจุบัน"
+        fi
+        echo ""
+
+        ########################################################################
+        # ขั้นตอนที่ 2: เลือกโหมดการติดตั้ง
+        ########################################################################
+        echo -e "${CYAN}${BOLD}⚙️  ขั้นตอนที่ 2: เลือกโหมดการติดตั้ง${NC}"
         echo ""
         echo -e "  ${GREEN}1${NC}) 🧙 ${BOLD}Wizard Mode${NC} (แนะนำ) - ถามทีละขั้นตอน ง่ายสำหรับผู้เริ่มต้น"
         echo -e "  ${GREEN}2${NC}) ⚡ ${BOLD}Auto Mode${NC} - ติดตั้งอัตโนมัติด้วยค่าเริ่มต้น"
