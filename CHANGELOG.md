@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.267.23] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: เพิ่ม useCurrent() ให้ timestamp columns ใน 3 migrations เพิ่มเติม (a167a0bd)
+- fix: เพิ่ม useCurrent() ให้ timestamp columns ใน lead_locks_table (f4b08d44)
+### 🔧 Other Changes
+- Merge pull request #1837 from xjanova/claude/review-install-system-018QjVzDZ7abVmCbrQ1YhpDb (03a54423)
+
 ## [v3.267.22] - 2025-11-30
 
 ### ✨ Features
