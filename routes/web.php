@@ -186,10 +186,16 @@ Route::prefix('certificate')->name('certificate.')->group(function () {
 });
 
 // Setup Routes
-// ⚠️ Setup: ระบบติดตั้งครั้งแรก - สร้าง Super Admin
+// ⚠️ Setup: ระบบติดตั้งครั้งแรก - สร้าง Super Admin (Step-by-Step Wizard)
 Route::prefix('setup')->name('setup.')->group(function () {
     Route::get('/', [SetupController::class, 'index'])->name('index');
     Route::post('/', [SetupController::class, 'store'])->name('store');
+
+    // API endpoints สำหรับ wizard
+    Route::post('/test-database', [SetupController::class, 'testDatabase'])->name('test-database');
+    Route::post('/save-database', [SetupController::class, 'saveDatabase'])->name('save-database');
+    Route::post('/run-migrations', [SetupController::class, 'runMigrations'])->name('run-migrations');
+    Route::post('/run-seeders', [SetupController::class, 'runSeeders'])->name('run-seeders');
 });
 
 // Authentication Routes

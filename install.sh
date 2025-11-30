@@ -540,10 +540,113 @@ clone_repository() {
 }
 
 ################################################################################
-# ฟังก์ชัน Wizard Mode (สำหรับผู้ใช้ทั่วไป)
+# ฟังก์ชัน Wizard Mode (สำหรับผู้ใช้ทั่วไป) - Step-by-Step
 ################################################################################
+
+# แสดง progress bar ของ wizard
+show_wizard_progress() {
+    local current_step=$1
+    local total_steps=5
+    local step_names=("ยินดีต้อนรับ" "ตั้งค่า Database" "ตั้งค่าแอป" "สร้าง Admin" "ยืนยัน")
+
+    echo ""
+    echo -e "${CYAN}┌────────────────────────────────────────────────────────────────┐${NC}"
+    echo -ne "${CYAN}│${NC} "
+
+    for i in $(seq 1 $total_steps); do
+        if [ $i -lt $current_step ]; then
+            echo -ne "${GREEN}●${NC}"  # เสร็จแล้ว
+        elif [ $i -eq $current_step ]; then
+            echo -ne "${YELLOW}◉${NC}"  # กำลังทำ
+        else
+            echo -ne "${WHITE}○${NC}"  # ยังไม่ถึง
+        fi
+
+        if [ $i -lt $total_steps ]; then
+            if [ $i -lt $current_step ]; then
+                echo -ne "${GREEN}────${NC}"
+            else
+                echo -ne "${WHITE}────${NC}"
+            fi
+        fi
+    done
+
+    echo -e " ${CYAN}│${NC}"
+    echo -ne "${CYAN}│${NC} "
+
+    for i in $(seq 1 $total_steps); do
+        local name="${step_names[$((i-1))]}"
+        local padding=$((12 - ${#name}))
+        if [ $i -eq $current_step ]; then
+            echo -ne "${YELLOW}${BOLD}${name}${NC}"
+        elif [ $i -lt $current_step ]; then
+            echo -ne "${GREEN}${name}${NC}"
+        else
+            echo -ne "${WHITE}${name}${NC}"
+        fi
+        # เพิ่ม spacing
+        [ $i -lt $total_steps ] && echo -ne "  "
+    done
+
+    echo -e " ${CYAN}│${NC}"
+    echo -e "${CYAN}└────────────────────────────────────────────────────────────────┘${NC}"
+    echo ""
+}
+
+# ถามคำถามแบบ interactive พร้อม validation
+ask_question() {
+    local prompt="$1"
+    local default="$2"
+    local required="${3:-false}"
+    local is_password="${4:-false}"
+    local result=""
+
+    if [ "$is_password" = true ]; then
+        while true; do
+            echo -ne "  ${CYAN}?${NC} $prompt"
+            [ -n "$default" ] && echo -ne " ${WHITE}[$default]${NC}"
+            echo -ne ": "
+            read -s result
+            echo ""
+
+            if [ -z "$result" ] && [ -n "$default" ]; then
+                result="$default"
+            fi
+
+            if [ "$required" = true ] && [ -z "$result" ]; then
+                print_error "    กรุณากรอกข้อมูล!"
+                continue
+            fi
+            break
+        done
+    else
+        while true; do
+            echo -ne "  ${CYAN}?${NC} $prompt"
+            [ -n "$default" ] && echo -ne " ${WHITE}[$default]${NC}"
+            echo -ne ": "
+            read result
+
+            if [ -z "$result" ] && [ -n "$default" ]; then
+                result="$default"
+            fi
+
+            if [ "$required" = true ] && [ -z "$result" ]; then
+                print_error "    กรุณากรอกข้อมูล!"
+                continue
+            fi
+            break
+        done
+    fi
+
+    echo "$result"
+}
+
 run_wizard_mode() {
     clear
+
+    ############################################################################
+    # Step 1: Welcome
+    ############################################################################
     echo ""
     echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${GREEN}║${NC}                                                                ${GREEN}║${NC}"
@@ -552,69 +655,67 @@ run_wizard_mode() {
     echo -e "${GREEN}║${NC}    ${CYAN}ติดตั้งง่ายๆ แค่ตอบคำถามไม่กี่ข้อ${NC}                        ${GREEN}║${NC}"
     echo -e "${GREEN}║${NC}                                                                ${GREEN}║${NC}"
     echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
-    echo ""
 
-    print_info "Wizard จะช่วยคุณ:"
-    echo "  1. ติดตั้ง dependencies ที่จำเป็นอัตโนมัติ"
-    echo "  2. ตั้งค่า database"
-    echo "  3. สร้าง admin account"
-    echo "  4. เตรียมระบบให้พร้อมใช้งาน"
-    echo ""
+    show_wizard_progress 1
 
-    # Step 1: Database Configuration
-    print_subheader "📋 ขั้นตอนที่ 1: ตั้งค่า Database"
+    echo -e "${BOLD}Wizard จะช่วยคุณติดตั้งผ่าน 5 ขั้นตอนง่ายๆ:${NC}"
     echo ""
-    echo -e "${YELLOW}คุณต้องมี MySQL/MariaDB database พร้อมใช้งาน${NC}"
-    echo "ถ้ายังไม่มี database กรุณาสร้างก่อน เช่น:"
-    echo -e "  ${CYAN}mysql -u root -p -e \"CREATE DATABASE thaiprompt_affiliate;\"${NC}"
+    echo -e "  ${GREEN}1.${NC} ยินดีต้อนรับ - แนะนำระบบ"
+    echo -e "  ${GREEN}2.${NC} ตั้งค่า Database - เชื่อมต่อฐานข้อมูล MySQL"
+    echo -e "  ${GREEN}3.${NC} ตั้งค่าแอป - ชื่อเว็บไซต์และ URL"
+    echo -e "  ${GREEN}4.${NC} สร้าง Admin - บัญชีผู้ดูแลระบบ"
+    echo -e "  ${GREEN}5.${NC} ยืนยัน - ตรวจสอบและเริ่มติดตั้ง"
     echo ""
 
     # ตรวจสอบว่ามี cache หรือไม่
     if [ -f "$CACHE_FILE" ]; then
-        print_info "💾 พบการตั้งค่าเดิม ใช้ค่านี้เลยหรือตั้งใหม่?"
-        read -p "ใช้การตั้งค่าเดิม? (y/n) [y]: " USE_OLD
+        echo -e "${YELLOW}💾 พบการตั้งค่าจากการติดตั้งครั้งก่อน${NC}"
+        read -p "  ต้องการใช้การตั้งค่าเดิม? (y/n) [y]: " USE_OLD
         USE_OLD=${USE_OLD:-y}
         if [[ $USE_OLD =~ ^[Yy]$ ]]; then
+            print_success "  โหลดการตั้งค่าเดิม..."
             # โหลดค่าจาก cache
             DB_HOST=$(load_from_cache "DB_HOST" "127.0.0.1")
             DB_PORT=$(load_from_cache "DB_PORT" "3306")
             DB_DATABASE=$(load_from_cache "DB_DATABASE" "thaiprompt_affiliate")
             DB_USERNAME=$(load_from_cache "DB_USERNAME" "root")
             DB_PASSWORD=$(load_from_cache "DB_PASSWORD" "")
-            ADMIN_EMAIL=$(load_from_cache "ADMIN_EMAIL" "admin@example.com")
+            APP_NAME=$(load_from_cache "APP_NAME" "TP-Affiliate")
             APP_URL=$(load_from_cache "APP_URL" "http://localhost")
+            ADMIN_NAME=$(load_from_cache "ADMIN_NAME" "Admin")
+            ADMIN_EMAIL=$(load_from_cache "ADMIN_EMAIL" "admin@example.com")
 
-            print_success "โหลดการตั้งค่าเรียบร้อย"
-            echo ""
-            echo "  Database: $DB_DATABASE@$DB_HOST:$DB_PORT"
-            echo "  Admin Email: $ADMIN_EMAIL"
-            echo "  App URL: $APP_URL"
-            echo ""
-
-            # ข้ามไปถาม password admin
-            goto_admin_password=true
+            # ข้ามไป step 5 ถาม password เท่านั้น
+            skip_to_password=true
         fi
     fi
 
-    if [ "$goto_admin_password" != true ]; then
-        # ถาม Database config
+    read -p "กด Enter เพื่อเริ่มต้น..."
+    clear
+
+    ############################################################################
+    # Step 2: Database Configuration
+    ############################################################################
+    if [ "$skip_to_password" != true ]; then
         echo ""
-        print_step "กรอกข้อมูล Database:"
+        echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${GREEN}║${NC}    ${MAGENTA}${BOLD}🧙 TP-Affiliate Installation Wizard${NC}                       ${GREEN}║${NC}"
+        echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 
-        read -p "  Database Host [127.0.0.1]: " DB_HOST
-        DB_HOST=${DB_HOST:-127.0.0.1}
+        show_wizard_progress 2
 
-        read -p "  Database Port [3306]: " DB_PORT
-        DB_PORT=${DB_PORT:-3306}
-
-        read -p "  Database Name [thaiprompt_affiliate]: " DB_DATABASE
-        DB_DATABASE=${DB_DATABASE:-thaiprompt_affiliate}
-
-        read -p "  Database Username [root]: " DB_USERNAME
-        DB_USERNAME=${DB_USERNAME:-root}
-
-        read -sp "  Database Password: " DB_PASSWORD
+        echo -e "${BOLD}📦 ขั้นตอนที่ 2: ตั้งค่า Database${NC}"
         echo ""
+        echo -e "${YELLOW}คุณต้องมี MySQL/MariaDB database พร้อมใช้งาน${NC}"
+        echo -e "ถ้ายังไม่มี กรุณาสร้างก่อน:"
+        echo -e "  ${CYAN}mysql -u root -p -e \"CREATE DATABASE thaiprompt_affiliate;\"${NC}"
+        echo ""
+
+        DB_HOST=$(ask_question "Database Host" "127.0.0.1")
+        DB_PORT=$(ask_question "Database Port" "3306")
+        DB_DATABASE=$(ask_question "Database Name" "thaiprompt_affiliate")
+        DB_USERNAME=$(ask_question "Database Username" "root")
+        DB_PASSWORD=$(ask_question "Database Password" "" false true)
 
         # บันทึก cache
         save_to_cache "DB_HOST" "$DB_HOST"
@@ -623,67 +724,128 @@ run_wizard_mode() {
         save_to_cache "DB_USERNAME" "$DB_USERNAME"
         save_to_cache "DB_PASSWORD" "$DB_PASSWORD"
 
-        # Step 2: App Configuration
-        print_subheader "📋 ขั้นตอนที่ 2: ตั้งค่าแอปพลิเคชัน"
+        echo ""
+        print_success "บันทึกการตั้งค่า Database เรียบร้อย"
+        read -p "กด Enter เพื่อไปขั้นตอนถัดไป..."
+        clear
 
-        read -p "  App Name [TP-Affiliate]: " APP_NAME
-        APP_NAME=${APP_NAME:-TP-Affiliate}
+        ############################################################################
+        # Step 3: App Configuration
+        ############################################################################
+        echo ""
+        echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${GREEN}║${NC}    ${MAGENTA}${BOLD}🧙 TP-Affiliate Installation Wizard${NC}                       ${GREEN}║${NC}"
+        echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
+
+        show_wizard_progress 3
+
+        echo -e "${BOLD}🌐 ขั้นตอนที่ 3: ตั้งค่าแอปพลิเคชัน${NC}"
+        echo ""
+
+        APP_NAME=$(ask_question "ชื่อแอปพลิเคชัน" "TP-Affiliate")
+        APP_URL=$(ask_question "URL ของเว็บไซต์ (เช่น https://example.com)" "http://localhost")
+
         save_to_cache "APP_NAME" "$APP_NAME"
-
-        read -p "  App URL (เช่น https://example.com) [http://localhost]: " APP_URL
-        APP_URL=${APP_URL:-http://localhost}
         save_to_cache "APP_URL" "$APP_URL"
 
-        # Step 3: Admin Account
-        print_subheader "📋 ขั้นตอนที่ 3: สร้าง Admin Account"
+        echo ""
+        print_success "บันทึกการตั้งค่าแอปเรียบร้อย"
+        read -p "กด Enter เพื่อไปขั้นตอนถัดไป..."
+        clear
 
-        read -p "  Admin Name [Admin]: " ADMIN_NAME
-        ADMIN_NAME=${ADMIN_NAME:-Admin}
+        ############################################################################
+        # Step 4: Admin Account
+        ############################################################################
+        echo ""
+        echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${GREEN}║${NC}    ${MAGENTA}${BOLD}🧙 TP-Affiliate Installation Wizard${NC}                       ${GREEN}║${NC}"
+        echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
+
+        show_wizard_progress 4
+
+        echo -e "${BOLD}👤 ขั้นตอนที่ 4: สร้าง Admin Account${NC}"
+        echo ""
+        echo -e "${YELLOW}บัญชีนี้จะเป็น Super Admin ของระบบ${NC}"
+        echo ""
+
+        ADMIN_NAME=$(ask_question "ชื่อผู้ดูแลระบบ" "Admin")
+        ADMIN_EMAIL=$(ask_question "Email ผู้ดูแลระบบ" "" true)
+
         save_to_cache "ADMIN_NAME" "$ADMIN_NAME"
-
-        read -p "  Admin Email: " ADMIN_EMAIL
-        while [ -z "$ADMIN_EMAIL" ]; do
-            print_error "  กรุณากรอก Email!"
-            read -p "  Admin Email: " ADMIN_EMAIL
-        done
         save_to_cache "ADMIN_EMAIL" "$ADMIN_EMAIL"
     fi
 
-    # ถาม Admin Password (ถามเสมอ)
-    print_step "ตั้ง Admin Password:"
-    read -sp "  Admin Password (อย่างน้อย 8 ตัว): " ADMIN_PASSWORD
-    echo ""
-    while [ ${#ADMIN_PASSWORD} -lt 8 ]; do
-        print_error "  Password ต้องมีอย่างน้อย 8 ตัวอักษร!"
-        read -sp "  Admin Password: " ADMIN_PASSWORD
+    ############################################################################
+    # Step 4b: Admin Password (ถามเสมอ)
+    ############################################################################
+    if [ "$skip_to_password" = true ]; then
         echo ""
+        echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${GREEN}║${NC}    ${MAGENTA}${BOLD}🧙 TP-Affiliate Installation Wizard${NC}                       ${GREEN}║${NC}"
+        echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
+
+        show_wizard_progress 4
+
+        echo -e "${BOLD}👤 ตั้งค่า Admin Password${NC}"
+        echo ""
+        echo -e "Admin Email: ${GREEN}${ADMIN_EMAIL}${NC}"
+        echo ""
+    fi
+
+    echo ""
+    echo -e "${BOLD}🔐 ตั้งรหัสผ่าน Admin${NC}"
+
+    while true; do
+        ADMIN_PASSWORD=$(ask_question "รหัสผ่าน (อย่างน้อย 8 ตัว)" "" true true)
+        if [ ${#ADMIN_PASSWORD} -lt 8 ]; then
+            print_error "    รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร!"
+            continue
+        fi
+
+        ADMIN_PASSWORD_CONFIRM=$(ask_question "ยืนยันรหัสผ่าน" "" true true)
+        if [ "$ADMIN_PASSWORD" != "$ADMIN_PASSWORD_CONFIRM" ]; then
+            print_error "    รหัสผ่านไม่ตรงกัน!"
+            continue
+        fi
+        break
     done
 
-    read -sp "  ยืนยัน Password: " ADMIN_PASSWORD_CONFIRM
     echo ""
-    while [ "$ADMIN_PASSWORD" != "$ADMIN_PASSWORD_CONFIRM" ]; do
-        print_error "  Password ไม่ตรงกัน!"
-        read -sp "  Admin Password: " ADMIN_PASSWORD
-        echo ""
-        read -sp "  ยืนยัน Password: " ADMIN_PASSWORD_CONFIRM
-        echo ""
-    done
+    print_success "ตั้งรหัสผ่าน Admin เรียบร้อย"
+    read -p "กด Enter เพื่อไปขั้นตอนสุดท้าย..."
+    clear
 
-    # Set default values for wizard mode
+    ############################################################################
+    # Step 5: Confirmation
+    ############################################################################
+    echo ""
+    echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║${NC}    ${MAGENTA}${BOLD}🧙 TP-Affiliate Installation Wizard${NC}                       ${GREEN}║${NC}"
+    echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
+
+    show_wizard_progress 5
+
+    echo -e "${BOLD}✅ ขั้นตอนที่ 5: ยืนยันการติดตั้ง${NC}"
+    echo ""
+    echo -e "${CYAN}┌────────────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${CYAN}│${NC} ${BOLD}สรุปการตั้งค่า${NC}                                                ${CYAN}│${NC}"
+    echo -e "${CYAN}├────────────────────────────────────────────────────────────────┤${NC}"
+    echo -e "${CYAN}│${NC}                                                                ${CYAN}│${NC}"
+    echo -e "${CYAN}│${NC}  🌐 ${WHITE}App Name:${NC}  ${GREEN}$APP_NAME${NC}"
+    echo -e "${CYAN}│${NC}  🔗 ${WHITE}App URL:${NC}   ${GREEN}$APP_URL${NC}"
+    echo -e "${CYAN}│${NC}                                                                ${CYAN}│${NC}"
+    echo -e "${CYAN}│${NC}  🗄️  ${WHITE}Database:${NC}  ${GREEN}$DB_DATABASE${NC}@${GREEN}$DB_HOST${NC}:${GREEN}$DB_PORT${NC}"
+    echo -e "${CYAN}│${NC}  👤 ${WHITE}DB User:${NC}   ${GREEN}$DB_USERNAME${NC}"
+    echo -e "${CYAN}│${NC}                                                                ${CYAN}│${NC}"
+    echo -e "${CYAN}│${NC}  📧 ${WHITE}Admin:${NC}     ${GREEN}$ADMIN_EMAIL${NC}"
+    echo -e "${CYAN}│${NC}                                                                ${CYAN}│${NC}"
+    echo -e "${CYAN}└────────────────────────────────────────────────────────────────┘${NC}"
+    echo ""
+
+    # Set default values
     APP_ENV="production"
     APP_DEBUG="false"
     INSTALL_MODE="standard"
-
-    # Summary
-    echo ""
-    print_subheader "📋 สรุปการตั้งค่า"
-    echo ""
-    echo "  🌐 App Name: $APP_NAME"
-    echo "  🔗 App URL: $APP_URL"
-    echo "  🗄️  Database: $DB_DATABASE@$DB_HOST:$DB_PORT"
-    echo "  👤 Admin: $ADMIN_EMAIL"
-    echo "  📦 Mode: $INSTALL_MODE"
-    echo ""
 
     read -p "ดำเนินการติดตั้งต่อ? (y/n) [y]: " CONTINUE_INSTALL
     CONTINUE_INSTALL=${CONTINUE_INSTALL:-y}
@@ -693,10 +855,10 @@ run_wizard_mode() {
     fi
 
     echo ""
-    print_success "เริ่มการติดตั้ง..."
+    echo -e "${GREEN}${BOLD}🚀 เริ่มการติดตั้ง...${NC}"
     echo ""
 
-    # ทำเครื่องหมายว่าผ่าน wizard แล้ว ไม่ต้องถามซ้ำใน STEP 2
+    # ทำเครื่องหมายว่าผ่าน wizard แล้ว
     save_checkpoint "WIZARD_COMPLETED"
 }
 
@@ -1004,6 +1166,74 @@ parse_arguments "$@"
 # Handle --force flag
 if [ "$FORCE_REINSTALL" = true ]; then
     rm -f "$PROGRESS_FILE" "$CACHE_FILE" 2>/dev/null || true
+fi
+
+################################################################################
+# ตรวจจับโฟลเดอร์ว่าง - เปิด Wizard Mode อัตโนมัติ
+################################################################################
+detect_empty_folder() {
+    # ตรวจสอบว่าอยู่ในโฟลเดอร์ที่มี Laravel project หรือไม่
+    if [ ! -f "artisan" ] && [ ! -f "composer.json" ]; then
+        return 0  # โฟลเดอร์ว่าง
+    fi
+    return 1  # มีไฟล์ Laravel แล้ว
+}
+
+# ถ้าโฟลเดอร์ว่างและไม่ได้ระบุ mode ใดๆ → เปิด wizard mode อัตโนมัติ
+if detect_empty_folder; then
+    if [ "$AUTO_MODE" != true ] && [ "$WIZARD_MODE" != true ]; then
+        clear
+        echo ""
+        echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${GREEN}║${NC}                                                                ${GREEN}║${NC}"
+        echo -e "${GREEN}║${NC}    ${MAGENTA}${BOLD}🎯 ยินดีต้อนรับสู่ TP-Affiliate Installer${NC}                  ${GREEN}║${NC}"
+        echo -e "${GREEN}║${NC}                                                                ${GREEN}║${NC}"
+        echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        echo -e "${YELLOW}⚠️  ตรวจพบว่าโฟลเดอร์นี้ว่างเปล่า${NC}"
+        echo ""
+        echo "เราจะช่วยคุณติดตั้ง TP-Affiliate ตั้งแต่ต้น"
+        echo ""
+        echo -e "${CYAN}คุณต้องการติดตั้งแบบไหน?${NC}"
+        echo ""
+        echo -e "  ${GREEN}1${NC}) 🧙 ${BOLD}Wizard Mode${NC} (แนะนำ) - ถามทีละขั้นตอน ง่ายสำหรับผู้เริ่มต้น"
+        echo -e "  ${GREEN}2${NC}) ⚡ ${BOLD}Auto Mode${NC} - ติดตั้งอัตโนมัติด้วยค่าเริ่มต้น"
+        echo -e "  ${GREEN}3${NC}) 📥 ${BOLD}Clone Only${NC} - ดาวน์โหลดโค้ดอย่างเดียว ตั้งค่าเองทีหลัง"
+        echo -e "  ${GREEN}0${NC}) ❌ ยกเลิก"
+        echo ""
+        read -p "เลือกตัวเลือก [1]: " INSTALL_CHOICE
+        INSTALL_CHOICE=${INSTALL_CHOICE:-1}
+
+        case $INSTALL_CHOICE in
+            1)
+                WIZARD_MODE=true
+                DO_CLONE=true
+                print_success "เลือก Wizard Mode"
+                ;;
+            2)
+                AUTO_MODE=true
+                DO_CLONE=true
+                print_success "เลือก Auto Mode"
+                ;;
+            3)
+                DO_CLONE=true
+                print_success "เลือก Clone Only"
+                ;;
+            0)
+                print_info "ยกเลิกการติดตั้ง"
+                exit 0
+                ;;
+            *)
+                WIZARD_MODE=true
+                DO_CLONE=true
+                print_info "เลือก Wizard Mode (ค่าเริ่มต้น)"
+                ;;
+        esac
+        echo ""
+    else
+        # ถ้าอยู่ใน auto mode หรือ wizard mode แล้ว ให้ clone อัตโนมัติ
+        DO_CLONE=true
+    fi
 fi
 
 ################################################################################
