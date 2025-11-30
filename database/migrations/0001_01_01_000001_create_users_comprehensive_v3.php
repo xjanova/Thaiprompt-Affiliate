@@ -233,8 +233,6 @@ return new class extends Migration
                 $table->foreign('affiliate_id')->references('id')->on('affiliates')->onDelete('set null');
             }
         });
-
-        $this->command->info('✅ สร้างตาราง users (Version 3) สำเร็จ!');
     }
 
     /**
