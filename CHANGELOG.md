@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.267.38] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1852 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (4c31621e)
+- fix: ใช้ Route::any สำหรับ root route เพื่อแก้ปัญหา MethodNotAllowedHttpException (dc92dbd8)
+### 🔧 Other Changes
+
+
 ## [v3.267.37] - 2025-11-30
 
 ### ✨ Features
