@@ -594,6 +594,8 @@ show_wizard_progress() {
 }
 
 # ถามคำถามแบบ interactive พร้อม validation
+# ใช้ >&2 เพื่อ output prompt ไปที่ stderr แทน stdout
+# เพื่อให้ capture เฉพาะ result ได้ถูกต้อง
 ask_question() {
     local prompt="$1"
     local default="$2"
@@ -603,27 +605,27 @@ ask_question() {
 
     if [ "$is_password" = true ]; then
         while true; do
-            echo -ne "  ${CYAN}?${NC} $prompt"
-            [ -n "$default" ] && echo -ne " ${WHITE}[$default]${NC}"
-            echo -ne ": "
+            echo -ne "  ${CYAN}?${NC} $prompt" >&2
+            [ -n "$default" ] && echo -ne " ${WHITE}[$default]${NC}" >&2
+            echo -ne ": " >&2
             read -s result
-            echo ""
+            echo "" >&2
 
             if [ -z "$result" ] && [ -n "$default" ]; then
                 result="$default"
             fi
 
             if [ "$required" = true ] && [ -z "$result" ]; then
-                print_error "    กรุณากรอกข้อมูล!"
+                print_error "    กรุณากรอกข้อมูล!" >&2
                 continue
             fi
             break
         done
     else
         while true; do
-            echo -ne "  ${CYAN}?${NC} $prompt"
-            [ -n "$default" ] && echo -ne " ${WHITE}[$default]${NC}"
-            echo -ne ": "
+            echo -ne "  ${CYAN}?${NC} $prompt" >&2
+            [ -n "$default" ] && echo -ne " ${WHITE}[$default]${NC}" >&2
+            echo -ne ": " >&2
             read result
 
             if [ -z "$result" ] && [ -n "$default" ]; then
@@ -631,7 +633,7 @@ ask_question() {
             fi
 
             if [ "$required" = true ] && [ -z "$result" ]; then
-                print_error "    กรุณากรอกข้อมูล!"
+                print_error "    กรุณากรอกข้อมูล!" >&2
                 continue
             fi
             break
