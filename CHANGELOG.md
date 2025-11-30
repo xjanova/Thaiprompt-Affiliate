@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.267.25] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1839 from xjanova/claude/fix-lead-locks-migration-01Xq2yQzg8FSoMGzf4ozFE7V (0524fe71)
+- fix: แก้ไข line_signup_rewards migration - index drop error (a3011d9f)
+### 🔧 Other Changes
+
+
 ## [v3.267.24] - 2025-11-30
 
 ### ✨ Features
