@@ -217,7 +217,7 @@ class LineSignupReward extends Model
             // ⚠️ ตรวจสอบว่าตารางมีอยู่หรือไม่ (ป้องกัน error เมื่อยังไม่ได้ run migration)
             if (!\Illuminate\Support\Facades\Schema::hasTable('line_signup_rewards')) {
                 \Illuminate\Support\Facades\Log::warning('LineSignupReward: ตาราง line_signup_rewards ไม่มีอยู่ - กรุณา run migration');
-                return collect();
+                return new \Illuminate\Database\Eloquent\Collection();
             }
 
             return static::query()
@@ -260,7 +260,7 @@ class LineSignupReward extends Model
             // ⚠️ ถ้าเกิด error (เช่น ตารางไม่มี) ให้ return collection ว่าง
             // และ log error เพื่อแจ้งเตือน admin
             \Illuminate\Support\Facades\Log::error('LineSignupReward::getAvailableRewards error: ' . $e->getMessage());
-            return collect();
+            return new \Illuminate\Database\Eloquent\Collection();
         }
     }
 
