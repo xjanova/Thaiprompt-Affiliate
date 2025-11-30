@@ -20,7 +20,7 @@ class AppBannerController extends Controller
             ->get()
             ->groupBy('position');
 
-        return view('admin.app-management.banners.index', compact('banners'));
+        return view('admin.app-banners.index', compact('banners'));
     }
 
     /**
@@ -28,7 +28,7 @@ class AppBannerController extends Controller
      */
     public function create()
     {
-        return view('admin.app-management.banners.create');
+        return view('admin.app-banners.create');
     }
 
     /**
@@ -129,7 +129,7 @@ class AppBannerController extends Controller
         AppBanner::create($validated);
 
         return redirect()
-            ->route('admin.app-management.banners.index')
+            ->route('admin.app-banners.index')
             ->with('success', 'เพิ่มแบนเนอร์สำเร็จ');
     }
 
@@ -138,7 +138,7 @@ class AppBannerController extends Controller
      */
     public function edit(AppBanner $appBanner)
     {
-        return view('admin.app-management.banners.edit', compact('appBanner'));
+        return view('admin.app-banners.edit', compact('appBanner'));
     }
 
     /**
@@ -231,7 +231,7 @@ class AppBannerController extends Controller
         $appBanner->update($validated);
 
         return redirect()
-            ->route('admin.app-management.banners.index')
+            ->route('admin.app-banners.index')
             ->with('success', 'อัพเดทแบนเนอร์สำเร็จ');
     }
 
@@ -243,7 +243,7 @@ class AppBannerController extends Controller
         $appBanner->delete();
 
         return redirect()
-            ->route('admin.app-management.banners.index')
+            ->route('admin.app-banners.index')
             ->with('success', 'ลบแบนเนอร์สำเร็จ');
     }
 
