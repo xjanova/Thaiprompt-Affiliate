@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.267.27] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1841 from xjanova/claude/fix-lead-locks-migration-01Xq2yQzg8FSoMGzf4ozFE7V (c2eec510)
+- fix: แก้ไข nfc_cards migration - Laravel 11 Doctrine DBAL removed (4f14b76d)
+### 🔧 Other Changes
+
+
 ## [v3.267.26] - 2025-11-30
 
 ### ✨ Features
