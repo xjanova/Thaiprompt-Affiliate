@@ -35,7 +35,7 @@ return new class extends Migration
                 $table->timestamps();
 
                 $table->index(['line_user_id', 'status']);
-                $table->index('session_token');
+                // session_token unique index ถูกสร้างแล้วที่ ->unique() ข้างบน
             });
         }
 
@@ -87,7 +87,7 @@ return new class extends Migration
                 $table->integer('usage_count')->default(0);
                 $table->timestamps();
 
-                $table->index('template_key');
+                // template_key unique index ถูกสร้างแล้วที่ ->unique() ข้างบน
             });
         }
 
@@ -145,7 +145,7 @@ return new class extends Migration
                 $table->timestamps();
 
                 $table->index(['invitation_token', 'status']);
-                $table->index('referral_code');
+                // referral_code index ถูกสร้างแล้วที่ ->index() ข้างบน
             });
         }
 
