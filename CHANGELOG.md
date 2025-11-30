@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.266.0] - 2025-11-30
+
+### ✨ Features
+- feat: เพิ่มตัวเลือกดึง migrations ใหม่จาก GitHub ก่อน migrate:fresh (6d79d079)
+### 🐛 Bug Fixes
+- fix: แก้ไข pos_clock_records FK to pos_sessions error (8cfd478c)
+### 🔧 Other Changes
+- Merge pull request #1813 from xjanova/claude/review-install-system-018QjVzDZ7abVmCbrQ1YhpDb (d4a740e0)
+
 ## [v3.265.1] - 2025-11-30
 
 ### ✨ Features
