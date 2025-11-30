@@ -1,130 +1,366 @@
-# ⚡ Quick Installation Guide
+# 🚀 TP-Affiliate Installation Guide
 
-> **Clone และติดตั้ง TP-Affiliate ในคำสั่งเดียว!**
+> **คู่มือติดตั้ง TP-Affiliate แบบ Step-by-Step**
+>
+> Version: 3.3.0 | Last Updated: 2025-11-30
 
-## 🚀 One-Line Installation
+---
 
-### วิธีที่ 1: ใช้ curl (แนะนำ)
+## 📋 สารบัญ
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/xjanova/Thaiprompt-Affiliate/claude/Main/quick-install.sh | bash
+1. [ความต้องการของระบบ](#-ความต้องการของระบบ)
+2. [วิธีติดตั้งแบบง่าย (แนะนำ)](#-วิธีติดตั้งแบบง่าย-แนะนำ)
+3. [ขั้นตอนการติดตั้งโดยละเอียด](#-ขั้นตอนการติดตั้งโดยละเอียด)
+4. [ตัวเลือกการติดตั้ง](#-ตัวเลือกการติดตั้ง)
+5. [หลังติดตั้งเสร็จ](#-หลังติดตั้งเสร็จ)
+6. [การแก้ปัญหา](#-การแก้ปัญหา)
+
+---
+
+## 💪 ความต้องการของระบบ
+
+### Minimum Requirements
+
+| Component | Version |
+|-----------|---------|
+| PHP | 8.1+ |
+| MySQL | 5.7+ / MariaDB 10.3+ |
+| Composer | 2.0+ |
+| Git | 2.0+ |
+| Node.js | 16+ (optional) |
+
+### PHP Extensions Required
+
+```
+bcmath, ctype, curl, dom, fileinfo, json,
+mbstring, openssl, pdo, pdo_mysql, tokenizer, xml, gd, zip
 ```
 
-### วิธีที่ 2: ใช้ wget
+### ตรวจสอบ PHP Extensions
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/xjanova/Thaiprompt-Affiliate/claude/Main/quick-install.sh | bash
-```
-
-### วิธีที่ 3: Clone แล้วรัน
-
-```bash
-git clone -b claude/Main https://github.com/xjanova/Thaiprompt-Affiliate.git
-cd Thaiprompt-Affiliate
-bash quick-install.sh
+php -m | grep -E "bcmath|ctype|curl|dom|fileinfo|json|mbstring|openssl|pdo|tokenizer|xml|gd|zip"
 ```
 
 ---
 
-## 📋 สิ่งที่ quick-install.sh ทำให้คุณอัตโนมัติ
+## ⚡ วิธีติดตั้งแบบง่าย (แนะนำ)
 
-1. ✅ **ตรวจสอบ System Requirements**
-   - Git, PHP 8.1+, Composer
-   - ติดตั้ง Composer อัตโนมัติถ้ายังไม่มี
-
-2. ✅ **Clone Repository**
-   - ดึงโค้ดล่าสุดจาก `claude/Main` branch
-   - สร้างโฟลเดอร์ `thaiprompt-affiliate`
-
-3. ✅ **รัน install.sh**
-   - ตรวจสอบและ restore ไฟล์สำคัญ 35 ไฟล์
-   - ติดตั้ง Composer dependencies
-   - สร้าง .env file
-   - Generate application key
-   - รัน migrations & seeders
-   - สร้าง Super Admin account
-   - Optimize production caches
-
----
-
-## 🎯 Installation Flow
-
-```mermaid
-graph LR
-    A[Run quick-install.sh] --> B[Check Requirements]
-    B --> C[Clone Repository]
-    C --> D[Run install.sh]
-    D --> E[Interactive Setup]
-    E --> F[Complete!]
-```
-
-**ระยะเวลาติดตั้ง:** 5-10 นาที (ขึ้นอยู่กับความเร็ว internet)
-
----
-
-## 💡 ตัวเลือกการติดตั้ง
-
-### ติดตั้งในโฟลเดอร์ที่กำหนดเอง
+### One-Line Installation
 
 ```bash
-# Clone มาก่อน
-git clone -b claude/Main https://github.com/xjanova/Thaiprompt-Affiliate.git my-project
-cd my-project
+# วิธีที่ 1: ใช้ curl
+curl -fsSL https://raw.githubusercontent.com/xjanova/Thaiprompt-Affiliate/claude/Main/install.sh -o install.sh && bash install.sh
 
-# รัน install.sh โดยตรง
-./install.sh
+# วิธีที่ 2: ใช้ wget
+wget -qO install.sh https://raw.githubusercontent.com/xjanova/Thaiprompt-Affiliate/claude/Main/install.sh && bash install.sh
 ```
 
-### ติดตั้งบน Production Server
+### หรือ Clone แล้วรัน
 
 ```bash
-# SSH เข้าเซิร์ฟเวอร์
-ssh user@your-server.com
+# สร้างโฟลเดอร์ว่าง
+mkdir my-affiliate-site
+cd my-affiliate-site
 
-# ไปที่โฟลเดอร์ web root
-cd /var/www/html  # หรือ /home/user/public_html
+# ดาวน์โหลด install.sh
+curl -fsSL https://raw.githubusercontent.com/xjanova/Thaiprompt-Affiliate/claude/Main/install.sh -o install.sh
 
-# รัน quick install
-curl -fsSL https://raw.githubusercontent.com/xjanova/Thaiprompt-Affiliate/claude/Main/quick-install.sh | bash
+# รัน installer
+bash install.sh
 ```
 
 ---
 
-## 🔧 ข้อมูลที่ต้องเตรียมก่อนติดตั้ง
+## 📝 ขั้นตอนการติดตั้งโดยละเอียด
 
-quick-install.sh จะถามข้อมูลเหล่านี้:
+เมื่อรัน `install.sh` ในโฟลเดอร์ว่าง ระบบจะถามทีละขั้นตอน:
 
-### 1. Application Configuration
-- **Application Name:** ชื่อแอปพลิเคชัน (default: TP-Affiliate)
-- **Application URL:** URL ของเว็บไซต์ (เช่น https://example.com)
-- **Environment:** Production หรือ Development
+### ขั้นตอนที่ 1: เลือกตำแหน่งติดตั้ง
 
-### 2. Database Configuration
-- **Database Host:** ที่อยู่ MySQL server (default: 127.0.0.1)
-- **Database Port:** พอร์ต MySQL (default: 3306)
-- **Database Name:** ชื่อฐานข้อมูล
-- **Database Username:** ชื่อผู้ใช้ฐานข้อมูล
-- **Database Password:** รหัสผ่านฐานข้อมูล
+```
+╔════════════════════════════════════════════════════════════════╗
+║    🎯 ยินดีต้อนรับสู่ TP-Affiliate Installer                  ║
+╚════════════════════════════════════════════════════════════════╝
 
-### 3. Super Admin Account
-- **Admin Name:** ชื่อผู้ดูแลระบบ
-- **Admin Email:** อีเมลผู้ดูแลระบบ
-- **Admin Password:** รหัสผ่าน (ขั้นต่ำ 8 ตัวอักษร)
+⚠️  ตรวจพบว่าโฟลเดอร์นี้ว่างเปล่า
+
+เราจะช่วยคุณติดตั้ง TP-Affiliate ตั้งแต่ต้น
+
+📁 ขั้นตอนที่ 1: เลือกตำแหน่งติดตั้ง
+
+  1) ติดตั้งในโฟลเดอร์ปัจจุบัน (/path/to/current)
+  2) สร้างโฟลเดอร์ใหม่
+
+เลือกตัวเลือก [1]: _
+```
+
+**ตัวเลือก:**
+- **1** = ติดตั้งในโฟลเดอร์ที่อยู่ตอนนี้
+- **2** = สร้างโฟลเดอร์ใหม่ (จะถามชื่อโฟลเดอร์)
+
+---
+
+### ขั้นตอนที่ 2: เลือกโหมดการติดตั้ง
+
+```
+⚙️  ขั้นตอนที่ 2: เลือกโหมดการติดตั้ง
+
+  1) 🧙 Wizard Mode (แนะนำ) - ถามทีละขั้นตอน ง่ายสำหรับผู้เริ่มต้น
+  2) ⚡ Auto Mode - ติดตั้งอัตโนมัติด้วยค่าเริ่มต้น
+  3) 📥 Clone Only - ดาวน์โหลดโค้ดอย่างเดียว ตั้งค่าเองทีหลัง
+  0) ❌ ยกเลิก
+
+เลือกตัวเลือก [1]: _
+```
+
+**คำอธิบายแต่ละโหมด:**
+
+| โหมด | คำอธิบาย | เหมาะสำหรับ |
+|------|----------|-------------|
+| 🧙 **Wizard Mode** | ถามทีละขั้นตอน มี progress bar | ผู้เริ่มต้น, ต้องการควบคุมทุกขั้นตอน |
+| ⚡ **Auto Mode** | ใช้ค่าเริ่มต้นทั้งหมด | CI/CD, ติดตั้งซ้ำ, ผู้เชี่ยวชาญ |
+| 📥 **Clone Only** | ดาวน์โหลดโค้ดเท่านั้น | ต้องการตั้งค่าเอง |
+
+---
+
+### ขั้นตอนที่ 3: Wizard Mode (ถ้าเลือก)
+
+เมื่อเลือก **Wizard Mode** จะมี 5 ขั้นตอนย่อย:
+
+#### 3.1 ยินดีต้อนรับ
+
+```
+╔════════════════════════════════════════════════════════════════╗
+║    🧙 TP-Affiliate Installation Wizard                       ║
+╚════════════════════════════════════════════════════════════════╝
+
+┌────────────────────────────────────────────────────────────────┐
+│ ◉────○────○────○────○ │
+│ ยินดีต้อนรับ  ตั้งค่า Database  ตั้งค่าแอป  สร้าง Admin  ยืนยัน │
+└────────────────────────────────────────────────────────────────┘
+
+Wizard จะช่วยคุณติดตั้งผ่าน 5 ขั้นตอนง่ายๆ:
+
+  1. ยินดีต้อนรับ - แนะนำระบบ
+  2. ตั้งค่า Database - เชื่อมต่อฐานข้อมูล MySQL
+  3. ตั้งค่าแอป - ชื่อเว็บไซต์และ URL
+  4. สร้าง Admin - บัญชีผู้ดูแลระบบ
+  5. ยืนยัน - ตรวจสอบและเริ่มติดตั้ง
+
+กด Enter เพื่อเริ่มต้น...
+```
+
+#### 3.2 ตั้งค่า Database
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│ ●────◉────○────○────○ │
+│ ยินดีต้อนรับ  ตั้งค่า Database  ตั้งค่าแอป  สร้าง Admin  ยืนยัน │
+└────────────────────────────────────────────────────────────────┘
+
+📦 ขั้นตอนที่ 2: ตั้งค่า Database
+
+คุณต้องมี MySQL/MariaDB database พร้อมใช้งาน
+ถ้ายังไม่มี กรุณาสร้างก่อน:
+  mysql -u root -p -e "CREATE DATABASE thaiprompt_affiliate;"
+
+  ? Database Host [127.0.0.1]: _
+  ? Database Port [3306]: _
+  ? Database Name [thaiprompt_affiliate]: _
+  ? Database Username [root]: _
+  ? Database Password: _
+```
+
+**ข้อมูลที่ต้องเตรียม:**
+- Host: ที่อยู่ MySQL server (ปกติคือ `127.0.0.1` หรือ `localhost`)
+- Port: พอร์ต MySQL (ปกติคือ `3306`)
+- Database Name: ชื่อฐานข้อมูลที่สร้างไว้
+- Username: ชื่อผู้ใช้ MySQL
+- Password: รหัสผ่าน MySQL
+
+#### 3.3 ตั้งค่าแอป
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│ ●────●────◉────○────○ │
+│ ยินดีต้อนรับ  ตั้งค่า Database  ตั้งค่าแอป  สร้าง Admin  ยืนยัน │
+└────────────────────────────────────────────────────────────────┘
+
+🌐 ขั้นตอนที่ 3: ตั้งค่าแอปพลิเคชัน
+
+  ? ชื่อแอปพลิเคชัน [TP-Affiliate]: _
+  ? URL ของเว็บไซต์ (เช่น https://example.com) [http://localhost]: _
+```
+
+#### 3.4 สร้าง Admin
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│ ●────●────●────◉────○ │
+│ ยินดีต้อนรับ  ตั้งค่า Database  ตั้งค่าแอป  สร้าง Admin  ยืนยัน │
+└────────────────────────────────────────────────────────────────┘
+
+👤 ขั้นตอนที่ 4: สร้าง Admin Account
+
+บัญชีนี้จะเป็น Super Admin ของระบบ
+
+  ? ชื่อผู้ดูแลระบบ [Admin]: _
+  ? Email ผู้ดูแลระบบ: _
+
+🔐 ตั้งรหัสผ่าน Admin
+  ? รหัสผ่าน (อย่างน้อย 8 ตัว): _
+  ? ยืนยันรหัสผ่าน: _
+```
+
+**ข้อกำหนดรหัสผ่าน:**
+- ต้องมีอย่างน้อย 8 ตัวอักษร
+- ต้องยืนยันรหัสผ่านให้ตรงกัน
+
+#### 3.5 ยืนยันการติดตั้ง
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│ ●────●────●────●────◉ │
+│ ยินดีต้อนรับ  ตั้งค่า Database  ตั้งค่าแอป  สร้าง Admin  ยืนยัน │
+└────────────────────────────────────────────────────────────────┘
+
+✅ ขั้นตอนที่ 5: ยืนยันการติดตั้ง
+
+┌────────────────────────────────────────────────────────────────┐
+│ สรุปการตั้งค่า                                                │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  🌐 App Name:  TP-Affiliate                                    │
+│  🔗 App URL:   https://example.com                             │
+│                                                                │
+│  🗄️  Database:  thaiprompt_affiliate@127.0.0.1:3306            │
+│  👤 DB User:   root                                            │
+│                                                                │
+│  📧 Admin:     admin@example.com                               │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+
+ดำเนินการติดตั้งต่อ? (y/n) [y]: _
+```
+
+---
+
+### ขั้นตอนที่ 4: การติดตั้งอัตโนมัติ
+
+หลังจากยืนยัน ระบบจะทำงานต่อไปนี้อัตโนมัติ:
+
+```
+🚀 เริ่มการติดตั้ง...
+
+📋 STEP 1: ตรวจสอบ System Requirements
+  ✓ PHP 8.2.0 ✓
+  ✓ BCMath Extension ✓
+  ✓ cURL Extension ✓
+  ... (ตรวจสอบ extensions อื่นๆ)
+
+📥 STEP 2: ติดตั้ง Dependencies
+  ▶ กำลังติดตั้ง Composer dependencies...
+  ✓ Composer dependencies ติดตั้งเรียบร้อย
+
+⚙️  STEP 3: ตั้งค่าระบบ
+  ✓ สร้าง .env file
+  ✓ Generate APP_KEY
+  ✓ ตั้งค่า Database connection
+
+🗄️  STEP 4: Database Migration
+  ▶ กำลังรัน migrations...
+  ✓ Migrations เสร็จสิ้น
+
+🌱 STEP 5: Seed Data
+  ▶ กำลังรัน DatabaseSeeder...
+  ✓ Seeders เสร็จสิ้น
+
+👤 STEP 6: สร้าง Super Admin
+  ✓ สร้างบัญชี Super Admin เรียบร้อย
+
+🔧 STEP 7: Optimization
+  ✓ Cache configuration
+  ✓ Cache routes
+  ✓ Cache views
+  ✓ Storage link created
+
+╔════════════════════════════════════════════════════════════════╗
+║                                                                ║
+║    ✅ ติดตั้ง TP-Affiliate สำเร็จ!                            ║
+║                                                                ║
+║    🌐 เปิดเบราว์เซอร์ไปที่: http://localhost:8000             ║
+║    👤 Admin Login: admin@example.com                           ║
+║                                                                ║
+║    📖 คำสั่งเริ่มต้น: php artisan serve                        ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## 🎛️ ตัวเลือกการติดตั้ง
+
+### Command Line Options
+
+```bash
+# แสดง help
+./install.sh --help
+
+# Wizard Mode (แนะนำ)
+./install.sh --wizard
+
+# Auto Mode (ใช้ค่าเริ่มต้น)
+./install.sh --auto
+
+# เลือกโหมดการติดตั้ง
+./install.sh --mode=minimal     # Core settings เท่านั้น
+./install.sh --mode=standard    # แนะนำ (มี demo data)
+./install.sh --mode=full        # ครบทุกอย่าง
+
+# Clone และติดตั้ง
+./install.sh --clone --wizard
+
+# บังคับติดตั้งใหม่
+./install.sh --force
+```
+
+### Installation Modes
+
+| Mode | รายละเอียด |
+|------|------------|
+| `minimal` | Core settings เท่านั้น ไม่มี demo data (เหมาะสำหรับ production) |
+| `standard` | Core + demo users + essential data (แนะนำ) |
+| `full` | ทุกอย่าง รวม demo products, test orders |
 
 ---
 
 ## ✅ หลังติดตั้งเสร็จ
 
-### ทดสอบด้วย Built-in Server
+### 1. ทดสอบด้วย Built-in Server
 
 ```bash
-cd thaiprompt-affiliate
 php artisan serve
 ```
 
-จากนั้นเปิดเบราว์เซอร์: http://localhost:8000
+เปิดเบราว์เซอร์: http://localhost:8000
 
-### ตั้งค่า Web Server (Production)
+### 2. Login Admin Dashboard
+
+```
+URL: http://localhost:8000/admin
+Email: [อีเมลที่กรอกตอนติดตั้ง]
+Password: [รหัสผ่านที่กรอกตอนติดตั้ง]
+```
+
+### 3. ตั้งค่าระบบเบื้องต้น
+
+1. ไปที่ **Settings** → **General Settings**
+2. ตั้งค่า Site Name, Logo, Favicon
+3. ตั้งค่า Email SMTP
+4. ตั้งค่า Payment Gateway
+
+### 4. Production Deployment
 
 #### Nginx Configuration
 
@@ -138,7 +374,6 @@ server {
     add_header X-Content-Type-Options "nosniff";
 
     index index.php;
-
     charset utf-8;
 
     location / {
@@ -162,107 +397,69 @@ server {
 }
 ```
 
-#### Apache Configuration (.htaccess)
+---
 
-```apache
-<IfModule mod_rewrite.c>
-    <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
-    </IfModule>
+## ❓ การแก้ปัญหา
 
-    RewriteEngine On
+### ปัญหา: Composer not found
 
-    # Handle Authorization Header
-    RewriteCond %{HTTP:Authorization} .
-    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+```bash
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+```
 
-    # Redirect Trailing Slashes If Not A Folder...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_URI} (.+)/$
-    RewriteRule ^ %1 [L,R=301]
+### ปัญหา: PHP version ไม่ตรง
 
-    # Send Requests To Front Controller...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
-</IfModule>
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install php8.1 php8.1-{cli,fpm,mysql,xml,mbstring,curl,zip,gd,bcmath}
+
+# CentOS/RHEL
+sudo yum install php81 php81-{cli,fpm,mysqlnd,xml,mbstring,curl,zip,gd,bcmath}
+```
+
+### ปัญหา: Database connection failed
+
+```bash
+# ตรวจสอบ MySQL status
+sudo systemctl status mysql
+
+# สร้างฐานข้อมูล
+mysql -u root -p -e "CREATE DATABASE thaiprompt_affiliate CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# ให้สิทธิ์
+mysql -u root -p -e "GRANT ALL PRIVILEGES ON thaiprompt_affiliate.* TO 'username'@'localhost';"
+```
+
+### ปัญหา: Permission denied
+
+```bash
+chmod -R 775 storage bootstrap/cache
+sudo chown -R $USER:www-data storage bootstrap/cache
+```
+
+### ปัญหา: รหัสผ่านไม่ตรงกัน loop
+
+ถ้าเจอปัญหานี้ ให้อัพเดท install.sh เป็นเวอร์ชันล่าสุด:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/xjanova/Thaiprompt-Affiliate/claude/Main/install.sh -o install.sh
 ```
 
 ---
 
 ## 🔄 การอัพเดท
 
-### อัพเดทจาก Git
-
 ```bash
-cd thaiprompt-affiliate
+# ใช้ deploy script
 ./deploy.sh
-```
 
-### อัพเดทด้วยมือ
-
-```bash
-cd thaiprompt-affiliate
+# หรืออัพเดทด้วยมือ
 git pull origin claude/Main
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-```
-
----
-
-## ❓ Troubleshooting
-
-### ปัญหา: Composer not found
-
-```bash
-# ติดตั้ง Composer
-curl -sS https://getcomposer.org/installer | php
-sudo mv composer.phar /usr/local/bin/composer
-```
-
-### ปัญหา: PHP version ไม่ตรงตามข้อกำหนด
-
-```bash
-# ตรวจสอบ PHP version
-php -v
-
-# ติดตั้ง PHP 8.1+
-# Ubuntu/Debian:
-sudo apt update
-sudo apt install php8.1 php8.1-{cli,fpm,mysql,xml,mbstring,curl,zip,gd}
-
-# CentOS/RHEL:
-sudo yum install php81 php81-{cli,fpm,mysqlnd,xml,mbstring,curl,zip,gd}
-```
-
-### ปัญหา: Database connection failed
-
-1. ตรวจสอบว่า MySQL/MariaDB ทำงานอยู่:
-   ```bash
-   sudo systemctl status mysql
-   # หรือ
-   sudo systemctl status mariadb
-   ```
-
-2. ตรวจสอบ credentials:
-   ```bash
-   mysql -u username -p -e "SELECT 1;"
-   ```
-
-3. สร้างฐานข้อมูล:
-   ```bash
-   mysql -u root -p -e "CREATE DATABASE thaiprompt_affiliate;"
-   ```
-
-### ปัญหา: Permission denied
-
-```bash
-cd thaiprompt-affiliate
-chmod -R 775 storage bootstrap/cache
-sudo chown -R www-data:www-data storage bootstrap/cache
+php artisan optimize
 ```
 
 ---
@@ -270,111 +467,16 @@ sudo chown -R www-data:www-data storage bootstrap/cache
 ## 📚 เอกสารเพิ่มเติม
 
 - [README.md](README.md) - ภาพรวมโปรเจค
-- [INSTALLATION.md](INSTALLATION.md) - คู่มือติดตั้งแบบละเอียด
-- [GITHUB_TOKEN_SETUP.md](GITHUB_TOKEN_SETUP.md) - ตั้งค่า GitHub Token (optional)
-- [.claude/](/.claude/) - Guidelines สำหรับการพัฒนา
-
----
-
-## 💪 System Requirements
-
-### Minimum Requirements
-- PHP 8.1+
-- MySQL 5.7+ / MariaDB 10.3+
-- Composer 2.0+
-- Git 2.0+
-
-### PHP Extensions Required
-- BCMath
-- Ctype
-- cURL
-- DOM
-- Fileinfo
-- JSON
-- Mbstring
-- OpenSSL
-- PDO
-- Tokenizer
-- XML
-- GD
-- Zip
-
-### Recommended
-- Node.js 16+ & npm (สำหรับ build frontend assets)
-- Redis (สำหรับ caching และ queue)
-
----
-
-## 🎯 Features After Installation
-
-หลังติดตั้งเสร็จ คุณจะได้:
-
-✅ **Backend Complete:**
-- ระบบ Affiliate Marketing พร้อมใช้งาน
-- MLM system with 20+ ranks
-- Commission calculation engine
-- Wallet & withdrawal system
-- E-commerce integration
-- AI Bot marketplace
-- TPIX blockchain integration
-
-✅ **Frontend Ready:**
-- Responsive design (Tailwind CSS)
-- Dark/Light mode
-- Admin dashboard
-- User dashboard
-- Seller dashboard
-
-✅ **Security:**
-- Cloudflare Turnstile protection
-- Rate limiting
-- Auto-ban system
-- IP blocking
-
-✅ **Performance:**
-- Optimized autoloader
-- Route/Config/View caching
-- Asset compilation (Vite)
-
----
-
-## 🌟 Quick Start After Installation
-
-### 1. Login Admin Dashboard
-```
-URL: https://your-domain.com/admin
-Email: [อีเมลที่กรอกตอนติดตั้ง]
-Password: [รหัสผ่านที่กรอกตอนติดตั้ง]
-```
-
-### 2. ตั้งค่าระบบเบื้องต้น
-1. ไปที่ **Settings** → **General Settings**
-2. ตั้งค่า Site Name, Logo, Favicon
-3. ตั้งค่า Email SMTP
-4. ตั้งค่า Payment Gateway
-
-### 3. สร้าง Rank & Commission Rules
-1. ไปที่ **Ranks** → **Manage Ranks**
-2. ตั้งค่า Commission Rates
-3. กำหนดเงื่อนไขการอัพแรงค์
-
-### 4. เพิ่ม Products/Services
-1. ไปที่ **E-Commerce** → **Products**
-2. เพิ่มสินค้า/บริการ
-3. ตั้งราคาและ Commission
+- [CLAUDE.md](CLAUDE.md) - Guidelines สำหรับนักพัฒนา
+- [ARCHITECTURE.md](ARCHITECTURE.md) - โครงสร้างระบบ
 
 ---
 
 ## 🆘 Support
 
-หากพบปัญหาหรือต้องการความช่วยเหลือ:
-
 - 📖 Documentation: [README.md](README.md)
 - 🐛 Report Issues: [GitHub Issues](https://github.com/xjanova/Thaiprompt-Affiliate/issues)
-- 📧 Email: [เพิ่ม email support]
 
 ---
 
 **🎉 ขอให้ติดตั้งสำเร็จและใช้งานได้อย่างราบรื่น!**
-
-Version: 3.80.2 | Last Updated: 2025-11-20
