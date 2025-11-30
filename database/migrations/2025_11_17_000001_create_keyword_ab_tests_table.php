@@ -18,13 +18,12 @@ return new class extends Migration
             return;
         }
 
-        Schema::create('keyword_ab_tests', function (Blueprint $table) {
+Schema::create('keyword_ab_tests', function (Blueprint $table) {
             $table->id();
 
-            // Foreign key - คีย์เวิร์ดต้นฉบับ
-            $table->foreignId('keyword_id')
-                ->constrained('line_bot_keywords')
-                ->onDelete('cascade');
+            // ⚠️ ใช้ unsignedBigInteger แทน foreignId()->constrained()
+            // เพราะ line_bot_keywords อาจยังไม่มีตอน migrate
+            $table->unsignedBigInteger('keyword_id');
 
             // Test metadata
             $table->string('test_name'); // ชื่อการทดสอบ
@@ -57,6 +56,16 @@ return new class extends Migration
             $table->index('started_at');
             $table->index('winning_criterion');
         });
+
+        // เพิ่ม FK constraint ถ้าตาราง line_bot_keywords มีอยู่
+        if (Schema::hasTable('line_bot_keywords')) {
+            Schema::table('keyword_ab_tests', function (Blueprint $table) {
+                $table->foreign('keyword_id')
+                    ->references('id')
+                    ->on('line_bot_keywords')
+                    ->onDelete('cascade');
+            });
+        }
     }
 
     /**
