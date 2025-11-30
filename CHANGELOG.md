@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.267.20] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1834 from xjanova/claude/review-install-system-018QjVzDZ7abVmCbrQ1YhpDb (2b05f8a6)
+- fix: ลบ $this->command ที่ไม่มีใน Migration และเพิ่ม hasColumn check (f44d12b5)
+### 🔧 Other Changes
+
+
 ## [v3.267.19] - 2025-11-30
 
 ### ✨ Features
