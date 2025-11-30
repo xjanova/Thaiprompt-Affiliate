@@ -6,6 +6,11 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Migration: ล็อค menu_theme_preference ให้ใช้แค่ arrow-x เท่านั้น
+ *
+ * ⚠️ NOTE: Migration นี้จะข้ามถ้าตาราง users หรือคอลัมน์ยังไม่มี
+ */
 return new class extends Migration
 {
     use SafeMigration;
@@ -22,6 +27,16 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
+        if (!Schema::hasTable('users')) {
+            return;
+        }
+
+        // ตรวจสอบว่าคอลัมน์มีอยู่หรือไม่
+        if (!Schema::hasColumn('users', 'menu_theme_preference')) {
+            return;
+        }
+
         // อัพเดทค่าทั้งหมดที่ไม่ใช่ arrow-x ให้เป็น arrow-x
         DB::table('users')
             ->whereNotNull('menu_theme_preference')
@@ -57,6 +72,11 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
+        if (!Schema::hasTable('users')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
             if (Schema::hasColumn('users', 'menu_theme_preference')) {
                 $table->string('menu_theme_preference', 50)

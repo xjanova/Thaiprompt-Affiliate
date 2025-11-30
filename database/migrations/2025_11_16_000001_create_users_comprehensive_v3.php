@@ -49,7 +49,8 @@ return new class extends Migration
             // 🎭 ROLE & PERMISSIONS
             // ===============================================
             $table->string('role')->default('user')->comment('user, seller, admin, super_admin');
-            $table->foreignId('role_id')->nullable()->constrained('roles')->onDelete('set null')->comment('Role ID (ระบบใหม่)');
+            // ⚠️ NOTE: ไม่ใช้ constrained() เพื่อความปลอดภัยกรณีติดตั้งซ้ำ
+            $table->unsignedBigInteger('role_id')->nullable()->comment('Role ID (ระบบใหม่)');
             $table->boolean('is_super_admin')->default(false)->comment('ผู้ดูแลระบบสูงสุด');
             $table->json('permissions')->nullable()->comment('สิทธิ์การใช้งาน (JSON array)');
 
@@ -57,13 +58,16 @@ return new class extends Migration
             // 🏨 HOTEL ADMIN FIELDS
             // ===============================================
             $table->boolean('is_hotel_admin')->default(false)->comment('เป็นผู้ดูแลโรงแรมหรือไม่');
-            $table->foreignId('managed_hotel_id')->nullable()->constrained('hotels')->onDelete('set null')->comment('โรงแรมที่ดูแล');
+            // ⚠️ NOTE: ไม่ใช้ constrained() เพื่อความปลอดภัยกรณีติดตั้งซ้ำ
+            $table->unsignedBigInteger('managed_hotel_id')->nullable()->comment('โรงแรมที่ดูแล');
 
             // ===============================================
             // 💼 AFFILIATE & RANK SYSTEM
             // ===============================================
-            $table->foreignId('affiliate_id')->nullable()->constrained('affiliates')->onDelete('set null')->comment('Affiliate ID');
-            $table->foreignId('current_rank_id')->nullable()->constrained('ranks')->onDelete('set null')->comment('Rank ปัจจุบัน');
+            // ⚠️ NOTE: ไม่ใช้ constrained() เพราะตารางอาจยังไม่มี
+            // Foreign keys จะถูกเพิ่มทีหลังหลังจากสร้างตาราง
+            $table->unsignedBigInteger('affiliate_id')->nullable()->comment('Affiliate ID');
+            $table->unsignedBigInteger('current_rank_id')->nullable()->comment('Rank ปัจจุบัน');
             $table->integer('rank_points')->default(0)->comment('คะแนน Rank');
             $table->timestamp('rank_updated_at')->nullable()->comment('วันที่อัพเดท Rank');
 
@@ -137,7 +141,9 @@ return new class extends Migration
             // ===============================================
             // 📺 VIDEO REWARD SYSTEM
             // ===============================================
-            $table->foreignId('video_referred_by')->nullable()->constrained('users')->onDelete('set null')->comment('ผู้แนะนำ (ระบบวิดีโอ)');
+            // ⚠️ NOTE: ไม่ใช้ constrained('users') เพราะเป็น self-reference
+            // ต้องเพิ่ม foreign key หลังจากสร้างตารางเสร็จ
+            $table->unsignedBigInteger('video_referred_by')->nullable()->comment('ผู้แนะนำ (ระบบวิดีโอ)');
 
             // ===============================================
             // 🎨 UI/UX PREFERENCES
@@ -158,13 +164,16 @@ return new class extends Migration
             $table->index('email');
             $table->index('member_number');
             $table->index('role');
+            $table->index('role_id');
             $table->index('is_super_admin');
+            $table->index('managed_hotel_id');
             $table->index('affiliate_id');
             $table->index('current_rank_id');
             $table->index('line_user_id');
             $table->index('phone');
             $table->index('id_card_number');
             $table->index('kyc_status');
+            $table->index('video_referred_by');
             $table->index('created_at');
             $table->index('deleted_at');
         });
@@ -194,6 +203,37 @@ return new class extends Migration
             });
         }
 
+        // ===============================================
+        // 🔗 FOREIGN KEYS (เพิ่มหลังจากสร้างตารางเสร็จ)
+        // ===============================================
+        // เพิ่ม foreign keys เฉพาะเมื่อตารางที่อ้างอิงมีอยู่แล้ว
+        Schema::table('users', function (Blueprint $table) {
+            // role_id -> roles
+            if (Schema::hasTable('roles') && !$this->hasForeignKey('users', 'role_id')) {
+                $table->foreign('role_id')->references('id')->on('roles')->onDelete('set null');
+            }
+
+            // managed_hotel_id -> hotels
+            if (Schema::hasTable('hotels') && !$this->hasForeignKey('users', 'managed_hotel_id')) {
+                $table->foreign('managed_hotel_id')->references('id')->on('hotels')->onDelete('set null');
+            }
+
+            // current_rank_id -> ranks
+            if (Schema::hasTable('ranks') && !$this->hasForeignKey('users', 'current_rank_id')) {
+                $table->foreign('current_rank_id')->references('id')->on('ranks')->onDelete('set null');
+            }
+
+            // video_referred_by -> users (self-reference)
+            if (!$this->hasForeignKey('users', 'video_referred_by')) {
+                $table->foreign('video_referred_by')->references('id')->on('users')->onDelete('set null');
+            }
+
+            // affiliate_id -> affiliates (ตาราง affiliates อาจยังไม่มี - จะถูกเพิ่มทีหลัง)
+            if (Schema::hasTable('affiliates') && !$this->hasForeignKey('users', 'affiliate_id')) {
+                $table->foreign('affiliate_id')->references('id')->on('affiliates')->onDelete('set null');
+            }
+        });
+
         $this->command->info('✅ สร้างตาราง users (Version 3) สำเร็จ!');
     }
 
@@ -207,5 +247,28 @@ return new class extends Migration
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('users');
+    }
+
+    /**
+     * ตรวจสอบว่ามี foreign key อยู่แล้วหรือไม่
+     *
+     * @param string $table ชื่อตาราง
+     * @param string $column ชื่อคอลัมน์
+     * @return bool
+     */
+    protected function hasForeignKey(string $table, string $column): bool
+    {
+        try {
+            $foreignKeys = Schema::getConnection()
+                ->getDoctrineSchemaManager()
+                ->listTableForeignKeys($table);
+
+            return collect($foreignKeys)->contains(function ($fk) use ($column) {
+                return in_array($column, $fk->getLocalColumns());
+            });
+        } catch (\Exception $e) {
+            // หากเกิดข้อผิดพลาด ถือว่ายังไม่มี foreign key
+            return false;
+        }
     }
 };

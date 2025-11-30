@@ -5,6 +5,11 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Migration: เปลี่ยน default value ของ menu_theme_preference เป็น arrow-x
+ *
+ * ⚠️ NOTE: Migration นี้จะข้ามถ้าตาราง users หรือคอลัมน์ยังไม่มี
+ */
 return new class extends Migration
 {
     /**
@@ -15,6 +20,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
+        if (!Schema::hasTable('users')) {
+            return;
+        }
+
         // ตรวจสอบว่าคอลัมน์มีอยู่หรือไม่
         if (!Schema::hasColumn('users', 'menu_theme_preference')) {
             return;
@@ -40,6 +50,11 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
+        if (!Schema::hasTable('users')) {
+            return;
+        }
+
         // ตรวจสอบว่าคอลัมน์มีอยู่หรือไม่
         if (!Schema::hasColumn('users', 'menu_theme_preference')) {
             return;
