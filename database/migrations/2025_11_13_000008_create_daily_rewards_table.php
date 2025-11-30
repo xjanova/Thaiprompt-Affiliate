@@ -8,71 +8,84 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     * สร้างตาราง Daily Rewards และ Game Missions
      */
     public function up(): void
     {
-        Schema::create('user_daily_streaks', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->integer('current_streak')->default(0);
-            $table->integer('longest_streak')->default(0);
-            $table->date('last_claim_date')->nullable();
-            $table->integer('total_claims')->default(0);
-            $table->decimal('total_rewards', 10, 2)->default(0);
-            $table->timestamps();
+        // User Daily Streaks - ติดตาม streak การล็อกอินรายวัน
+        if (!Schema::hasTable('user_daily_streaks')) {
+            Schema::create('user_daily_streaks', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->integer('current_streak')->default(0);
+                $table->integer('longest_streak')->default(0);
+                $table->date('last_claim_date')->nullable();
+                $table->integer('total_claims')->default(0);
+                $table->decimal('total_rewards', 10, 2)->default(0);
+                $table->timestamps();
 
-            $table->unique('user_id');
-        });
+                $table->unique('user_id');
+            });
+        }
 
-        Schema::create('daily_reward_claims', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->date('claim_date');
-            $table->integer('day_number'); // Day 1, 2, 3... of streak
-            $table->string('reward_type'); // coins, skin, boost, premium
-            $table->decimal('reward_amount', 10, 2)->nullable();
-            $table->string('reward_item')->nullable();
-            $table->boolean('bonus_applied')->default(false); // Milestone bonus
-            $table->timestamps();
+        // Daily Reward Claims - บันทึกการรับรางวัลรายวัน
+        if (!Schema::hasTable('daily_reward_claims')) {
+            Schema::create('daily_reward_claims', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->date('claim_date');
+                $table->integer('day_number'); // Day 1, 2, 3... of streak
+                $table->string('reward_type'); // coins, skin, boost, premium
+                $table->decimal('reward_amount', 10, 2)->nullable();
+                $table->string('reward_item')->nullable();
+                $table->boolean('bonus_applied')->default(false); // Milestone bonus
+                $table->timestamps();
 
-            $table->index(['user_id', 'claim_date']);
-        });
+                $table->index(['user_id', 'claim_date']);
+            });
+        }
 
-        Schema::create('game_missions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('game_id')->constrained()->onDelete('cascade');
-            $table->string('slug')->unique();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->string('type'); // daily, weekly, special
-            $table->string('objective'); // play_games, reach_score, kill_count, survive_time
-            $table->integer('target'); // Target value to complete
-            $table->json('requirements')->nullable(); // Additional requirements
-            $table->string('reward_type'); // coins, skin, boost
-            $table->decimal('reward_amount', 10, 2)->nullable();
-            $table->string('reward_item')->nullable();
-            $table->integer('reward_points')->default(0);
-            $table->integer('difficulty')->default(1); // 1-5
-            $table->boolean('is_active')->default(true);
-            $table->date('available_from')->nullable();
-            $table->date('available_until')->nullable();
-            $table->timestamps();
-        });
+        // Game Missions - ภารกิจในเกม
+        if (!Schema::hasTable('game_missions')) {
+            Schema::create('game_missions', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('game_id')->constrained()->onDelete('cascade');
+                $table->string('slug')->unique();
+                $table->string('name');
+                $table->text('description')->nullable();
+                $table->string('type'); // daily, weekly, special
+                $table->string('objective'); // play_games, reach_score, kill_count, survive_time
+                $table->integer('target'); // Target value to complete
+                $table->json('requirements')->nullable(); // Additional requirements
+                $table->string('reward_type'); // coins, skin, boost
+                $table->decimal('reward_amount', 10, 2)->nullable();
+                $table->string('reward_item')->nullable();
+                $table->integer('reward_points')->default(0);
+                $table->integer('difficulty')->default(1); // 1-5
+                $table->boolean('is_active')->default(true);
+                $table->date('available_from')->nullable();
+                $table->date('available_until')->nullable();
+                $table->timestamps();
+            });
+        }
 
-        Schema::create('user_mission_progress', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('mission_id')->constrained('game_missions')->onDelete('cascade');
-            $table->integer('current_progress')->default(0);
-            $table->boolean('is_completed')->default(false);
-            $table->boolean('is_claimed')->default(false);
-            $table->timestamp('completed_at')->nullable();
-            $table->timestamp('claimed_at')->nullable();
-            $table->timestamps();
+        // User Mission Progress - ติดตามความคืบหน้าภารกิจ
+        if (!Schema::hasTable('user_mission_progress')) {
+            Schema::create('user_mission_progress', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->foreignId('mission_id')->constrained('game_missions')->onDelete('cascade');
+                $table->integer('current_progress')->default(0);
+                $table->boolean('is_completed')->default(false);
+                $table->boolean('is_claimed')->default(false);
+                $table->timestamp('completed_at')->nullable();
+                $table->timestamp('claimed_at')->nullable();
+                $table->timestamps();
 
-            $table->unique(['user_id', 'mission_id']);
-            $table->index(['user_id', 'is_completed', 'is_claimed']);
-        });
+                $table->unique(['user_id', 'mission_id']);
+                $table->index(['user_id', 'is_completed', 'is_claimed']);
+            });
+        }
     }
 
     /**
