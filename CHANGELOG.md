@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.267.44] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1858 from xjanova/claude/fix-root-route-method-017ankfjHTSXTi5389J7ZJCG (d832e111)
+- fix: เพิ่มคอลัมน์ที่ขาดหายไปใน games table (14c7cbf9)
+### 🔧 Other Changes
+
+
 ## [v3.267.43] - 2025-11-30
 
 ### ✨ Features
