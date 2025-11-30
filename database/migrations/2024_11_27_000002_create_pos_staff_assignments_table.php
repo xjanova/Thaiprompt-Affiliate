@@ -18,20 +18,12 @@ return new class extends Migration
 
         Schema::create('pos_staff_assignments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('employee_id')
-                ->constrained('employees')
-                ->onDelete('cascade');
-            $table->foreignId('pos_device_id')
-                ->nullable()
-                ->constrained('pos_devices')
-                ->onDelete('set null');
-            $table->foreignId('work_shift_id')
-                ->nullable()
-                ->constrained('work_shifts')
-                ->onDelete('set null');
-            $table->foreignId('store_id')
-                ->constrained('vendor_stores')
-                ->onDelete('cascade');
+            // ⚠️ ใช้ unsignedBigInteger แทน foreignId()->constrained()
+            // เพราะตารางที่อ้างอิงอาจยังไม่มีในขณะที่ migration นี้รัน
+            $table->unsignedBigInteger('employee_id');
+            $table->unsignedBigInteger('pos_device_id')->nullable();
+            $table->unsignedBigInteger('work_shift_id')->nullable();
+            $table->unsignedBigInteger('store_id');
 
             // ข้อมูลพนักงานขาย
             $table->string('staff_code')->unique(); // รหัสพนักงานขาย
@@ -75,6 +67,31 @@ return new class extends Migration
             $table->index('pin_code');
             $table->index('rfid_tag');
         });
+
+        // เพิ่ม foreign keys ถ้าตารางที่อ้างอิงมีอยู่แล้ว
+        if (Schema::hasTable('employees')) {
+            Schema::table('pos_staff_assignments', function (Blueprint $table) {
+                $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
+            });
+        }
+
+        if (Schema::hasTable('pos_devices')) {
+            Schema::table('pos_staff_assignments', function (Blueprint $table) {
+                $table->foreign('pos_device_id')->references('id')->on('pos_devices')->onDelete('set null');
+            });
+        }
+
+        if (Schema::hasTable('work_shifts')) {
+            Schema::table('pos_staff_assignments', function (Blueprint $table) {
+                $table->foreign('work_shift_id')->references('id')->on('work_shifts')->onDelete('set null');
+            });
+        }
+
+        if (Schema::hasTable('vendor_stores')) {
+            Schema::table('pos_staff_assignments', function (Blueprint $table) {
+                $table->foreign('store_id')->references('id')->on('vendor_stores')->onDelete('cascade');
+            });
+        }
     }
 
     /**

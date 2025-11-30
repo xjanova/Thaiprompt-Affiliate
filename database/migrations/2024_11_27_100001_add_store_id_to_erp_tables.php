@@ -17,99 +17,118 @@ return new class extends Migration
      * Run the migrations.
      * เพิ่ม store_id สำหรับแยกข้อมูลตามร้านค้า
      *
+     * ⚠️ vendor_stores ถูกสร้างใน migration 2025_11_03
+     * ดังนั้นต้องเช็คว่า vendor_stores มีอยู่ก่อนเพิ่ม foreign key
+     *
      * @return void
      */
     public function up(): void
     {
-        // เพิ่ม store_id ให้ตาราง departments
-        Schema::table('departments', function (Blueprint $table) {
-            if (!Schema::hasColumn('departments', 'store_id')) {
-                $table->foreignId('store_id')
-                    ->nullable()
-                    ->after('id')
-                    ->constrained('vendor_stores')
-                    ->onDelete('cascade');
+        $vendorStoresExists = Schema::hasTable('vendor_stores');
 
-                // Index สำหรับค้นหาตาม store
-                $table->index('store_id', 'departments_store_id_index');
+        // เพิ่ม store_id ให้ตาราง departments
+        if (Schema::hasTable('departments')) {
+            Schema::table('departments', function (Blueprint $table) use ($vendorStoresExists) {
+                if (!Schema::hasColumn('departments', 'store_id')) {
+                    // เพิ่มคอลัมน์ก่อน
+                    $table->unsignedBigInteger('store_id')->nullable()->after('id');
+                    $table->index('store_id', 'departments_store_id_index');
+                }
+            });
+
+            // เพิ่ม foreign key ถ้า vendor_stores มีอยู่
+            if ($vendorStoresExists && Schema::hasColumn('departments', 'store_id')) {
+                try {
+                    Schema::table('departments', function (Blueprint $table) {
+                        $table->foreign('store_id')->references('id')->on('vendor_stores')->onDelete('cascade');
+                    });
+                } catch (\Exception $e) {
+                    // Foreign key อาจมีอยู่แล้ว - ข้าม
+                }
             }
-        });
+        }
 
         // เพิ่ม store_id ให้ตาราง positions
-        Schema::table('positions', function (Blueprint $table) {
-            if (!Schema::hasColumn('positions', 'store_id')) {
-                $table->foreignId('store_id')
-                    ->nullable()
-                    ->after('id')
-                    ->constrained('vendor_stores')
-                    ->onDelete('cascade');
+        if (Schema::hasTable('positions')) {
+            Schema::table('positions', function (Blueprint $table) use ($vendorStoresExists) {
+                if (!Schema::hasColumn('positions', 'store_id')) {
+                    $table->unsignedBigInteger('store_id')->nullable()->after('id');
+                    $table->index('store_id', 'positions_store_id_index');
+                }
+            });
 
-                // Index สำหรับค้นหาตาม store
-                $table->index('store_id', 'positions_store_id_index');
+            if ($vendorStoresExists && Schema::hasColumn('positions', 'store_id')) {
+                try {
+                    Schema::table('positions', function (Blueprint $table) {
+                        $table->foreign('store_id')->references('id')->on('vendor_stores')->onDelete('cascade');
+                    });
+                } catch (\Exception $e) {
+                    // Foreign key อาจมีอยู่แล้ว - ข้าม
+                }
             }
-        });
+        }
 
         // เพิ่ม store_id ให้ตาราง employees
-        Schema::table('employees', function (Blueprint $table) {
-            if (!Schema::hasColumn('employees', 'store_id')) {
-                $table->foreignId('store_id')
-                    ->nullable()
-                    ->after('id')
-                    ->constrained('vendor_stores')
-                    ->onDelete('cascade');
+        if (Schema::hasTable('employees')) {
+            Schema::table('employees', function (Blueprint $table) use ($vendorStoresExists) {
+                if (!Schema::hasColumn('employees', 'store_id')) {
+                    $table->unsignedBigInteger('store_id')->nullable()->after('id');
+                    $table->index('store_id', 'employees_store_id_index');
+                }
+            });
 
-                // Index สำหรับค้นหาตาม store
-                $table->index('store_id', 'employees_store_id_index');
+            if ($vendorStoresExists && Schema::hasColumn('employees', 'store_id')) {
+                try {
+                    Schema::table('employees', function (Blueprint $table) {
+                        $table->foreign('store_id')->references('id')->on('vendor_stores')->onDelete('cascade');
+                    });
+                } catch (\Exception $e) {
+                    // Foreign key อาจมีอยู่แล้ว - ข้าม
+                }
             }
-
-            // ทำให้ user_id เป็น nullable (พนักงานไม่จำเป็นต้องมี account)
-            // แก้ไขเฉพาะเมื่อยังไม่เป็น nullable
-        });
+        }
 
         // เพิ่ม store_id ให้ตาราง attendance_records (ถ้ามี)
         if (Schema::hasTable('attendance_records')) {
             Schema::table('attendance_records', function (Blueprint $table) {
                 if (!Schema::hasColumn('attendance_records', 'store_id')) {
-                    $table->foreignId('store_id')
-                        ->nullable()
-                        ->after('id')
-                        ->constrained('vendor_stores')
-                        ->onDelete('cascade');
-
+                    $table->unsignedBigInteger('store_id')->nullable()->after('id');
                     $table->index('store_id', 'attendance_records_store_id_idx');
                 }
             });
+
+            if ($vendorStoresExists && Schema::hasColumn('attendance_records', 'store_id')) {
+                try {
+                    Schema::table('attendance_records', function (Blueprint $table) {
+                        $table->foreign('store_id')->references('id')->on('vendor_stores')->onDelete('cascade');
+                    });
+                } catch (\Exception $e) {
+                    // Foreign key อาจมีอยู่แล้ว - ข้าม
+                }
+            }
         }
 
         // เพิ่ม store_id ให้ตาราง leave_requests (ถ้ามี)
         if (Schema::hasTable('leave_requests')) {
             Schema::table('leave_requests', function (Blueprint $table) {
                 if (!Schema::hasColumn('leave_requests', 'store_id')) {
-                    $table->foreignId('store_id')
-                        ->nullable()
-                        ->after('id')
-                        ->constrained('vendor_stores')
-                        ->onDelete('cascade');
-
+                    $table->unsignedBigInteger('store_id')->nullable()->after('id');
                     $table->index('store_id', 'leave_requests_store_id_index');
                 }
             });
-        }
 
-        // เพิ่ม store_id ให้ตาราง work_shifts
-        if (Schema::hasTable('work_shifts')) {
-            Schema::table('work_shifts', function (Blueprint $table) {
-                if (!Schema::hasColumn('work_shifts', 'store_id')) {
-                    $table->foreignId('store_id')
-                        ->nullable()
-                        ->after('id')
-                        ->constrained('vendor_stores')
-                        ->onDelete('cascade');
-
-                    $table->index('store_id', 'work_shifts_store_id_index');
+            if ($vendorStoresExists && Schema::hasColumn('leave_requests', 'store_id')) {
+                try {
+                    Schema::table('leave_requests', function (Blueprint $table) {
+                        $table->foreign('store_id')->references('id')->on('vendor_stores')->onDelete('cascade');
+                    });
+                } catch (\Exception $e) {
+                    // Foreign key อาจมีอยู่แล้ว - ข้าม
                 }
-            });
+            }
         }
+
+        // work_shifts มี store_id อยู่แล้วจาก migration ก่อนหน้า - ข้าม
     }
 
     /**
