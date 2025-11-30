@@ -11,12 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตารางมีอยู่แล้วหรือไม่
+        if (Schema::hasTable('tpix_swaps')) {
+            return;
+        }
+
         Schema::create('tpix_swaps', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('pool_id')->constrained('tpix_liquidity_pools')->onDelete('cascade');
-            $table->foreignId('token_in_id')->constrained('tpix_tokens')->onDelete('cascade');
-            $table->foreignId('token_out_id')->constrained('tpix_tokens')->onDelete('cascade');
+            // ⚠️ ใช้ unsignedBigInteger แทน foreignId()->constrained() เพราะบางตารางอาจยังไม่มี
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('pool_id');
+            $table->unsignedBigInteger('token_in_id');
+            $table->unsignedBigInteger('token_out_id');
 
             // Swap amounts
             $table->decimal('amount_in', 30, 8);
@@ -49,8 +55,27 @@ return new class extends Migration
             $table->index('pool_id');
             $table->index('status');
             $table->index('created_at');
-            $table->index(['token_in_id', 'token_out_id']);
+            $table->index('token_in_id');
+            $table->index('token_out_id');
         });
+
+        // เพิ่ม foreign keys ถ้าตารางที่อ้างอิงมีอยู่แล้ว
+        if (Schema::hasTable('users')) {
+            Schema::table('tpix_swaps', function (Blueprint $table) {
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            });
+        }
+        if (Schema::hasTable('tpix_liquidity_pools')) {
+            Schema::table('tpix_swaps', function (Blueprint $table) {
+                $table->foreign('pool_id')->references('id')->on('tpix_liquidity_pools')->onDelete('cascade');
+            });
+        }
+        if (Schema::hasTable('tpix_tokens')) {
+            Schema::table('tpix_swaps', function (Blueprint $table) {
+                $table->foreign('token_in_id')->references('id')->on('tpix_tokens')->onDelete('cascade');
+                $table->foreign('token_out_id')->references('id')->on('tpix_tokens')->onDelete('cascade');
+            });
+        }
     }
 
     /**

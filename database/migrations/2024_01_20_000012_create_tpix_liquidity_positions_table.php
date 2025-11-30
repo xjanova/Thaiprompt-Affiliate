@@ -11,10 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตารางมีอยู่แล้วหรือไม่
+        if (Schema::hasTable('tpix_liquidity_positions')) {
+            return;
+        }
+
         Schema::create('tpix_liquidity_positions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('pool_id')->constrained('tpix_liquidity_pools')->onDelete('cascade');
+            // ⚠️ ใช้ unsignedBigInteger แทน foreignId()->constrained()
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('pool_id');
 
             // Position amounts
             $table->decimal('token_a_amount', 30, 8);
@@ -48,8 +54,19 @@ return new class extends Migration
             $table->index('user_id');
             $table->index('pool_id');
             $table->index('status');
-            $table->index(['user_id', 'pool_id', 'status']);
         });
+
+        // เพิ่ม foreign keys ถ้าตารางที่อ้างอิงมีอยู่แล้ว
+        if (Schema::hasTable('users')) {
+            Schema::table('tpix_liquidity_positions', function (Blueprint $table) {
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            });
+        }
+        if (Schema::hasTable('tpix_liquidity_pools')) {
+            Schema::table('tpix_liquidity_positions', function (Blueprint $table) {
+                $table->foreign('pool_id')->references('id')->on('tpix_liquidity_pools')->onDelete('cascade');
+            });
+        }
     }
 
     /**
