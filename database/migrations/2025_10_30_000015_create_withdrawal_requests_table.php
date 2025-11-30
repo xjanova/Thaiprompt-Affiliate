@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * สร้างตาราง withdrawal_requests
+     * ตารางคำขอถอนเงิน
      */
     public function up(): void
     {
@@ -28,7 +29,9 @@ return new class extends Migration
             $table->enum('status', ['pending', 'processing', 'approved', 'rejected', 'cancelled', 'completed'])->default('pending');
 
             // Payment method details
-            $table->foreignId('payment_method_id')->nullable()->constrained('payment_methods')->onDelete('set null');
+            // ⚠️ ใช้ unsignedBigInteger แทน foreignId()->constrained()
+            // เพราะ payment_methods ถูกสร้างใน migration 000016 (หลัง 000015)
+            $table->unsignedBigInteger('payment_method_id')->nullable();
             $table->string('payment_type')->nullable(); // 'promptpay', 'bank_transfer', 'paypal', etc.
             $table->json('payment_details')->nullable(); // Store account details
 
@@ -65,6 +68,16 @@ return new class extends Migration
             $table->index('approved_by');
             $table->index('created_at');
         });
+
+        // เพิ่ม foreign key ถ้า payment_methods มีอยู่แล้ว
+        if (Schema::hasTable('payment_methods')) {
+            Schema::table('withdrawal_requests', function (Blueprint $table) {
+                $table->foreign('payment_method_id')
+                    ->references('id')
+                    ->on('payment_methods')
+                    ->onDelete('set null');
+            });
+        }
     }
 
     /**
