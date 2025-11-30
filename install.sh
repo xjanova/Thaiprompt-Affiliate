@@ -1981,9 +1981,16 @@ else
     print_error "Migration ล้มเหลว!"
     echo ""
 
-    # ตรวจสอบว่าเป็น foreign key error หรือ table already exists
-    if echo "$MIGRATION_OUTPUT" | grep -q -E "(Foreign key|already exists|errno: 150|constraint)"; then
-        print_warning "ดูเหมือนว่ามีตารางหรือ constraints ที่ค้างจากการติดตั้งไม่สำเร็จก่อนหน้านี้"
+    # ตรวจสอบว่าเป็น migration error ที่สามารถแก้ไขได้โดยดึง migrations ใหม่
+    # Error types:
+    # - Foreign key errors (errno: 150)
+    # - Table already exists
+    # - Invalid default value (errno: 1067) - timestamp issues
+    # - Index name too long (errno: 1059)
+    # - Syntax error or access violation
+    # - SQLSTATE errors
+    if echo "$MIGRATION_OUTPUT" | grep -q -E "(Foreign key|already exists|errno: 150|errno: 1067|errno: 1059|constraint|Invalid default|Syntax error|SQLSTATE)"; then
+        print_warning "พบ error ที่อาจแก้ไขได้โดยการอัพเดท migrations ใหม่จาก GitHub"
         echo ""
 
         if [ "$AUTO_MODE" = true ]; then
@@ -2089,7 +2096,88 @@ else
             fi
         fi
     else
-        error_exit "รัน migrations ล้มเหลว!"
+        # Error ที่ไม่ได้อยู่ใน pattern ที่รู้จัก - ยังคงให้ตัวเลือกแก่ผู้ใช้
+        print_warning "พบ error ที่ไม่คุ้นเคย - อาจเป็นปัญหาใหม่"
+        echo ""
+
+        if [ "$AUTO_MODE" = true ]; then
+            print_error "Auto mode: ไม่สามารถ recover อัตโนมัติได้"
+            error_exit "รัน migrations ล้มเหลว!"
+        else
+            echo "คุณต้องการทำอย่างไร?"
+            echo ""
+            echo "  1) รัน migrate:fresh (ลบตารางทั้งหมดและสร้างใหม่)"
+            echo "  2) ดึง migrations ใหม่จาก GitHub แล้วลองอีกครั้ง (แนะนำ)"
+            echo "  3) ยกเลิกการติดตั้ง"
+            echo ""
+            read -p "เลือก (1/2/3) [2]: " UNKNOWN_ERR_CHOICE
+            UNKNOWN_ERR_CHOICE=${UNKNOWN_ERR_CHOICE:-2}
+
+            if [ "$UNKNOWN_ERR_CHOICE" = "1" ]; then
+                print_step "กำลังรัน migrate:fresh..."
+                echo ""
+                if php artisan migrate:fresh --force; then
+                    MIGRATION_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "0")
+                    echo ""
+                    print_success "รัน migrate:fresh สำเร็จ ✓ (สร้าง $MIGRATION_COUNT ตาราง)"
+                else
+                    error_exit "รัน migrate:fresh ล้มเหลว!"
+                fi
+            elif [ "$UNKNOWN_ERR_CHOICE" = "2" ]; then
+                print_step "กำลังดึง migrations ใหม่จาก GitHub..."
+                echo ""
+
+                # ดึง migrations และ seeders ใหม่จาก GitHub
+                if [ -d ".git" ]; then
+                    print_info "พบ Git repository - กำลัง pull การอัพเดทล่าสุด..."
+                    git fetch origin 2>/dev/null || true
+                    git checkout origin/main -- database/migrations/ database/seeders/ 2>/dev/null || \
+                    git checkout origin/master -- database/migrations/ database/seeders/ 2>/dev/null || \
+                    git checkout origin/claude/Main -- database/migrations/ database/seeders/ 2>/dev/null || {
+                        print_warning "ไม่สามารถดึงจาก git ได้ - ลองใช้ curl แทน..."
+                    }
+                fi
+
+                # ถ้า git ไม่สำเร็จ หรือไม่มี .git - ใช้ curl ดาวน์โหลด
+                if [ ! -d ".git" ] || [ $? -ne 0 ]; then
+                    print_info "กำลังดาวน์โหลด migrations จาก GitHub..."
+                    TEMP_DIR=$(mktemp -d)
+                    REPO_URL="https://github.com/xjanova/Thaiprompt-Affiliate"
+                    BRANCH="${REPO_BRANCH:-claude/Main}"
+
+                    if curl -sL "${REPO_URL}/archive/refs/heads/${BRANCH}.tar.gz" -o "$TEMP_DIR/repo.tar.gz" 2>/dev/null; then
+                        tar -xzf "$TEMP_DIR/repo.tar.gz" -C "$TEMP_DIR" 2>/dev/null
+                        EXTRACTED_DIR=$(ls -d "$TEMP_DIR"/Thaiprompt-Affiliate-* 2>/dev/null | head -1)
+
+                        if [ -d "$EXTRACTED_DIR/database/migrations" ]; then
+                            cp -r "$EXTRACTED_DIR/database/migrations/"* database/migrations/ 2>/dev/null || true
+                            print_success "อัพเดท migrations เรียบร้อย"
+                        fi
+                        if [ -d "$EXTRACTED_DIR/database/seeders" ]; then
+                            cp -r "$EXTRACTED_DIR/database/seeders/"* database/seeders/ 2>/dev/null || true
+                            print_success "อัพเดท seeders เรียบร้อย"
+                        fi
+                    fi
+                    rm -rf "$TEMP_DIR" 2>/dev/null || true
+                fi
+
+                echo ""
+                print_step "กำลังรัน migrate:fresh ด้วย migrations ใหม่..."
+                echo ""
+
+                if php artisan migrate:fresh --force; then
+                    MIGRATION_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "0")
+                    echo ""
+                    print_success "รัน migrate:fresh สำเร็จ ✓ (สร้าง $MIGRATION_COUNT ตาราง)"
+                else
+                    print_error "รัน migrate:fresh ยังคงล้มเหลว!"
+                    print_info "💡 รายงาน error นี้ไปที่: https://github.com/xjanova/Thaiprompt-Affiliate/issues"
+                    error_exit "ไม่สามารถรัน migrations ได้"
+                fi
+            else
+                error_exit "ยกเลิกการติดตั้งตามที่ผู้ใช้ต้องการ"
+            fi
+        fi
     fi
 fi
 
