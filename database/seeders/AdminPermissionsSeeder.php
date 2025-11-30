@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Permission;
 use App\Models\Role;
+use Database\Seeders\Concerns\SafeSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\DB;
  */
 class AdminPermissionsSeeder extends Seeder
 {
+    use SafeSeeder;
+
     /**
      * Run the database seeds.
      *
@@ -25,6 +28,11 @@ class AdminPermissionsSeeder extends Seeder
      */
     public function run(): void
     {
+        // ตรวจสอบว่าตาราง permissions มีอยู่หรือไม่
+        if (!$this->requireTable('permissions', 'AdminPermissionsSeeder')) {
+            return;
+        }
+
         $this->command->info('🔐 กำลังสร้าง Admin Permissions...');
 
         $permissions = $this->getPermissions();

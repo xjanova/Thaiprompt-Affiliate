@@ -3,11 +3,14 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use Database\Seeders\Concerns\SafeSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class DemoUsersSeeder extends Seeder
 {
+    use SafeSeeder;
+
     /**
      * Run the database seeds.
      *
@@ -15,6 +18,11 @@ class DemoUsersSeeder extends Seeder
      */
     public function run(): void
     {
+        // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
+        if (!$this->requireTable('users', 'DemoUsersSeeder')) {
+            return;
+        }
+
         $this->command->info('🌱 Creating demo users...');
 
         // Super Admin

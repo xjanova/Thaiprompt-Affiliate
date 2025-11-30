@@ -4,10 +4,13 @@ namespace Database\Seeders;
 
 use App\Models\TwoFactorSetting;
 use App\Models\OtpSetting;
+use Database\Seeders\Concerns\SafeSeeder;
 use Illuminate\Database\Seeder;
 
 class TwoFactorSettingsSeeder extends Seeder
 {
+    use SafeSeeder;
+
     /**
      * Run the database seeds.
      *
@@ -17,6 +20,11 @@ class TwoFactorSettingsSeeder extends Seeder
      */
     public function run(): void
     {
+        // ตรวจสอบว่าตาราง two_factor_settings มีอยู่หรือไม่
+        if (!$this->requireTable('two_factor_settings', 'TwoFactorSettingsSeeder')) {
+            return;
+        }
+
         // Check if 2FA settings already exist
         $existingTwoFactorSetting = TwoFactorSetting::find(1);
 

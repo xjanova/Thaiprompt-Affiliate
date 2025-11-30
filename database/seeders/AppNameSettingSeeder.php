@@ -3,15 +3,23 @@
 namespace Database\Seeders;
 
 use App\Models\Setting;
+use Database\Seeders\Concerns\SafeSeeder;
 use Illuminate\Database\Seeder;
 
 class AppNameSettingSeeder extends Seeder
 {
+    use SafeSeeder;
+
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
+        // ตรวจสอบว่าตาราง settings มีอยู่หรือไม่
+        if (!$this->requireTable('settings', 'AppNameSettingSeeder')) {
+            return;
+        }
+
         // Check if app_name setting already exists
         $existingSetting = Setting::where('key', 'app_name')->first();
 

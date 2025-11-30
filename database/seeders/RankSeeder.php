@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Rank;
 use App\Models\RankBonus;
 use App\Models\RankRequirement;
+use Database\Seeders\Concerns\SafeSeeder;
 use Illuminate\Database\Seeder;
 
 /**
@@ -24,6 +25,8 @@ use Illuminate\Database\Seeder;
  */
 class RankSeeder extends Seeder
 {
+    use SafeSeeder;
+
     /**
      * รันการ seed ข้อมูลระดับ
      *
@@ -31,6 +34,11 @@ class RankSeeder extends Seeder
      */
     public function run(): void
     {
+        // ตรวจสอบว่าตาราง ranks มีอยู่หรือไม่
+        if (!$this->requireTable('ranks', 'RankSeeder')) {
+            return;
+        }
+
         // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่
         $existingRanksCount = Rank::whereIn('level', [1, 2, 3])->count();
 

@@ -7,10 +7,13 @@ use App\Models\ThemeSetting;
 use App\Models\ThemeColor;
 use App\Models\ThemeRgbEffect;
 use App\Models\ThemeTypography;
+use Database\Seeders\Concerns\SafeSeeder;
 use Illuminate\Support\Facades\DB;
 
 class ArrowXThemeSeeder extends Seeder
 {
+    use SafeSeeder;
+
     /**
      * สร้างข้อมูลเริ่มต้นสำหรับ Arrow X Theme System
      *
@@ -18,6 +21,11 @@ class ArrowXThemeSeeder extends Seeder
      */
     public function run(): void
     {
+        // ตรวจสอบว่าตาราง theme_settings มีอยู่หรือไม่
+        if (!$this->requireTable('theme_settings', 'ArrowXThemeSeeder')) {
+            return;
+        }
+
         $this->command->info('');
         $this->command->info('🎨 กำลัง seed ข้อมูล Arrow X Theme...');
         $this->command->info('');
