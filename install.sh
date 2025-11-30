@@ -1733,8 +1733,8 @@ else
     print_info "ไม่พบ MySQL client - จะทดสอบผ่าน PHP"
 fi
 
-# Super Admin Account (Interactive mode only - auto mode ได้ตั้งค่าไปแล้ว)
-if [ "$AUTO_MODE" != true ]; then
+# Super Admin Account (Interactive mode only - auto mode และ wizard mode ได้ตั้งค่าไปแล้ว)
+if [ "$AUTO_MODE" != true ] && ! is_step_completed "WIZARD_COMPLETED"; then
     print_subheader "👤 Super Admin Account"
 
     CACHED_ADMIN_NAME=$(load_from_cache "ADMIN_NAME" "")
