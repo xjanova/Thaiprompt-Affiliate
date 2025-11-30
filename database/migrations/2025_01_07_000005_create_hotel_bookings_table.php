@@ -7,10 +7,15 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * สร้างตาราง hotel_bookings
+     * ตารางสำหรับจองโรงแรม
      */
     public function up(): void
     {
+        if (Schema::hasTable('hotel_bookings')) {
+            return;
+        }
+
         Schema::create('hotel_bookings', function (Blueprint $table) {
             $table->id();
             $table->string('booking_number')->unique(); // e.g., HB20250107-0001
@@ -59,7 +64,9 @@ return new class extends Migration
             ])->default('pending');
 
             // Payment
-            $table->foreignId('payment_transaction_id')->nullable()->constrained()->onDelete('set null');
+            // ⚠️ ใช้ unsignedBigInteger แทน foreignId()->constrained()
+            // เพราะ payment_transactions ถูกสร้างใน migration 2025_11_03 (ทีหลัง)
+            $table->unsignedBigInteger('payment_transaction_id')->nullable();
             $table->enum('payment_status', ['pending', 'paid', 'refunded', 'failed'])->default('pending');
             $table->timestamp('payment_date')->nullable();
 
@@ -90,6 +97,16 @@ return new class extends Migration
             $table->index(['check_in_date', 'check_out_date']);
             $table->index('payment_status');
         });
+
+        // เพิ่ม foreign key ถ้า payment_transactions มีอยู่แล้ว
+        if (Schema::hasTable('payment_transactions')) {
+            Schema::table('hotel_bookings', function (Blueprint $table) {
+                $table->foreign('payment_transaction_id')
+                    ->references('id')
+                    ->on('payment_transactions')
+                    ->onDelete('set null');
+            });
+        }
     }
 
     /**
