@@ -1,11 +1,14 @@
 <?php
 
+use Database\Migrations\Concerns\SafeMigration;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    use SafeMigration;
+
     /**
      * เพิ่มคอลัมน์ rating, review, rated_at ในตาราง service_bookings
      *
@@ -24,33 +27,25 @@ return new class extends Migration
         Schema::table('service_bookings', function (Blueprint $table) {
             // คะแนนและรีวิวจากลูกค้า
             if (!Schema::hasColumn('service_bookings', 'rating')) {
-                $table->tinyInteger('rating')->nullable()->after('completed_at')->comment('คะแนน 1-5 ดาว');
+                $table->tinyInteger('rating')->nullable()->comment('คะแนน 1-5 ดาว');
             }
 
             if (!Schema::hasColumn('service_bookings', 'review')) {
-                $table->text('review')->nullable()->after('rating')->comment('ความคิดเห็นจากลูกค้า');
+                $table->text('review')->nullable()->comment('ความคิดเห็นจากลูกค้า');
             }
 
             if (!Schema::hasColumn('service_bookings', 'rated_at')) {
-                $table->dateTime('rated_at')->nullable()->after('review')->comment('เวลาที่ให้คะแนน');
+                $table->dateTime('rated_at')->nullable()->comment('เวลาที่ให้คะแนน');
             }
 
             // เพิ่ม final_price ถ้ายังไม่มี (ใช้ใน analytics)
             if (!Schema::hasColumn('service_bookings', 'final_price')) {
-                $table->decimal('final_price', 10, 2)->nullable()->after('total_amount')->comment('ราคาสุดท้ายหลังส่วนลด');
+                $table->decimal('final_price', 10, 2)->nullable()->comment('ราคาสุดท้ายหลังส่วนลด');
             }
         });
 
-        // เพิ่ม index สำหรับ query รีวิว
-        Schema::table('service_bookings', function (Blueprint $table) {
-            // ตรวจสอบว่า index มีอยู่แล้วหรือไม่
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $indexes = $sm->listTableIndexes('service_bookings');
-
-            if (!isset($indexes['service_booking_rating_idx'])) {
-                $table->index('rating', 'service_booking_rating_idx');
-            }
-        });
+        // เพิ่ม index สำหรับ query รีวิว (ใช้ SafeMigration trait)
+        $this->safeAddIndex('service_bookings', 'rating', 'service_booking_rating_idx');
     }
 
     /**
