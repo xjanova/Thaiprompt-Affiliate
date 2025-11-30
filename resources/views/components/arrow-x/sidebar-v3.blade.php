@@ -340,6 +340,57 @@
         </div>
         @endif
 
+        {{-- Marketplace Affiliate (Collapsible Menu) 🛒 --}}
+        @if($type === 'admin')
+        <div class="space-y-1"
+             x-data="{ marketplaceOpen: {{ request()->routeIs('admin.marketplace.*') ? 'true' : 'false' }} }">
+            {{-- Marketplace Header Button --}}
+            <button @click="marketplaceOpen = !marketplaceOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.marketplace.*') ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-store w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Marketplace Affiliate</span>
+                <i x-show="$store.sidebar.shouldExpand && marketplaceOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !marketplaceOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Marketplace Submenu --}}
+            <div x-show="marketplaceOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- บัญชี Marketplace 🔑 --}}
+                <a href="{{ route('admin.marketplace.accounts.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.marketplace.accounts.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-key w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">บัญชี API</span>
+                </a>
+
+                {{-- สินค้า Marketplace 📦 --}}
+                <a href="{{ route('admin.marketplace.products.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.marketplace.products.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-boxes w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">สินค้า</span>
+                </a>
+
+                {{-- ออเดอร์ 🛒 --}}
+                <a href="{{ route('admin.marketplace.orders.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.marketplace.orders.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-shopping-bag w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ออเดอร์</span>
+                </a>
+
+                {{-- คอมมิชชั่น 💰 --}}
+                <a href="{{ route('admin.marketplace.commissions.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.marketplace.commissions.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-coins w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
+                </a>
+            </div>
+        </div>
+        @endif
+
         {{-- LINE Membership Signup (Collapsible Menu) 🤖 --}}
         <div class="space-y-1"
              x-data="{ lineSignupOpen: {{ request()->routeIs('admin.line-membership-signup.*') ? 'true' : 'false' }} }">

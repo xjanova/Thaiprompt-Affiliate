@@ -2987,3 +2987,111 @@ Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () 
             ->name('playground.generate');
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Marketplace Affiliate Routes - ระบบ Affiliate จาก Marketplace
+|--------------------------------------------------------------------------
+|
+| เส้นทางสำหรับจัดการ:
+| - บัญชี Marketplace (Lazada, Shopee, TikTok Shop)
+| - สินค้าที่ Sync มาจาก Platform
+| - ออเดอร์และคอมมิชชั่น
+| - การเชื่อมต่อ API และ Sync ข้อมูล
+|
+*/
+
+Route::prefix('marketplace')->name('marketplace.')->group(function () {
+
+    // =========================================
+    // Marketplace Accounts - บัญชี Marketplace
+    // =========================================
+    Route::prefix('accounts')->name('accounts.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\MarketplaceAccountController::class, 'index'])
+            ->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\MarketplaceAccountController::class, 'create'])
+            ->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\MarketplaceAccountController::class, 'store'])
+            ->name('store');
+        Route::get('/{account}', [\App\Http\Controllers\Admin\MarketplaceAccountController::class, 'show'])
+            ->name('show');
+        Route::get('/{account}/edit', [\App\Http\Controllers\Admin\MarketplaceAccountController::class, 'edit'])
+            ->name('edit');
+        Route::put('/{account}', [\App\Http\Controllers\Admin\MarketplaceAccountController::class, 'update'])
+            ->name('update');
+        Route::delete('/{account}', [\App\Http\Controllers\Admin\MarketplaceAccountController::class, 'destroy'])
+            ->name('destroy');
+
+        // API Actions
+        Route::post('/{account}/test-connection', [\App\Http\Controllers\Admin\MarketplaceAccountController::class, 'testConnection'])
+            ->name('test-connection');
+        Route::post('/{account}/sync-products', [\App\Http\Controllers\Admin\MarketplaceAccountController::class, 'syncProducts'])
+            ->name('sync-products');
+        Route::post('/{account}/sync-orders', [\App\Http\Controllers\Admin\MarketplaceAccountController::class, 'syncOrders'])
+            ->name('sync-orders');
+        Route::post('/{account}/sync-all', [\App\Http\Controllers\Admin\MarketplaceAccountController::class, 'syncAll'])
+            ->name('sync-all');
+    });
+
+    // =========================================
+    // Marketplace Products - สินค้าจาก Marketplace
+    // =========================================
+    Route::prefix('products')->name('products.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\MarketplaceProductController::class, 'index'])
+            ->name('index');
+        Route::get('/{product}', [\App\Http\Controllers\Admin\MarketplaceProductController::class, 'show'])
+            ->name('show');
+        Route::put('/{product}', [\App\Http\Controllers\Admin\MarketplaceProductController::class, 'update'])
+            ->name('update');
+        Route::delete('/{product}', [\App\Http\Controllers\Admin\MarketplaceProductController::class, 'destroy'])
+            ->name('destroy');
+
+        // Bulk Actions
+        Route::post('/bulk-action', [\App\Http\Controllers\Admin\MarketplaceProductController::class, 'bulkAction'])
+            ->name('bulk-action');
+    });
+
+    // =========================================
+    // Marketplace Orders - ออเดอร์จาก Marketplace
+    // =========================================
+    Route::prefix('orders')->name('orders.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'index'])
+            ->name('index');
+        Route::get('/{order}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'show'])
+            ->name('show');
+        Route::put('/{order}/status', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'updateStatus'])
+            ->name('update-status');
+        Route::delete('/{order}', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'destroy'])
+            ->name('destroy');
+
+        // Commission Actions
+        Route::post('/{order}/calculate-commission', [\App\Http\Controllers\Admin\MarketplaceOrderController::class, 'calculateCommission'])
+            ->name('calculate-commission');
+    });
+
+    // =========================================
+    // Marketplace Commissions - คอมมิชชั่น
+    // =========================================
+    Route::prefix('commissions')->name('commissions.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\MarketplaceCommissionController::class, 'index'])
+            ->name('index');
+        Route::get('/{commission}', [\App\Http\Controllers\Admin\MarketplaceCommissionController::class, 'show'])
+            ->name('show');
+        Route::delete('/{commission}', [\App\Http\Controllers\Admin\MarketplaceCommissionController::class, 'destroy'])
+            ->name('destroy');
+
+        // Approval Actions
+        Route::post('/{commission}/approve', [\App\Http\Controllers\Admin\MarketplaceCommissionController::class, 'approve'])
+            ->name('approve');
+        Route::post('/{commission}/pay', [\App\Http\Controllers\Admin\MarketplaceCommissionController::class, 'pay'])
+            ->name('pay');
+        Route::post('/{commission}/reject', [\App\Http\Controllers\Admin\MarketplaceCommissionController::class, 'reject'])
+            ->name('reject');
+
+        // Bulk Actions
+        Route::post('/bulk-approve', [\App\Http\Controllers\Admin\MarketplaceCommissionController::class, 'bulkApprove'])
+            ->name('bulk-approve');
+        Route::post('/bulk-pay', [\App\Http\Controllers\Admin\MarketplaceCommissionController::class, 'bulkPay'])
+            ->name('bulk-pay');
+    });
+});
