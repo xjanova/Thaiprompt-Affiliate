@@ -2,7 +2,6 @@
 
 use Database\Migrations\Concerns\SafeMigration;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -47,64 +46,37 @@ return new class extends Migration
             'expires_at',
         ];
 
-        Schema::table('line_signup_rewards', function (Blueprint $table) use ($columnsToRemove) {
-            // 1. ลบ foreign key constraints ก่อนเสมอ (ต้องลบก่อน indexes!)
-            $foreignKeys = [
-                'line_signup_rewards_user_id_foreign',
-                'line_signup_rewards_session_id_foreign',
-            ];
+        // 1. ลบ foreign key constraints ก่อนเสมอ (ต้องลบก่อน indexes!)
+        $foreignKeys = [
+            'line_signup_rewards_user_id_foreign',
+            'line_signup_rewards_session_id_foreign',
+        ];
 
-            foreach ($foreignKeys as $fkName) {
-                try {
-                    $table->dropForeign($fkName);
-                } catch (\Exception $e) {
-                    // Ignore if FK doesn't exist
-                }
-            }
+        foreach ($foreignKeys as $fkName) {
+            $this->safeDropForeign('line_signup_rewards', $fkName);
+        }
 
-            // ลบ foreign keys โดยใช้ column names
-            foreach (['user_id', 'session_id'] as $column) {
-                try {
-                    $table->dropForeign([$column]);
-                } catch (\Exception $e) {
-                    // Ignore if FK doesn't exist
-                }
-            }
+        // 2. ลบ composite indexes และ named indexes
+        $indexesToDrop = [
+            'idx_user_status',
+            'idx_session_status',
+            'line_signup_rewards_user_id_index',
+            'line_signup_rewards_session_id_index',
+            'line_signup_rewards_status_index',
+        ];
 
-            // 2. ลบ composite indexes และ named indexes
-            $indexesToDrop = [
-                'idx_user_status',           // composite index (user_id, status)
-                'idx_session_status',         // อาจมี composite index
-                'line_signup_rewards_user_id_index',
-                'line_signup_rewards_session_id_index',
-                'line_signup_rewards_status_index',
-            ];
+        foreach ($indexesToDrop as $indexName) {
+            $this->safeDropIndex('line_signup_rewards', $indexName);
+        }
 
-            foreach ($indexesToDrop as $indexName) {
-                try {
-                    $table->dropIndex($indexName);
-                } catch (\Exception $e) {
-                    // Ignore if index doesn't exist
-                }
-            }
-
-            // 3. ลบ indexes แบบ single column
-            foreach ($columnsToRemove as $column) {
-                try {
-                    $table->dropIndex([$column]);
-                } catch (\Exception $e) {
-                    // Ignore if index doesn't exist
-                }
-            }
-        });
-
-        // 4. ลบ columns ทีละตัว (แยกออกจาก closure ข้างบนเพื่อความปลอดภัย)
+        // 3. ลบ indexes แบบ single column (ใช้ชื่อ index ตาม Laravel convention)
         foreach ($columnsToRemove as $column) {
-            if (Schema::hasColumn('line_signup_rewards', $column)) {
-                Schema::table('line_signup_rewards', function (Blueprint $table) use ($column) {
-                    $table->dropColumn($column);
-                });
-            }
+            $this->safeDropIndex('line_signup_rewards', "line_signup_rewards_{$column}_index");
+        }
+
+        // 4. ลบ columns ทีละตัว
+        foreach ($columnsToRemove as $column) {
+            $this->safeDropColumn('line_signup_rewards', $column);
         }
     }
 
