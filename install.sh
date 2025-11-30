@@ -1924,21 +1924,29 @@ php artisan config:clear
 
 print_step "กำลังรัน migrations..."
 echo ""
-echo "📊 กำลังสร้างตารางฐานข้อมูล..."
+echo "📊 กำลังสร้างตารางฐานข้อมูล... (อาจใช้เวลาสักครู่)"
 echo ""
 
-# เก็บ output ของ migration เพื่อวิเคราะห์ error
-MIGRATION_OUTPUT=$(php artisan migrate --force 2>&1)
-MIGRATION_STATUS=$?
+# สร้างไฟล์ชั่วคราวสำหรับเก็บ output
+MIGRATION_LOG=$(mktemp)
+
+# รัน migration และแสดง output แบบ real-time + เก็บไว้วิเคราะห์ error
+php artisan migrate --force 2>&1 | tee "$MIGRATION_LOG"
+MIGRATION_STATUS=${PIPESTATUS[0]}
 
 if [ $MIGRATION_STATUS -eq 0 ]; then
     MIGRATION_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "0")
+    echo ""
     print_success "รัน migrations สำเร็จ ✓ (สร้าง $MIGRATION_COUNT ตาราง)"
+    rm -f "$MIGRATION_LOG"
 else
+    # อ่าน output จากไฟล์
+    MIGRATION_OUTPUT=$(cat "$MIGRATION_LOG")
+    rm -f "$MIGRATION_LOG"
+
     # แสดง error
     echo ""
-    print_error "Migration ล้มเหลว:"
-    echo "$MIGRATION_OUTPUT" | tail -20
+    print_error "Migration ล้มเหลว!"
     echo ""
 
     # ตรวจสอบว่าเป็น foreign key error หรือ table already exists
@@ -1949,8 +1957,10 @@ else
         if [ "$AUTO_MODE" = true ]; then
             # Auto mode: ลองรัน migrate:fresh อัตโนมัติ
             print_step "Auto mode: กำลังรัน migrate:fresh เพื่อเริ่มใหม่..."
+            echo ""
             if php artisan migrate:fresh --force; then
                 MIGRATION_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "0")
+                echo ""
                 print_success "รัน migrate:fresh สำเร็จ ✓ (สร้าง $MIGRATION_COUNT ตาราง)"
             else
                 error_exit "รัน migrate:fresh ล้มเหลว!"
@@ -1967,8 +1977,10 @@ else
 
             if [ "$MIGRATE_CHOICE" = "1" ]; then
                 print_step "กำลังรัน migrate:fresh..."
+                echo ""
                 if php artisan migrate:fresh --force; then
                     MIGRATION_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "0")
+                    echo ""
                     print_success "รัน migrate:fresh สำเร็จ ✓ (สร้าง $MIGRATION_COUNT ตาราง)"
                 else
                     error_exit "รัน migrate:fresh ล้มเหลว!"
