@@ -21,6 +21,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง line_signup_templates มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('line_signup_templates')) {
+            return;
+        }
+
         Schema::table('line_signup_templates', function (Blueprint $table) {
             // ✅ ใช้ SafeMigration trait เพื่อความปลอดภัย
 

@@ -12,6 +12,16 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง ticket_replies มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('ticket_replies')) {
+            return;
+        }
+
+        // ตรวจสอบว่าตาราง tickets มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('tickets')) {
+            return;
+        }
+
         // Add fulltext index for better search
         DB::statement('ALTER TABLE tickets ADD FULLTEXT search_index (ticket_number, subject, description)');
 

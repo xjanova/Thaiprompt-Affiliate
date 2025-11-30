@@ -14,6 +14,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง kyc_verifications มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('kyc_verifications')) {
+            return;
+        }
+
         Schema::table('kyc_verifications', function (Blueprint $table) {
             // เช็คว่าคอลัมน์มีอยู่แล้วหรือยัง
             if (!Schema::hasColumn('kyc_verifications', 'extracted_data')) {

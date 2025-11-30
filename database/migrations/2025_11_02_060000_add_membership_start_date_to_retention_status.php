@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง membership_retention_status มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('membership_retention_status')) {
+            return;
+        }
+
         Schema::table('membership_retention_status', function (Blueprint $table) {
             // วันที่เริ่มเป็นสมาชิก (วันที่ซื้อครั้งแรก - ไม่รวมการเติม wallet)
             $table->date('membership_start_date')->nullable()->after('user_id');

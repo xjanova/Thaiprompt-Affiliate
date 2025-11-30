@@ -17,6 +17,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง tpix_configurations มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('tpix_configurations')) {
+            return;
+        }
+
         Schema::table('tpix_configurations', function (Blueprint $table) {
             // Payment Information
             $this->safeAddColumn($table, 'tpix_configurations', 'wallet_address', function ($t) {

@@ -13,6 +13,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง products มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('products')) {
+            return;
+        }
+
         Schema::table('products', function (Blueprint $table) {
             // ✅ เช็คก่อนเพิ่มคอลัมน์ (idempotent)
             if (!Schema::hasColumn('products', 'customer_cashback')) {

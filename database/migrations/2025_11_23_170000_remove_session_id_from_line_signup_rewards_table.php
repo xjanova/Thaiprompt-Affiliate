@@ -19,6 +19,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง line_signup_rewards มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('line_signup_rewards')) {
+            return;
+        }
+
         // เช็คว่ามี column session_id หรือไม่
         if (Schema::hasColumn('line_signup_rewards', 'session_id')) {
             // ลบ foreign key constraint ถ้ามี (ใช้ SafeMigration trait)

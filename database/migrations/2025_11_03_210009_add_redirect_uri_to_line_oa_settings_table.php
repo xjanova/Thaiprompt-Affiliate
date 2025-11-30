@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง line_oa_settings มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('line_oa_settings')) {
+            return;
+        }
+
         Schema::table('line_oa_settings', function (Blueprint $table) {
             $table->string('redirect_uri')->nullable()->after('channel_secret')
                 ->comment('Custom redirect URI for LINE Login callback. If not set, will use route("line.callback")');

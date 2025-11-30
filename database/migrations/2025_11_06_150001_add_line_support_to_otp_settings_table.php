@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง otp_settings มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('otp_settings')) {
+            return;
+        }
+
         Schema::table('otp_settings', function (Blueprint $table) {
             // Update provider enum to include 'line'
             $table->string('provider')->default('twilio')->change(); // twilio, nexmo, custom, line

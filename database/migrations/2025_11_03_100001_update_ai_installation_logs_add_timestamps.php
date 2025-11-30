@@ -12,6 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง ai_installation_logs มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('ai_installation_logs')) {
+            return;
+        }
+
         Schema::table('ai_installation_logs', function (Blueprint $table) {
             // Add created_at and updated_at if they don't exist
             if (!Schema::hasColumn('ai_installation_logs', 'created_at')) {

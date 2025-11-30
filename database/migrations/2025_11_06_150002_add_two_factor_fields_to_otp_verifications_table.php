@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง otp_verifications มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('otp_verifications')) {
+            return;
+        }
+
         Schema::table('otp_verifications', function (Blueprint $table) {
             // Add user_id to link OTP to specific user
             $table->foreignId('user_id')->nullable()->after('id')->constrained()->onDelete('cascade');

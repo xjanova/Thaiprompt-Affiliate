@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง game_leaderboards มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('game_leaderboards')) {
+            return;
+        }
+
         Schema::create('leaderboard_seasons', function (Blueprint $table) {
             $table->id();
             $table->foreignId('game_id')->constrained()->onDelete('cascade');

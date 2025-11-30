@@ -30,6 +30,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง payout_settings มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('payout_settings')) {
+            return;
+        }
+
         Schema::table('payout_settings', function (Blueprint $table) {
             // เพิ่มคอลัมน์ใหม่ที่ seeder ต้องการ
             if (!Schema::hasColumn('payout_settings', 'slug')) {

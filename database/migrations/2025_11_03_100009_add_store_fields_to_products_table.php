@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง products มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('products')) {
+            return;
+        }
+
         Schema::table('products', function (Blueprint $table) {
             // Add store_id after seller_id
             $table->foreignId('store_id')->nullable()->after('seller_id')

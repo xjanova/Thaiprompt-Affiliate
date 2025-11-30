@@ -11,6 +11,26 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง tarot_spread_types มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('tarot_spread_types')) {
+            return;
+        }
+
+        // ตรวจสอบว่าตาราง tarot_settings มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('tarot_settings')) {
+            return;
+        }
+
+        // ตรวจสอบว่าตาราง tarot_user_limits มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('tarot_user_limits')) {
+            return;
+        }
+
+        // ตรวจสอบว่าตาราง tarot_readings มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('tarot_readings')) {
+            return;
+        }
+
         // Add pricing to individual readings
         Schema::table('tarot_readings', function (Blueprint $table) {
             $table->decimal('price', 10, 2)->default(0)->after('interpretation');

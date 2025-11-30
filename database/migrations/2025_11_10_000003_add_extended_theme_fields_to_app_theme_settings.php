@@ -13,6 +13,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง app_theme_settings มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('app_theme_settings')) {
+            return;
+        }
+
         Schema::table('app_theme_settings', function (Blueprint $table) {
             // Typography Scale (Heading Styles)
             if (!Schema::hasColumn('app_theme_settings', 'heading1_size')) {

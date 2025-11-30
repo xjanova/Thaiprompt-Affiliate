@@ -29,6 +29,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง nfc_cards มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('nfc_cards')) {
+            return;
+        }
+
         Schema::table('nfc_cards', function (Blueprint $table) {
             // ระบบล็อคบัตร
             $this->safeAddColumn($table, 'nfc_cards', 'is_locked', function ($table) {

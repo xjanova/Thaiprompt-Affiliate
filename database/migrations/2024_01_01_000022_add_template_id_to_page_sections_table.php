@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง page_sections มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('page_sections')) {
+            return;
+        }
+
         Schema::table('page_sections', function (Blueprint $table) {
             $table->foreignId('template_id')->nullable()->after('id')->constrained('page_templates')->onDelete('cascade');
             $table->index('template_id');

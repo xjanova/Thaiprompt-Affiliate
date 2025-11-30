@@ -18,6 +18,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง service_providers มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('service_providers')) {
+            return;
+        }
+
         Schema::table('service_providers', function (Blueprint $table) {
             // ชื่อที่ใช้แสดง (แยกจาก name จริง)
             if (!Schema::hasColumn('service_providers', 'display_name')) {

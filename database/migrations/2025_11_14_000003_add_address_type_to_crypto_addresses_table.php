@@ -14,6 +14,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง crypto_addresses มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('crypto_addresses')) {
+            return;
+        }
+
         Schema::table('crypto_addresses', function (Blueprint $table) {
             // ตรวจสอบและเพิ่มคอลัมน์ address_type
             if (!Schema::hasColumn('crypto_addresses', 'address_type')) {

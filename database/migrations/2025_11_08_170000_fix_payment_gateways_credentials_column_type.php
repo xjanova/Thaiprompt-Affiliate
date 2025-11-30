@@ -19,6 +19,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง payment_gateways มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('payment_gateways')) {
+            return;
+        }
+
         // For MySQL, we need to alter the column type from JSON to LONGTEXT
         // to avoid the CHECK constraint that validates JSON format
 

@@ -14,6 +14,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง earnings_ledger มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('earnings_ledger')) {
+            return;
+        }
+
         Schema::table('earnings_ledger', function (Blueprint $table) {
             // เพิ่ม FK สำหรับ payout_request_id
             $table->foreign('payout_request_id')

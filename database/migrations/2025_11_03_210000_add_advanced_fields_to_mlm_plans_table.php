@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ตรวจสอบว่าตาราง mlm_plans มีอยู่แล้วหรือไม่
+        if (!Schema::hasTable('mlm_plans')) {
+            return;
+        }
+
         Schema::table('mlm_plans', function (Blueprint $table) {
             // PV Flush Options
             $table->boolean('binary_flush_enabled')->default(true)->after('binary_flush_percentage');
