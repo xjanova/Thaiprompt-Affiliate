@@ -24,7 +24,7 @@ return new class extends Migration
     {
         // ตรวจสอบว่าตารางยังไม่มีอยู่ก่อนสร้าง
         if (Schema::hasTable('users')) {
-            $this->command->warn('⚠️  ตาราง users มีอยู่แล้ว - ข้าม migration นี้');
+            // ตาราง users มีอยู่แล้ว - ข้าม migration นี้
             return;
         }
 
