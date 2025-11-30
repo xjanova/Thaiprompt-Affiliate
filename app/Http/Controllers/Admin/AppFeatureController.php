@@ -18,7 +18,7 @@ class AppFeatureController extends Controller
             ->get()
             ->groupBy('category');
 
-        return view('admin.app-management.features.index', compact('features'));
+        return view('admin.app-features.index', compact('features'));
     }
 
     /**
@@ -26,7 +26,7 @@ class AppFeatureController extends Controller
      */
     public function create()
     {
-        return view('admin.app-management.features.create');
+        return view('admin.app-features.create');
     }
 
     /**
@@ -56,7 +56,7 @@ class AppFeatureController extends Controller
         AppFeature::create($validated);
 
         return redirect()
-            ->route('admin.app-management.features.index')
+            ->route('admin.app-features.index')
             ->with('success', 'เพิ่มฟีเจอร์สำเร็จ');
     }
 
@@ -65,7 +65,7 @@ class AppFeatureController extends Controller
      */
     public function edit(AppFeature $appFeature)
     {
-        return view('admin.app-management.features.edit', compact('appFeature'));
+        return view('admin.app-features.edit', compact('appFeature'));
     }
 
     /**
@@ -94,7 +94,7 @@ class AppFeatureController extends Controller
         $appFeature->update($validated);
 
         return redirect()
-            ->route('admin.app-management.features.index')
+            ->route('admin.app-features.index')
             ->with('success', 'อัพเดทฟีเจอร์สำเร็จ');
     }
 
@@ -106,7 +106,7 @@ class AppFeatureController extends Controller
         $appFeature->delete();
 
         return redirect()
-            ->route('admin.app-management.features.index')
+            ->route('admin.app-features.index')
             ->with('success', 'ลบฟีเจอร์สำเร็จ');
     }
 
