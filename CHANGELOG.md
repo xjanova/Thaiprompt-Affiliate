@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.264.4] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: ปรับปรุง users_comprehensive migration ให้รองรับการติดตั้งซ้ำ (b38731c1)
+- fix: แก้ไขปัญหา migration ordering และถามค่าซ้ำซ้อนหลัง wizard (84f2cb2a)
+### 🔧 Other Changes
+- Merge pull request #1800 from xjanova/claude/review-install-system-018QjVzDZ7abVmCbrQ1YhpDb (02940c8d)
+
 ## [v3.264.3] - 2025-11-30
 
 ### ✨ Features
