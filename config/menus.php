@@ -636,7 +636,7 @@ return [
                 ['label' => 'ตั้งค่า Mobile App', 'route' => 'admin.app-management.settings.index'],
                 ['label' => 'คุณสมบัติแอป', 'route' => 'admin.app-management.features.index'],
                 ['label' => 'แบนเนอร์แอป', 'route' => 'admin.app-management.banners.index'],
-                ['label' => 'โหมดซ่อมบำรุง', 'route' => 'admin.app-management.maintenance.index'],
+                ['label' => 'โหมดซ่อมบำรุง', 'route' => 'admin.app-management.app-maintenance.index'],
                 ['label' => 'ตั้งค่า OCR', 'route' => 'admin.settings.ocr'],
                 ['label' => 'จัดการ API', 'route' => 'admin.api-management.endpoints.index'],
                 ['label' => 'API Keys', 'route' => 'admin.api-management.keys.index'],
