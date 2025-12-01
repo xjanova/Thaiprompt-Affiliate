@@ -65,47 +65,81 @@
         {{-- Card Details --}}
         <div id="card-details" class="opacity-0">
             {{-- Cards Information Grid --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 max-w-6xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 max-w-7xl mx-auto">
                 @foreach($reading->cards as $index => $readingCard)
-                <div class="card-info group perspective-1000" data-card-index="{{ $index }}">
-                    <div class="relative transform-gpu transition-all duration-500 group-hover:rotate-y-3 group-hover:scale-105">
+                <div class="card-info group" data-card-index="{{ $index }}">
+                    <div class="relative">
                         {{-- Glow Effect --}}
-                        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-pink-500/20 to-amber-500/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-pink-500/15 to-amber-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
                         {{-- Card Body --}}
-                        <div class="relative bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90 backdrop-blur-xl rounded-2xl p-6 border border-white/10 group-hover:border-purple-400/50 shadow-2xl transition-all duration-500">
-                            {{-- Card Number Badge --}}
-                            <div class="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-full flex items-center justify-center text-slate-900 font-bold shadow-lg shadow-amber-500/30">
-                                {{ $index + 1 }}
-                            </div>
+                        <div class="relative bg-gradient-to-br from-slate-900/95 via-purple-900/85 to-slate-900/95 backdrop-blur-xl rounded-3xl p-6 border border-white/10 group-hover:border-purple-400/40 shadow-2xl transition-all duration-500">
+                            {{-- Card Header --}}
+                            <div class="flex items-start gap-4 mb-4">
+                                {{-- Card Number Badge --}}
+                                <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl flex items-center justify-center text-slate-900 font-bold text-lg shadow-lg shadow-amber-500/30">
+                                    {{ $index + 1 }}
+                                </div>
 
-                            {{-- Position Name --}}
-                            <div class="text-sm text-purple-400 font-medium mb-2 flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-                                </svg>
-                                {{ $readingCard->position_name }}
-                            </div>
-
-                            {{-- Card Name --}}
-                            <h3 class="text-2xl font-bold text-white mb-3 flex items-center gap-2">
-                                {{ $readingCard->card->getName() }}
-                                @if($readingCard->is_reversed)
-                                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-red-500/20 border border-red-500/40 text-red-400 text-xs rounded-full">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                <div class="flex-1">
+                                    {{-- Position Name --}}
+                                    <div class="text-sm text-purple-400 font-medium mb-1 flex items-center gap-2">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                                         </svg>
-                                        กลับหัว
-                                    </span>
-                                @endif
-                            </h3>
+                                        {{ $readingCard->position_name }}
+                                    </div>
 
-                            {{-- Card Meaning --}}
+                                    {{-- Card Name --}}
+                                    <h3 class="text-xl md:text-2xl font-bold text-white flex items-center gap-2 flex-wrap">
+                                        {{ $readingCard->card->getName() }}
+                                        @if($readingCard->is_reversed)
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-red-500/20 border border-red-500/40 text-red-400 text-xs rounded-full">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                                </svg>
+                                                กลับหัว
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs rounded-full">
+                                                ✨ หัวตั้ง
+                                            </span>
+                                        @endif
+                                    </h3>
+                                </div>
+                            </div>
+
+                            {{-- Detailed Interpretation --}}
+                            @if($readingCard->interpretation)
+                            <div class="space-y-4">
+                                <div class="prose prose-sm prose-invert max-w-none tarot-interpretation">
+                                    {!! nl2br(e($readingCard->interpretation)) !!}
+                                </div>
+                            </div>
+                            @else
+                            {{-- Fallback: Basic Card Meaning --}}
                             <div class="bg-gradient-to-br from-purple-900/60 to-slate-900/60 rounded-xl p-4 border border-purple-500/20">
                                 <p class="text-purple-100/90 leading-relaxed">
                                     {{ $readingCard->card->getMeaning($readingCard->is_reversed) }}
                                 </p>
                             </div>
+                            @endif
+
+                            {{-- Keywords --}}
+                            @php
+                                $keywords = $readingCard->card->keywords_th ?? [];
+                            @endphp
+                            @if(!empty($keywords))
+                            <div class="mt-4 pt-4 border-t border-white/10">
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach(array_slice($keywords, 0, 4) as $keyword)
+                                    <span class="px-3 py-1 bg-purple-500/20 text-purple-300 text-xs rounded-full border border-purple-500/30">
+                                        {{ $keyword }}
+                                    </span>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -114,23 +148,49 @@
 
             {{-- Overall Interpretation --}}
             @if($reading->interpretation)
-            <div class="max-w-4xl mx-auto mb-8">
+            <div class="max-w-5xl mx-auto mb-8">
                 <div class="relative">
                     {{-- Glow Effect --}}
-                    <div class="absolute inset-0 bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/20 rounded-3xl blur-xl"></div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/20 rounded-3xl blur-2xl"></div>
 
                     {{-- Content --}}
-                    <div class="relative bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
-                                <span class="text-2xl">✨</span>
+                    <div class="relative bg-gradient-to-br from-slate-900/95 via-purple-900/85 to-slate-900/95 backdrop-blur-xl rounded-3xl p-8 border border-amber-500/20 shadow-2xl">
+                        {{-- Header --}}
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-14 h-14 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/40">
+                                <span class="text-3xl">✨</span>
                             </div>
-                            <h2 class="text-2xl font-bold text-white">คำแนะนำรวม</h2>
+                            <div>
+                                <h2 class="text-2xl md:text-3xl font-bold text-white">บทสรุปการทำนาย</h2>
+                                <p class="text-amber-300/70 text-sm">คำแนะนำโดยรวมจากไพ่ทั้งหมด</p>
+                            </div>
                         </div>
 
-                        <p class="text-purple-100/90 text-lg leading-relaxed">
-                            {{ $reading->interpretation }}
-                        </p>
+                        {{-- Interpretation Content --}}
+                        <div class="prose prose-lg prose-invert max-w-none tarot-overall-interpretation">
+                            {!! nl2br(e($reading->interpretation)) !!}
+                        </div>
+
+                        {{-- Footer --}}
+                        <div class="mt-8 pt-6 border-t border-white/10 flex items-center justify-between flex-wrap gap-4">
+                            <div class="flex items-center gap-3 text-purple-300/60 text-sm">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                                </svg>
+                                <span>ทำนายเมื่อ: {{ $reading->created_at->format('d/m/Y H:i') }}</span>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                @if($reading->is_free)
+                                <span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full border border-emerald-500/40">
+                                    🎁 ทำนายฟรี
+                                </span>
+                                @endif
+                                <span class="px-3 py-1 bg-purple-500/20 text-purple-300 text-xs rounded-full border border-purple-500/40">
+                                    {{ $reading->spreadType->name_th }}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -256,6 +316,104 @@
 
     #canvas-container {
         animation: mystical-glow 4s ease-in-out infinite;
+    }
+
+    /* =================================
+       Tarot Interpretation Styling
+       ================================= */
+
+    /* Card Interpretation */
+    .tarot-interpretation {
+        color: rgba(233, 213, 255, 0.95);
+        line-height: 1.8;
+        font-size: 0.95rem;
+    }
+
+    .tarot-interpretation br {
+        display: block;
+        content: "";
+        margin-bottom: 0.5rem;
+    }
+
+    /* Style bold text with ** */
+    .tarot-interpretation {
+        /* Highlight emoji sections */
+    }
+
+    /* Overall Interpretation Styling */
+    .tarot-overall-interpretation {
+        color: rgba(233, 213, 255, 0.95);
+        line-height: 1.9;
+        font-size: 1rem;
+    }
+
+    .tarot-overall-interpretation br {
+        display: block;
+        content: "";
+        margin-bottom: 0.75rem;
+    }
+
+    /* Styling for emoji-prefixed lines */
+    .tarot-interpretation,
+    .tarot-overall-interpretation {
+        /* Make lines with emojis stand out */
+    }
+
+    /* Style sections with icons */
+    .tarot-interpretation > br + br,
+    .tarot-overall-interpretation > br + br {
+        margin-bottom: 1.5rem;
+    }
+
+    /* Gradient text for headers */
+    .interpretation-header {
+        background: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: bold;
+    }
+
+    /* Card highlight on hover */
+    .card-info:hover .tarot-interpretation {
+        color: rgba(255, 255, 255, 0.98);
+    }
+
+    /* Smooth text reveal animation */
+    @keyframes text-reveal {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .tarot-interpretation,
+    .tarot-overall-interpretation {
+        animation: text-reveal 0.8s ease-out;
+    }
+
+    /* Selection highlight */
+    .tarot-interpretation::selection,
+    .tarot-overall-interpretation::selection {
+        background: rgba(168, 85, 247, 0.4);
+        color: white;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .tarot-interpretation {
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        .tarot-overall-interpretation {
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
     }
 </style>
 @endpush
@@ -849,6 +1007,39 @@ function saveReading() {
         }
     });
 }
+
+// แปลง markdown-like text เป็น HTML ที่สวยงาม
+function formatInterpretation() {
+    const interpretationElements = document.querySelectorAll('.tarot-interpretation, .tarot-overall-interpretation');
+
+    interpretationElements.forEach(el => {
+        let html = el.innerHTML;
+
+        // แปลง **bold** เป็น <strong>
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
+
+        // แปลง _italic_ เป็น <em>
+        html = html.replace(/_([^_]+)_/g, '<em class="text-purple-300">$1</em>');
+
+        // เพิ่ม styling สำหรับ emoji headers
+        html = html.replace(/(🎴|📍|💫|🔮|💡|🏷️|✨|📊|⚡|🎯|💫|🌟|❓|📝|⚖️|🔄|🌀)\s*(<strong[^>]*>)/g,
+            '<span class="inline-flex items-center gap-2 mt-4 mb-2 text-lg">$1 $2');
+
+        // ปิด span ที่เปิดไว้
+        html = html.replace(/(<\/strong>)(\s*<br\s*\/?>)/g, '$1</span>$2');
+
+        // Style section dividers
+        html = html.replace(/<br><br>/g, '<div class="my-4 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent"></div>');
+
+        el.innerHTML = html;
+    });
+}
+
+// เรียกใช้เมื่อ DOM โหลดเสร็จ
+document.addEventListener('DOMContentLoaded', function() {
+    // รอให้ card details แสดงก่อน (หลังจาก 3D animation)
+    setTimeout(formatInterpretation, 4000);
+});
 </script>
 @endpush
 @endsection
