@@ -33,11 +33,67 @@ class CloudflareService
 
     /**
      * Constructor
+     *
+     * ลำดับการดึงค่า:
+     * 1. Database (Setting model) - ถ้ามี
+     * 2. Config (services.cloudflare) - fallback
      */
     public function __construct()
     {
-        $this->apiToken = config('services.cloudflare.api_token');
-        $this->zoneId = config('services.cloudflare.zone_id');
+        // ลองดึงจาก database ก่อน
+        $this->apiToken = $this->getSettingValue('cloudflare_api_token')
+            ?? config('services.cloudflare.api_token');
+
+        $this->zoneId = $this->getSettingValue('cloudflare_zone_id')
+            ?? config('services.cloudflare.zone_id');
+    }
+
+    /**
+     * ดึงค่า setting จาก database
+     */
+    protected function getSettingValue(string $key): ?string
+    {
+        try {
+            if (class_exists(\App\Models\Setting::class)) {
+                $value = \App\Models\Setting::get($key);
+                return !empty($value) ? $value : null;
+            }
+        } catch (\Exception $e) {
+            // Database อาจยังไม่พร้อม (เช่น ตอน migrate)
+        }
+        return null;
+    }
+
+    /**
+     * บันทึก Cloudflare settings ลง database
+     */
+    public static function saveSettings(string $zoneId, string $apiToken): array
+    {
+        try {
+            \App\Models\Setting::set('cloudflare_zone_id', $zoneId, 'string', 'cloudflare');
+            \App\Models\Setting::set('cloudflare_api_token', $apiToken, 'string', 'cloudflare');
+
+            return [
+                'success' => true,
+                'message' => 'บันทึกการตั้งค่า Cloudflare สำเร็จ',
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * ดึง Cloudflare settings จาก database
+     */
+    public static function getStoredSettings(): array
+    {
+        return [
+            'zone_id' => \App\Models\Setting::get('cloudflare_zone_id', ''),
+            'api_token' => \App\Models\Setting::get('cloudflare_api_token', ''),
+        ];
     }
 
     /**
@@ -1149,6 +1205,328 @@ class CloudflareService
             'total_count' => $totalSettings,
             'status' => $status,
             'message' => "ระดับ Optimization: {$percentage}% ({$optimizedCount}/{$totalSettings})",
+        ];
+    }
+
+    // ========================================
+    // AUTO UNDER ATTACK MODE
+    // ========================================
+
+    /**
+     * ตรวจสอบว่าควรเปิด Under Attack Mode อัตโนมัติหรือไม่
+     *
+     * ตรวจสอบจาก:
+     * - จำนวน failed logins ใน X นาที
+     * - จำนวน rate limit exceeded ใน X นาที
+     * - จำนวน turnstile failures ใน X นาที
+     * - จำนวน threat IPs detected ใน X นาที
+     *
+     * @return array
+     */
+    public function checkAutoUnderAttackStatus(): array
+    {
+        $settings = $this->getAutoUnderAttackSettings();
+
+        if (!$settings['enabled']) {
+            return [
+                'should_activate' => false,
+                'reason' => 'Auto Under Attack Mode ถูกปิดใช้งาน',
+                'metrics' => [],
+            ];
+        }
+
+        $timeWindow = $settings['time_window']; // นาที
+        $since = now()->subMinutes($timeWindow);
+
+        $metrics = [
+            'failed_logins' => 0,
+            'rate_limit_exceeded' => 0,
+            'turnstile_failures' => 0,
+            'unique_attack_ips' => 0,
+        ];
+
+        // ตรวจสอบจาก SecurityLog (ถ้ามี)
+        if (class_exists(\App\Models\SecurityLog::class)) {
+            try {
+                $metrics['failed_logins'] = \App\Models\SecurityLog::where('event_type', 'login_failed')
+                    ->where('created_at', '>=', $since)
+                    ->count();
+
+                $metrics['rate_limit_exceeded'] = \App\Models\SecurityLog::where('event_type', 'rate_limit_exceeded')
+                    ->where('created_at', '>=', $since)
+                    ->count();
+
+                $metrics['turnstile_failures'] = \App\Models\SecurityLog::where('event_type', 'turnstile_failed')
+                    ->where('created_at', '>=', $since)
+                    ->count();
+
+                $metrics['unique_attack_ips'] = \App\Models\SecurityLog::whereIn('event_type', [
+                    'login_failed', 'rate_limit_exceeded', 'turnstile_failed', 'blocked_by_threat_intelligence'
+                ])
+                    ->where('created_at', '>=', $since)
+                    ->distinct('ip_address')
+                    ->count('ip_address');
+            } catch (\Exception $e) {
+                Log::warning('CloudflareService: ไม่สามารถดึงข้อมูล SecurityLog', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // คำนวณ total threat score
+        $threatScore = 0;
+        $threatScore += $metrics['failed_logins'] * ($settings['weight_failed_login'] ?? 1);
+        $threatScore += $metrics['rate_limit_exceeded'] * ($settings['weight_rate_limit'] ?? 2);
+        $threatScore += $metrics['turnstile_failures'] * ($settings['weight_turnstile'] ?? 1);
+        $threatScore += $metrics['unique_attack_ips'] * ($settings['weight_unique_ips'] ?? 3);
+
+        $shouldActivate = $threatScore >= $settings['threshold'];
+
+        $reasons = [];
+        if ($metrics['failed_logins'] >= ($settings['max_failed_logins'] ?? 100)) {
+            $reasons[] = "Failed logins สูง: {$metrics['failed_logins']}";
+        }
+        if ($metrics['rate_limit_exceeded'] >= ($settings['max_rate_limit'] ?? 50)) {
+            $reasons[] = "Rate limit exceeded สูง: {$metrics['rate_limit_exceeded']}";
+        }
+        if ($metrics['unique_attack_ips'] >= ($settings['max_unique_ips'] ?? 30)) {
+            $reasons[] = "Unique attack IPs สูง: {$metrics['unique_attack_ips']}";
+        }
+
+        return [
+            'should_activate' => $shouldActivate,
+            'reason' => $shouldActivate
+                ? 'ตรวจพบการโจมตี! ' . implode(', ', $reasons)
+                : 'ยังไม่ถึง threshold การโจมตี',
+            'threat_score' => $threatScore,
+            'threshold' => $settings['threshold'],
+            'metrics' => $metrics,
+            'time_window' => $timeWindow,
+        ];
+    }
+
+    /**
+     * เปิด Under Attack Mode อัตโนมัติ พร้อม log
+     *
+     * @param string $reason เหตุผลที่เปิด
+     * @return array
+     */
+    public function autoEnableUnderAttackMode(string $reason = ''): array
+    {
+        if (!$this->isConfigured()) {
+            return [
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ];
+        }
+
+        // เปิด Under Attack Mode
+        $result = $this->enableUnderAttackMode();
+
+        if ($result['success']) {
+            // บันทึกการเปิด Under Attack Mode
+            \App\Models\Setting::set('cloudflare_under_attack_auto_enabled', true, 'boolean', 'cloudflare');
+            \App\Models\Setting::set('cloudflare_under_attack_auto_enabled_at', now()->toIso8601String(), 'string', 'cloudflare');
+            \App\Models\Setting::set('cloudflare_under_attack_auto_reason', $reason, 'string', 'cloudflare');
+
+            // Log to SecurityLog ถ้ามี
+            if (class_exists(\App\Models\SecurityLog::class)) {
+                try {
+                    \App\Models\SecurityLog::create([
+                        'event_type' => 'cloudflare_under_attack_enabled',
+                        'ip_address' => request()->ip() ?? '127.0.0.1',
+                        'severity' => 'critical',
+                        'description' => 'Auto-enabled Under Attack Mode: ' . $reason,
+                        'user_agent' => 'System',
+                    ]);
+                } catch (\Exception $e) {
+                    Log::warning('ไม่สามารถ log Under Attack Mode activation', ['error' => $e->getMessage()]);
+                }
+            }
+
+            Log::critical('Cloudflare: AUTO ENABLED Under Attack Mode', ['reason' => $reason]);
+
+            return [
+                'success' => true,
+                'message' => 'เปิด Under Attack Mode อัตโนมัติสำเร็จ',
+                'reason' => $reason,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * ปิด Under Attack Mode อัตโนมัติ เมื่อหมดเวลาที่กำหนด
+     *
+     * @return array
+     */
+    public function autoDisableUnderAttackMode(): array
+    {
+        if (!$this->isConfigured()) {
+            return [
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ];
+        }
+
+        $settings = $this->getAutoUnderAttackSettings();
+
+        // ตรวจสอบว่าเปิดอัตโนมัติอยู่หรือไม่
+        $autoEnabled = \App\Models\Setting::get('cloudflare_under_attack_auto_enabled', false);
+
+        if (!$autoEnabled) {
+            return [
+                'success' => false,
+                'message' => 'Under Attack Mode ไม่ได้เปิดอัตโนมัติ',
+            ];
+        }
+
+        $enabledAt = \App\Models\Setting::get('cloudflare_under_attack_auto_enabled_at');
+
+        if (!$enabledAt) {
+            return [
+                'success' => false,
+                'message' => 'ไม่พบเวลาที่เปิด Under Attack Mode',
+            ];
+        }
+
+        $enabledAtTime = \Carbon\Carbon::parse($enabledAt);
+        $duration = $settings['auto_disable_after'] ?? 30; // นาที
+
+        // ถ้ายังไม่ถึงเวลาปิด
+        if (now()->diffInMinutes($enabledAtTime) < $duration) {
+            $remainingMinutes = $duration - now()->diffInMinutes($enabledAtTime);
+            return [
+                'success' => false,
+                'message' => "ยังไม่ถึงเวลาปิด Under Attack Mode อีก {$remainingMinutes} นาที",
+                'remaining_minutes' => $remainingMinutes,
+            ];
+        }
+
+        // ปิด Under Attack Mode (กลับไป medium)
+        $result = $this->setSecurityLevel('medium');
+
+        if ($result['success']) {
+            // ล้าง settings
+            \App\Models\Setting::set('cloudflare_under_attack_auto_enabled', false, 'boolean', 'cloudflare');
+
+            // Log to SecurityLog ถ้ามี
+            if (class_exists(\App\Models\SecurityLog::class)) {
+                try {
+                    \App\Models\SecurityLog::create([
+                        'event_type' => 'cloudflare_under_attack_disabled',
+                        'ip_address' => '127.0.0.1',
+                        'severity' => 'medium',
+                        'description' => 'Auto-disabled Under Attack Mode หลังจากเปิดมา ' . $duration . ' นาที',
+                        'user_agent' => 'System',
+                    ]);
+                } catch (\Exception $e) {
+                    // Ignore
+                }
+            }
+
+            Log::info('Cloudflare: AUTO DISABLED Under Attack Mode', ['duration' => $duration]);
+
+            return [
+                'success' => true,
+                'message' => 'ปิด Under Attack Mode อัตโนมัติสำเร็จ',
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * ดึงการตั้งค่า Auto Under Attack Mode
+     *
+     * @return array
+     */
+    public function getAutoUnderAttackSettings(): array
+    {
+        return [
+            'enabled' => (bool) \App\Models\Setting::get('cloudflare_auto_under_attack_enabled', false),
+            'threshold' => (int) \App\Models\Setting::get('cloudflare_auto_under_attack_threshold', 150),
+            'time_window' => (int) \App\Models\Setting::get('cloudflare_auto_under_attack_time_window', 5), // นาที
+            'auto_disable_after' => (int) \App\Models\Setting::get('cloudflare_auto_under_attack_auto_disable', 30), // นาที
+            'max_failed_logins' => (int) \App\Models\Setting::get('cloudflare_auto_under_attack_max_failed_logins', 100),
+            'max_rate_limit' => (int) \App\Models\Setting::get('cloudflare_auto_under_attack_max_rate_limit', 50),
+            'max_unique_ips' => (int) \App\Models\Setting::get('cloudflare_auto_under_attack_max_unique_ips', 30),
+            'weight_failed_login' => (int) \App\Models\Setting::get('cloudflare_auto_under_attack_weight_failed_login', 1),
+            'weight_rate_limit' => (int) \App\Models\Setting::get('cloudflare_auto_under_attack_weight_rate_limit', 2),
+            'weight_turnstile' => (int) \App\Models\Setting::get('cloudflare_auto_under_attack_weight_turnstile', 1),
+            'weight_unique_ips' => (int) \App\Models\Setting::get('cloudflare_auto_under_attack_weight_unique_ips', 3),
+        ];
+    }
+
+    /**
+     * บันทึกการตั้งค่า Auto Under Attack Mode
+     *
+     * @param array $settings
+     * @return array
+     */
+    public static function saveAutoUnderAttackSettings(array $settings): array
+    {
+        try {
+            $settingsMap = [
+                'enabled' => ['key' => 'cloudflare_auto_under_attack_enabled', 'type' => 'boolean'],
+                'threshold' => ['key' => 'cloudflare_auto_under_attack_threshold', 'type' => 'integer'],
+                'time_window' => ['key' => 'cloudflare_auto_under_attack_time_window', 'type' => 'integer'],
+                'auto_disable_after' => ['key' => 'cloudflare_auto_under_attack_auto_disable', 'type' => 'integer'],
+                'max_failed_logins' => ['key' => 'cloudflare_auto_under_attack_max_failed_logins', 'type' => 'integer'],
+                'max_rate_limit' => ['key' => 'cloudflare_auto_under_attack_max_rate_limit', 'type' => 'integer'],
+                'max_unique_ips' => ['key' => 'cloudflare_auto_under_attack_max_unique_ips', 'type' => 'integer'],
+            ];
+
+            foreach ($settings as $key => $value) {
+                if (isset($settingsMap[$key])) {
+                    \App\Models\Setting::set(
+                        $settingsMap[$key]['key'],
+                        $value,
+                        $settingsMap[$key]['type'],
+                        'cloudflare'
+                    );
+                }
+            }
+
+            return [
+                'success' => true,
+                'message' => 'บันทึกการตั้งค่า Auto Under Attack Mode สำเร็จ',
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * ดึงสถานะ Under Attack Mode ปัจจุบัน
+     *
+     * @return array
+     */
+    public function getUnderAttackStatus(): array
+    {
+        $autoEnabled = \App\Models\Setting::get('cloudflare_under_attack_auto_enabled', false);
+        $autoEnabledAt = \App\Models\Setting::get('cloudflare_under_attack_auto_enabled_at');
+        $autoReason = \App\Models\Setting::get('cloudflare_under_attack_auto_reason', '');
+
+        // ดึง security level ปัจจุบัน
+        $currentLevel = null;
+        if ($this->isConfigured()) {
+            $levelResult = $this->getSecurityLevel();
+            if ($levelResult['success']) {
+                $currentLevel = $levelResult['data']['value'] ?? 'unknown';
+            }
+        }
+
+        $isUnderAttack = $currentLevel === 'under_attack';
+
+        return [
+            'is_under_attack' => $isUnderAttack,
+            'current_security_level' => $currentLevel,
+            'auto_enabled' => $autoEnabled,
+            'auto_enabled_at' => $autoEnabledAt,
+            'auto_reason' => $autoReason,
         ];
     }
 
