@@ -123,6 +123,26 @@
                                         <span>ยังไม่ได้ยืนยันตัวตน</span>
                                     </a>
                                 @endif
+
+                                {{-- LINE Connection Status Badge --}}
+                                @if($user->line_user_id)
+                                    <div class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-sm font-bold shadow-lg group">
+                                        <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/>
+                                        </svg>
+                                        <span>LINE: {{ $user->line_display_name ?? 'เชื่อมต่อแล้ว' }}</span>
+                                        <i class="fas fa-check-circle ml-2 text-green-200"></i>
+                                    </div>
+                                @else
+                                    <a href="{{ route('line.link') }}"
+                                       class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-[#00B900] to-[#00C300] hover:from-[#00A000] hover:to-[#00B000] text-white rounded-full text-sm font-bold shadow-lg hover:shadow-xl transition-all group">
+                                        <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/>
+                                        </svg>
+                                        <span>เชื่อมต่อ LINE</span>
+                                        <i class="fas fa-external-link-alt ml-2 text-white/70"></i>
+                                    </a>
+                                @endif
                             </div>
 
                             @if($user->member_number)
