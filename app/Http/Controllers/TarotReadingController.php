@@ -10,12 +10,30 @@ use App\Models\TarotSpreadType;
 use App\Models\TarotUserLimit;
 use App\Models\TarotCardBackImage;
 use App\Models\PaymentTransaction;
+use App\Services\TarotInterpretationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class TarotReadingController extends Controller
 {
+    /**
+     * บริการสร้างคำทำนายไพ่ทาโร่ต์
+     *
+     * @var TarotInterpretationService
+     */
+    protected TarotInterpretationService $interpretationService;
+
+    /**
+     * Constructor
+     *
+     * @param TarotInterpretationService $interpretationService
+     */
+    public function __construct(TarotInterpretationService $interpretationService)
+    {
+        $this->interpretationService = $interpretationService;
+    }
+
     /**
      * Show the tarot reading homepage
      */
@@ -256,6 +274,9 @@ class TarotReadingController extends Controller
             $request->ip()
         );
 
+        // สร้างคำทำนายละเอียดสำหรับไพ่ทั้งหมด
+        $this->interpretationService->generateInterpretations($reading);
+
         return response()->json([
             'success' => true,
             'reading_id' => $reading->id,
@@ -352,6 +373,9 @@ class TarotReadingController extends Controller
             // Clear session
             session()->forget('tarot_reading_' . $reading->id . '_is_free');
         }
+
+        // สร้างคำทำนายละเอียดสำหรับไพ่ทั้งหมด
+        $this->interpretationService->generateInterpretations($reading);
 
         return response()->json([
             'success' => true,
