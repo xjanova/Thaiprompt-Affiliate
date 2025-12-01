@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.292.0] - 2025-12-01
+
+### ✨ Features
+- feat: เพิ่มหน้า Admin นำเข้าวิดีโอจาก YouTube แบบง่าย (86d9d1c2)
+- feat: เพิ่มระบบนำเข้าวิดีโอจาก YouTube Channel (a7207065)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1893 from xjanova/claude/video-rewards-system-01RPgkZ8LMAWhgDBidZR5L78 (a9c8e122)
+
 ## [v3.291.0] - 2025-12-01
 
 ### ✨ Features
