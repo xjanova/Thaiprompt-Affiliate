@@ -259,6 +259,16 @@
     </div>
 </div>
 
+@php
+// เตรียมค่าเริ่มต้นสำหรับ metrics เพื่อหลีกเลี่ยงปัญหา @json directive
+$metricsData = $checkResult['metrics'] ?? [
+    'failed_logins' => 0,
+    'rate_limit_exceeded' => 0,
+    'turnstile_failures' => 0,
+    'unique_attack_ips' => 0
+];
+@endphp
+
 @push('scripts')
 <script>
 function autoUnderAttack() {
@@ -266,7 +276,7 @@ function autoUnderAttack() {
         settings: @json($settings),
         status: @json($status),
         checkResult: @json($checkResult),
-        metrics: @json($checkResult['metrics'] ?? ['failed_logins' => 0, 'rate_limit_exceeded' => 0, 'turnstile_failures' => 0, 'unique_attack_ips' => 0]),
+        metrics: @json($metricsData),
         saving: false,
         refreshing: false,
         testing: false,
