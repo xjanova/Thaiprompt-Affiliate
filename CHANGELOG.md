@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.285.0] - 2025-12-01
+
+### ✨ Features
+- feat: เพิ่มระบบจัดการคำทำนายไพ่ทาโร่ต์สำหรับแอดมิน (f7cf2411)
+### 🐛 Bug Fixes
+- fix: แก้ไขการแสดงผลคำทำนายไพ่ทาโร่ต์ให้อ่านง่าย (b1af10e9)
+### 🔧 Other Changes
+- Merge pull request #1885 from xjanova/claude/enhance-tarot-ui-animations-01UN95cuGcM4JsCbbsW7zQAU (74e00c9b)
+
 ## [v3.284.0] - 2025-12-01
 
 ### ✨ Features
