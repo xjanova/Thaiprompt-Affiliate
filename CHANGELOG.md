@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.267.47] - 2025-12-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไข step numbering ใน deploy.sh ให้ตรงกับจริง (21 steps) (eb1e52b6)
+- fix: เพิ่ม immediate cache clearing หลัง pull code ใน deploy.sh (1901ca9c)
+### 🔧 Other Changes
+- Merge pull request #1861 from xjanova/claude/fix-root-route-method-017ankfjHTSXTi5389J7ZJCG (915029f0)
+- refactor: ปรับปรุง deploy.sh v4.0 - เพิ่ม Visual Styling ที่ดีขึ้น (26aca7c5)
+- refactor: ปรับปรุง deploy.sh แก้ bugs และเพิ่มความสามารถใหม่ (4cf4c210)
+
 ## [v3.267.46] - 2025-12-01
 
 ### ✨ Features
