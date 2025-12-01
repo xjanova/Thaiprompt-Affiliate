@@ -3141,4 +3141,10 @@ Route::prefix('cloudflare')->name('cloudflare.')->group(function () {
 
     // Settings
     Route::get('/settings', [CloudflareController::class, 'settings'])->name('settings');
+
+    // One-Click Optimization
+    Route::get('/optimization', [CloudflareController::class, 'optimization'])->name('optimization');
+    Route::get('/optimization/status', [CloudflareController::class, 'getOptimizationStatus'])->name('optimization.status');
+    Route::post('/optimization/run', [CloudflareController::class, 'runOptimization'])->name('optimization.run');
+    Route::get('/all-settings', [CloudflareController::class, 'getAllSettings'])->name('all-settings');
 });

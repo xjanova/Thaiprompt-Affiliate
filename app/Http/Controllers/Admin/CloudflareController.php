@@ -569,4 +569,85 @@ class CloudflareController extends Controller
             'hasApiToken' => !empty(config('services.cloudflare.api_token')),
         ]);
     }
+
+    // ========================================
+    // ONE-CLICK OPTIMIZATION
+    // ========================================
+
+    /**
+     * หน้า Optimization
+     *
+     * @return View
+     */
+    public function optimization(): View
+    {
+        $optimizationStatus = null;
+
+        if ($this->cloudflare->isConfigured()) {
+            $optimizationStatus = $this->cloudflare->checkOptimizationStatus();
+        }
+
+        return view('admin.cloudflare.optimization', [
+            'pageTitle' => 'One-Click Optimization',
+            'isConfigured' => $this->cloudflare->isConfigured(),
+            'optimizationStatus' => $optimizationStatus,
+        ]);
+    }
+
+    /**
+     * ดึงสถานะ Optimization (AJAX)
+     *
+     * @return JsonResponse
+     */
+    public function getOptimizationStatus(): JsonResponse
+    {
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        $result = $this->cloudflare->checkOptimizationStatus();
+
+        return response()->json($result);
+    }
+
+    /**
+     * รัน One-Click Optimization
+     *
+     * @return JsonResponse
+     */
+    public function runOptimization(): JsonResponse
+    {
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า กรุณาเพิ่ม Zone ID และ API Token',
+            ], 400);
+        }
+
+        $result = $this->cloudflare->oneClickOptimization();
+
+        return response()->json($result);
+    }
+
+    /**
+     * ดึง Settings ทั้งหมด (AJAX)
+     *
+     * @return JsonResponse
+     */
+    public function getAllSettings(): JsonResponse
+    {
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        $result = $this->cloudflare->getAllSettings();
+
+        return response()->json($result);
+    }
 }
