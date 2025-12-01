@@ -3159,3 +3159,39 @@ Route::prefix('cloudflare')->name('cloudflare.')->group(function () {
     Route::post('/auto-under-attack/toggle', [CloudflareController::class, 'toggleUnderAttackMode'])->name('auto-under-attack.toggle');
     Route::get('/auto-under-attack/test', [CloudflareController::class, 'testAutoUnderAttack'])->name('auto-under-attack.test');
 });
+
+
+// ============================================
+// Video Mission System Routes (ภารกิจดูคลิปรับรางวัล)
+// ============================================
+Route::prefix('video-missions')->name('video-missions.')->group(function () {
+    // Dashboard
+    Route::get('/', [\App\Http\Controllers\Admin\VideoMissionController::class, 'index'])->name('index');
+
+    // Missions CRUD
+    Route::get('/missions', [\App\Http\Controllers\Admin\VideoMissionController::class, 'missions'])->name('missions');
+    Route::get('/missions/create', [\App\Http\Controllers\Admin\VideoMissionController::class, 'create'])->name('create');
+    Route::post('/missions', [\App\Http\Controllers\Admin\VideoMissionController::class, 'store'])->name('store');
+    Route::get('/missions/{mission}', [\App\Http\Controllers\Admin\VideoMissionController::class, 'show'])->name('show');
+    Route::get('/missions/{mission}/edit', [\App\Http\Controllers\Admin\VideoMissionController::class, 'edit'])->name('edit');
+    Route::put('/missions/{mission}', [\App\Http\Controllers\Admin\VideoMissionController::class, 'update'])->name('update');
+    Route::delete('/missions/{mission}', [\App\Http\Controllers\Admin\VideoMissionController::class, 'destroy'])->name('destroy');
+    Route::post('/missions/{mission}/toggle-active', [\App\Http\Controllers\Admin\VideoMissionController::class, 'toggleActive'])->name('toggle-active');
+
+    // Completions (การทำภารกิจ)
+    Route::get('/completions', [\App\Http\Controllers\Admin\VideoMissionController::class, 'completions'])->name('completions');
+    Route::get('/completions/{completion}', [\App\Http\Controllers\Admin\VideoMissionController::class, 'showCompletion'])->name('completion');
+    Route::post('/completions/{completion}/verify', [\App\Http\Controllers\Admin\VideoMissionController::class, 'verifyCompletion'])->name('completion.verify');
+    Route::post('/completions/{completion}/reject', [\App\Http\Controllers\Admin\VideoMissionController::class, 'rejectCompletion'])->name('completion.reject');
+
+    // Rank Limits
+    Route::get('/rank-limits', [\App\Http\Controllers\Admin\VideoMissionController::class, 'rankLimits'])->name('rank-limits');
+    Route::put('/rank-limits', [\App\Http\Controllers\Admin\VideoMissionController::class, 'updateRankLimits'])->name('rank-limits.update');
+
+    // Settings
+    Route::get('/settings', [\App\Http\Controllers\Admin\VideoMissionController::class, 'settings'])->name('settings');
+    Route::put('/settings', [\App\Http\Controllers\Admin\VideoMissionController::class, 'updateSettings'])->name('settings.update');
+
+    // Reports
+    Route::get('/reports', [\App\Http\Controllers\Admin\VideoMissionController::class, 'reports'])->name('reports');
+});

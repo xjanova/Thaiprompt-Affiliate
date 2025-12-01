@@ -523,3 +523,24 @@ Route::prefix('service-reviews')->name('service-reviews.')->group(function () {
     Route::put('/{review}', [\App\Http\Controllers\User\ServiceBookingController::class, 'updateReview'])->name('update');
     Route::delete('/{review}', [\App\Http\Controllers\User\ServiceBookingController::class, 'deleteReview'])->name('destroy');
 });
+
+
+// ============================================
+// Video Mission System Routes (ภารกิจดูคลิปรับรางวัล)
+// ============================================
+Route::prefix('video-missions')->name('video-missions.')->group(function () {
+    // Main pages
+    Route::get('/', [\App\Http\Controllers\User\VideoMissionController::class, 'index'])->name('index');
+    Route::get('/list', [\App\Http\Controllers\User\VideoMissionController::class, 'missions'])->name('list');
+    Route::get('/history', [\App\Http\Controllers\User\VideoMissionController::class, 'history'])->name('history');
+
+    // Mission detail & watch
+    Route::get('/mission/{mission}', [\App\Http\Controllers\User\VideoMissionController::class, 'show'])->name('show');
+    Route::get('/mission/{mission}/watch', [\App\Http\Controllers\User\VideoMissionController::class, 'watch'])->name('watch');
+
+    // API endpoints for video watching
+    Route::post('/completion/{completion}/heartbeat', [\App\Http\Controllers\User\VideoMissionController::class, 'heartbeat'])->name('completion.heartbeat');
+    Route::post('/completion/{completion}/event', [\App\Http\Controllers\User\VideoMissionController::class, 'recordEvent'])->name('completion.event');
+    Route::post('/completion/{completion}/complete', [\App\Http\Controllers\User\VideoMissionController::class, 'complete'])->name('completion.complete');
+    Route::post('/completion/{completion}/cancel', [\App\Http\Controllers\User\VideoMissionController::class, 'cancel'])->name('completion.cancel');
+});
