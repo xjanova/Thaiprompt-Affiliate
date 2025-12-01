@@ -3194,4 +3194,8 @@ Route::prefix('video-missions')->name('video-missions.')->group(function () {
 
     // Reports
     Route::get('/reports', [\App\Http\Controllers\Admin\VideoMissionController::class, 'reports'])->name('reports');
+
+    // YouTube Import
+    Route::get('/import-youtube', [\App\Http\Controllers\Admin\VideoMissionController::class, 'importYouTube'])->name('import-youtube');
+    Route::post('/import-youtube', [\App\Http\Controllers\Admin\VideoMissionController::class, 'processImportYouTube'])->name('import-youtube.process');
 });
