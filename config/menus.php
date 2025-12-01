@@ -445,6 +445,25 @@ return [
         ],
 
         [
+            'id' => 'video-missions',
+            'label' => 'ภารกิจดูคลิป',
+            'icon' => '🎬',
+            'route' => null,
+            'order' => 16.5,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-pink-500 to-purple-500',
+            'submenu' => [
+                ['label' => '📊 Dashboard', 'route' => 'admin.video-missions.index', 'description' => 'ภาพรวมระบบ'],
+                ['label' => '🎬 จัดการภารกิจ', 'route' => 'admin.video-missions.missions', 'description' => 'สร้าง/แก้ไขภารกิจ'],
+                ['label' => '📋 การทำภารกิจ', 'route' => 'admin.video-missions.completions', 'description' => 'ตรวจสอบการทำภารกิจ'],
+                ['label' => '🏆 Rank Limits', 'route' => 'admin.video-missions.rank-limits', 'description' => 'ตั้งค่าลิมิตตาม Rank'],
+                ['label' => '📈 รายงาน', 'route' => 'admin.video-missions.reports', 'description' => 'สถิติและรายงาน'],
+                ['label' => '⚙️ ตั้งค่า', 'route' => 'admin.video-missions.settings', 'description' => 'ตั้งค่าระบบ'],
+            ],
+        ],
+
+        [
             'id' => 'hrm',
             'label' => 'HRM (HR)',
             'icon' => '👨‍💼',
@@ -961,6 +980,21 @@ return [
                 ['label' => 'ทัวร์นาเมนต์', 'route' => 'tournaments.index'],
                 ['label' => 'รางวัลรายวัน', 'route' => 'rewards.daily'],
                 ['label' => 'ภารกิจ', 'route' => 'rewards.missions'],
+            ],
+        ],
+
+        [
+            'id' => 'video-missions',
+            'label' => 'ภารกิจดูคลิป',
+            'icon' => '🎬',
+            'route' => null,
+            'order' => 6.9,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-pink-500 to-purple-500',
+            'submenu' => [
+                ['label' => '🎬 ภารกิจทั้งหมด', 'route' => 'user.video-missions.index', 'description' => 'ดูและทำภารกิจ'],
+                ['label' => '📜 ประวัติการทำ', 'route' => 'user.video-missions.history', 'description' => 'ประวัติและรายได้'],
             ],
         ],
 
