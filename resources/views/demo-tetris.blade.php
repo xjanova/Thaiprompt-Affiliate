@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Tetris Game - เกมส์เตตริสเท่ห์ๆ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +17,7 @@
 
         body {
             font-family: 'Noto Sans Thai', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #0a0a0f;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -25,37 +26,239 @@
             position: relative;
         }
 
-        /* Animated background */
-        body::before {
-            content: '';
-            position: absolute;
-            width: 200%;
-            height: 200%;
-            background:
-                linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.05) 30%, rgba(255, 255, 255, 0.05) 70%, transparent 70%),
-                linear-gradient(-45deg, transparent 30%, rgba(255, 255, 255, 0.05) 30%, rgba(255, 255, 255, 0.05) 70%, transparent 70%);
-            background-size: 100px 100px;
-            animation: moveBackground 20s linear infinite;
+        /* Floating Orbs Background */
+        .orbs-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
             z-index: 0;
+            pointer-events: none;
         }
 
-        @keyframes moveBackground {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(50px, 50px); }
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.4;
+            animation: floatOrb 20s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, #6366f1 0%, transparent 70%);
+            top: -10%;
+            left: -5%;
+            animation-delay: 0s;
+            animation-duration: 25s;
+        }
+
+        .orb-2 {
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, #a855f7 0%, transparent 70%);
+            top: 60%;
+            right: -10%;
+            animation-delay: -5s;
+            animation-duration: 20s;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, #ec4899 0%, transparent 70%);
+            bottom: -5%;
+            left: 30%;
+            animation-delay: -10s;
+            animation-duration: 22s;
+        }
+
+        .orb-4 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, #06b6d4 0%, transparent 70%);
+            top: 20%;
+            right: 20%;
+            animation-delay: -7s;
+            animation-duration: 18s;
+        }
+
+        .orb-5 {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, #10b981 0%, transparent 70%);
+            top: 40%;
+            left: 10%;
+            animation-delay: -3s;
+            animation-duration: 23s;
+        }
+
+        @keyframes floatOrb {
+            0%, 100% {
+                transform: translate(0, 0) scale(1);
+            }
+            25% {
+                transform: translate(30px, -40px) scale(1.1);
+            }
+            50% {
+                transform: translate(-20px, 30px) scale(0.9);
+            }
+            75% {
+                transform: translate(40px, 20px) scale(1.05);
+            }
+        }
+
+        /* Grid overlay */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .main-wrapper {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            padding: 20px;
         }
 
         .game-container {
             position: relative;
-            z-index: 1;
             display: flex;
-            gap: 30px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 30px;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            padding: 25px;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 100px rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             transition: transform 0.05s ease-out;
+        }
+
+        /* Live Leaderboard Panel */
+        .live-leaderboard {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 220px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .live-leaderboard h2 {
+            color: #fbbf24;
+            font-size: 14px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .live-leaderboard-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .live-lb-entry {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .live-lb-entry:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .live-lb-entry.top-1 {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.1));
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .live-lb-entry.top-2 {
+            background: linear-gradient(135deg, rgba(192, 192, 192, 0.15), rgba(169, 169, 169, 0.1));
+            border-color: rgba(192, 192, 192, 0.2);
+        }
+
+        .live-lb-entry.top-3 {
+            background: linear-gradient(135deg, rgba(205, 127, 50, 0.15), rgba(184, 115, 51, 0.1));
+            border-color: rgba(205, 127, 50, 0.2);
+        }
+
+        .live-lb-rank {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            min-width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .live-lb-entry.top-1 .live-lb-rank { color: #ffd700; background: rgba(255, 215, 0, 0.2); }
+        .live-lb-entry.top-2 .live-lb-rank { color: #c0c0c0; background: rgba(192, 192, 192, 0.2); }
+        .live-lb-entry.top-3 .live-lb-rank { color: #cd7f32; background: rgba(205, 127, 50, 0.2); }
+
+        .live-lb-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .live-lb-name {
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .live-lb-date {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 9px;
+            margin-top: 2px;
+        }
+
+        .live-lb-score {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 11px;
+            color: #22d3ee;
+            text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+        }
+
+        .live-lb-empty {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
+            padding: 20px;
         }
 
         .game-container.shake {
@@ -577,10 +780,34 @@
         }
 
         /* Responsive */
+        @media (max-width: 1200px) {
+            .main-wrapper {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .live-leaderboard {
+                width: 100%;
+                max-width: 600px;
+                max-height: 200px;
+            }
+
+            .live-leaderboard-list {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .live-lb-entry {
+                flex: 1;
+                min-width: 180px;
+            }
+        }
+
         @media (max-width: 768px) {
             .game-container {
                 flex-direction: column;
-                padding: 20px;
+                padding: 15px;
                 gap: 15px;
             }
 
@@ -593,7 +820,11 @@
 
             .right-panel > div {
                 flex: 1;
-                min-width: 150px;
+                min-width: 140px;
+            }
+
+            .live-leaderboard {
+                padding: 15px;
             }
 
             #tetris-canvas {
@@ -604,12 +835,31 @@
     </style>
 </head>
 <body>
-    <div class="game-container" id="game-container">
-        <div class="left-panel">
-            <div class="game-board">
-                <canvas id="tetris-canvas" width="300" height="600"></canvas>
-                <div id="particle-container"></div>
+    <!-- Floating Orbs Background -->
+    <div class="orbs-container">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+        <div class="orb orb-5"></div>
+    </div>
+    <div class="grid-overlay"></div>
+
+    <div class="main-wrapper">
+        <!-- Live Leaderboard -->
+        <div class="live-leaderboard">
+            <h2>🏆 Top Scores</h2>
+            <div class="live-leaderboard-list" id="live-leaderboard-list">
+                <div class="live-lb-empty">ยังไม่มีข้อมูล</div>
             </div>
+        </div>
+
+        <div class="game-container" id="game-container">
+            <div class="left-panel">
+                <div class="game-board">
+                    <canvas id="tetris-canvas" width="300" height="600"></canvas>
+                    <div id="particle-container"></div>
+                </div>
             <div class="controls-info">
                 <h3>🎮 การควบคุม</h3>
                 <div class="control-row">
@@ -679,6 +929,7 @@
             </div>
         </div>
     </div>
+    </div> <!-- Close main-wrapper -->
 
     <!-- Pause Overlay -->
     <div id="pause-overlay">
@@ -993,6 +1244,7 @@
             highScore = parseInt(localStorage.getItem('tetris-high-score')) || 0;
             document.getElementById('high-score').textContent = highScore;
             loadLeaderboard();
+            renderLiveLeaderboard();
 
             // สร้างบอร์ดเปล่า
             board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
@@ -1046,6 +1298,37 @@
             localStorage.setItem('tetris-leaderboard', JSON.stringify(leaderboard));
         }
 
+        // แสดง Live Leaderboard (ด้านข้าง)
+        function renderLiveLeaderboard() {
+            const list = document.getElementById('live-leaderboard-list');
+            list.innerHTML = '';
+
+            if (leaderboard.length === 0) {
+                list.innerHTML = '<div class="live-lb-empty">ยังไม่มีข้อมูล<br>เล่นเพื่อบันทึกคะแนน!</div>';
+                return;
+            }
+
+            leaderboard.slice(0, 10).forEach((entry, index) => {
+                const div = document.createElement('div');
+                div.className = 'live-lb-entry';
+                if (index === 0) div.classList.add('top-1');
+                if (index === 1) div.classList.add('top-2');
+                if (index === 2) div.classList.add('top-3');
+
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+
+                div.innerHTML = `
+                    <div class="live-lb-rank">${medal}</div>
+                    <div class="live-lb-info">
+                        <div class="live-lb-name">${entry.name || 'ผู้เล่น'}</div>
+                        <div class="live-lb-date">${entry.date || ''}</div>
+                    </div>
+                    <div class="live-lb-score">${entry.score.toLocaleString()}</div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
         function addToLeaderboard(name, playerScore) {
             leaderboard.push({
                 name: name || 'ผู้เล่น',
@@ -1090,6 +1373,7 @@
             const name = nameInput.value.trim() || 'ผู้เล่น';
             addToLeaderboard(name, score);
             renderLeaderboard(score);
+            renderLiveLeaderboard();
             document.getElementById('name-input-container').classList.remove('show');
         }
 
