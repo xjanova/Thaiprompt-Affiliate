@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.290.0] - 2025-12-01
+
+### ✨ Features
+- Merge pull request #1891 from xjanova/claude/fix-provider-register-icon-01GjE1KN7HdBPNqJ3Xf1MNuH (f2dea19a)
+- feat: เพิ่มปุ่มเชื่อมต่อ LINE ในหน้าโปรไฟล์ผู้ใช้ (8d364d39)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.289.1] - 2025-12-01
 
 ### ✨ Features
