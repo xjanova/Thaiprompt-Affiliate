@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.270.0] - 2025-12-01
+
+### ✨ Features
+- Merge pull request #1864 from xjanova/claude/superadmin-default-leader-01VHkTrVwhHPQxkGMvETc3DU (ed0e3ae0)
+- feat: เพิ่ม SuperAdminMlmSeeder ให้ SuperAdmin เป็น Root Leader ของระบบ MLM (17d26180)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.269.0] - 2025-12-01
 
 ### ✨ Features
