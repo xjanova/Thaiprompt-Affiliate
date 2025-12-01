@@ -1347,9 +1347,9 @@ else
             if [ "$new_count" != "0" ]; then
                 print_warning "📦 New Seeders:"
                 for seeder in $new_list; do
-                    local seeder_path="$SEEDER_DIR/$seeder"
+                    seeder_path="$SEEDER_DIR/$seeder"
                     if [ -f "$seeder_path" ]; then
-                        local safety_result=$(analyze_seeder_safety "$seeder_path")
+                        safety_result=$(analyze_seeder_safety "$seeder_path")
                         IFS='|' read -r safety_level safe_methods issues <<< "$safety_result"
 
                         case "$safety_level" in
@@ -1376,9 +1376,9 @@ else
             if [ "$changed_count" != "0" ]; then
                 print_warning "🔄 Updated Seeders:"
                 for seeder in $changed_list; do
-                    local seeder_path="$SEEDER_DIR/$seeder"
+                    seeder_path="$SEEDER_DIR/$seeder"
                     if [ -f "$seeder_path" ]; then
-                        local safety_result=$(analyze_seeder_safety "$seeder_path")
+                        safety_result=$(analyze_seeder_safety "$seeder_path")
                         IFS='|' read -r safety_level safe_methods issues <<< "$safety_result"
 
                         case "$safety_level" in
