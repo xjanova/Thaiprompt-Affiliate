@@ -52,22 +52,7 @@ else
     fi
 fi
 
-# GitHub Token Configuration (Optional)
-# ใช้ GitHub token จาก environment variable (ถ้ามี)
-# ประโยชน์: เพิ่ม rate limit จาก 60 → 5,000 requests/hour
-if [ -n "$GITHUB_TOKEN" ]; then
-    # ตั้งค่า git credential helper ให้ใช้ token
-    export GIT_ASKPASS_TOKEN="$GITHUB_TOKEN"
-    git config --local credential.helper '!f() { echo "username=token"; echo "password=$GITHUB_TOKEN"; }; f'
-    print_info "Using GitHub token for authentication (rate limit: 5,000/hour)"
-else
-    # ไม่มี token - ใช้ public access (60 requests/hour)
-    print_info "No GitHub token provided - using public access (rate limit: 60/hour)"
-    echo "  💡 Tip: Set GITHUB_TOKEN env variable to increase rate limit"
-    echo "     Example: export GITHUB_TOKEN=your_github_token"
-fi
-
-# Colors
+# Colors (ต้องกำหนดก่อนใช้งาน)
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -75,7 +60,7 @@ BLUE='\033[0;34m'
 MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
 
-# Functions
+# Functions (ต้องกำหนดก่อนใช้งาน)
 print_success() {
     echo -e "${GREEN}✓${NC} $1" | tee -a "$LOG_FILE"
 }
@@ -103,6 +88,21 @@ print_header() {
 log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
 }
+
+# GitHub Token Configuration (Optional)
+# ใช้ GitHub token จาก environment variable (ถ้ามี)
+# ประโยชน์: เพิ่ม rate limit จาก 60 → 5,000 requests/hour
+if [ -n "$GITHUB_TOKEN" ]; then
+    # ตั้งค่า git credential helper ให้ใช้ token
+    export GIT_ASKPASS_TOKEN="$GITHUB_TOKEN"
+    git config --local credential.helper '!f() { echo "username=token"; echo "password=$GITHUB_TOKEN"; }; f'
+    print_info "Using GitHub token for authentication (rate limit: 5,000/hour)"
+else
+    # ไม่มี token - ใช้ public access (60 requests/hour)
+    print_info "No GitHub token provided - using public access (rate limit: 60/hour)"
+    echo "  💡 Tip: Set GITHUB_TOKEN env variable to increase rate limit"
+    echo "     Example: export GITHUB_TOKEN=your_github_token"
+fi
 
 # Smart ENV Sync - Auto-update .env with new variables from .env.example
 sync_env_file() {
@@ -555,14 +555,16 @@ DB_DATABASE=$(grep "^DB_DATABASE=" .env | cut -d '=' -f2)
 DB_USERNAME=$(grep "^DB_USERNAME=" .env | cut -d '=' -f2)
 DB_PASSWORD=$(grep "^DB_PASSWORD=" .env | cut -d '=' -f2)
 DB_HOST=$(grep "^DB_HOST=" .env | cut -d '=' -f2)
+DB_PORT=$(grep "^DB_PORT=" .env | cut -d '=' -f2)
+DB_PORT=${DB_PORT:-3306}  # Default to 3306 if not set
 
 if [ "$DB_CONNECTION" = "mysql" ] && command -v mysqldump >/dev/null 2>&1; then
     if [ -z "$DB_PASSWORD" ]; then
-        mysqldump -h "$DB_HOST" -u "$DB_USERNAME" "$DB_DATABASE" > "$BACKUP_FILE" 2>/dev/null || {
+        mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" > "$BACKUP_FILE" 2>/dev/null || {
             print_warning "Database backup failed (continuing anyway)"
         }
     else
-        mysqldump -h "$DB_HOST" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" > "$BACKUP_FILE" 2>/dev/null || {
+        mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" > "$BACKUP_FILE" 2>/dev/null || {
             print_warning "Database backup failed (continuing anyway)"
         }
     fi
@@ -639,12 +641,27 @@ php artisan cache:clear 2>/dev/null || true
 php artisan event:clear 2>/dev/null || true
 
 # Clear OPcache if available (critical for PHP file changes)
+# ⚠️ Note: CLI opcache_reset() only clears CLI cache, not web server cache
+# Web server OPcache will be cleared when PHP-FPM is restarted in Step 18
 if php -m | grep -q "OPcache"; then
-    print_info "Clearing OPcache..."
-    php -r "if (function_exists('opcache_reset')) { opcache_reset(); echo 'OPcache cleared'; } else { echo 'OPcache not available'; }" 2>/dev/null || true
+    print_info "Clearing CLI OPcache..."
+    php -r "if (function_exists('opcache_reset')) { opcache_reset(); echo 'CLI OPcache cleared'; } else { echo 'OPcache not available'; }" 2>/dev/null || true
+
+    # Try to invalidate all cached files (works on both CLI and web if shared cache)
+    php -r "
+        if (function_exists('opcache_get_status')) {
+            \$status = opcache_get_status(true);
+            if (\$status && isset(\$status['scripts'])) {
+                foreach (array_keys(\$status['scripts']) as \$file) {
+                    opcache_invalidate(\$file, true);
+                }
+                echo 'Invalidated ' . count(\$status['scripts']) . ' cached files';
+            }
+        }
+    " 2>/dev/null || true
 fi
 
-# Clear realpath cache
+# Clear realpath cache (important for symlinked files)
 php -r "clearstatcache(true);" 2>/dev/null || true
 
 # Delete bootstrap cache files manually (ensure clean state)
@@ -872,10 +889,10 @@ else
     SCHEMA_BACKUP="$BACKUP_DIR/pre_autofix_$(date +'%Y%m%d_%H%M%S').sql"
     if [ "$DB_CONNECTION" = "mysql" ] && command -v mysqldump >/dev/null 2>&1; then
         if [ -z "$DB_PASSWORD" ]; then
-            mysqldump -h "$DB_HOST" -u "$DB_USERNAME" "$DB_DATABASE" > "$SCHEMA_BACKUP" 2>/dev/null || \
+            mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" > "$SCHEMA_BACKUP" 2>/dev/null || \
                 print_warning "Backup failed (continuing anyway)"
         else
-            mysqldump -h "$DB_HOST" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" > "$SCHEMA_BACKUP" 2>/dev/null || \
+            mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" > "$SCHEMA_BACKUP" 2>/dev/null || \
                 print_warning "Backup failed (continuing anyway)"
         fi
         if [ -f "$SCHEMA_BACKUP" ]; then
@@ -1054,10 +1071,10 @@ if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
     MIGRATION_BACKUP="$BACKUP_DIR/pre_migration_$(date +'%Y%m%d_%H%M%S').sql"
     if [ "$DB_CONNECTION" = "mysql" ] && command -v mysqldump >/dev/null 2>&1; then
         if [ -z "$DB_PASSWORD" ]; then
-            mysqldump -h "$DB_HOST" -u "$DB_USERNAME" "$DB_DATABASE" > "$MIGRATION_BACKUP" 2>/dev/null || \
+            mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" > "$MIGRATION_BACKUP" 2>/dev/null || \
                 print_warning "Schema backup failed (continuing anyway)"
         else
-            mysqldump -h "$DB_HOST" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" > "$MIGRATION_BACKUP" 2>/dev/null || \
+            mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" > "$MIGRATION_BACKUP" 2>/dev/null || \
                 print_warning "Schema backup failed (continuing anyway)"
         fi
         if [ -f "$MIGRATION_BACKUP" ]; then
@@ -1264,7 +1281,7 @@ else
 
         # Step 11.2: Track individual seeder changes
         print_info "→ Analyzing seeder changes..."
-        local tracking_result=$(track_seeder_changes "$SEEDER_DIR")
+        tracking_result=$(track_seeder_changes "$SEEDER_DIR")
         IFS='|' read -r new_count changed_count unchanged_count new_list changed_list <<< "$tracking_result"
 
         print_info "  • New seeders: $new_count"
@@ -1273,7 +1290,7 @@ else
         echo ""
 
         # Step 11.3: Safety analysis for new/changed seeders
-        local has_changes=0
+        has_changes=0
         if [ "$new_count" != "0" ] || [ "$changed_count" != "0" ]; then
             has_changes=1
             print_info "→ Safety Analysis:"
@@ -1489,15 +1506,36 @@ print_info "[17/20] Optimizing autoloader..."
 composer dump-autoload --optimize --no-dev --no-interaction
 print_success "Autoloader optimized"
 
-# Step 18: Restart Services
+# Step 18: Restart Services (CRITICAL for OPcache clearing!)
 print_info "[18/20] Restarting services..."
 
-# Restart PHP-FPM (if available)
+# Restart PHP-FPM (if available) - THIS CLEARS WEB SERVER OPCACHE!
+PHP_FPM_RESTARTED=false
 if command -v systemctl >/dev/null 2>&1; then
-    # Try different PHP-FPM service names
-    for service in php-fpm php8.2-fpm php8.1-fpm php8.0-fpm; do
+    # Try different PHP-FPM service names (newest first)
+    for service in php8.3-fpm php8.2-fpm php8.1-fpm php8.0-fpm php-fpm; do
         if systemctl is-active --quiet $service 2>/dev/null; then
-            sudo systemctl reload $service 2>/dev/null && print_success "Reloaded $service" || true
+            print_info "Found active PHP-FPM service: $service"
+            if sudo systemctl reload $service 2>/dev/null; then
+                print_success "✓ Reloaded $service (OPcache cleared)"
+                PHP_FPM_RESTARTED=true
+            else
+                print_warning "⚠ Could not reload $service (may need sudo)"
+            fi
+            break
+        fi
+    done
+
+    if [ "$PHP_FPM_RESTARTED" = false ]; then
+        print_warning "⚠ No PHP-FPM service found - OPcache may not be cleared!"
+        print_info "  Try manually: sudo systemctl reload php8.3-fpm"
+    fi
+elif command -v service >/dev/null 2>&1; then
+    # Try using service command (for older systems)
+    for svc in php8.3-fpm php8.2-fpm php8.1-fpm php-fpm; do
+        if service $svc status >/dev/null 2>&1; then
+            sudo service $svc reload 2>/dev/null && print_success "✓ Reloaded $svc" || true
+            PHP_FPM_RESTARTED=true
             break
         fi
     done
@@ -1505,6 +1543,9 @@ fi
 
 # Restart queue workers (if using)
 php artisan queue:restart 2>/dev/null && print_success "Queue workers restarted" || true
+
+# Restart Horizon (if using)
+php artisan horizon:terminate 2>/dev/null && print_success "Horizon terminated (will auto-restart)" || true
 
 # Step 19: Final ENV Verification
 print_info "[19/20] Verifying environment configuration..."
@@ -1529,6 +1570,25 @@ if php artisan route:list >/dev/null 2>&1; then
     print_success "✓ Routes are accessible"
 else
     print_warning "⚠ Routes check skipped (cache warming up)"
+fi
+
+# HTTP Health Check - verify site is actually responding
+APP_URL=$(grep "^APP_URL=" .env | cut -d '=' -f2)
+if [ -n "$APP_URL" ] && command -v curl >/dev/null 2>&1; then
+    print_info "Checking HTTP response from $APP_URL..."
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$APP_URL" 2>/dev/null || echo "000")
+
+    if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "302" ] || [ "$HTTP_CODE" = "301" ]; then
+        print_success "✓ HTTP Health Check OK (HTTP $HTTP_CODE)"
+    elif [ "$HTTP_CODE" = "503" ]; then
+        print_warning "⚠ Site returning 503 (may still be in maintenance mode)"
+    elif [ "$HTTP_CODE" = "000" ]; then
+        print_warning "⚠ HTTP Health Check failed (timeout or network error)"
+    else
+        print_warning "⚠ HTTP Health Check returned HTTP $HTTP_CODE"
+    fi
+else
+    print_info "Skipping HTTP health check (curl not available or APP_URL not set)"
 fi
 
 # Check if database is accessible
