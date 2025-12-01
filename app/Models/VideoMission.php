@@ -122,6 +122,9 @@ class VideoMission extends Model
         'view_count',
         'completion_count',
         'total_rewards_given',
+        'max_reward_budget',
+        'budget_exhausted_at',
+        'budget_warning_threshold',
 
         // หมวดหมู่
         'category',
@@ -179,6 +182,9 @@ class VideoMission extends Model
         'reward_coins' => 'decimal:2',
         'reward_tpix' => 'decimal:8',
         'total_rewards_given' => 'decimal:2',
+        'max_reward_budget' => 'decimal:2',
+        'budget_warning_threshold' => 'integer',
+        'budget_exhausted_at' => 'datetime',
 
         // DateTime
         'start_at' => 'datetime',
@@ -654,6 +660,15 @@ class VideoMission extends Model
             }
         }
 
+        // ตรวจสอบงบประมาณ (Budget)
+        if ($this->isBudgetExhausted()) {
+            return ['eligible' => false, 'reason' => 'งบประมาณรางวัลของภารกิจนี้หมดแล้ว'];
+        }
+
+        if (!$this->hasBudgetForNextReward()) {
+            return ['eligible' => false, 'reason' => 'งบประมาณไม่เพียงพอสำหรับรางวัล'];
+        }
+
         // ตรวจสอบ frequency
         $canDoNow = $this->canUserDoNow($user);
         if (!$canDoNow['can']) {
@@ -789,6 +804,145 @@ class VideoMission extends Model
     public function addRewardsGiven(float $amount): void
     {
         $this->increment('total_rewards_given', $amount);
+
+        // ตรวจสอบว่าถึง budget หรือยัง
+        $this->refresh();
+        if ($this->isBudgetExhausted()) {
+            $this->markBudgetExhausted();
+        }
+    }
+
+    // ==================== BUDGET MANAGEMENT ====================
+
+    /**
+     * ตรวจสอบว่างบประมาณหมดหรือยัง
+     *
+     * @return bool
+     */
+    public function isBudgetExhausted(): bool
+    {
+        // ถ้าไม่มีการกำหนด budget = ไม่จำกัด
+        if (!$this->max_reward_budget || $this->max_reward_budget <= 0) {
+            return false;
+        }
+
+        return $this->total_rewards_given >= $this->max_reward_budget;
+    }
+
+    /**
+     * ตรวจสอบว่างบประมาณใกล้หมดหรือยัง (ตาม threshold)
+     *
+     * @return bool
+     */
+    public function isBudgetNearExhaustion(): bool
+    {
+        if (!$this->max_reward_budget || $this->max_reward_budget <= 0) {
+            return false;
+        }
+
+        $threshold = $this->budget_warning_threshold ?? 80;
+        $usedPercentage = ($this->total_rewards_given / $this->max_reward_budget) * 100;
+
+        return $usedPercentage >= $threshold;
+    }
+
+    /**
+     * ดึงงบประมาณที่เหลือ
+     *
+     * @return float|null null = ไม่จำกัด
+     */
+    public function getRemainingBudget(): ?float
+    {
+        if (!$this->max_reward_budget || $this->max_reward_budget <= 0) {
+            return null;
+        }
+
+        return max(0, $this->max_reward_budget - $this->total_rewards_given);
+    }
+
+    /**
+     * ดึง % งบที่ใช้ไป
+     *
+     * @return float|null null = ไม่จำกัด
+     */
+    public function getBudgetUsedPercentage(): ?float
+    {
+        if (!$this->max_reward_budget || $this->max_reward_budget <= 0) {
+            return null;
+        }
+
+        return min(100, ($this->total_rewards_given / $this->max_reward_budget) * 100);
+    }
+
+    /**
+     * Mark ว่างบประมาณหมดแล้ว
+     *
+     * @return void
+     */
+    public function markBudgetExhausted(): void
+    {
+        if (!$this->budget_exhausted_at) {
+            $this->update([
+                'budget_exhausted_at' => now(),
+            ]);
+        }
+    }
+
+    /**
+     * ตรวจสอบว่ามีงบเพียงพอสำหรับรางวัลครั้งต่อไปหรือไม่
+     *
+     * @param float|null $nextRewardAmount จำนวนรางวัลที่จะแจกครั้งต่อไป (null = ใช้ค่าเริ่มต้น)
+     * @return bool
+     */
+    public function hasBudgetForNextReward(?float $nextRewardAmount = null): bool
+    {
+        // ถ้าไม่มี budget limit = ไม่จำกัด
+        if (!$this->max_reward_budget || $this->max_reward_budget <= 0) {
+            return true;
+        }
+
+        // ถ้าระบุจำนวนรางวัลให้ใช้ค่านั้น ถ้าไม่ให้คำนวณจากรางวัลของภารกิจ
+        $rewardAmount = $nextRewardAmount ?? $this->calculateTotalRewardValue();
+
+        $remaining = $this->getRemainingBudget();
+
+        return $remaining >= $rewardAmount;
+    }
+
+    /**
+     * คำนวณมูลค่ารางวัลทั้งหมดต่อครั้ง
+     *
+     * @return float
+     */
+    public function calculateTotalRewardValue(): float
+    {
+        // รวมทุก reward type เป็นมูลค่าเดียว
+        // สำหรับ budget ใช้ค่าหลักเป็น money + coins
+        return (float) $this->reward_money + (float) $this->reward_coins;
+    }
+
+    /**
+     * ดึงจำนวนคนที่ทำได้อีก (จากงบประมาณ)
+     *
+     * @return int|null null = ไม่จำกัด
+     */
+    public function getRemainingSlots(): ?int
+    {
+        if (!$this->max_reward_budget || $this->max_reward_budget <= 0) {
+            // ตรวจสอบ max_total_completions แทน
+            if ($this->max_total_completions) {
+                return max(0, $this->max_total_completions - $this->completion_count);
+            }
+            return null;
+        }
+
+        $rewardPerCompletion = $this->calculateTotalRewardValue();
+        if ($rewardPerCompletion <= 0) {
+            return null;
+        }
+
+        $remaining = $this->getRemainingBudget();
+        return (int) floor($remaining / $rewardPerCompletion);
     }
 
     /**
