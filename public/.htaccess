@@ -13,12 +13,14 @@
 
     # ========================================
     # SECURITY: ป้องกันการเข้าถึงไฟล์ ENV
-    # Redirect การเข้าถึง /env, /.env, /ENV ไปที่หน้าแรก
+    # Redirect การเข้าถึง /env, /.env ไปที่หน้าแรก
     # ========================================
-    RewriteCond %{REQUEST_URI} ^/\.env [NC,OR]
-    RewriteCond %{REQUEST_URI} ^/env [NC,OR]
-    RewriteCond %{REQUEST_URI} ^/ENV [NC]
-    RewriteRule ^(.*)$ / [R=301,L]
+    # Block /.env และ /.env.* files
+    RewriteRule ^\.env$ / [R=301,L]
+    RewriteRule ^\.env\. / [R=301,L]
+    # Block /env และ /env/ folder เท่านั้น (exact match)
+    RewriteRule ^env$ / [R=301,L]
+    RewriteRule ^env/ / [R=301,L]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
