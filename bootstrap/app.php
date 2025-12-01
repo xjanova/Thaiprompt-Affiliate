@@ -19,6 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
             // Provider routes (Service Booking)
             Route::middleware('web')->group(base_path('routes/provider.php'));
+
+            // Forum routes (Community Forum System)
+            Route::middleware('web')->group(base_path('routes/forum.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
