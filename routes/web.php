@@ -246,6 +246,8 @@ Route::prefix('language')->name('language.')->group(function () {
 // LINE Signup via Invitation Link (Public Routes with Rate Limiting)
 // ⚠️ Affiliate: LINE signup links สำคัญสำหรับระบบ affiliate
 Route::prefix('line/signup')->name('line.signup.')->middleware(['line.signup.throttle'])->group(function () {
+    // สำหรับสแกน QR Code ด้วย member_code โดยตรง (สร้าง invitation อัตโนมัติ)
+    Route::match(['GET', 'HEAD'], '/invite/{memberCode}', [\App\Http\Controllers\LineSignupController::class, 'inviteByMemberCode'])->name('invite');
     Route::match(['GET', 'HEAD'], '/invitation/{token}', [\App\Http\Controllers\LineSignupController::class, 'handleInvitation'])->name('invitation');
     Route::match(['GET', 'HEAD'], '/callback', [\App\Http\Controllers\LineSignupController::class, 'handleCallback'])->name('callback');
 });

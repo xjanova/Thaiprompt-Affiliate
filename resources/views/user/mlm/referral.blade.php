@@ -151,7 +151,8 @@
 </div>
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+{{-- ใช้ CDN ที่ถูกต้องสำหรับ qrcodejs --}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 const referralUrl = "{{ $referralUrl }}";
 const memberCode = "{{ $member->member_code }}";
@@ -223,7 +224,8 @@ function generateQRCode(retryCount = 0) {
 }
 
 /**
- * Fallback ใช้ Google Charts API สร้าง QR Code (ไม่ต้องใช้ library)
+ * Fallback ใช้ QR Server API สร้าง QR Code (ไม่ต้องใช้ library)
+ * Google Charts API ถูก deprecated แล้ว จึงใช้ api.qrserver.com แทน
  */
 function useFallbackQRCode() {
     const qrcodeContainer = document.getElementById('qrcode');
@@ -233,18 +235,19 @@ function useFallbackQRCode() {
 
     if (loadingEl) loadingEl.remove();
 
-    // สร้าง QR Code ด้วย Google Charts API
+    // สร้าง QR Code ด้วย QR Server API (ฟรีและยังใช้งานได้)
     const encodedUrl = encodeURIComponent(referralUrl);
-    const googleQRUrl = `https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodedUrl}&choe=UTF-8`;
+    const qrServerUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedUrl}&format=png`;
 
     // สร้าง img element
     const img = document.createElement('img');
-    img.src = googleQRUrl;
+    img.src = qrServerUrl;
     img.alt = 'QR Code สำหรับลิงก์แนะนำ';
     img.width = 200;
     img.height = 200;
     img.style.borderRadius = '8px';
     img.id = 'qrcode-image';
+    img.crossOrigin = 'anonymous'; // สำหรับดาวน์โหลด
 
     img.onload = function() {
         qrcodeContainer.innerHTML = '';
@@ -253,7 +256,7 @@ function useFallbackQRCode() {
             downloadBtn.classList.remove('hidden');
             downloadBtn.classList.add('flex');
         }
-        console.log('สร้าง QR Code ด้วย Google Charts API สำเร็จ');
+        console.log('สร้าง QR Code ด้วย QR Server API สำเร็จ');
     };
 
     img.onerror = function() {
@@ -262,7 +265,7 @@ function useFallbackQRCode() {
             errorEl.classList.remove('hidden');
         }
         qrcodeContainer.innerHTML = '<p class="text-gray-500 text-sm">ไม่สามารถโหลด QR Code ได้</p>';
-        console.error('ไม่สามารถโหลด QR Code จาก Google Charts API');
+        console.error('ไม่สามารถโหลด QR Code จาก QR Server API');
     };
 }
 
