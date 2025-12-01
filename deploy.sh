@@ -534,7 +534,7 @@ cleanup_old_backups
 print_header "📦 Deployment Process"
 
 # Step 1: Enable Maintenance Mode
-print_info "[1/19] Enabling maintenance mode..."
+print_info "[1/21] Enabling maintenance mode..."
 
 # Ensure directories exist before running artisan
 ensure_laravel_directories
@@ -546,7 +546,7 @@ print_success "Maintenance mode enabled"
 sleep 2  # Give time for requests to finish
 
 # Step 2: Backup Database
-print_info "[2/19] Creating database backup..."
+print_info "[2/21] Creating database backup..."
 BACKUP_FILE="$BACKUP_DIR/db_backup_$(date +'%Y%m%d_%H%M%S').sql"
 
 # Get database info from .env
@@ -583,12 +583,12 @@ log "Current commit: $CURRENT_COMMIT"
 print_info "Current commit: ${CURRENT_COMMIT:0:8}"
 
 # Step 3: Backup Critical Files (PREVENT DATA LOSS!)
-print_info "[3/19] Backing up critical files (.env, uploads)..."
+print_info "[3/21] Backing up critical files (.env, uploads)..."
 backup_critical_files
 print_success "Critical files backed up safely"
 
 # Step 4: Force Pull Latest Code from GitHub
-print_info "[4/19] Force syncing with GitHub..."
+print_info "[4/21] Force syncing with GitHub..."
 
 # Step 4.1: Stash any local changes (for safety backup)
 if [[ -n $(git status -s) ]]; then
@@ -619,7 +619,7 @@ restore_critical_files
 print_success "Critical files restored successfully"
 
 # Step 4.6: Smart ENV Sync - Auto-update .env with new variables
-print_info "[4.6/19] Syncing .env with .env.example..."
+print_info "[4.6/21] Syncing .env with .env.example..."
 if ! sync_env_file; then
     error_exit "ENV sync failed" "$?"
 fi
@@ -631,7 +631,7 @@ print_success "Essential directories created"
 
 # Step 4.8: CRITICAL - Clear ALL caches immediately after pulling new code
 # ⚠️ This prevents route/config cache from using old code
-print_info "[4.8/20] 🔥 Clearing ALL caches immediately (prevent stale cache issues)..."
+print_info "[4.8/21] 🔥 Clearing ALL caches immediately (prevent stale cache issues)..."
 
 # Clear Laravel caches FIRST - before any other artisan commands
 php artisan route:clear 2>/dev/null || true
@@ -690,7 +690,7 @@ print_info "New commit: ${NEW_COMMIT:0:8}"
 save_deployment_history "$NEW_COMMIT" "$BRANCH"
 
 # Step 6: Ensure Base Controller Exists
-print_info "[6/20] Ensuring base Controller exists..."
+print_info "[5/21] Ensuring base Controller exists..."
 CONTROLLER_FILE="app/Http/Controllers/Controller.php"
 if [ ! -f "$CONTROLLER_FILE" ]; then
     print_warning "Base Controller.php not found, creating..."
@@ -788,7 +788,7 @@ check_package() {
 }
 
 # Step 7: Smart Composer Management
-print_info "[7/20] Smart Composer Management..."
+print_info "[6/21] Smart Composer Management..."
 echo ""
 
 # Run smart composer install
@@ -802,7 +802,7 @@ check_package "barryvdh/laravel-dompdf" "DomPDF (PDF Generation)" false
 echo ""
 
 # Step 8: Smart Laravel Sanctum Installation
-print_info "[8/20] Smart Laravel Sanctum Installation..."
+print_info "[7/21] Smart Laravel Sanctum Installation..."
 
 # Check if Sanctum migrations already exist
 if [ -f "database/migrations/*_create_personal_access_tokens_table.php" ] || \
@@ -818,7 +818,7 @@ else
 fi
 
 # Step 9: Clear All Cache (before migration)
-print_info "[9/20] Clearing all caches..."
+print_info "[8/21] Clearing all caches..."
 
 # Clear caches silently (ignore permission errors)
 php artisan cache:clear >/dev/null 2>&1 || print_warning "Cache clear skipped (may need manual clear)"
@@ -835,7 +835,7 @@ else
 fi
 
 # Step 10: Smart Database Migration System
-print_info "[10/20] 🎯 Smart Database Migration System..."
+print_info "[9/21] 🎯 Smart Database Migration System..."
 echo ""
 
 # Step 10.1: Create database if not exists (Auto-fix for missing database)
@@ -1244,7 +1244,7 @@ track_seeder_changes() {
 }
 
 # Step 11: Smart Database Seeding System v2
-print_info "[11/20] 🌱 Smart Database Seeding System v2..."
+print_info "[10/21] 🌱 Smart Database Seeding System v2..."
 echo ""
 
 # Step 11.1: Verify all seeders are included in DatabaseSeeder.php
@@ -1409,7 +1409,7 @@ fi
 echo ""
 
 # Step 12: Create Storage Symlink (แก้ไขปัญหาโลโก้หาย)
-print_info "[12/20] Creating storage symlink..."
+print_info "[11/21] Creating storage symlink..."
 
 # ใช้ storage:fix แทน storage:link เพราะจัดการกรณีพิเศษได้ดีกว่า
 if php artisan storage:fix --force --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
@@ -1445,7 +1445,7 @@ else
 fi
 
 # Step 13: Set Permissions
-print_info "[13/20] Setting file permissions..."
+print_info "[12/21] Setting file permissions..."
 
 # Detect web server user
 WEB_USER=""
@@ -1485,29 +1485,29 @@ fi
 print_success "Permissions set"
 
 # Step 14: Cache Configuration
-print_info "[14/20] Caching configuration..."
+print_info "[13/21] Caching configuration..."
 if ! php artisan config:cache 2>&1 | tee -a "$LOG_FILE"; then
     error_exit "Config cache failed - ตรวจสอบ .env และ config files" "$?"
 fi
 print_success "Configuration cached"
 
 # Step 15: Cache Routes
-print_info "[15/20] Caching routes..."
+print_info "[14/21] Caching routes..."
 php artisan route:cache || print_warning "Route cache failed (continuing anyway)"
 print_success "Routes cached"
 
 # Step 16: Cache Views
-print_info "[16/20] Caching views..."
+print_info "[15/21] Caching views..."
 php artisan view:cache || print_warning "View cache failed (continuing anyway)"
 print_success "Views cached"
 
 # Step 17: Optimize Autoloader
-print_info "[17/20] Optimizing autoloader..."
+print_info "[16/21] Optimizing autoloader..."
 composer dump-autoload --optimize --no-dev --no-interaction
 print_success "Autoloader optimized"
 
 # Step 18: Restart Services (CRITICAL for OPcache clearing!)
-print_info "[18/20] Restarting services..."
+print_info "[17/21] Restarting services..."
 
 # Restart PHP-FPM (if available) - THIS CLEARS WEB SERVER OPCACHE!
 PHP_FPM_RESTARTED=false
@@ -1548,7 +1548,7 @@ php artisan queue:restart 2>/dev/null && print_success "Queue workers restarted"
 php artisan horizon:terminate 2>/dev/null && print_success "Horizon terminated (will auto-restart)" || true
 
 # Step 19: Final ENV Verification
-print_info "[19/20] Verifying environment configuration..."
+print_info "[18/21] Verifying environment configuration..."
 if [ -f ".env" ]; then
     print_success "✓ .env file exists and is ready"
 else
@@ -1556,14 +1556,15 @@ else
 fi
 
 # Step 20: Disable Maintenance Mode
-print_info "[20/20] Disabling maintenance mode..."
+print_info "[19/21] Disabling maintenance mode..."
 php artisan up || error_exit "Failed to disable maintenance mode"
 print_success "Application is now live!"
 
 # Post-deployment verification
 print_header "🔍 Post-Deployment Verification"
 
-print_info "Verifying deployment..."
+# Step 20: Verify deployment
+print_info "[20/21] Verifying deployment..."
 
 # Check if application is accessible (non-critical check)
 if php artisan route:list >/dev/null 2>&1; then
@@ -1572,7 +1573,8 @@ else
     print_warning "⚠ Routes check skipped (cache warming up)"
 fi
 
-# HTTP Health Check - verify site is actually responding
+# Step 21: HTTP Health Check - verify site is actually responding
+print_info "[21/21] Running HTTP health check..."
 APP_URL=$(grep "^APP_URL=" .env | cut -d '=' -f2)
 if [ -n "$APP_URL" ] && command -v curl >/dev/null 2>&1; then
     print_info "Checking HTTP response from $APP_URL..."
