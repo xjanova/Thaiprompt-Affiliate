@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.273.0] - 2025-12-01
+
+### ✨ Features
+- Merge pull request #1868 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (26ad28c1)
+- feat: เพิ่ม One-Click Optimization สำหรับ Cloudflare (25521f43)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.272.0] - 2025-12-01
 
 ### ✨ Features
