@@ -2,6 +2,96 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.275.0] - 2025-12-01
+
+### ✨ Features
+- Merge pull request #1873 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (aff71e83)
+- feat: เพิ่มระบบตั้งค่า Cloudflare API และ Auto Under Attack Mode (3678b49c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.274.2] - 2025-12-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1872 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (adde7839)
+- refactor: ลบ Turnstile settings ออกจาก settings-v3 (b0a728b4)
+
+## [v3.274.1] - 2025-12-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1871 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (b0e7a223)
+- fix: แก้ไข ParseError ใน auto-under-attack.blade.php (938542c0)
+### 🔧 Other Changes
+
+
+## [v3.274.0] - 2025-12-01
+
+### ✨ Features
+- feat: เพิ่มระบบตั้งค่า Cloudflare API และ Auto Under Attack Mode (001904a5)
+### 🐛 Bug Fixes
+- fix: ปรับปรุง Cloudflare Optimization ให้แสดงสาเหตุที่ล้มเหลว (0360b163)
+### 🔧 Other Changes
+- Merge pull request #1870 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (139931a6)
+
+## [v3.273.1] - 2025-12-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: use exact match for env redirect rules (6e99ac83)
+### 🔧 Other Changes
+- Merge pull request #1869 from xjanova/claude/redirect-env-to-public-016hHDJn5gEwuRAsBRvrWaAi (e093df01)
+- security: redirect /env paths to home page (8cc1fb62)
+
+## [v3.273.0] - 2025-12-01
+
+### ✨ Features
+- Merge pull request #1868 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (26ad28c1)
+- feat: เพิ่ม One-Click Optimization สำหรับ Cloudflare (25521f43)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.272.0] - 2025-12-01
+
+### ✨ Features
+- Merge pull request #1867 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (93534884)
+- feat: เพิ่มระบบจัดการ Cloudflare CDN ใน Admin Panel (a94b0d02)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.271.0] - 2025-12-01
+
+### ✨ Features
+- Merge pull request #1866 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (a68090ba)
+- feat: เพิ่ม Cloudflare cache purge command (bcdabacb)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.270.1] - 2025-12-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: resolve merge conflict - keep root route at top of file (5438c910)
+- fix: ย้าย root route ไปไว้ต้นไฟล์ web.php (04ac55f9)
+- fix: ใช้ Route::addRoute() แทน Route::any() สำหรับ root route (d0930c52)
+### 🔧 Other Changes
+- Merge pull request #1865 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (8f2cf2db)
+
 ## [v3.270.0] - 2025-12-01
 
 ### ✨ Features
