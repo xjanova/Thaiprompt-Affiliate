@@ -13,11 +13,15 @@ return [
     */
 
     'cloudflare' => [
+        // Turnstile (CAPTCHA)
         'turnstile' => [
             'site_key' => env('CLOUDFLARE_TURNSTILE_SITE_KEY', ''),
             'secret_key' => env('CLOUDFLARE_TURNSTILE_SECRET_KEY', ''),
             'verify_url' => 'https://challenges.cloudflare.com/turnstile/v0/siteverify',
         ],
+        // Cache Purge API (สำหรับ clear cache หลัง deploy)
+        'zone_id' => env('CLOUDFLARE_ZONE_ID', ''),
+        'api_token' => env('CLOUDFLARE_API_TOKEN', ''),
     ],
 
     'google' => [
