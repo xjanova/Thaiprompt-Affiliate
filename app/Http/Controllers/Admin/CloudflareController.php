@@ -650,4 +650,16 @@ class CloudflareController extends Controller
 
         return response()->json($result);
     }
+
+    /**
+     * ทดสอบการเชื่อมต่อ Cloudflare API
+     *
+     * @return JsonResponse
+     */
+    public function testConnection(): JsonResponse
+    {
+        $result = $this->cloudflare->testConnection();
+
+        return response()->json($result);
+    }
 }

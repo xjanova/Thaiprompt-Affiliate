@@ -49,6 +49,81 @@ class CloudflareService
     }
 
     /**
+     * ทดสอบการเชื่อมต่อ API
+     *
+     * @return array
+     */
+    public function testConnection(): array
+    {
+        if (!$this->isConfigured()) {
+            return [
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า Zone ID หรือ API Token',
+                'details' => [
+                    'zone_id_set' => !empty($this->zoneId),
+                    'api_token_set' => !empty($this->apiToken),
+                ],
+            ];
+        }
+
+        try {
+            // ทดสอบ API Token ด้วย /user/tokens/verify
+            $tokenResponse = $this->client()->get(self::API_BASE . '/user/tokens/verify');
+
+            if (!$tokenResponse->successful()) {
+                return [
+                    'success' => false,
+                    'message' => 'API Token ไม่ถูกต้องหรือหมดอายุ',
+                    'details' => [
+                        'status' => $tokenResponse->status(),
+                        'errors' => $tokenResponse->json('errors', []),
+                    ],
+                ];
+            }
+
+            $tokenData = $tokenResponse->json('result', []);
+
+            // ทดสอบ Zone ID
+            $zoneResponse = $this->client()->get(self::API_BASE . "/zones/{$this->zoneId}");
+
+            if (!$zoneResponse->successful()) {
+                return [
+                    'success' => false,
+                    'message' => 'Zone ID ไม่ถูกต้องหรือ Token ไม่มีสิทธิ์เข้าถึง Zone นี้',
+                    'details' => [
+                        'status' => $zoneResponse->status(),
+                        'errors' => $zoneResponse->json('errors', []),
+                        'token_status' => $tokenData['status'] ?? 'unknown',
+                    ],
+                ];
+            }
+
+            $zoneData = $zoneResponse->json('result', []);
+
+            return [
+                'success' => true,
+                'message' => 'เชื่อมต่อ Cloudflare สำเร็จ!',
+                'details' => [
+                    'token_status' => $tokenData['status'] ?? 'active',
+                    'zone_name' => $zoneData['name'] ?? 'unknown',
+                    'zone_status' => $zoneData['status'] ?? 'unknown',
+                    'plan' => $zoneData['plan']['name'] ?? 'Free',
+                    'plan_id' => $zoneData['plan']['legacy_id'] ?? 'free',
+                ],
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการเชื่อมต่อ: ' . $e->getMessage(),
+                'details' => [
+                    'exception' => get_class($e),
+                    'error' => $e->getMessage(),
+                ],
+            ];
+        }
+    }
+
+    /**
      * ดึง HTTP client พร้อม headers
      */
     protected function client()
@@ -923,32 +998,128 @@ class CloudflareService
 
         $current = $settingsResult['data'];
 
-        // รายการ settings ที่ควรจะมีหลัง optimization
-        $optimizedValues = [
-            'brotli' => 'on',
-            'early_hints' => 'on',
-            'http2' => 'on',
-            'http3' => 'on',
-            '0rtt' => 'on',
-            'rocket_loader' => 'on',
-            'crawler_hints' => 'on',
-            'always_online' => 'on',
-            'security_level' => 'medium',
-            'browser_check' => 'on',
-            'email_obfuscation' => 'on',
-            'hotlink_protection' => 'on',
-            'opportunistic_encryption' => 'on',
-            'ssl' => 'full',
-            'always_use_https' => 'on',
-            'automatic_https_rewrites' => 'on',
-            'cache_level' => 'aggressive',
+        // รายการ settings พร้อมข้อมูลละเอียด
+        $optimizedSettings = [
+            'brotli' => [
+                'name' => 'Brotli Compression',
+                'category' => 'performance',
+                'optimal' => 'on',
+                'description' => 'บีบอัดข้อมูลให้เล็กลง',
+                'free_plan' => true,
+            ],
+            'early_hints' => [
+                'name' => 'Early Hints',
+                'category' => 'performance',
+                'optimal' => 'on',
+                'description' => 'ส่ง hints ล่วงหน้าให้ browser',
+                'free_plan' => true,
+            ],
+            'http2' => [
+                'name' => 'HTTP/2',
+                'category' => 'performance',
+                'optimal' => 'on',
+                'description' => 'HTTP/2 protocol',
+                'free_plan' => true,
+            ],
+            'http3' => [
+                'name' => 'HTTP/3 (QUIC)',
+                'category' => 'performance',
+                'optimal' => 'on',
+                'description' => 'HTTP/3 protocol',
+                'free_plan' => true,
+            ],
+            '0rtt' => [
+                'name' => '0-RTT',
+                'category' => 'performance',
+                'optimal' => 'on',
+                'description' => 'ลด latency',
+                'free_plan' => true,
+            ],
+            'rocket_loader' => [
+                'name' => 'Rocket Loader',
+                'category' => 'performance',
+                'optimal' => 'on',
+                'description' => 'Async load JavaScript',
+                'free_plan' => true,
+            ],
+            'always_online' => [
+                'name' => 'Always Online',
+                'category' => 'seo',
+                'optimal' => 'on',
+                'description' => 'แสดงหน้าจาก cache เมื่อ server ล่ม',
+                'free_plan' => true,
+            ],
+            'security_level' => [
+                'name' => 'Security Level',
+                'category' => 'security',
+                'optimal' => 'medium',
+                'description' => 'ระดับ security',
+                'free_plan' => true,
+            ],
+            'browser_check' => [
+                'name' => 'Browser Integrity Check',
+                'category' => 'security',
+                'optimal' => 'on',
+                'description' => 'ตรวจสอบ browser headers',
+                'free_plan' => true,
+            ],
+            'email_obfuscation' => [
+                'name' => 'Email Obfuscation',
+                'category' => 'security',
+                'optimal' => 'on',
+                'description' => 'ซ่อน email จาก bots',
+                'free_plan' => true,
+            ],
+            'hotlink_protection' => [
+                'name' => 'Hotlink Protection',
+                'category' => 'security',
+                'optimal' => 'on',
+                'description' => 'ป้องกันขโมย bandwidth',
+                'free_plan' => true,
+            ],
+            'opportunistic_encryption' => [
+                'name' => 'Opportunistic Encryption',
+                'category' => 'security',
+                'optimal' => 'on',
+                'description' => 'เข้ารหัส HTTP',
+                'free_plan' => true,
+            ],
+            'ssl' => [
+                'name' => 'SSL Mode',
+                'category' => 'ssl',
+                'optimal' => 'full',
+                'description' => 'Full SSL encryption',
+                'free_plan' => true,
+            ],
+            'always_use_https' => [
+                'name' => 'Always Use HTTPS',
+                'category' => 'ssl',
+                'optimal' => 'on',
+                'description' => 'Redirect HTTP → HTTPS',
+                'free_plan' => true,
+            ],
+            'automatic_https_rewrites' => [
+                'name' => 'Automatic HTTPS Rewrites',
+                'category' => 'ssl',
+                'optimal' => 'on',
+                'description' => 'แก้ mixed content',
+                'free_plan' => true,
+            ],
+            'cache_level' => [
+                'name' => 'Cache Level',
+                'category' => 'cache',
+                'optimal' => 'aggressive',
+                'description' => 'ระดับ caching',
+                'free_plan' => true,
+            ],
         ];
 
         $optimizedCount = 0;
         $status = [];
 
-        foreach ($optimizedValues as $key => $expectedValue) {
+        foreach ($optimizedSettings as $key => $setting) {
             $currentValue = $current[$key] ?? null;
+            $expectedValue = $setting['optimal'];
             $isOptimized = ($currentValue === $expectedValue);
 
             if ($isOptimized) {
@@ -956,13 +1127,19 @@ class CloudflareService
             }
 
             $status[$key] = [
+                'name' => $setting['name'],
+                'category' => $setting['category'],
+                'description' => $setting['description'],
                 'current' => $currentValue,
+                'current_display' => $this->formatSettingValue($currentValue),
                 'optimal' => $expectedValue,
+                'optimal_display' => $this->formatSettingValue($expectedValue),
                 'optimized' => $isOptimized,
+                'free_plan' => $setting['free_plan'],
             ];
         }
 
-        $totalSettings = count($optimizedValues);
+        $totalSettings = count($optimizedSettings);
         $percentage = round(($optimizedCount / $totalSettings) * 100);
 
         return [
@@ -973,6 +1150,26 @@ class CloudflareService
             'status' => $status,
             'message' => "ระดับ Optimization: {$percentage}% ({$optimizedCount}/{$totalSettings})",
         ];
+    }
+
+    /**
+     * แปลงค่า setting ให้อ่านง่าย
+     */
+    protected function formatSettingValue($value): string
+    {
+        if ($value === null) {
+            return 'ไม่พบ';
+        }
+        if ($value === 'on') {
+            return '✅ เปิด';
+        }
+        if ($value === 'off') {
+            return '❌ ปิด';
+        }
+        if (is_array($value)) {
+            return json_encode($value);
+        }
+        return (string) $value;
     }
 
     // ========================================
