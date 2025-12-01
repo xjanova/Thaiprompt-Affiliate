@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\TarotCard;
 use App\Models\TarotCardBackImage;
+use App\Models\TarotCardInterpretation;
 use App\Models\TarotReadingCategory;
 use App\Models\TarotSpreadType;
 use App\Models\TarotReading;
@@ -443,5 +444,161 @@ class TarotManagementController extends Controller
             'readingsBySpread',
             'popularCards'
         ));
+    }
+
+    /**
+     * จัดการคำทำนายตามหมวดหมู่
+     *
+     * แสดงรายการไพ่ทั้งหมดพร้อมสถานะคำทำนายในแต่ละหมวด
+     */
+    public function interpretationsIndex()
+    {
+        $cards = TarotCard::with('interpretations')
+            ->orderBy('type')
+            ->orderBy('suit')
+            ->orderBy('number')
+            ->paginate(30);
+
+        $categories = TarotReadingCategory::active()->ordered()->get();
+
+        return view('admin.tarot.interpretations.index', compact('cards', 'categories'));
+    }
+
+    /**
+     * แก้ไขคำทำนายของไพ่แต่ละใบสำหรับทุกหมวด
+     *
+     * @param int $id ID ของไพ่
+     */
+    public function interpretationsEdit($id)
+    {
+        $card = TarotCard::with('interpretations')->findOrFail($id);
+        $categories = TarotReadingCategory::active()->ordered()->get();
+
+        // เตรียม interpretations สำหรับทุกหมวด (สร้างถ้าไม่มี)
+        $interpretations = [];
+        foreach ($categories as $category) {
+            $interpretation = $card->interpretations
+                ->firstWhere('category_id', $category->id);
+
+            if (!$interpretation) {
+                $interpretation = new TarotCardInterpretation([
+                    'card_id' => $card->id,
+                    'category_id' => $category->id,
+                ]);
+            }
+
+            $interpretations[$category->id] = $interpretation;
+        }
+
+        return view('admin.tarot.interpretations.edit', compact('card', 'categories', 'interpretations'));
+    }
+
+    /**
+     * บันทึกคำทำนายของไพ่
+     *
+     * @param Request $request
+     * @param int $id ID ของไพ่
+     */
+    public function interpretationsUpdate(Request $request, $id)
+    {
+        $card = TarotCard::findOrFail($id);
+
+        $request->validate([
+            'interpretations' => 'required|array',
+            'interpretations.*.category_id' => 'required|exists:tarot_reading_categories,id',
+            'interpretations.*.upright_interpretation_th' => 'nullable|string',
+            'interpretations.*.upright_interpretation_en' => 'nullable|string',
+            'interpretations.*.reversed_interpretation_th' => 'nullable|string',
+            'interpretations.*.reversed_interpretation_en' => 'nullable|string',
+            'interpretations.*.advice_th' => 'nullable|string',
+            'interpretations.*.advice_en' => 'nullable|string',
+        ]);
+
+        foreach ($request->interpretations as $data) {
+            TarotCardInterpretation::updateOrCreate(
+                [
+                    'card_id' => $card->id,
+                    'category_id' => $data['category_id'],
+                ],
+                [
+                    'upright_interpretation_th' => $data['upright_interpretation_th'] ?? null,
+                    'upright_interpretation_en' => $data['upright_interpretation_en'] ?? null,
+                    'reversed_interpretation_th' => $data['reversed_interpretation_th'] ?? null,
+                    'reversed_interpretation_en' => $data['reversed_interpretation_en'] ?? null,
+                    'advice_th' => $data['advice_th'] ?? null,
+                    'advice_en' => $data['advice_en'] ?? null,
+                ]
+            );
+        }
+
+        return redirect()
+            ->route('admin.tarot.interpretations.index')
+            ->with('success', 'บันทึกคำทำนายสำเร็จ');
+    }
+
+    /**
+     * คัดลอกคำทำนายเริ่มต้นจาก TarotCard ไปยัง TarotCardInterpretation
+     *
+     * ใช้สำหรับ setup เริ่มต้นเพื่อคัดลอกความหมายพื้นฐานไปทุกหมวด
+     *
+     * @param int $id ID ของไพ่
+     */
+    public function interpretationsCopyDefaults($id)
+    {
+        $card = TarotCard::findOrFail($id);
+        $categories = TarotReadingCategory::active()->get();
+
+        foreach ($categories as $category) {
+            TarotCardInterpretation::updateOrCreate(
+                [
+                    'card_id' => $card->id,
+                    'category_id' => $category->id,
+                ],
+                [
+                    'upright_interpretation_th' => $card->upright_meaning_th,
+                    'upright_interpretation_en' => $card->upright_meaning_en,
+                    'reversed_interpretation_th' => $card->reversed_meaning_th,
+                    'reversed_interpretation_en' => $card->reversed_meaning_en,
+                ]
+            );
+        }
+
+        return redirect()
+            ->route('admin.tarot.interpretations.edit', $card->id)
+            ->with('success', 'คัดลอกคำทำนายเริ่มต้นไปทุกหมวดสำเร็จ');
+    }
+
+    /**
+     * คัดลอกคำทำนายเริ่มต้นให้ไพ่ทั้งหมด
+     *
+     * Bulk operation สำหรับ setup เริ่มต้น
+     */
+    public function interpretationsCopyAllDefaults()
+    {
+        $cards = TarotCard::all();
+        $categories = TarotReadingCategory::active()->get();
+        $count = 0;
+
+        foreach ($cards as $card) {
+            foreach ($categories as $category) {
+                TarotCardInterpretation::updateOrCreate(
+                    [
+                        'card_id' => $card->id,
+                        'category_id' => $category->id,
+                    ],
+                    [
+                        'upright_interpretation_th' => $card->upright_meaning_th,
+                        'upright_interpretation_en' => $card->upright_meaning_en,
+                        'reversed_interpretation_th' => $card->reversed_meaning_th,
+                        'reversed_interpretation_en' => $card->reversed_meaning_en,
+                    ]
+                );
+                $count++;
+            }
+        }
+
+        return redirect()
+            ->route('admin.tarot.interpretations.index')
+            ->with('success', "คัดลอกคำทำนายเริ่มต้นสำเร็จ ({$count} รายการ)");
     }
 }

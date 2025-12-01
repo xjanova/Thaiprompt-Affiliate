@@ -42,6 +42,27 @@ class TarotCard extends Model
     }
 
     /**
+     * ความสัมพันธ์กับคำทำนายตามหมวดหมู่
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function interpretations()
+    {
+        return $this->hasMany(TarotCardInterpretation::class, 'card_id');
+    }
+
+    /**
+     * ดึงคำทำนายสำหรับหมวดเฉพาะ
+     *
+     * @param int $categoryId ID หมวดหมู่
+     * @return TarotCardInterpretation|null
+     */
+    public function getInterpretationForCategory(int $categoryId): ?TarotCardInterpretation
+    {
+        return $this->interpretations()->where('category_id', $categoryId)->first();
+    }
+
+    /**
      * Get the meaning based on orientation and language
      */
     public function getMeaning(bool $isReversed = false, string $language = 'th'): string

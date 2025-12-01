@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\TarotReading;
 use App\Models\TarotReadingCard;
 use App\Models\TarotCard;
+use App\Models\TarotCardInterpretation;
 use App\Models\TarotReadingCategory;
 use App\Models\TarotSpreadType;
 
@@ -252,6 +253,7 @@ class TarotInterpretationService
         $reading->load(['category', 'spreadType', 'cards.card']);
 
         $categorySlug = $reading->category->slug ?? 'general';
+        $categoryId = $reading->category_id;
         $categoryContext = $this->categoryContexts[$categorySlug] ?? $this->categoryContexts['general'];
 
         // สร้างคำทำนายสำหรับแต่ละไพ่
@@ -259,7 +261,8 @@ class TarotInterpretationService
             $interpretation = $this->generateCardInterpretation(
                 $readingCard,
                 $categoryContext,
-                $reading->question
+                $reading->question,
+                $categoryId  // ส่ง categoryId เพื่อใช้ดึงคำทำนายที่กำหนดเอง
             );
 
             $readingCard->update(['interpretation' => $interpretation]);
@@ -277,15 +280,22 @@ class TarotInterpretationService
     /**
      * สร้างคำทำนายสำหรับไพ่แต่ละใบ
      *
+     * ลำดับการใช้คำทำนาย:
+     * 1. คำทำนายที่กำหนดเองจากฐานข้อมูล (TarotCardInterpretation)
+     * 2. ถ้าไม่มี ใช้คำทำนายพื้นฐานจากไพ่ (TarotCard)
+     * 3. ถ้าไม่มี ใช้คำทำนายที่สร้างอัตโนมัติ
+     *
      * @param TarotReadingCard $readingCard ไพ่ที่เลือก
      * @param array $categoryContext บริบทของหมวดหมู่
      * @param string|null $question คำถามของผู้ใช้
+     * @param int|null $categoryId ID ของหมวดหมู่
      * @return string คำทำนายละเอียด
      */
     protected function generateCardInterpretation(
         TarotReadingCard $readingCard,
         array $categoryContext,
-        ?string $question
+        ?string $question,
+        ?int $categoryId = null
     ): string {
         $card = $readingCard->card;
         $isReversed = $readingCard->is_reversed;
@@ -298,7 +308,20 @@ class TarotInterpretationService
             'focus' => 'พลังงานที่กำลังทำงานในชีวิตคุณ',
         ];
 
-        // ดึงความหมายของไพ่
+        // 1. ตรวจสอบคำทำนายที่กำหนดเองจากฐานข้อมูลก่อน
+        $customInterpretation = $this->getCustomInterpretation($card->id, $categoryId, $isReversed);
+        if (!empty($customInterpretation)) {
+            return $this->buildInterpretationWithCustom(
+                $customInterpretation,
+                $positionName,
+                $positionContext,
+                $card->name_th ?? $card->name_en,
+                $isReversed,
+                $categoryId
+            );
+        }
+
+        // 2. ดึงความหมายของไพ่จากตารางหลัก (TarotCard)
         $cardMeaning = $isReversed
             ? ($card->reversed_meaning_th ?? 'พลังงานที่ถูกปิดกั้นหรือต้องการความสนใจ')
             : ($card->upright_meaning_th ?? 'พลังงานที่ไหลลื่นและส่งเสริม');
@@ -308,7 +331,7 @@ class TarotInterpretationService
         $orientationText = $isReversed ? 'กลับหัว' : 'หัวตั้ง';
         $orientationEmoji = $isReversed ? '🔄' : '✨';
 
-        // สร้างคำทำนายแบบละเอียด
+        // 3. สร้างคำทำนายแบบละเอียดอัตโนมัติ
         $interpretation = $this->buildDetailedInterpretation(
             $cardName,
             $orientationText,
@@ -322,6 +345,84 @@ class TarotInterpretationService
         );
 
         return $interpretation;
+    }
+
+    /**
+     * ดึงคำทำนายที่กำหนดเองจากฐานข้อมูล
+     *
+     * @param int $cardId ID ของไพ่
+     * @param int|null $categoryId ID ของหมวดหมู่
+     * @param bool $isReversed ไพ่กลับหัวหรือไม่
+     * @return string|null คำทำนายที่กำหนดเอง หรือ null ถ้าไม่มี
+     */
+    protected function getCustomInterpretation(int $cardId, ?int $categoryId, bool $isReversed): ?string
+    {
+        if (!$categoryId) {
+            return null;
+        }
+
+        $customInterpretation = TarotCardInterpretation::findFor($cardId, $categoryId);
+
+        if (!$customInterpretation) {
+            return null;
+        }
+
+        // ดึงคำทำนายตามสถานะหงาย/กลับหัว
+        $interpretation = $isReversed
+            ? $customInterpretation->getReversedInterpretation('th')
+            : $customInterpretation->getUprightInterpretation('th');
+
+        return !empty($interpretation) ? $interpretation : null;
+    }
+
+    /**
+     * สร้างคำทำนายจากข้อมูลที่กำหนดเอง
+     *
+     * @param string $customInterpretation คำทำนายที่กำหนดเอง
+     * @param string $positionName ชื่อตำแหน่ง
+     * @param array $positionContext บริบทตำแหน่ง
+     * @param string $cardName ชื่อไพ่
+     * @param bool $isReversed ไพ่กลับหัวหรือไม่
+     * @param int|null $categoryId ID ของหมวดหมู่
+     * @return string
+     */
+    protected function buildInterpretationWithCustom(
+        string $customInterpretation,
+        string $positionName,
+        array $positionContext,
+        string $cardName,
+        bool $isReversed,
+        ?int $categoryId
+    ): string {
+        $lines = [];
+
+        // ส่วนความหมาย
+        $lines[] = "ความหมาย: {$customInterpretation}";
+
+        // ส่วนตำแหน่ง
+        $lines[] = "";
+        $lines[] = "ในตำแหน่ง \"{$positionName}\" - {$positionContext['meaning']}";
+
+        // คำแนะนำที่กำหนดเอง (ถ้ามี)
+        if ($categoryId) {
+            $customInterpretationModel = TarotCardInterpretation::where('card_id', function($query) use ($cardName) {
+                $query->select('id')
+                    ->from('tarot_cards')
+                    ->where('name_th', $cardName)
+                    ->orWhere('name_en', $cardName)
+                    ->limit(1);
+            })->where('category_id', $categoryId)->first();
+
+            if ($customInterpretationModel) {
+                $advice = $customInterpretationModel->getAdvice('th');
+                if (!empty($advice)) {
+                    $lines[] = "";
+                    $lines[] = "คำแนะนำ: {$advice}";
+                }
+            }
+        }
+
+        return implode("\n", $lines);
     }
 
     /**

@@ -1828,6 +1828,15 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'spreadTypesIndex'])->name('index');
     });
 
+    // Interpretations Management - จัดการคำทำนายตามหมวดหมู่
+    Route::prefix('interpretations')->name('interpretations.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'interpretationsIndex'])->name('index');
+        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\TarotManagementController::class, 'interpretationsEdit'])->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'interpretationsUpdate'])->name('update');
+        Route::post('/{id}/copy-defaults', [\App\Http\Controllers\Admin\TarotManagementController::class, 'interpretationsCopyDefaults'])->name('copy-defaults');
+        Route::post('/copy-all-defaults', [\App\Http\Controllers\Admin\TarotManagementController::class, 'interpretationsCopyAllDefaults'])->name('copy-all-defaults');
+    });
+
     // Readings Management
     Route::prefix('readings')->name('readings.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'readingsIndex'])->name('index');
