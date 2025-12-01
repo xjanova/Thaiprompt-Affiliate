@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.269.0] - 2025-12-01
+
+### ✨ Features
+- feat: เพิ่มส่วนแสดงข้อมูลบัตรประชาชนในหน้าโปรไฟล์ (read-only) (440c9fd4)
+### 🐛 Bug Fixes
+- fix: แก้ไขระบบ OCR บัตรประชาชนให้ทำงานได้จริง (677a76f2)
+### 🔧 Other Changes
+- Merge pull request #1863 from xjanova/claude/fix-id-card-ocr-01Wn1Nhhv9hj9kKPw1jsAZJY (b273cfe2)
+
 ## [v3.268.0] - 2025-12-01
 
 ### ✨ Features
