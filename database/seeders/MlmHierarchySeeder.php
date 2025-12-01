@@ -82,26 +82,39 @@ class MlmHierarchySeeder extends Seeder
     /**
      * ลบข้อมูล demo เดิม
      *
+     * ⚠️ IMPORTANT: MlmMember ใช้ SoftDeletes
+     * ต้องใช้ withTrashed() เพื่อหา records ที่ถูก soft-delete
+     * และใช้ forceDelete() เพื่อลบถาวร
+     * เพราะ unique constraint ยังคงมีผลกับ soft-deleted records
+     *
      * @return void
      */
     private function cleanupOldData(): void
     {
         $this->command->info('🧹 กำลังลบข้อมูล demo เดิม...');
 
-        // ลบ MLM Members ที่มี member_code เริ่มต้นด้วย MLM-DEMO-
-        $deletedCount = MlmMember::where('member_code', 'LIKE', 'MLM-DEMO-%')->count();
+        // ลบ MLM Members ที่มี member_code เริ่มต้นด้วย MLM-DEMO- (รวม soft-deleted)
+        $deletedCount = MlmMember::withTrashed()
+            ->where('member_code', 'LIKE', 'MLM-DEMO-%')
+            ->count();
 
         if ($deletedCount > 0) {
-            // ลบ users ที่เกี่ยวข้อง
-            $memberUserIds = MlmMember::where('member_code', 'LIKE', 'MLM-DEMO-%')
+            // ดึง user_ids ก่อนลบ (รวม soft-deleted)
+            $memberUserIds = MlmMember::withTrashed()
+                ->where('member_code', 'LIKE', 'MLM-DEMO-%')
                 ->pluck('user_id');
 
-            MlmMember::where('member_code', 'LIKE', 'MLM-DEMO-%')->delete();
+            // ใช้ forceDelete() เพื่อลบถาวร (ไม่ใช่ soft delete)
+            MlmMember::withTrashed()
+                ->where('member_code', 'LIKE', 'MLM-DEMO-%')
+                ->forceDelete();
+
+            // ลบ demo users ที่เกี่ยวข้อง (User ไม่มี SoftDeletes)
             User::whereIn('id', $memberUserIds)
                 ->where('email', 'LIKE', 'mlm-member-%@example.com')
                 ->delete();
 
-            $this->command->info("   ลบ {$deletedCount} สมาชิก MLM เดิม");
+            $this->command->info("   ลบ {$deletedCount} สมาชิก MLM เดิม (force delete)");
         } else {
             $this->command->info('   ไม่มีข้อมูลเดิมที่ต้องลบ');
         }
