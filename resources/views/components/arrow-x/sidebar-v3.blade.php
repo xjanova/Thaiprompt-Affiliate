@@ -1520,6 +1520,80 @@
             </div>
         </div>
 
+        {{-- Games & Entertainment 🎮 ไพ่ทาโร่ต์และเกม --}}
+        <div class="space-y-1"
+             x-data="{ gamesOpen: {{ request()->routeIs('admin.tarot.*') ? 'true' : 'false' }} }">
+            {{-- Games Header Button --}}
+            <button @click="gamesOpen = !gamesOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tarot.*') ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-dice w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">🎴 เกม</span>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="ml-auto px-1.5 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold rounded-full shadow-lg">NEW</span>
+                <i x-show="$store.sidebar.shouldExpand && gamesOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !gamesOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Games Submenu --}}
+            <div x-show="gamesOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Tarot Dashboard --}}
+                <a href="{{ route('admin.tarot.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tarot.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
+                </a>
+
+                {{-- Tarot Cards --}}
+                <a href="{{ route('admin.tarot.cards.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tarot.cards.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-images w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ไพ่ทาโร่ต์</span>
+                </a>
+
+                {{-- Card Backs --}}
+                <a href="{{ route('admin.tarot.card-backs.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tarot.card-backs.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-layer-group w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">หลังไพ่</span>
+                </a>
+
+                {{-- Interpretations --}}
+                <a href="{{ route('admin.tarot.interpretations.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tarot.interpretations.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-book-open w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">คำทำนาย</span>
+                </a>
+
+                {{-- Categories --}}
+                <a href="{{ route('admin.tarot.categories.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tarot.categories.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tags w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">หมวดหมู่</span>
+                </a>
+
+                {{-- Readings History --}}
+                <a href="{{ route('admin.tarot.readings.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tarot.readings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-history w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ประวัติการดู</span>
+                </a>
+
+                {{-- Tarot Settings --}}
+                <a href="{{ route('admin.tarot.settings.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tarot.settings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-cog w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
+                </a>
+            </div>
+        </div>
+
         {{-- Divider --}}
         <div x-show="$store.sidebar.shouldExpand" x-transition class="border-t border-white/30 my-4"></div>
 
