@@ -213,42 +213,55 @@ class LineSignupReward extends Model
      */
     public static function getAvailableRewards(?int $packageId = null, ?bool $hasReferrer = null): \Illuminate\Database\Eloquent\Collection
     {
-        return static::query()
-            ->where('is_active', true)
-            ->where(function ($query) {
-                $query->where('is_time_limited', false)
-                    ->orWhere(function ($q) {
-                        $q->where('is_time_limited', true)
-                            ->where(function ($q2) {
-                                $q2->whereNull('start_date')
-                                    ->orWhere('start_date', '<=', now());
-                            })
-                            ->where(function ($q2) {
-                                $q2->whereNull('end_date')
-                                    ->orWhere('end_date', '>=', now());
-                            });
-                    });
-            })
-            ->where(function ($query) {
-                $query->whereNull('max_claims')
-                    ->orWhereRaw('total_claimed < max_claims');
-            })
-            ->orderBy('display_order')
-            ->orderBy('created_at')
-            ->get()
-            ->filter(function ($reward) use ($packageId, $hasReferrer) {
-                // ตรวจสอบเงื่อนไขแพคเกจ
-                if (!$reward->isValidForPackage($packageId)) {
-                    return false;
-                }
+        try {
+            // ⚠️ ตรวจสอบว่าตารางมีอยู่หรือไม่ (ป้องกัน error เมื่อยังไม่ได้ run migration)
+            if (!\Illuminate\Support\Facades\Schema::hasTable('line_signup_rewards')) {
+                \Illuminate\Support\Facades\Log::warning('LineSignupReward: ตาราง line_signup_rewards ไม่มีอยู่ - กรุณา run migration');
+                return new \Illuminate\Database\Eloquent\Collection();
+            }
 
-                // ตรวจสอบเงื่อนไขผู้แนะนำ (ถ้าระบุ)
-                if ($hasReferrer !== null && !$reward->isValidForReferrer($hasReferrer)) {
-                    return false;
-                }
+            return static::query()
+                ->where('is_active', true)
+                ->where(function ($query) {
+                    $query->where('is_time_limited', false)
+                        ->orWhere(function ($q) {
+                            $q->where('is_time_limited', true)
+                                ->where(function ($q2) {
+                                    $q2->whereNull('start_date')
+                                        ->orWhere('start_date', '<=', now());
+                                })
+                                ->where(function ($q2) {
+                                    $q2->whereNull('end_date')
+                                        ->orWhere('end_date', '>=', now());
+                                });
+                        });
+                })
+                ->where(function ($query) {
+                    $query->whereNull('max_claims')
+                        ->orWhereRaw('total_claimed < max_claims');
+                })
+                ->orderBy('display_order')
+                ->orderBy('created_at')
+                ->get()
+                ->filter(function ($reward) use ($packageId, $hasReferrer) {
+                    // ตรวจสอบเงื่อนไขแพคเกจ
+                    if (!$reward->isValidForPackage($packageId)) {
+                        return false;
+                    }
 
-                return true;
-            });
+                    // ตรวจสอบเงื่อนไขผู้แนะนำ (ถ้าระบุ)
+                    if ($hasReferrer !== null && !$reward->isValidForReferrer($hasReferrer)) {
+                        return false;
+                    }
+
+                    return true;
+                });
+        } catch (\Exception $e) {
+            // ⚠️ ถ้าเกิด error (เช่น ตารางไม่มี) ให้ return collection ว่าง
+            // และ log error เพื่อแจ้งเตือน admin
+            \Illuminate\Support\Facades\Log::error('LineSignupReward::getAvailableRewards error: ' . $e->getMessage());
+            return new \Illuminate\Database\Eloquent\Collection();
+        }
     }
 
     /**

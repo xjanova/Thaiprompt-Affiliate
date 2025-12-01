@@ -620,6 +620,25 @@ class DashboardController extends Controller
         // Remove password fields from validated array if not changing password
         unset($validated['current_password'], $validated['new_password']);
 
+        // ⚠️ SECURITY: ป้องกันไม่ให้แก้ไข ID Card fields ผ่าน profile update
+        // ID Card fields สามารถแก้ไขได้โดย Admin เท่านั้น (ผ่าน Support Ticket)
+        $protectedIdCardFields = [
+            'id_card_number',
+            'thai_first_name',
+            'thai_last_name',
+            'english_first_name',
+            'english_last_name',
+            'id_card_birth_date',
+            'id_card_religion',
+            'id_card_address',
+            'id_card_issue_date',
+            'id_card_expiry_date',
+        ];
+
+        foreach ($protectedIdCardFields as $field) {
+            unset($validated[$field]);
+        }
+
         $user->update($validated);
 
         return redirect()->route('user.profile')

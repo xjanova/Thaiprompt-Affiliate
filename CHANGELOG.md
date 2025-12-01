@@ -2,6 +2,146 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.270.0] - 2025-12-01
+
+### ✨ Features
+- Merge pull request #1864 from xjanova/claude/superadmin-default-leader-01VHkTrVwhHPQxkGMvETc3DU (ed0e3ae0)
+- feat: เพิ่ม SuperAdminMlmSeeder ให้ SuperAdmin เป็น Root Leader ของระบบ MLM (17d26180)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.269.0] - 2025-12-01
+
+### ✨ Features
+- feat: เพิ่มส่วนแสดงข้อมูลบัตรประชาชนในหน้าโปรไฟล์ (read-only) (440c9fd4)
+### 🐛 Bug Fixes
+- fix: แก้ไขระบบ OCR บัตรประชาชนให้ทำงานได้จริง (677a76f2)
+### 🔧 Other Changes
+- Merge pull request #1863 from xjanova/claude/fix-id-card-ocr-01Wn1Nhhv9hj9kKPw1jsAZJY (b273cfe2)
+
+## [v3.268.0] - 2025-12-01
+
+### ✨ Features
+- feat: ปรับปรุง Step 17 Service Restart ให้แสดงสถานะชัดเจน (d6315a52)
+### 🐛 Bug Fixes
+- fix: ลบ local keyword ที่ใช้นอก function ใน deploy.sh (5c5b23ed)
+### 🔧 Other Changes
+- Merge pull request #1862 from xjanova/claude/fix-root-route-method-017ankfjHTSXTi5389J7ZJCG (2643ac16)
+
+## [v3.267.47] - 2025-12-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไข step numbering ใน deploy.sh ให้ตรงกับจริง (21 steps) (eb1e52b6)
+- fix: เพิ่ม immediate cache clearing หลัง pull code ใน deploy.sh (1901ca9c)
+### 🔧 Other Changes
+- Merge pull request #1861 from xjanova/claude/fix-root-route-method-017ankfjHTSXTi5389J7ZJCG (915029f0)
+- refactor: ปรับปรุง deploy.sh v4.0 - เพิ่ม Visual Styling ที่ดีขึ้น (26aca7c5)
+- refactor: ปรับปรุง deploy.sh แก้ bugs และเพิ่มความสามารถใหม่ (4cf4c210)
+
+## [v3.267.46] - 2025-12-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1860 from xjanova/claude/mlm-hierarchy-seeder-01PdxJ7MXzpAwZ55Yp5uj4st (ff6c4a52)
+- fix: ใช้ forceDelete() และ withTrashed() ใน MlmHierarchySeeder cleanup (f69554b6)
+### 🔧 Other Changes
+
+
+## [v3.267.45] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1859 from xjanova/claude/fix-root-route-method-017ankfjHTSXTi5389J7ZJCG (087f1622)
+- fix: แก้ return type ใน LineSignupReward::getAvailableRewards() (80b78881)
+### 🔧 Other Changes
+
+
+## [v3.267.44] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1858 from xjanova/claude/fix-root-route-method-017ankfjHTSXTi5389J7ZJCG (d832e111)
+- fix: เพิ่มคอลัมน์ที่ขาดหายไปใน games table (14c7cbf9)
+### 🔧 Other Changes
+
+
+## [v3.267.43] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1857 from xjanova/claude/fix-root-route-method-017ankfjHTSXTi5389J7ZJCG (27706c3d)
+- fix: เพิ่ม error handling ใน LineSignupReward::getAvailableRewards() (585cb64a)
+### 🔧 Other Changes
+
+
+## [v3.267.42] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1856 from xjanova/claude/fix-root-route-method-017ankfjHTSXTi5389J7ZJCG (995e2f01)
+- fix: แก้ไข root route ให้รองรับ GET method (b194a6d5)
+### 🔧 Other Changes
+
+
+## [v3.267.41] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1855 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (40563538)
+- fix: แก้ไข NFCCardSeeder - auto_topup columns ไม่สามารถเป็น null (97276bfc)
+### 🔧 Other Changes
+
+
+## [v3.267.40] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1854 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (f2a0b996)
+- fix: เพิ่มการตรวจสอบตารางใน LineSignupRewardSeeder (88b4f173)
+### 🔧 Other Changes
+
+
+## [v3.267.39] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1853 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (e5d9e386)
+- fix: แก้ไข migration line_signup_rewards ให้ drop schema เก่าและสร้างใหม่ (30600034)
+### 🔧 Other Changes
+
+
+## [v3.267.38] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1852 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (4c31621e)
+- fix: ใช้ Route::any สำหรับ root route เพื่อแก้ปัญหา MethodNotAllowedHttpException (dc92dbd8)
+### 🔧 Other Changes
+
+
+## [v3.267.37] - 2025-11-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1851 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (f2233e4a)
+- fix: แก้ไข MethodNotAllowedHttpException สำหรับ root route (8836c93b)
+### 🔧 Other Changes
+
+
 ## [v3.267.36] - 2025-11-30
 
 ### ✨ Features
