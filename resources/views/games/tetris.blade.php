@@ -49,52 +49,154 @@
         .orb-1 {
             width: 400px;
             height: 400px;
-            background: radial-gradient(circle, #6366f1 0%, transparent 70%);
+            background: radial-gradient(circle, var(--orb-color-1, #6366f1) 0%, transparent 70%);
             top: -10%;
             left: -5%;
             animation-delay: 0s;
             animation-duration: 25s;
+            transition: background 1s ease;
         }
 
         .orb-2 {
             width: 350px;
             height: 350px;
-            background: radial-gradient(circle, #a855f7 0%, transparent 70%);
+            background: radial-gradient(circle, var(--orb-color-2, #a855f7) 0%, transparent 70%);
             top: 60%;
             right: -10%;
             animation-delay: -5s;
             animation-duration: 20s;
+            transition: background 1s ease;
         }
 
         .orb-3 {
             width: 300px;
             height: 300px;
-            background: radial-gradient(circle, #ec4899 0%, transparent 70%);
+            background: radial-gradient(circle, var(--orb-color-3, #ec4899) 0%, transparent 70%);
             bottom: -5%;
             left: 30%;
             animation-delay: -10s;
             animation-duration: 22s;
+            transition: background 1s ease;
         }
 
         .orb-4 {
             width: 250px;
             height: 250px;
-            background: radial-gradient(circle, #06b6d4 0%, transparent 70%);
+            background: radial-gradient(circle, var(--orb-color-4, #06b6d4) 0%, transparent 70%);
             top: 20%;
             right: 20%;
             animation-delay: -7s;
             animation-duration: 18s;
+            transition: background 1s ease;
         }
 
         .orb-5 {
             width: 200px;
             height: 200px;
-            background: radial-gradient(circle, #10b981 0%, transparent 70%);
+            background: radial-gradient(circle, var(--orb-color-5, #10b981) 0%, transparent 70%);
             top: 40%;
             left: 10%;
             animation-delay: -3s;
             animation-duration: 23s;
+            transition: background 1s ease;
         }
+
+        /* Level Themes - สีพื้นหลังตามระดับ */
+        body.theme-calm {
+            --orb-color-1: #6366f1;
+            --orb-color-2: #a855f7;
+            --orb-color-3: #818cf8;
+            --orb-color-4: #06b6d4;
+            --orb-color-5: #10b981;
+        }
+
+        body.theme-warm {
+            --orb-color-1: #f59e0b;
+            --orb-color-2: #f97316;
+            --orb-color-3: #eab308;
+            --orb-color-4: #facc15;
+            --orb-color-5: #fb923c;
+        }
+
+        body.theme-danger {
+            --orb-color-1: #ef4444;
+            --orb-color-2: #f43f5e;
+            --orb-color-3: #ec4899;
+            --orb-color-4: #dc2626;
+            --orb-color-5: #f87171;
+        }
+
+        body.theme-extreme {
+            --orb-color-1: #7f1d1d;
+            --orb-color-2: #991b1b;
+            --orb-color-3: #b91c1c;
+            --orb-color-4: #450a0a;
+            --orb-color-5: #dc2626;
+        }
+
+        body.theme-nightmare {
+            --orb-color-1: #18181b;
+            --orb-color-2: #7c3aed;
+            --orb-color-3: #dc2626;
+            --orb-color-4: #4c1d95;
+            --orb-color-5: #6b21a8;
+        }
+
+        /* Obstacle block style */
+        .obstacle-warning {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(0deg, rgba(255, 0, 0, 0.3), transparent);
+            pointer-events: none;
+            animation: warningPulse 0.5s ease-in-out;
+            border-radius: 0 0 10px 10px;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* Level indicator */
+        .level-indicator {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(30, 30, 30, 0.9));
+            padding: 10px 30px;
+            border-radius: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .level-badge {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .difficulty-label {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .diff-easy { background: #10b981; color: white; }
+        .diff-normal { background: #3b82f6; color: white; }
+        .diff-hard { background: #f59e0b; color: white; }
+        .diff-expert { background: #ef4444; color: white; }
+        .diff-nightmare { background: linear-gradient(135deg, #7c3aed, #dc2626); color: white; }
 
         @keyframes floatOrb {
             0%, 100% {
@@ -835,8 +937,14 @@
     </style>
 </head>
 <body>
+    <!-- Level Indicator -->
+    <div class="level-indicator" id="level-indicator">
+        <span class="level-badge">LV <span id="level-display">1</span></span>
+        <span class="difficulty-label diff-easy" id="difficulty-label">EASY</span>
+    </div>
+
     <!-- Floating Orbs Background -->
-    <div class="orbs-container">
+    <div class="orbs-container" id="orbs-container">
         <div class="orb orb-1"></div>
         <div class="orb orb-2"></div>
         <div class="orb orb-3"></div>
@@ -953,12 +1061,20 @@
                     <span class="value" id="final-level">1</span>
                 </div>
                 <div class="game-over-stat">
+                    <span class="label">ความยาก:</span>
+                    <span class="value" id="final-difficulty">EASY</span>
+                </div>
+                <div class="game-over-stat">
                     <span class="label">เส้นทั้งหมด:</span>
                     <span class="value" id="final-lines">0</span>
                 </div>
                 <div class="game-over-stat">
                     <span class="label">Combo สูงสุด:</span>
                     <span class="value" id="final-combo">0</span>
+                </div>
+                <div class="game-over-stat">
+                    <span class="label">แถวขยะที่รอด:</span>
+                    <span class="value" id="final-garbage">0</span>
                 </div>
             </div>
             <div id="new-high-score-message" class="new-high-score" style="display: none;">
@@ -973,7 +1089,7 @@
                 <div id="leaderboard-list"></div>
             </div>
             <button class="btn btn-primary" onclick="restartGame()">เล่นอีกครั้ง</button>
-            <button class="btn" onclick="location.href='{{ route('games.index') }}'">กลับหน้าเกม</button>
+            <button class="btn" onclick="location.href='{{ route('games.index') }}'">กลับ Game Arcade</button>
         </div>
     </div>
 
@@ -1226,6 +1342,28 @@
         let highScore = 0;
         let leaderboard = [];
 
+        // ============================================
+        // 🚧 OBSTACLE SYSTEM
+        // ============================================
+        let obstacleCounter = 0;
+        let obstacleInterval = 30000; // 30 วินาทีเริ่มต้น
+        let garbageRows = 0;
+        let currentTheme = 'calm';
+
+        // ระดับความยาก
+        const DIFFICULTY_LEVELS = {
+            1: { name: 'EASY', theme: 'calm', class: 'diff-easy', obstacleChance: 0, garbageHoles: 3 },
+            5: { name: 'NORMAL', theme: 'calm', class: 'diff-normal', obstacleChance: 0.1, garbageHoles: 2 },
+            10: { name: 'HARD', theme: 'warm', class: 'diff-hard', obstacleChance: 0.2, garbageHoles: 2 },
+            15: { name: 'EXPERT', theme: 'danger', class: 'diff-expert', obstacleChance: 0.3, garbageHoles: 1 },
+            20: { name: 'NIGHTMARE', theme: 'extreme', class: 'diff-nightmare', obstacleChance: 0.4, garbageHoles: 1 },
+            25: { name: 'HELL', theme: 'nightmare', class: 'diff-nightmare', obstacleChance: 0.5, garbageHoles: 1 }
+        };
+
+        // สีของ obstacle blocks
+        const OBSTACLE_COLOR = '#4a4a4a';
+        const OBSTACLE_HIGHLIGHT = '#666666';
+
         // Sound Manager
         const soundManager = new SoundManager();
 
@@ -1245,6 +1383,9 @@
             document.getElementById('high-score').textContent = highScore;
             loadLeaderboard();
             renderLiveLeaderboard();
+
+            // ตั้งค่า theme เริ่มต้น
+            updateTheme(1);
 
             // สร้างบอร์ดเปล่า
             board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
@@ -1298,6 +1439,111 @@
             localStorage.setItem('tetris-leaderboard', JSON.stringify(leaderboard));
         }
 
+        // ============================================
+        // 🎨 THEME & DIFFICULTY SYSTEM
+        // ============================================
+        function getDifficultyForLevel(lvl) {
+            // หาระดับความยากที่เหมาะกับเลเวลปัจจุบัน
+            let difficulty = DIFFICULTY_LEVELS[1];
+            for (const key of Object.keys(DIFFICULTY_LEVELS).map(Number).sort((a, b) => b - a)) {
+                if (lvl >= key) {
+                    difficulty = DIFFICULTY_LEVELS[key];
+                    break;
+                }
+            }
+            return difficulty;
+        }
+
+        function updateTheme(lvl) {
+            const difficulty = getDifficultyForLevel(lvl);
+
+            // อัพเดท theme ของ body
+            document.body.classList.remove('theme-calm', 'theme-warm', 'theme-danger', 'theme-extreme', 'theme-nightmare');
+            document.body.classList.add('theme-' + difficulty.theme);
+            currentTheme = difficulty.theme;
+
+            // อัพเดท level indicator
+            document.getElementById('level-display').textContent = lvl;
+            const diffLabel = document.getElementById('difficulty-label');
+            diffLabel.textContent = difficulty.name;
+            diffLabel.className = 'difficulty-label ' + difficulty.class;
+
+            // ปรับ obstacle interval ตามเลเวล (ยิ่งสูงยิ่งถี่)
+            obstacleInterval = Math.max(5000, 30000 - (lvl - 1) * 1000);
+        }
+
+        // ============================================
+        // 🚧 OBSTACLE FUNCTIONS
+        // ============================================
+        function addGarbageRows(count = 1) {
+            const difficulty = getDifficultyForLevel(level);
+            const holes = difficulty.garbageHoles;
+
+            soundManager.playTone(100, 0.3, 'sawtooth', 0.4);
+            shakeScreen();
+
+            for (let i = 0; i < count; i++) {
+                // สร้างแถวขยะพร้อมช่องว่าง
+                const garbageRow = Array(COLS).fill(OBSTACLE_COLOR);
+
+                // สร้างช่องว่างแบบสุ่ม
+                const holePositions = [];
+                while (holePositions.length < holes) {
+                    const pos = Math.floor(Math.random() * COLS);
+                    if (!holePositions.includes(pos)) {
+                        holePositions.push(pos);
+                        garbageRow[pos] = 0;
+                    }
+                }
+
+                // เลื่อนบอร์ดขึ้น
+                board.shift();
+                board.push(garbageRow);
+            }
+
+            // แสดง warning effect
+            showGarbageWarning();
+            garbageRows += count;
+        }
+
+        function showGarbageWarning() {
+            const gameBoard = document.querySelector('.game-board');
+            const warning = document.createElement('div');
+            warning.className = 'obstacle-warning';
+            gameBoard.appendChild(warning);
+            setTimeout(() => warning.remove(), 500);
+        }
+
+        function checkForRandomObstacles() {
+            const difficulty = getDifficultyForLevel(level);
+
+            // โอกาสเกิด obstacle หลังวางชิ้นส่วน
+            if (Math.random() < difficulty.obstacleChance) {
+                // หน่วงเวลาสักครู่ก่อนเพิ่มขยะ
+                setTimeout(() => {
+                    if (!gameOver && !isPaused) {
+                        const rowsToAdd = level >= 20 ? 2 : 1;
+                        addGarbageRows(rowsToAdd);
+                    }
+                }, 300);
+            }
+        }
+
+        function spawnRandomBlock() {
+            // เพิ่ม block แบบสุ่มบนบอร์ด (สำหรับเลเวลสูง)
+            if (level >= 15) {
+                const chance = 0.05 + (level - 15) * 0.01;
+                if (Math.random() < chance) {
+                    const col = Math.floor(Math.random() * COLS);
+                    const row = Math.floor(Math.random() * 5) + ROWS - 6; // ล่างสุด 6 แถว
+
+                    if (board[row][col] === 0) {
+                        board[row][col] = OBSTACLE_COLOR;
+                    }
+                }
+            }
+        }
+
         // แสดง Live Leaderboard (ด้านข้าง)
         function renderLiveLeaderboard() {
             const list = document.getElementById('live-leaderboard-list');
@@ -1321,7 +1567,7 @@
                     <div class="live-lb-rank">${medal}</div>
                     <div class="live-lb-info">
                         <div class="live-lb-name">${entry.name || 'ผู้เล่น'}</div>
-                        <div class="live-lb-date">${entry.date || ''}</div>
+                        <div class="live-lb-date">LV.${entry.level || 1} | ${entry.date || ''}</div>
                     </div>
                     <div class="live-lb-score">${entry.score.toLocaleString()}</div>
                 `;
@@ -1361,7 +1607,7 @@
                 }
                 div.innerHTML = `
                     <span class="leaderboard-rank">#${index + 1}</span>
-                    <span class="leaderboard-name">${entry.name}</span>
+                    <span class="leaderboard-name">${entry.name} <small style="color:#888;">LV.${entry.level || 1}</small></span>
                     <span class="leaderboard-score">${entry.score.toLocaleString()}</span>
                 `;
                 list.appendChild(div);
@@ -1557,8 +1803,9 @@
                 const newLevel = Math.floor(lines / 10) + 1;
                 if (newLevel > level) {
                     level = newLevel;
-                    dropInterval = Math.max(100, 1000 - (level - 1) * 80);
+                    dropInterval = Math.max(50, 1000 - (level - 1) * 50); // เร็วขึ้นตามเลเวล
                     soundManager.playLevelUp();
+                    updateTheme(level); // อัพเดทธีมตามเลเวล
                 }
 
                 // Visual effects
@@ -1582,6 +1829,11 @@
                 soundManager.playLock();
                 mergePiece();
                 clearLines();
+
+                // เช็คโอกาสเกิดอุปสรรคแบบสุ่ม (ตามระดับความยาก)
+                checkForRandomObstacles();
+                spawnRandomBlock();
+
                 spawnPiece();
                 return false;
             }
@@ -1604,6 +1856,11 @@
 
             mergePiece();
             clearLines();
+
+            // เช็คโอกาสเกิดอุปสรรคแบบสุ่ม
+            checkForRandomObstacles();
+            spawnRandomBlock();
+
             spawnPiece();
         }
 
@@ -1912,8 +2169,10 @@
 
             document.getElementById('final-score').textContent = score.toLocaleString();
             document.getElementById('final-level').textContent = level;
+            document.getElementById('final-difficulty').textContent = getDifficultyForLevel(level).name;
             document.getElementById('final-lines').textContent = lines;
             document.getElementById('final-combo').textContent = maxCombo;
+            document.getElementById('final-garbage').textContent = garbageRows;
 
             // Check for new high score
             const isNewHighScore = score > parseInt(localStorage.getItem('tetris-high-score') || 0);
@@ -1956,6 +2215,13 @@
             dropInterval = 1000;
             holdPiece = null;
             canHold = true;
+
+            // Reset obstacle counters
+            obstacleCounter = 0;
+            garbageRows = 0;
+
+            // Reset theme to initial
+            updateTheme(1);
 
             // Hide overlays
             document.getElementById('game-over-overlay').style.display = 'none';
