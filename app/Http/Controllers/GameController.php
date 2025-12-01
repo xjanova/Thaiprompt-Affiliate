@@ -46,6 +46,10 @@ class GameController extends Controller
             return $this->showSnakeIo($game);
         }
 
+        if ($slug === 'tetris') {
+            return $this->showTetris($game);
+        }
+
         // Space Shooter or other games
         return $this->showSpaceShooter($game);
     }
@@ -60,6 +64,19 @@ class GameController extends Controller
             ->get();
 
         return view('games.snake-io', compact('game', 'leaderboard'));
+    }
+
+    /**
+     * แสดงหน้าเกม Tetris
+     *
+     * @param Game $game
+     * @return \Illuminate\View\View
+     */
+    private function showTetris($game)
+    {
+        // Tetris ใช้ localStorage สำหรับ leaderboard
+        // ไม่ต้องดึงจาก database
+        return view('games.tetris', compact('game'));
     }
 
     private function showSpaceShooter($game)

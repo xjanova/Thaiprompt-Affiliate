@@ -62,6 +62,32 @@ class GameSeeder extends Seeder
                 'is_active' => true,
                 'card_style' => 'neon',
             ],
+            [
+                'slug' => 'tetris',
+                'name' => 'Tetris',
+                'title' => 'Tetris',
+                'title_en' => 'Tetris',
+                'description' => 'เกมเตตริสคลาสสิค' . "\n" . 'พร้อมเสียงและบันทึกคะแนน!',
+                'description_en' => 'Classic Tetris game' . "\n" . 'With sound and leaderboard!',
+                'icon' => '🎮',
+                'url' => '/games/tetris',
+                'thumbnail' => null,
+                'category' => 'puzzle',
+                'primary_color' => '#a855f7',
+                'secondary_color' => '#6366f1',
+                'glow_color' => 'rgba(168, 85, 247, 0.8)',
+                'order' => 3,
+                'is_active' => true,
+                'requires_auth' => false,
+                'min_level_required' => 1,
+                'card_style' => 'gradient',
+                'settings' => json_encode([
+                    'has_sound' => true,
+                    'has_leaderboard' => true,
+                    'has_hold' => true,
+                    'has_combo' => true,
+                ]),
+            ],
         ];
 
         foreach ($games as $gameData) {
