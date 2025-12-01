@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.295.0] - 2025-12-01
+
+### ✨ Features
+- Merge pull request #1896 from xjanova/claude/community-forum-system-01JpydUpxhwA2btd4rt5SeSH (f5e3cc73)
+- feat: เพิ่มระบบ Community Forum พร้อมระบบ Trophy (284e88f9)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.294.0] - 2025-12-01
 
 ### ✨ Features
