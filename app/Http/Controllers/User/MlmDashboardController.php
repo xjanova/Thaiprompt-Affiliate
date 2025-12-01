@@ -115,7 +115,9 @@ class MlmDashboardController extends Controller
                 ->with('error', 'You are not enrolled in any MLM plan yet.');
         }
 
-        $referralUrl = route('register', ['ref' => $member->member_code]);
+        // ใช้ LINE signup URL แทน register URL ปกติ
+        // เมื่อสแกน QR Code จะพาไปเพิ่มเพื่อน LINE OA และสมัครผ่าน Bot
+        $referralUrl = route('line.signup.invite', ['memberCode' => $member->member_code]);
 
         return view('user.mlm.referral', compact('member', 'referralUrl'));
     }
@@ -176,7 +178,9 @@ class MlmDashboardController extends Controller
         $user = Auth::user();
         $member = $user->mlmMembers()->where('member_code', $memberCode)->firstOrFail();
 
-        $referralUrl = route('register', ['ref' => $member->member_code]);
+        // ใช้ LINE signup URL แทน register URL ปกติ
+        // เมื่อสแกน QR Code จะพาไปเพิ่มเพื่อน LINE OA และสมัครผ่าน Bot
+        $referralUrl = route('line.signup.invite', ['memberCode' => $member->member_code]);
 
         return view('user.mlm.referral-link', compact('member', 'referralUrl'));
     }
