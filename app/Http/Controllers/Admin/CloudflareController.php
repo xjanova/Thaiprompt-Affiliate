@@ -562,11 +562,56 @@ class CloudflareController extends Controller
      */
     public function settings(): View
     {
+        // ดึง settings จาก database
+        $storedSettings = CloudflareService::getStoredSettings();
+
         return view('admin.cloudflare.settings', [
             'pageTitle' => 'Cloudflare Settings',
             'isConfigured' => $this->cloudflare->isConfigured(),
-            'zoneId' => config('services.cloudflare.zone_id'),
-            'hasApiToken' => !empty(config('services.cloudflare.api_token')),
+            'storedZoneId' => $storedSettings['zone_id'] ?? '',
+            'storedApiToken' => $storedSettings['api_token'] ?? '',
+            'configZoneId' => config('services.cloudflare.zone_id'),
+            'hasConfigApiToken' => !empty(config('services.cloudflare.api_token')),
+        ]);
+    }
+
+    /**
+     * บันทึกการตั้งค่า Cloudflare
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function saveSettings(Request $request): JsonResponse
+    {
+        $request->validate([
+            'zone_id' => 'required|string|min:32|max:32',
+            'api_token' => 'required|string|min:40',
+        ], [
+            'zone_id.required' => 'กรุณาระบุ Zone ID',
+            'zone_id.min' => 'Zone ID ต้องมี 32 ตัวอักษร',
+            'zone_id.max' => 'Zone ID ต้องมี 32 ตัวอักษร',
+            'api_token.required' => 'กรุณาระบุ API Token',
+            'api_token.min' => 'API Token สั้นเกินไป',
+        ]);
+
+        // บันทึกลง database
+        $result = CloudflareService::saveSettings(
+            $request->input('zone_id'),
+            $request->input('api_token')
+        );
+
+        if (!$result['success']) {
+            return response()->json($result, 400);
+        }
+
+        // ทดสอบการเชื่อมต่อทันที
+        $cloudflare = new CloudflareService();
+        $connectionTest = $cloudflare->testConnection();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'บันทึกการตั้งค่าสำเร็จ',
+            'connection_test' => $connectionTest,
         ]);
     }
 
@@ -649,5 +694,134 @@ class CloudflareController extends Controller
         $result = $this->cloudflare->getAllSettings();
 
         return response()->json($result);
+    }
+
+    /**
+     * ทดสอบการเชื่อมต่อ Cloudflare API
+     *
+     * @return JsonResponse
+     */
+    public function testConnection(): JsonResponse
+    {
+        $result = $this->cloudflare->testConnection();
+
+        return response()->json($result);
+    }
+
+    // ========================================
+    // AUTO UNDER ATTACK MODE
+    // ========================================
+
+    /**
+     * หน้า Auto Under Attack Mode Settings
+     *
+     * @return View
+     */
+    public function autoUnderAttack(): View
+    {
+        $settings = $this->cloudflare->getAutoUnderAttackSettings();
+        $status = $this->cloudflare->getUnderAttackStatus();
+        $checkResult = $this->cloudflare->checkAutoUnderAttackStatus();
+
+        return view('admin.cloudflare.auto-under-attack', [
+            'pageTitle' => 'Auto Under Attack Mode',
+            'isConfigured' => $this->cloudflare->isConfigured(),
+            'settings' => $settings,
+            'status' => $status,
+            'checkResult' => $checkResult,
+        ]);
+    }
+
+    /**
+     * บันทึกการตั้งค่า Auto Under Attack Mode
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function saveAutoUnderAttackSettings(Request $request): JsonResponse
+    {
+        $request->validate([
+            'enabled' => 'required|boolean',
+            'threshold' => 'required|integer|min:10|max:1000',
+            'time_window' => 'required|integer|min:1|max:60',
+            'auto_disable_after' => 'required|integer|min:5|max:180',
+            'max_failed_logins' => 'nullable|integer|min:10|max:500',
+            'max_rate_limit' => 'nullable|integer|min:10|max:500',
+            'max_unique_ips' => 'nullable|integer|min:5|max:200',
+        ]);
+
+        $result = CloudflareService::saveAutoUnderAttackSettings($request->all());
+
+        return response()->json($result);
+    }
+
+    /**
+     * ดึงสถานะ Auto Under Attack (AJAX)
+     *
+     * @return JsonResponse
+     */
+    public function getAutoUnderAttackStatus(): JsonResponse
+    {
+        $status = $this->cloudflare->getUnderAttackStatus();
+        $checkResult = $this->cloudflare->checkAutoUnderAttackStatus();
+
+        return response()->json([
+            'success' => true,
+            'status' => $status,
+            'check_result' => $checkResult,
+        ]);
+    }
+
+    /**
+     * เปิด/ปิด Under Attack Mode ด้วยตนเอง
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function toggleUnderAttackMode(Request $request): JsonResponse
+    {
+        $request->validate([
+            'enable' => 'required|boolean',
+        ]);
+
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        if ($request->boolean('enable')) {
+            $result = $this->cloudflare->enableUnderAttackMode();
+            if ($result['success']) {
+                $result['message'] = 'เปิด Under Attack Mode สำเร็จ';
+            }
+        } else {
+            $result = $this->cloudflare->disableUnderAttackMode();
+            if ($result['success']) {
+                $result['message'] = 'ปิด Under Attack Mode สำเร็จ';
+            }
+        }
+
+        return response()->json($result);
+    }
+
+    /**
+     * ทดสอบการตรวจจับการโจมตี (ไม่เปิด Under Attack จริง)
+     *
+     * @return JsonResponse
+     */
+    public function testAutoUnderAttack(): JsonResponse
+    {
+        $checkResult = $this->cloudflare->checkAutoUnderAttackStatus();
+
+        return response()->json([
+            'success' => true,
+            'would_activate' => $checkResult['should_activate'],
+            'threat_score' => $checkResult['threat_score'] ?? 0,
+            'threshold' => $checkResult['threshold'] ?? 0,
+            'reason' => $checkResult['reason'],
+            'metrics' => $checkResult['metrics'],
+        ]);
     }
 }

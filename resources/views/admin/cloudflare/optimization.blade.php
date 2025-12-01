@@ -43,59 +43,157 @@
             </div>
         </div>
     @else
-        {{-- Optimization Status Card --}}
+        {{-- Step 1: Test Connection --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <span class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm">1</span>
+                ทดสอบการเชื่อมต่อ API
+            </h2>
+
+            <div class="flex flex-wrap items-center gap-4">
+                <button @click="testConnection()"
+                        :disabled="isTesting"
+                        class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 flex items-center gap-2">
+                    <template x-if="!isTesting">
+                        <span><i class="fas fa-plug mr-2"></i>ทดสอบการเชื่อมต่อ</span>
+                    </template>
+                    <template x-if="isTesting">
+                        <span><i class="fas fa-spinner fa-spin mr-2"></i>กำลังทดสอบ...</span>
+                    </template>
+                </button>
+
+                {{-- Connection Status --}}
+                <div x-show="connectionTested" x-transition class="flex items-center gap-3">
+                    <template x-if="connectionResult.success">
+                        <div class="flex items-center gap-2 text-green-600 dark:text-green-400">
+                            <i class="fas fa-check-circle text-2xl"></i>
+                            <div>
+                                <span class="font-semibold" x-text="connectionResult.message"></span>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">
+                                    <span x-text="'Zone: ' + (connectionResult.details?.zone_name || '-')"></span>
+                                    <span class="mx-2">|</span>
+                                    <span x-text="'Plan: ' + (connectionResult.details?.plan || 'Free')"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="!connectionResult.success">
+                        <div class="flex items-center gap-2 text-red-600 dark:text-red-400">
+                            <i class="fas fa-times-circle text-2xl"></i>
+                            <div>
+                                <span class="font-semibold" x-text="connectionResult.message"></span>
+                                <div class="text-sm" x-show="connectionResult.details">
+                                    <template x-if="connectionResult.details?.errors?.length">
+                                        <span x-text="connectionResult.details.errors[0]?.message || 'Unknown error'"></span>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        {{-- Step 2: Current Status --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <span class="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm">2</span>
+                    สถานะปัจจุบัน
+                </h2>
+                <button @click="refreshStatus()"
+                        :disabled="isRefreshing"
+                        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition flex items-center gap-2">
+                    <i class="fas fa-sync-alt" :class="isRefreshing && 'fa-spin'"></i>
+                    รีเฟรช
+                </button>
+            </div>
+
+            {{-- Optimization Progress --}}
+            <div class="mb-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-gray-700 dark:text-gray-300 font-medium">ระดับ Optimization</span>
+                    <span class="text-2xl font-bold text-purple-600 dark:text-purple-400" x-text="optimizationPercentage + '%'">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full transition-all duration-500"
+                         :style="'width: ' + optimizationPercentage + '%'"></div>
+                </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2" x-text="optimizationMessage"></p>
+            </div>
+
+            {{-- Settings Table --}}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead>
+                        <tr class="bg-gray-50 dark:bg-gray-700/50">
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Setting</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">หมวด</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">ค่าปัจจุบัน</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">ค่าที่แนะนำ</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <template x-for="(setting, key) in statusDetails" :key="key">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
+                                <td class="px-4 py-3">
+                                    <div class="font-medium text-gray-900 dark:text-white" x-text="setting.name"></div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400" x-text="setting.description"></div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium"
+                                          :class="{
+                                              'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300': setting.category === 'performance',
+                                              'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300': setting.category === 'seo',
+                                              'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300': setting.category === 'security',
+                                              'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300': setting.category === 'ssl',
+                                              'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300': setting.category === 'cache',
+                                          }"
+                                          x-text="setting.category"></span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="font-mono text-sm" x-text="setting.current_display"></span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <span class="font-mono text-sm text-purple-600 dark:text-purple-400" x-text="setting.optimal_display"></span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <template x-if="setting.optimized">
+                                        <span class="text-green-500"><i class="fas fa-check-circle text-lg"></i></span>
+                                    </template>
+                                    <template x-if="!setting.optimized">
+                                        <span class="text-yellow-500"><i class="fas fa-exclamation-circle text-lg"></i></span>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {{-- Step 3: Run Optimization --}}
         <div class="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl p-8 mb-8 text-white shadow-xl">
             <div class="flex flex-col lg:flex-row items-center gap-8">
-                {{-- Progress Circle --}}
-                <div class="relative">
-                    <svg class="w-48 h-48 transform -rotate-90">
-                        <circle cx="96" cy="96" r="88" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="12"/>
-                        <circle cx="96" cy="96" r="88" fill="none" stroke="white" stroke-width="12"
-                                stroke-linecap="round"
-                                :stroke-dasharray="2 * Math.PI * 88"
-                                :stroke-dashoffset="2 * Math.PI * 88 * (1 - optimizationPercentage / 100)"
-                                class="transition-all duration-1000"/>
-                    </svg>
-                    <div class="absolute inset-0 flex items-center justify-center flex-col">
-                        <span class="text-5xl font-bold" x-text="optimizationPercentage + '%'">
-                            {{ $optimizationStatus['optimized_percentage'] ?? 0 }}%
-                        </span>
-                        <span class="text-sm opacity-80">Optimized</span>
-                    </div>
-                </div>
-
-                {{-- Info --}}
                 <div class="flex-1 text-center lg:text-left">
-                    <h2 class="text-3xl font-bold mb-2">
-                        <span x-show="optimizationPercentage === 100">
-                            <i class="fas fa-check-circle mr-2"></i> Fully Optimized!
-                        </span>
-                        <span x-show="optimizationPercentage >= 70 && optimizationPercentage < 100">
-                            <i class="fas fa-thumbs-up mr-2"></i> เกือบสมบูรณ์แล้ว
-                        </span>
-                        <span x-show="optimizationPercentage < 70">
-                            <i class="fas fa-rocket mr-2"></i> พร้อมที่จะ Optimize!
-                        </span>
+                    <h2 class="text-2xl font-bold mb-2 flex items-center gap-2 justify-center lg:justify-start">
+                        <span class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-sm">3</span>
+                        รัน Optimization
                     </h2>
-                    <p class="text-lg opacity-90 mb-4" x-text="optimizationMessage">
-                        {{ $optimizationStatus['message'] ?? 'กำลังโหลด...' }}
+                    <p class="text-lg opacity-90 mb-2">
+                        กดปุ่มด้านล่างเพื่อตั้งค่าทั้งหมดให้เหมาะสมที่สุดโดยอัตโนมัติ
                     </p>
-                    <div class="flex flex-wrap gap-4 justify-center lg:justify-start">
-                        <div class="bg-white/20 rounded-lg px-4 py-2">
-                            <span class="text-2xl font-bold" x-text="optimizedCount">{{ $optimizationStatus['optimized_count'] ?? 0 }}</span>
-                            <span class="text-sm opacity-80 ml-1">ตั้งค่าแล้ว</span>
-                        </div>
-                        <div class="bg-white/20 rounded-lg px-4 py-2">
-                            <span class="text-2xl font-bold" x-text="totalCount">{{ $optimizationStatus['total_count'] ?? 0 }}</span>
-                            <span class="text-sm opacity-80 ml-1">ทั้งหมด</span>
-                        </div>
-                    </div>
+                    <ul class="text-sm opacity-80 space-y-1">
+                        <li><i class="fas fa-check mr-2"></i>ตั้งค่า Performance, SEO, Security, SSL, Cache</li>
+                        <li><i class="fas fa-check mr-2"></i>ล้าง Cache อัตโนมัติหลังตั้งค่าเสร็จ</li>
+                        <li><i class="fas fa-clock mr-2"></i>ใช้เวลาประมาณ 10-20 วินาที</li>
+                    </ul>
                 </div>
 
-                {{-- Action Button --}}
                 <div class="flex flex-col items-center gap-4">
                     <button @click="runOptimization()"
-                            :disabled="isRunning"
+                            :disabled="isRunning || !connectionResult.success"
                             class="px-8 py-4 bg-white text-purple-700 hover:bg-gray-100 rounded-xl font-bold text-lg shadow-lg transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                         <template x-if="!isRunning">
                             <span>
@@ -110,80 +208,11 @@
                             </span>
                         </template>
                     </button>
-                    <span class="text-sm opacity-80">
-                        <i class="fas fa-clock mr-1"></i>
-                        ใช้เวลาประมาณ 10-20 วินาที
+                    <span x-show="!connectionResult.success" class="text-sm text-yellow-200">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        กรุณาทดสอบการเชื่อมต่อก่อน
                     </span>
                 </div>
-            </div>
-        </div>
-
-        {{-- What Will Be Optimized --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {{-- Performance --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-t-4 border-blue-500">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-tachometer-alt text-blue-500 text-xl"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Performance</h3>
-                </div>
-                <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Auto Minify (JS, CSS, HTML)</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Brotli Compression</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Early Hints</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>HTTP/2 & HTTP/3</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>0-RTT Connection</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Rocket Loader</li>
-                </ul>
-            </div>
-
-            {{-- SEO --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-t-4 border-green-500">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-search text-green-500 text-xl"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">SEO & Bots</h3>
-                </div>
-                <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Crawler Hints (IndexNow)</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Always Online</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Search Engine Friendly</li>
-                </ul>
-            </div>
-
-            {{-- Security --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-t-4 border-red-500">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-shield-alt text-red-500 text-xl"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Security</h3>
-                </div>
-                <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Security Level: Medium</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Browser Integrity Check</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Email Obfuscation</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Hotlink Protection</li>
-                </ul>
-            </div>
-
-            {{-- SSL & Cache --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-t-4 border-orange-500">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-lock text-orange-500 text-xl"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">SSL & Cache</h3>
-                </div>
-                <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Full SSL Mode</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Always HTTPS</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>TLS 1.2+</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Aggressive Caching</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i>Browser Cache TTL</li>
-                </ul>
             </div>
         </div>
 
@@ -193,7 +222,7 @@
                 <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">
                         <i class="fas fa-list-check mr-2 text-purple-500"></i>
-                        Optimization Results
+                        ผลลัพธ์ Optimization
                     </h3>
                     <span class="text-sm text-gray-500 dark:text-gray-400">
                         <span x-text="results.summary?.success || 0" class="text-green-500 font-bold"></span> สำเร็จ /
@@ -220,7 +249,9 @@
                                           x-text="result.category"></span>
                                 </div>
                             </div>
-                            <span class="text-sm text-gray-500 dark:text-gray-400" x-text="result.description"></span>
+                            <div class="text-right">
+                                <span class="text-sm" :class="result.success ? 'text-gray-500 dark:text-gray-400' : 'text-red-500'" x-text="result.message"></span>
+                            </div>
                         </div>
                     </template>
                 </div>
@@ -233,13 +264,13 @@
                 <i class="fas fa-info-circle text-blue-500 text-2xl mt-1"></i>
                 <div>
                     <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200">
-                        ข้อมูลเพิ่มเติม
+                        หมายเหตุ
                     </h3>
                     <ul class="text-blue-700 dark:text-blue-300 mt-2 space-y-1 text-sm">
-                        <li><i class="fas fa-check mr-2"></i>การ Optimize จะไม่ลบการตั้งค่าที่คุณทำไว้ก่อนหน้า</li>
-                        <li><i class="fas fa-check mr-2"></i>Settings บางอย่างอาจต้องการ Plan ที่สูงกว่า Free</li>
-                        <li><i class="fas fa-check mr-2"></i>Cache จะถูก Purge หลังจาก Optimize เสร็จ</li>
-                        <li><i class="fas fa-check mr-2"></i>คุณสามารถกดปุ่ม Optimize ซ้ำได้เมื่อต้องการ</li>
+                        <li><i class="fas fa-check mr-2"></i>บาง settings อาจต้องการ Cloudflare Plan ที่สูงกว่า Free</li>
+                        <li><i class="fas fa-check mr-2"></i>API Token ต้องมีสิทธิ์ "Zone Settings:Edit" และ "Cache Purge:Purge"</li>
+                        <li><i class="fas fa-check mr-2"></i>หาก API Token ไม่มีสิทธิ์เพียงพอ รายการนั้นจะแสดง error</li>
+                        <li><i class="fas fa-check mr-2"></i>คุณสามารถสร้าง API Token ใหม่ได้ที่ <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" class="underline">Cloudflare Dashboard</a></li>
                     </ul>
                 </div>
             </div>
@@ -252,16 +283,102 @@
 <script>
 function cloudflareOptimization() {
     return {
-        isRunning: false,
-        showResults: false,
-        results: {},
+        // Connection test
+        isTesting: false,
+        connectionTested: false,
+        connectionResult: { success: false },
+
+        // Status
+        isRefreshing: false,
         optimizationPercentage: {{ $optimizationStatus['optimized_percentage'] ?? 0 }},
         optimizedCount: {{ $optimizationStatus['optimized_count'] ?? 0 }},
         totalCount: {{ $optimizationStatus['total_count'] ?? 0 }},
         optimizationMessage: '{{ $optimizationStatus['message'] ?? 'กำลังโหลด...' }}',
+        statusDetails: @json($optimizationStatus['status'] ?? []),
+
+        // Optimization
+        isRunning: false,
+        showResults: false,
+        results: {},
+
+        async testConnection() {
+            if (this.isTesting) return;
+
+            this.isTesting = true;
+            this.connectionTested = false;
+
+            try {
+                const response = await fetch('{{ route('admin.cloudflare.test-connection') }}');
+                const data = await response.json();
+
+                this.connectionResult = data;
+                this.connectionTested = true;
+
+                // If connection successful, refresh status
+                if (data.success) {
+                    await this.refreshStatus();
+                }
+            } catch (error) {
+                console.error('Test connection error:', error);
+                this.connectionResult = {
+                    success: false,
+                    message: 'เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message
+                };
+                this.connectionTested = true;
+            } finally {
+                this.isTesting = false;
+            }
+        },
+
+        async refreshStatus() {
+            if (this.isRefreshing) return;
+
+            this.isRefreshing = true;
+
+            try {
+                const response = await fetch('{{ route('admin.cloudflare.optimization.status') }}');
+                const data = await response.json();
+
+                if (data.success) {
+                    this.optimizationPercentage = data.optimized_percentage;
+                    this.optimizedCount = data.optimized_count;
+                    this.totalCount = data.total_count;
+                    this.optimizationMessage = data.message;
+                    this.statusDetails = data.status;
+                } else {
+                    console.error('Refresh status failed:', data.message);
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'ไม่สามารถโหลดสถานะได้',
+                            text: data.message,
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Refresh status error:', error);
+            } finally {
+                this.isRefreshing = false;
+            }
+        },
 
         async runOptimization() {
             if (this.isRunning) return;
+
+            // Confirm before running
+            if (typeof Swal !== 'undefined') {
+                const result = await Swal.fire({
+                    icon: 'question',
+                    title: 'ยืนยันการ Optimization?',
+                    text: 'ระบบจะตั้งค่า Cloudflare ทั้งหมดให้เหมาะสมที่สุด',
+                    showCancelButton: true,
+                    confirmButtonText: 'ตกลง, เริ่มเลย!',
+                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonColor: '#7C3AED',
+                });
+
+                if (!result.isConfirmed) return;
+            }
 
             this.isRunning = true;
             this.showResults = false;
@@ -277,23 +394,26 @@ function cloudflareOptimization() {
 
                 const data = await response.json();
 
-                if (data.success !== undefined) {
+                if (data.results !== undefined) {
                     this.results = data;
                     this.showResults = true;
 
-                    // Refresh optimization status
+                    // Refresh status
                     await this.refreshStatus();
 
-                    // Show success notification
+                    // Show notification
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
-                            icon: data.success ? 'success' : 'warning',
-                            title: data.success ? 'Optimization สำเร็จ!' : 'Optimization มีบางรายการล้มเหลว',
-                            text: data.message,
-                            confirmButtonText: 'ตกลง'
+                            icon: data.summary?.failed === 0 ? 'success' : 'warning',
+                            title: data.summary?.failed === 0 ? 'Optimization สำเร็จ!' : 'Optimization เสร็จสิ้น',
+                            html: `<p>${data.message}</p>
+                                   <div class="mt-3 text-left text-sm">
+                                       <div class="text-green-600">✅ สำเร็จ: ${data.summary?.success || 0} รายการ</div>
+                                       <div class="text-red-600">❌ ล้มเหลว: ${data.summary?.failed || 0} รายการ</div>
+                                   </div>`,
+                            confirmButtonText: 'ตกลง',
+                            confirmButtonColor: '#7C3AED',
                         });
-                    } else {
-                        alert(data.message);
                     }
                 } else {
                     throw new Error(data.message || 'Unknown error');
@@ -315,20 +435,9 @@ function cloudflareOptimization() {
             }
         },
 
-        async refreshStatus() {
-            try {
-                const response = await fetch('{{ route('admin.cloudflare.optimization.status') }}');
-                const data = await response.json();
-
-                if (data.success) {
-                    this.optimizationPercentage = data.optimized_percentage;
-                    this.optimizedCount = data.optimized_count;
-                    this.totalCount = data.total_count;
-                    this.optimizationMessage = data.message;
-                }
-            } catch (error) {
-                console.error('Failed to refresh status:', error);
-            }
+        init() {
+            // Auto test connection on load
+            this.testConnection();
         }
     }
 }

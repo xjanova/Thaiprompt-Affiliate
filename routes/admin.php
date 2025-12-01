@@ -3141,10 +3141,21 @@ Route::prefix('cloudflare')->name('cloudflare.')->group(function () {
 
     // Settings
     Route::get('/settings', [CloudflareController::class, 'settings'])->name('settings');
+    Route::post('/settings', [CloudflareController::class, 'saveSettings'])->name('settings.save');
 
     // One-Click Optimization
     Route::get('/optimization', [CloudflareController::class, 'optimization'])->name('optimization');
     Route::get('/optimization/status', [CloudflareController::class, 'getOptimizationStatus'])->name('optimization.status');
     Route::post('/optimization/run', [CloudflareController::class, 'runOptimization'])->name('optimization.run');
     Route::get('/all-settings', [CloudflareController::class, 'getAllSettings'])->name('all-settings');
+
+    // Test Connection
+    Route::get('/test-connection', [CloudflareController::class, 'testConnection'])->name('test-connection');
+
+    // Auto Under Attack Mode
+    Route::get('/auto-under-attack', [CloudflareController::class, 'autoUnderAttack'])->name('auto-under-attack');
+    Route::post('/auto-under-attack/settings', [CloudflareController::class, 'saveAutoUnderAttackSettings'])->name('auto-under-attack.settings');
+    Route::get('/auto-under-attack/status', [CloudflareController::class, 'getAutoUnderAttackStatus'])->name('auto-under-attack.status');
+    Route::post('/auto-under-attack/toggle', [CloudflareController::class, 'toggleUnderAttackMode'])->name('auto-under-attack.toggle');
+    Route::get('/auto-under-attack/test', [CloudflareController::class, 'testAutoUnderAttack'])->name('auto-under-attack.test');
 });
