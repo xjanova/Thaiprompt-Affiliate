@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.294.0] - 2025-12-01
+
+### ✨ Features
+- feat: เพิ่มระบบร้านค้า Coins (Coin Shop) (1237e4f6)
+- feat: เพิ่มระบบงบประมาณ, EXP Level และดาวใน Video Rewards (c44c5705)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1895 from xjanova/claude/video-rewards-system-01RPgkZ8LMAWhgDBidZR5L78 (43839c47)
+
 ## [v3.293.0] - 2025-12-01
 
 ### ✨ Features
