@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.286.0] - 2025-12-01
+
+### ✨ Features
+- feat: เพิ่มเมนูภารกิจดูคลิปใน Admin Sidebar (403a635b)
+### 🐛 Bug Fixes
+- fix: แก้ไข foreign key error เมื่อ user ไม่มี rank (29ab7e78)
+### 🔧 Other Changes
+- Merge pull request #1886 from xjanova/claude/video-rewards-system-01RPgkZ8LMAWhgDBidZR5L78 (b7980c36)
+
 ## [v3.285.0] - 2025-12-01
 
 ### ✨ Features
