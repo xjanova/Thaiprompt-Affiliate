@@ -565,6 +565,417 @@ class CloudflareService
     }
 
     // ========================================
+    // ONE-CLICK OPTIMIZATION
+    // ========================================
+
+    /**
+     * One-Click Optimization - ตั้งค่าทั้งหมดให้เหมาะสมที่สุด
+     *
+     * รวมการตั้งค่า:
+     * - Performance (Speed)
+     * - SEO (Search Engine Optimization)
+     * - Security
+     * - Caching
+     * - SSL/TLS
+     *
+     * @param string|null $zoneId
+     * @return array
+     */
+    public function oneClickOptimization(?string $zoneId = null): array
+    {
+        $zoneId = $zoneId ?? $this->zoneId;
+        $results = [];
+        $successCount = 0;
+        $failCount = 0;
+
+        // รายการ settings ที่จะตั้งค่า
+        $optimizations = [
+            // ========================================
+            // PERFORMANCE SETTINGS
+            // ========================================
+            [
+                'name' => 'Auto Minify (JS)',
+                'category' => 'performance',
+                'setting' => 'minify',
+                'value' => ['js' => 'on', 'css' => 'on', 'html' => 'on'],
+                'description' => 'บีบอัด JavaScript, CSS, HTML เพื่อลดขนาดไฟล์',
+            ],
+            [
+                'name' => 'Brotli Compression',
+                'category' => 'performance',
+                'setting' => 'brotli',
+                'value' => 'on',
+                'description' => 'เปิด Brotli compression สำหรับ response ที่เร็วขึ้น',
+            ],
+            [
+                'name' => 'Early Hints',
+                'category' => 'performance',
+                'setting' => 'early_hints',
+                'value' => 'on',
+                'description' => 'ส่ง hints ล่วงหน้าเพื่อให้ browser preload resources',
+            ],
+            [
+                'name' => 'HTTP/2',
+                'category' => 'performance',
+                'setting' => 'http2',
+                'value' => 'on',
+                'description' => 'เปิดใช้ HTTP/2 protocol',
+            ],
+            [
+                'name' => 'HTTP/3 (QUIC)',
+                'category' => 'performance',
+                'setting' => 'http3',
+                'value' => 'on',
+                'description' => 'เปิดใช้ HTTP/3 สำหรับ performance ที่ดีขึ้น',
+            ],
+            [
+                'name' => '0-RTT Connection Resumption',
+                'category' => 'performance',
+                'setting' => '0rtt',
+                'value' => 'on',
+                'description' => 'ลด latency สำหรับผู้เยี่ยมชมที่กลับมา',
+            ],
+            [
+                'name' => 'Rocket Loader',
+                'category' => 'performance',
+                'setting' => 'rocket_loader',
+                'value' => 'on',
+                'description' => 'เร่งความเร็ว paint time โดย async load JavaScript',
+            ],
+
+            // ========================================
+            // SEO / CRAWLER SETTINGS
+            // ========================================
+            [
+                'name' => 'Crawler Hints',
+                'category' => 'seo',
+                'setting' => 'crawler_hints',
+                'value' => 'on',
+                'description' => 'ส่ง IndexNow เพื่อแจ้ง search engines เมื่อเนื้อหาเปลี่ยนแปลง',
+            ],
+            [
+                'name' => 'Always Online',
+                'category' => 'seo',
+                'setting' => 'always_online',
+                'value' => 'on',
+                'description' => 'แสดงหน้าจาก cache เมื่อ origin server ล่ม',
+            ],
+
+            // ========================================
+            // SECURITY SETTINGS
+            // ========================================
+            [
+                'name' => 'Security Level',
+                'category' => 'security',
+                'setting' => 'security_level',
+                'value' => 'medium',
+                'description' => 'ระดับ security ที่สมดุล (ไม่รบกวนผู้ใช้จริง)',
+            ],
+            [
+                'name' => 'Browser Integrity Check',
+                'category' => 'security',
+                'setting' => 'browser_check',
+                'value' => 'on',
+                'description' => 'ตรวจสอบ HTTP headers เพื่อกัน bots ไม่ดี',
+            ],
+            [
+                'name' => 'Email Obfuscation',
+                'category' => 'security',
+                'setting' => 'email_obfuscation',
+                'value' => 'on',
+                'description' => 'ซ่อน email จาก spammers/scrapers',
+            ],
+            [
+                'name' => 'Hotlink Protection',
+                'category' => 'security',
+                'setting' => 'hotlink_protection',
+                'value' => 'on',
+                'description' => 'ป้องกันเว็บอื่นขโมย bandwidth ของคุณ',
+            ],
+            [
+                'name' => 'Opportunistic Encryption',
+                'category' => 'security',
+                'setting' => 'opportunistic_encryption',
+                'value' => 'on',
+                'description' => 'เข้ารหัส HTTP requests โดยไม่ต้อง redirect',
+            ],
+
+            // ========================================
+            // SSL/TLS SETTINGS
+            // ========================================
+            [
+                'name' => 'SSL Mode',
+                'category' => 'ssl',
+                'setting' => 'ssl',
+                'value' => 'full',
+                'description' => 'Full SSL encryption ระหว่าง Cloudflare และ Origin',
+            ],
+            [
+                'name' => 'Always Use HTTPS',
+                'category' => 'ssl',
+                'setting' => 'always_use_https',
+                'value' => 'on',
+                'description' => 'Redirect HTTP → HTTPS อัตโนมัติ',
+            ],
+            [
+                'name' => 'Automatic HTTPS Rewrites',
+                'category' => 'ssl',
+                'setting' => 'automatic_https_rewrites',
+                'value' => 'on',
+                'description' => 'แก้ mixed content โดยเปลี่ยน http:// เป็น https://',
+            ],
+            [
+                'name' => 'TLS 1.3',
+                'category' => 'ssl',
+                'setting' => 'min_tls_version',
+                'value' => '1.2',
+                'description' => 'ใช้ TLS 1.2+ สำหรับ security ที่ดีขึ้น',
+            ],
+
+            // ========================================
+            // CACHING SETTINGS
+            // ========================================
+            [
+                'name' => 'Cache Level',
+                'category' => 'cache',
+                'setting' => 'cache_level',
+                'value' => 'aggressive',
+                'description' => 'Cache แบบ aggressive เพื่อประสิทธิภาพสูงสุด',
+            ],
+            [
+                'name' => 'Browser Cache TTL',
+                'category' => 'cache',
+                'setting' => 'browser_cache_ttl',
+                'value' => 14400, // 4 ชั่วโมง
+                'description' => 'Cache ในเบราว์เซอร์ 4 ชั่วโมง',
+            ],
+        ];
+
+        // วนลูปตั้งค่าทั้งหมด
+        foreach ($optimizations as $opt) {
+            $result = $this->setSetting($opt['setting'], $opt['value'], $zoneId);
+
+            $results[] = [
+                'name' => $opt['name'],
+                'category' => $opt['category'],
+                'description' => $opt['description'],
+                'success' => $result['success'],
+                'message' => $result['message'] ?? ($result['success'] ? 'สำเร็จ' : 'ล้มเหลว'),
+            ];
+
+            if ($result['success']) {
+                $successCount++;
+            } else {
+                $failCount++;
+            }
+
+            // หน่วงเวลาเล็กน้อยเพื่อหลีกเลี่ยง rate limit
+            usleep(100000); // 0.1 วินาที
+        }
+
+        // Purge cache หลังจากตั้งค่าเสร็จ
+        $purgeResult = $this->purgeEverything($zoneId);
+        $results[] = [
+            'name' => 'Purge Cache',
+            'category' => 'cache',
+            'description' => 'ล้าง cache ทั้งหมดเพื่อให้ settings ใหม่มีผล',
+            'success' => $purgeResult['success'],
+            'message' => $purgeResult['message'] ?? 'Cache cleared',
+        ];
+
+        if ($purgeResult['success']) {
+            $successCount++;
+        } else {
+            $failCount++;
+        }
+
+        Log::info('Cloudflare: One-Click Optimization completed', [
+            'success' => $successCount,
+            'failed' => $failCount,
+            'zone_id' => $zoneId,
+        ]);
+
+        return [
+            'success' => $failCount === 0,
+            'message' => "Optimization เสร็จสิ้น: {$successCount} สำเร็จ, {$failCount} ล้มเหลว",
+            'results' => $results,
+            'summary' => [
+                'total' => count($results),
+                'success' => $successCount,
+                'failed' => $failCount,
+            ],
+        ];
+    }
+
+    /**
+     * ตั้งค่า setting เดี่ยว
+     *
+     * @param string $setting
+     * @param mixed $value
+     * @param string|null $zoneId
+     * @return array
+     */
+    public function setSetting(string $setting, $value, ?string $zoneId = null): array
+    {
+        $zoneId = $zoneId ?? $this->zoneId;
+
+        try {
+            $response = $this->client()->patch(
+                self::API_BASE . "/zones/{$zoneId}/settings/{$setting}",
+                ['value' => $value]
+            );
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'message' => "ตั้งค่า {$setting} สำเร็จ",
+                    'data' => $response->json('result'),
+                ];
+            }
+
+            return $this->handleError($response);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * ดึงค่า setting เดี่ยว
+     *
+     * @param string $setting
+     * @param string|null $zoneId
+     * @return array
+     */
+    public function getSetting(string $setting, ?string $zoneId = null): array
+    {
+        $zoneId = $zoneId ?? $this->zoneId;
+
+        try {
+            $response = $this->client()->get(
+                self::API_BASE . "/zones/{$zoneId}/settings/{$setting}"
+            );
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'data' => $response->json('result'),
+                ];
+            }
+
+            return $this->handleError($response);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * ดึง settings ทั้งหมดพร้อมกัน
+     *
+     * @param string|null $zoneId
+     * @return array
+     */
+    public function getAllSettings(?string $zoneId = null): array
+    {
+        $zoneId = $zoneId ?? $this->zoneId;
+
+        try {
+            $response = $this->client()->get(
+                self::API_BASE . "/zones/{$zoneId}/settings"
+            );
+
+            if ($response->successful()) {
+                $settings = $response->json('result', []);
+
+                // แปลงเป็น key-value array
+                $settingsMap = [];
+                foreach ($settings as $setting) {
+                    $settingsMap[$setting['id']] = $setting['value'];
+                }
+
+                return [
+                    'success' => true,
+                    'data' => $settingsMap,
+                    'raw' => $settings,
+                ];
+            }
+
+            return $this->handleError($response);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * ตรวจสอบสถานะ optimization ปัจจุบัน
+     *
+     * @param string|null $zoneId
+     * @return array
+     */
+    public function checkOptimizationStatus(?string $zoneId = null): array
+    {
+        $zoneId = $zoneId ?? $this->zoneId;
+
+        $settingsResult = $this->getAllSettings($zoneId);
+
+        if (!$settingsResult['success']) {
+            return $settingsResult;
+        }
+
+        $current = $settingsResult['data'];
+
+        // รายการ settings ที่ควรจะมีหลัง optimization
+        $optimizedValues = [
+            'brotli' => 'on',
+            'early_hints' => 'on',
+            'http2' => 'on',
+            'http3' => 'on',
+            '0rtt' => 'on',
+            'rocket_loader' => 'on',
+            'crawler_hints' => 'on',
+            'always_online' => 'on',
+            'security_level' => 'medium',
+            'browser_check' => 'on',
+            'email_obfuscation' => 'on',
+            'hotlink_protection' => 'on',
+            'opportunistic_encryption' => 'on',
+            'ssl' => 'full',
+            'always_use_https' => 'on',
+            'automatic_https_rewrites' => 'on',
+            'cache_level' => 'aggressive',
+        ];
+
+        $optimizedCount = 0;
+        $status = [];
+
+        foreach ($optimizedValues as $key => $expectedValue) {
+            $currentValue = $current[$key] ?? null;
+            $isOptimized = ($currentValue === $expectedValue);
+
+            if ($isOptimized) {
+                $optimizedCount++;
+            }
+
+            $status[$key] = [
+                'current' => $currentValue,
+                'optimal' => $expectedValue,
+                'optimized' => $isOptimized,
+            ];
+        }
+
+        $totalSettings = count($optimizedValues);
+        $percentage = round(($optimizedCount / $totalSettings) * 100);
+
+        return [
+            'success' => true,
+            'optimized_percentage' => $percentage,
+            'optimized_count' => $optimizedCount,
+            'total_count' => $totalSettings,
+            'status' => $status,
+            'message' => "ระดับ Optimization: {$percentage}% ({$optimizedCount}/{$totalSettings})",
+        ];
+    }
+
+    // ========================================
     // ERROR HANDLING
     // ========================================
 
