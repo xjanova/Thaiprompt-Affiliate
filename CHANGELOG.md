@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.273.1] - 2025-12-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: use exact match for env redirect rules (6e99ac83)
+### 🔧 Other Changes
+- Merge pull request #1869 from xjanova/claude/redirect-env-to-public-016hHDJn5gEwuRAsBRvrWaAi (e093df01)
+- security: redirect /env paths to home page (8cc1fb62)
+
 ## [v3.273.0] - 2025-12-01
 
 ### ✨ Features
