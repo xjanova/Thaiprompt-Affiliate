@@ -1517,6 +1517,14 @@
                     <i class="fas fa-cog w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
                 </a>
+
+                {{-- นำเข้าจาก YouTube --}}
+                <a href="{{ route('admin.video-missions.import-youtube') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.video-missions.import-youtube') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fab fa-youtube w-4 text-center drop-shadow text-red-400"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">นำเข้า YouTube</span>
+                </a>
             </div>
         </div>
 

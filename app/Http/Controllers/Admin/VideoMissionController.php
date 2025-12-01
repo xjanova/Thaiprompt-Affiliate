@@ -720,4 +720,431 @@ class VideoMissionController extends Controller
             'endDate'
         ));
     }
+
+    // ==================== YOUTUBE IMPORT ====================
+
+    /**
+     * แสดงหน้านำเข้าวิดีโอจาก YouTube
+     *
+     * @return \Illuminate\View\View
+     */
+    public function importYouTube()
+    {
+        // ดึงหมวดหมู่ที่มีอยู่
+        $categories = VideoMission::distinct('category')
+            ->whereNotNull('category')
+            ->pluck('category')
+            ->toArray();
+
+        // เพิ่มหมวดหมู่เริ่มต้น
+        $defaultCategories = ['youtube', 'entertainment', 'education', 'music', 'gaming', 'news', 'sports'];
+        $categories = array_unique(array_merge($categories, $defaultCategories));
+        sort($categories);
+
+        // ตรวจสอบว่ามี API Key หรือไม่
+        $hasApiKey = !empty(env('YOUTUBE_API_KEY'));
+
+        return view('admin.video-missions.import-youtube', compact('categories', 'hasApiKey'));
+    }
+
+    /**
+     * ประมวลผลนำเข้าวิดีโอจาก YouTube
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function processImportYouTube(Request $request)
+    {
+        $request->validate([
+            'channel' => 'required|string',
+            'category' => 'required|string|max:50',
+            'reward_money' => 'required|numeric|min:0|max:1000',
+            'reward_coins' => 'required|numeric|min:0|max:10000',
+            'reward_exp' => 'required|integer|min:0|max:10000',
+            'watch_percent' => 'required|integer|min:50|max:100',
+            'limit' => 'required|integer|min:1|max:500',
+            'is_active' => 'boolean',
+            'is_featured' => 'boolean',
+        ]);
+
+        $apiKey = $request->input('api_key') ?: env('YOUTUBE_API_KEY');
+
+        if (!$apiKey) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาระบุ YouTube API Key',
+            ], 400);
+        }
+
+        // แปลง channel name เป็น channel ID
+        $channel = $request->input('channel');
+        $channelId = $this->resolveChannelId($channel, $apiKey);
+
+        if (!$channelId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบช่อง YouTube ที่ระบุ กรุณาตรวจสอบชื่อช่องหรือ Channel ID',
+            ], 404);
+        }
+
+        // ดึงข้อมูลช่อง
+        $channelInfo = $this->getChannelInfo($channelId, $apiKey);
+
+        if (!$channelInfo) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงข้อมูลช่องได้',
+            ], 500);
+        }
+
+        // ดึงวิดีโอจากช่อง
+        $uploadsPlaylistId = $channelInfo['uploadsPlaylistId'] ?? null;
+
+        if (!$uploadsPlaylistId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบ Playlist วิดีโอของช่อง',
+            ], 500);
+        }
+
+        $videos = $this->getPlaylistVideos($uploadsPlaylistId, $apiKey, (int) $request->input('limit'));
+
+        if (empty($videos)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบวิดีโอในช่อง',
+            ], 404);
+        }
+
+        // สร้างภารกิจจากวิดีโอ
+        $created = 0;
+        $skipped = 0;
+        $errors = 0;
+
+        foreach ($videos as $video) {
+            try {
+                $result = $this->createMissionFromVideo($video, $apiKey, [
+                    'category' => $request->input('category'),
+                    'reward_money' => (float) $request->input('reward_money'),
+                    'reward_coins' => (float) $request->input('reward_coins'),
+                    'reward_exp' => (int) $request->input('reward_exp'),
+                    'watch_percent' => (int) $request->input('watch_percent'),
+                    'is_active' => $request->boolean('is_active', true),
+                    'is_featured' => $request->boolean('is_featured', false),
+                ]);
+
+                if ($result === 'created') {
+                    $created++;
+                } else {
+                    $skipped++;
+                }
+            } catch (\Exception $e) {
+                $errors++;
+                \Log::error('YouTube Import Error', [
+                    'video_id' => $video['videoId'] ?? 'unknown',
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "นำเข้าสำเร็จ!",
+            'data' => [
+                'channel' => $channelInfo['title'],
+                'total_videos' => count($videos),
+                'created' => $created,
+                'skipped' => $skipped,
+                'errors' => $errors,
+            ],
+        ]);
+    }
+
+    /**
+     * แปลง Channel Handle หรือ URL เป็น Channel ID
+     */
+    protected function resolveChannelId(string $channel, string $apiKey): ?string
+    {
+        // ถ้าเป็น Channel ID อยู่แล้ว (เริ่มด้วย UC)
+        if (preg_match('/^UC[\w-]{22}$/', $channel)) {
+            return $channel;
+        }
+
+        // ถ้าเป็น URL
+        if (str_contains($channel, 'youtube.com')) {
+            // Extract channel ID or handle from URL
+            if (preg_match('/youtube\.com\/channel\/(UC[\w-]{22})/', $channel, $matches)) {
+                return $matches[1];
+            }
+            if (preg_match('/youtube\.com\/@([\w-]+)/', $channel, $matches)) {
+                $channel = '@' . $matches[1];
+            }
+        }
+
+        // ถ้าเป็น @handle
+        if (str_starts_with($channel, '@')) {
+            $handle = substr($channel, 1);
+        } else {
+            $handle = $channel;
+        }
+
+        // ค้นหา Channel ID จาก handle/username
+        try {
+            $response = \Http::get('https://www.googleapis.com/youtube/v3/search', [
+                'key' => $apiKey,
+                'q' => $handle,
+                'type' => 'channel',
+                'part' => 'snippet',
+                'maxResults' => 1,
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if (!empty($data['items'])) {
+                    return $data['items'][0]['id']['channelId'] ?? null;
+                }
+            }
+
+            // ลองค้นหาด้วย forUsername (สำหรับ legacy usernames)
+            $response = \Http::get('https://www.googleapis.com/youtube/v3/channels', [
+                'key' => $apiKey,
+                'forUsername' => $handle,
+                'part' => 'id',
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if (!empty($data['items'])) {
+                    return $data['items'][0]['id'] ?? null;
+                }
+            }
+
+            // ลองค้นหาด้วย forHandle (สำหรับ @handles ใหม่)
+            $response = \Http::get('https://www.googleapis.com/youtube/v3/channels', [
+                'key' => $apiKey,
+                'forHandle' => $handle,
+                'part' => 'id',
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if (!empty($data['items'])) {
+                    return $data['items'][0]['id'] ?? null;
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('YouTube Channel Resolve Error', ['error' => $e->getMessage()]);
+        }
+
+        return null;
+    }
+
+    /**
+     * ดึงข้อมูลช่อง YouTube
+     */
+    protected function getChannelInfo(string $channelId, string $apiKey): ?array
+    {
+        try {
+            $response = \Http::get('https://www.googleapis.com/youtube/v3/channels', [
+                'key' => $apiKey,
+                'id' => $channelId,
+                'part' => 'snippet,contentDetails,statistics',
+            ]);
+
+            if (!$response->successful()) {
+                return null;
+            }
+
+            $data = $response->json();
+
+            if (empty($data['items'])) {
+                return null;
+            }
+
+            $channel = $data['items'][0];
+
+            return [
+                'id' => $channel['id'],
+                'title' => $channel['snippet']['title'] ?? '',
+                'description' => $channel['snippet']['description'] ?? '',
+                'thumbnail' => $channel['snippet']['thumbnails']['high']['url'] ?? null,
+                'subscriberCount' => $channel['statistics']['subscriberCount'] ?? 0,
+                'videoCount' => $channel['statistics']['videoCount'] ?? 0,
+                'uploadsPlaylistId' => $channel['contentDetails']['relatedPlaylists']['uploads'] ?? null,
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * ดึงวิดีโอจาก Playlist
+     */
+    protected function getPlaylistVideos(string $playlistId, string $apiKey, int $limit = 100): array
+    {
+        $videos = [];
+        $nextPageToken = null;
+
+        do {
+            $params = [
+                'key' => $apiKey,
+                'playlistId' => $playlistId,
+                'part' => 'snippet,contentDetails',
+                'maxResults' => min(50, $limit - count($videos)),
+            ];
+
+            if ($nextPageToken) {
+                $params['pageToken'] = $nextPageToken;
+            }
+
+            $response = \Http::get('https://www.googleapis.com/youtube/v3/playlistItems', $params);
+
+            if (!$response->successful()) {
+                break;
+            }
+
+            $data = $response->json();
+
+            foreach ($data['items'] ?? [] as $item) {
+                $videos[] = [
+                    'videoId' => $item['contentDetails']['videoId'] ?? null,
+                    'title' => $item['snippet']['title'] ?? '',
+                    'description' => $item['snippet']['description'] ?? '',
+                    'thumbnail' => $item['snippet']['thumbnails']['high']['url']
+                                ?? $item['snippet']['thumbnails']['medium']['url']
+                                ?? $item['snippet']['thumbnails']['default']['url']
+                                ?? null,
+                    'publishedAt' => $item['snippet']['publishedAt'] ?? null,
+                    'channelTitle' => $item['snippet']['channelTitle'] ?? '',
+                ];
+
+                if (count($videos) >= $limit) {
+                    break 2;
+                }
+            }
+
+            $nextPageToken = $data['nextPageToken'] ?? null;
+        } while ($nextPageToken && count($videos) < $limit);
+
+        return $videos;
+    }
+
+    /**
+     * ดึงรายละเอียดวิดีโอ
+     */
+    protected function getVideoDetails(string $videoId, string $apiKey): ?array
+    {
+        try {
+            $response = \Http::get('https://www.googleapis.com/youtube/v3/videos', [
+                'key' => $apiKey,
+                'id' => $videoId,
+                'part' => 'contentDetails,statistics',
+            ]);
+
+            if (!$response->successful()) {
+                return null;
+            }
+
+            $data = $response->json();
+
+            if (empty($data['items'])) {
+                return null;
+            }
+
+            $video = $data['items'][0];
+            $duration = $video['contentDetails']['duration'] ?? 'PT0S';
+
+            return [
+                'duration' => $this->parseDuration($duration),
+                'viewCount' => (int) ($video['statistics']['viewCount'] ?? 0),
+                'likeCount' => (int) ($video['statistics']['likeCount'] ?? 0),
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * แปลง ISO 8601 Duration เป็นวินาที
+     */
+    protected function parseDuration(string $duration): int
+    {
+        try {
+            $interval = new \DateInterval($duration);
+            return ($interval->h * 3600) + ($interval->i * 60) + $interval->s;
+        } catch (\Exception $e) {
+            return 60; // default 1 minute
+        }
+    }
+
+    /**
+     * สร้างภารกิจจากวิดีโอ
+     */
+    protected function createMissionFromVideo(array $video, string $apiKey, array $options): string
+    {
+        $videoId = $video['videoId'];
+
+        if (!$videoId) {
+            return 'error';
+        }
+
+        // ตรวจสอบว่ามีอยู่แล้วหรือไม่
+        if (VideoMission::where('video_id', $videoId)->exists()) {
+            return 'skipped';
+        }
+
+        // ดึงรายละเอียดวิดีโอ
+        $details = $this->getVideoDetails($videoId, $apiKey);
+        $durationSeconds = $details['duration'] ?? 60;
+
+        // คำนวณเวลาที่ต้องดู
+        $watchPercent = $options['watch_percent'] ?? 80;
+        $requiredWatchSeconds = (int) ceil($durationSeconds * ($watchPercent / 100));
+
+        if ($durationSeconds < 60) {
+            $requiredWatchSeconds = $durationSeconds;
+        }
+
+        // สร้างภารกิจ
+        VideoMission::create([
+            'title' => $video['title'],
+            'title_th' => $video['title'],
+            'description' => substr($video['description'] ?? '', 0, 500),
+            'description_th' => substr($video['description'] ?? '', 0, 500),
+            'thumbnail' => $video['thumbnail'],
+
+            'video_url' => "https://www.youtube.com/watch?v={$videoId}",
+            'video_type' => 'youtube',
+            'video_id' => $videoId,
+            'video_duration_seconds' => $durationSeconds,
+
+            'required_watch_seconds' => $requiredWatchSeconds,
+            'required_watch_percentage' => $watchPercent,
+
+            'reward_type' => 'multi',
+            'reward_money' => $options['reward_money'] ?? 1,
+            'reward_coins' => $options['reward_coins'] ?? 10,
+            'reward_exp' => $options['reward_exp'] ?? 5,
+
+            'frequency' => 'daily',
+            'cooldown_minutes' => 0,
+
+            'anti_cheat_enabled' => true,
+            'require_focus' => true,
+            'detect_tab_switch' => true,
+            'max_tab_switches' => 3,
+
+            'is_active' => $options['is_active'] ?? true,
+            'is_featured' => $options['is_featured'] ?? false,
+            'priority' => 0,
+            'sort_order' => 0,
+
+            'category' => $options['category'] ?? 'youtube',
+            'tags' => [$video['channelTitle'] ?? 'YouTube'],
+
+            'created_by' => auth()->id(),
+        ]);
+
+        return 'created';
+    }
 }
