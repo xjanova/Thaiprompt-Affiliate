@@ -55,6 +55,18 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.05s ease-out;
+        }
+
+        .game-container.shake {
+            animation: shake 0.3s ease-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            25% { transform: translateX(-5px) translateY(2px); }
+            50% { transform: translateX(5px) translateY(-2px); }
+            75% { transform: translateX(-3px) translateY(1px); }
         }
 
         .left-panel {
@@ -73,6 +85,32 @@
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
             display: block;
             background: rgba(0, 0, 0, 0.8);
+        }
+
+        /* Particle container */
+        #particle-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            border-radius: 10px;
+        }
+
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleFade 0.8s ease-out forwards;
+        }
+
+        @keyframes particleFade {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0) translateY(-50px); }
         }
 
         .controls-info {
@@ -112,7 +150,7 @@
         .right-panel {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
             min-width: 200px;
         }
 
@@ -126,8 +164,8 @@
 
         .info-box h2 {
             color: #fff;
-            font-size: 16px;
-            margin-bottom: 15px;
+            font-size: 14px;
+            margin-bottom: 12px;
             text-align: center;
             font-weight: 700;
             text-transform: uppercase;
@@ -138,43 +176,71 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 10px 0;
-            padding: 10px;
+            margin: 8px 0;
+            padding: 8px;
             background: rgba(0, 0, 0, 0.2);
             border-radius: 5px;
         }
 
         .stat-label {
             color: rgba(255, 255, 255, 0.8);
-            font-size: 14px;
+            font-size: 12px;
         }
 
         .stat-value {
             color: #fff;
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 700;
             font-family: 'Press Start 2P', monospace;
         }
 
-        .next-piece-box {
+        /* Combo display */
+        .combo-display {
+            text-align: center;
+            padding: 10px;
+            background: linear-gradient(135deg, rgba(255, 165, 0, 0.3), rgba(255, 69, 0, 0.3));
+            border-radius: 8px;
+            border: 2px solid rgba(255, 165, 0, 0.5);
+            display: none;
+        }
+
+        .combo-display.active {
+            display: block;
+            animation: comboPulse 0.5s ease-out;
+        }
+
+        @keyframes comboPulse {
+            0% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .combo-text {
+            color: #ffa500;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'Press Start 2P', monospace;
+            text-shadow: 0 0 10px rgba(255, 165, 0, 0.8);
+        }
+
+        .next-piece-box, .hold-piece-box {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(5px);
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        .next-piece-box h2 {
+        .next-piece-box h2, .hold-piece-box h2 {
             color: #fff;
-            font-size: 16px;
-            margin-bottom: 15px;
+            font-size: 12px;
+            margin-bottom: 10px;
             text-align: center;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
 
-        #next-canvas {
+        #next-canvas, #hold-canvas {
             display: block;
             margin: 0 auto;
             background: rgba(0, 0, 0, 0.3);
@@ -182,10 +248,14 @@
             border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
+        .hold-piece-box.used {
+            opacity: 0.5;
+        }
+
         .high-score-box {
             background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2));
             backdrop-filter: blur(5px);
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
             border: 2px solid rgba(255, 215, 0, 0.5);
             animation: pulse 2s ease-in-out infinite;
@@ -198,21 +268,49 @@
 
         .high-score-box h2 {
             color: #ffd700;
-            font-size: 16px;
-            margin-bottom: 15px;
+            font-size: 12px;
+            margin-bottom: 10px;
             text-align: center;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
 
         .high-score-value {
             color: #ffd700;
-            font-size: 28px;
+            font-size: 20px;
             font-weight: 700;
             font-family: 'Press Start 2P', monospace;
             text-align: center;
             text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Sound control */
+        .sound-control {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .sound-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .sound-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .sound-btn.muted {
+            opacity: 0.5;
         }
 
         /* Game Over Overlay */
@@ -237,12 +335,13 @@
 
         .game-over-content {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 40px;
+            padding: 30px;
             border-radius: 20px;
             text-align: center;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
             border: 3px solid rgba(255, 255, 255, 0.3);
-            max-width: 400px;
+            max-width: 500px;
+            width: 90%;
             animation: slideUp 0.5s ease-out;
         }
 
@@ -253,7 +352,7 @@
 
         .game-over-content h1 {
             color: #fff;
-            font-size: 48px;
+            font-size: 36px;
             font-family: 'Press Start 2P', monospace;
             margin-bottom: 20px;
             text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
@@ -261,17 +360,17 @@
 
         .game-over-stats {
             background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
-            margin: 20px 0;
+            margin: 15px 0;
         }
 
         .game-over-stat {
             display: flex;
             justify-content: space-between;
-            margin: 10px 0;
+            margin: 8px 0;
             color: #fff;
-            font-size: 18px;
+            font-size: 14px;
         }
 
         .game-over-stat .label {
@@ -285,9 +384,9 @@
 
         .new-high-score {
             color: #ffd700;
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
-            margin: 20px 0;
+            margin: 15px 0;
             animation: glow 1s ease-in-out infinite;
         }
 
@@ -296,12 +395,97 @@
             50% { text-shadow: 0 0 20px rgba(255, 215, 0, 1); }
         }
 
+        /* Name input */
+        .name-input-container {
+            margin: 15px 0;
+            display: none;
+        }
+
+        .name-input-container.show {
+            display: block;
+        }
+
+        .name-input-container label {
+            color: #ffd700;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .name-input-container input {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: #fff;
+            font-size: 16px;
+            width: 100%;
+            max-width: 200px;
+            text-align: center;
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        .name-input-container input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Leaderboard */
+        .leaderboard-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .leaderboard-box h3 {
+            color: #ffd700;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin: 4px 0;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        .leaderboard-entry.highlight {
+            background: rgba(255, 215, 0, 0.3);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+        }
+
+        .leaderboard-rank {
+            font-family: 'Press Start 2P', monospace;
+            color: #ffd700;
+            width: 30px;
+        }
+
+        .leaderboard-name {
+            flex: 1;
+            text-align: left;
+            padding: 0 10px;
+        }
+
+        .leaderboard-score {
+            font-family: 'Press Start 2P', monospace;
+            color: #00f0f0;
+        }
+
         .btn {
             background: rgba(255, 255, 255, 0.2);
             color: #fff;
             border: 2px solid rgba(255, 255, 255, 0.5);
-            padding: 15px 30px;
-            font-size: 18px;
+            padding: 12px 25px;
+            font-size: 16px;
             font-weight: 700;
             border-radius: 10px;
             cursor: pointer;
@@ -360,24 +544,71 @@
             font-size: 18px;
         }
 
+        /* Line clear flash */
+        .line-clear-flash {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 30px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+            pointer-events: none;
+            animation: flashLine 0.3s ease-out forwards;
+        }
+
+        @keyframes flashLine {
+            0% { opacity: 1; transform: scaleY(1); }
+            100% { opacity: 0; transform: scaleY(2); }
+        }
+
+        /* Score popup */
+        .score-popup {
+            position: absolute;
+            color: #ffd700;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            pointer-events: none;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+            animation: scoreFloat 1s ease-out forwards;
+        }
+
+        @keyframes scoreFloat {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .game-container {
                 flex-direction: column;
                 padding: 20px;
+                gap: 15px;
             }
 
             .right-panel {
                 min-width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .right-panel > div {
+                flex: 1;
+                min-width: 150px;
+            }
+
+            #tetris-canvas {
+                width: 250px;
+                height: 500px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="game-container">
+    <div class="game-container" id="game-container">
         <div class="left-panel">
             <div class="game-board">
                 <canvas id="tetris-canvas" width="300" height="600"></canvas>
+                <div id="particle-container"></div>
             </div>
             <div class="controls-info">
                 <h3>🎮 การควบคุม</h3>
@@ -387,7 +618,7 @@
                 </div>
                 <div class="control-row">
                     <span>หมุน:</span>
-                    <span><span class="key">↑</span></span>
+                    <span><span class="key">↑</span> / <span class="key">Z</span></span>
                 </div>
                 <div class="control-row">
                     <span>ตกเร็ว:</span>
@@ -398,8 +629,16 @@
                     <span><span class="key">SPACE</span></span>
                 </div>
                 <div class="control-row">
+                    <span>เก็บชิ้น:</span>
+                    <span><span class="key">C</span> / <span class="key">SHIFT</span></span>
+                </div>
+                <div class="control-row">
                     <span>หยุดชั่วคราว:</span>
-                    <span><span class="key">P</span></span>
+                    <span><span class="key">P</span> / <span class="key">ESC</span></span>
+                </div>
+                <div class="sound-control">
+                    <button class="sound-btn" id="sound-toggle" title="เปิด/ปิดเสียง">🔊</button>
+                    <button class="sound-btn" id="music-toggle" title="เปิด/ปิดเพลง">🎵</button>
                 </div>
             </div>
         </div>
@@ -419,11 +658,19 @@
                     <span class="stat-label">เส้น:</span>
                     <span class="stat-value" id="lines">0</span>
                 </div>
+                <div class="combo-display" id="combo-display">
+                    <span class="combo-text" id="combo-text">COMBO x2</span>
+                </div>
+            </div>
+
+            <div class="hold-piece-box" id="hold-box">
+                <h2>📦 เก็บไว้ (C)</h2>
+                <canvas id="hold-canvas" width="100" height="100"></canvas>
             </div>
 
             <div class="next-piece-box">
                 <h2>⏭️ ชิ้นถัดไป</h2>
-                <canvas id="next-canvas" width="120" height="120"></canvas>
+                <canvas id="next-canvas" width="100" height="100"></canvas>
             </div>
 
             <div class="high-score-box">
@@ -437,7 +684,7 @@
     <div id="pause-overlay">
         <div class="pause-content">
             <h2>PAUSE</h2>
-            <p>กด P เพื่อเล่นต่อ</p>
+            <p>กด P หรือ ESC เพื่อเล่นต่อ</p>
         </div>
     </div>
 
@@ -458,9 +705,21 @@
                     <span class="label">เส้นทั้งหมด:</span>
                     <span class="value" id="final-lines">0</span>
                 </div>
+                <div class="game-over-stat">
+                    <span class="label">Combo สูงสุด:</span>
+                    <span class="value" id="final-combo">0</span>
+                </div>
             </div>
             <div id="new-high-score-message" class="new-high-score" style="display: none;">
                 🎉 สถิติใหม่! 🎉
+            </div>
+            <div class="name-input-container" id="name-input-container">
+                <label>ใส่ชื่อของคุณ:</label>
+                <input type="text" id="player-name" maxlength="10" placeholder="ชื่อ">
+            </div>
+            <div class="leaderboard-box" id="leaderboard-box">
+                <h3>🏅 อันดับ 10 สูงสุด</h3>
+                <div id="leaderboard-list"></div>
             </div>
             <button class="btn btn-primary" onclick="restartGame()">เล่นอีกครั้ง</button>
             <button class="btn" onclick="location.href='/'">กลับหน้าหลัก</button>
@@ -468,7 +727,208 @@
     </div>
 
     <script>
-        // Game Configuration
+        // ============================================
+        // 🔊 SOUND SYSTEM (Web Audio API)
+        // ============================================
+        class SoundManager {
+            constructor() {
+                this.audioContext = null;
+                this.isMuted = false;
+                this.isMusicMuted = false;
+                this.musicOscillator = null;
+                this.musicGain = null;
+                this.initialized = false;
+            }
+
+            // เริ่มต้น Audio Context (ต้องเรียกหลัง user interaction)
+            init() {
+                if (this.initialized) return;
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.initialized = true;
+                } catch (e) {
+                    console.warn('Web Audio API ไม่รองรับ:', e);
+                }
+            }
+
+            // สร้างเสียง beep พื้นฐาน
+            playTone(frequency, duration, type = 'square', volume = 0.3) {
+                if (!this.audioContext || this.isMuted) return;
+
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+
+                oscillator.frequency.value = frequency;
+                oscillator.type = type;
+
+                gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + duration);
+            }
+
+            // เสียงเลื่อนชิ้นส่วน
+            playMove() {
+                this.playTone(200, 0.05, 'sine', 0.1);
+            }
+
+            // เสียงหมุน
+            playRotate() {
+                this.playTone(400, 0.1, 'sine', 0.2);
+            }
+
+            // เสียงวางชิ้นส่วน (lock)
+            playLock() {
+                this.playTone(150, 0.15, 'triangle', 0.3);
+            }
+
+            // เสียง Hard Drop
+            playHardDrop() {
+                this.playTone(100, 0.2, 'sawtooth', 0.4);
+                setTimeout(() => this.playTone(80, 0.1, 'square', 0.3), 50);
+            }
+
+            // เสียงล้างแถว (ต่างกันตามจำนวนแถว)
+            playClearLine(lineCount) {
+                if (!this.audioContext || this.isMuted) return;
+
+                const baseFreq = 300;
+                for (let i = 0; i < lineCount; i++) {
+                    setTimeout(() => {
+                        this.playTone(baseFreq + (i * 100), 0.15, 'sine', 0.3);
+                    }, i * 80);
+                }
+
+                // Tetris! (4 แถว)
+                if (lineCount === 4) {
+                    setTimeout(() => {
+                        this.playTone(600, 0.1, 'square', 0.4);
+                        setTimeout(() => this.playTone(800, 0.1, 'square', 0.4), 100);
+                        setTimeout(() => this.playTone(1000, 0.2, 'square', 0.5), 200);
+                    }, 300);
+                }
+            }
+
+            // เสียง Combo
+            playCombo(comboCount) {
+                if (!this.audioContext || this.isMuted) return;
+                const freq = 400 + (comboCount * 50);
+                this.playTone(freq, 0.1, 'sine', 0.3);
+                setTimeout(() => this.playTone(freq + 100, 0.15, 'sine', 0.3), 100);
+            }
+
+            // เสียง Level Up
+            playLevelUp() {
+                if (!this.audioContext || this.isMuted) return;
+
+                const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
+                notes.forEach((freq, i) => {
+                    setTimeout(() => {
+                        this.playTone(freq, 0.2, 'sine', 0.3);
+                    }, i * 100);
+                });
+            }
+
+            // เสียง Hold
+            playHold() {
+                this.playTone(350, 0.1, 'sine', 0.2);
+                setTimeout(() => this.playTone(450, 0.1, 'sine', 0.2), 80);
+            }
+
+            // เสียง Game Over
+            playGameOver() {
+                if (!this.audioContext || this.isMuted) return;
+
+                const notes = [400, 350, 300, 250, 200];
+                notes.forEach((freq, i) => {
+                    setTimeout(() => {
+                        this.playTone(freq, 0.3, 'sawtooth', 0.3);
+                    }, i * 150);
+                });
+            }
+
+            // เสียง High Score ใหม่
+            playHighScore() {
+                if (!this.audioContext || this.isMuted) return;
+
+                const melody = [523, 659, 784, 880, 1047, 880, 784, 1047];
+                melody.forEach((freq, i) => {
+                    setTimeout(() => {
+                        this.playTone(freq, 0.15, 'sine', 0.3);
+                    }, i * 100);
+                });
+            }
+
+            // เพลงพื้นหลัง (simple loop)
+            startMusic() {
+                if (!this.audioContext || this.isMusicMuted) return;
+                this.stopMusic();
+
+                // สร้าง pattern เพลงง่ายๆ
+                this.playMusicLoop();
+            }
+
+            playMusicLoop() {
+                if (this.isMusicMuted || !this.audioContext) return;
+
+                const bassNotes = [130.81, 146.83, 164.81, 174.61]; // C3, D3, E3, F3
+                let noteIndex = 0;
+
+                const playNote = () => {
+                    if (this.isMusicMuted) return;
+
+                    const osc = this.audioContext.createOscillator();
+                    const gain = this.audioContext.createGain();
+
+                    osc.connect(gain);
+                    gain.connect(this.audioContext.destination);
+
+                    osc.frequency.value = bassNotes[noteIndex % bassNotes.length];
+                    osc.type = 'sine';
+
+                    gain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.4);
+
+                    osc.start();
+                    osc.stop(this.audioContext.currentTime + 0.4);
+
+                    noteIndex++;
+                    this.musicTimeout = setTimeout(playNote, 500);
+                };
+
+                playNote();
+            }
+
+            stopMusic() {
+                if (this.musicTimeout) {
+                    clearTimeout(this.musicTimeout);
+                    this.musicTimeout = null;
+                }
+            }
+
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                return this.isMuted;
+            }
+
+            toggleMusic() {
+                this.isMusicMuted = !this.isMusicMuted;
+                if (this.isMusicMuted) {
+                    this.stopMusic();
+                } else {
+                    this.startMusic();
+                }
+                return this.isMusicMuted;
+            }
+        }
+
+        // ============================================
+        // 🎮 GAME CONFIGURATION
+        // ============================================
         const COLS = 10;
         const ROWS = 20;
         const BLOCK_SIZE = 30;
@@ -493,47 +953,149 @@
             L: [[0, 0, 1], [1, 1, 1]]
         };
 
-        // Game State
-        let canvas, ctx, nextCanvas, nextCtx;
+        // ============================================
+        // 🎯 GAME STATE
+        // ============================================
+        let canvas, ctx, nextCanvas, nextCtx, holdCanvas, holdCtx;
         let board = [];
         let currentPiece = null;
         let nextPiece = null;
+        let holdPiece = null;
+        let canHold = true;
         let score = 0;
         let level = 1;
         let lines = 0;
+        let combo = 0;
+        let maxCombo = 0;
         let gameOver = false;
         let isPaused = false;
         let dropCounter = 0;
         let dropInterval = 1000;
         let lastTime = 0;
         let highScore = 0;
+        let leaderboard = [];
 
-        // Initialize Game
+        // Sound Manager
+        const soundManager = new SoundManager();
+
+        // ============================================
+        // 🚀 INITIALIZE GAME
+        // ============================================
         function init() {
             canvas = document.getElementById('tetris-canvas');
             ctx = canvas.getContext('2d');
             nextCanvas = document.getElementById('next-canvas');
             nextCtx = nextCanvas.getContext('2d');
+            holdCanvas = document.getElementById('hold-canvas');
+            holdCtx = holdCanvas.getContext('2d');
 
-            // Load high score
-            highScore = localStorage.getItem('tetris-high-score') || 0;
+            // โหลด high score และ leaderboard
+            highScore = parseInt(localStorage.getItem('tetris-high-score')) || 0;
             document.getElementById('high-score').textContent = highScore;
+            loadLeaderboard();
 
-            // Create empty board
+            // สร้างบอร์ดเปล่า
             board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
 
-            // Generate first pieces
+            // สร้างชิ้นแรก
             nextPiece = generatePiece();
             spawnPiece();
 
-            // Start game loop
+            // เริ่ม game loop
             requestAnimationFrame(update);
 
             // Keyboard controls
             document.addEventListener('keydown', handleKeyPress);
+
+            // Sound controls
+            document.getElementById('sound-toggle').addEventListener('click', () => {
+                soundManager.init();
+                const muted = soundManager.toggleMute();
+                document.getElementById('sound-toggle').textContent = muted ? '🔇' : '🔊';
+                document.getElementById('sound-toggle').classList.toggle('muted', muted);
+            });
+
+            document.getElementById('music-toggle').addEventListener('click', () => {
+                soundManager.init();
+                const muted = soundManager.toggleMusic();
+                document.getElementById('music-toggle').textContent = muted ? '🎵' : '🎶';
+                document.getElementById('music-toggle').classList.toggle('muted', muted);
+            });
+
+            // First interaction to enable audio
+            document.addEventListener('click', () => soundManager.init(), { once: true });
+            document.addEventListener('keydown', () => soundManager.init(), { once: true });
+
+            // Name input handler
+            document.getElementById('player-name').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveScore();
+                }
+            });
         }
 
-        // Generate random piece
+        // ============================================
+        // 📦 LEADERBOARD SYSTEM
+        // ============================================
+        function loadLeaderboard() {
+            const saved = localStorage.getItem('tetris-leaderboard');
+            leaderboard = saved ? JSON.parse(saved) : [];
+        }
+
+        function saveLeaderboard() {
+            localStorage.setItem('tetris-leaderboard', JSON.stringify(leaderboard));
+        }
+
+        function addToLeaderboard(name, playerScore) {
+            leaderboard.push({
+                name: name || 'ผู้เล่น',
+                score: playerScore,
+                level: level,
+                lines: lines,
+                date: new Date().toLocaleDateString('th-TH')
+            });
+
+            // เรียงลำดับและเก็บแค่ 10 อันดับ
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 10);
+            saveLeaderboard();
+        }
+
+        function renderLeaderboard(highlightScore = null) {
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = '';
+
+            if (leaderboard.length === 0) {
+                list.innerHTML = '<p style="color: rgba(255,255,255,0.5); text-align: center;">ยังไม่มีข้อมูล</p>';
+                return;
+            }
+
+            leaderboard.forEach((entry, index) => {
+                const div = document.createElement('div');
+                div.className = 'leaderboard-entry';
+                if (highlightScore && entry.score === highlightScore) {
+                    div.classList.add('highlight');
+                }
+                div.innerHTML = `
+                    <span class="leaderboard-rank">#${index + 1}</span>
+                    <span class="leaderboard-name">${entry.name}</span>
+                    <span class="leaderboard-score">${entry.score.toLocaleString()}</span>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function saveScore() {
+            const nameInput = document.getElementById('player-name');
+            const name = nameInput.value.trim() || 'ผู้เล่น';
+            addToLeaderboard(name, score);
+            renderLeaderboard(score);
+            document.getElementById('name-input-container').classList.remove('show');
+        }
+
+        // ============================================
+        // 🧩 PIECE MANAGEMENT
+        // ============================================
         function generatePiece() {
             const types = Object.keys(SHAPES);
             const type = types[Math.floor(Math.random() * types.length)];
@@ -546,12 +1108,12 @@
             };
         }
 
-        // Spawn new piece
         function spawnPiece() {
             currentPiece = nextPiece;
             nextPiece = generatePiece();
+            canHold = true;
 
-            // Check if spawn position is valid
+            // ตรวจสอบ spawn position
             if (!isValidMove(currentPiece.x, currentPiece.y, currentPiece.shape)) {
                 endGame();
             }
@@ -559,7 +1121,48 @@
             drawNextPiece();
         }
 
-        // Check if move is valid
+        // Hold Piece
+        function holdCurrentPiece() {
+            if (!canHold) return;
+
+            soundManager.playHold();
+            canHold = false;
+
+            if (holdPiece === null) {
+                holdPiece = {
+                    type: currentPiece.type,
+                    shape: SHAPES[currentPiece.type],
+                    color: COLORS[currentPiece.type]
+                };
+                spawnPiece();
+            } else {
+                const temp = {
+                    type: currentPiece.type,
+                    shape: SHAPES[currentPiece.type],
+                    color: COLORS[currentPiece.type]
+                };
+                currentPiece = {
+                    type: holdPiece.type,
+                    shape: holdPiece.shape,
+                    color: holdPiece.color,
+                    x: Math.floor(COLS / 2) - Math.floor(holdPiece.shape[0].length / 2),
+                    y: 0
+                };
+                holdPiece = temp;
+            }
+
+            drawHoldPiece();
+            updateHoldBoxStyle();
+        }
+
+        function updateHoldBoxStyle() {
+            const holdBox = document.getElementById('hold-box');
+            holdBox.classList.toggle('used', !canHold);
+        }
+
+        // ============================================
+        // 🎯 COLLISION DETECTION
+        // ============================================
         function isValidMove(x, y, shape) {
             for (let row = 0; row < shape.length; row++) {
                 for (let col = 0; col < shape[row].length; col++) {
@@ -580,7 +1183,7 @@
             return true;
         }
 
-        // Rotate piece
+        // หมุนชิ้นส่วน
         function rotate(shape) {
             const rows = shape.length;
             const cols = shape[0].length;
@@ -597,7 +1200,25 @@
             return rotated;
         }
 
-        // Merge piece to board
+        // Wall kick - พยายามหมุนแม้ชนกำแพง
+        function tryRotate() {
+            const rotated = rotate(currentPiece.shape);
+            const kicks = [0, -1, 1, -2, 2]; // ลองขยับซ้าย-ขวา
+
+            for (const kick of kicks) {
+                if (isValidMove(currentPiece.x + kick, currentPiece.y, rotated)) {
+                    currentPiece.shape = rotated;
+                    currentPiece.x += kick;
+                    soundManager.playRotate();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // ============================================
+        // 📍 PIECE MOVEMENT
+        // ============================================
         function mergePiece() {
             for (let row = 0; row < currentPiece.shape.length; row++) {
                 for (let col = 0; col < currentPiece.shape[row].length; col++) {
@@ -612,40 +1233,69 @@
             }
         }
 
-        // Clear completed lines
+        // ล้างแถว
         function clearLines() {
             let linesCleared = 0;
+            const clearedRows = [];
 
             for (let row = ROWS - 1; row >= 0; row--) {
                 if (board[row].every(cell => cell !== 0)) {
+                    clearedRows.push(row);
                     board.splice(row, 1);
                     board.unshift(Array(COLS).fill(0));
                     linesCleared++;
-                    row++; // Check the same row again
+                    row++;
                 }
             }
 
             if (linesCleared > 0) {
                 lines += linesCleared;
+                combo++;
+                if (combo > maxCombo) maxCombo = combo;
 
-                // Score calculation
-                const points = [0, 100, 300, 500, 800];
-                score += points[linesCleared] * level;
+                // คำนวณคะแนน (รวม combo bonus)
+                const basePoints = [0, 100, 300, 500, 800];
+                let earnedPoints = basePoints[linesCleared] * level;
 
-                // Level up every 10 lines
-                level = Math.floor(lines / 10) + 1;
-                dropInterval = Math.max(100, 1000 - (level - 1) * 100);
+                // Combo bonus
+                if (combo > 1) {
+                    earnedPoints += 50 * combo * level;
+                    showCombo(combo);
+                    soundManager.playCombo(combo);
+                }
+
+                score += earnedPoints;
+
+                // แสดง score popup
+                showScorePopup(earnedPoints, clearedRows[0]);
+
+                // Level up ทุก 10 เส้น
+                const newLevel = Math.floor(lines / 10) + 1;
+                if (newLevel > level) {
+                    level = newLevel;
+                    dropInterval = Math.max(100, 1000 - (level - 1) * 80);
+                    soundManager.playLevelUp();
+                }
+
+                // Visual effects
+                createParticles(clearedRows);
+                soundManager.playClearLine(linesCleared);
 
                 updateStats();
+            } else {
+                // Reset combo ถ้าไม่ได้ล้างแถว
+                combo = 0;
+                hideCombo();
             }
         }
 
-        // Move piece down
+        // เลื่อนลง
         function moveDown() {
             if (isValidMove(currentPiece.x, currentPiece.y + 1, currentPiece.shape)) {
                 currentPiece.y++;
                 return true;
             } else {
+                soundManager.playLock();
                 mergePiece();
                 clearLines();
                 spawnPiece();
@@ -655,14 +1305,87 @@
 
         // Hard drop
         function hardDrop() {
-            while (moveDown()) {}
+            let dropDistance = 0;
+            while (isValidMove(currentPiece.x, currentPiece.y + 1, currentPiece.shape)) {
+                currentPiece.y++;
+                dropDistance++;
+            }
+
+            // Bonus score สำหรับ hard drop
+            score += dropDistance * 2;
+            updateStats();
+
+            soundManager.playHardDrop();
+            shakeScreen();
+
+            mergePiece();
+            clearLines();
+            spawnPiece();
         }
 
-        // Handle keyboard input
+        // ============================================
+        // 🎨 VISUAL EFFECTS
+        // ============================================
+        function createParticles(rows) {
+            const container = document.getElementById('particle-container');
+
+            rows.forEach(row => {
+                for (let i = 0; i < 20; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 300 + 'px';
+                    particle.style.top = (row * BLOCK_SIZE) + 'px';
+                    particle.style.backgroundColor = `hsl(${Math.random() * 360}, 80%, 60%)`;
+                    container.appendChild(particle);
+
+                    setTimeout(() => particle.remove(), 800);
+                }
+
+                // Line flash effect
+                const flash = document.createElement('div');
+                flash.className = 'line-clear-flash';
+                flash.style.top = (row * BLOCK_SIZE) + 'px';
+                container.appendChild(flash);
+                setTimeout(() => flash.remove(), 300);
+            });
+        }
+
+        function showScorePopup(points, row) {
+            const container = document.getElementById('particle-container');
+            const popup = document.createElement('div');
+            popup.className = 'score-popup';
+            popup.textContent = '+' + points.toLocaleString();
+            popup.style.left = '150px';
+            popup.style.top = (row * BLOCK_SIZE) + 'px';
+            container.appendChild(popup);
+            setTimeout(() => popup.remove(), 1000);
+        }
+
+        function shakeScreen() {
+            const container = document.getElementById('game-container');
+            container.classList.add('shake');
+            setTimeout(() => container.classList.remove('shake'), 300);
+        }
+
+        function showCombo(count) {
+            const display = document.getElementById('combo-display');
+            const text = document.getElementById('combo-text');
+            text.textContent = `COMBO x${count}`;
+            display.classList.add('active');
+        }
+
+        function hideCombo() {
+            document.getElementById('combo-display').classList.remove('active');
+        }
+
+        // ============================================
+        // ⌨️ KEYBOARD CONTROLS
+        // ============================================
         function handleKeyPress(e) {
             if (gameOver) return;
 
-            if (e.key === 'p' || e.key === 'P') {
+            // Pause controls
+            if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
                 togglePause();
                 return;
             }
@@ -673,29 +1396,38 @@
                 case 'ArrowLeft':
                     if (isValidMove(currentPiece.x - 1, currentPiece.y, currentPiece.shape)) {
                         currentPiece.x--;
+                        soundManager.playMove();
                     }
                     break;
 
                 case 'ArrowRight':
                     if (isValidMove(currentPiece.x + 1, currentPiece.y, currentPiece.shape)) {
                         currentPiece.x++;
+                        soundManager.playMove();
                     }
                     break;
 
                 case 'ArrowDown':
                     moveDown();
+                    score += 1; // Soft drop bonus
+                    updateStats();
                     break;
 
                 case 'ArrowUp':
-                    const rotated = rotate(currentPiece.shape);
-                    if (isValidMove(currentPiece.x, currentPiece.y, rotated)) {
-                        currentPiece.shape = rotated;
-                    }
+                case 'z':
+                case 'Z':
+                    tryRotate();
                     break;
 
                 case ' ':
                     e.preventDefault();
                     hardDrop();
+                    break;
+
+                case 'c':
+                case 'C':
+                case 'Shift':
+                    holdCurrentPiece();
                     break;
             }
 
@@ -706,11 +1438,21 @@
         function togglePause() {
             isPaused = !isPaused;
             document.getElementById('pause-overlay').style.display = isPaused ? 'flex' : 'none';
+
+            if (isPaused) {
+                soundManager.stopMusic();
+            } else {
+                if (!soundManager.isMusicMuted) {
+                    soundManager.startMusic();
+                }
+            }
         }
 
-        // Update game stats
+        // ============================================
+        // 📊 UI UPDATES
+        // ============================================
         function updateStats() {
-            document.getElementById('score').textContent = score;
+            document.getElementById('score').textContent = score.toLocaleString();
             document.getElementById('level').textContent = level;
             document.getElementById('lines').textContent = lines;
 
@@ -718,11 +1460,13 @@
             if (score > highScore) {
                 highScore = score;
                 localStorage.setItem('tetris-high-score', highScore);
-                document.getElementById('high-score').textContent = highScore;
+                document.getElementById('high-score').textContent = highScore.toLocaleString();
             }
         }
 
-        // Draw game board
+        // ============================================
+        // 🎨 DRAWING FUNCTIONS
+        // ============================================
         function draw() {
             // Clear canvas
             ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
@@ -753,19 +1497,8 @@
                 }
             }
 
-            // Draw current piece
+            // Draw ghost piece
             if (currentPiece) {
-                for (let row = 0; row < currentPiece.shape.length; row++) {
-                    for (let col = 0; col < currentPiece.shape[row].length; col++) {
-                        if (currentPiece.shape[row][col]) {
-                            const x = (currentPiece.x + col) * BLOCK_SIZE;
-                            const y = (currentPiece.y + row) * BLOCK_SIZE;
-                            drawBlock(ctx, x, y, currentPiece.color);
-                        }
-                    }
-                }
-
-                // Draw ghost piece
                 let ghostY = currentPiece.y;
                 while (isValidMove(currentPiece.x, ghostY + 1, currentPiece.shape)) {
                     ghostY++;
@@ -782,29 +1515,44 @@
                     }
                 }
                 ctx.globalAlpha = 1.0;
+
+                // Draw current piece
+                for (let row = 0; row < currentPiece.shape.length; row++) {
+                    for (let col = 0; col < currentPiece.shape[row].length; col++) {
+                        if (currentPiece.shape[row][col]) {
+                            const x = (currentPiece.x + col) * BLOCK_SIZE;
+                            const y = (currentPiece.y + row) * BLOCK_SIZE;
+                            drawBlock(ctx, x, y, currentPiece.color);
+                        }
+                    }
+                }
             }
         }
 
-        // Draw a single block
         function drawBlock(context, x, y, color) {
+            const size = context === ctx ? BLOCK_SIZE : 20;
+
             // Main block
             context.fillStyle = color;
-            context.fillRect(x, y, BLOCK_SIZE, BLOCK_SIZE);
+            context.fillRect(x, y, size, size);
 
             // Gradient overlay
-            const gradient = context.createLinearGradient(x, y, x + BLOCK_SIZE, y + BLOCK_SIZE);
+            const gradient = context.createLinearGradient(x, y, x + size, y + size);
             gradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
             gradient.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
             context.fillStyle = gradient;
-            context.fillRect(x, y, BLOCK_SIZE, BLOCK_SIZE);
+            context.fillRect(x, y, size, size);
+
+            // Inner highlight
+            context.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            context.fillRect(x + 2, y + 2, size - 4, size / 3);
 
             // Border
             context.strokeStyle = 'rgba(255, 255, 255, 0.6)';
             context.lineWidth = 2;
-            context.strokeRect(x + 1, y + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2);
+            context.strokeRect(x + 1, y + 1, size - 2, size - 2);
         }
 
-        // Draw next piece preview
         function drawNextPiece() {
             nextCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
@@ -826,7 +1574,30 @@
             }
         }
 
-        // Game loop
+        function drawHoldPiece() {
+            holdCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            holdCtx.fillRect(0, 0, holdCanvas.width, holdCanvas.height);
+
+            if (holdPiece) {
+                const blockSize = 20;
+                const offsetX = (holdCanvas.width - holdPiece.shape[0].length * blockSize) / 2;
+                const offsetY = (holdCanvas.height - holdPiece.shape.length * blockSize) / 2;
+
+                for (let row = 0; row < holdPiece.shape.length; row++) {
+                    for (let col = 0; col < holdPiece.shape[row].length; col++) {
+                        if (holdPiece.shape[row][col]) {
+                            const x = offsetX + col * blockSize;
+                            const y = offsetY + row * blockSize;
+                            drawBlock(holdCtx, x, y, holdPiece.color);
+                        }
+                    }
+                }
+            }
+        }
+
+        // ============================================
+        // 🔄 GAME LOOP
+        // ============================================
         function update(time = 0) {
             if (gameOver) return;
 
@@ -847,40 +1618,72 @@
             requestAnimationFrame(update);
         }
 
-        // End game
+        // ============================================
+        // 🏁 GAME END
+        // ============================================
         function endGame() {
             gameOver = true;
+            soundManager.stopMusic();
+            soundManager.playGameOver();
 
-            document.getElementById('final-score').textContent = score;
+            document.getElementById('final-score').textContent = score.toLocaleString();
             document.getElementById('final-level').textContent = level;
             document.getElementById('final-lines').textContent = lines;
+            document.getElementById('final-combo').textContent = maxCombo;
 
             // Check for new high score
-            if (score > parseInt(localStorage.getItem('tetris-high-score') || 0)) {
+            const isNewHighScore = score > parseInt(localStorage.getItem('tetris-high-score') || 0);
+            if (isNewHighScore) {
                 document.getElementById('new-high-score-message').style.display = 'block';
+                document.getElementById('name-input-container').classList.add('show');
+                soundManager.playHighScore();
             }
 
+            // Check if qualifies for leaderboard
+            const qualifiesForLeaderboard = leaderboard.length < 10 ||
+                (leaderboard.length > 0 && score > leaderboard[leaderboard.length - 1].score);
+
+            if (qualifiesForLeaderboard && !isNewHighScore) {
+                document.getElementById('name-input-container').classList.add('show');
+            }
+
+            renderLeaderboard();
             document.getElementById('game-over-overlay').style.display = 'flex';
         }
 
         // Restart game
         function restartGame() {
+            // Save score if name entered
+            const nameInput = document.getElementById('player-name');
+            if (nameInput.value.trim()) {
+                saveScore();
+            }
+
             // Reset game state
             board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
             score = 0;
             level = 1;
             lines = 0;
+            combo = 0;
+            maxCombo = 0;
             gameOver = false;
             isPaused = false;
             dropCounter = 0;
             dropInterval = 1000;
+            holdPiece = null;
+            canHold = true;
 
             // Hide overlays
             document.getElementById('game-over-overlay').style.display = 'none';
             document.getElementById('new-high-score-message').style.display = 'none';
+            document.getElementById('name-input-container').classList.remove('show');
+            nameInput.value = '';
+            hideCombo();
 
             // Update UI
             updateStats();
+            drawHoldPiece();
+            updateHoldBoxStyle();
 
             // Generate new pieces
             nextPiece = generatePiece();
@@ -889,9 +1692,16 @@
             // Restart game loop
             lastTime = 0;
             requestAnimationFrame(update);
+
+            // Restart music if enabled
+            if (!soundManager.isMusicMuted) {
+                soundManager.startMusic();
+            }
         }
 
-        // Start game when page loads
+        // ============================================
+        // 🎬 START GAME
+        // ============================================
         window.addEventListener('load', init);
     </script>
 </body>
