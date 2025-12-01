@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.287.0] - 2025-12-01
+
+### ✨ Features
+- feat: บังคับเชื่อมต่อ LINE ก่อนสมัครเป็นผู้ให้บริการ (9c849c7a)
+### 🐛 Bug Fixes
+- fix: แก้ไขปัญหาไอคอน Font Awesome ไม่แสดงในหน้า provider/register (0bde55c5)
+### 🔧 Other Changes
+- Merge pull request #1887 from xjanova/claude/fix-provider-register-icon-01GjE1KN7HdBPNqJ3Xf1MNuH (a9634003)
+
 ## [v3.286.0] - 2025-12-01
 
 ### ✨ Features
