@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.295.1] - 2025-12-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1897 from xjanova/claude/fix-wiki-loading-0194Sq6eyNZnbfM1Q99Y7e39 (b834fa48)
+- fix: แก้ไข Wiki ไม่โหลดบนเซิร์ฟเวอร์ใหม่ (b12b1486)
+### 🔧 Other Changes
+
+
 ## [v3.295.0] - 2025-12-01
 
 ### ✨ Features
