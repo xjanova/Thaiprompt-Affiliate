@@ -913,6 +913,15 @@ Route::prefix('line-membership-signup')->name('line-membership-signup.')->group(
 
     // Export
     Route::get('/export/sessions', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'exportSessions'])->name('export.sessions');
+
+    // LINE Connections Management (ผู้ใช้ที่เชื่อมต่อ LINE)
+    Route::prefix('connections')->name('connections.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'index'])->name('index');
+        Route::get('/export', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'export'])->name('export');
+        Route::get('/{user}', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'show'])->name('show');
+        Route::post('/{user}/disconnect', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'disconnect'])->name('disconnect');
+        Route::post('/bulk-disconnect', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'bulkDisconnect'])->name('bulk-disconnect');
+    });
 });
 
 // LINE Recruitment Management (AI-Powered Recruitment System)
