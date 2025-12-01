@@ -295,6 +295,30 @@
             </x-arrow-x.card-v3>
             @endif
 
+            {{-- ======================================
+                Video Rewards Section - สรุปยอดคะแนนชัดเจน
+            ====================================== --}}
+            @if($user->videoLevel || $user->videoCoin)
+            <div class="space-y-4">
+                {{-- Header --}}
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <span class="text-2xl">🎬</span>
+                        <span>ภารกิจดูคลิป</span>
+                    </h2>
+                    <a href="{{ route('user.video-missions.index') }}" class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                        <span>ดูทั้งหมด</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+
+                {{-- Stats Summary Component - แสดงสรุปยอดชัดเจน --}}
+                <x-video-reward.stats-summary :user="$user" compact />
+            </div>
+            @endif
+
             {{-- Recent Activities - ใช้ Arrow X Card (ปิด glow ลดความฟุ้ง) --}}
             <x-arrow-x.card-v3 class="p-6" :glow="false" :hover="false">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
