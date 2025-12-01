@@ -1667,11 +1667,14 @@ CF_ZONE_ID=$(grep "^CLOUDFLARE_ZONE_ID=" .env 2>/dev/null | cut -d '=' -f2 || ec
 CF_API_TOKEN=$(grep "^CLOUDFLARE_API_TOKEN=" .env 2>/dev/null | cut -d '=' -f2 || echo "")
 
 # Use defaults from config if not in .env
+# ⚠️ แนะนำให้ตั้งค่าใน .env แทนการ hardcode ที่นี่
 if [ -z "$CF_ZONE_ID" ]; then
+    # Zone ID จาก Cloudflare Dashboard → Overview → API section
     CF_ZONE_ID="d552b4a77bf4783bf6cbfd6a07d3f349"
 fi
 if [ -z "$CF_API_TOKEN" ]; then
-    CF_API_TOKEN="3fc13fcba9b6add1ee59f2504f092bddec540"
+    # API Token สำหรับ Cache Purge (ต้องมี permission: Zone - Cache Purge - Purge)
+    CF_API_TOKEN="XAoAgrl8jWGhQgXH5SZXZg9g_iTqExuZz0z3m9My"
 fi
 
 if [ -n "$CF_ZONE_ID" ] && [ -n "$CF_API_TOKEN" ]; then
