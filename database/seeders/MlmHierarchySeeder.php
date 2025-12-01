@@ -246,16 +246,27 @@ class MlmHierarchySeeder extends Seeder
             ]);
         }
 
-        // สร้าง Root Member (M1, index 0)
-        $members[0] = $this->createMember(
-            index: 0,
-            user: $adminUser,
-            plan: $plan,
-            package: $package,
-            members: $members,
-            crossReferrals: $crossReferrals
-        );
-        $this->command->info("   M1 (Root): {$adminUser->name}");
+        // ===== ใช้ SuperAdmin MlmMember ที่สร้างจาก SuperAdminMlmSeeder (ถ้ามี) =====
+        $existingSuperAdminMember = MlmMember::where('user_id', $adminUser->id)
+            ->where('member_code', 'ADMIN-0001')
+            ->first();
+
+        if ($existingSuperAdminMember) {
+            // ใช้ SuperAdmin member ที่มีอยู่เป็น Root
+            $members[0] = $existingSuperAdminMember;
+            $this->command->info("   M1 (Root): {$adminUser->name} [ใช้ ADMIN-0001 ที่มีอยู่]");
+        } else {
+            // สร้าง Root Member ใหม่ (M1, index 0)
+            $members[0] = $this->createMember(
+                index: 0,
+                user: $adminUser,
+                plan: $plan,
+                package: $package,
+                members: $members,
+                crossReferrals: $crossReferrals
+            );
+            $this->command->info("   M1 (Root): {$adminUser->name}");
+        }
 
         // สร้างสมาชิกที่เหลือ (M2-M31, index 1-30)
         for ($i = 1; $i <= 30; $i++) {
