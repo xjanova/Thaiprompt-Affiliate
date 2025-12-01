@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.268.0] - 2025-12-01
+
+### ✨ Features
+- feat: ปรับปรุง Step 17 Service Restart ให้แสดงสถานะชัดเจน (d6315a52)
+### 🐛 Bug Fixes
+- fix: ลบ local keyword ที่ใช้นอก function ใน deploy.sh (5c5b23ed)
+### 🔧 Other Changes
+- Merge pull request #1862 from xjanova/claude/fix-root-route-method-017ankfjHTSXTi5389J7ZJCG (2643ac16)
+
 ## [v3.267.47] - 2025-12-01
 
 ### ✨ Features
