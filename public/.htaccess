@@ -11,6 +11,15 @@
 
     RewriteEngine On
 
+    # ========================================
+    # SECURITY: ป้องกันการเข้าถึงไฟล์ ENV
+    # Redirect การเข้าถึง /env, /.env, /ENV ไปที่หน้าแรก
+    # ========================================
+    RewriteCond %{REQUEST_URI} ^/\.env [NC,OR]
+    RewriteCond %{REQUEST_URI} ^/env [NC,OR]
+    RewriteCond %{REQUEST_URI} ^/ENV [NC]
+    RewriteRule ^(.*)$ / [R=301,L]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
