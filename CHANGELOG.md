@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.278.0] - 2025-12-01
+
+### ✨ Features
+- Merge pull request #1877 from xjanova/claude/tetris-sound-scoring-01VXkEvNE4etmtz1tM22ewsw (aaaed53e)
+- feat: ปรับปรุงเกม Tetris เพิ่มเสียงและระบบบันทึกคะแนน (f589bba9)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.277.0] - 2025-12-01
 
 ### ✨ Features
