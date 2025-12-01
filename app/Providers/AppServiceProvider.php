@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,6 +31,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ⚠️ CRITICAL: Force HTTPS สำหรับ Production
+        // แก้ปัญหา redirect loop เมื่อใช้ Cloudflare/Reverse Proxy
+        if (config('app.env') === 'production' || env('FORCE_HTTPS', false)) {
+            URL::forceScheme('https');
+        }
+
         // Use Tailwind pagination views
         Paginator::useTailwind();
 
