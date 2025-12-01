@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.274.2] - 2025-12-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1872 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (adde7839)
+- refactor: ลบ Turnstile settings ออกจาก settings-v3 (b0a728b4)
+
 ## [v3.274.1] - 2025-12-01
 
 ### ✨ Features
