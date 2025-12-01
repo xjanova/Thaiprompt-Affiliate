@@ -117,6 +117,7 @@ class DatabaseSeeder extends Seeder
             VideoRewardSystemSeeder::class,     // ระบบรางวัลจากการดูวิดีโอ (Channels, Videos, Quests, Coins)
             VideoMissionSystemSeeder::class,    // 🆕 ระบบภารกิจดูคลิปรับรางวัล (Video Missions, Rank Limits, Anti-Cheat)
             VideoMissionYouTubeSeeder::class,   // 🎬 นำเข้าวิดีโอจากช่อง YouTube (@Metal-XProject)
+            CoinShopSeeder::class,              // 🛒 ระบบร้านค้า Coins (Coin Shop Products)
             GameSeeder::class,                  // ระบบเกม (Game System)
             GamesSeeder::class,                 // ข้อมูลเกมต่างๆ (Games Data)
             GameSettingsSeeder::class,          // การตั้งค่าเกม (IP, Port, Server Config)

@@ -3199,3 +3199,23 @@ Route::prefix('video-missions')->name('video-missions.')->group(function () {
     Route::get('/import-youtube', [\App\Http\Controllers\Admin\VideoMissionController::class, 'importYouTube'])->name('import-youtube');
     Route::post('/import-youtube', [\App\Http\Controllers\Admin\VideoMissionController::class, 'processImportYouTube'])->name('import-youtube.process');
 });
+
+// ============================================
+// Coin Shop Management Routes (ร้านค้า Coins)
+// ============================================
+Route::prefix('coin-shop')->name('coin-shop.')->group(function () {
+    // Products CRUD
+    Route::get('/', [\App\Http\Controllers\Admin\CoinShopController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Admin\CoinShopController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Admin\CoinShopController::class, 'store'])->name('store');
+    Route::get('/{product}/edit', [\App\Http\Controllers\Admin\CoinShopController::class, 'edit'])->name('edit');
+    Route::put('/{product}', [\App\Http\Controllers\Admin\CoinShopController::class, 'update'])->name('update');
+    Route::delete('/{product}', [\App\Http\Controllers\Admin\CoinShopController::class, 'destroy'])->name('destroy');
+    Route::post('/{product}/toggle-active', [\App\Http\Controllers\Admin\CoinShopController::class, 'toggleActive'])->name('toggle-active');
+
+    // Purchases Management
+    Route::get('/purchases', [\App\Http\Controllers\Admin\CoinShopController::class, 'purchases'])->name('purchases');
+    Route::get('/purchases/{purchase}', [\App\Http\Controllers\Admin\CoinShopController::class, 'purchaseDetail'])->name('purchases.detail');
+    Route::put('/purchases/{purchase}/status', [\App\Http\Controllers\Admin\CoinShopController::class, 'updatePurchaseStatus'])->name('purchases.update-status');
+    Route::post('/purchases/{purchase}/refund', [\App\Http\Controllers\Admin\CoinShopController::class, 'refundPurchase'])->name('purchases.refund');
+});

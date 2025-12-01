@@ -544,3 +544,23 @@ Route::prefix('video-missions')->name('video-missions.')->group(function () {
     Route::post('/completion/{completion}/complete', [\App\Http\Controllers\User\VideoMissionController::class, 'complete'])->name('completion.complete');
     Route::post('/completion/{completion}/cancel', [\App\Http\Controllers\User\VideoMissionController::class, 'cancel'])->name('completion.cancel');
 });
+
+// ============================================
+// Coin Shop Routes (ร้านค้า Coins)
+// ============================================
+Route::prefix('coin-shop')->name('coin-shop.')->group(function () {
+    // หน้าร้านค้า
+    Route::get('/', [\App\Http\Controllers\User\CoinShopController::class, 'index'])->name('index');
+    Route::get('/product/{product}', [\App\Http\Controllers\User\CoinShopController::class, 'show'])->name('product');
+
+    // การซื้อสินค้า
+    Route::post('/product/{product}/purchase', [\App\Http\Controllers\User\CoinShopController::class, 'purchase'])->name('purchase');
+    Route::get('/purchase/{purchase}/success', [\App\Http\Controllers\User\CoinShopController::class, 'purchaseSuccess'])->name('purchase-success');
+
+    // ประวัติการซื้อ
+    Route::get('/my-purchases', [\App\Http\Controllers\User\CoinShopController::class, 'myPurchases'])->name('my-purchases');
+    Route::get('/purchase/{purchase}', [\App\Http\Controllers\User\CoinShopController::class, 'purchaseDetail'])->name('purchase-detail');
+
+    // ใช้งานสินค้า
+    Route::post('/purchase/{purchase}/use', [\App\Http\Controllers\User\CoinShopController::class, 'useItem'])->name('use-item');
+});
