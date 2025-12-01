@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.270.1] - 2025-12-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: resolve merge conflict - keep root route at top of file (5438c910)
+- fix: ย้าย root route ไปไว้ต้นไฟล์ web.php (04ac55f9)
+- fix: ใช้ Route::addRoute() แทน Route::any() สำหรับ root route (d0930c52)
+### 🔧 Other Changes
+- Merge pull request #1865 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (8f2cf2db)
+
 ## [v3.270.0] - 2025-12-01
 
 ### ✨ Features
