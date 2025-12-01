@@ -416,6 +416,130 @@
                     </div>
                 </x-arrow-x.card-v3>
 
+                {{-- ID Card Information (Read-Only) - แสดงเมื่อ KYC ผ่านแล้ว --}}
+                @if($user->isKycVerified() && $user->id_card_number)
+                <x-arrow-x.card-v3 class="p-6 border-2 border-green-500/30 dark:border-green-500/20 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                            <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3 shadow-lg">
+                                <i class="fas fa-id-card text-white"></i>
+                            </div>
+                            ข้อมูลบัตรประชาชน
+                        </h2>
+                        <span class="inline-flex items-center px-3 py-1 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 rounded-full text-sm font-semibold">
+                            <i class="fas fa-shield-check mr-2"></i>ยืนยันตัวตนแล้ว
+                        </span>
+                    </div>
+
+                    {{-- คำเตือน: ไม่สามารถแก้ไขได้ --}}
+                    <div class="mb-4 p-4 bg-amber-50 dark:bg-amber-900/30 border-l-4 border-amber-500 rounded-r-lg">
+                        <p class="text-sm text-amber-800 dark:text-amber-200">
+                            <i class="fas fa-lock mr-2"></i>
+                            ข้อมูลบัตรประชาชนไม่สามารถแก้ไขได้ หากต้องการแก้ไขกรุณาติดต่อทีมงานผ่านระบบ Support Ticket
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {{-- เลขบัตรประชาชน --}}
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-fingerprint mr-1 text-green-600"></i>เลขบัตรประชาชน
+                            </label>
+                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 font-mono">
+                                {{ substr($user->id_card_number, 0, 1) }}-{{ substr($user->id_card_number, 1, 4) }}-{{ substr($user->id_card_number, 5, 5) }}-{{ substr($user->id_card_number, 10, 2) }}-{{ substr($user->id_card_number, 12, 1) }}
+                            </div>
+                        </div>
+
+                        {{-- ชื่อภาษาไทย --}}
+                        @if($user->thai_first_name || $user->thai_last_name)
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-user mr-1 text-green-600"></i>ชื่อ-นามสกุล (ภาษาไทย)
+                            </label>
+                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300">
+                                {{ $user->thai_first_name }} {{ $user->thai_last_name }}
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- ชื่อภาษาอังกฤษ --}}
+                        @if($user->english_first_name || $user->english_last_name)
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-globe mr-1 text-green-600"></i>ชื่อ-นามสกุล (ภาษาอังกฤษ)
+                            </label>
+                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300">
+                                {{ $user->english_first_name }} {{ $user->english_last_name }}
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- วันเกิด --}}
+                        @if($user->id_card_birth_date)
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-birthday-cake mr-1 text-green-600"></i>วันเกิด (จากบัตร)
+                            </label>
+                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300">
+                                {{ \Carbon\Carbon::parse($user->id_card_birth_date)->locale('th')->translatedFormat('j F Y') }}
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- ศาสนา --}}
+                        @if($user->id_card_religion)
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-pray mr-1 text-green-600"></i>ศาสนา
+                            </label>
+                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300">
+                                {{ $user->id_card_religion }}
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- วันออกบัตร --}}
+                        @if($user->id_card_issue_date)
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-calendar-plus mr-1 text-green-600"></i>วันออกบัตร
+                            </label>
+                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300">
+                                {{ \Carbon\Carbon::parse($user->id_card_issue_date)->locale('th')->translatedFormat('j F Y') }}
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- วันหมดอายุ --}}
+                        @if($user->id_card_expiry_date)
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-calendar-times mr-1 text-green-600"></i>วันหมดอายุ
+                            </label>
+                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 {{ \Carbon\Carbon::parse($user->id_card_expiry_date)->isPast() ? 'text-red-600 dark:text-red-400' : '' }}">
+                                {{ \Carbon\Carbon::parse($user->id_card_expiry_date)->locale('th')->translatedFormat('j F Y') }}
+                                @if(\Carbon\Carbon::parse($user->id_card_expiry_date)->isPast())
+                                    <span class="ml-2 text-red-600 dark:text-red-400 text-sm">(หมดอายุแล้ว)</span>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- ที่อยู่ตามบัตร --}}
+                        @if($user->id_card_address)
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-map-marker-alt mr-1 text-green-600"></i>ที่อยู่ตามบัตร
+                            </label>
+                            <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300">
+                                {{ $user->id_card_address }}
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </x-arrow-x.card-v3>
+                @endif
+
                 {{-- Password Change --}}
                 <x-arrow-x.card-v3 class="p-6">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
