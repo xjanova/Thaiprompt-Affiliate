@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.288.0] - 2025-12-01
+
+### ✨ Features
+- feat: เพิ่มระบบ QR Code สมัครผ่าน LINE Bot (429f0d3f)
+### 🐛 Bug Fixes
+- fix: แก้ไข QR Code ไม่แสดงในหน้า referral (910bdecb)
+### 🔧 Other Changes
+- Merge pull request #1888 from xjanova/claude/add-qr-code-scanning-011fkTyrbFHsYppJWVHtZ497 (e862adfd)
+
 ## [v3.287.0] - 2025-12-01
 
 ### ✨ Features
