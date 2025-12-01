@@ -1,67 +1,205 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 overflow-hidden">
-    <div class="container mx-auto px-4 py-8">
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-white mb-2" id="header-title">
-                กำลังสับไพ่...
+{{-- หน้าเลือกไพ่ทาโร่ต์ - V3 Premium Design with Mystical Effects --}}
+<div class="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 overflow-hidden relative"
+     x-data="{ showInstructions: false }">
+
+    {{-- พื้นหลังแบบ Mystical --}}
+    <div class="absolute inset-0 pointer-events-none">
+        {{-- ดาวกระพริบ --}}
+        <div class="stars-bg absolute inset-0"></div>
+
+        {{-- หมอกเรืองแสง --}}
+        <div class="absolute -top-32 -left-32 w-96 h-96 bg-purple-600/30 rounded-full blur-[120px] animate-pulse"></div>
+        <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-pink-600/30 rounded-full blur-[120px] animate-pulse" style="animation-delay: 1s;"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-600/10 rounded-full blur-[100px] animate-pulse" style="animation-delay: 2s;"></div>
+
+        {{-- วงแหวนเวทย์มนต์รอบ Canvas --}}
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px]">
+            <div class="absolute inset-0 border border-purple-500/20 rounded-full animate-spin-slow"></div>
+            <div class="absolute inset-12 border border-pink-500/15 rounded-full animate-spin-slow-reverse"></div>
+            <div class="absolute inset-24 border border-cyan-500/10 rounded-full animate-spin-slow" style="animation-duration: 50s;"></div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6 relative z-10">
+        {{-- Header --}}
+        <div class="text-center mb-6">
+            <h1 class="text-4xl md:text-5xl font-black mb-2" id="header-title">
+                <span class="bg-gradient-to-r from-purple-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent">
+                    กำลังสับไพ่...
+                </span>
             </h1>
-            <p class="text-purple-200 text-lg" id="header-subtitle">
-                โปรดรอสักครู่
+            <p class="text-purple-200/80 text-lg" id="header-subtitle">
+                โปรดรอสักครู่ ไพ่กำลังถูกสับ
             </p>
         </div>
 
-        <!-- Progress Indicator -->
-        <div class="max-w-md mx-auto mb-8">
-            <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-full p-4 border border-white border-opacity-20">
-                <div class="flex items-center justify-between text-white text-sm mb-2">
-                    <span>เลือกแล้ว: <span id="selected-count">0</span> ใบ</span>
-                    <span>ต้องการ: <span id="required-count">{{ $spreadType->card_count }}</span> ใบ</span>
-                </div>
-                <div class="w-full bg-white bg-opacity-20 rounded-full h-3 overflow-hidden">
-                    <div id="progress-bar" class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+        {{-- Progress Indicator ที่สวยงามขึ้น --}}
+        <div class="max-w-lg mx-auto mb-6">
+            <div class="relative bg-gradient-to-br from-slate-900/80 via-purple-900/60 to-slate-900/80 backdrop-blur-xl rounded-2xl p-5 border border-white/10 shadow-2xl">
+                {{-- Glow Effect --}}
+                <div class="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-pink-500/10 to-cyan-500/20 rounded-2xl blur-xl opacity-50"></div>
+
+                <div class="relative">
+                    {{-- ตัวนับ --}}
+                    <div class="flex items-center justify-between text-white mb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+                                <span class="text-xl">🎴</span>
+                            </div>
+                            <div>
+                                <div class="text-xs text-purple-300/70">เลือกแล้ว</div>
+                                <div class="font-bold text-lg"><span id="selected-count">0</span> ใบ</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <div>
+                                <div class="text-xs text-purple-300/70 text-right">ต้องการ</div>
+                                <div class="font-bold text-lg"><span id="required-count">{{ $spreadType->card_count }}</span> ใบ</div>
+                            </div>
+                            <div class="w-10 h-10 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+                                <span class="text-xl">✨</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Progress Bar ที่มี Glow --}}
+                    <div class="relative">
+                        <div class="w-full bg-slate-800/80 rounded-full h-4 overflow-hidden border border-white/10">
+                            <div id="progress-bar"
+                                 class="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 rounded-full transition-all duration-700 ease-out relative"
+                                 style="width: 0%">
+                                {{-- Shine effect on progress --}}
+                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+                            </div>
+                        </div>
+                        {{-- Glow under progress --}}
+                        <div id="progress-glow" class="absolute -bottom-2 left-0 h-4 bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 rounded-full blur-md opacity-50 transition-all duration-700" style="width: 0%"></div>
+                    </div>
+
+                    {{-- Selected Cards Preview --}}
+                    <div id="selected-preview" class="flex justify-center gap-2 mt-4 min-h-[40px]">
+                        {{-- จะถูก populate โดย JavaScript --}}
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 3D WebGL Canvas -->
-        <div id="canvas-container" class="relative mx-auto" style="height: 600px; max-width: 1200px;">
-            <canvas id="tarot-canvas"></canvas>
+        {{-- 3D WebGL Canvas --}}
+        <div id="canvas-container" class="relative mx-auto rounded-3xl overflow-hidden" style="height: 550px; max-width: 1200px;">
+            {{-- Glow Border --}}
+            <div class="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 rounded-3xl blur-sm opacity-30"></div>
+            <div class="absolute inset-[2px] bg-slate-950 rounded-3xl"></div>
+            <canvas id="tarot-canvas" class="relative z-10"></canvas>
+
+            {{-- Corner Decorations --}}
+            <div class="absolute top-4 left-4 w-12 h-12 border-l-2 border-t-2 border-purple-400/50 rounded-tl-lg"></div>
+            <div class="absolute top-4 right-4 w-12 h-12 border-r-2 border-t-2 border-pink-400/50 rounded-tr-lg"></div>
+            <div class="absolute bottom-4 left-4 w-12 h-12 border-l-2 border-b-2 border-cyan-400/50 rounded-bl-lg"></div>
+            <div class="absolute bottom-4 right-4 w-12 h-12 border-r-2 border-b-2 border-amber-400/50 rounded-br-lg"></div>
         </div>
 
-        <!-- Instructions -->
-        <div id="instructions" class="text-center mt-8 opacity-0">
-            <p class="text-white text-xl font-semibold mb-2">
-                ✨ เลือกไพ่ {{ $spreadType->card_count }} ใบ
-            </p>
-            <p class="text-purple-200">
-                ชี้เม้าส์ที่ไพ่เพื่อเลือก (คลิกเพื่อยืนยัน)
-            </p>
+        {{-- Instructions --}}
+        <div id="instructions" class="text-center mt-6 opacity-0 transform translate-y-4 transition-all duration-500">
+            <div class="inline-block bg-gradient-to-br from-slate-900/80 via-purple-900/60 to-slate-900/80 backdrop-blur-xl rounded-2xl px-8 py-4 border border-white/10">
+                <p class="text-white text-xl font-bold mb-2 flex items-center justify-center gap-2">
+                    <span class="animate-pulse">✨</span>
+                    เลือกไพ่ {{ $spreadType->card_count }} ใบ
+                    <span class="animate-pulse">✨</span>
+                </p>
+                <p class="text-purple-200/70">
+                    ใช้สัญชาตญาณของคุณ • ชี้เม้าส์และคลิกเพื่อเลือก
+                </p>
+            </div>
         </div>
 
-        <!-- Confirm Button (appears when all cards selected) -->
-        <div id="confirm-button-container" class="text-center mt-8 opacity-0">
-            <button id="confirm-selection" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-12 py-4 rounded-full font-bold text-xl shadow-2xl transform hover:scale-105 transition-all">
-                🔮 เปิดไพ่
+        {{-- Confirm Button --}}
+        <div id="confirm-button-container" class="text-center mt-6 opacity-0 transform scale-90 transition-all duration-500">
+            <button id="confirm-selection"
+                    class="group relative overflow-hidden px-14 py-5 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 rounded-2xl font-bold text-xl text-white shadow-2xl shadow-purple-500/40 transform hover:scale-105 transition-all duration-300">
+                {{-- Shine Effect --}}
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                {{-- Glow Pulse --}}
+                <div class="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-2xl blur-xl opacity-0 group-hover:opacity-50 animate-pulse"></div>
+
+                <span class="relative flex items-center justify-center gap-3">
+                    <span class="text-2xl">🔮</span>
+                    <span>เปิดไพ่ทำนาย</span>
+                </span>
             </button>
+
+            <p class="text-purple-300/60 text-sm mt-3">
+                ไพ่ที่คุณเลือกจะเปิดเผยคำตอบ
+            </p>
         </div>
     </div>
 </div>
 
 @push('styles')
 <style>
+    /* Canvas Styling */
     #tarot-canvas {
         width: 100%;
         height: 100%;
         display: block;
-        border-radius: 24px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        border-radius: 22px;
     }
 
     #canvas-container {
         position: relative;
+    }
+
+    /* ดาวบนพื้นหลัง */
+    .stars-bg {
+        background-image:
+            radial-gradient(2px 2px at 20px 30px, white, transparent),
+            radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+            radial-gradient(1px 1px at 90px 40px, white, transparent),
+            radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.6), transparent),
+            radial-gradient(1px 1px at 230px 80px, white, transparent),
+            radial-gradient(2px 2px at 300px 150px, rgba(255,255,255,0.7), transparent);
+        background-size: 350px 200px;
+        animation: stars-twinkle 8s ease-in-out infinite;
+    }
+
+    @keyframes stars-twinkle {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+    }
+
+    /* หมุนช้าๆ */
+    @keyframes spin-slow {
+        from { transform: translate(-50%, -50%) rotate(0deg); }
+        to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    .animate-spin-slow {
+        animation: spin-slow 60s linear infinite;
+    }
+    .animate-spin-slow-reverse {
+        animation: spin-slow 45s linear infinite reverse;
+    }
+
+    /* Shimmer effect */
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    .animate-shimmer {
+        animation: shimmer 2s linear infinite;
+    }
+
+    /* Card Selection Animation */
+    @keyframes card-selected {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+    }
+
+    .card-preview-item {
+        animation: card-selected 0.5s ease-out;
     }
 
     /* Loading overlay */
@@ -71,12 +209,31 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 24px;
+        border-radius: 22px;
         z-index: 1000;
+    }
+
+    /* Mystical Glow Animation */
+    @keyframes mystical-glow {
+        0%, 100% {
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.5),
+                        0 0 40px rgba(236, 72, 153, 0.3),
+                        0 0 60px rgba(168, 85, 247, 0.2);
+        }
+        50% {
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.7),
+                        0 0 60px rgba(236, 72, 153, 0.5),
+                        0 0 90px rgba(168, 85, 247, 0.3);
+        }
+    }
+
+    #canvas-container:hover {
+        animation: mystical-glow 2s ease-in-out infinite;
     }
 </style>
 @endpush
@@ -401,14 +558,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Show instructions
+    // Show instructions พร้อม animation ที่สวยงาม
     function showInstructions() {
         gsap.to(headerTitle, {
             duration: 0.5,
             opacity: 0,
             y: -20,
             onComplete: () => {
-                headerTitle.textContent = '🔮 เลือกไพ่ทาโร่ของคุณ';
+                headerTitle.innerHTML = '<span class="bg-gradient-to-r from-purple-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent">🔮 เลือกไพ่ทาโร่ของคุณ</span>';
                 gsap.to(headerTitle, { duration: 0.5, opacity: 1, y: 0 });
             }
         });
@@ -423,11 +580,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         gsap.to(instructions, {
-            duration: 0.5,
+            duration: 0.7,
             opacity: 1,
             y: 0,
+            ease: "back.out(1.7)",
             delay: 0.3
         });
+    }
+
+    // เพิ่ม preview card ตอนเลือก
+    function addSelectedCardPreview(cardIndex) {
+        const preview = document.getElementById('selected-preview');
+        const item = document.createElement('div');
+        item.className = 'card-preview-item w-8 h-12 bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600 rounded-lg shadow-lg shadow-purple-500/30 flex items-center justify-center';
+        item.innerHTML = '<span class="text-white text-xs font-bold">' + selectedCards.length + '</span>';
+        preview.appendChild(item);
     }
 
     // Mouse move handler
@@ -518,19 +685,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Update progress bar
+    // Update progress bar พร้อม glow effect
     function updateProgress() {
         const progress = (selectedCards.length / requiredCards) * 100;
         selectedCountEl.textContent = selectedCards.length;
 
+        // Progress bar
         gsap.to(progressBar, {
-            duration: 0.5,
+            duration: 0.7,
             width: progress + '%',
             ease: "power2.out"
         });
+
+        // Progress glow
+        const progressGlow = document.getElementById('progress-glow');
+        if (progressGlow) {
+            gsap.to(progressGlow, {
+                duration: 0.7,
+                width: progress + '%',
+                ease: "power2.out"
+            });
+        }
+
+        // เพิ่ม preview card
+        addSelectedCardPreview(selectedCards.length);
     }
 
-    // Show confirm button
+    // Show confirm button พร้อม celebration effect
     function showConfirmButton() {
         gsap.to(instructions, {
             duration: 0.5,
@@ -539,12 +720,86 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         gsap.to(confirmButtonContainer, {
-            duration: 0.5,
+            duration: 0.7,
             opacity: 1,
             scale: 1,
-            ease: "back.out(1.7)",
+            ease: "elastic.out(1, 0.5)",
             delay: 0.3
         });
+
+        // เพิ่ม particle burst เมื่อเลือกครบ
+        createCelebrationParticles();
+    }
+
+    // สร้าง particles เฉลิมฉลองเมื่อเลือกครบ
+    function createCelebrationParticles() {
+        const particleCount = 100;
+        const geometry = new THREE.BufferGeometry();
+        const positions = [];
+        const velocities = [];
+        const colors = [];
+
+        const celebrationColors = [
+            new THREE.Color(0xfbbf24), // gold
+            new THREE.Color(0x9333ea), // purple
+            new THREE.Color(0xec4899), // pink
+            new THREE.Color(0x22d3ee)  // cyan
+        ];
+
+        for (let i = 0; i < particleCount; i++) {
+            positions.push(0, 5, 0);
+
+            const velocity = new THREE.Vector3(
+                (Math.random() - 0.5) * 0.8,
+                Math.random() * 0.5 + 0.2,
+                (Math.random() - 0.5) * 0.8
+            );
+            velocities.push(velocity);
+
+            const color = celebrationColors[Math.floor(Math.random() * celebrationColors.length)];
+            colors.push(color.r, color.g, color.b);
+        }
+
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: 0.5,
+            vertexColors: true,
+            transparent: true,
+            opacity: 1,
+            blending: THREE.AdditiveBlending
+        });
+
+        const celebrationParticles = new THREE.Points(geometry, material);
+        scene.add(celebrationParticles);
+
+        // Animate particles
+        let frame = 0;
+        const maxFrames = 90;
+        const animateCelebration = () => {
+            frame++;
+            const posArray = celebrationParticles.geometry.attributes.position.array;
+
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+                posArray[i3] += velocities[i].x;
+                posArray[i3 + 1] += velocities[i].y;
+                posArray[i3 + 2] += velocities[i].z;
+
+                velocities[i].y -= 0.015; // gravity
+            }
+
+            celebrationParticles.geometry.attributes.position.needsUpdate = true;
+            celebrationParticles.material.opacity = 1 - (frame / maxFrames);
+
+            if (frame < maxFrames) {
+                requestAnimationFrame(animateCelebration);
+            } else {
+                scene.remove(celebrationParticles);
+            }
+        };
+        animateCelebration();
     }
 
     // Animation loop

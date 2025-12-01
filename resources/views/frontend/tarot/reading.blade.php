@@ -1,82 +1,182 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 py-12">
-    <div class="container mx-auto px-4">
-        <!-- Header -->
+{{-- หน้าผลการทำนายไพ่ทาโร่ต์ - V3 Premium Design --}}
+<div class="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 py-8 relative overflow-hidden">
+
+    {{-- พื้นหลังแบบ Mystical --}}
+    <div class="absolute inset-0 pointer-events-none">
+        {{-- ดาวกระพริบ --}}
+        <div class="stars-bg absolute inset-0"></div>
+
+        {{-- หมอกเรืองแสง --}}
+        <div class="absolute -top-32 -left-32 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] animate-pulse"></div>
+        <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-pink-600/20 rounded-full blur-[120px] animate-pulse" style="animation-delay: 1s;"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-amber-600/5 rounded-full blur-[100px]"></div>
+    </div>
+
+    <div class="container mx-auto px-4 relative z-10">
+        {{-- Header --}}
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-white mb-4">
-                ผลการทำนาย
+            <div class="inline-block mb-4">
+                <div class="w-20 h-20 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-2xl flex items-center justify-center mx-auto shadow-2xl shadow-amber-500/30 animate-bounce-slow">
+                    <span class="text-4xl">🔮</span>
+                </div>
+            </div>
+
+            <h1 class="text-4xl md:text-5xl font-black mb-4">
+                <span class="bg-gradient-to-r from-amber-300 via-yellow-300 to-amber-300 bg-clip-text text-transparent">
+                    ผลการทำนาย
+                </span>
             </h1>
-            <p class="text-purple-200 text-lg">
-                {{ $reading->category->name_th }} - {{ $reading->spreadType->name_th }}
-            </p>
+
+            <div class="inline-block bg-gradient-to-br from-slate-900/80 via-purple-900/60 to-slate-900/80 backdrop-blur-xl rounded-2xl px-6 py-3 border border-white/10">
+                <p class="text-purple-200 text-lg">
+                    {{ $reading->category->name_th }} • {{ $reading->spreadType->name_th }}
+                </p>
+            </div>
+
             @if($reading->question)
-            <p class="text-white mt-4 text-xl">
-                คำถาม: "{{ $reading->question }}"
-            </p>
+            <div class="mt-4 max-w-2xl mx-auto">
+                <div class="bg-gradient-to-r from-purple-900/60 via-pink-900/40 to-purple-900/60 backdrop-blur-lg rounded-2xl px-6 py-4 border border-white/10">
+                    <p class="text-sm text-purple-300/70 mb-1">คำถามของคุณ</p>
+                    <p class="text-white text-xl font-medium">
+                        "{{ $reading->question }}"
+                    </p>
+                </div>
+            </div>
             @endif
         </div>
 
-        <!-- 3D WebGL Canvas -->
-        <div id="canvas-container" class="relative mx-auto mb-8" style="height: 600px; max-width: 1200px;">
-            <canvas id="tarot-canvas"></canvas>
+        {{-- 3D WebGL Canvas --}}
+        <div id="canvas-container" class="relative mx-auto mb-8 rounded-3xl overflow-hidden" style="height: 550px; max-width: 1200px;">
+            {{-- Glow Border --}}
+            <div class="absolute inset-0 bg-gradient-to-r from-amber-500 via-purple-500 to-pink-500 rounded-3xl blur-sm opacity-30"></div>
+            <div class="absolute inset-[2px] bg-slate-950 rounded-3xl"></div>
+            <canvas id="tarot-canvas" class="relative z-10"></canvas>
+
+            {{-- Corner Decorations --}}
+            <div class="absolute top-4 left-4 w-12 h-12 border-l-2 border-t-2 border-amber-400/50 rounded-tl-lg"></div>
+            <div class="absolute top-4 right-4 w-12 h-12 border-r-2 border-t-2 border-purple-400/50 rounded-tr-lg"></div>
+            <div class="absolute bottom-4 left-4 w-12 h-12 border-l-2 border-b-2 border-pink-400/50 rounded-bl-lg"></div>
+            <div class="absolute bottom-4 right-4 w-12 h-12 border-r-2 border-b-2 border-cyan-400/50 rounded-br-lg"></div>
         </div>
 
-        <!-- Card Details (Hidden initially, shown after animation) -->
+        {{-- Card Details --}}
         <div id="card-details" class="opacity-0">
-            <!-- Cards Information Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {{-- Cards Information Grid --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 max-w-6xl mx-auto">
                 @foreach($reading->cards as $index => $readingCard)
-                <div class="card-info bg-white bg-opacity-10 backdrop-blur-lg rounded-xl p-6 border border-white border-opacity-20" data-card-index="{{ $index }}">
-                    <h3 class="text-2xl font-bold text-white mb-2">
-                        {{ $readingCard->card->getName() }}
-                        @if($readingCard->is_reversed)
-                            <span class="text-red-400 text-sm">(กลับหัว)</span>
-                        @endif
-                    </h3>
-                    <p class="text-purple-300 font-semibold mb-3">
-                        {{ $readingCard->position_name }}
-                    </p>
-                    <div class="bg-purple-900 bg-opacity-40 p-4 rounded-lg">
-                        <p class="text-purple-100">
-                            {{ $readingCard->card->getMeaning($readingCard->is_reversed) }}
-                        </p>
+                <div class="card-info group perspective-1000" data-card-index="{{ $index }}">
+                    <div class="relative transform-gpu transition-all duration-500 group-hover:rotate-y-3 group-hover:scale-105">
+                        {{-- Glow Effect --}}
+                        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/30 via-pink-500/20 to-amber-500/30 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                        {{-- Card Body --}}
+                        <div class="relative bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90 backdrop-blur-xl rounded-2xl p-6 border border-white/10 group-hover:border-purple-400/50 shadow-2xl transition-all duration-500">
+                            {{-- Card Number Badge --}}
+                            <div class="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-full flex items-center justify-center text-slate-900 font-bold shadow-lg shadow-amber-500/30">
+                                {{ $index + 1 }}
+                            </div>
+
+                            {{-- Position Name --}}
+                            <div class="text-sm text-purple-400 font-medium mb-2 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                </svg>
+                                {{ $readingCard->position_name }}
+                            </div>
+
+                            {{-- Card Name --}}
+                            <h3 class="text-2xl font-bold text-white mb-3 flex items-center gap-2">
+                                {{ $readingCard->card->getName() }}
+                                @if($readingCard->is_reversed)
+                                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-red-500/20 border border-red-500/40 text-red-400 text-xs rounded-full">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                        </svg>
+                                        กลับหัว
+                                    </span>
+                                @endif
+                            </h3>
+
+                            {{-- Card Meaning --}}
+                            <div class="bg-gradient-to-br from-purple-900/60 to-slate-900/60 rounded-xl p-4 border border-purple-500/20">
+                                <p class="text-purple-100/90 leading-relaxed">
+                                    {{ $readingCard->card->getMeaning($readingCard->is_reversed) }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 @endforeach
             </div>
 
-            <!-- Overall Interpretation -->
+            {{-- Overall Interpretation --}}
             @if($reading->interpretation)
-            <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl p-8 mb-8">
-                <h2 class="text-2xl font-bold text-white mb-4">คำแนะนำรวม</h2>
-                <p class="text-purple-100 text-lg leading-relaxed">
-                    {{ $reading->interpretation }}
-                </p>
+            <div class="max-w-4xl mx-auto mb-8">
+                <div class="relative">
+                    {{-- Glow Effect --}}
+                    <div class="absolute inset-0 bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/20 rounded-3xl blur-xl"></div>
+
+                    {{-- Content --}}
+                    <div class="relative bg-gradient-to-br from-slate-900/90 via-purple-900/80 to-slate-900/90 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
+                                <span class="text-2xl">✨</span>
+                            </div>
+                            <h2 class="text-2xl font-bold text-white">คำแนะนำรวม</h2>
+                        </div>
+
+                        <p class="text-purple-100/90 text-lg leading-relaxed">
+                            {{ $reading->interpretation }}
+                        </p>
+                    </div>
+                </div>
             </div>
             @endif
 
-            <!-- Actions -->
+            {{-- Actions --}}
             <div class="flex flex-wrap gap-4 justify-center">
                 @auth
                     @if(!$reading->is_saved)
-                    <button onclick="saveReading()" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-all">
-                        <i class="fas fa-save mr-2"></i> บันทึกคำทำนาย
+                    <button onclick="saveReading()"
+                            class="group relative overflow-hidden px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl font-bold text-white shadow-lg shadow-emerald-500/30 transform hover:scale-105 transition-all duration-300">
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                        <span class="relative flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+                            </svg>
+                            บันทึกคำทำนาย
+                        </span>
                     </button>
                     @else
-                    <div class="bg-green-600 text-white px-8 py-3 rounded-lg font-semibold">
-                        <i class="fas fa-check mr-2"></i> บันทึกแล้ว
+                    <div class="px-8 py-4 bg-emerald-600/30 border border-emerald-500/50 rounded-2xl font-bold text-emerald-300 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        บันทึกแล้ว
                     </div>
                     @endif
                 @endauth
 
-                <a href="{{ route('tarot.category', $reading->category->slug) }}" class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-all">
-                    <i class="fas fa-redo mr-2"></i> ทำนายใหม่
+                <a href="{{ route('tarot.category', $reading->category->slug) }}"
+                   class="group relative overflow-hidden px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl font-bold text-white shadow-lg shadow-purple-500/30 transform hover:scale-105 transition-all duration-300">
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                    <span class="relative flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        ทำนายใหม่
+                    </span>
                 </a>
 
-                <a href="{{ route('tarot.index') }}" class="bg-gray-600 hover:bg-gray-700 text-white px-8 py-3 rounded-lg font-semibold transition-all">
-                    <i class="fas fa-home mr-2"></i> หน้าหลัก
+                <a href="{{ route('tarot.index') }}"
+                   class="px-8 py-4 bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl font-bold text-white hover:bg-white/20 transition-all duration-300 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    หน้าหลัก
                 </a>
             </div>
         </div>
@@ -85,25 +185,77 @@
 
 @push('styles')
 <style>
+    /* Canvas Styling */
     #tarot-canvas {
         width: 100%;
         height: 100%;
         display: block;
-        border-radius: 24px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        border-radius: 22px;
     }
 
     #canvas-container {
         position: relative;
     }
 
+    /* ดาวบนพื้นหลัง */
+    .stars-bg {
+        background-image:
+            radial-gradient(2px 2px at 20px 30px, white, transparent),
+            radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+            radial-gradient(1px 1px at 90px 40px, white, transparent),
+            radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.6), transparent),
+            radial-gradient(1px 1px at 230px 80px, white, transparent),
+            radial-gradient(2px 2px at 300px 150px, rgba(255,255,255,0.7), transparent);
+        background-size: 350px 200px;
+        animation: stars-twinkle 8s ease-in-out infinite;
+    }
+
+    @keyframes stars-twinkle {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+    }
+
+    /* Bounce ช้า */
+    @keyframes bounce-slow {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    .animate-bounce-slow {
+        animation: bounce-slow 3s ease-in-out infinite;
+    }
+
+    /* Perspective สำหรับ 3D */
+    .perspective-1000 { perspective: 1000px; }
+    .rotate-y-3 { transform: rotateY(3deg); }
+
+    /* Card info animation */
     .card-info {
-        transform: translateY(20px);
-        transition: all 0.5s ease;
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .card-info.visible {
+        opacity: 1;
         transform: translateY(0);
+    }
+
+    /* Glow Animation */
+    @keyframes mystical-glow {
+        0%, 100% {
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.3),
+                        0 0 40px rgba(168, 85, 247, 0.2),
+                        0 0 60px rgba(236, 72, 153, 0.1);
+        }
+        50% {
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.5),
+                        0 0 60px rgba(168, 85, 247, 0.3),
+                        0 0 90px rgba(236, 72, 153, 0.2);
+        }
+    }
+
+    #canvas-container {
+        animation: mystical-glow 4s ease-in-out infinite;
     }
 </style>
 @endpush
