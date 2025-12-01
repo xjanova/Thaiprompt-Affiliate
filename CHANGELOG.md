@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.277.0] - 2025-12-01
+
+### ✨ Features
+- feat: เพิ่ม Admin Views และ Menu สำหรับระบบภารกิจดูคลิป (b5bfe0c7)
+- feat: เพิ่มระบบภารกิจดูคลิปรับรางวัล (Video Mission System) (80b6504a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1876 from xjanova/claude/video-rewards-system-01RPgkZ8LMAWhgDBidZR5L78 (0ae8d60b)
+
 ## [v3.276.1] - 2025-12-01
 
 ### ✨ Features
