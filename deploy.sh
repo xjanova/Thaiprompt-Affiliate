@@ -1556,43 +1556,95 @@ print_success "Autoloader optimized"
 # Step 17: Restart Services (CRITICAL for OPcache clearing!)
 print_step 17 21 "Restarting Services (OPcache)"
 
+# Track service restart status
+PHP_FPM_STATUS="⏭️ ไม่พบ"
+QUEUE_STATUS="⏭️ ไม่ได้ใช้งาน"
+HORIZON_STATUS="⏭️ ไม่ได้ใช้งาน"
+
 # Restart PHP-FPM (if available) - THIS CLEARS WEB SERVER OPCACHE!
+print_info "→ ตรวจสอบ PHP-FPM service..."
 PHP_FPM_RESTARTED=false
 if command -v systemctl >/dev/null 2>&1; then
     # Try different PHP-FPM service names (newest first)
     for service in php8.3-fpm php8.2-fpm php8.1-fpm php8.0-fpm php-fpm; do
         if systemctl is-active --quiet $service 2>/dev/null; then
-            print_info "Found active PHP-FPM service: $service"
+            print_info "  พบ PHP-FPM service: $service"
             if sudo systemctl reload $service 2>/dev/null; then
-                print_success "✓ Reloaded $service (OPcache cleared)"
+                print_success "  ✓ Reload $service สำเร็จ (OPcache cleared)"
+                PHP_FPM_STATUS="✅ $service reloaded"
                 PHP_FPM_RESTARTED=true
             else
-                print_warning "⚠ Could not reload $service (may need sudo)"
+                print_error "  ✗ Reload $service ล้มเหลว (ต้องการ sudo)"
+                PHP_FPM_STATUS="❌ ล้มเหลว (ต้อง sudo)"
             fi
             break
         fi
     done
 
-    if [ "$PHP_FPM_RESTARTED" = false ]; then
-        print_warning "⚠ No PHP-FPM service found - OPcache may not be cleared!"
-        print_info "  Try manually: sudo systemctl reload php8.3-fpm"
+    if [ "$PHP_FPM_RESTARTED" = false ] && [ "$PHP_FPM_STATUS" = "⏭️ ไม่พบ" ]; then
+        print_warning "  ⚠ ไม่พบ PHP-FPM service ที่ทำงานอยู่"
+        PHP_FPM_STATUS="⚠️ ไม่พบ service"
     fi
 elif command -v service >/dev/null 2>&1; then
     # Try using service command (for older systems)
     for svc in php8.3-fpm php8.2-fpm php8.1-fpm php-fpm; do
         if service $svc status >/dev/null 2>&1; then
-            sudo service $svc reload 2>/dev/null && print_success "✓ Reloaded $svc" || true
-            PHP_FPM_RESTARTED=true
+            if sudo service $svc reload 2>/dev/null; then
+                print_success "  ✓ Reload $svc สำเร็จ"
+                PHP_FPM_STATUS="✅ $svc reloaded"
+                PHP_FPM_RESTARTED=true
+            else
+                print_error "  ✗ Reload $svc ล้มเหลว"
+                PHP_FPM_STATUS="❌ ล้มเหลว"
+            fi
             break
         fi
     done
+else
+    print_warning "  ⚠ ไม่พบ systemctl หรือ service command"
+    PHP_FPM_STATUS="⚠️ ไม่พบ systemctl/service"
 fi
+echo ""
 
 # Restart queue workers (if using)
-php artisan queue:restart 2>/dev/null && print_success "Queue workers restarted" || true
+print_info "→ ตรวจสอบ Queue Workers..."
+if php artisan queue:restart 2>&1 | grep -q "Broadcasting queue restart signal"; then
+    print_success "  ✓ Queue workers restart signal sent"
+    QUEUE_STATUS="✅ Restart signal sent"
+else
+    print_info "  ℹ Queue workers ไม่ได้ใช้งาน หรือไม่มี worker ทำงานอยู่"
+    QUEUE_STATUS="ℹ️ ไม่มี worker ทำงาน"
+fi
+echo ""
 
 # Restart Horizon (if using)
-php artisan horizon:terminate 2>/dev/null && print_success "Horizon terminated (will auto-restart)" || true
+print_info "→ ตรวจสอบ Laravel Horizon..."
+if php artisan horizon:terminate 2>&1 | grep -q "Horizon"; then
+    print_success "  ✓ Horizon terminated (จะ auto-restart)"
+    HORIZON_STATUS="✅ Terminated"
+elif php artisan list 2>/dev/null | grep -q "horizon"; then
+    print_warning "  ⚠ Horizon installed แต่ไม่ได้ทำงานอยู่"
+    HORIZON_STATUS="ℹ️ ไม่ได้ทำงาน"
+else
+    print_info "  ℹ Horizon ไม่ได้ติดตั้ง (ข้ามไป)"
+    HORIZON_STATUS="⏭️ ไม่ได้ติดตั้ง"
+fi
+echo ""
+
+# Summary
+print_info "📊 สรุปสถานะ Service Restart:"
+echo "  • PHP-FPM:  $PHP_FPM_STATUS"
+echo "  • Queue:    $QUEUE_STATUS"
+echo "  • Horizon:  $HORIZON_STATUS"
+echo ""
+
+# Warning if PHP-FPM failed
+if [ "$PHP_FPM_RESTARTED" = false ]; then
+    print_warning "⚠️ OPcache อาจยังไม่ถูก clear - ลองรัน manual:"
+    echo "  sudo systemctl reload php8.3-fpm"
+    echo "  # หรือ"
+    echo "  sudo service php8.2-fpm reload"
+fi
 
 # Step 18: Final ENV Verification
 print_step 18 21 "Verifying Environment Configuration"
