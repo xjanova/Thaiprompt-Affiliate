@@ -43,122 +43,74 @@
         </div>
     </div>
 
-    {{-- Tabs --}}
+    {{-- General Settings Card --}}
     <div class="glass-fusion rounded-2xl overflow-hidden border border-white/30 shadow-2xl">
-        <div class="flex border-b border-white/20 overflow-x-auto">
-            <template x-for="tab in tabs" :key="tab.id">
-                <button
-                    @click="currentTab = tab.id"
-                    :class="{
-                        'bg-white/20 border-b-2 border-blue-400': currentTab === tab.id,
-                        'hover:bg-white/10': currentTab !== tab.id
-                    }"
-                    class="px-6 py-4 text-white font-medium transition whitespace-nowrap flex items-center gap-2"
-                >
-                    <i :class="tab.icon"></i>
-                    <span x-text="tab.label"></span>
-                </button>
-            </template>
-        </div>
-
         <div class="p-6">
-            {{-- General Settings Tab --}}
-            <div x-show="currentTab === 'general'" x-transition>
-                <div class="space-y-6">
-                    <h3 class="text-xl font-bold text-white mb-4">
-                        <i class="fas fa-sliders-h mr-2"></i>
-                        การตั้งค่าทั่วไป
-                    </h3>
+            <div class="space-y-6">
+                <h3 class="text-xl font-bold text-white mb-4">
+                    <i class="fas fa-sliders-h mr-2"></i>
+                    การตั้งค่าทั่วไป
+                </h3>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {{-- App Name --}}
-                        <div>
-                            <label class="block text-white/90 font-medium mb-2">
-                                <i class="fas fa-heading mr-1"></i>
-                                ชื่อแอปพลิเคชัน
-                            </label>
-                            <input
-                                type="text"
-                                x-model="form.app_name"
-                                class="input-glass w-full"
-                                placeholder="TP-Affiliate"
-                            >
-                        </div>
-                    </div>
-
-                    {{-- หมายเหตุ: การตั้งค่าคอมมิชชั่นย้ายไปที่ MLM Settings --}}
-                    <div class="mt-4 p-4 bg-blue-500/20 rounded-lg border border-blue-400/30">
-                        <p class="text-white/80 text-sm">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            การตั้งค่าคอมมิชชั่นและ MLM ได้ย้ายไปที่
-                            <a href="{{ route('admin.mlm.settings.index') }}" class="text-blue-300 hover:text-blue-200 underline">
-                                การตั้งค่า MLM
-                            </a>
-                        </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {{-- App Name --}}
+                    <div>
+                        <label class="block text-white/90 font-medium mb-2">
+                            <i class="fas fa-heading mr-1"></i>
+                            ชื่อแอปพลิเคชัน
+                        </label>
+                        <input
+                            type="text"
+                            x-model="form.app_name"
+                            class="input-glass w-full"
+                            placeholder="TP-Affiliate"
+                        >
                     </div>
                 </div>
-            </div>
 
-            {{-- Security Settings Tab --}}
-            <div x-show="currentTab === 'security'" x-transition>
-                <div class="space-y-6">
-                    <h3 class="text-xl font-bold text-white mb-4">
-                        <i class="fas fa-shield-alt mr-2"></i>
-                        การตั้งค่าความปลอดภัย
-                    </h3>
-
-                    {{-- Cloudflare Turnstile --}}
-                    <div class="card-glass p-6">
-                        <h4 class="text-lg font-semibold text-white mb-4">
-                            <i class="fab fa-cloudflare mr-2"></i>
-                            Cloudflare Turnstile (CAPTCHA)
-                        </h4>
-
-                        <div class="space-y-4">
-                            <label class="flex items-center gap-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    x-model="form.turnstile_enabled"
-                                    class="checkbox-glass"
-                                >
-                                <span class="text-white/90">เปิดใช้งาน Turnstile</span>
-                            </label>
-
-                            <div x-show="form.turnstile_enabled" x-transition class="space-y-4">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-white/90 mb-2">Site Key</label>
-                                        <input
-                                            type="text"
-                                            x-model="form.turnstile_site_key"
-                                            class="input-glass w-full"
-                                            placeholder="0x4A..."
-                                        >
-                                    </div>
-                                    <div>
-                                        <label class="block text-white/90 mb-2">Secret Key</label>
-                                        <input
-                                            type="password"
-                                            x-model="form.turnstile_secret_key"
-                                            class="input-glass w-full"
-                                            placeholder="0x4B..."
-                                        >
-                                    </div>
-                                </div>
-
-                                <div class="flex gap-4 flex-wrap">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" x-model="form.turnstile_login" class="checkbox-glass">
-                                        <span class="text-white/90">Login</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" x-model="form.turnstile_register" class="checkbox-glass">
-                                        <span class="text-white/90">Register</span>
-                                    </label>
-                                </div>
+                {{-- Quick Links --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                    {{-- MLM Settings --}}
+                    <a href="{{ route('admin.mlm.settings.index') }}" class="card-glass p-4 hover:bg-white/20 transition group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-purple-500/30 flex items-center justify-center">
+                                <i class="fas fa-sitemap text-purple-300"></i>
                             </div>
+                            <div>
+                                <h4 class="text-white font-medium group-hover:text-purple-300 transition">การตั้งค่า MLM</h4>
+                                <p class="text-white/50 text-xs">คอมมิชชั่น, ระดับ, แผนการตลาด</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-white/30 ml-auto"></i>
                         </div>
-                    </div>
+                    </a>
+
+                    {{-- Security Settings (Turnstile) --}}
+                    <a href="{{ route('admin.security.index') }}" class="card-glass p-4 hover:bg-white/20 transition group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-red-500/30 flex items-center justify-center">
+                                <i class="fas fa-shield-alt text-red-300"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-white font-medium group-hover:text-red-300 transition">ความปลอดภัย</h4>
+                                <p class="text-white/50 text-xs">Turnstile, IP Ban, Rate Limit</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-white/30 ml-auto"></i>
+                        </div>
+                    </a>
+
+                    {{-- Cloudflare Settings --}}
+                    <a href="{{ route('admin.cloudflare.index') }}" class="card-glass p-4 hover:bg-white/20 transition group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-orange-500/30 flex items-center justify-center">
+                                <i class="fab fa-cloudflare text-orange-300"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-white font-medium group-hover:text-orange-300 transition">Cloudflare CDN</h4>
+                                <p class="text-white/50 text-xs">Cache, Optimization, API</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-white/30 ml-auto"></i>
+                        </div>
+                    </a>
                 </div>
             </div>
         </div>
@@ -170,19 +122,9 @@
 <script>
 function settingsManager() {
     return {
-        currentTab: 'general',
         saving: false,
-        tabs: [
-            { id: 'general', label: 'ทั่วไป', icon: 'fas fa-sliders-h' },
-            { id: 'security', label: 'ความปลอดภัย', icon: 'fas fa-shield-alt' }
-        ],
         form: {
-            app_name: '{{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}',
-            turnstile_enabled: {{ \App\Models\Setting::get('turnstile_enabled', false) ? 'true' : 'false' }},
-            turnstile_site_key: '{{ \App\Models\Setting::get('turnstile_site_key', '') }}',
-            turnstile_secret_key: '{{ \App\Models\Setting::get('turnstile_secret_key', '') }}',
-            turnstile_login: {{ \App\Models\Setting::get('turnstile_login', false) ? 'true' : 'false' }},
-            turnstile_register: {{ \App\Models\Setting::get('turnstile_register', false) ? 'true' : 'false' }}
+            app_name: '{{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}'
         },
 
         resetForm() {
@@ -194,7 +136,7 @@ function settingsManager() {
 
             try {
                 const response = await fetch('{{ route('admin.settings.update') }}', {
-                    method: 'PUT',  // แก้จาก POST เป็น PUT
+                    method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -206,13 +148,8 @@ function settingsManager() {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    // Show success message
                     alert('✅ ' + (data.message || 'บันทึกการตั้งค่าสำเร็จ!'));
-
-                    // Reload หน้าเพื่อโหลดค่าใหม่
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
+                    setTimeout(() => location.reload(), 1000);
                 } else {
                     alert('❌ เกิดข้อผิดพลาด: ' + (data.message || 'Unknown error'));
                 }
