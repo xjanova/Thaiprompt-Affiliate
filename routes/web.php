@@ -23,7 +23,8 @@ use Illuminate\Support\Facades\Route;
 
 // ⚠️ ROOT ROUTE - ต้องอยู่ก่อน routes อื่นทั้งหมด
 // FIX: MethodNotAllowedHttpException - The GET method is not supported for route /
-Route::get('/', [HomeController::class, 'index'])->name('home');
+// ใช้ Route::match() เพื่อรองรับทั้ง GET และ HEAD methods อย่างชัดเจน
+Route::match(['GET', 'HEAD'], '/', [HomeController::class, 'index'])->name('home');
 
 // Demo Routes
 Route::get('/demo/loading', function () {
