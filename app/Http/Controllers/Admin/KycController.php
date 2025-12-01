@@ -134,7 +134,8 @@ class KycController extends Controller
         }
 
         // Update user's KYC status and profile data
-        $kycVerification->user->update($userData);
+        // ⚠️ ต้องใช้ forceFill() เพราะ kyc_status และ kyc_verified_at เป็น guarded fields
+        $kycVerification->user->forceFill($userData)->save();
 
         return back()->with('success', 'อนุมัติการยืนยันตัวตนเรียบร้อยแล้ว และข้อมูลโปรไฟล์ได้ถูกอัปเดตอัตโนมัติ');
     }
@@ -170,10 +171,11 @@ class KycController extends Controller
         ]);
 
         // Update user's KYC status
-        $kycVerification->user->update([
+        // ⚠️ ต้องใช้ forceFill() เพราะ kyc_status เป็น guarded field
+        $kycVerification->user->forceFill([
             'kyc_status' => 'rejected',
             'kyc_verified_at' => null,
-        ]);
+        ])->save();
 
         return back()->with('success', 'ปฏิเสธการยืนยันตัวตนเรียบร้อยแล้ว');
     }

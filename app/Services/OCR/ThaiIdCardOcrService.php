@@ -154,9 +154,17 @@ class ThaiIdCardOcrService
      */
     public function extractData(string $imagePath): array
     {
+        Log::info('OCR extractData started', [
+            'imagePath' => $imagePath,
+            'useRestApi' => $this->useRestApi,
+            'hasApiKey' => !empty($this->apiKey),
+            'hasClient' => !is_null($this->client),
+        ]);
+
         try {
             // Check if image file exists
             if (!Storage::disk('public')->exists($imagePath)) {
+                Log::warning('OCR: Image file not found', ['path' => $imagePath]);
                 return [
                     'success' => false,
                     'error' => 'ไม่พบไฟล์รูปภาพ',
@@ -167,10 +175,12 @@ class ThaiIdCardOcrService
 
             // Read the image file
             $imageContent = Storage::disk('public')->get($imagePath);
+            Log::info('OCR: Image loaded', ['size' => strlen($imageContent)]);
 
             // Validate image content
             $validation = $this->validateImageQuality($imageContent);
             if (!$validation['valid']) {
+                Log::warning('OCR: Image validation failed', $validation);
                 return [
                     'success' => false,
                     'error' => $validation['error'],
@@ -179,24 +189,30 @@ class ThaiIdCardOcrService
                 ];
             }
 
+            Log::info('OCR: Image validation passed');
+
             // Preprocess image for better OCR results
             $processedContent = $this->preprocessImage($imageContent);
+            Log::info('OCR: Image preprocessed', ['processed_size' => strlen($processedContent)]);
 
             // เลือกวิธีการ OCR
             $result = null;
 
             // วิธี 1: ใช้ REST API + API Key
             if ($this->useRestApi && $this->apiKey) {
+                Log::info('OCR: Using REST API method');
                 $result = $this->extractWithRestApi($processedContent);
             }
             // วิธี 2: ใช้ SDK + Service Account
             elseif ($this->client) {
+                Log::info('OCR: Using SDK method');
                 $result = $this->extractWithGoogleVision($processedContent);
             }
 
             if ($result === null) {
                 // ตรวจสอบว่ามี API ใดเลยหรือไม่
                 if (!$this->useRestApi && !$this->client) {
+                    Log::error('OCR: Not configured - no API key or credentials');
                     return [
                         'success' => false,
                         'error' => 'ระบบ OCR ยังไม่พร้อมใช้งาน',
@@ -205,6 +221,7 @@ class ThaiIdCardOcrService
                     ];
                 }
 
+                Log::warning('OCR: No text detected from image');
                 return [
                     'success' => false,
                     'error' => 'ไม่สามารถตรวจจับข้อความจากรูปภาพได้',
@@ -213,12 +230,20 @@ class ThaiIdCardOcrService
                 ];
             }
 
+            Log::info('OCR: Text extraction completed', ['result_keys' => array_keys($result)]);
+
             // Check if we got meaningful data
             if ($this->hasMinimumData($result)) {
                 $result['success'] = true;
                 $result['ocr_method'] = $this->useRestApi ? 'REST_API' : 'SDK';
+                Log::info('OCR: Success - extracted meaningful data', [
+                    'id_card_number' => !empty($result['id_card_number']) ? '***' . substr($result['id_card_number'] ?? '', -4) : null,
+                    'thai_first_name' => $result['thai_first_name'] ?? null,
+                    'english_first_name' => $result['english_first_name'] ?? null,
+                ]);
                 return $result;
             } else {
+                Log::warning('OCR: Insufficient data extracted', ['partial_data' => $result]);
                 return [
                     'success' => false,
                     'error' => 'ตรวจพบข้อความบางส่วน แต่ไม่สามารถระบุข้อมูลสำคัญได้',
@@ -229,7 +254,8 @@ class ThaiIdCardOcrService
             }
         } catch (\Exception $e) {
             Log::error('Thai ID Card OCR Error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'imagePath' => $imagePath,
             ]);
 
             return [
@@ -387,20 +413,51 @@ class ThaiIdCardOcrService
 
     /**
      * Check if extracted data has minimum required information
+     *
+     * V2.0: ผ่อนปรนเงื่อนไขให้ผ่านง่ายขึ้น - มีข้อมูลอย่างน้อย 1 อย่างก็ถือว่าสำเร็จ
      */
     protected function hasMinimumData(array $data): bool
     {
-        // For ID card: must have ID number or name
+        // นับจำนวนข้อมูลที่ได้
+        $fieldsFound = 0;
+
+        // For ID card
         if ($data['document_type'] === 'id_card') {
+            if (!empty($data['id_card_number'])) $fieldsFound++;
+            if (!empty($data['thai_first_name'])) $fieldsFound++;
+            if (!empty($data['thai_last_name'])) $fieldsFound++;
+            if (!empty($data['english_first_name'])) $fieldsFound++;
+            if (!empty($data['english_last_name'])) $fieldsFound++;
+            if (!empty($data['birth_date'])) $fieldsFound++;
+            if (!empty($data['address'])) $fieldsFound++;
+
+            Log::info('OCR hasMinimumData check:', [
+                'document_type' => 'id_card',
+                'fields_found' => $fieldsFound,
+                'has_id' => !empty($data['id_card_number']),
+                'has_thai_name' => !empty($data['thai_first_name']),
+                'has_english_name' => !empty($data['english_first_name']),
+            ]);
+
+            // ผ่านถ้ามีเลขบัตร หรือ มีชื่อ (ไทย/อังกฤษ) หรือ มีข้อมูลอย่างน้อย 2 อย่าง
             return !empty($data['id_card_number']) ||
-                   (!empty($data['thai_first_name']) || !empty($data['english_first_name']));
+                   !empty($data['thai_first_name']) ||
+                   !empty($data['english_first_name']) ||
+                   $fieldsFound >= 2;
         }
 
-        // For driver license: must have license number or ID number
+        // For driver license
         if ($data['document_type'] === 'driver_license') {
+            if (!empty($data['license_number'])) $fieldsFound++;
+            if (!empty($data['id_card_number'])) $fieldsFound++;
+            if (!empty($data['thai_first_name'])) $fieldsFound++;
+            if (!empty($data['english_first_name'])) $fieldsFound++;
+
             return !empty($data['license_number']) ||
                    !empty($data['id_card_number']) ||
-                   (!empty($data['thai_first_name']) || !empty($data['english_first_name']));
+                   !empty($data['thai_first_name']) ||
+                   !empty($data['english_first_name']) ||
+                   $fieldsFound >= 2;
         }
 
         return false;
@@ -593,6 +650,8 @@ class ThaiIdCardOcrService
 
     /**
      * Parse extracted text to identify Thai ID card fields
+     *
+     * ปรับปรุง V2.0: เพิ่ม patterns เพื่อรองรับบัตรประชาชนหลายรูปแบบ
      */
     protected function parseThaiIdCardText(string $text): array
     {
@@ -610,69 +669,198 @@ class ThaiIdCardOcrService
             'expiry_date' => null,
         ];
 
-        // Extract ID card number (13 digits)
-        if (preg_match('/(\d\s*\d{4}\s*\d{5}\s*\d{2}\s*\d|\d{13})/', $text, $matches)) {
-            $data['id_card_number'] = preg_replace('/\s+/', '', $matches[1]);
+        // Log raw text for debugging (เฉพาะ debug mode)
+        Log::debug('OCR Raw Text:', ['text' => $text]);
+
+        // ===============================================
+        // 1. Extract ID card number (13 digits) - หลายรูปแบบ
+        // ===============================================
+        // รูปแบบ: X-XXXX-XXXXX-XX-X, X XXXX XXXXX XX X, หรือติดกัน
+        $idPatterns = [
+            // รูปแบบมีขีด: 1-2345-67890-12-3
+            '/(\d[-\s]*\d{4}[-\s]*\d{5}[-\s]*\d{2}[-\s]*\d)/',
+            // รูปแบบมี space: 1 2345 67890 12 3
+            '/(\d\s+\d{4}\s+\d{5}\s+\d{2}\s+\d)/',
+            // รูปแบบติดกัน 13 หลัก
+            '/(\d{13})/',
+            // รูปแบบใกล้กับ "เลขประจำตัวประชาชน" หรือ "Identification"
+            '/(?:เลข(?:ประจำตัว)?(?:ประชาชน)?|Identification\s*(?:Number)?)\s*[:\s]*(\d[\d\s-]{11,16}\d)/',
+        ];
+
+        foreach ($idPatterns as $pattern) {
+            if (preg_match($pattern, $text, $matches)) {
+                $cleanId = preg_replace('/[\s-]+/', '', $matches[1]);
+                if (strlen($cleanId) === 13 && ctype_digit($cleanId)) {
+                    $data['id_card_number'] = $cleanId;
+                    Log::debug('OCR Found ID:', ['id' => $cleanId, 'pattern' => $pattern]);
+                    break;
+                }
+            }
         }
 
-        // Extract dates (DD MMM YYYY format in Thai or DD/MM/YYYY)
-        $dates = [];
-        preg_match_all('/(\d{1,2}\s*(?:ม\.ค|ก\.พ|มี\.ค|เม\.ย|พ\.ค|มิ\.ย|ก\.ค|ส\.ค|ก\.ย|ต\.ค|พ\.ย|ธ\.ค|มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม)\.*\s*\d{4})/', $text, $dateMatches);
-        if (!empty($dateMatches[0])) {
-            $dates = $dateMatches[0];
+        // ===============================================
+        // 2. Extract Thai Name - หลายรูปแบบ
+        // ===============================================
+        // รูปแบบ: นาย/นาง/นางสาว ชื่อ นามสกุล หรือ ชื่อตัว ชื่อ / ชื่อสกุล นามสกุล
+        $thaiNamePatterns = [
+            // รูปแบบ: นาย ชื่อ นามสกุล (ในบรรทัดเดียว)
+            '/(นาย|นาง|นางสาว|น\.ส\.|เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.)\s*([ก-๙]+)\s+([ก-๙]+)/',
+            // รูปแบบ: ชื่อตัว ชื่อ (แยกบรรทัด)
+            '/ชื่อตัว[และ]*ชื่อสกุล\s*[:\s]*([ก-๙]+)\s*([ก-๙]+)?/',
+            // รูปแบบ: ชื่อ นามสกุล (หลัง prefix)
+            '/(นาย|นาง|นางสาว)\s*([ก-๙\s]+)/',
+        ];
+
+        foreach ($thaiNamePatterns as $pattern) {
+            if (preg_match($pattern, $text, $matches)) {
+                if (isset($matches[2]) && !empty($matches[2])) {
+                    $data['thai_first_name'] = trim($matches[2]);
+                }
+                if (isset($matches[3]) && !empty($matches[3])) {
+                    $data['thai_last_name'] = trim($matches[3]);
+                }
+                if (!empty($data['thai_first_name'])) {
+                    Log::debug('OCR Found Thai Name:', [
+                        'first' => $data['thai_first_name'],
+                        'last' => $data['thai_last_name']
+                    ]);
+                    break;
+                }
+            }
         }
 
-        // Also try DD/MM/YYYY format
-        preg_match_all('/(\d{1,2}\/\d{1,2}\/\d{4})/', $text, $slashDateMatches);
-        if (!empty($slashDateMatches[0])) {
-            $dates = array_merge($dates, $slashDateMatches[0]);
-        }
-
-        // Assign dates (typically: birth date, issue date, expiry date)
-        if (count($dates) >= 1) {
-            $data['birth_date'] = $this->parseThaiDate($dates[0]);
-        }
-        if (count($dates) >= 2) {
-            $data['issue_date'] = $this->parseThaiDate($dates[1]);
-        }
-        if (count($dates) >= 3) {
-            $data['expiry_date'] = $this->parseThaiDate($dates[2]);
-        }
-
-        // Extract Thai name (look for patterns like "ชื่อตัว", "นาย", "นาง", "นางสาว")
-        $lines = explode("\n", $text);
-        foreach ($lines as $i => $line) {
-            // Look for Thai name patterns
-            if (preg_match('/(นาย|นาง|นางสาว|เด็กชาย|เด็กหญิง)\s*([ก-๙]+)/', $line, $matches)) {
-                $data['thai_first_name'] = trim($matches[2]);
-
-                // Next line might be last name
-                if (isset($lines[$i + 1])) {
-                    $nextLine = trim($lines[$i + 1]);
-                    if (preg_match('/^([ก-๙]+)$/', $nextLine, $lastNameMatch)) {
-                        $data['thai_last_name'] = $lastNameMatch[1];
+        // ถ้ายังไม่เจอนามสกุล ลองหาจากบรรทัดถัดไป
+        if (!empty($data['thai_first_name']) && empty($data['thai_last_name'])) {
+            $lines = explode("\n", $text);
+            foreach ($lines as $i => $line) {
+                if (preg_match('/(นาย|นาง|นางสาว|น\.ส\.)\s*' . preg_quote($data['thai_first_name']) . '/', $line)) {
+                    if (isset($lines[$i + 1])) {
+                        $nextLine = trim($lines[$i + 1]);
+                        if (preg_match('/^([ก-๙]+)$/u', $nextLine, $lastNameMatch)) {
+                            $data['thai_last_name'] = $lastNameMatch[1];
+                            break;
+                        }
                     }
                 }
             }
+        }
 
-            // Look for English name (usually "Name" followed by English text)
-            if (preg_match('/Name\s+([A-Z][a-z]+)/', $line, $matches)) {
-                $data['english_first_name'] = $matches[1];
-            }
-            if (preg_match('/Last\s*name\s+([A-Z][a-z]+)/i', $line, $matches)) {
-                $data['english_last_name'] = $matches[1];
-            }
+        // ===============================================
+        // 3. Extract English Name - หลายรูปแบบ
+        // ===============================================
+        $englishNamePatterns = [
+            // รูปแบบ: Name Mr. FIRST LAST หรือ Miss FIRST LAST
+            '/Name\s+(?:Mr\.|Mrs\.|Miss|Ms\.?)\s*([A-Z][a-zA-Z]+)\s+([A-Z][a-zA-Z]+)/',
+            // รูปแบบ: Mr./Mrs./Miss First Last
+            '/(?:Mr\.|Mrs\.|Miss|Ms\.?)\s*([A-Z][a-zA-Z]+)\s+([A-Z][a-zA-Z]+)/',
+            // รูปแบบ: First name FIRST / Last name LAST
+            '/(?:First\s*name|Name)\s*[:\s]*([A-Z][a-zA-Z]+)/',
+        ];
 
-            // Look for religion
-            if (preg_match('/ศาสนา\s*[:.]?\s*([ก-๙]+)/', $line, $matches)) {
-                $data['religion'] = trim($matches[1]);
+        foreach ($englishNamePatterns as $pattern) {
+            if (preg_match($pattern, $text, $matches)) {
+                if (isset($matches[1]) && !empty($matches[1])) {
+                    $data['english_first_name'] = trim($matches[1]);
+                }
+                if (isset($matches[2]) && !empty($matches[2])) {
+                    $data['english_last_name'] = trim($matches[2]);
+                }
+                if (!empty($data['english_first_name'])) {
+                    Log::debug('OCR Found English Name:', [
+                        'first' => $data['english_first_name'],
+                        'last' => $data['english_last_name']
+                    ]);
+                    break;
+                }
             }
         }
 
-        // Extract address (look for "ที่อยู่" or address patterns)
-        if (preg_match('/ที่อยู่\s*[:.]?\s*(.+?)(?=วันเกิด|เกิด|Date|$)/s', $text, $matches)) {
-            $data['address'] = trim($matches[1]);
+        // ลองหา Last name แยก
+        if (!empty($data['english_first_name']) && empty($data['english_last_name'])) {
+            if (preg_match('/(?:Last\s*name|Surname)\s*[:\s]*([A-Z][a-zA-Z]+)/i', $text, $matches)) {
+                $data['english_last_name'] = trim($matches[1]);
+            }
         }
+
+        // ===============================================
+        // 4. Extract Dates - วันเกิด, วันออกบัตร, วันหมดอายุ
+        // ===============================================
+        $dates = [];
+
+        // รูปแบบไทย: 1 ม.ค. 2530 หรือ 1 มกราคม 2530
+        preg_match_all('/(\d{1,2})\s*(ม\.ค\.?|ก\.พ\.?|มี\.ค\.?|เม\.ย\.?|พ\.ค\.?|มิ\.ย\.?|ก\.ค\.?|ส\.ค\.?|ก\.ย\.?|ต\.ค\.?|พ\.ย\.?|ธ\.ค\.?|มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม)\s*(\d{4})/u', $text, $thaiDateMatches, PREG_SET_ORDER);
+
+        foreach ($thaiDateMatches as $match) {
+            $dates[] = $match[0];
+        }
+
+        // รูปแบบ: DD/MM/YYYY หรือ DD-MM-YYYY
+        preg_match_all('/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/', $text, $slashDateMatches, PREG_SET_ORDER);
+        foreach ($slashDateMatches as $match) {
+            $dates[] = $match[0];
+        }
+
+        // รูปแบบ: DD MMM YYYY (English)
+        preg_match_all('/(\d{1,2})\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s*(\d{4})/i', $text, $engDateMatches, PREG_SET_ORDER);
+        foreach ($engDateMatches as $match) {
+            $dates[] = $match[0];
+        }
+
+        // ลบ duplicates
+        $dates = array_unique($dates);
+        $dates = array_values($dates);
+
+        Log::debug('OCR Found Dates:', ['dates' => $dates]);
+
+        // ลองหาวันเกิดที่ใกล้กับ keyword "เกิด" หรือ "Date of Birth"
+        if (preg_match('/(?:เกิด|Date\s*of\s*Birth|วันเกิด|DOB)\s*[:\s]*(\d{1,2}[\/\-\s](?:\d{1,2}|ม\.ค\.?|ก\.พ\.?|มี\.ค\.?|เม\.ย\.?|พ\.ค\.?|มิ\.ย\.?|ก\.ค\.?|ส\.ค\.?|ก\.ย\.?|ต\.ค\.?|พ\.ย\.?|ธ\.ค\.?|มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม)[\/\-\s]*\d{4})/iu', $text, $birthMatch)) {
+            $data['birth_date'] = $this->parseThaiDate($birthMatch[1]);
+        } elseif (count($dates) >= 1) {
+            $data['birth_date'] = $this->parseThaiDate($dates[0]);
+        }
+
+        // ลองหาวันออกบัตรและวันหมดอายุ
+        if (preg_match('/(?:ออก|Issue)\s*[:\s]*(\d{1,2}[\/\-\s][^\d]*\d{4})/iu', $text, $issueMatch)) {
+            $data['issue_date'] = $this->parseThaiDate($issueMatch[1]);
+        } elseif (count($dates) >= 2) {
+            $data['issue_date'] = $this->parseThaiDate($dates[1]);
+        }
+
+        if (preg_match('/(?:หมดอายุ|Expiry|Exp)\s*[:\s]*(\d{1,2}[\/\-\s][^\d]*\d{4})/iu', $text, $expiryMatch)) {
+            $data['expiry_date'] = $this->parseThaiDate($expiryMatch[1]);
+        } elseif (count($dates) >= 3) {
+            $data['expiry_date'] = $this->parseThaiDate($dates[2]);
+        }
+
+        // ===============================================
+        // 5. Extract Religion
+        // ===============================================
+        if (preg_match('/ศาสนา\s*[:\s]*([ก-๙]+)/u', $text, $religionMatch)) {
+            $data['religion'] = trim($religionMatch[1]);
+        }
+
+        // ===============================================
+        // 6. Extract Address
+        // ===============================================
+        // ลองหาที่อยู่
+        $addressPatterns = [
+            '/ที่อยู่\s*[:\s]*(.+?)(?=\n\n|วันเกิด|เกิด|Date|ออก|Issue|หมดอายุ|ศาสนา|$)/su',
+            '/(?:บ้านเลขที่|เลขที่)\s*(\d+[^\n]+)/u',
+        ];
+
+        foreach ($addressPatterns as $pattern) {
+            if (preg_match($pattern, $text, $addressMatch)) {
+                $address = trim($addressMatch[1]);
+                // ทำความสะอาด address
+                $address = preg_replace('/\s+/', ' ', $address);
+                if (mb_strlen($address) > 10) { // ที่อยู่ต้องยาวพอ
+                    $data['address'] = $address;
+                    break;
+                }
+            }
+        }
+
+        Log::debug('OCR Parsed Data:', ['data' => $data]);
 
         return $data;
     }

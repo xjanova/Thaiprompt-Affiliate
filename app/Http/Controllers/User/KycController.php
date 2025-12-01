@@ -76,32 +76,19 @@ class KycController extends Controller
             'selfie_image.max' => 'ขนาดไฟล์รูปถ่ายตัวเองต้องไม่เกิน 5MB',
         ]);
 
-        // Store images with WebP conversion
-        $webpService = new WebPService();
+        // ⚠️ IMPORTANT: ต้องทำ OCR ก่อน WebP conversion เพื่อคุณภาพที่ดีที่สุด
+        // เก็บรูป original ชั่วคราวสำหรับ OCR
+        $idCardFile = $request->file('id_card_image');
+        $tempIdCardPath = 'kyc/temp/' . uniqid('idcard_') . '.' . $idCardFile->getClientOriginalExtension();
+        Storage::disk('public')->put($tempIdCardPath, file_get_contents($idCardFile->getRealPath()));
 
-        // Convert ID card image to WebP
-        $idCardResult = $webpService->convertAndStore(
-            $request->file('id_card_image'),
-            'kyc/id-cards',
-            90 // High quality for ID cards
-        );
-        $idCardPath = $idCardResult['path'];
-
-        // Convert selfie image to WebP
-        $selfieResult = $webpService->convertAndStore(
-            $request->file('selfie_image'),
-            'kyc/selfies',
-            90 // High quality for selfies
-        );
-        $selfiePath = $selfieResult['path'];
-
-        // Extract data from ID card using OCR
+        // Extract data from ID card using OCR (ใช้รูปต้นฉบับ)
         $extractedData = null;
         $ocrError = null;
 
         try {
             $ocrService = new ThaiIdCardOcrService();
-            $ocrResult = $ocrService->extractData($idCardPath);
+            $ocrResult = $ocrService->extractData($tempIdCardPath);
 
             if (!empty($ocrResult['success'])) {
                 // OCR succeeded
@@ -139,6 +126,28 @@ class KycController extends Controller
                 'suggestion' => 'กรุณาลองอัพโหลดใหม่อีกครั้ง'
             ];
         }
+
+        // ลบไฟล์ temp หลัง OCR
+        Storage::disk('public')->delete($tempIdCardPath);
+
+        // Store images with WebP conversion (หลังจาก OCR)
+        $webpService = new WebPService();
+
+        // Convert ID card image to WebP
+        $idCardResult = $webpService->convertAndStore(
+            $request->file('id_card_image'),
+            'kyc/id-cards',
+            90 // High quality for ID cards
+        );
+        $idCardPath = $idCardResult['path'];
+
+        // Convert selfie image to WebP
+        $selfieResult = $webpService->convertAndStore(
+            $request->file('selfie_image'),
+            'kyc/selfies',
+            90 // High quality for selfies
+        );
+        $selfiePath = $selfieResult['path'];
 
         // Create KYC verification record
         $kycVerification = KycVerification::create([
