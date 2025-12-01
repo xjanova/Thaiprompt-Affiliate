@@ -581,7 +581,7 @@ cleanup_old_backups
 print_header "📦 Deployment Process"
 
 # Step 1: Enable Maintenance Mode
-print_step 1 21 "Enabling Maintenance Mode"
+print_step 1 22 "Enabling Maintenance Mode"
 
 # Ensure directories exist before running artisan
 ensure_laravel_directories
@@ -593,7 +593,7 @@ print_success "Maintenance mode enabled"
 sleep 2  # Give time for requests to finish
 
 # Step 2: Backup Database
-print_step 2 21 "Creating Database Backup"
+print_step 2 22 "Creating Database Backup"
 BACKUP_FILE="$BACKUP_DIR/db_backup_$(date +'%Y%m%d_%H%M%S').sql"
 
 # Get database info from .env
@@ -630,12 +630,12 @@ log "Current commit: $CURRENT_COMMIT"
 print_info "Current commit: ${CURRENT_COMMIT:0:8}"
 
 # Step 3: Backup Critical Files (PREVENT DATA LOSS!)
-print_step 3 21 "Backing up Critical Files (.env, uploads)"
+print_step 3 22 "Backing up Critical Files (.env, uploads)"
 backup_critical_files
 print_success "Critical files backed up safely"
 
 # Step 4: Force Pull Latest Code from GitHub
-print_step 4 21 "Force Syncing with GitHub"
+print_step 4 22 "Force Syncing with GitHub"
 
 # Step 4.1: Stash any local changes (for safety backup)
 if [[ -n $(git status -s) ]]; then
@@ -737,7 +737,7 @@ print_info "New commit: ${NEW_COMMIT:0:8}"
 save_deployment_history "$NEW_COMMIT" "$BRANCH"
 
 # Step 5: Ensure Base Controller Exists
-print_step 5 21 "Ensuring Base Controller Exists"
+print_step 5 22 "Ensuring Base Controller Exists"
 CONTROLLER_FILE="app/Http/Controllers/Controller.php"
 if [ ! -f "$CONTROLLER_FILE" ]; then
     print_warning "Base Controller.php not found, creating..."
@@ -835,7 +835,7 @@ check_package() {
 }
 
 # Step 6: Smart Composer Management
-print_step 6 21 "Smart Composer Management"
+print_step 6 22 "Smart Composer Management"
 echo ""
 
 # Run smart composer install
@@ -849,7 +849,7 @@ check_package "barryvdh/laravel-dompdf" "DomPDF (PDF Generation)" false
 echo ""
 
 # Step 7: Smart Laravel Sanctum Installation
-print_step 7 21 "Smart Laravel Sanctum Installation"
+print_step 7 22 "Smart Laravel Sanctum Installation"
 
 # Check if Sanctum migrations already exist
 if [ -f "database/migrations/*_create_personal_access_tokens_table.php" ] || \
@@ -865,7 +865,7 @@ else
 fi
 
 # Step 8: Clear All Cache (before migration)
-print_step 8 21 "Clearing All Caches"
+print_step 8 22 "Clearing All Caches"
 
 # Clear caches silently (ignore permission errors)
 php artisan cache:clear >/dev/null 2>&1 || print_warning "Cache clear skipped (may need manual clear)"
@@ -882,7 +882,7 @@ else
 fi
 
 # Step 9: Smart Database Migration System
-print_step 9 21 "🎯 Smart Database Migration System"
+print_step 9 22 "🎯 Smart Database Migration System"
 echo ""
 
 # Step 10.1: Create database if not exists (Auto-fix for missing database)
@@ -1291,7 +1291,7 @@ track_seeder_changes() {
 }
 
 # Step 10: Smart Database Seeding System v2
-print_step 10 21 "🌱 Smart Database Seeding System v2"
+print_step 10 22 "🌱 Smart Database Seeding System v2"
 echo ""
 
 # Step 11.1: Verify all seeders are included in DatabaseSeeder.php
@@ -1456,7 +1456,7 @@ fi
 echo ""
 
 # Step 11: Create Storage Symlink (แก้ไขปัญหาโลโก้หาย)
-print_step 11 21 "Creating Storage Symlink"
+print_step 11 22 "Creating Storage Symlink"
 
 # ใช้ storage:fix แทน storage:link เพราะจัดการกรณีพิเศษได้ดีกว่า
 if php artisan storage:fix --force --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
@@ -1492,7 +1492,7 @@ else
 fi
 
 # Step 12: Set Permissions
-print_step 12 21 "Setting File Permissions"
+print_step 12 22 "Setting File Permissions"
 
 # Detect web server user
 WEB_USER=""
@@ -1532,29 +1532,29 @@ fi
 print_success "Permissions set"
 
 # Step 13: Cache Configuration
-print_step 13 21 "Caching Configuration"
+print_step 13 22 "Caching Configuration"
 if ! php artisan config:cache 2>&1 | tee -a "$LOG_FILE"; then
     error_exit "Config cache failed - ตรวจสอบ .env และ config files" "$?"
 fi
 print_success "Configuration cached"
 
 # Step 14: Cache Routes
-print_step 14 21 "Caching Routes"
+print_step 14 22 "Caching Routes"
 php artisan route:cache || print_warning "Route cache failed (continuing anyway)"
 print_success "Routes cached"
 
 # Step 15: Cache Views
-print_step 15 21 "Caching Views"
+print_step 15 22 "Caching Views"
 php artisan view:cache || print_warning "View cache failed (continuing anyway)"
 print_success "Views cached"
 
 # Step 16: Optimize Autoloader
-print_step 16 21 "Optimizing Autoloader"
+print_step 16 22 "Optimizing Autoloader"
 composer dump-autoload --optimize --no-dev --no-interaction
 print_success "Autoloader optimized"
 
 # Step 17: Restart Services (CRITICAL for OPcache clearing!)
-print_step 17 21 "Restarting Services (OPcache)"
+print_step 17 22 "Restarting Services (OPcache)"
 
 # Track service restart status
 PHP_FPM_STATUS="⏭️ ไม่พบ"
@@ -1647,7 +1647,7 @@ if [ "$PHP_FPM_RESTARTED" = false ]; then
 fi
 
 # Step 18: Final ENV Verification
-print_step 18 21 "Verifying Environment Configuration"
+print_step 18 22 "Verifying Environment Configuration"
 if [ -f ".env" ]; then
     print_success "✓ .env file exists and is ready"
 else
@@ -1655,15 +1655,57 @@ else
 fi
 
 # Step 19: Disable Maintenance Mode
-print_step 19 21 "Disabling Maintenance Mode"
+print_step 19 22 "Disabling Maintenance Mode"
 php artisan up || error_exit "Failed to disable maintenance mode"
 print_success "Application is now live!"
+
+# Step 20: Cloudflare Cache Purge (NEW!)
+print_step 20 22 "☁️ Cloudflare CDN Cache Purge"
+
+# Check if Cloudflare is configured
+CF_ZONE_ID=$(grep "^CLOUDFLARE_ZONE_ID=" .env 2>/dev/null | cut -d '=' -f2 || echo "")
+CF_API_TOKEN=$(grep "^CLOUDFLARE_API_TOKEN=" .env 2>/dev/null | cut -d '=' -f2 || echo "")
+
+# Use defaults from config if not in .env
+if [ -z "$CF_ZONE_ID" ]; then
+    CF_ZONE_ID="d552b4a77bf4783bf6cbfd6a07d3f349"
+fi
+if [ -z "$CF_API_TOKEN" ]; then
+    CF_API_TOKEN="3fc13fcba9b6add1ee59f2504f092bddec540"
+fi
+
+if [ -n "$CF_ZONE_ID" ] && [ -n "$CF_API_TOKEN" ]; then
+    print_info "→ Purging Cloudflare CDN cache..."
+
+    # Make API call to purge everything
+    CF_RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+        -H "Authorization: Bearer ${CF_API_TOKEN}" \
+        -H "Content-Type: application/json" \
+        --data '{"purge_everything":true}' \
+        --max-time 30 2>/dev/null || echo '{"success":false}')
+
+    # Check response
+    if echo "$CF_RESPONSE" | grep -q '"success":true'; then
+        print_success "✓ Cloudflare cache purged successfully!"
+        print_info "  CDN จะ fetch เนื้อหาใหม่จาก origin server"
+        log "Cloudflare: Cache purged successfully"
+    else
+        CF_ERROR=$(echo "$CF_RESPONSE" | grep -oP '"message":"\K[^"]+' | head -1 || echo "Unknown error")
+        print_warning "⚠ Cloudflare cache purge failed: $CF_ERROR"
+        print_info "  ลองรัน manual: php artisan cloudflare:purge"
+        log "Cloudflare: Cache purge failed - $CF_ERROR"
+    fi
+else
+    print_info "→ Cloudflare ไม่ได้ตั้งค่า (ข้ามการ purge cache)"
+    print_info "  กำหนดค่าได้ที่: Admin → Cloudflare CDN"
+fi
+echo ""
 
 # Post-deployment verification
 print_header "🔍 Post-Deployment Verification"
 
-# Step 20: Verify deployment
-print_step 20 21 "Verifying Deployment"
+# Step 21: Verify deployment
+print_step 21 22 "Verifying Deployment"
 
 # Check if application is accessible (non-critical check)
 if php artisan route:list >/dev/null 2>&1; then
@@ -1672,8 +1714,8 @@ else
     print_warning "⚠ Routes check skipped (cache warming up)"
 fi
 
-# Step 21: HTTP Health Check - verify site is actually responding
-print_step 21 21 "Running HTTP Health Check"
+# Step 22: HTTP Health Check - verify site is actually responding
+print_step 22 22 "Running HTTP Health Check"
 APP_URL=$(grep "^APP_URL=" .env | cut -d '=' -f2)
 if [ -n "$APP_URL" ] && command -v curl >/dev/null 2>&1; then
     print_info "Checking HTTP response from $APP_URL..."

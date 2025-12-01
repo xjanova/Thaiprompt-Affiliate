@@ -3095,3 +3095,50 @@ Route::prefix('marketplace')->name('marketplace.')->group(function () {
             ->name('bulk-pay');
     });
 });
+
+
+
+// ========================================
+// CLOUDFLARE MANAGEMENT SYSTEM
+// ========================================
+use App\Http\Controllers\Admin\CloudflareController;
+
+Route::prefix('cloudflare')->name('cloudflare.')->group(function () {
+    // Dashboard
+    Route::get('/', [CloudflareController::class, 'index'])->name('index');
+
+    // Cache Management
+    Route::get('/cache', [CloudflareController::class, 'cache'])->name('cache');
+    Route::post('/purge-all', [CloudflareController::class, 'purgeAll'])->name('purge-all');
+    Route::post('/purge-urls', [CloudflareController::class, 'purgeUrls'])->name('purge-urls');
+    Route::post('/purge-prefixes', [CloudflareController::class, 'purgePrefixes'])->name('purge-prefixes');
+
+    // DNS Management
+    Route::get('/dns', [CloudflareController::class, 'dns'])->name('dns');
+    Route::post('/dns', [CloudflareController::class, 'createDns'])->name('dns.create');
+    Route::put('/dns/{recordId}', [CloudflareController::class, 'updateDns'])->name('dns.update');
+    Route::delete('/dns/{recordId}', [CloudflareController::class, 'deleteDns'])->name('dns.delete');
+
+    // Security
+    Route::get('/security', [CloudflareController::class, 'security'])->name('security');
+    Route::post('/security-level', [CloudflareController::class, 'setSecurityLevel'])->name('set-security-level');
+    Route::post('/enable-under-attack', [CloudflareController::class, 'enableUnderAttack'])->name('enable-under-attack');
+    Route::post('/disable-under-attack', [CloudflareController::class, 'disableUnderAttack'])->name('disable-under-attack');
+
+    // Development Mode
+    Route::post('/toggle-dev-mode', [CloudflareController::class, 'toggleDevelopmentMode'])->name('toggle-dev-mode');
+
+    // Analytics
+    Route::get('/analytics', [CloudflareController::class, 'analytics'])->name('analytics');
+    Route::get('/analytics/data', [CloudflareController::class, 'getAnalytics'])->name('analytics.data');
+
+    // Page Rules
+    Route::get('/page-rules', [CloudflareController::class, 'pageRules'])->name('page-rules');
+
+    // Zone Info
+    Route::get('/zones', [CloudflareController::class, 'getZones'])->name('zones');
+    Route::get('/zone-info', [CloudflareController::class, 'getZoneInfo'])->name('zone-info');
+
+    // Settings
+    Route::get('/settings', [CloudflareController::class, 'settings'])->name('settings');
+});
