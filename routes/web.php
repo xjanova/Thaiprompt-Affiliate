@@ -275,8 +275,8 @@ Route::prefix('otp')->name('otp.')->group(function () {
 
 // Frontend Routes
 // Landing Page - หน้าแรก (3 ประตู Storytelling)
-// ⚠️ FIX: ใช้ Route::any เพื่อรองรับทุก HTTP method (แก้ปัญหา MethodNotAllowedHttpException)
-Route::any('/', [HomeController::class, 'index'])->name('home');
+// ⚠️ FIX: Register ทั้ง GET และ HEAD แยกกันเพื่อแก้ปัญหา MethodNotAllowedHttpException
+Route::addRoute(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], '/', [HomeController::class, 'index'])->name('home');
 
 // Original Home Page
 // ⚠️ SEO Critical: Landing pages ต้องรองรับ HEAD method
