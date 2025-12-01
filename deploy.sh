@@ -627,6 +627,34 @@ print_info "Recreating essential Laravel directories..."
 ensure_laravel_directories
 print_success "Essential directories created"
 
+# Step 4.8: CRITICAL - Clear ALL caches immediately after pulling new code
+# ⚠️ This prevents route/config cache from using old code
+print_info "[4.8/20] 🔥 Clearing ALL caches immediately (prevent stale cache issues)..."
+
+# Clear Laravel caches FIRST - before any other artisan commands
+php artisan route:clear 2>/dev/null || true
+php artisan config:clear 2>/dev/null || true
+php artisan view:clear 2>/dev/null || true
+php artisan cache:clear 2>/dev/null || true
+php artisan event:clear 2>/dev/null || true
+
+# Clear OPcache if available (critical for PHP file changes)
+if php -m | grep -q "OPcache"; then
+    print_info "Clearing OPcache..."
+    php -r "if (function_exists('opcache_reset')) { opcache_reset(); echo 'OPcache cleared'; } else { echo 'OPcache not available'; }" 2>/dev/null || true
+fi
+
+# Clear realpath cache
+php -r "clearstatcache(true);" 2>/dev/null || true
+
+# Delete bootstrap cache files manually (ensure clean state)
+rm -f bootstrap/cache/config.php 2>/dev/null || true
+rm -f bootstrap/cache/routes-v7.php 2>/dev/null || true
+rm -f bootstrap/cache/services.php 2>/dev/null || true
+rm -f bootstrap/cache/packages.php 2>/dev/null || true
+
+print_success "✓ All caches cleared - ready for fresh code"
+
 # Step 5: Verify we're in sync with remote
 LOCAL_COMMIT=$(git rev-parse HEAD)
 REMOTE_COMMIT=$(git rev-parse "origin/$BRANCH")
