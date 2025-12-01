@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.267.46] - 2025-12-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1860 from xjanova/claude/mlm-hierarchy-seeder-01PdxJ7MXzpAwZ55Yp5uj4st (ff6c4a52)
+- fix: ใช้ forceDelete() และ withTrashed() ใน MlmHierarchySeeder cleanup (f69554b6)
+### 🔧 Other Changes
+
+
 ## [v3.267.45] - 2025-11-30
 
 ### ✨ Features
