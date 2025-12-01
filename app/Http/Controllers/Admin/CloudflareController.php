@@ -1,0 +1,572 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Services\CloudflareService;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\View\View;
+
+/**
+ * CloudflareController
+ *
+ * จัดการ Cloudflare ผ่าน Admin Panel
+ * รองรับ: Cache Purge, DNS, Security, Analytics และอื่นๆ
+ */
+class CloudflareController extends Controller
+{
+    /**
+     * Cloudflare Service
+     */
+    protected CloudflareService $cloudflare;
+
+    /**
+     * Constructor
+     */
+    public function __construct(CloudflareService $cloudflare)
+    {
+        $this->cloudflare = $cloudflare;
+    }
+
+    // ========================================
+    // DASHBOARD
+    // ========================================
+
+    /**
+     * หน้า Dashboard หลักของ Cloudflare
+     *
+     * @return View
+     */
+    public function index(): View
+    {
+        $isConfigured = $this->cloudflare->isConfigured();
+        $zoneInfo = null;
+        $analytics = null;
+        $securityLevel = null;
+        $developmentMode = null;
+
+        if ($isConfigured) {
+            // ดึงข้อมูล Zone
+            $zoneResult = $this->cloudflare->getZone();
+            if ($zoneResult['success']) {
+                $zoneInfo = $zoneResult['data'];
+            }
+
+            // ดึงข้อมูล Analytics
+            $analyticsResult = $this->cloudflare->getAnalyticsDashboard();
+            if ($analyticsResult['success']) {
+                $analytics = $analyticsResult['data'];
+            }
+
+            // ดึง Security Level
+            $securityResult = $this->cloudflare->getSecurityLevel();
+            if ($securityResult['success']) {
+                $securityLevel = $securityResult['data']['value'] ?? 'medium';
+            }
+
+            // ดึง Development Mode
+            $devModeResult = $this->cloudflare->getDevelopmentMode();
+            if ($devModeResult['success']) {
+                $developmentMode = $devModeResult['data']['value'] ?? 'off';
+            }
+        }
+
+        return view('admin.cloudflare.index', [
+            'pageTitle' => 'Cloudflare Management',
+            'isConfigured' => $isConfigured,
+            'zoneInfo' => $zoneInfo,
+            'analytics' => $analytics,
+            'securityLevel' => $securityLevel,
+            'developmentMode' => $developmentMode,
+        ]);
+    }
+
+    // ========================================
+    // CACHE MANAGEMENT
+    // ========================================
+
+    /**
+     * หน้าจัดการ Cache
+     *
+     * @return View
+     */
+    public function cache(): View
+    {
+        return view('admin.cloudflare.cache', [
+            'pageTitle' => 'Cloudflare Cache Management',
+            'isConfigured' => $this->cloudflare->isConfigured(),
+        ]);
+    }
+
+    /**
+     * Purge Cache ทั้งหมด
+     *
+     * @return JsonResponse
+     */
+    public function purgeAll(): JsonResponse
+    {
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า กรุณาเพิ่ม Zone ID และ API Token ใน .env',
+            ], 400);
+        }
+
+        $result = $this->cloudflare->purgeEverything();
+
+        return response()->json($result);
+    }
+
+    /**
+     * Purge Cache ตาม URLs
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function purgeUrls(Request $request): JsonResponse
+    {
+        $request->validate([
+            'urls' => 'required|array|min:1',
+            'urls.*' => 'required|url',
+        ]);
+
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        $result = $this->cloudflare->purgeUrls($request->urls);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Purge Cache ตาม Prefixes
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function purgePrefixes(Request $request): JsonResponse
+    {
+        $request->validate([
+            'prefixes' => 'required|array|min:1',
+            'prefixes.*' => 'required|string',
+        ]);
+
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        $result = $this->cloudflare->purgePrefixes($request->prefixes);
+
+        return response()->json($result);
+    }
+
+    // ========================================
+    // DNS MANAGEMENT
+    // ========================================
+
+    /**
+     * หน้าจัดการ DNS
+     *
+     * @return View
+     */
+    public function dns(): View
+    {
+        $dnsRecords = [];
+
+        if ($this->cloudflare->isConfigured()) {
+            $result = $this->cloudflare->getDnsRecords();
+            if ($result['success']) {
+                $dnsRecords = $result['data'];
+            }
+        }
+
+        return view('admin.cloudflare.dns', [
+            'pageTitle' => 'Cloudflare DNS Management',
+            'isConfigured' => $this->cloudflare->isConfigured(),
+            'dnsRecords' => $dnsRecords,
+        ]);
+    }
+
+    /**
+     * สร้าง DNS Record ใหม่
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function createDns(Request $request): JsonResponse
+    {
+        $request->validate([
+            'type' => 'required|string|in:A,AAAA,CNAME,TXT,MX,NS,SRV,CAA',
+            'name' => 'required|string|max:255',
+            'content' => 'required|string|max:255',
+            'ttl' => 'nullable|integer|min:1',
+            'proxied' => 'nullable|boolean',
+            'priority' => 'nullable|integer', // สำหรับ MX records
+        ]);
+
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        $data = [
+            'type' => $request->type,
+            'name' => $request->name,
+            'content' => $request->content,
+            'ttl' => $request->ttl ?? 1, // 1 = auto
+            'proxied' => $request->boolean('proxied', false),
+        ];
+
+        // เพิ่ม priority สำหรับ MX records
+        if ($request->type === 'MX' && $request->priority) {
+            $data['priority'] = $request->priority;
+        }
+
+        $result = $this->cloudflare->createDnsRecord($data);
+
+        return response()->json($result);
+    }
+
+    /**
+     * อัพเดท DNS Record
+     *
+     * @param Request $request
+     * @param string $recordId
+     * @return JsonResponse
+     */
+    public function updateDns(Request $request, string $recordId): JsonResponse
+    {
+        $request->validate([
+            'type' => 'required|string|in:A,AAAA,CNAME,TXT,MX,NS,SRV,CAA',
+            'name' => 'required|string|max:255',
+            'content' => 'required|string|max:255',
+            'ttl' => 'nullable|integer|min:1',
+            'proxied' => 'nullable|boolean',
+            'priority' => 'nullable|integer',
+        ]);
+
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        $data = [
+            'type' => $request->type,
+            'name' => $request->name,
+            'content' => $request->content,
+            'ttl' => $request->ttl ?? 1,
+            'proxied' => $request->boolean('proxied', false),
+        ];
+
+        if ($request->type === 'MX' && $request->priority) {
+            $data['priority'] = $request->priority;
+        }
+
+        $result = $this->cloudflare->updateDnsRecord($recordId, $data);
+
+        return response()->json($result);
+    }
+
+    /**
+     * ลบ DNS Record
+     *
+     * @param string $recordId
+     * @return JsonResponse
+     */
+    public function deleteDns(string $recordId): JsonResponse
+    {
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        $result = $this->cloudflare->deleteDnsRecord($recordId);
+
+        return response()->json($result);
+    }
+
+    // ========================================
+    // SECURITY SETTINGS
+    // ========================================
+
+    /**
+     * หน้าตั้งค่า Security
+     *
+     * @return View
+     */
+    public function security(): View
+    {
+        $securityLevel = 'medium';
+        $firewallRules = [];
+        $sslSettings = null;
+
+        if ($this->cloudflare->isConfigured()) {
+            // Security Level
+            $result = $this->cloudflare->getSecurityLevel();
+            if ($result['success']) {
+                $securityLevel = $result['data']['value'] ?? 'medium';
+            }
+
+            // Firewall Rules
+            $fwResult = $this->cloudflare->getFirewallRules();
+            if ($fwResult['success']) {
+                $firewallRules = $fwResult['data'];
+            }
+
+            // SSL Settings
+            $sslResult = $this->cloudflare->getSslSettings();
+            if ($sslResult['success']) {
+                $sslSettings = $sslResult['data'];
+            }
+        }
+
+        return view('admin.cloudflare.security', [
+            'pageTitle' => 'Cloudflare Security Settings',
+            'isConfigured' => $this->cloudflare->isConfigured(),
+            'securityLevel' => $securityLevel,
+            'firewallRules' => $firewallRules,
+            'sslSettings' => $sslSettings,
+        ]);
+    }
+
+    /**
+     * เปลี่ยน Security Level
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function setSecurityLevel(Request $request): JsonResponse
+    {
+        $request->validate([
+            'level' => 'required|string|in:off,essentially_off,low,medium,high,under_attack',
+        ]);
+
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        $result = $this->cloudflare->setSecurityLevel($request->level);
+
+        return response()->json($result);
+    }
+
+    /**
+     * เปิด Under Attack Mode
+     *
+     * @return JsonResponse
+     */
+    public function enableUnderAttack(): JsonResponse
+    {
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        $result = $this->cloudflare->enableUnderAttackMode();
+
+        return response()->json($result);
+    }
+
+    /**
+     * ปิด Under Attack Mode
+     *
+     * @return JsonResponse
+     */
+    public function disableUnderAttack(): JsonResponse
+    {
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        $result = $this->cloudflare->disableUnderAttackMode();
+
+        return response()->json($result);
+    }
+
+    // ========================================
+    // DEVELOPMENT MODE
+    // ========================================
+
+    /**
+     * สลับ Development Mode
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function toggleDevelopmentMode(Request $request): JsonResponse
+    {
+        $request->validate([
+            'enabled' => 'required|boolean',
+        ]);
+
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        $result = $this->cloudflare->setDevelopmentMode($request->boolean('enabled'));
+
+        return response()->json($result);
+    }
+
+    // ========================================
+    // ANALYTICS
+    // ========================================
+
+    /**
+     * หน้า Analytics
+     *
+     * @return View
+     */
+    public function analytics(): View
+    {
+        $analytics = null;
+
+        if ($this->cloudflare->isConfigured()) {
+            $result = $this->cloudflare->getAnalyticsDashboard();
+            if ($result['success']) {
+                $analytics = $result['data'];
+            }
+        }
+
+        return view('admin.cloudflare.analytics', [
+            'pageTitle' => 'Cloudflare Analytics',
+            'isConfigured' => $this->cloudflare->isConfigured(),
+            'analytics' => $analytics,
+        ]);
+    }
+
+    /**
+     * ดึงข้อมูล Analytics ล่าสุด (AJAX)
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getAnalytics(Request $request): JsonResponse
+    {
+        $since = $request->get('since', '-1440'); // ค่าเริ่มต้น 24 ชั่วโมง
+
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        $result = $this->cloudflare->getAnalyticsDashboard(null, $since);
+
+        return response()->json($result);
+    }
+
+    // ========================================
+    // PAGE RULES
+    // ========================================
+
+    /**
+     * หน้า Page Rules
+     *
+     * @return View
+     */
+    public function pageRules(): View
+    {
+        $pageRules = [];
+
+        if ($this->cloudflare->isConfigured()) {
+            $result = $this->cloudflare->getPageRules();
+            if ($result['success']) {
+                $pageRules = $result['data'];
+            }
+        }
+
+        return view('admin.cloudflare.page-rules', [
+            'pageTitle' => 'Cloudflare Page Rules',
+            'isConfigured' => $this->cloudflare->isConfigured(),
+            'pageRules' => $pageRules,
+        ]);
+    }
+
+    // ========================================
+    // ZONE INFORMATION
+    // ========================================
+
+    /**
+     * ดึงข้อมูล Zones ทั้งหมด
+     *
+     * @return JsonResponse
+     */
+    public function getZones(): JsonResponse
+    {
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        $result = $this->cloudflare->getZones();
+
+        return response()->json($result);
+    }
+
+    /**
+     * ดึงข้อมูล Zone ปัจจุบัน
+     *
+     * @return JsonResponse
+     */
+    public function getZoneInfo(): JsonResponse
+    {
+        if (!$this->cloudflare->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        $result = $this->cloudflare->getZone();
+
+        return response()->json($result);
+    }
+
+    // ========================================
+    // SETTINGS
+    // ========================================
+
+    /**
+     * หน้าตั้งค่า
+     *
+     * @return View
+     */
+    public function settings(): View
+    {
+        return view('admin.cloudflare.settings', [
+            'pageTitle' => 'Cloudflare Settings',
+            'isConfigured' => $this->cloudflare->isConfigured(),
+            'zoneId' => config('services.cloudflare.zone_id'),
+            'hasApiToken' => !empty(config('services.cloudflare.api_token')),
+        ]);
+    }
+}

@@ -19,9 +19,9 @@ return [
             'secret_key' => env('CLOUDFLARE_TURNSTILE_SECRET_KEY', ''),
             'verify_url' => 'https://challenges.cloudflare.com/turnstile/v0/siteverify',
         ],
-        // Cache Purge API (สำหรับ clear cache หลัง deploy)
-        'zone_id' => env('CLOUDFLARE_ZONE_ID', ''),
-        'api_token' => env('CLOUDFLARE_API_TOKEN', ''),
+        // Cloudflare API (Cache Purge, DNS, Security, etc.)
+        'zone_id' => env('CLOUDFLARE_ZONE_ID', 'd552b4a77bf4783bf6cbfd6a07d3f349'),
+        'api_token' => env('CLOUDFLARE_API_TOKEN', '3fc13fcba9b6add1ee59f2504f092bddec540'),
     ],
 
     'google' => [
