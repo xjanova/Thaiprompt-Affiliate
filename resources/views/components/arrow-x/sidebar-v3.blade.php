@@ -1454,6 +1454,72 @@
             <span x-show="$store.sidebar.shouldExpand" x-transition class="ml-auto px-1.5 py-0.5 text-[10px] rounded bg-green-500/30 text-green-300 font-bold">LIVE</span>
         </a>
 
+        {{-- Video Missions (ภารกิจดูคลิปรับรางวัล) 🎬 --}}
+        <div class="space-y-1"
+             x-data="{ videoMissionsOpen: {{ request()->routeIs('admin.video-missions.*') ? 'true' : 'false' }} }">
+            {{-- Video Missions Header Button --}}
+            <button @click="videoMissionsOpen = !videoMissionsOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.video-missions.*') ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-video w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">ภารกิจดูคลิป</span>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="ml-auto px-1.5 py-0.5 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-[10px] font-bold rounded-full shadow-lg">NEW</span>
+                <i x-show="$store.sidebar.shouldExpand && videoMissionsOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !videoMissionsOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Video Missions Submenu --}}
+            <div x-show="videoMissionsOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Dashboard --}}
+                <a href="{{ route('admin.video-missions.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.video-missions.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
+                </a>
+
+                {{-- จัดการภารกิจ --}}
+                <a href="{{ route('admin.video-missions.missions') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.video-missions.missions') || request()->routeIs('admin.video-missions.create') || request()->routeIs('admin.video-missions.edit') || request()->routeIs('admin.video-missions.show') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tasks w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">จัดการภารกิจ</span>
+                </a>
+
+                {{-- การทำภารกิจ --}}
+                <a href="{{ route('admin.video-missions.completions') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.video-missions.completions') || request()->routeIs('admin.video-missions.completion') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-clipboard-check w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">การทำภารกิจ</span>
+                </a>
+
+                {{-- Rank Limits --}}
+                <a href="{{ route('admin.video-missions.rank-limits') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.video-missions.rank-limits') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-medal w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Rank Limits</span>
+                </a>
+
+                {{-- รายงาน --}}
+                <a href="{{ route('admin.video-missions.reports') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.video-missions.reports') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">รายงาน</span>
+                </a>
+
+                {{-- ตั้งค่า --}}
+                <a href="{{ route('admin.video-missions.settings') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.video-missions.settings') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-cog w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
+                </a>
+            </div>
+        </div>
+
         {{-- Divider --}}
         <div x-show="$store.sidebar.shouldExpand" x-transition class="border-t border-white/30 my-4"></div>
 

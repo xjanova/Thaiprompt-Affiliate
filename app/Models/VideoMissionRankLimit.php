@@ -132,11 +132,41 @@ class VideoMissionRankLimit extends Model
     /**
      * ดึง limit สำหรับ Rank (สร้างค่าเริ่มต้นถ้ายังไม่มี)
      *
-     * @param int $rankId
+     * ถ้า user ไม่มี rank (rank_id = 0 หรือ null)
+     * จะ return default limit object โดยไม่บันทึกลง database
+     *
+     * @param int|null $rankId
      * @return self
      */
-    public static function getForRank(int $rankId): self
+    public static function getForRank(?int $rankId): self
     {
+        // ถ้าไม่มี rank ให้ return default limit (ไม่บันทึกลง DB)
+        if (!$rankId || $rankId <= 0) {
+            $defaultLimit = new static();
+            $defaultLimit->rank_id = null;
+            $defaultLimit->daily_mission_limit = 5;
+            $defaultLimit->weekly_mission_limit = 20;
+            $defaultLimit->monthly_mission_limit = 60;
+            $defaultLimit->reward_multiplier = 1.00;
+            $defaultLimit->bonus_reward_percentage = 0;
+            $defaultLimit->bonus_exp_percentage = 0;
+            $defaultLimit->can_access_premium_missions = false;
+            $defaultLimit->can_access_featured_missions = true;
+            $defaultLimit->skip_cooldown = false;
+            $defaultLimit->cooldown_reduction_percent = 0;
+            $defaultLimit->priority_in_queue = 0;
+            $defaultLimit->is_active = true;
+
+            return $defaultLimit;
+        }
+
+        // ตรวจสอบว่า Rank มีอยู่จริงหรือไม่
+        $rankExists = \App\Models\Rank::where('id', $rankId)->exists();
+        if (!$rankExists) {
+            // Rank ไม่มีอยู่ ให้ return default
+            return static::getForRank(null);
+        }
+
         return static::firstOrCreate(
             ['rank_id' => $rankId],
             [
