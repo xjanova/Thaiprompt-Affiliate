@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.274.1] - 2025-12-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1871 from xjanova/claude/fix-root-route-method-01R1kXApbkrJ6YEvcT56n2aq (b0e7a223)
+- fix: แก้ไข ParseError ใน auto-under-attack.blade.php (938542c0)
+### 🔧 Other Changes
+
+
 ## [v3.274.0] - 2025-12-01
 
 ### ✨ Features
