@@ -73,6 +73,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // LINE OA Security middleware
             'line.webhook.throttle' => \App\Http\Middleware\LineWebhookThrottle::class,
             'line.signup.throttle' => \App\Http\Middleware\LineSignupThrottle::class,
+            // Provider LINE connection middleware
+            'provider.line.required' => \App\Http\Middleware\EnsureProviderLineConnected::class,
             // Food Passport API Rate Limiting (CRITICAL for TPIX blockchain protection)
             'food-passport.ratelimit' => \App\Http\Middleware\FoodPassportRateLimiter::class,
             // TPIX Blockchain & Token middleware

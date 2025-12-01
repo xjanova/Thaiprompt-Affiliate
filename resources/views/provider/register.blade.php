@@ -23,6 +23,32 @@
         </p>
     </div>
 
+    {{-- LINE Connected Status --}}
+    @if($user->line_user_id)
+    <div class="mb-6 p-4 bg-green-500/20 border border-green-400/30 rounded-xl">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-green-500/30 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-green-300" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-bold text-green-200 flex items-center gap-2">
+                    <i class="fas fa-check-circle"></i>
+                    เชื่อมต่อ LINE แล้ว
+                </p>
+                <p class="text-sm text-green-200/80">
+                    @if($user->line_display_name)
+                        {{ $user->line_display_name }}
+                    @else
+                        บัญชี LINE ของคุณเชื่อมต่อแล้ว
+                    @endif
+                </p>
+            </div>
+        </div>
+    </div>
+    @endif
+
     {{-- Benefits --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div class="glass-fusion border border-white/20 rounded-xl p-4 text-center hover:scale-105 transition-transform">

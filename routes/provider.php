@@ -16,10 +16,22 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->prefix('provider')->name('provider.')->group(function () {
 
+    // ===== หน้าบังคับเชื่อมต่อ LINE =====
+    // แสดงเมื่อผู้ใช้ยังไม่ได้เชื่อมต่อ LINE
+    Route::get('/line-required', function () {
+        // ถ้าเชื่อมต่อ LINE แล้วให้ redirect ไปหน้า register
+        if (auth()->user()->line_user_id) {
+            return redirect()->route('provider.register');
+        }
+        return view('provider.line-required');
+    })->name('line-required');
+
     // ===== Provider Registration =====
-    // ลงทะเบียนเป็นผู้ให้บริการ
-    Route::get('/register', [RegistrationController::class, 'showForm'])->name('register');
-    Route::post('/register', [RegistrationController::class, 'store'])->name('register.store');
+    // ลงทะเบียนเป็นผู้ให้บริการ (บังคับเชื่อมต่อ LINE ก่อน)
+    Route::middleware(['provider.line.required'])->group(function () {
+        Route::get('/register', [RegistrationController::class, 'showForm'])->name('register');
+        Route::post('/register', [RegistrationController::class, 'store'])->name('register.store');
+    });
     Route::get('/register/status', [RegistrationController::class, 'status'])->name('register.status');
 
     // Dashboard
