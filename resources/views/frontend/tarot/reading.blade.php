@@ -111,10 +111,8 @@
 
                             {{-- Detailed Interpretation --}}
                             @if($readingCard->interpretation)
-                            <div class="space-y-4">
-                                <div class="prose prose-sm prose-invert max-w-none tarot-interpretation">
-                                    {!! nl2br(e($readingCard->interpretation)) !!}
-                                </div>
+                            <div class="bg-gradient-to-br from-purple-900/50 to-slate-900/50 rounded-xl p-4 border border-purple-500/20">
+                                <div class="tarot-interpretation">{{ $readingCard->interpretation }}</div>
                             </div>
                             @else
                             {{-- Fallback: Basic Card Meaning --}}
@@ -167,9 +165,7 @@
                         </div>
 
                         {{-- Interpretation Content --}}
-                        <div class="prose prose-lg prose-invert max-w-none tarot-overall-interpretation">
-                            {!! nl2br(e($reading->interpretation)) !!}
-                        </div>
+                        <div class="tarot-overall-interpretation">{{ $reading->interpretation }}</div>
 
                         {{-- Footer --}}
                         <div class="mt-8 pt-6 border-t border-white/10 flex items-center justify-between flex-wrap gap-4">
@@ -325,19 +321,9 @@
     /* Card Interpretation */
     .tarot-interpretation {
         color: rgba(233, 213, 255, 0.95);
-        line-height: 1.8;
+        line-height: 1.9;
         font-size: 0.95rem;
-    }
-
-    .tarot-interpretation br {
-        display: block;
-        content: "";
-        margin-bottom: 0.5rem;
-    }
-
-    /* Style bold text with ** */
-    .tarot-interpretation {
-        /* Highlight emoji sections */
+        white-space: pre-line;
     }
 
     /* Overall Interpretation Styling */
@@ -345,55 +331,12 @@
         color: rgba(233, 213, 255, 0.95);
         line-height: 1.9;
         font-size: 1rem;
-    }
-
-    .tarot-overall-interpretation br {
-        display: block;
-        content: "";
-        margin-bottom: 0.75rem;
-    }
-
-    /* Styling for emoji-prefixed lines */
-    .tarot-interpretation,
-    .tarot-overall-interpretation {
-        /* Make lines with emojis stand out */
-    }
-
-    /* Style sections with icons */
-    .tarot-interpretation > br + br,
-    .tarot-overall-interpretation > br + br {
-        margin-bottom: 1.5rem;
-    }
-
-    /* Gradient text for headers */
-    .interpretation-header {
-        background: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-weight: bold;
+        white-space: pre-line;
     }
 
     /* Card highlight on hover */
     .card-info:hover .tarot-interpretation {
         color: rgba(255, 255, 255, 0.98);
-    }
-
-    /* Smooth text reveal animation */
-    @keyframes text-reveal {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .tarot-interpretation,
-    .tarot-overall-interpretation {
-        animation: text-reveal 0.8s ease-out;
     }
 
     /* Selection highlight */
@@ -1008,38 +951,6 @@ function saveReading() {
     });
 }
 
-// แปลง markdown-like text เป็น HTML ที่สวยงาม
-function formatInterpretation() {
-    const interpretationElements = document.querySelectorAll('.tarot-interpretation, .tarot-overall-interpretation');
-
-    interpretationElements.forEach(el => {
-        let html = el.innerHTML;
-
-        // แปลง **bold** เป็น <strong>
-        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
-
-        // แปลง _italic_ เป็น <em>
-        html = html.replace(/_([^_]+)_/g, '<em class="text-purple-300">$1</em>');
-
-        // เพิ่ม styling สำหรับ emoji headers
-        html = html.replace(/(🎴|📍|💫|🔮|💡|🏷️|✨|📊|⚡|🎯|💫|🌟|❓|📝|⚖️|🔄|🌀)\s*(<strong[^>]*>)/g,
-            '<span class="inline-flex items-center gap-2 mt-4 mb-2 text-lg">$1 $2');
-
-        // ปิด span ที่เปิดไว้
-        html = html.replace(/(<\/strong>)(\s*<br\s*\/?>)/g, '$1</span>$2');
-
-        // Style section dividers
-        html = html.replace(/<br><br>/g, '<div class="my-4 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent"></div>');
-
-        el.innerHTML = html;
-    });
-}
-
-// เรียกใช้เมื่อ DOM โหลดเสร็จ
-document.addEventListener('DOMContentLoaded', function() {
-    // รอให้ card details แสดงก่อน (หลังจาก 3D animation)
-    setTimeout(formatInterpretation, 4000);
-});
 </script>
 @endpush
 @endsection

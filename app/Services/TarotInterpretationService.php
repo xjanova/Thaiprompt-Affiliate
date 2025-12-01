@@ -349,31 +349,29 @@ class TarotInterpretationService
         array $categoryContext,
         bool $isReversed
     ): string {
-        $keywordString = !empty($keywords) ? implode('、', array_slice($keywords, 0, 3)) : '';
+        $keywordString = !empty($keywords) ? implode(', ', array_slice($keywords, 0, 3)) : '';
 
-        // ส่วนที่ 1: บทนำ
-        $intro = "🎴 **ไพ่ {$cardName}** ({$orientationText} {$orientationEmoji})\n\n";
+        // สร้างคำทำนายแบบอ่านง่าย (ไม่ใช้ markdown)
+        $lines = [];
 
-        // ส่วนที่ 2: ความหมายตำแหน่ง
-        $positionSection = "📍 **ตำแหน่ง: {$positionName}**\n";
-        $positionSection .= "_{$positionContext['meaning']}_\n\n";
+        // ส่วนความหมายของไพ่
+        $lines[] = "ความหมาย: {$cardMeaning}";
 
-        // ส่วนที่ 3: ความหมายของไพ่
-        $meaningSection = "💫 **ความหมาย:**\n";
-        $meaningSection .= "{$cardMeaning}\n\n";
+        // ส่วนตำแหน่ง
+        $lines[] = "";
+        $lines[] = "ในตำแหน่ง \"{$positionName}\" - {$positionContext['meaning']}";
 
-        // ส่วนที่ 4: การตีความตามบริบท
-        $contextSection = "🔮 **{$categoryContext['guidance_prefix']}:**\n";
-
+        // ส่วนการตีความตามบริบท
+        $lines[] = "";
         if ($isReversed) {
-            $contextSection .= $this->getReversedContextualInterpretation(
+            $lines[] = $this->getReversedContextualInterpretation(
                 $cardName,
                 $positionContext,
                 $categoryContext,
                 $keywordString
             );
         } else {
-            $contextSection .= $this->getUprightContextualInterpretation(
+            $lines[] = $this->getUprightContextualInterpretation(
                 $cardName,
                 $positionContext,
                 $categoryContext,
@@ -381,17 +379,11 @@ class TarotInterpretationService
             );
         }
 
-        // ส่วนที่ 5: คำแนะนำ
-        $adviceSection = "\n\n💡 **คำแนะนำ:**\n";
-        $adviceSection .= $this->getAdvice($isReversed, $positionContext, $categoryContext);
+        // ส่วนคำแนะนำ
+        $lines[] = "";
+        $lines[] = "คำแนะนำ: " . $this->getAdvice($isReversed, $positionContext, $categoryContext);
 
-        // ส่วนที่ 6: คีย์เวิร์ด (ถ้ามี)
-        $keywordsSection = '';
-        if (!empty($keywordString)) {
-            $keywordsSection = "\n\n🏷️ **พลังงานหลัก:** {$keywordString}";
-        }
-
-        return $intro . $positionSection . $meaningSection . $contextSection . $adviceSection . $keywordsSection;
+        return implode("\n", $lines);
     }
 
     /**
@@ -503,7 +495,6 @@ class TarotInterpretationService
         $categoryName = $reading->category->name_th ?? 'การทำนายทั่วไป';
         $spreadTypeName = $reading->spreadType->name_th ?? 'การเปิดไพ่';
         $focus = $categoryContext['focus'];
-        $energy = $categoryContext['energy'];
 
         // นับไพ่หัวตั้งและกลับหัว
         $uprightCount = $cards->where('is_reversed', false)->count();
@@ -520,33 +511,28 @@ class TarotInterpretationService
             $allKeywords = array_merge($allKeywords, $keywords);
         }
         $topKeywords = array_slice(array_unique($allKeywords), 0, 5);
-        $keywordString = implode('、', $topKeywords);
+        $keywordString = implode(', ', $topKeywords);
 
-        // สร้างบทสรุป
-        $summary = "✨ **บทสรุปการทำนาย: {$categoryName}** ✨\n\n";
-        $summary .= "📊 **รูปแบบการเปิด:** {$spreadTypeName} ({$totalCards} ใบ)\n";
-        $summary .= "⚡ **พลังงานโดยรวม:** {$energyAnalysis['description']}\n";
-        $summary .= "🎯 **พลังงานหลัก:** {$keywordString}\n\n";
+        // สร้างบทสรุปแบบอ่านง่าย (ไม่ใช้ markdown)
+        $lines = [];
 
-        // ส่วนวิเคราะห์หลัก
-        $summary .= "🔮 **การวิเคราะห์:**\n\n";
-        $summary .= $this->buildOverallAnalysis($cards, $categoryContext, $energyAnalysis);
-
-        // คำแนะนำโดยรวม
-        $summary .= "\n\n💫 **คำแนะนำโดยรวม:**\n";
-        $summary .= $this->getOverallAdvice($energyAnalysis, $categoryContext);
-
-        // ข้อความสร้างแรงบันดาลใจ
-        $summary .= "\n\n🌟 **ข้อคิด:**\n";
-        $summary .= $this->getInspirationMessage($energyAnalysis, $focus);
+        $lines[] = "พลังงานโดยรวม: {$energyAnalysis['description_clean']}";
+        $lines[] = "";
+        $lines[] = "การวิเคราะห์:";
+        $lines[] = $this->buildOverallAnalysis($cards, $categoryContext, $energyAnalysis);
+        $lines[] = "";
+        $lines[] = "คำแนะนำ: " . $this->getOverallAdvice($energyAnalysis, $categoryContext);
+        $lines[] = "";
+        $lines[] = "ข้อคิด: " . $this->getInspirationMessage($energyAnalysis, $focus);
 
         // คำถามของผู้ใช้ (ถ้ามี)
         if (!empty($reading->question)) {
-            $summary .= "\n\n❓ **คำถามของคุณ:** \"{$reading->question}\"\n";
-            $summary .= "📝 **คำตอบ:** " . $this->answerQuestion($reading->question, $cards, $categoryContext, $energyAnalysis);
+            $lines[] = "";
+            $lines[] = "คำถามของคุณ: \"{$reading->question}\"";
+            $lines[] = "คำตอบ: " . $this->answerQuestion($reading->question, $cards, $categoryContext, $energyAnalysis);
         }
 
-        return $summary;
+        return implode("\n", $lines);
     }
 
     /**
@@ -564,35 +550,40 @@ class TarotInterpretationService
         if ($uprightRatio >= 0.8) {
             return [
                 'type' => 'very_positive',
-                'description' => '🌟 พลังงานบวกสูงมาก - เส้นทางกำลังเปิดกว้าง',
+                'description' => 'พลังงานบวกสูงมาก - เส้นทางกำลังเปิดกว้าง',
+                'description_clean' => 'พลังงานบวกสูงมาก เส้นทางกำลังเปิดกว้าง',
                 'level' => 5,
                 'advice_tone' => 'optimistic',
             ];
         } elseif ($uprightRatio >= 0.6) {
             return [
                 'type' => 'positive',
-                'description' => '✨ พลังงานบวก - สถานการณ์เอื้ออำนวย',
+                'description' => 'พลังงานบวก - สถานการณ์เอื้ออำนวย',
+                'description_clean' => 'พลังงานบวก สถานการณ์เอื้ออำนวย',
                 'level' => 4,
                 'advice_tone' => 'encouraging',
             ];
         } elseif ($uprightRatio >= 0.4) {
             return [
                 'type' => 'balanced',
-                'description' => '⚖️ พลังงานสมดุล - มีทั้งโอกาสและความท้าทาย',
+                'description' => 'พลังงานสมดุล - มีทั้งโอกาสและความท้าทาย',
+                'description_clean' => 'พลังงานสมดุล มีทั้งโอกาสและความท้าทาย',
                 'level' => 3,
                 'advice_tone' => 'balanced',
             ];
         } elseif ($uprightRatio >= 0.2) {
             return [
                 'type' => 'challenging',
-                'description' => '🔄 พลังงานท้าทาย - ต้องการความพยายามเพิ่มเติม',
+                'description' => 'พลังงานท้าทาย - ต้องการความพยายามเพิ่มเติม',
+                'description_clean' => 'พลังงานท้าทาย ต้องการความพยายามเพิ่มเติม',
                 'level' => 2,
                 'advice_tone' => 'supportive',
             ];
         } else {
             return [
                 'type' => 'transformative',
-                'description' => '🌀 พลังงานแห่งการเปลี่ยนแปลง - โอกาสในการเติบโตครั้งใหญ่',
+                'description' => 'พลังงานแห่งการเปลี่ยนแปลง - โอกาสในการเติบโตครั้งใหญ่',
+                'description_clean' => 'พลังงานแห่งการเปลี่ยนแปลง โอกาสในการเติบโตครั้งใหญ่',
                 'level' => 1,
                 'advice_tone' => 'transformative',
             ];
@@ -693,11 +684,11 @@ class TarotInterpretationService
         $level = $energyAnalysis['level'];
 
         $inspirations = [
-            5 => "\"จงเป็นแสงสว่างที่คุณต้องการเห็นในโลก\" - พลังงานรอบตัวคุณสว่างไสว {$focus}ของคุณกำลังเบ่งบาน",
-            4 => "\"ทุกก้าวเล็กๆ นำไปสู่การเดินทางที่ยิ่งใหญ่\" - คุณกำลังก้าวไปในทิศทางที่ถูกต้องใน{$focus}",
-            3 => "\"ความสมดุลคือกุญแจสู่ความสุข\" - รักษาสมดุลใน{$focus}และชีวิตของคุณจะราบรื่น",
-            2 => "\"ดอกบัวงดงามที่สุดเบ่งบานจากโคลนตม\" - ความท้าทายใน{$focus}คือโอกาสให้คุณเติบโต",
-            1 => "\"การเปลี่ยนแปลงคือธรรมชาติของชีวิต\" - ปล่อยวางและต้อนรับ{$focus}ในรูปแบบใหม่ที่ดีกว่า",
+            5 => "จงเป็นแสงสว่างที่คุณต้องการเห็นในโลก พลังงานรอบตัวคุณสว่างไสว {$focus}ของคุณกำลังเบ่งบาน",
+            4 => "ทุกก้าวเล็กๆ นำไปสู่การเดินทางที่ยิ่งใหญ่ คุณกำลังก้าวไปในทิศทางที่ถูกต้องใน{$focus}",
+            3 => "ความสมดุลคือกุญแจสู่ความสุข รักษาสมดุลใน{$focus}และชีวิตของคุณจะราบรื่น",
+            2 => "ดอกบัวงดงามที่สุดเบ่งบานจากโคลนตม ความท้าทายใน{$focus}คือโอกาสให้คุณเติบโต",
+            1 => "การเปลี่ยนแปลงคือธรรมชาติของชีวิต ปล่อยวางและต้อนรับ{$focus}ในรูปแบบใหม่ที่ดีกว่า",
         ];
 
         return $inspirations[$level] ?? $inspirations[3];
