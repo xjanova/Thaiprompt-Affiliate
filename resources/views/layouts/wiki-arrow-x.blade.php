@@ -10,12 +10,19 @@
 
     <title>@yield('title', 'Wiki') - {{ config('app.name') }}</title>
 
-    {{-- Favicon --}}
+    {{-- Favicon - พร้อม fallback ถ้าตารางยังไม่มี --}}
     @php
-        $themeSetting = \App\Models\ThemeSetting::active();
-        $faviconPath = $themeSetting && $themeSetting->favicon_path
-            ? asset('storage/' . $themeSetting->favicon_path)
-            : asset('favicon.ico');
+        $faviconPath = asset('favicon.ico');
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('theme_settings')) {
+                $themeSetting = \App\Models\ThemeSetting::active();
+                if ($themeSetting && $themeSetting->favicon_path) {
+                    $faviconPath = asset('storage/' . $themeSetting->favicon_path);
+                }
+            }
+        } catch (\Exception $e) {
+            // ใช้ค่า default ถ้าเกิด error
+        }
     @endphp
     <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ $faviconPath }}">
@@ -322,7 +329,14 @@
                 <div class="flex items-center gap-4">
                     <a href="{{ route('home') }}" class="flex items-center gap-3 group">
                         @php
-                            $logo = \App\Models\Setting::get('logo');
+                            $logo = null;
+                            try {
+                                if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+                                    $logo = \App\Models\Setting::get('logo');
+                                }
+                            } catch (\Exception $e) {
+                                // ใช้ค่า default ถ้าเกิด error
+                            }
                         @endphp
                         @if($logo)
                             <img src="{{ asset('storage/' . $logo) }}" alt="Logo" class="h-10 w-auto group-hover:scale-105 transition-transform">
