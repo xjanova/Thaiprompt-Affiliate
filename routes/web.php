@@ -21,6 +21,10 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+// ⚠️ ROOT ROUTE - ต้องอยู่ก่อน routes อื่นทั้งหมด
+// FIX: MethodNotAllowedHttpException - The GET method is not supported for route /
+Route::get('/', [HomeController::class, 'index'])->name('home');
+
 // Demo Routes
 Route::get('/demo/loading', function () {
     return view('demo-loading');
@@ -274,9 +278,7 @@ Route::prefix('otp')->name('otp.')->group(function () {
 });
 
 // Frontend Routes
-// Landing Page - หน้าแรก (3 ประตู Storytelling)
-// ⚠️ SEO Critical: หน้าแรกต้องรองรับ GET และ HEAD method
-Route::match(['GET', 'HEAD'], '/', [HomeController::class, 'index'])->name('home');
+// NOTE: Root route '/' ถูกย้ายไปไว้ต้นไฟล์แล้ว (line 26)
 
 // Original Home Page
 // ⚠️ SEO Critical: Landing pages ต้องรองรับ HEAD method
