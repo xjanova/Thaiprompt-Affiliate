@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.279.0] - 2025-12-01
+
+### ✨ Features
+- Merge pull request #1878 from xjanova/claude/video-rewards-system-01RPgkZ8LMAWhgDBidZR5L78 (7c3b5057)
+- feat: เพิ่ม Progress Gauge, Animation รับรางวัล และระบบแชร์ Affiliate (8cfa7753)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.278.0] - 2025-12-01
 
 ### ✨ Features
