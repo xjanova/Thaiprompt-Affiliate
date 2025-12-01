@@ -2,6 +2,87 @@
 
 @section('title', 'ดูคลิป: ' . $mission->display_title)
 
+@push('styles')
+<style>
+    /* Circular Progress Ring */
+    .progress-ring {
+        transform: rotate(-90deg);
+    }
+    .progress-ring__circle {
+        transition: stroke-dashoffset 0.5s ease-out;
+    }
+
+    /* Confetti Animation */
+    @keyframes confetti-fall {
+        0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    .confetti {
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        top: -10px;
+        animation: confetti-fall 3s linear forwards;
+    }
+    .confetti:nth-child(odd) { border-radius: 50%; }
+    .confetti:nth-child(even) { border-radius: 2px; }
+
+    /* Reward Popup Animation */
+    @keyframes reward-bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0) scale(1); }
+        40% { transform: translateY(-30px) scale(1.1); }
+        60% { transform: translateY(-15px) scale(1.05); }
+    }
+    .animate-reward-bounce {
+        animation: reward-bounce 1s ease-out;
+    }
+
+    /* Glow Pulse */
+    @keyframes glow-pulse {
+        0%, 100% { box-shadow: 0 0 20px rgba(236, 72, 153, 0.5); }
+        50% { box-shadow: 0 0 40px rgba(236, 72, 153, 0.8), 0 0 60px rgba(168, 85, 247, 0.6); }
+    }
+    .animate-glow-pulse {
+        animation: glow-pulse 2s ease-in-out infinite;
+    }
+
+    /* Coin Rain */
+    @keyframes coin-rain {
+        0% { transform: translateY(-20px) rotate(0deg); opacity: 0; }
+        10% { opacity: 1; }
+        100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    .coin-particle {
+        animation: coin-rain 3s ease-in forwards;
+    }
+
+    /* Shine Effect */
+    @keyframes shine {
+        0% { background-position: -200% center; }
+        100% { background-position: 200% center; }
+    }
+    .animate-shine {
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        background-size: 200% 100%;
+        animation: shine 2s infinite;
+    }
+
+    /* Progress Fill Animation */
+    @keyframes progress-fill {
+        0% { stroke-dashoffset: 565; }
+    }
+
+    /* Sparkle */
+    @keyframes sparkle {
+        0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+        50% { opacity: 1; transform: scale(1) rotate(180deg); }
+    }
+    .sparkle {
+        animation: sparkle 1.5s ease-in-out infinite;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
      x-data="videoWatcher({{ json_encode([
@@ -12,9 +93,19 @@
          'videoId' => $mission->video_id,
          'embedUrl' => $mission->embed_url,
          'antiCheat' => $antiCheatSettings,
+         'missionTitle' => $mission->display_title,
+         'missionIcon' => $mission->icon ?? '🎬',
+         'rewardMoney' => $mission->reward_money,
+         'rewardCoins' => $mission->reward_coins,
+         'rewardExp' => $mission->reward_exp,
+         'affiliateCode' => auth()->user()->affiliate_code ?? auth()->user()->id,
+         'userName' => auth()->user()->name,
      ]) }})"
      x-init="init()"
      @beforeunload.window="handleBeforeUnload($event)">
+
+    {{-- Confetti Container --}}
+    <div id="confetti-container" class="fixed inset-0 pointer-events-none z-50"></div>
 
     {{-- Header --}}
     <div class="flex items-center justify-between mb-4">
@@ -42,192 +133,359 @@
         </div>
     </div>
 
-    {{-- Video Player Container --}}
-    <div class="glass-fusion dark:bg-gray-800/50 rounded-2xl shadow-lg overflow-hidden backdrop-blur-sm border border-white/20 dark:border-gray-700/50">
-        {{-- Video Title --}}
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h1 class="text-xl font-bold text-gray-900 dark:text-white">
-                {{ $mission->icon ?? '🎬' }} {{ $mission->display_title }}
-            </h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                ดูให้ครบ {{ $mission->required_watch_time_formatted }} เพื่อรับรางวัล
-            </p>
-        </div>
+    <div class="grid lg:grid-cols-3 gap-6">
+        {{-- Main Video Section --}}
+        <div class="lg:col-span-2">
+            {{-- Video Player Container --}}
+            <div class="glass-fusion dark:bg-gray-800/50 rounded-2xl shadow-lg overflow-hidden backdrop-blur-sm border border-white/20 dark:border-gray-700/50">
+                {{-- Video Title --}}
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h1 class="text-xl font-bold text-gray-900 dark:text-white">
+                        {{ $mission->icon ?? '🎬' }} {{ $mission->display_title }}
+                    </h1>
+                </div>
 
-        {{-- Video Player --}}
-        <div class="relative bg-black aspect-video"
-             @focus.window="handleFocus()"
-             @blur.window="handleBlur()">
+                {{-- Video Player --}}
+                <div class="relative bg-black aspect-video"
+                     @focus.window="handleFocus()"
+                     @blur.window="handleBlur()">
 
-            {{-- YouTube Player --}}
-            @if($mission->video_type === 'youtube')
-            <div id="youtube-player" class="w-full h-full"></div>
-            @elseif($mission->video_type === 'vimeo')
-            {{-- Vimeo Player --}}
-            <iframe id="vimeo-player"
-                    src="{{ $mission->embed_url }}"
-                    class="w-full h-full"
-                    frameborder="0"
-                    allow="autoplay; fullscreen"
-                    allowfullscreen></iframe>
-            @else
-            {{-- Direct Video --}}
-            <video id="direct-player"
-                   class="w-full h-full"
-                   @play="handlePlay()"
-                   @pause="handlePause()"
-                   @seeked="handleSeek($event)"
-                   @timeupdate="handleTimeUpdate($event)">
-                <source src="{{ $mission->video_url }}" type="video/mp4">
-                เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ
-            </video>
-            @endif
+                    {{-- YouTube Player --}}
+                    @if($mission->video_type === 'youtube')
+                    <div id="youtube-player" class="w-full h-full"></div>
+                    @elseif($mission->video_type === 'vimeo')
+                    {{-- Vimeo Player --}}
+                    <iframe id="vimeo-player"
+                            src="{{ $mission->embed_url }}"
+                            class="w-full h-full"
+                            frameborder="0"
+                            allow="autoplay; fullscreen"
+                            allowfullscreen></iframe>
+                    @else
+                    {{-- Direct Video --}}
+                    <video id="direct-player"
+                           class="w-full h-full"
+                           @play="handlePlay()"
+                           @pause="handlePause()"
+                           @seeked="handleSeek($event)"
+                           @timeupdate="handleTimeUpdate($event)">
+                        <source src="{{ $mission->video_url }}" type="video/mp4">
+                        เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอ
+                    </video>
+                    @endif
 
-            {{-- Anti-Cheat Overlay (ถ้าต้อง interaction) --}}
-            <div x-show="showInteractionPrompt"
-                 x-transition
-                 class="absolute inset-0 bg-black/80 flex items-center justify-center z-10">
-                <div class="text-center">
-                    <p class="text-white text-lg mb-4">กรุณาคลิกเพื่อยืนยันว่าคุณกำลังดูอยู่</p>
-                    <button @click="confirmInteraction()"
-                            class="px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-xl font-medium">
-                        ฉันกำลังดูอยู่
-                    </button>
+                    {{-- Anti-Cheat Overlay --}}
+                    <div x-show="showInteractionPrompt"
+                         x-transition
+                         class="absolute inset-0 bg-black/80 flex items-center justify-center z-10">
+                        <div class="text-center">
+                            <p class="text-white text-lg mb-4">กรุณาคลิกเพื่อยืนยันว่าคุณกำลังดูอยู่</p>
+                            <button @click="confirmInteraction()"
+                                    class="px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-xl font-medium">
+                                ฉันกำลังดูอยู่
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Warning Overlay --}}
+                    <div x-show="showWarning"
+                         x-transition
+                         class="absolute inset-0 bg-red-900/90 flex items-center justify-center z-20">
+                        <div class="text-center">
+                            <span class="text-5xl mb-4 block">⚠️</span>
+                            <p class="text-white text-lg mb-2">คุณออกจากหน้านี้!</p>
+                            <p class="text-red-200 text-sm mb-4">
+                                สลับแท็บได้อีก <span x-text="remainingTabSwitches"></span> ครั้ง
+                            </p>
+                            <button @click="dismissWarning()"
+                                    class="px-6 py-3 bg-white text-red-600 rounded-xl font-medium">
+                                กลับมาดูต่อ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Linear Progress Bar --}}
+                <div class="p-4 bg-gray-50 dark:bg-gray-800/50">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            ความคืบหน้า
+                        </span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">
+                            <span x-text="formatTime(watchedSeconds)">0:00</span> / {{ $mission->required_watch_time_formatted }}
+                        </span>
+                    </div>
+                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden relative">
+                        <div class="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-full transition-all duration-300 relative overflow-hidden"
+                             :style="{ width: progressPercentage + '%' }">
+                            <div class="absolute inset-0 animate-shine"></div>
+                        </div>
+                        {{-- Milestone markers --}}
+                        <div class="absolute inset-0 flex justify-between px-1 items-center pointer-events-none">
+                            <div class="w-1 h-1 rounded-full bg-white/50"></div>
+                            <div class="w-1 h-1 rounded-full bg-white/50"></div>
+                            <div class="w-1 h-1 rounded-full bg-white/50"></div>
+                            <div class="w-1 h-1 rounded-full bg-white/50"></div>
+                            <div class="w-1 h-1 rounded-full bg-white/50"></div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Actions --}}
+                <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        {{-- Complete Button --}}
+                        <button @click="completeAndClaim()"
+                                :disabled="!canComplete || isLoading"
+                                :class="{
+                                    'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 animate-glow-pulse': canComplete && !isLoading,
+                                    'bg-gray-300 dark:bg-gray-700 cursor-not-allowed': !canComplete || isLoading
+                                }"
+                                class="flex-1 px-6 py-4 text-white rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 relative overflow-hidden">
+                            <template x-if="isLoading">
+                                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </template>
+                            <span x-show="!isLoading && canComplete">🎁 รับรางวัลเลย!</span>
+                            <span x-show="!isLoading && !canComplete">ดูให้ครบก่อนนะ...</span>
+                        </button>
+
+                        {{-- Cancel Button --}}
+                        <button @click="cancelMission()"
+                                :disabled="isLoading"
+                                class="px-6 py-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-xl font-medium transition-all">
+                            ยกเลิก
+                        </button>
+                    </div>
                 </div>
             </div>
-
-            {{-- Warning Overlay (Tab Switch) --}}
-            <div x-show="showWarning"
-                 x-transition
-                 class="absolute inset-0 bg-red-900/90 flex items-center justify-center z-20">
-                <div class="text-center">
-                    <span class="text-5xl mb-4 block">⚠️</span>
-                    <p class="text-white text-lg mb-2">คุณออกจากหน้านี้!</p>
-                    <p class="text-red-200 text-sm mb-4">
-                        สลับแท็บได้อีก <span x-text="remainingTabSwitches"></span> ครั้ง
-                    </p>
-                    <button @click="dismissWarning()"
-                            class="px-6 py-3 bg-white text-red-600 rounded-xl font-medium">
-                        กลับมาดูต่อ
-                    </button>
-                </div>
-            </div>
         </div>
 
-        {{-- Progress Bar --}}
-        <div class="p-4 bg-gray-50 dark:bg-gray-800/50">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    ความคืบหน้า
-                </span>
-                <span class="text-sm text-gray-500 dark:text-gray-400">
-                    <span x-text="formatTime(watchedSeconds)">0:00</span> / {{ $mission->required_watch_time_formatted }}
-                </span>
-            </div>
-            <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-pink-500 to-purple-600 rounded-full transition-all duration-300"
-                     :style="{ width: progressPercentage + '%' }"></div>
-            </div>
-            <div class="flex items-center justify-between mt-2">
-                <span class="text-xs text-gray-500 dark:text-gray-400">
-                    <span x-text="progressPercentage.toFixed(1)">0</span>%
-                </span>
-                <span x-show="canComplete"
-                      class="text-xs text-green-600 dark:text-green-400 font-medium">
-                    ✓ ดูครบแล้ว! คลิกรับรางวัล
-                </span>
-            </div>
-        </div>
+        {{-- Sidebar - Circular Progress --}}
+        <div class="lg:col-span-1 space-y-6">
+            {{-- Circular Progress Gauge --}}
+            <div class="glass-fusion dark:bg-gray-800/50 rounded-2xl p-6 backdrop-blur-sm border border-white/20 dark:border-gray-700/50 text-center">
+                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">เป้าหมาย</h3>
 
-        {{-- Actions --}}
-        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
-            <div class="flex flex-col sm:flex-row gap-3">
-                {{-- Complete Button --}}
-                <button @click="completeAndClaim()"
-                        :disabled="!canComplete || isLoading"
-                        :class="{
-                            'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700': canComplete && !isLoading,
-                            'bg-gray-300 dark:bg-gray-700 cursor-not-allowed': !canComplete || isLoading
-                        }"
-                        class="flex-1 px-6 py-3 text-white rounded-xl font-medium transition-all flex items-center justify-center gap-2">
-                    <template x-if="isLoading">
-                        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                {{-- SVG Circular Progress --}}
+                <div class="relative inline-block">
+                    <svg class="progress-ring w-48 h-48" viewBox="0 0 200 200">
+                        {{-- Background Circle --}}
+                        <circle
+                            class="text-gray-200 dark:text-gray-700"
+                            stroke="currentColor"
+                            stroke-width="12"
+                            fill="transparent"
+                            r="90"
+                            cx="100"
+                            cy="100"/>
+                        {{-- Progress Circle --}}
+                        <circle
+                            class="progress-ring__circle text-transparent"
+                            stroke="url(#gradient)"
+                            stroke-width="12"
+                            stroke-linecap="round"
+                            fill="transparent"
+                            r="90"
+                            cx="100"
+                            cy="100"
+                            :stroke-dasharray="565.48"
+                            :stroke-dashoffset="565.48 - (progressPercentage / 100 * 565.48)"/>
+                        {{-- Gradient Definition --}}
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#ec4899"/>
+                                <stop offset="50%" stop-color="#a855f7"/>
+                                <stop offset="100%" stop-color="#6366f1"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+
+                    {{-- Center Content --}}
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span class="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent"
+                              x-text="Math.round(progressPercentage) + '%'">0%</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="formatTime(watchedSeconds)">0:00</span>
+                    </div>
+
+                    {{-- Sparkle Effects when almost complete --}}
+                    <template x-if="progressPercentage >= 80">
+                        <div class="absolute inset-0 pointer-events-none">
+                            <span class="absolute top-2 right-8 text-yellow-400 sparkle" style="animation-delay: 0s;">✨</span>
+                            <span class="absolute top-8 left-2 text-pink-400 sparkle" style="animation-delay: 0.5s;">✨</span>
+                            <span class="absolute bottom-8 right-2 text-purple-400 sparkle" style="animation-delay: 1s;">✨</span>
+                        </div>
                     </template>
-                    <span x-show="!isLoading">🎁 รับรางวัล ({{ $mission->reward_summary }})</span>
-                    <span x-show="isLoading">กำลังดำเนินการ...</span>
-                </button>
+                </div>
 
-                {{-- Cancel Button --}}
-                <button @click="cancelMission()"
-                        :disabled="isLoading"
-                        class="px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-xl font-medium transition-all">
-                    ยกเลิก
-                </button>
+                {{-- Target Info --}}
+                <div class="mt-4 space-y-2">
+                    <p class="text-gray-600 dark:text-gray-400">
+                        ต้องดูให้ครบ <span class="font-bold text-gray-900 dark:text-white">{{ $mission->required_watch_time_formatted }}</span>
+                    </p>
+                    <p class="text-sm" :class="canComplete ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'">
+                        <template x-if="!canComplete">
+                            <span>เหลืออีก <span x-text="formatTime(requiredSeconds - watchedSeconds)"></span></span>
+                        </template>
+                        <template x-if="canComplete">
+                            <span class="font-bold">✓ ดูครบแล้ว! กดรับรางวัลได้เลย</span>
+                        </template>
+                    </p>
+                </div>
+            </div>
+
+            {{-- Reward Preview --}}
+            <div class="glass-fusion dark:bg-gray-800/50 rounded-2xl p-6 backdrop-blur-sm border border-white/20 dark:border-gray-700/50">
+                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">🎁 รางวัลที่จะได้รับ</h3>
+                <div class="space-y-3">
+                    @if($mission->reward_money > 0)
+                    <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/30 rounded-xl">
+                        <span class="text-green-800 dark:text-green-200">💵 เงิน</span>
+                        <span class="font-bold text-green-600 dark:text-green-400">฿{{ number_format($mission->reward_money * ($rankLimit->reward_multiplier ?? 1), 2) }}</span>
+                    </div>
+                    @endif
+                    @if($mission->reward_coins > 0)
+                    <div class="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/30 rounded-xl">
+                        <span class="text-yellow-800 dark:text-yellow-200">🪙 Coins</span>
+                        <span class="font-bold text-yellow-600 dark:text-yellow-400">{{ number_format($mission->reward_coins * ($rankLimit->reward_multiplier ?? 1)) }}</span>
+                    </div>
+                    @endif
+                    @if($mission->reward_exp > 0)
+                    <div class="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/30 rounded-xl">
+                        <span class="text-purple-800 dark:text-purple-200">⭐ EXP</span>
+                        <span class="font-bold text-purple-600 dark:text-purple-400">+{{ number_format($mission->reward_exp) }}</span>
+                    </div>
+                    @endif
+                </div>
+
+                @if(($rankLimit->reward_multiplier ?? 1) > 1)
+                <div class="mt-4 p-3 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-xl border border-yellow-500/30">
+                    <p class="text-sm text-yellow-700 dark:text-yellow-300 text-center">
+                        ⭐ โบนัส Rank <span class="font-bold">x{{ number_format($rankLimit->reward_multiplier, 2) }}</span>
+                    </p>
+                </div>
+                @endif
             </div>
         </div>
     </div>
 
-    {{-- Mission Info --}}
-    <div class="glass-fusion dark:bg-gray-800/50 rounded-2xl p-6 mt-6 backdrop-blur-sm border border-white/20 dark:border-gray-700/50">
-        <h2 class="font-bold text-gray-900 dark:text-white mb-4">📋 ข้อมูลภารกิจ</h2>
-        <div class="grid sm:grid-cols-2 gap-4 text-sm">
-            <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <span>⏱️</span>
-                <span>ต้องดู: {{ $mission->required_watch_time_formatted }}</span>
-            </div>
-            <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <span>🎁</span>
-                <span>รางวัล: {{ $mission->reward_summary }}</span>
-            </div>
-            @if($rankLimit->reward_multiplier > 1)
-            <div class="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
-                <span>⭐</span>
-                <span>โบนัส Rank: x{{ number_format($rankLimit->reward_multiplier, 2) }}</span>
-            </div>
-            @endif
-            <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <span>📊</span>
-                <span>ทำแล้ว: {{ number_format($mission->completion_count) }} ครั้ง</span>
-            </div>
-        </div>
-
-        @if($mission->display_description)
-        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <p class="text-gray-600 dark:text-gray-400">{{ $mission->display_description }}</p>
-        </div>
-        @endif
-    </div>
-
-    {{-- Success Modal --}}
+    {{-- ============================================== --}}
+    {{-- SUCCESS MODAL with Share Feature --}}
+    {{-- ============================================== --}}
     <div x-show="showSuccessModal"
-         x-transition
-         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl"
-             @click.away="showSuccessModal = false">
-            <div class="text-6xl mb-4">🎉</div>
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                ยินดีด้วย!
-            </h2>
-            <p class="text-gray-600 dark:text-gray-400 mb-4">
-                คุณได้รับรางวัลแล้ว
-            </p>
-            <div class="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 mb-6">
-                <p class="text-2xl font-bold text-green-600 dark:text-green-400" x-text="rewardSummary">
-                    {{ $mission->reward_summary }}
-                </p>
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+         style="display: none;">
+
+        <div x-show="showSuccessModal"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-75"
+             x-transition:enter-end="opacity-100 scale-100"
+             class="bg-white dark:bg-gray-800 rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden">
+
+            {{-- Celebration Header --}}
+            <div class="relative bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 p-8 text-center overflow-hidden">
+                {{-- Animated Background --}}
+                <div class="absolute inset-0 opacity-30">
+                    <div class="absolute top-0 left-0 w-20 h-20 bg-white/20 rounded-full blur-xl animate-pulse"></div>
+                    <div class="absolute bottom-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-xl animate-pulse" style="animation-delay: 0.5s;"></div>
+                </div>
+
+                {{-- Trophy Icon --}}
+                <div class="relative animate-reward-bounce">
+                    <span class="text-8xl filter drop-shadow-lg">🏆</span>
+                </div>
+
+                <h2 class="text-3xl font-bold text-white mt-4 relative">
+                    ยินดีด้วย! 🎉
+                </h2>
+                <p class="text-white/80 mt-2 relative">ทำภารกิจสำเร็จแล้ว!</p>
             </div>
-            <div class="flex gap-3">
-                <a href="{{ route('user.video-missions.index') }}"
-                   class="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-xl font-medium">
-                    ดูภารกิจอื่น
-                </a>
-                <button @click="showSuccessModal = false"
-                        class="px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl font-medium">
-                    ปิด
-                </button>
+
+            {{-- Rewards Section --}}
+            <div class="p-6">
+                <div class="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl p-6 mb-6">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 text-center mb-3">รางวัลที่ได้รับ</p>
+                    <p class="text-3xl font-bold text-center bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent"
+                       x-text="rewardSummary">
+                    </p>
+                </div>
+
+                {{-- Share Section --}}
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <p class="text-center text-gray-700 dark:text-gray-300 font-medium mb-4">
+                        📢 อวดให้เพื่อนดู & ชวนมาทำด้วยกัน!
+                    </p>
+
+                    {{-- Share Preview --}}
+                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 mb-4">
+                        <p class="text-sm text-gray-600 dark:text-gray-400" x-text="shareText"></p>
+                    </div>
+
+                    {{-- Share Buttons --}}
+                    <div class="grid grid-cols-4 gap-3">
+                        {{-- Facebook --}}
+                        <button @click="shareToFacebook()"
+                                class="flex flex-col items-center justify-center p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all hover:scale-105">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                            </svg>
+                            <span class="text-xs mt-1">FB</span>
+                        </button>
+
+                        {{-- LINE --}}
+                        <button @click="shareToLine()"
+                                class="flex flex-col items-center justify-center p-3 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all hover:scale-105">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.349 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+                            </svg>
+                            <span class="text-xs mt-1">LINE</span>
+                        </button>
+
+                        {{-- Twitter/X --}}
+                        <button @click="shareToTwitter()"
+                                class="flex flex-col items-center justify-center p-3 bg-black hover:bg-gray-800 text-white rounded-xl transition-all hover:scale-105">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                            <span class="text-xs mt-1">X</span>
+                        </button>
+
+                        {{-- Copy Link --}}
+                        <button @click="copyAffiliateLink()"
+                                class="flex flex-col items-center justify-center p-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl transition-all hover:scale-105 relative">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            <span class="text-xs mt-1" x-text="linkCopied ? '✓' : 'คัดลอก'">คัดลอก</span>
+                        </button>
+                    </div>
+
+                    {{-- Affiliate Link Preview --}}
+                    <div class="mt-4 p-3 bg-pink-50 dark:bg-pink-900/20 rounded-xl border border-pink-200 dark:border-pink-800">
+                        <p class="text-xs text-pink-600 dark:text-pink-400 mb-1">🔗 ลิงก์ Affiliate ของคุณ:</p>
+                        <p class="text-sm text-pink-800 dark:text-pink-200 font-mono break-all" x-text="affiliateLink"></p>
+                    </div>
+                </div>
+
+                {{-- Action Buttons --}}
+                <div class="flex gap-3 mt-6">
+                    <a href="{{ route('user.video-missions.index') }}"
+                       class="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white rounded-xl font-medium text-center transition-all">
+                        🎬 ดูภารกิจอื่น
+                    </a>
+                    <button @click="showSuccessModal = false"
+                            class="px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all">
+                        ปิด
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -250,6 +508,10 @@ function videoWatcher(config) {
         videoId: config.videoId,
         embedUrl: config.embedUrl,
         antiCheat: config.antiCheat,
+        missionTitle: config.missionTitle,
+        missionIcon: config.missionIcon,
+        affiliateCode: config.affiliateCode,
+        userName: config.userName,
 
         // State
         status: 'watching',
@@ -266,14 +528,25 @@ function videoWatcher(config) {
         showInteractionPrompt: false,
         lastInteractionTime: Date.now(),
 
-        // Success
+        // Success & Share
         showSuccessModal: false,
         rewardSummary: '',
+        earnedRewards: {},
+        linkCopied: false,
 
         // Player instances
         youtubePlayer: null,
         heartbeatInterval: null,
         interactionCheckInterval: null,
+
+        // Computed
+        get affiliateLink() {
+            return `${window.location.origin}/ref/${this.affiliateCode}?from=video-mission`;
+        },
+
+        get shareText() {
+            return `🎬 ฉันเพิ่งทำภารกิจ "${this.missionTitle}" สำเร็จ และได้รับ ${this.rewardSummary}! มาทำด้วยกันเถอะ 👇`;
+        },
 
         init() {
             // Initialize video player
@@ -298,13 +571,6 @@ function videoWatcher(config) {
 
             // Prevent right click
             document.addEventListener('contextmenu', (e) => e.preventDefault());
-
-            // Prevent keyboard shortcuts
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
-                    e.preventDefault();
-                }
-            });
         },
 
         initYouTubePlayer() {
@@ -323,14 +589,11 @@ function videoWatcher(config) {
                     },
                     events: {
                         onStateChange: (event) => self.onYouTubeStateChange(event),
-                        onReady: (event) => {
-                            event.target.playVideo();
-                        }
+                        onReady: (event) => event.target.playVideo()
                     }
                 });
             };
 
-            // If API already loaded
             if (window.YT && window.YT.Player) {
                 window.onYouTubeIframeAPIReady();
             }
@@ -360,7 +623,6 @@ function videoWatcher(config) {
         },
 
         async sendHeartbeat() {
-            // Get current position
             if (this.videoType === 'youtube' && this.youtubePlayer) {
                 this.currentPosition = Math.floor(this.youtubePlayer.getCurrentTime() || 0);
             } else if (this.videoType === 'direct') {
@@ -484,7 +746,7 @@ function videoWatcher(config) {
                     this.showInteractionPrompt = true;
                     this.pauseVideo();
                 }
-            }, 10000); // Check every 10 seconds
+            }, 10000);
         },
 
         confirmInteraction() {
@@ -521,7 +783,11 @@ function videoWatcher(config) {
                     clearInterval(this.interactionCheckInterval);
 
                     if (data.reward_given) {
+                        this.earnedRewards = data.rewards;
                         this.rewardSummary = this.formatRewards(data.rewards);
+
+                        // Trigger celebration
+                        this.triggerCelebration();
                         this.showSuccessModal = true;
                     } else {
                         alert(data.message || 'ทำภารกิจสำเร็จ รอการตรวจสอบ');
@@ -535,6 +801,41 @@ function videoWatcher(config) {
                 alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
             } finally {
                 this.isLoading = false;
+            }
+        },
+
+        triggerCelebration() {
+            // Create confetti
+            const colors = ['#ec4899', '#a855f7', '#6366f1', '#fbbf24', '#34d399', '#f87171'];
+            const container = document.getElementById('confetti-container');
+
+            for (let i = 0; i < 100; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    container.appendChild(confetti);
+
+                    setTimeout(() => confetti.remove(), 5000);
+                }, i * 20);
+            }
+
+            // Create coin particles
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const coin = document.createElement('div');
+                    coin.className = 'fixed text-4xl pointer-events-none z-50 coin-particle';
+                    coin.innerHTML = '🪙';
+                    coin.style.left = (20 + Math.random() * 60) + 'vw';
+                    coin.style.top = '40vh';
+                    coin.style.animationDelay = Math.random() * 0.5 + 's';
+                    document.body.appendChild(coin);
+
+                    setTimeout(() => coin.remove(), 4000);
+                }, i * 100);
             }
         },
 
@@ -573,6 +874,42 @@ function videoWatcher(config) {
             if (this.status !== 'completed' && this.watchedSeconds > 0) {
                 event.preventDefault();
                 event.returnValue = '';
+            }
+        },
+
+        // Share functions
+        shareToFacebook() {
+            const url = encodeURIComponent(this.affiliateLink);
+            const text = encodeURIComponent(this.shareText);
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`, '_blank', 'width=600,height=400');
+        },
+
+        shareToLine() {
+            const text = encodeURIComponent(this.shareText + '\n\n' + this.affiliateLink);
+            window.open(`https://line.me/R/msg/text/?${text}`, '_blank');
+        },
+
+        shareToTwitter() {
+            const text = encodeURIComponent(this.shareText);
+            const url = encodeURIComponent(this.affiliateLink);
+            window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'width=600,height=400');
+        },
+
+        async copyAffiliateLink() {
+            try {
+                await navigator.clipboard.writeText(this.affiliateLink);
+                this.linkCopied = true;
+                setTimeout(() => this.linkCopied = false, 2000);
+            } catch (err) {
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = this.affiliateLink;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                this.linkCopied = true;
+                setTimeout(() => this.linkCopied = false, 2000);
             }
         },
 
