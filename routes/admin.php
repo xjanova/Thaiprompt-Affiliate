@@ -3282,3 +3282,13 @@ Route::prefix('star-upgrade')->name('star-upgrade.')->group(function () {
     Route::get('/history', [\App\Http\Controllers\Admin\StarUpgradePriceController::class, 'history'])->name('history');
     Route::post('/history/{upgrade}/refund', [\App\Http\Controllers\Admin\StarUpgradePriceController::class, 'refund'])->name('refund');
 });
+
+// ============================================
+// Documentation Routes (เอกสารระบบ)
+// ============================================
+Route::prefix('documentation')->name('documentation.')->group(function () {
+    // Registration Flow Documentation
+    Route::get('/registration-flow', function () {
+        return view('admin.documentation.registration-flow');
+    })->name('registration-flow');
+});
