@@ -50,6 +50,14 @@ class TarotCardBackImage extends Model
     }
 
     /**
+     * Get raw image_url value from database (for debugging/deletion)
+     */
+    public function getRawImageUrl(): ?string
+    {
+        return $this->attributes['image_url'] ?? null;
+    }
+
+    /**
      * Get image URL with asset helper
      *
      * รูปหลังไพ่เก็บใน storage/app/public/tarot/card-backs/
