@@ -537,9 +537,17 @@
                     <div x-show="nfcOpen" x-collapse x-cloak class="ml-8 space-y-1">
                         <a href="{{ route('admin.nfc-cards.index') }}"
                            @click="$store.sidebar.closeOnMenuClick()"
-                           class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-xs {{ request()->routeIs('admin.nfc-cards.*') ? 'bg-white/20 text-white font-bold' : 'text-white/70 hover:bg-white/10 hover:text-white' }}">
+                           class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-xs {{ request()->routeIs('admin.nfc-cards.index') || request()->routeIs('admin.nfc-cards.show') || request()->routeIs('admin.nfc-cards.edit') ? 'bg-white/20 text-white font-bold' : 'text-white/70 hover:bg-white/10 hover:text-white' }}">
                             <i class="fas fa-id-card w-4 text-center"></i>
                             <span x-show="$store.sidebar.shouldExpand" x-transition class="whitespace-nowrap">บัตร NFC</span>
+                        </a>
+
+                        <a href="{{ route('admin.nfc-cards.writer') }}"
+                           @click="$store.sidebar.closeOnMenuClick()"
+                           class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-xs {{ request()->routeIs('admin.nfc-cards.writer') ? 'bg-white/20 text-white font-bold' : 'text-white/70 hover:bg-white/10 hover:text-white' }}">
+                            <i class="fas fa-edit w-4 text-center"></i>
+                            <span x-show="$store.sidebar.shouldExpand" x-transition class="whitespace-nowrap">NFC Writer</span>
+                            <span class="px-1.5 py-0.5 text-[10px] bg-green-500 text-white rounded-full">NEW</span>
                         </a>
 
                         <a href="{{ route('admin.nfc-readers.index') }}"
