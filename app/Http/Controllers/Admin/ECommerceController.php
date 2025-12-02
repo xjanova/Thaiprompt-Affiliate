@@ -796,49 +796,213 @@ class ECommerceController extends Controller
     }
 
     /**
-     * Show reports page
+     * แสดงหน้ารายงานยอดขาย E-commerce
+     *
+     * รวมข้อมูล:
+     * - สรุปยอดขายรวม
+     * - กราฟแนวโน้มยอดขาย
+     * - สินค้าขายดี
+     * - หมวดหมู่ที่มียอดขายสูงสุด
+     * - สถานะคำสั่งซื้อ
+     * - สถิติลูกค้า
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
      */
     public function reports(Request $request)
     {
-        $dateFrom = $request->get('date_from', now()->subMonth()->format('Y-m-d'));
-        $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+        // รองรับ period presets หรือ custom date range
+        $period = $request->get('period', 'month');
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
 
-        // Sales report
+        // ถ้าไม่ได้กำหนด date range ให้ใช้ period presets
+        if (!$dateFrom || !$dateTo) {
+            $dates = $this->getDateRangeFromPeriod($period);
+            $dateFrom = $dates['start'];
+            $dateTo = $dates['end'];
+        }
+
+        // สรุปยอดขายรายวัน สำหรับกราฟ
         $salesReport = Order::where('payment_status', 'paid')
-            ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
             ->selectRaw('DATE(created_at) as date, COUNT(*) as orders, SUM(total_amount) as revenue')
             ->groupBy('date')
             ->orderBy('date')
             ->get();
 
-        // Top products
-        $topProducts = Product::withCount(['orderItems as total_sales' => function($query) use ($dateFrom, $dateTo) {
-                $query->select(DB::raw('SUM(quantity)'))
-                    ->whereHas('order', function($q) use ($dateFrom, $dateTo) {
-                        $q->whereBetween('created_at', [$dateFrom, $dateTo]);
-                    });
-            }])
-            ->orderBy('total_sales', 'desc')
-            ->limit(20)
+        // สินค้าขายดี Top 10
+        $topProducts = Product::select('products.*')
+            ->leftJoin('order_items', 'products.id', '=', 'order_items.product_id')
+            ->leftJoin('orders', function ($join) use ($dateFrom, $dateTo) {
+                $join->on('order_items.order_id', '=', 'orders.id')
+                    ->whereBetween('orders.created_at', [$dateFrom, $dateTo . ' 23:59:59']);
+            })
+            ->selectRaw('products.*, COALESCE(SUM(order_items.quantity), 0) as total_sales, COALESCE(SUM(order_items.subtotal), 0) as total_revenue')
+            ->groupBy('products.id')
+            ->orderByDesc('total_sales')
+            ->limit(10)
             ->get();
 
-        // Category performance
-        $categoryPerformance = ProductCategory::withCount(['products as total_sales' => function($query) use ($dateFrom, $dateTo) {
-                $query->select(DB::raw('SUM(order_items.quantity)'))
-                    ->join('order_items', 'products.id', '=', 'order_items.product_id')
-                    ->join('orders', 'order_items.order_id', '=', 'orders.id')
-                    ->whereBetween('orders.created_at', [$dateFrom, $dateTo]);
-            }])
-            ->orderBy('total_sales', 'desc')
+        // ยอดขายตามหมวดหมู่
+        $categoryPerformance = ProductCategory::select('product_categories.*')
+            ->leftJoin('products', 'product_categories.id', '=', 'products.category_id')
+            ->leftJoin('order_items', 'products.id', '=', 'order_items.product_id')
+            ->leftJoin('orders', function ($join) use ($dateFrom, $dateTo) {
+                $join->on('order_items.order_id', '=', 'orders.id')
+                    ->where('orders.payment_status', 'paid')
+                    ->whereBetween('orders.created_at', [$dateFrom, $dateTo . ' 23:59:59']);
+            })
+            ->selectRaw('product_categories.*, COALESCE(SUM(order_items.quantity), 0) as total_sales, COALESCE(SUM(order_items.subtotal), 0) as total_revenue')
+            ->groupBy('product_categories.id')
+            ->orderByDesc('total_revenue')
             ->get();
+
+        // คำนวณ % สำหรับแต่ละหมวดหมู่
+        $totalCategoryRevenue = $categoryPerformance->sum('total_revenue') ?: 1;
+        $categoryPerformance = $categoryPerformance->map(function ($cat) use ($totalCategoryRevenue) {
+            $cat->percentage = round(($cat->total_revenue / $totalCategoryRevenue) * 100, 1);
+            return $cat;
+        });
+
+        // สถานะคำสั่งซื้อ
+        $orderStatusDistribution = Order::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->orderByDesc('count')
+            ->get()
+            ->map(function ($item) {
+                $statusLabels = [
+                    'pending' => 'รอดำเนินการ',
+                    'processing' => 'กำลังดำเนินการ',
+                    'shipped' => 'จัดส่งแล้ว',
+                    'delivered' => 'ส่งถึงแล้ว',
+                    'completed' => 'สำเร็จ',
+                    'cancelled' => 'ยกเลิก',
+                    'refunded' => 'คืนเงิน',
+                ];
+                $statusColors = [
+                    'pending' => 'yellow',
+                    'processing' => 'blue',
+                    'shipped' => 'indigo',
+                    'delivered' => 'teal',
+                    'completed' => 'green',
+                    'cancelled' => 'red',
+                    'refunded' => 'gray',
+                ];
+                $item->label = $statusLabels[$item->status] ?? $item->status;
+                $item->color = $statusColors[$item->status] ?? 'gray';
+                return $item;
+            });
+
+        // สถิติลูกค้า
+        $customerStats = [
+            'total_customers' => Order::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+                ->distinct('user_id')
+                ->count('user_id'),
+            'returning_customers' => Order::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+                ->select('user_id')
+                ->groupBy('user_id')
+                ->havingRaw('COUNT(*) > 1')
+                ->get()
+                ->count(),
+            'new_customers' => User::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+                ->whereHas('orders')
+                ->count(),
+        ];
+
+        // สรุปสถิติ
+        $summary = [
+            'total_orders' => Order::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])->count(),
+            'completed_orders' => Order::where('status', 'completed')
+                ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])->count(),
+            'pending_orders' => Order::where('status', 'pending')
+                ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])->count(),
+            'cancelled_orders' => Order::where('status', 'cancelled')
+                ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])->count(),
+            'total_revenue' => Order::where('payment_status', 'paid')
+                ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+                ->sum('total_amount'),
+            'average_order_value' => Order::where('payment_status', 'paid')
+                ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+                ->avg('total_amount') ?? 0,
+            'total_items_sold' => DB::table('order_items')
+                ->join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->where('orders.payment_status', 'paid')
+                ->whereBetween('orders.created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+                ->sum('order_items.quantity'),
+        ];
+
+        // คำนวณการเติบโตเทียบกับช่วงก่อนหน้า
+        $daysDiff = now()->parse($dateFrom)->diffInDays(now()->parse($dateTo));
+        $prevDateFrom = now()->parse($dateFrom)->subDays($daysDiff + 1)->format('Y-m-d');
+        $prevDateTo = now()->parse($dateFrom)->subDay()->format('Y-m-d');
+
+        $prevRevenue = Order::where('payment_status', 'paid')
+            ->whereBetween('created_at', [$prevDateFrom, $prevDateTo . ' 23:59:59'])
+            ->sum('total_amount');
+
+        $prevOrders = Order::whereBetween('created_at', [$prevDateFrom, $prevDateTo . ' 23:59:59'])->count();
+
+        $summary['revenue_growth'] = $prevRevenue > 0
+            ? round((($summary['total_revenue'] - $prevRevenue) / $prevRevenue) * 100, 1)
+            : 0;
+
+        $summary['orders_growth'] = $prevOrders > 0
+            ? round((($summary['total_orders'] - $prevOrders) / $prevOrders) * 100, 1)
+            : 0;
 
         return view('admin.ecommerce.reports', compact(
             'salesReport',
             'topProducts',
             'categoryPerformance',
+            'orderStatusDistribution',
+            'customerStats',
+            'summary',
             'dateFrom',
-            'dateTo'
+            'dateTo',
+            'period'
         ));
+    }
+
+    /**
+     * แปลง period preset เป็น date range
+     *
+     * @param string $period
+     * @return array
+     */
+    private function getDateRangeFromPeriod(string $period): array
+    {
+        return match ($period) {
+            'today' => [
+                'start' => now()->format('Y-m-d'),
+                'end' => now()->format('Y-m-d'),
+            ],
+            'yesterday' => [
+                'start' => now()->subDay()->format('Y-m-d'),
+                'end' => now()->subDay()->format('Y-m-d'),
+            ],
+            'week' => [
+                'start' => now()->subDays(6)->format('Y-m-d'),
+                'end' => now()->format('Y-m-d'),
+            ],
+            'month' => [
+                'start' => now()->subDays(29)->format('Y-m-d'),
+                'end' => now()->format('Y-m-d'),
+            ],
+            'quarter' => [
+                'start' => now()->subDays(89)->format('Y-m-d'),
+                'end' => now()->format('Y-m-d'),
+            ],
+            'year' => [
+                'start' => now()->subYear()->format('Y-m-d'),
+                'end' => now()->format('Y-m-d'),
+            ],
+            default => [
+                'start' => now()->subDays(29)->format('Y-m-d'),
+                'end' => now()->format('Y-m-d'),
+            ],
+        };
     }
 
     /**
