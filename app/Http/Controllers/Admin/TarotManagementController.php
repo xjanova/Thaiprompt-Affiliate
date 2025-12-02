@@ -10,12 +10,19 @@ use App\Models\TarotReadingCategory;
 use App\Models\TarotSpreadType;
 use App\Models\TarotReading;
 use App\Models\TarotSetting;
+use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class TarotManagementController extends Controller
 {
+    protected ImageUploadService $imageService;
+
+    public function __construct(ImageUploadService $imageService)
+    {
+        $this->imageService = $imageService;
+    }
     /**
      * Show tarot dashboard
      */
@@ -71,7 +78,7 @@ class TarotManagementController extends Controller
             'reversed_meaning_th' => 'nullable|string',
             'keywords_en' => 'nullable|string',
             'keywords_th' => 'nullable|string',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|image|max:5120',
             'is_active' => 'boolean',
         ]);
 
@@ -85,16 +92,16 @@ class TarotManagementController extends Controller
             $data['keywords_th'] = array_map('trim', explode(',', $request->keywords_th));
         }
 
-        // Handle image upload
+        // Handle image upload - แปลงเป็น WebP และ resize ให้พอดีกับขนาดการ์ด
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('tarot/cards', 'public');
+            $path = $this->imageService->uploadTarotCard($request->file('image'));
             $data['image_url'] = '/storage/' . $path;
         }
 
         TarotCard::create($data);
 
         return redirect()->route('admin.tarot.cards.index')
-            ->with('success', 'Card created successfully');
+            ->with('success', 'สร้างไพ่สำเร็จ');
     }
 
     public function cardsEdit($id)
@@ -122,7 +129,7 @@ class TarotManagementController extends Controller
             'reversed_meaning_th' => 'nullable|string',
             'keywords_en' => 'nullable|string',
             'keywords_th' => 'nullable|string',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|image|max:5120',
             'is_active' => 'boolean',
         ]);
 
@@ -136,38 +143,33 @@ class TarotManagementController extends Controller
             $data['keywords_th'] = array_map('trim', explode(',', $request->keywords_th));
         }
 
-        // Handle image upload
+        // Handle image upload - แปลงเป็น WebP และ resize ให้พอดีกับขนาดการ์ด
         if ($request->hasFile('image')) {
-            // Delete old image
-            if ($card->image_url) {
-                $oldPath = str_replace('/storage/', '', $card->image_url);
-                Storage::disk('public')->delete($oldPath);
-            }
+            // ลบรูปเก่า
+            $this->imageService->deleteTarotImage($card->image_url);
 
-            $path = $request->file('image')->store('tarot/cards', 'public');
+            // อัพโหลดรูปใหม่
+            $path = $this->imageService->uploadTarotCard($request->file('image'));
             $data['image_url'] = '/storage/' . $path;
         }
 
         $card->update($data);
 
         return redirect()->route('admin.tarot.cards.index')
-            ->with('success', 'Card updated successfully');
+            ->with('success', 'อัพเดทไพ่สำเร็จ');
     }
 
     public function cardsDestroy($id)
     {
         $card = TarotCard::findOrFail($id);
 
-        // Delete image
-        if ($card->image_url) {
-            $oldPath = str_replace('/storage/', '', $card->image_url);
-            Storage::disk('public')->delete($oldPath);
-        }
+        // ลบรูปไพ่
+        $this->imageService->deleteTarotImage($card->image_url);
 
         $card->delete();
 
         return redirect()->route('admin.tarot.cards.index')
-            ->with('success', 'Card deleted successfully');
+            ->with('success', 'ลบไพ่สำเร็จ');
     }
 
     /**
@@ -273,12 +275,13 @@ class TarotManagementController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'image' => 'required|image|max:2048',
+            'image' => 'required|image|max:5120',
             'is_default' => 'boolean',
             'is_active' => 'boolean',
         ]);
 
-        $path = $request->file('image')->store('tarot/card-backs', 'public');
+        // อัพโหลดรูปหลังไพ่ - แปลงเป็น WebP และ resize ให้พอดี
+        $path = $this->imageService->uploadTarotCardBack($request->file('image'));
 
         TarotCardBackImage::create([
             'name' => $request->name,
@@ -289,7 +292,7 @@ class TarotManagementController extends Controller
         ]);
 
         return redirect()->route('admin.tarot.card-backs.index')
-            ->with('success', 'Card back image uploaded successfully');
+            ->with('success', 'อัพโหลดรูปหลังไพ่สำเร็จ');
     }
 
     public function cardBacksSetDefault($id)
@@ -312,19 +315,16 @@ class TarotManagementController extends Controller
 
         if ($cardBack->is_default) {
             return redirect()->route('admin.tarot.card-backs.index')
-                ->with('error', 'Cannot delete the default card back image');
+                ->with('error', 'ไม่สามารถลบรูปหลังไพ่ที่เป็นค่าเริ่มต้นได้');
         }
 
-        // Delete image file
-        if ($cardBack->image_url) {
-            $oldPath = str_replace('/storage/', '', $cardBack->image_url);
-            Storage::disk('public')->delete($oldPath);
-        }
+        // ลบรูปหลังไพ่
+        $this->imageService->deleteTarotImage($cardBack->image_url);
 
         $cardBack->delete();
 
         return redirect()->route('admin.tarot.card-backs.index')
-            ->with('success', 'Card back image deleted successfully');
+            ->with('success', 'ลบรูปหลังไพ่สำเร็จ');
     }
 
     /**
