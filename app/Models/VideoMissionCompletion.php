@@ -639,6 +639,108 @@ class VideoMissionCompletion extends Model
     }
 
     /**
+     * บันทึกการพยายามโกง (DevTools, speed change, etc.)
+     *
+     * @param string $type ประเภทการโกง
+     * @param array $details รายละเอียดเพิ่มเติม
+     * @return void
+     */
+    public function recordCheatAttempt(string $type, array $details = []): void
+    {
+        $activities = $this->suspicious_activities ?? [];
+        $activities[] = [
+            'type' => $type,
+            'at' => now()->toDateTimeString(),
+            'details' => $details,
+            'position' => $this->video_position_seconds,
+            'ip' => request()->ip(),
+        ];
+
+        $this->update([
+            'suspicious_activities' => $activities,
+        ]);
+
+        // เพิ่ม cheat_count ถ้ามีคอลัมน์นี้
+        if (in_array('cheat_attempt_count', $this->fillable)) {
+            $this->increment('cheat_attempt_count');
+        }
+    }
+
+    /**
+     * นับจำนวน devtools_detected (การโกงที่ตรวจพบจริง) ของ user
+     *
+     * @param int $userId
+     * @return int
+     */
+    public static function countUserDevToolsDetected(int $userId): int
+    {
+        $completions = static::where('user_id', $userId)
+            ->whereNotNull('suspicious_activities')
+            ->get();
+
+        $count = 0;
+        foreach ($completions as $completion) {
+            $activities = $completion->suspicious_activities ?? [];
+            foreach ($activities as $activity) {
+                if (($activity['type'] ?? '') === 'devtools_detected') {
+                    $count++;
+                }
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * ตรวจสอบว่า user ถูกแบนจากระบบ video missions หรือไม่
+     *
+     * @param int $userId
+     * @return array ['banned' => bool, 'reason' => string|null, 'banned_at' => \Carbon\Carbon|null]
+     */
+    public static function checkUserVideoMissionBan(int $userId): array
+    {
+        $user = \App\Models\User::find($userId);
+
+        if (!$user) {
+            return ['banned' => true, 'reason' => 'ไม่พบผู้ใช้', 'banned_at' => null];
+        }
+
+        // ตรวจสอบว่าถูกแบนจาก video missions หรือไม่
+        if ($user->video_missions_banned_at) {
+            return [
+                'banned' => true,
+                'reason' => $user->video_missions_ban_reason ?? 'ตรวจพบการโกงหลายครั้ง',
+                'banned_at' => $user->video_missions_banned_at,
+            ];
+        }
+
+        return ['banned' => false, 'reason' => null, 'banned_at' => null];
+    }
+
+    /**
+     * แบน user จากระบบ video missions
+     *
+     * @param int $userId
+     * @param string $reason
+     * @return bool
+     */
+    public static function banUserFromVideoMissions(int $userId, string $reason): bool
+    {
+        $user = \App\Models\User::find($userId);
+
+        if (!$user) {
+            return false;
+        }
+
+        $user->update([
+            'video_missions_banned_at' => now(),
+            'video_missions_ban_reason' => $reason,
+        ]);
+
+        return true;
+    }
+
+    /**
      * ทำเครื่องหมายว่าดูจบ
      *
      * @return void

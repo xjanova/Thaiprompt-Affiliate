@@ -2,6 +2,13 @@
 
 @section('title', 'ดูคลิป: ' . $mission->display_title)
 
+@push('head')
+{{-- ป้องกัน browser cache สำหรับหน้านี้ --}}
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+@endpush
+
 @push('styles')
 <style>
     /* Circular Progress Ring */
@@ -187,7 +194,7 @@
                         </div>
                     </div>
 
-                    {{-- Warning Overlay --}}
+                    {{-- Warning Overlay (Tab Switch) --}}
                     <div x-show="showWarning"
                          x-transition
                          class="absolute inset-0 bg-red-900/90 flex items-center justify-center z-20">
@@ -200,6 +207,27 @@
                             <button @click="dismissWarning()"
                                     class="px-6 py-3 bg-white text-red-600 rounded-xl font-medium">
                                 กลับมาดูต่อ
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- DevTools Detection Warning Overlay --}}
+                    <div x-show="showDevToolsWarning"
+                         x-transition
+                         class="absolute inset-0 bg-black/95 flex items-center justify-center z-30">
+                        <div class="text-center max-w-md mx-auto px-4">
+                            <span class="text-7xl mb-6 block animate-pulse">🛑</span>
+                            <h2 class="text-2xl font-bold text-red-500 mb-4">ตรวจพบการโกง!</h2>
+                            <p class="text-white text-lg mb-2">
+                                ระบบตรวจพบการพยายามเปิด DevTools
+                            </p>
+                            <p class="text-gray-400 text-sm mb-6">
+                                การใช้เครื่องมือนักพัฒนา (F12) ขณะทำภารกิจถือเป็นการโกง<br>
+                                ภารกิจนี้ถูกยกเลิกแล้ว
+                            </p>
+                            <button @click="dismissDevToolsWarning()"
+                                    class="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-all">
+                                กลับไปหน้าภารกิจ
                             </button>
                         </div>
                     </div>
@@ -548,6 +576,12 @@ function videoWatcher(config) {
             return `🎬 ฉันเพิ่งทำภารกิจ "${this.missionTitle}" สำเร็จ และได้รับ ${this.rewardSummary}! มาทำด้วยกันเถอะ 👇`;
         },
 
+        // DevTools detection state
+        devToolsOpen: false,
+        devToolsWarningCount: 0,
+        maxDevToolsWarnings: 3,
+        showDevToolsWarning: false,
+
         init() {
             // Initialize video player
             if (this.videoType === 'youtube') {
@@ -569,8 +603,212 @@ function videoWatcher(config) {
                 this.startInteractionCheck();
             }
 
-            // Prevent right click
+            // ==================== ANTI-CHEAT SYSTEMS ====================
+
+            // 1. Prevent right click
             document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            // 2. Prevent keyboard shortcuts (F12, Ctrl+Shift+I, Ctrl+U, etc.)
+            this.initKeyboardProtection();
+
+            // 3. DevTools detection
+            this.initDevToolsDetection();
+
+            // 4. Console protection
+            this.initConsoleProtection();
+
+            // 5. Prevent text selection
+            document.addEventListener('selectstart', (e) => e.preventDefault());
+
+            // 6. Prevent drag
+            document.addEventListener('dragstart', (e) => e.preventDefault());
+        },
+
+        // ==================== KEYBOARD PROTECTION ====================
+        initKeyboardProtection() {
+            document.addEventListener('keydown', (e) => {
+                // F12
+                if (e.key === 'F12' || e.keyCode === 123) {
+                    e.preventDefault();
+                    this.handleDevToolsAttempt('F12');
+                    return false;
+                }
+
+                // Ctrl+Shift+I (DevTools)
+                if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73)) {
+                    e.preventDefault();
+                    this.handleDevToolsAttempt('Ctrl+Shift+I');
+                    return false;
+                }
+
+                // Ctrl+Shift+J (Console)
+                if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j' || e.keyCode === 74)) {
+                    e.preventDefault();
+                    this.handleDevToolsAttempt('Ctrl+Shift+J');
+                    return false;
+                }
+
+                // Ctrl+Shift+C (Element inspector)
+                if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c' || e.keyCode === 67)) {
+                    e.preventDefault();
+                    this.handleDevToolsAttempt('Ctrl+Shift+C');
+                    return false;
+                }
+
+                // Ctrl+U (View source)
+                if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) {
+                    e.preventDefault();
+                    this.handleDevToolsAttempt('Ctrl+U');
+                    return false;
+                }
+
+                // Ctrl+S (Save)
+                if (e.ctrlKey && (e.key === 'S' || e.key === 's' || e.keyCode === 83)) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                // Ctrl+P (Print) - can be used to see source
+                if (e.ctrlKey && (e.key === 'P' || e.key === 'p' || e.keyCode === 80)) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        },
+
+        // ==================== DEVTOOLS DETECTION ====================
+        initDevToolsDetection() {
+            const self = this;
+
+            // Method 1: Window size detection (when DevTools is docked)
+            const checkWindowSize = () => {
+                const widthThreshold = window.outerWidth - window.innerWidth > 160;
+                const heightThreshold = window.outerHeight - window.innerHeight > 160;
+
+                if (widthThreshold || heightThreshold) {
+                    if (!self.devToolsOpen) {
+                        self.devToolsOpen = true;
+                        self.handleDevToolsDetected('window_size');
+                    }
+                } else {
+                    self.devToolsOpen = false;
+                }
+            };
+
+            // Method 2: Debugger detection via timing
+            const checkDebugger = () => {
+                const start = performance.now();
+                debugger;
+                const end = performance.now();
+
+                // If debugger is open, this will take significantly longer
+                if (end - start > 100) {
+                    self.handleDevToolsDetected('debugger');
+                }
+            };
+
+            // Method 3: Console.log detection
+            const checkConsole = () => {
+                const element = new Image();
+                Object.defineProperty(element, 'id', {
+                    get: function() {
+                        self.handleDevToolsDetected('console_access');
+                        return 'devtools-detect';
+                    }
+                });
+                // Only log if we need to check - disabled to avoid spam
+                // console.log('%c', element);
+            };
+
+            // Method 4: toString detection
+            const checkToString = () => {
+                const obj = {};
+                let devtoolsOpen = false;
+
+                Object.defineProperty(obj, 'a', {
+                    get: function() {
+                        devtoolsOpen = true;
+                        return 'devtools';
+                    }
+                });
+
+                // This only triggers when DevTools is open and inspecting
+                setInterval(() => {
+                    devtoolsOpen = false;
+                    console.log(obj);
+                    console.clear();
+                    if (devtoolsOpen) {
+                        self.handleDevToolsDetected('toString');
+                    }
+                }, 5000);
+            };
+
+            // Run checks periodically
+            setInterval(checkWindowSize, 1000);
+
+            // Resize listener
+            window.addEventListener('resize', checkWindowSize);
+
+            // Initial check
+            checkWindowSize();
+        },
+
+        // ==================== CONSOLE PROTECTION ====================
+        initConsoleProtection() {
+            // Override console methods to prevent easy debugging
+            const noop = () => {};
+
+            // Store original console methods for debugging purposes
+            window._originalConsole = {
+                log: console.log,
+                warn: console.warn,
+                error: console.error,
+                info: console.info,
+                debug: console.debug,
+            };
+
+            // Comment out the override in development - enable in production
+            // console.log = noop;
+            // console.warn = noop;
+            // console.error = noop;
+            // console.info = noop;
+            // console.debug = noop;
+            // console.clear = noop;
+        },
+
+        handleDevToolsAttempt(method) {
+            this.devToolsWarningCount++;
+            this.sendEvent('devtools_attempt', { method: method, count: this.devToolsWarningCount });
+
+            if (this.devToolsWarningCount >= this.maxDevToolsWarnings) {
+                this.handleDevToolsDetected(method);
+            } else {
+                // แสดงคำเตือน
+                this.showDevToolsWarningMessage();
+            }
+        },
+
+        handleDevToolsDetected(method) {
+            this.devToolsOpen = true;
+            this.sendEvent('devtools_detected', { method: method });
+
+            // หยุดวิดีโอ
+            this.pauseVideo();
+
+            // แสดงหน้าเตือน
+            this.showDevToolsWarning = true;
+        },
+
+        showDevToolsWarningMessage() {
+            // แสดง toast หรือ alert
+            const remaining = this.maxDevToolsWarnings - this.devToolsWarningCount;
+            alert(`⚠️ การพยายามเปิด DevTools ถูกตรวจพบ!\n\nคุณสามารถพยายามได้อีก ${remaining} ครั้ง\nหากพยายามต่อ ภารกิจจะถูกยกเลิก`);
+        },
+
+        dismissDevToolsWarning() {
+            this.showDevToolsWarning = false;
+            // ไม่ให้ดูต่อ - ต้องรีโหลดหน้า
+            window.location.href = '{{ route("user.video-missions.index") }}';
         },
 
         initYouTubePlayer() {
@@ -589,13 +827,32 @@ function videoWatcher(config) {
                     },
                     events: {
                         onStateChange: (event) => self.onYouTubeStateChange(event),
-                        onReady: (event) => event.target.playVideo()
+                        onReady: (event) => event.target.playVideo(),
+                        onPlaybackRateChange: (event) => self.onPlaybackRateChange(event),
                     }
                 });
             };
 
             if (window.YT && window.YT.Player) {
                 window.onYouTubeIframeAPIReady();
+            }
+        },
+
+        // ตรวจจับการเปลี่ยนความเร็ววิดีโอ
+        onPlaybackRateChange(event) {
+            const newSpeed = event.data;
+
+            // ถ้าความเร็วไม่ใช่ 1x ถือว่าพยายามโกง
+            if (newSpeed !== 1) {
+                this.sendEvent('speed_change', { speed: newSpeed });
+
+                // บังคับให้กลับไปความเร็วปกติ
+                if (this.youtubePlayer) {
+                    this.youtubePlayer.setPlaybackRate(1);
+                }
+
+                // แจ้งเตือน
+                alert('⚠️ ไม่อนุญาตให้เปลี่ยนความเร็ววิดีโอ\nความเร็วถูกตั้งกลับเป็น 1x');
             }
         },
 
@@ -659,7 +916,7 @@ function videoWatcher(config) {
 
         async sendEvent(eventType, extraData = {}) {
             try {
-                await fetch(`/user/video-missions/completion/${this.completionId}/event`, {
+                const response = await fetch(`/user/video-missions/completion/${this.completionId}/event`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -670,6 +927,22 @@ function videoWatcher(config) {
                         ...extraData,
                     }),
                 });
+
+                const data = await response.json();
+
+                // ตรวจสอบว่าถูกแบนหรือไม่
+                if (data.banned) {
+                    // แสดงข้อความและ redirect ไปหน้าแบน
+                    alert('⛔ บัญชีของคุณถูกระงับจากระบบภารกิจดูคลิป\n\n' + data.message);
+                    window.location.href = '{{ route("user.video-missions.index") }}';
+                    return;
+                }
+
+                // ถ้ามีคำเตือน (ใกล้ถึง threshold)
+                if (data.warning && eventType === 'devtools_detected') {
+                    console.log('Warning:', data.message);
+                }
+
             } catch (error) {
                 console.error('Event error:', error);
             }
@@ -929,6 +1202,14 @@ function videoWatcher(config) {
         },
     };
 }
+
+// ป้องกัน bfcache (back-forward cache) - reload เมื่อกลับมาที่หน้านี้ด้วย back button
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+        // Page was restored from bfcache - reload เพื่อตรวจสอบสิทธิ์
+        location.reload();
+    }
+});
 </script>
 @endpush
 @endsection

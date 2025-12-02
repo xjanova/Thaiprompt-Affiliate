@@ -39,6 +39,15 @@ class VideoMissionController extends Controller
             return view('user.video-missions.maintenance', compact('message'));
         }
 
+        // ตรวจสอบว่า user ถูกแบนหรือไม่
+        $banStatus = VideoMissionCompletion::checkUserVideoMissionBan($user->id);
+        if ($banStatus['banned']) {
+            return view('user.video-missions.banned', [
+                'reason' => $banStatus['reason'],
+                'banned_at' => $banStatus['banned_at'],
+            ]);
+        }
+
         // ดึง rank limit ของ user
         $rankLimit = VideoMissionRankLimit::getForRank($user->current_rank_id ?? 0);
         $limits = $rankLimit->checkAllLimits($user);
@@ -69,9 +78,17 @@ class VideoMissionController extends Controller
             ->take(4)
             ->get();
 
+        // เพิ่มข้อมูลสิทธิ์ให้ featured missions
+        $featuredMissions = $this->attachEligibilityInfo($featuredMissions, $user);
+
         // ภารกิจทั้งหมด
         $missions = $this->getAvailableMissions($user)
             ->paginate(12);
+
+        // เพิ่มข้อมูลสิทธิ์ให้ missions
+        $missions->getCollection()->transform(function ($mission) use ($user) {
+            return $this->addEligibilityToMission($mission, $user);
+        });
 
         // ภารกิจที่กำลังทำอยู่
         $inProgressMissions = VideoMissionCompletion::where('user_id', $user->id)
@@ -141,14 +158,30 @@ class VideoMissionController extends Controller
      * แสดงรายละเอียดภารกิจ
      *
      * @param VideoMission $mission
-     * @return \Illuminate\View\View
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function show(VideoMission $mission)
     {
         $user = auth()->user();
 
+        // ตรวจสอบว่า user ถูกแบนหรือไม่
+        $banStatus = VideoMissionCompletion::checkUserVideoMissionBan($user->id);
+        if ($banStatus['banned']) {
+            return redirect()->route('user.video-missions.index');
+        }
+
         // ตรวจสอบสิทธิ์
         $eligibility = $mission->checkUserEligibility($user);
+
+        // ตรวจสอบว่าทำได้ตอนนี้ไหม
+        $canDoNow = $mission->canUserDoNow($user);
+
+        // ถ้าไม่มีสิทธิ์เลย (ไม่ใช่แค่รอ cooldown) ให้ redirect กลับไปหน้า index
+        if (!$eligibility['eligible'] && !$canDoNow['can']) {
+            return redirect()
+                ->route('user.video-missions.index')
+                ->with('error', $eligibility['reason'] ?? $canDoNow['reason'] ?? 'คุณไม่มีสิทธิ์เข้าถึงภารกิจนี้');
+        }
 
         // ดึงประวัติการทำภารกิจของ user
         $userCompletions = VideoMissionCompletion::where('user_id', $user->id)
@@ -160,9 +193,6 @@ class VideoMissionController extends Controller
         // ดึง rank limit
         $rankLimit = VideoMissionRankLimit::getForRank($user->current_rank_id ?? 0);
         $rewards = $mission->calculateRewards($rankLimit->reward_multiplier);
-
-        // ตรวจสอบว่าทำได้ตอนนี้ไหม
-        $canDoNow = $mission->canUserDoNow($user);
 
         return view('user.video-missions.show', compact(
             'mission',
@@ -185,6 +215,12 @@ class VideoMissionController extends Controller
     public function watch(VideoMission $mission)
     {
         $user = auth()->user();
+
+        // ตรวจสอบว่า user ถูกแบนหรือไม่
+        $banStatus = VideoMissionCompletion::checkUserVideoMissionBan($user->id);
+        if ($banStatus['banned']) {
+            return redirect()->route('user.video-missions.index');
+        }
 
         // ตรวจสอบสิทธิ์
         $eligibility = $mission->checkUserEligibility($user);
@@ -295,7 +331,7 @@ class VideoMissionController extends Controller
     }
 
     /**
-     * บันทึก event (tab switch, pause, seek, etc.)
+     * บันทึก event (tab switch, pause, seek, devtools, etc.)
      *
      * @param Request $request
      * @param VideoMissionCompletion $completion
@@ -308,9 +344,12 @@ class VideoMissionController extends Controller
         }
 
         $request->validate([
-            'event' => 'required|string|in:tab_switch,pause,resume,seek,focus_lost,interaction',
+            'event' => 'required|string|in:tab_switch,pause,resume,seek,focus_lost,interaction,devtools_attempt,devtools_detected,speed_change',
             'from_position' => 'nullable|integer|min:0',
             'to_position' => 'nullable|integer|min:0',
+            'method' => 'nullable|string|max:50',
+            'count' => 'nullable|integer',
+            'speed' => 'nullable|numeric',
         ]);
 
         switch ($request->event) {
@@ -334,6 +373,58 @@ class VideoMissionController extends Controller
                 break;
             case 'interaction':
                 $completion->recordInteraction();
+                break;
+            case 'devtools_attempt':
+                // บันทึกการพยายามเปิด DevTools
+                $completion->recordCheatAttempt('devtools_attempt', [
+                    'method' => $request->method ?? 'unknown',
+                    'count' => $request->count ?? 1,
+                ]);
+                break;
+            case 'devtools_detected':
+                // บันทึกว่าตรวจพบ DevTools - ถือว่าโกง
+                $completion->recordCheatAttempt('devtools_detected', [
+                    'method' => $request->method ?? 'unknown',
+                ]);
+                // อัพเดทสถานะเป็น failed
+                $completion->update([
+                    'status' => 'failed',
+                    'verification_notes' => 'ตรวจพบการใช้ DevTools: ' . ($request->method ?? 'unknown'),
+                ]);
+
+                // ตรวจสอบจำนวนครั้งที่โกงและแบนถ้าเกิน threshold
+                $userId = auth()->id();
+                $cheatCount = VideoMissionCompletion::countUserDevToolsDetected($userId);
+                $banThreshold = 3; // แบนหลังจากโกง 3 ครั้ง
+
+                if ($cheatCount >= $banThreshold) {
+                    // แบน user จากระบบ video missions
+                    VideoMissionCompletion::banUserFromVideoMissions(
+                        $userId,
+                        "ตรวจพบการใช้ DevTools จำนวน {$cheatCount} ครั้ง"
+                    );
+
+                    return response()->json([
+                        'success' => false,
+                        'banned' => true,
+                        'message' => 'บัญชีของคุณถูกระงับจากระบบภารกิจดูคลิปเนื่องจากตรวจพบการโกงหลายครั้ง',
+                    ]);
+                }
+
+                // เตือนถ้าใกล้ถึง threshold
+                $remaining = $banThreshold - $cheatCount;
+                return response()->json([
+                    'success' => true,
+                    'warning' => true,
+                    'cheat_count' => $cheatCount,
+                    'remaining_before_ban' => $remaining,
+                    'message' => "คำเตือน: หากตรวจพบการโกงอีก {$remaining} ครั้ง บัญชีจะถูกระงับจากระบบนี้",
+                ]);
+            case 'speed_change':
+                // บันทึกการเปลี่ยนความเร็ว
+                $completion->recordCheatAttempt('speed_change', [
+                    'speed' => $request->speed ?? 1.0,
+                ]);
                 break;
         }
 
@@ -603,5 +694,42 @@ class VideoMissionController extends Controller
         }
 
         // TPIX จะต้อง implement เพิ่มตาม blockchain system ของระบบ
+    }
+
+    /**
+     * เพิ่มข้อมูลสิทธิ์การทำภารกิจให้กับแต่ละ mission
+     *
+     * @param \Illuminate\Support\Collection $missions
+     * @param \App\Models\User $user
+     * @return \Illuminate\Support\Collection
+     */
+    protected function attachEligibilityInfo($missions, $user)
+    {
+        return $missions->map(function ($mission) use ($user) {
+            return $this->addEligibilityToMission($mission, $user);
+        });
+    }
+
+    /**
+     * เพิ่มข้อมูลสิทธิ์ให้ mission เดียว
+     *
+     * @param \App\Models\VideoMission $mission
+     * @param \App\Models\User $user
+     * @return \App\Models\VideoMission
+     */
+    protected function addEligibilityToMission($mission, $user)
+    {
+        // ตรวจสอบสิทธิ์พื้นฐาน
+        $eligibility = $mission->checkUserEligibility($user);
+
+        // ตรวจสอบว่าทำได้ตอนนี้หรือไม่
+        $canDoNow = $mission->canUserDoNow($user);
+
+        // รวมผลการตรวจสอบ
+        $mission->user_eligible = $eligibility['eligible'] && $canDoNow['can'];
+        $mission->eligibility_reason = $eligibility['reason'] ?? $canDoNow['reason'] ?? null;
+        $mission->next_available_at = $canDoNow['next_available_at'] ?? null;
+
+        return $mission;
     }
 }
