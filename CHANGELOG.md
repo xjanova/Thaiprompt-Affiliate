@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.297.0] - 2025-12-02
+
+### ✨ Features
+- feat: เพิ่มหน้า NFC Writer สำหรับเขียนข้อมูลประเภทต่างๆ ลงบัตร (44c370d1)
+- feat: เพิ่มระบบอ่าน/เขียน NFC และจับคู่บัตรสมบูรณ์ (1497d6d7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1899 from xjanova/claude/nfc-admin-integration-01LQtRUDPgf5yeArJamc31FG (6aa38475)
+
 ## [v3.296.0] - 2025-12-02
 
 ### ✨ Features
