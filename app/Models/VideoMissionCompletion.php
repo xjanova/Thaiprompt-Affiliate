@@ -667,6 +667,80 @@ class VideoMissionCompletion extends Model
     }
 
     /**
+     * นับจำนวน devtools_detected (การโกงที่ตรวจพบจริง) ของ user
+     *
+     * @param int $userId
+     * @return int
+     */
+    public static function countUserDevToolsDetected(int $userId): int
+    {
+        $completions = static::where('user_id', $userId)
+            ->whereNotNull('suspicious_activities')
+            ->get();
+
+        $count = 0;
+        foreach ($completions as $completion) {
+            $activities = $completion->suspicious_activities ?? [];
+            foreach ($activities as $activity) {
+                if (($activity['type'] ?? '') === 'devtools_detected') {
+                    $count++;
+                }
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * ตรวจสอบว่า user ถูกแบนจากระบบ video missions หรือไม่
+     *
+     * @param int $userId
+     * @return array ['banned' => bool, 'reason' => string|null, 'banned_at' => \Carbon\Carbon|null]
+     */
+    public static function checkUserVideoMissionBan(int $userId): array
+    {
+        $user = \App\Models\User::find($userId);
+
+        if (!$user) {
+            return ['banned' => true, 'reason' => 'ไม่พบผู้ใช้', 'banned_at' => null];
+        }
+
+        // ตรวจสอบว่าถูกแบนจาก video missions หรือไม่
+        if ($user->video_missions_banned_at) {
+            return [
+                'banned' => true,
+                'reason' => $user->video_missions_ban_reason ?? 'ตรวจพบการโกงหลายครั้ง',
+                'banned_at' => $user->video_missions_banned_at,
+            ];
+        }
+
+        return ['banned' => false, 'reason' => null, 'banned_at' => null];
+    }
+
+    /**
+     * แบน user จากระบบ video missions
+     *
+     * @param int $userId
+     * @param string $reason
+     * @return bool
+     */
+    public static function banUserFromVideoMissions(int $userId, string $reason): bool
+    {
+        $user = \App\Models\User::find($userId);
+
+        if (!$user) {
+            return false;
+        }
+
+        $user->update([
+            'video_missions_banned_at' => now(),
+            'video_missions_ban_reason' => $reason,
+        ]);
+
+        return true;
+    }
+
+    /**
      * ทำเครื่องหมายว่าดูจบ
      *
      * @return void

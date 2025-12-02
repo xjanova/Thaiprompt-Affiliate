@@ -916,7 +916,7 @@ function videoWatcher(config) {
 
         async sendEvent(eventType, extraData = {}) {
             try {
-                await fetch(`/user/video-missions/completion/${this.completionId}/event`, {
+                const response = await fetch(`/user/video-missions/completion/${this.completionId}/event`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -927,6 +927,22 @@ function videoWatcher(config) {
                         ...extraData,
                     }),
                 });
+
+                const data = await response.json();
+
+                // ตรวจสอบว่าถูกแบนหรือไม่
+                if (data.banned) {
+                    // แสดงข้อความและ redirect ไปหน้าแบน
+                    alert('⛔ บัญชีของคุณถูกระงับจากระบบภารกิจดูคลิป\n\n' + data.message);
+                    window.location.href = '{{ route("user.video-missions.index") }}';
+                    return;
+                }
+
+                // ถ้ามีคำเตือน (ใกล้ถึง threshold)
+                if (data.warning && eventType === 'devtools_detected') {
+                    console.log('Warning:', data.message);
+                }
+
             } catch (error) {
                 console.error('Event error:', error);
             }

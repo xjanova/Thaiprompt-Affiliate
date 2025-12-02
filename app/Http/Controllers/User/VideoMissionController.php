@@ -39,6 +39,15 @@ class VideoMissionController extends Controller
             return view('user.video-missions.maintenance', compact('message'));
         }
 
+        // ตรวจสอบว่า user ถูกแบนหรือไม่
+        $banStatus = VideoMissionCompletion::checkUserVideoMissionBan($user->id);
+        if ($banStatus['banned']) {
+            return view('user.video-missions.banned', [
+                'reason' => $banStatus['reason'],
+                'banned_at' => $banStatus['banned_at'],
+            ]);
+        }
+
         // ดึง rank limit ของ user
         $rankLimit = VideoMissionRankLimit::getForRank($user->current_rank_id ?? 0);
         $limits = $rankLimit->checkAllLimits($user);
@@ -155,6 +164,12 @@ class VideoMissionController extends Controller
     {
         $user = auth()->user();
 
+        // ตรวจสอบว่า user ถูกแบนหรือไม่
+        $banStatus = VideoMissionCompletion::checkUserVideoMissionBan($user->id);
+        if ($banStatus['banned']) {
+            return redirect()->route('user.video-missions.index');
+        }
+
         // ตรวจสอบสิทธิ์
         $eligibility = $mission->checkUserEligibility($user);
 
@@ -200,6 +215,12 @@ class VideoMissionController extends Controller
     public function watch(VideoMission $mission)
     {
         $user = auth()->user();
+
+        // ตรวจสอบว่า user ถูกแบนหรือไม่
+        $banStatus = VideoMissionCompletion::checkUserVideoMissionBan($user->id);
+        if ($banStatus['banned']) {
+            return redirect()->route('user.video-missions.index');
+        }
 
         // ตรวจสอบสิทธิ์
         $eligibility = $mission->checkUserEligibility($user);
@@ -370,7 +391,35 @@ class VideoMissionController extends Controller
                     'status' => 'failed',
                     'verification_notes' => 'ตรวจพบการใช้ DevTools: ' . ($request->method ?? 'unknown'),
                 ]);
-                break;
+
+                // ตรวจสอบจำนวนครั้งที่โกงและแบนถ้าเกิน threshold
+                $userId = auth()->id();
+                $cheatCount = VideoMissionCompletion::countUserDevToolsDetected($userId);
+                $banThreshold = 3; // แบนหลังจากโกง 3 ครั้ง
+
+                if ($cheatCount >= $banThreshold) {
+                    // แบน user จากระบบ video missions
+                    VideoMissionCompletion::banUserFromVideoMissions(
+                        $userId,
+                        "ตรวจพบการใช้ DevTools จำนวน {$cheatCount} ครั้ง"
+                    );
+
+                    return response()->json([
+                        'success' => false,
+                        'banned' => true,
+                        'message' => 'บัญชีของคุณถูกระงับจากระบบภารกิจดูคลิปเนื่องจากตรวจพบการโกงหลายครั้ง',
+                    ]);
+                }
+
+                // เตือนถ้าใกล้ถึง threshold
+                $remaining = $banThreshold - $cheatCount;
+                return response()->json([
+                    'success' => true,
+                    'warning' => true,
+                    'cheat_count' => $cheatCount,
+                    'remaining_before_ban' => $remaining,
+                    'message' => "คำเตือน: หากตรวจพบการโกงอีก {$remaining} ครั้ง บัญชีจะถูกระงับจากระบบนี้",
+                ]);
             case 'speed_change':
                 // บันทึกการเปลี่ยนความเร็ว
                 $completion->recordCheatAttempt('speed_change', [
