@@ -334,24 +334,57 @@
                                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white">
                             </div>
 
-                            {{-- Selected User Display --}}
-                            <div x-show="selectedUser" x-transition class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 mb-4">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                            <span x-text="selectedUser ? selectedUser.name.substring(0, 2).toUpperCase() : ''"></span>
-                                        </div>
-                                        <div>
-                                            <div class="font-semibold text-gray-900 dark:text-white" x-text="selectedUser ? selectedUser.name : ''"></div>
-                                            <div class="text-sm text-gray-600 dark:text-gray-400" x-text="selectedUser ? selectedUser.email : ''"></div>
-                                        </div>
-                                    </div>
+                            {{-- Selected User Display with Business Card Preview --}}
+                            <div x-show="selectedUser" x-transition class="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800 mb-4">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="font-semibold text-green-800 dark:text-green-300 flex items-center gap-2">
+                                        <i class="fas fa-address-card"></i>
+                                        นามบัตรที่จะเขียนลงบัตร NFC
+                                    </h4>
                                     <button type="button"
                                             @click="selectedUser = null"
                                             class="text-red-600 hover:text-red-800 dark:text-red-400">
                                         <i class="fas fa-times-circle"></i>
                                     </button>
                                 </div>
+
+                                {{-- Business Card Preview --}}
+                                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-inner">
+                                    <div class="flex items-start gap-4">
+                                        <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl shrink-0">
+                                            <span x-text="selectedUser ? selectedUser.name.substring(0, 2).toUpperCase() : ''"></span>
+                                        </div>
+                                        <div class="flex-1 space-y-1">
+                                            <div class="font-bold text-lg text-gray-900 dark:text-white" x-text="selectedUser ? selectedUser.name : ''"></div>
+                                            <div class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2" x-show="selectedUser && selectedUser.member_number">
+                                                <i class="fas fa-id-badge text-blue-500"></i>
+                                                <span x-text="selectedUser ? selectedUser.member_number : ''"></span>
+                                            </div>
+                                            <div class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2" x-show="selectedUser && selectedUser.phone">
+                                                <i class="fas fa-phone text-green-500"></i>
+                                                <span x-text="selectedUser ? selectedUser.phone : ''"></span>
+                                            </div>
+                                            <div class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                                                <i class="fas fa-envelope text-red-500"></i>
+                                                <span x-text="selectedUser ? selectedUser.email : ''"></span>
+                                            </div>
+                                            <div class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2" x-show="selectedUser && selectedUser.line_id">
+                                                <i class="fab fa-line text-green-600"></i>
+                                                <span x-text="selectedUser ? selectedUser.line_id : ''"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- Referral Link Preview --}}
+                                    <div class="mt-4 p-3 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                                        <div class="text-xs text-orange-700 dark:text-orange-300 mb-1 flex items-center gap-1">
+                                            <i class="fas fa-link"></i>
+                                            Referral Link (เมื่อแตะบัตรจะไปหน้านี้)
+                                        </div>
+                                        <div class="font-mono text-xs text-orange-800 dark:text-orange-200 break-all" x-text="getReferralUrl()"></div>
+                                    </div>
+                                </div>
+
                                 <input type="hidden" name="user_id" x-bind:value="selectedUser ? selectedUser.id : ''">
                             </div>
 
@@ -607,6 +640,9 @@ function nfcPairAndWrite() {
         selectedUser: null,
         users: @json($users ?? []),
 
+        // Referral URL
+        referralBaseUrl: '{{ $referralBaseUrl ?? route("register") }}',
+
         // Computed
         get readStatusText() {
             switch(this.readState) {
@@ -626,6 +662,14 @@ function nfcPairAndWrite() {
                 user.email.toLowerCase().includes(query) ||
                 (user.id + '').includes(query)
             );
+        },
+
+        // สร้าง Referral URL จาก member_number ของ user ที่เลือก
+        getReferralUrl() {
+            if (!this.selectedUser || !this.selectedUser.member_number) {
+                return this.referralBaseUrl;
+            }
+            return `${this.referralBaseUrl}?ref=${this.selectedUser.member_number}`;
         },
 
         // Methods
@@ -734,14 +778,68 @@ function nfcPairAndWrite() {
                 // Build NDEF records
                 const records = [];
 
-                // URL Record (verification URL with anti-counterfeit code)
-                const verifyUrl = `{{ route("nfc.verify", ["card" => $nfcCard->card_number]) }}?code=${this.antiCounterfeitCode.substring(0, 16)}`;
+                // 🔗 URL Record - Referral Link (เมื่อแตะบัตรจะไปหน้าชวนคน)
+                // ใช้ referral URL ถ้าเลือก user แล้ว, ไม่งั้นใช้ verification URL
+                let primaryUrl;
+                if (this.selectedUser && this.selectedUser.member_number) {
+                    // Referral URL - ไปหน้าสมัครสมาชิกพร้อม referral code
+                    primaryUrl = this.getReferralUrl();
+                } else {
+                    // Verification URL - ตรวจสอบบัตร
+                    primaryUrl = `{{ route("nfc.verify", ["card" => $nfcCard->card_number]) }}?code=${this.antiCounterfeitCode.substring(0, 16)}`;
+                }
                 records.push({
                     recordType: 'url',
-                    data: verifyUrl,
+                    data: primaryUrl,
                 });
 
-                // Text Record (card info)
+                // 👤 นามบัตรของลูกค้า (ถ้าเลือก user แล้ว)
+                if (this.selectedUser) {
+                    // ชื่อ
+                    records.push({
+                        recordType: 'text',
+                        data: `NAME:${this.selectedUser.name}`,
+                        lang: 'th',
+                    });
+
+                    // Member Number
+                    if (this.selectedUser.member_number) {
+                        records.push({
+                            recordType: 'text',
+                            data: `MEMBER:${this.selectedUser.member_number}`,
+                            lang: 'en',
+                        });
+                    }
+
+                    // เบอร์โทร
+                    if (this.selectedUser.phone) {
+                        records.push({
+                            recordType: 'text',
+                            data: `TEL:${this.selectedUser.phone}`,
+                            lang: 'en',
+                        });
+                    }
+
+                    // อีเมล
+                    if (this.selectedUser.email) {
+                        records.push({
+                            recordType: 'text',
+                            data: `EMAIL:${this.selectedUser.email}`,
+                            lang: 'en',
+                        });
+                    }
+
+                    // LINE ID
+                    if (this.selectedUser.line_id) {
+                        records.push({
+                            recordType: 'text',
+                            data: `LINE:${this.selectedUser.line_id}`,
+                            lang: 'en',
+                        });
+                    }
+                }
+
+                // 🔐 Card Info & Anti-Counterfeit
                 records.push({
                     recordType: 'text',
                     data: `TP-NFC:${this.cardUID}:${this.antiCounterfeitCode.substring(0, 8)}`,

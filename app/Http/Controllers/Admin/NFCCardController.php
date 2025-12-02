@@ -260,12 +260,15 @@ class NFCCardController extends Controller
         // โหลดความสัมพันธ์ที่จำเป็น
         $nfcCard->load(['user', 'issuer', 'pairer', 'nfcWriter', 'locker']);
 
-        // ดึงรายชื่อผู้ใช้สำหรับจับคู่ (ผู้ใช้ที่ไม่ถูก block)
+        // ดึงรายชื่อผู้ใช้สำหรับจับคู่ พร้อมข้อมูลสำหรับทำนามบัตร
         $users = User::whereNull('blocked_at')
             ->orderBy('name')
-            ->get(['id', 'name', 'email']);
+            ->get(['id', 'name', 'email', 'phone', 'member_number', 'line_id', 'address', 'city']);
 
-        return view('admin.nfc-cards.pair-and-write', compact('nfcCard', 'users'));
+        // สร้าง Referral URL base
+        $referralBaseUrl = route('register');
+
+        return view('admin.nfc-cards.pair-and-write', compact('nfcCard', 'users', 'referralBaseUrl'));
     }
 
     /**
