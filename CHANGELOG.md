@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.298.0] - 2025-12-02
+
+### ✨ Features
+- Merge pull request #1900 from xjanova/claude/enhance-staking-features-01RkTJKajz8JWdqJdyJ6EAwX (ad597cbb)
+- feat: ปรับปรุงระบบ Staking และเพิ่มฟีเจอร์ใหม่ (80a00d1a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.297.0] - 2025-12-02
 
 ### ✨ Features
