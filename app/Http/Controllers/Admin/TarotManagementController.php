@@ -193,6 +193,82 @@ class TarotManagementController extends Controller
     }
 
     /**
+     * AJAX Upload Image สำหรับไพ่ทาโร่ต์
+     * ใช้สำหรับอัพโหลดรูปแบบ AJAX พร้อม progress และ error handling
+     */
+    public function cardsUploadImage(Request $request, $id)
+    {
+        try {
+            $card = TarotCard::findOrFail($id);
+
+            $request->validate([
+                'image' => 'required|image|max:5120',
+            ]);
+
+            if (!$request->hasFile('image')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบไฟล์รูปภาพ',
+                ], 400);
+            }
+
+            $file = $request->file('image');
+
+            // ลบรูปเก่า
+            $oldImagePath = $card->getRawImageUrl();
+            if ($oldImagePath) {
+                $this->imageService->deleteTarotImage($oldImagePath);
+            }
+
+            // ลองอัพโหลดแบบ WebP ก่อน
+            try {
+                $path = $this->imageService->uploadTarotCard($file);
+                $imageUrl = '/storage/' . $path;
+            } catch (\Exception $e) {
+                // Fallback: อัพโหลดแบบปกติถ้า WebP ไม่ทำงาน
+                \Log::warning('WebP conversion failed, using fallback', ['error' => $e->getMessage()]);
+
+                $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('tarot/cards', $filename, 'public');
+                $imageUrl = '/storage/' . $path;
+            }
+
+            // อัพเดท database
+            $card->update(['image_url' => $imageUrl]);
+
+            \Log::info('Tarot card image uploaded via AJAX', [
+                'card_id' => $card->id,
+                'image_url' => $imageUrl,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'อัพโหลดรูปสำเร็จ',
+                'image_url' => asset($imageUrl),
+                'raw_path' => $imageUrl,
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'รูปภาพไม่ถูกต้อง: ' . implode(', ', $e->validator->errors()->all()),
+            ], 422);
+
+        } catch (\Exception $e) {
+            \Log::error('Tarot card image upload failed', [
+                'card_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Categories Management
      */
     public function categoriesIndex()

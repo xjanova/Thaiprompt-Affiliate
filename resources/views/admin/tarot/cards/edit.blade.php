@@ -48,13 +48,13 @@
                          :class="{ 'border-purple-500 bg-purple-50 dark:bg-purple-900/30': isDragging }">
 
                         {{-- Current/Preview Image --}}
-                        <img x-show="previewUrl || '{{ $card->image_url }}'"
-                             :src="previewUrl || '{{ $card->image_url }}'"
+                        <img x-show="currentImageUrl"
+                             :src="currentImageUrl"
                              alt="{{ $card->name_th }}"
                              class="w-full h-full object-cover">
 
                         {{-- Placeholder when no image --}}
-                        <div x-show="!previewUrl && !'{{ $card->image_url }}'"
+                        <div x-show="!currentImageUrl"
                              class="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
                             <svg class="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -62,8 +62,16 @@
                             <span class="text-sm">ยังไม่มีรูปภาพ</span>
                         </div>
 
+                        {{-- Loading overlay --}}
+                        <div x-show="isUploading"
+                             class="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm">
+                            <div class="w-12 h-12 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mb-3"></div>
+                            <p class="text-white font-medium">กำลังอัพโหลด...</p>
+                            <p class="text-purple-300 text-sm mt-1" x-text="uploadProgress + '%'"></p>
+                        </div>
+
                         {{-- Drag overlay --}}
-                        <div x-show="isDragging"
+                        <div x-show="isDragging && !isUploading"
                              class="absolute inset-0 flex items-center justify-center bg-purple-500/20 backdrop-blur-sm">
                             <div class="text-center">
                                 <svg class="w-12 h-12 mx-auto text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,31 +83,31 @@
                     </div>
 
                     {{-- Upload Button --}}
-                    <label class="block">
+                    <label class="block" :class="{ 'pointer-events-none opacity-50': isUploading }">
                         <input type="file" name="image" accept="image/*"
                                @change="handleFileSelect($event)"
-                               class="hidden">
+                               class="hidden"
+                               :disabled="isUploading">
                         <div class="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl cursor-pointer transition transform hover:scale-[1.02]">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                             </svg>
-                            <span>เลือกรูปภาพ</span>
+                            <span x-text="isUploading ? 'กำลังอัพโหลด...' : 'เลือกรูปภาพ'"></span>
                         </div>
                     </label>
 
+                    {{-- Status Message --}}
+                    <div x-show="statusMessage" x-transition
+                         :class="statusType === 'success' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-400'"
+                         class="mt-3 p-3 rounded-xl border text-sm">
+                        <span x-text="statusMessage"></span>
+                    </div>
+
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">
                         รองรับ JPG, PNG, GIF, WebP ขนาดไม่เกิน 5MB<br>
-                        <span class="text-green-600 dark:text-green-400">✓ แปลงเป็น WebP อัตโนมัติ</span><br>
+                        <span class="text-green-600 dark:text-green-400">✓ อัพโหลดทันทีเมื่อเลือกรูป</span><br>
                         <span class="text-purple-600 dark:text-purple-400">✓ ปรับขนาดให้พอดี 400x600px</span>
                     </p>
-
-                    {{-- Remove image button --}}
-                    <button type="button"
-                            x-show="previewUrl"
-                            @click="removePreview()"
-                            class="mt-3 w-full px-4 py-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-xl transition text-sm">
-                        ยกเลิกรูปที่เลือก
-                    </button>
                 </div>
             </div>
 
@@ -270,13 +278,17 @@
 <script>
 function cardImageUpload() {
     return {
-        previewUrl: null,
+        currentImageUrl: '{{ $card->image_url }}',
         isDragging: false,
+        isUploading: false,
+        uploadProgress: 0,
+        statusMessage: '',
+        statusType: '',
 
         handleFileSelect(event) {
             const file = event.target.files[0];
             if (file) {
-                this.createPreview(file);
+                this.uploadImage(file);
             }
         },
 
@@ -284,27 +296,73 @@ function cardImageUpload() {
             this.isDragging = false;
             const file = event.dataTransfer.files[0];
             if (file && file.type.startsWith('image/')) {
-                // Update the file input
-                const input = this.$el.querySelector('input[type="file"]');
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                input.files = dataTransfer.files;
-                this.createPreview(file);
+                this.uploadImage(file);
             }
         },
 
-        createPreview(file) {
+        async uploadImage(file) {
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                this.showStatus('ไฟล์ใหญ่เกินไป (ขนาดสูงสุด 5MB)', 'error');
+                return;
+            }
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                this.showStatus('กรุณาเลือกไฟล์รูปภาพ', 'error');
+                return;
+            }
+
+            // Show preview immediately
             const reader = new FileReader();
             reader.onload = (e) => {
-                this.previewUrl = e.target.result;
+                this.currentImageUrl = e.target.result;
             };
             reader.readAsDataURL(file);
+
+            // Start upload
+            this.isUploading = true;
+            this.uploadProgress = 0;
+            this.statusMessage = '';
+
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('_token', '{{ csrf_token() }}');
+
+            try {
+                const response = await fetch('{{ route("admin.tarot.cards.upload-image", $card->id) }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.currentImageUrl = data.image_url;
+                    this.showStatus('อัพโหลดรูปสำเร็จ!', 'success');
+                } else {
+                    this.showStatus(data.message || 'เกิดข้อผิดพลาดในการอัพโหลด', 'error');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                this.showStatus('เกิดข้อผิดพลาด: ' + error.message, 'error');
+            } finally {
+                this.isUploading = false;
+                this.uploadProgress = 100;
+            }
         },
 
-        removePreview() {
-            this.previewUrl = null;
-            const input = this.$el.querySelector('input[type="file"]');
-            input.value = '';
+        showStatus(message, type) {
+            this.statusMessage = message;
+            this.statusType = type;
+
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                this.statusMessage = '';
+            }, 5000);
         }
     }
 }

@@ -1840,6 +1840,8 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
         Route::get('/{id}/edit', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsEdit'])->name('edit');
         Route::put('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsUpdate'])->name('update');
         Route::delete('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsDestroy'])->name('destroy');
+        // AJAX upload endpoint
+        Route::post('/{id}/upload-image', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsUploadImage'])->name('upload-image');
     });
 
     // Categories Management
