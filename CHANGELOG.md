@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.301.0] - 2025-12-02
+
+### ✨ Features
+- feat: เพิ่มระบบแบนผู้ใช้ที่โกงภารกิจดูคลิปหลายครั้ง (1af0d83e)
+- feat: ปรับปรุงระบบป้องกันการโกงให้ทำงานได้จริง (ff788526)
+- feat: เพิ่มการแสดงภารกิจดูคลิปที่ไม่มีสิทธิ์เป็นสีมืดและกดไม่ได้ (df59d535)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1906 from xjanova/claude/fix-maintenance-mode-toggle-01WHxZDF1bdDb216u6matVwT (c25fa7be)
+
 ## [v3.300.0] - 2025-12-02
 
 ### ✨ Features
