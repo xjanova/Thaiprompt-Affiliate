@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.302.1] - 2025-12-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: ลบ routes ซ้ำและจัดเรียง NFC routes ให้ถูกต้อง (3101e9e0)
+- fix: จัดเรียง routes NFC ให้ static routes อยู่ก่อน parameter routes (cd3a837f)
+### 🔧 Other Changes
+- Merge pull request #1908 from xjanova/claude/nfc-admin-integration-01LQtRUDPgf5yeArJamc31FG (43ffe35f)
+
 ## [v3.302.0] - 2025-12-02
 
 ### ✨ Features
