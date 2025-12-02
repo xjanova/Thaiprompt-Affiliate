@@ -145,15 +145,32 @@ class TarotManagementController extends Controller
 
         // Handle image upload - แปลงเป็น WebP และ resize ให้พอดีกับขนาดการ์ด
         if ($request->hasFile('image')) {
-            // ลบรูปเก่า
-            $this->imageService->deleteTarotImage($card->image_url);
+            // ลบรูปเก่า (ใช้ raw value จาก DB ไม่ใช่ accessor)
+            $oldImagePath = $card->getRawImageUrl();
+            if ($oldImagePath) {
+                $this->imageService->deleteTarotImage($oldImagePath);
+            }
 
             // อัพโหลดรูปใหม่
             $path = $this->imageService->uploadTarotCard($request->file('image'));
             $data['image_url'] = '/storage/' . $path;
+
+            // Log for debugging
+            \Log::info('Tarot card image uploaded', [
+                'card_id' => $card->id,
+                'old_path' => $oldImagePath,
+                'new_path' => $data['image_url'],
+                'storage_path' => $path,
+            ]);
         }
 
         $card->update($data);
+
+        // Log final state
+        \Log::info('Tarot card updated', [
+            'card_id' => $card->id,
+            'image_url' => $card->fresh()->getRawImageUrl(),
+        ]);
 
         return redirect()->route('admin.tarot.cards.index')
             ->with('success', 'อัพเดทไพ่สำเร็จ');
@@ -163,8 +180,11 @@ class TarotManagementController extends Controller
     {
         $card = TarotCard::findOrFail($id);
 
-        // ลบรูปไพ่
-        $this->imageService->deleteTarotImage($card->image_url);
+        // ลบรูปไพ่ (ใช้ raw value จาก DB)
+        $imagePath = $card->getRawImageUrl();
+        if ($imagePath) {
+            $this->imageService->deleteTarotImage($imagePath);
+        }
 
         $card->delete();
 
@@ -318,8 +338,11 @@ class TarotManagementController extends Controller
                 ->with('error', 'ไม่สามารถลบรูปหลังไพ่ที่เป็นค่าเริ่มต้นได้');
         }
 
-        // ลบรูปหลังไพ่
-        $this->imageService->deleteTarotImage($cardBack->image_url);
+        // ลบรูปหลังไพ่ (ใช้ raw value จาก DB)
+        $imagePath = $cardBack->getRawImageUrl();
+        if ($imagePath) {
+            $this->imageService->deleteTarotImage($imagePath);
+        }
 
         $cardBack->delete();
 
