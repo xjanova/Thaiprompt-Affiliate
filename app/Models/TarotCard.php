@@ -125,6 +125,14 @@ class TarotCard extends Model
     }
 
     /**
+     * Get raw image_url value from database (for debugging)
+     */
+    public function getRawImageUrl(): ?string
+    {
+        return $this->attributes['image_url'] ?? null;
+    }
+
+    /**
      * Get image URL with fallback
      *
      * รูปไพ่เก็บใน storage/app/public/tarot/cards/
@@ -132,31 +140,34 @@ class TarotCard extends Model
      */
     public function getImageUrlAttribute($value)
     {
+        // ถ้าไม่มีค่า ใช้ default
         if (!$value) {
             return asset('images/tarot/default-card.svg');
         }
 
-        // ถ้าเป็น URL แบบ /storage/... ให้ตรวจสอบว่าไฟล์มีอยู่จริงใน storage
-        if (str_starts_with($value, '/storage/')) {
-            $storagePath = str_replace('/storage/', '', $value);
-            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($storagePath)) {
-                return asset($value);
-            }
-        }
-
-        // ถ้าเป็น path แบบเดิม (เช่น /images/tarot/xxx.png)
-        if (str_starts_with($value, '/images/') || str_starts_with($value, 'images/')) {
-            if (file_exists(public_path($value))) {
-                return asset($value);
-            }
-        }
-
-        // ถ้าเป็น full URL อยู่แล้ว
+        // ถ้าเป็น full URL อยู่แล้ว (http/https) ใช้ตรงๆ
         if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
             return $value;
         }
 
-        // Return default placeholder
-        return asset('images/tarot/default-card.svg');
+        // ถ้าเป็น URL แบบ /storage/... (จาก upload ใหม่)
+        // Trust database value และ return asset URL
+        if (str_starts_with($value, '/storage/')) {
+            return asset($value);
+        }
+
+        // ถ้าเป็น path แบบไม่มี / นำหน้า (เช่น tarot/cards/xxx.webp)
+        // แปลงเป็น storage URL
+        if (str_starts_with($value, 'tarot/')) {
+            return asset('storage/' . $value);
+        }
+
+        // ถ้าเป็น path แบบเดิม (เช่น /images/tarot/xxx.png)
+        if (str_starts_with($value, '/images/') || str_starts_with($value, 'images/')) {
+            return asset($value);
+        }
+
+        // สำหรับ path อื่นๆ ที่ไม่รู้จัก ลอง return ตรงๆ
+        return asset($value);
     }
 }
