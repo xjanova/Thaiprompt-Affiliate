@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.303.0] - 2025-12-02
+
+### ✨ Features
+- feat: เพิ่มระบบนามบัตรและ Referral Link ในการจับคู่บัตร NFC (b3b2e9bf)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1909 from xjanova/claude/nfc-admin-integration-01LQtRUDPgf5yeArJamc31FG (fd30d395)
+
 ## [v3.302.1] - 2025-12-02
 
 ### ✨ Features
