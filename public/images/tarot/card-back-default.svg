@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
+  <defs>
+    <linearGradient id="backGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e1b4b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#312e81;stop-opacity:1" />
+    </linearGradient>
+    <pattern id="starPattern" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse">
+      <polygon points="25,5 30,20 45,20 33,30 38,45 25,35 12,45 17,30 5,20 20,20"
+               fill="#6366f1" opacity="0.3"/>
+    </pattern>
+  </defs>
+
+  <!-- Card background -->
+  <rect width="400" height="600" rx="20" fill="url(#backGrad)"/>
+
+  <!-- Star pattern -->
+  <rect width="400" height="600" rx="20" fill="url(#starPattern)"/>
+
+  <!-- Inner border -->
+  <rect x="20" y="20" width="360" height="560" rx="15" fill="none" stroke="#818cf8" stroke-width="3"/>
+
+  <!-- Second inner border -->
+  <rect x="35" y="35" width="330" height="530" rx="12" fill="none" stroke="#6366f1" stroke-width="1"/>
+
+  <!-- Center mandala design -->
+  <g transform="translate(200,300)">
+    <circle cx="0" cy="0" r="100" fill="none" stroke="#818cf8" stroke-width="2" opacity="0.5"/>
+    <circle cx="0" cy="0" r="80" fill="none" stroke="#a5b4fc" stroke-width="1" opacity="0.5"/>
+    <circle cx="0" cy="0" r="60" fill="none" stroke="#c7d2fe" stroke-width="1" opacity="0.5"/>
+
+    <!-- Cross pattern -->
+    <line x1="-100" y1="0" x2="100" y2="0" stroke="#818cf8" stroke-width="1" opacity="0.4"/>
+    <line x1="0" y1="-100" x2="0" y2="100" stroke="#818cf8" stroke-width="1" opacity="0.4"/>
+    <line x1="-70" y1="-70" x2="70" y2="70" stroke="#818cf8" stroke-width="1" opacity="0.4"/>
+    <line x1="-70" y1="70" x2="70" y2="-70" stroke="#818cf8" stroke-width="1" opacity="0.4"/>
+
+    <!-- Center star -->
+    <polygon points="0,-40 10,-15 40,-15 18,5 28,35 0,18 -28,35 -18,5 -40,-15 -10,-15"
+             fill="#a5b4fc" opacity="0.6"/>
+    <circle cx="0" cy="0" r="15" fill="#c7d2fe" opacity="0.5"/>
+  </g>
+
+  <!-- Corner decorations -->
+  <g transform="translate(50,50)">
+    <polygon points="0,-15 5,-5 15,-5 8,2 10,15 0,8 -10,15 -8,2 -15,-5 -5,-5"
+             fill="#a5b4fc" opacity="0.5"/>
+  </g>
+  <g transform="translate(350,50)">
+    <polygon points="0,-15 5,-5 15,-5 8,2 10,15 0,8 -10,15 -8,2 -15,-5 -5,-5"
+             fill="#a5b4fc" opacity="0.5"/>
+  </g>
+  <g transform="translate(50,550)">
+    <polygon points="0,-15 5,-5 15,-5 8,2 10,15 0,8 -10,15 -8,2 -15,-5 -5,-5"
+             fill="#a5b4fc" opacity="0.5"/>
+  </g>
+  <g transform="translate(350,550)">
+    <polygon points="0,-15 5,-5 15,-5 8,2 10,15 0,8 -10,15 -8,2 -15,-5 -5,-5"
+             fill="#a5b4fc" opacity="0.5"/>
+  </g>
+</svg>
