@@ -252,6 +252,8 @@ return [
                 ['label' => '➕ ออกบัตรใหม่', 'route' => 'admin.nfc-cards.create'],
                 ['label' => '📜 ธุรกรรมทั้งหมด', 'route' => 'admin.nfc.transactions'],
                 ['label' => '📥 ส่งออกข้อมูล', 'route' => 'admin.nfc-cards.export'],
+                ['label' => '---', 'route' => null], // Divider
+                ['label' => '📡 เครื่องอ่าน NFC', 'route' => 'admin.nfc-readers.index', 'description' => 'จัดการเครื่องอ่าน NFC'],
             ],
         ],
 

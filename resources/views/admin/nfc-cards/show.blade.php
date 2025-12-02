@@ -34,6 +34,12 @@
                 <i class="fas fa-money-bill-wave"></i>
                 เติมเงิน
             </a>
+            {{-- ปุ่มจับคู่และเขียน NFC (รวม Web NFC API) --}}
+            <a href="{{ route('admin.nfc-cards.pair-and-write', $nfcCard) }}"
+               class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
+                <i class="fas fa-wifi"></i>
+                อ่าน/เขียน NFC
+            </a>
             @if(!$nfcCard->is_paired)
                 <a href="{{ route('admin.nfc-cards.pair-form', $nfcCard) }}"
                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
@@ -308,6 +314,99 @@
                     </div>
                 </div>
             @endif
+
+            {{-- NFC Info Card --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-wifi text-purple-600"></i>
+                    ข้อมูล NFC
+                </h3>
+
+                <div class="space-y-4">
+                    {{-- NFC UID --}}
+                    <div>
+                        <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1">NFC UID</label>
+                        @if($nfcCard->nfc_uid)
+                            <div class="flex items-center gap-2">
+                                <code class="text-sm font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-900 dark:text-white">
+                                    {{ $nfcCard->nfc_uid }}
+                                </code>
+                                <button onclick="navigator.clipboard.writeText('{{ $nfcCard->nfc_uid }}')"
+                                        class="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-sm"
+                                        title="คัดลอก">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        @else
+                            <span class="text-sm text-gray-400 dark:text-gray-500">ยังไม่ได้เขียนลงบัตร</span>
+                        @endif
+                    </div>
+
+                    {{-- Anti-Counterfeit Status --}}
+                    <div>
+                        <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1">รหัสป้องกันปลอม</label>
+                        @if($nfcCard->anti_counterfeit_code)
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                                <i class="fas fa-shield-alt mr-1"></i>
+                                เขียนแล้ว
+                            </span>
+                        @else
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                <i class="fas fa-exclamation-circle mr-1"></i>
+                                ยังไม่ได้เขียน
+                            </span>
+                        @endif
+                    </div>
+
+                    {{-- Written At --}}
+                    @if($nfcCard->nfc_written_at)
+                        <div>
+                            <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1">เขียนข้อมูลเมื่อ</label>
+                            <div class="text-sm text-gray-900 dark:text-white">
+                                {{ $nfcCard->nfc_written_at->format('d/m/Y H:i') }}
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                {{ $nfcCard->nfc_written_at->diffForHumans() }}
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Card Type Detected --}}
+                    @if($nfcCard->card_type_detected)
+                        <div>
+                            <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1">ประเภทบัตร NFC</label>
+                            <div class="text-sm text-gray-900 dark:text-white">
+                                {{ $nfcCard->card_type_detected_label ?? $nfcCard->card_type_detected }}
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Lock Status --}}
+                    <div>
+                        <label class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1">สถานะล็อค</label>
+                        @if($nfcCard->is_locked)
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                                <i class="fas fa-lock mr-1"></i>
+                                ล็อคแล้ว
+                            </span>
+                        @else
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                                <i class="fas fa-lock-open mr-1"></i>
+                                ปลดล็อค
+                            </span>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- NFC Action Button --}}
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <a href="{{ route('admin.nfc-cards.pair-and-write', $nfcCard) }}"
+                       class="block w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-colors text-center">
+                        <i class="fas fa-wifi mr-2"></i>
+                        อ่าน/เขียน NFC
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -379,6 +379,7 @@ Route::prefix('nfc-cards')->name('nfc-cards.')->group(function () {
     Route::put('/{nfcCard}', [NFCCardController::class, 'update'])->name('update');
     Route::delete('/{nfcCard}', [NFCCardController::class, 'destroy'])->name('destroy');
     Route::get('/{nfcCard}/pair', [NFCCardController::class, 'pairForm'])->name('pair-form');
+    Route::get('/{nfcCard}/pair-and-write', [NFCCardController::class, 'pairAndWrite'])->name('pair-and-write');
     Route::post('/{nfcCard}/pair', [NFCCardController::class, 'pair'])->name('pair');
     Route::post('/{nfcCard}/unpair', [NFCCardController::class, 'unpair'])->name('unpair');
     Route::post('/{nfcCard}/activate', [NFCCardController::class, 'activate'])->name('activate');

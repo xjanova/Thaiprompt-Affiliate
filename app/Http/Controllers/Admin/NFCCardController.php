@@ -244,6 +244,31 @@ class NFCCardController extends Controller
     }
 
     /**
+     * แสดงหน้าจับคู่และเขียนบัตร NFC
+     *
+     * หน้านี้รวมทุกขั้นตอนในการตั้งค่าบัตร NFC:
+     * 1. อ่าน NFC UID จากบัตร
+     * 2. เขียนรหัสป้องกันปลอมลงบัตร
+     * 3. จับคู่บัตรกับผู้ใช้
+     * 4. บันทึกข้อมูลลงฐานข้อมูล
+     *
+     * @param NFCCard $nfcCard
+     * @return \Illuminate\View\View
+     */
+    public function pairAndWrite(NFCCard $nfcCard)
+    {
+        // โหลดความสัมพันธ์ที่จำเป็น
+        $nfcCard->load(['user', 'issuer', 'pairer', 'nfcWriter', 'locker']);
+
+        // ดึงรายชื่อผู้ใช้สำหรับจับคู่
+        $users = User::where('status', 'active')
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'status']);
+
+        return view('admin.nfc-cards.pair-and-write', compact('nfcCard', 'users'));
+    }
+
+    /**
      * Pair card with user
      */
     public function pair(Request $request, NFCCard $nfcCard)
