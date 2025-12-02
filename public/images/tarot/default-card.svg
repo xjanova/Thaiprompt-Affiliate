@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
+  <defs>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4c1d95;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Card background -->
+  <rect width="400" height="600" rx="20" fill="url(#cardGrad)"/>
+
+  <!-- Inner border -->
+  <rect x="15" y="15" width="370" height="570" rx="15" fill="none" stroke="#a78bfa" stroke-width="2" stroke-dasharray="10,5"/>
+
+  <!-- Decorative corners -->
+  <circle cx="40" cy="40" r="8" fill="#a78bfa" opacity="0.5"/>
+  <circle cx="360" cy="40" r="8" fill="#a78bfa" opacity="0.5"/>
+  <circle cx="40" cy="560" r="8" fill="#a78bfa" opacity="0.5"/>
+  <circle cx="360" cy="560" r="8" fill="#a78bfa" opacity="0.5"/>
+
+  <!-- Star symbol in center -->
+  <g transform="translate(200,280)">
+    <polygon points="0,-60 15,-20 60,-20 25,10 40,55 0,30 -40,55 -25,10 -60,-20 -15,-20"
+             fill="url(#starGrad)" opacity="0.8"/>
+    <circle cx="0" cy="0" r="20" fill="#fbbf24" opacity="0.6"/>
+  </g>
+
+  <!-- Question mark -->
+  <text x="200" y="300" text-anchor="middle" fill="white" font-size="48" font-family="serif" opacity="0.9">?</text>
+
+  <!-- Text -->
+  <text x="200" y="480" text-anchor="middle" fill="#e9d5ff" font-size="20" font-family="sans-serif">ไพ่ทาโร่ต์</text>
+  <text x="200" y="510" text-anchor="middle" fill="#c4b5fd" font-size="14" font-family="sans-serif">ยังไม่มีรูป</text>
+</svg>

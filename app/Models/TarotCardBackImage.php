@@ -51,14 +51,37 @@ class TarotCardBackImage extends Model
 
     /**
      * Get image URL with asset helper
+     *
+     * รูปหลังไพ่เก็บใน storage/app/public/tarot/card-backs/
+     * และเข้าถึงผ่าน /storage/tarot/card-backs/xxx.webp
      */
     public function getImageUrlAttribute($value)
     {
-        if ($value && file_exists(public_path($value))) {
-            return asset($value);
+        if (!$value) {
+            return asset('images/tarot/card-back-default.svg');
         }
 
-        return asset('images/tarot/card-back-default.png');
+        // ถ้าเป็น URL แบบ /storage/... ให้ตรวจสอบว่าไฟล์มีอยู่จริงใน storage
+        if (str_starts_with($value, '/storage/')) {
+            $storagePath = str_replace('/storage/', '', $value);
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($storagePath)) {
+                return asset($value);
+            }
+        }
+
+        // ถ้าเป็น path แบบเดิม (เช่น /images/tarot/xxx.png)
+        if (str_starts_with($value, '/images/') || str_starts_with($value, 'images/')) {
+            if (file_exists(public_path($value))) {
+                return asset($value);
+            }
+        }
+
+        // ถ้าเป็น full URL อยู่แล้ว
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        return asset('images/tarot/card-back-default.svg');
     }
 
     /**
