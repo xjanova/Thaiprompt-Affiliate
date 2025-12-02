@@ -250,6 +250,7 @@ return [
                 ['label' => '📊 Dashboard', 'route' => 'admin.nfc.dashboard'],
                 ['label' => '💳 จัดการบัตร', 'route' => 'admin.nfc-cards.index'],
                 ['label' => '➕ ออกบัตรใหม่', 'route' => 'admin.nfc-cards.create'],
+                ['label' => '✏️ เขียนข้อมูล NFC', 'route' => 'admin.nfc-cards.writer', 'badge' => 'NEW', 'badge_color' => 'bg-green-500', 'description' => 'เขียนข้อมูลประเภทต่างๆ ลงบัตร'],
                 ['label' => '📜 ธุรกรรมทั้งหมด', 'route' => 'admin.nfc.transactions'],
                 ['label' => '📥 ส่งออกข้อมูล', 'route' => 'admin.nfc-cards.export'],
                 ['label' => '---', 'route' => null], // Divider
