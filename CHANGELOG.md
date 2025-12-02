@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.305.0] - 2025-12-02
+
+### ✨ Features
+- Merge pull request #1915 from xjanova/claude/enhance-tarot-ui-animations-01UN95cuGcM4JsCbbsW7zQAU (cdbe64d8)
+- feat: เพิ่ม AJAX upload สำหรับรูปไพ่ทาโร่ต์พร้อม loading state (4c3e7ce8)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.304.3] - 2025-12-02
 
 ### ✨ Features
