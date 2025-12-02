@@ -2095,17 +2095,21 @@
         }
 
         function drawNextPiece() {
-            nextCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            // ล้าง canvas ให้หมดจดก่อน (ใช้ clearRect + สีทึบ)
+            nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+            nextCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
             nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
 
             if (nextPiece) {
                 const blockSize = 20;
-                const offsetX = (nextCanvas.width - nextPiece.shape[0].length * blockSize) / 2;
-                const offsetY = (nextCanvas.height - nextPiece.shape.length * blockSize) / 2;
+                // ใช้ shape ดั้งเดิมจาก SHAPES เพื่อให้แสดงผลถูกต้อง (แสดงแค่ชิ้นเดียว)
+                const originalShape = SHAPES[nextPiece.type];
+                const offsetX = (nextCanvas.width - originalShape[0].length * blockSize) / 2;
+                const offsetY = (nextCanvas.height - originalShape.length * blockSize) / 2;
 
-                for (let row = 0; row < nextPiece.shape.length; row++) {
-                    for (let col = 0; col < nextPiece.shape[row].length; col++) {
-                        if (nextPiece.shape[row][col]) {
+                for (let row = 0; row < originalShape.length; row++) {
+                    for (let col = 0; col < originalShape[row].length; col++) {
+                        if (originalShape[row][col]) {
                             const x = offsetX + col * blockSize;
                             const y = offsetY + row * blockSize;
                             drawBlock(nextCtx, x, y, nextPiece.color);
@@ -2116,17 +2120,21 @@
         }
 
         function drawHoldPiece() {
-            holdCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            // ล้าง canvas ให้หมดจดก่อน (ใช้ clearRect + สีทึบ)
+            holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
+            holdCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
             holdCtx.fillRect(0, 0, holdCanvas.width, holdCanvas.height);
 
             if (holdPiece) {
                 const blockSize = 20;
-                const offsetX = (holdCanvas.width - holdPiece.shape[0].length * blockSize) / 2;
-                const offsetY = (holdCanvas.height - holdPiece.shape.length * blockSize) / 2;
+                // ใช้ shape ดั้งเดิมจาก SHAPES เพื่อให้แสดงผลถูกต้อง
+                const originalShape = SHAPES[holdPiece.type];
+                const offsetX = (holdCanvas.width - originalShape[0].length * blockSize) / 2;
+                const offsetY = (holdCanvas.height - originalShape.length * blockSize) / 2;
 
-                for (let row = 0; row < holdPiece.shape.length; row++) {
-                    for (let col = 0; col < holdPiece.shape[row].length; col++) {
-                        if (holdPiece.shape[row][col]) {
+                for (let row = 0; row < originalShape.length; row++) {
+                    for (let col = 0; col < originalShape[row].length; col++) {
+                        if (originalShape[row][col]) {
                             const x = offsetX + col * blockSize;
                             const y = offsetY + row * blockSize;
                             drawBlock(holdCtx, x, y, holdPiece.color);
