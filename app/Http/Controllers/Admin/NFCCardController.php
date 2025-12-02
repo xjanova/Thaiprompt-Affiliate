@@ -236,9 +236,9 @@ class NFCCardController extends Controller
             return back()->with('error', 'บัตรนี้ถูกจับคู่กับผู้ใช้แล้ว');
         }
 
-        $users = User::where('status', 'active')
+        $users = User::whereNull('blocked_at')
             ->orderBy('name')
-            ->get();
+            ->get(['id', 'name', 'email']);
 
         return view('admin.nfc-cards.pair', compact('nfcCard', 'users'));
     }
@@ -260,10 +260,10 @@ class NFCCardController extends Controller
         // โหลดความสัมพันธ์ที่จำเป็น
         $nfcCard->load(['user', 'issuer', 'pairer', 'nfcWriter', 'locker']);
 
-        // ดึงรายชื่อผู้ใช้สำหรับจับคู่
-        $users = User::where('status', 'active')
+        // ดึงรายชื่อผู้ใช้สำหรับจับคู่ (ผู้ใช้ที่ไม่ถูก block)
+        $users = User::whereNull('blocked_at')
             ->orderBy('name')
-            ->get(['id', 'name', 'email', 'status']);
+            ->get(['id', 'name', 'email']);
 
         return view('admin.nfc-cards.pair-and-write', compact('nfcCard', 'users'));
     }
