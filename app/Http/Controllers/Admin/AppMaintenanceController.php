@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppMaintenance;
+use App\Models\SiteSetting;
 use App\Services\WebPService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -66,6 +67,9 @@ class AppMaintenanceController extends Controller
         $maintenance = AppMaintenance::getInstance();
         $maintenance->update($validated);
 
+        // ⭐ Sync กับ SiteSetting เพื่อให้ทั้งสองระบบทำงานตรงกัน
+        $this->syncWithSiteSetting($validated['is_maintenance_mode']);
+
         return redirect()
             ->route('admin.app-maintenance.index')
             ->with('success', 'อัพเดทการตั้งค่าการปรับปรุงระบบสำเร็จ');
@@ -78,6 +82,9 @@ class AppMaintenanceController extends Controller
     {
         $maintenance = AppMaintenance::getInstance();
         $maintenance->startMaintenance();
+
+        // ⭐ Sync กับ SiteSetting
+        $this->syncWithSiteSetting(true);
 
         return response()->json([
             'success' => true,
@@ -92,6 +99,9 @@ class AppMaintenanceController extends Controller
     {
         $maintenance = AppMaintenance::getInstance();
         $maintenance->endMaintenance();
+
+        // ⭐ Sync กับ SiteSetting
+        $this->syncWithSiteSetting(false);
 
         return response()->json([
             'success' => true,
@@ -109,16 +119,40 @@ class AppMaintenanceController extends Controller
         if ($maintenance->is_maintenance_mode) {
             $maintenance->endMaintenance();
             $message = 'ปิดใช้งานโหมดปรับปรุงระบบสำเร็จ';
+            $newState = false;
         } else {
             $maintenance->startMaintenance();
             $message = 'เปิดใช้งานโหมดปรับปรุงระบบสำเร็จ';
+            $newState = true;
         }
+
+        // ⭐ Sync กับ SiteSetting
+        $this->syncWithSiteSetting($newState);
 
         return response()->json([
             'success' => true,
             'is_maintenance_mode' => $maintenance->is_maintenance_mode,
             'message' => $message,
         ]);
+    }
+
+    /**
+     * Sync สถานะ maintenance กับ SiteSetting
+     *
+     * @param bool $isMaintenanceMode
+     * @return void
+     */
+    protected function syncWithSiteSetting(bool $isMaintenanceMode): void
+    {
+        try {
+            $siteSettings = SiteSetting::getSetting();
+            if ($siteSettings->maintenance_mode !== $isMaintenanceMode) {
+                $siteSettings->update(['maintenance_mode' => $isMaintenanceMode]);
+                SiteSetting::clearCache();
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Could not sync SiteSetting maintenance mode: ' . $e->getMessage());
+        }
     }
 
     /**

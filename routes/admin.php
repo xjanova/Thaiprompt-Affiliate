@@ -3219,3 +3219,18 @@ Route::prefix('coin-shop')->name('coin-shop.')->group(function () {
     Route::put('/purchases/{purchase}/status', [\App\Http\Controllers\Admin\CoinShopController::class, 'updatePurchaseStatus'])->name('purchases.update-status');
     Route::post('/purchases/{purchase}/refund', [\App\Http\Controllers\Admin\CoinShopController::class, 'refundPurchase'])->name('purchases.refund');
 });
+
+// ============================================
+// Star Upgrade Price Management (ราคาอัพเกรดดาว)
+// ============================================
+Route::prefix('star-upgrade')->name('star-upgrade.')->group(function () {
+    // จัดการราคาดาว
+    Route::get('/', [\App\Http\Controllers\Admin\StarUpgradePriceController::class, 'index'])->name('index');
+    Route::get('/{starPrice}/edit', [\App\Http\Controllers\Admin\StarUpgradePriceController::class, 'edit'])->name('edit');
+    Route::put('/{starPrice}', [\App\Http\Controllers\Admin\StarUpgradePriceController::class, 'update'])->name('update');
+    Route::post('/{starPrice}/toggle-active', [\App\Http\Controllers\Admin\StarUpgradePriceController::class, 'toggleActive'])->name('toggle-active');
+
+    // ประวัติการอัพเกรด
+    Route::get('/history', [\App\Http\Controllers\Admin\StarUpgradePriceController::class, 'history'])->name('history');
+    Route::post('/history/{upgrade}/refund', [\App\Http\Controllers\Admin\StarUpgradePriceController::class, 'refund'])->name('refund');
+});

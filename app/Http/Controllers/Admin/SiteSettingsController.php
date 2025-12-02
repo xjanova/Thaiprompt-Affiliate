@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppMaintenance;
 use App\Models\SiteSetting;
 use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
@@ -26,7 +27,15 @@ class SiteSettingsController extends Controller
         // ดึงการตั้งค่าปัจจุบัน (Singleton with Cache)
         $settings = SiteSetting::getSetting();
 
-        return view('admin.site-settings.index', compact('settings'));
+        // ดึงสถานะ AppMaintenance เพื่อแสดงให้ผู้ใช้ทราบ
+        $appMaintenance = null;
+        try {
+            $appMaintenance = AppMaintenance::getInstance();
+        } catch (\Exception $e) {
+            // ถ้าดึงไม่ได้ ให้ข้ามไป
+        }
+
+        return view('admin.site-settings.index', compact('settings', 'appMaintenance'));
     }
 
     /**
@@ -145,6 +154,21 @@ class SiteSettingsController extends Controller
 
         // ล้าง cache
         SiteSetting::clearCache();
+
+        // ⭐ Sync กับ AppMaintenance เพื่อให้ทั้งสองระบบทำงานตรงกัน
+        try {
+            $appMaintenance = AppMaintenance::getInstance();
+            if ($validated['maintenance_mode'] && !$appMaintenance->is_maintenance_mode) {
+                // เปิด maintenance mode
+                $appMaintenance->startMaintenance();
+            } elseif (!$validated['maintenance_mode'] && $appMaintenance->is_maintenance_mode) {
+                // ปิด maintenance mode
+                $appMaintenance->endMaintenance();
+            }
+        } catch (\Exception $e) {
+            // ถ้า AppMaintenance ไม่ทำงาน ให้ข้ามไป
+            \Log::warning('Could not sync AppMaintenance: ' . $e->getMessage());
+        }
 
         return redirect()
             ->route('admin.site-settings.index')
