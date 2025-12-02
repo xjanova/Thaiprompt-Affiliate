@@ -40,6 +40,8 @@
                         </div>
                         <div>
                             @if($setting->type === 'boolean')
+                            {{-- Hidden input เพื่อส่งค่า 0 เมื่อ checkbox ไม่ถูก check --}}
+                            <input type="hidden" name="settings[{{ $setting->key }}]" value="0">
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="settings[{{ $setting->key }}]" value="1"
                                        {{ $setting->value === 'true' || $setting->value === '1' ? 'checked' : '' }}
@@ -77,6 +79,8 @@
                         </div>
                         <div>
                             @if($setting->type === 'boolean')
+                            {{-- Hidden input เพื่อส่งค่า 0 เมื่อ checkbox ไม่ถูก check --}}
+                            <input type="hidden" name="settings[{{ $setting->key }}]" value="0">
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="settings[{{ $setting->key }}]" value="1"
                                        {{ $setting->value === 'true' || $setting->value === '1' ? 'checked' : '' }}
