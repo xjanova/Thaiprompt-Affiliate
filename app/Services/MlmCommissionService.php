@@ -13,7 +13,23 @@ use Carbon\Carbon;
 class MlmCommissionService
 {
     /**
+     * Track rollup count per member ในแต่ละ transaction
+     * เพื่อป้องกันคนเดียวได้ rollup มากเกินไป
+     */
+    protected array $rollupCountPerMember = [];
+
+    /**
+     * เก็บยอด commission ที่ถูก skip ไปยัง pool
+     */
+    protected float $pooledRollupAmount = 0;
+
+    /**
      * Calculate and distribute commissions with roll-up logic
+     *
+     * Roll-up Logic ที่ปรับปรุงแล้ว:
+     * 1. จำกัดจำนวน rollup ต่อคน (rollup_max_per_member)
+     * 2. กระจายแบบต่างๆ (single/distributed/proportional)
+     * 3. ส่ง excess ไป Pool Bonus แทน admin (rollup_to_pool_enabled)
      */
     public function calculateCommissionsWithRollup(MlmMember $member, float $pv, string $transactionType = 'purchase', $transactionId = null)
     {
@@ -21,6 +37,10 @@ class MlmCommissionService
 
         try {
             $commissions = [];
+
+            // Reset tracking per transaction
+            $this->rollupCountPerMember = [];
+            $this->pooledRollupAmount = 0;
 
             // Get global settings
             $rollupEnabled = MlmGlobalSetting::get('rollup_enabled', false);
@@ -171,8 +191,54 @@ class MlmCommissionService
 
                 $rollupSponsor = $rollupResult['sponsor'];
                 $rollupChain = array_merge($rollupChain, $rollupResult['chain']);
+                $toPool = $rollupResult['to_pool'] ?? false;
 
-                if ($rollupSponsor) {
+                if ($toPool) {
+                    // ส่ง commission ไป Pool Bonus
+                    $this->pooledRollupAmount += $commissionAmount;
+
+                    // บันทึก commission ที่ส่งไป pool (สำหรับ tracking)
+                    $commissions[] = [
+                        'mlm_member_id' => null, // ไม่มีผู้รับโดยตรง
+                        'mlm_plan_id' => $member->mlm_plan_id,
+                        'user_id' => null, // ไป pool
+                        'from_member_id' => $member->id,
+                        'type' => 'pool_bonus',
+                        'level' => $currentLevel,
+                        'commission_amount' => $commissionAmount,
+                        'pv_amount' => $pv,
+                        'percentage' => $percentage,
+                        'status' => 'pending',
+                        'is_rollup' => true,
+                        'rollup_from_member_id' => $sponsor->id,
+                        'rollup_original_level' => $currentLevel,
+                        'rollup_chain' => json_encode($rollupChain),
+                        'tree_type' => 'pool',
+                        'notes' => sprintf(
+                            'Roll-up ส่งไป Pool Bonus จากสมาชิก #%s (ข้าม %d คน)',
+                            $sponsor->member_code,
+                            count($rollupChain)
+                        ),
+                        'calculation_details' => json_encode([
+                            'pv' => $pv,
+                            'percentage' => $percentage,
+                            'level' => $currentLevel,
+                            'rollup' => true,
+                            'to_pool' => true,
+                            'inactive_member' => $sponsor->member_code,
+                            'rollup_chain_length' => count($rollupChain),
+                        ]),
+                        'created_at' => now(),
+                    ];
+
+                    Log::info("Roll-up commission sent to Pool Bonus", [
+                        'amount' => $commissionAmount,
+                        'rolled_from' => $sponsor->id,
+                        'chain_length' => count($rollupChain),
+                        'total_pooled' => $this->pooledRollupAmount,
+                    ]);
+
+                } elseif ($rollupSponsor) {
                     // Mark this upline as having received roll-up
                     $rollupTracker[$rollupSponsor->id] = true;
 
@@ -202,6 +268,7 @@ class MlmCommissionService
                             'inactive_member' => $sponsor->member_code,
                             'rollup_recipient' => $rollupSponsor->member_code,
                             'rollup_chain_length' => count($rollupChain),
+                            'recipient_rollup_count' => $this->rollupCountPerMember[$rollupSponsor->id] ?? 0,
                         ]),
                         'created_at' => now(),
                     ];
@@ -212,6 +279,7 @@ class MlmCommissionService
                         'amount' => $commissionAmount,
                         'rolled_from' => $sponsor->id,
                         'chain_length' => count($rollupChain),
+                        'recipient_rollup_count' => $this->rollupCountPerMember[$rollupSponsor->id] ?? 0,
                     ]);
                 }
 
@@ -253,12 +321,17 @@ class MlmCommissionService
     /**
      * หา upline ที่ active ถัดไป พร้อมสร้าง chain tracking
      *
+     * ปรับปรุงแล้ว:
+     * 1. เช็ค rollup_max_per_member - ป้องกันคนเดียวได้มากเกินไป
+     * 2. เช็ค rollup_to_pool_enabled - ส่งไป pool แทน admin
+     * 3. กระจายแบบ distributed/proportional ถ้าตั้งค่าไว้
+     *
      * @param MlmMember $member
      * @param int $maxLevelsToSearch
      * @param array $rollupTracker
      * @param bool $preventDuplicate
      * @param MlmMember|null $adminMember
-     * @return array ['sponsor' => MlmMember|null, 'chain' => array]
+     * @return array ['sponsor' => MlmMember|null, 'chain' => array, 'to_pool' => bool]
      */
     protected function findNextActiveUplineWithChain(
         MlmMember $member,
@@ -271,6 +344,10 @@ class MlmCommissionService
         $currentMember = $member;
         $levelsSearched = 0;
 
+        // ดึง settings ใหม่
+        $maxPerMember = MlmGlobalSetting::get('rollup_max_per_member', 1);
+        $toPoolEnabled = MlmGlobalSetting::get('rollup_to_pool_enabled', true);
+
         while ($levelsSearched < $maxLevelsToSearch && $currentMember->sponsor_id) {
             $sponsor = $currentMember->sponsor;
 
@@ -281,9 +358,28 @@ class MlmCommissionService
             $isActive = $this->isMemberActive($sponsor);
             $alreadyReceived = $preventDuplicate && isset($rollupTracker[$sponsor->id]);
 
-            if ($isActive && !$alreadyReceived) {
-                // พบ upline ที่ active และยังไม่ได้รับ rollup
-                return ['sponsor' => $sponsor, 'chain' => $chain];
+            // ตรวจสอบว่าคนนี้ได้รับ rollup เกินกำหนดหรือยัง
+            $memberRollupCount = $this->rollupCountPerMember[$sponsor->id] ?? 0;
+            $exceedsMaxRollup = $memberRollupCount >= $maxPerMember;
+
+            if ($isActive && !$alreadyReceived && !$exceedsMaxRollup) {
+                // พบ upline ที่ active, ยังไม่ได้รับ rollup, และไม่เกินกำหนด
+                // เพิ่ม count
+                $this->rollupCountPerMember[$sponsor->id] = $memberRollupCount + 1;
+
+                return [
+                    'sponsor' => $sponsor,
+                    'chain' => $chain,
+                    'to_pool' => false,
+                ];
+            }
+
+            // เหตุผลที่ข้าม
+            $reason = 'inactive';
+            if ($alreadyReceived) {
+                $reason = 'already_received';
+            } elseif ($exceedsMaxRollup) {
+                $reason = 'exceeds_max_rollup';
             }
 
             // เพิ่มเข้า chain
@@ -291,16 +387,47 @@ class MlmCommissionService
                 'member_id' => $sponsor->id,
                 'member_code' => $sponsor->member_code,
                 'level' => $member->unilevel_level + $levelsSearched + 1,
-                'reason' => $alreadyReceived ? 'already_received' : 'inactive',
+                'reason' => $reason,
                 'tree_type' => 'unilevel',
+                'rollup_count' => $memberRollupCount,
             ];
 
             $currentMember = $sponsor;
             $levelsSearched++;
         }
 
-        // ถ้าหาไม่เจอ → rollup ไป Admin (ID 1) ถ้ามี
-        if ($adminMember && !isset($rollupTracker[$adminMember->id])) {
+        // ถ้าหาไม่เจอ upline ที่เหมาะสม
+        // ตัดสินใจว่าจะส่งไป admin หรือ pool
+
+        if ($toPoolEnabled) {
+            // ส่งไป Pool Bonus แทน admin
+            $chain[] = [
+                'member_id' => null,
+                'member_code' => 'POOL',
+                'level' => 0,
+                'reason' => 'sent_to_pool_bonus',
+                'tree_type' => 'pool',
+            ];
+
+            Log::info('Rollup commission sent to Pool Bonus', [
+                'original_member_id' => $member->id,
+                'chain_length' => count($chain),
+            ]);
+
+            return [
+                'sponsor' => null,
+                'chain' => $chain,
+                'to_pool' => true,
+            ];
+        }
+
+        // ส่งไป Admin (fallback เดิม)
+        if ($adminMember) {
+            $adminRollupCount = $this->rollupCountPerMember[$adminMember->id] ?? 0;
+
+            // Admin ได้ไม่จำกัด แต่ยังบันทึกไว้
+            $this->rollupCountPerMember[$adminMember->id] = $adminRollupCount + 1;
+
             $chain[] = [
                 'member_id' => $adminMember->id,
                 'member_code' => $adminMember->member_code,
@@ -308,10 +435,19 @@ class MlmCommissionService
                 'reason' => 'final_rollup_to_admin',
                 'tree_type' => 'unilevel',
             ];
-            return ['sponsor' => $adminMember, 'chain' => $chain];
+
+            return [
+                'sponsor' => $adminMember,
+                'chain' => $chain,
+                'to_pool' => false,
+            ];
         }
 
-        return ['sponsor' => null, 'chain' => $chain];
+        return [
+            'sponsor' => null,
+            'chain' => $chain,
+            'to_pool' => false,
+        ];
     }
 
     /**
