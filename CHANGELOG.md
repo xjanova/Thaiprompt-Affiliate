@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.307.0] - 2025-12-02
+
+### ✨ Features
+- feat: implement Pool Bonus (All Sale) และปรับปรุง Roll-up logic (9cef48ff)
+### 🐛 Bug Fixes
+- fix: เปลี่ยน default rollup_max_per_member จาก 3 เป็น 1 (96ccd9be)
+### 🔧 Other Changes
+- Merge pull request #1918 from xjanova/claude/review-mlm-system-015MEWVh8USoiWTaQKZw1sh4 (99cd91df)
+
 ## [v3.306.1] - 2025-12-02
 
 ### ✨ Features
