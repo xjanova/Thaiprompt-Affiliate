@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.299.1] - 2025-12-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1904 from xjanova/claude/fix-maintenance-mode-toggle-01WHxZDF1bdDb216u6matVwT (f082fc55)
+- fix: แก้ไขปัญหา maintenance mode toggle ปิดไม่ได้ในหน้า video-missions settings (1a5ba37c)
+### 🔧 Other Changes
+
+
 ## [v3.299.0] - 2025-12-02
 
 ### ✨ Features
