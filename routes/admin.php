@@ -397,6 +397,18 @@ Route::prefix('nfc-cards')->name('nfc-cards.')->group(function () {
     Route::get('/', [NFCCardController::class, 'index'])->name('index');
     Route::get('/create', [NFCCardController::class, 'create'])->name('create');
     Route::post('/', [NFCCardController::class, 'store'])->name('store');
+    Route::post('/read', [NFCCardController::class, 'read'])->name('read');
+    Route::get('/export', [NFCCardController::class, 'export'])->name('export');
+    Route::get('/templates', [NFCCardController::class, 'getTemplates'])->name('templates');
+    Route::post('/build-template-records', [NFCCardController::class, 'buildTemplateRecords'])->name('build-template-records');
+
+    // 🆕 V3: NFC Writer - เขียนข้อมูลประเภทต่างๆ ลงบัตร NFC (ต้องอยู่ก่อน {nfcCard})
+    Route::get('/writer', [NFCCardController::class, 'nfcWriter'])->name('writer');
+    Route::post('/save-nfc-write-log', [NFCCardController::class, 'saveNfcWriteLog'])->name('save-nfc-write-log');
+    Route::post('/generate-anti-counterfeit', [NFCCardController::class, 'generateAntiCounterfeitCode'])->name('generate-anti-counterfeit');
+    Route::post('/verify-anti-counterfeit', [NFCCardController::class, 'verifyAntiCounterfeitCode'])->name('verify-anti-counterfeit');
+
+    // Routes ที่มี {nfcCard} parameter ต้องอยู่หลังสุด
     Route::get('/{nfcCard}', [NFCCardController::class, 'show'])->name('show');
     Route::get('/{nfcCard}/edit', [NFCCardController::class, 'edit'])->name('edit');
     Route::put('/{nfcCard}', [NFCCardController::class, 'update'])->name('update');
@@ -411,8 +423,6 @@ Route::prefix('nfc-cards')->name('nfc-cards.')->group(function () {
     Route::post('/{nfcCard}/unblock', [NFCCardController::class, 'unblock'])->name('unblock');
     Route::get('/{nfcCard}/topup', [NFCCardController::class, 'topUpForm'])->name('topup-form');
     Route::post('/{nfcCard}/topup', [NFCCardController::class, 'topUp'])->name('topup');
-    Route::post('/read', [NFCCardController::class, 'read'])->name('read');
-    Route::get('/export', [NFCCardController::class, 'export'])->name('export');
 
     // 🆕 V2: Enhanced NFC Features
     Route::post('/{nfcCard}/suspend', [NFCCardController::class, 'suspend'])->name('suspend');
@@ -422,24 +432,14 @@ Route::prefix('nfc-cards')->name('nfc-cards.')->group(function () {
     Route::put('/{nfcCard}/auto-topup', [NFCCardController::class, 'configureAutoTopUp'])->name('auto-topup.configure');
     Route::post('/{nfcCard}/enable-tpix', [NFCCardController::class, 'enableTPIX'])->name('enable-tpix');
     Route::post('/{nfcCard}/disable-tpix', [NFCCardController::class, 'disableTPIX'])->name('disable-tpix');
-
-    // 🆕 V3: NFC Card Read/Write API
-    Route::post('/generate-anti-counterfeit', [NFCCardController::class, 'generateAntiCounterfeitCode'])->name('generate-anti-counterfeit');
-    Route::post('/verify-anti-counterfeit', [NFCCardController::class, 'verifyAntiCounterfeitCode'])->name('verify-anti-counterfeit');
     Route::post('/{nfcCard}/save-nfc-uid', [NFCCardController::class, 'saveNFCUID'])->name('save-nfc-uid');
 
     // 🆕 V3: NFC Card Lock/Unlock System (Admin Only)
     Route::post('/{nfcCard}/lock', [NFCCardController::class, 'lockCard'])->name('lock');
     Route::post('/{nfcCard}/unlock', [NFCCardController::class, 'unlockCard'])->name('unlock');
 
-    // 🆕 V3: NFC Card Info & Templates
+    // 🆕 V3: NFC Card Info
     Route::post('/{nfcCard}/save-card-info', [NFCCardController::class, 'saveCardInfo'])->name('save-card-info');
-    Route::get('/templates', [NFCCardController::class, 'getTemplates'])->name('templates');
-    Route::post('/build-template-records', [NFCCardController::class, 'buildTemplateRecords'])->name('build-template-records');
-
-    // 🆕 V3: NFC Writer - เขียนข้อมูลประเภทต่างๆ ลงบัตร NFC
-    Route::get('/writer', [NFCCardController::class, 'nfcWriter'])->name('writer');
-    Route::post('/save-nfc-write-log', [NFCCardController::class, 'saveNfcWriteLog'])->name('save-nfc-write-log');
 });
 
 // 🆕 NFC System Dashboard & Analytics
