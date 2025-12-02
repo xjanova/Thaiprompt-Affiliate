@@ -292,6 +292,24 @@ return [
         ],
 
         [
+            'id' => 'staking',
+            'label' => 'ระบบลงทุน Staking',
+            'icon' => '📈',
+            'route' => null,
+            'order' => 9.5,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-indigo-500 to-purple-500',
+            'submenu' => [
+                ['label' => '📊 Dashboard', 'route' => 'admin.staking-plans.index', 'description' => 'ภาพรวมแผนลงทุน'],
+                ['label' => '➕ สร้างแผนใหม่', 'route' => 'admin.staking-plans.create', 'description' => 'สร้างแผนลงทุนใหม่'],
+                ['label' => '💰 Positions ทั้งหมด', 'route' => 'admin.staking-plans.positions', 'description' => 'ดูการลงทุนของ Users'],
+                ['label' => '🪙 ตั้งค่า Coin', 'route' => 'admin.staking-plans.coin-settings', 'description' => 'อัตราแลกเปลี่ยน Coin/THB', 'badge' => 'HOT', 'badge_color' => 'bg-gradient-to-r from-yellow-500 to-orange-500'],
+                ['label' => '📈 รายงาน ROI', 'route' => 'admin.staking-plans.reports', 'description' => 'สถิติผลตอบแทน'],
+            ],
+        ],
+
+        [
             'id' => 'commissions',
             'label' => 'คอมมิชชั่น MLM',
             'icon' => '💵',
