@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.300.0] - 2025-12-02
+
+### ✨ Features
+- Merge pull request #1905 from xjanova/claude/nfc-admin-integration-01LQtRUDPgf5yeArJamc31FG (cc54725f)
+- feat: เพิ่มเมนู NFC Writer ใน sidebar แอดมิน (f517393b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.299.1] - 2025-12-02
 
 ### ✨ Features
