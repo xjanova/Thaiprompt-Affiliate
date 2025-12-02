@@ -345,7 +345,7 @@ class MlmCommissionService
         $levelsSearched = 0;
 
         // ดึง settings ใหม่
-        $maxPerMember = MlmGlobalSetting::get('rollup_max_per_member', 3);
+        $maxPerMember = MlmGlobalSetting::get('rollup_max_per_member', 1);
         $toPoolEnabled = MlmGlobalSetting::get('rollup_to_pool_enabled', true);
 
         while ($levelsSearched < $maxLevelsToSearch && $currentMember->sponsor_id) {
