@@ -310,7 +310,7 @@ class VideoMissionController extends Controller
     }
 
     /**
-     * บันทึก event (tab switch, pause, seek, etc.)
+     * บันทึก event (tab switch, pause, seek, devtools, etc.)
      *
      * @param Request $request
      * @param VideoMissionCompletion $completion
@@ -323,9 +323,12 @@ class VideoMissionController extends Controller
         }
 
         $request->validate([
-            'event' => 'required|string|in:tab_switch,pause,resume,seek,focus_lost,interaction',
+            'event' => 'required|string|in:tab_switch,pause,resume,seek,focus_lost,interaction,devtools_attempt,devtools_detected,speed_change',
             'from_position' => 'nullable|integer|min:0',
             'to_position' => 'nullable|integer|min:0',
+            'method' => 'nullable|string|max:50',
+            'count' => 'nullable|integer',
+            'speed' => 'nullable|numeric',
         ]);
 
         switch ($request->event) {
@@ -349,6 +352,30 @@ class VideoMissionController extends Controller
                 break;
             case 'interaction':
                 $completion->recordInteraction();
+                break;
+            case 'devtools_attempt':
+                // บันทึกการพยายามเปิด DevTools
+                $completion->recordCheatAttempt('devtools_attempt', [
+                    'method' => $request->method ?? 'unknown',
+                    'count' => $request->count ?? 1,
+                ]);
+                break;
+            case 'devtools_detected':
+                // บันทึกว่าตรวจพบ DevTools - ถือว่าโกง
+                $completion->recordCheatAttempt('devtools_detected', [
+                    'method' => $request->method ?? 'unknown',
+                ]);
+                // อัพเดทสถานะเป็น failed
+                $completion->update([
+                    'status' => 'failed',
+                    'verification_notes' => 'ตรวจพบการใช้ DevTools: ' . ($request->method ?? 'unknown'),
+                ]);
+                break;
+            case 'speed_change':
+                // บันทึกการเปลี่ยนความเร็ว
+                $completion->recordCheatAttempt('speed_change', [
+                    'speed' => $request->speed ?? 1.0,
+                ]);
                 break;
         }
 
