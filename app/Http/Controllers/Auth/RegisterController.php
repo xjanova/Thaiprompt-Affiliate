@@ -133,6 +133,11 @@ class RegisterController extends Controller
 
         $user = User::create($userData);
 
+        // ⚠️ CRITICAL: ตั้งค่า role หลัง create เพราะ role อยู่ใน guarded
+        // ถ้าไม่ตั้งค่า role จะเป็น null ใน memory ทำให้ middleware role:user fail
+        $user->role = 'user';
+        $user->save();
+
         // Store encrypted LINE access token if available
         if ($lineProfile && !empty($lineProfile['line_access_token'])) {
             $tokenService = app(LineTokenService::class);
@@ -156,6 +161,27 @@ class RegisterController extends Controller
         $defaultPlan = \App\Models\MlmPlan::where('is_default', true)->first();
         if (!$defaultPlan) {
             $defaultPlan = \App\Models\MlmPlan::first(); // Fallback to any plan
+        }
+
+        // ⚠️ CRITICAL: ถ้าไม่มี MlmPlan ให้สร้างอันใหม่
+        // เพราะ mlm_members.mlm_plan_id เป็น NOT NULL
+        if (!$defaultPlan) {
+            $defaultPlan = \App\Models\MlmPlan::create([
+                'name' => 'Default Plan',
+                'name_th' => 'แผนมาตรฐาน',
+                'slug' => 'default-plan',
+                'description' => 'Default commission plan',
+                'description_th' => 'แผนคอมมิชชันมาตรฐาน',
+                'type' => 'hybrid',
+                'is_active' => true,
+                'is_default' => true,
+                'color' => '#6366f1',
+                'icon' => 'fa-crown',
+                'sort_order' => 1,
+                'joining_fee' => 0,
+                'requires_joining_fee' => false,
+            ]);
+            \Log::info('Created default MlmPlan automatically during registration');
         }
 
         // หาตำแหน่งใน Unilevel Tree (รองรับ width/depth limits และ spillover)
