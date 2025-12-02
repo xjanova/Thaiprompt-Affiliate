@@ -204,4 +204,78 @@ class ImageUploadService
             throw new Exception('Failed to convert to WebP: ' . $e->getMessage());
         }
     }
+
+    /**
+     * อัพโหลดรูปไพ่ทาโร่ต์
+     *
+     * ปรับขนาดให้พอดีกับการ์ด (สัดส่วน 2:3) และแปลงเป็น WebP
+     *
+     * @param UploadedFile $file ไฟล์รูปภาพ
+     * @param string $directory โฟลเดอร์ที่จะเก็บ (default: tarot/cards)
+     * @param int $width ความกว้าง (default: 400)
+     * @param int $height ความสูง (default: 600)
+     * @param int $quality คุณภาพ WebP (default: 90)
+     * @return string path ของไฟล์ที่อัพโหลด
+     */
+    public function uploadTarotCard(
+        UploadedFile $file,
+        string $directory = 'tarot/cards',
+        int $width = 400,
+        int $height = 600,
+        int $quality = 90
+    ): string {
+        try {
+            // สร้างชื่อไฟล์ unique
+            $filename = Str::random(40) . '.webp';
+            $path = "{$directory}/{$filename}";
+
+            // อ่านและประมวลผลรูป
+            $image = $this->manager->read($file->getPathname());
+
+            // Resize และ crop ให้พอดีกับขนาดการ์ด (cover = crop to fill)
+            $image->cover($width, $height);
+
+            // Encode เป็น WebP และบันทึก
+            $encoded = $image->toWebp(quality: $quality);
+            Storage::disk('public')->put($path, (string) $encoded);
+
+            return $path;
+        } catch (Exception $e) {
+            throw new Exception('อัพโหลดรูปไพ่ไม่สำเร็จ: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * อัพโหลดรูปหลังไพ่ทาโร่ต์
+     *
+     * @param UploadedFile $file ไฟล์รูปภาพ
+     * @param int $width ความกว้าง (default: 400)
+     * @param int $height ความสูง (default: 600)
+     * @return string path ของไฟล์ที่อัพโหลด
+     */
+    public function uploadTarotCardBack(
+        UploadedFile $file,
+        int $width = 400,
+        int $height = 600
+    ): string {
+        return $this->uploadTarotCard($file, 'tarot/card-backs', $width, $height, 90);
+    }
+
+    /**
+     * ลบรูปไพ่ทาโร่ต์
+     *
+     * @param string|null $imageUrl URL ของรูป (เช่น /storage/tarot/cards/xxx.webp)
+     * @return bool
+     */
+    public function deleteTarotImage(?string $imageUrl): bool
+    {
+        if (!$imageUrl) {
+            return false;
+        }
+
+        // แปลง URL เป็น path
+        $path = str_replace('/storage/', '', $imageUrl);
+
+        return $this->deleteImage($path);
+    }
 }

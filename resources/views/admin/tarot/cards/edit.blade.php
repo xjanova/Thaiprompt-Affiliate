@@ -88,8 +88,9 @@
                     </label>
 
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">
-                        รองรับ JPG, PNG, WebP ขนาดไม่เกิน 2MB<br>
-                        แนะนำ: อัตราส่วน 2:3 (เช่น 400x600px)
+                        รองรับ JPG, PNG, GIF, WebP ขนาดไม่เกิน 5MB<br>
+                        <span class="text-green-600 dark:text-green-400">✓ แปลงเป็น WebP อัตโนมัติ</span><br>
+                        <span class="text-purple-600 dark:text-purple-400">✓ ปรับขนาดให้พอดี 400x600px</span>
                     </p>
 
                     {{-- Remove image button --}}
