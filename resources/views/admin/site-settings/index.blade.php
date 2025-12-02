@@ -425,6 +425,24 @@
                         โหมดปิดปรับปรุง
                     </label>
                     <div class="glass-fusion-card rounded-xl p-6 border border-white/20 dark:border-gray-700/50">
+                        {{-- แจ้งเตือนสถานะ --}}
+                        @if(isset($appMaintenance) && $appMaintenance)
+                            @php
+                                $siteEnabled = $settings->maintenance_mode;
+                                $appEnabled = $appMaintenance->is_maintenance_mode;
+                            @endphp
+                            @if($siteEnabled || $appEnabled)
+                                <div class="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg">
+                                    <p class="text-sm text-red-800 dark:text-red-200 flex items-center gap-2">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        </svg>
+                                        <span><strong>โหมดบำรุงรักษาเปิดอยู่!</strong> (Site Settings: {{ $siteEnabled ? 'เปิด' : 'ปิด' }} | App Maintenance: {{ $appEnabled ? 'เปิด' : 'ปิด' }})</span>
+                                    </p>
+                                </div>
+                            @endif
+                        @endif
+
                         <div class="flex items-center justify-between mb-4">
                             <div class="flex-1">
                                 <h3 class="font-bold text-gray-900 dark:text-white text-lg">เปิดโหมดปิดปรับปรุง</h3>
@@ -441,6 +459,13 @@
                                 ข้อความแจ้งเตือน
                             </label>
                             <textarea name="maintenance_message" rows="3" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-purple-500/50 focus:border-purple-500 dark:focus:border-purple-400 text-gray-900 dark:text-white transition-all" placeholder="เว็บไซต์กำลังปิดปรับปรุง กรุณากลับมาใหม่อีกครั้ง">{{ old('maintenance_message', $settings->maintenance_message) }}</textarea>
+                        </div>
+
+                        {{-- หมายเหตุ --}}
+                        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <p class="text-sm text-blue-800 dark:text-blue-200">
+                                <strong>หมายเหตุ:</strong> การเปลี่ยนที่นี่จะ sync กับระบบ App Maintenance อัตโนมัติ
+                            </p>
                         </div>
                     </div>
                 </div>
