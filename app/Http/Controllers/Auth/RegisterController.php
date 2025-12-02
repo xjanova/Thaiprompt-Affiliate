@@ -95,6 +95,26 @@ class RegisterController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => 'user',
+            // ⚠️ บังคับใช้ Arrow X Theme v.3 โหมด Classic สำหรับ User ใหม่
+            'menu_theme_preference' => 'arrow-x',
+            'arrow_x_mode' => 'classic',
+            'theme_settings' => [
+                'glassOpacity' => 0,
+                'glassBlur' => 0,
+                'borderOpacity' => 30,
+                'shadowIntensity' => 50,
+                'glowIntensity' => 60,
+                'textShadow' => true,
+                'animationSpeed' => 500,
+                'hoverScale' => 105,
+                'cardRoundness' => 16,
+                'buttonRoundness' => 12,
+                'primaryHue' => 260,
+                'accentHue' => 340,
+                'contrast' => 100,
+                'backdropSaturate' => 100,
+                'perspectiveDepth' => 1000,
+            ],
         ];
 
         if ($lineProfile) {

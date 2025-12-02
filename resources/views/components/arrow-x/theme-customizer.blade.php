@@ -39,11 +39,22 @@
     },
 
     init() {
-        // โหลดการตั้งค่าจาก localStorage
+        // 1. โหลดค่าเริ่มต้นจาก server (ถ้ามี)
+        @auth
+        const serverSettings = @json(auth()->user()->theme_settings ?? []);
+        if (serverSettings && Object.keys(serverSettings).length > 0) {
+            this.settings = { ...this.settings, ...serverSettings };
+            // Sync ค่าจาก server ไป localStorage
+            localStorage.setItem('themeSettings', JSON.stringify(this.settings));
+        }
+        @endauth
+
+        // 2. Override ด้วย localStorage (ถ้า user ปรับแต่งเอง)
         const saved = localStorage.getItem('themeSettings');
         if (saved) {
             this.settings = { ...this.settings, ...JSON.parse(saved) };
         }
+
         this.applySettings();
 
         // Keyboard shortcut (Ctrl+Shift+T)

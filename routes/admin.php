@@ -182,6 +182,29 @@ Route::prefix('investments')->name('investments.')->group(function () {
     Route::post('/process-mature', [InvestmentController::class, 'processMaturePositions'])->name('process-mature');
 });
 
+// Staking Plans Management (Enhanced V3)
+Route::prefix('staking-plans')->name('staking-plans.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\StakingPlanController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Admin\StakingPlanController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Admin\StakingPlanController::class, 'store'])->name('store');
+    Route::get('/{stakingPlan}', [\App\Http\Controllers\Admin\StakingPlanController::class, 'show'])->name('show');
+    Route::get('/{stakingPlan}/edit', [\App\Http\Controllers\Admin\StakingPlanController::class, 'edit'])->name('edit');
+    Route::put('/{stakingPlan}', [\App\Http\Controllers\Admin\StakingPlanController::class, 'update'])->name('update');
+    Route::delete('/{stakingPlan}', [\App\Http\Controllers\Admin\StakingPlanController::class, 'destroy'])->name('destroy');
+
+    // การจัดการแผน
+    Route::post('/{stakingPlan}/pause', [\App\Http\Controllers\Admin\StakingPlanController::class, 'pause'])->name('pause');
+    Route::post('/{stakingPlan}/resume', [\App\Http\Controllers\Admin\StakingPlanController::class, 'resume'])->name('resume');
+    Route::post('/{stakingPlan}/toggle-active', [\App\Http\Controllers\Admin\StakingPlanController::class, 'toggleActive'])->name('toggle-active');
+
+    // ตั้งค่า Coin
+    Route::get('/settings/coin', [\App\Http\Controllers\Admin\StakingPlanController::class, 'coinSettings'])->name('coin-settings');
+    Route::put('/settings/coin', [\App\Http\Controllers\Admin\StakingPlanController::class, 'updateCoinSettings'])->name('coin-settings.update');
+
+    // รายงาน Positions
+    Route::get('/reports/positions', [\App\Http\Controllers\Admin\StakingPlanController::class, 'positions'])->name('positions');
+});
+
 // KYC Verification Management
 Route::prefix('kyc')->name('kyc.')->group(function () {
     Route::get('/', [KycController::class, 'index'])->name('index');
