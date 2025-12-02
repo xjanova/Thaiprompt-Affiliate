@@ -190,6 +190,14 @@ Route::prefix('certificate')->name('certificate.')->group(function () {
     Route::match(['GET', 'HEAD'], '/share/{id}', [\App\Http\Controllers\Admin\CertificateController::class, 'share'])->name('share');
 });
 
+// Public NFC Card Verification
+// ⚠️ Public Service: NFC card verification ต้องเข้าถึงได้สาธารณะ (ไม่ต้อง login)
+Route::prefix('nfc')->name('nfc.')->group(function () {
+    Route::match(['GET', 'HEAD'], '/verify/{card?}', [\App\Http\Controllers\NFCVerificationController::class, 'show'])->name('verify');
+    Route::post('/verify/check', [\App\Http\Controllers\NFCVerificationController::class, 'verify'])->name('verify.check');
+    Route::post('/verify/quick', [\App\Http\Controllers\NFCVerificationController::class, 'quickVerify'])->name('verify.quick');
+});
+
 // Setup Routes
 // ⚠️ Setup: ระบบติดตั้งครั้งแรก - สร้าง Super Admin (Step-by-Step Wizard)
 Route::prefix('setup')->name('setup.')->group(function () {

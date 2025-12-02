@@ -379,6 +379,7 @@ Route::prefix('nfc-cards')->name('nfc-cards.')->group(function () {
     Route::put('/{nfcCard}', [NFCCardController::class, 'update'])->name('update');
     Route::delete('/{nfcCard}', [NFCCardController::class, 'destroy'])->name('destroy');
     Route::get('/{nfcCard}/pair', [NFCCardController::class, 'pairForm'])->name('pair-form');
+    Route::get('/{nfcCard}/pair-and-write', [NFCCardController::class, 'pairAndWrite'])->name('pair-and-write');
     Route::post('/{nfcCard}/pair', [NFCCardController::class, 'pair'])->name('pair');
     Route::post('/{nfcCard}/unpair', [NFCCardController::class, 'unpair'])->name('unpair');
     Route::post('/{nfcCard}/activate', [NFCCardController::class, 'activate'])->name('activate');
@@ -412,6 +413,10 @@ Route::prefix('nfc-cards')->name('nfc-cards.')->group(function () {
     Route::post('/{nfcCard}/save-card-info', [NFCCardController::class, 'saveCardInfo'])->name('save-card-info');
     Route::get('/templates', [NFCCardController::class, 'getTemplates'])->name('templates');
     Route::post('/build-template-records', [NFCCardController::class, 'buildTemplateRecords'])->name('build-template-records');
+
+    // 🆕 V3: NFC Writer - เขียนข้อมูลประเภทต่างๆ ลงบัตร NFC
+    Route::get('/writer', [NFCCardController::class, 'nfcWriter'])->name('writer');
+    Route::post('/save-nfc-write-log', [NFCCardController::class, 'saveNfcWriteLog'])->name('save-nfc-write-log');
 });
 
 // 🆕 NFC System Dashboard & Analytics

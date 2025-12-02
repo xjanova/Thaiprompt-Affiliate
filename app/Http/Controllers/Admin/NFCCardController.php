@@ -244,6 +244,31 @@ class NFCCardController extends Controller
     }
 
     /**
+     * แสดงหน้าจับคู่และเขียนบัตร NFC
+     *
+     * หน้านี้รวมทุกขั้นตอนในการตั้งค่าบัตร NFC:
+     * 1. อ่าน NFC UID จากบัตร
+     * 2. เขียนรหัสป้องกันปลอมลงบัตร
+     * 3. จับคู่บัตรกับผู้ใช้
+     * 4. บันทึกข้อมูลลงฐานข้อมูล
+     *
+     * @param NFCCard $nfcCard
+     * @return \Illuminate\View\View
+     */
+    public function pairAndWrite(NFCCard $nfcCard)
+    {
+        // โหลดความสัมพันธ์ที่จำเป็น
+        $nfcCard->load(['user', 'issuer', 'pairer', 'nfcWriter', 'locker']);
+
+        // ดึงรายชื่อผู้ใช้สำหรับจับคู่
+        $users = User::where('status', 'active')
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'status']);
+
+        return view('admin.nfc-cards.pair-and-write', compact('nfcCard', 'users'));
+    }
+
+    /**
      * Pair card with user
      */
     public function pair(Request $request, NFCCard $nfcCard)
@@ -1275,6 +1300,122 @@ class NFCCardController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถสร้าง records ได้: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * แสดงหน้า NFC Writer สำหรับเขียนข้อมูลประเภทต่างๆ
+     *
+     * รองรับ Templates:
+     * - บัตรสมาชิก (Member Card)
+     * - นามบัตร (Business Card)
+     * - ข้อมูลสินค้า (Product Info)
+     * - บัตรเข้า-ออก (Access Card)
+     * - WiFi Share
+     * - URL Shortcut
+     * - Social Media Links
+     *
+     * @return \Illuminate\View\View
+     */
+    public function nfcWriter()
+    {
+        return view('admin.nfc-cards.nfc-writer');
+    }
+
+    /**
+     * บันทึก Log การเขียน NFC
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function saveNfcWriteLog(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'nfc_uid' => 'required|string',
+                'template' => 'required|string',
+                'data' => 'required|array',
+                'records' => 'required|array',
+            ]);
+
+            $nfcUid = $validated['nfc_uid'];
+            $template = $validated['template'];
+            $data = $validated['data'];
+            $records = $validated['records'];
+
+            // หาบัตร NFC ที่ตรงกับ UID หรือสร้างใหม่
+            $nfcCard = NFCCard::where('nfc_uid', $nfcUid)->first();
+
+            if (!$nfcCard) {
+                // สร้างบัตรใหม่อัตโนมัติ
+                $nfcCard = NFCCard::create([
+                    'card_number' => 'NFC-' . strtoupper(substr(md5($nfcUid . time()), 0, 8)),
+                    'card_name' => 'NFC Card - ' . $template,
+                    'nfc_uid' => $nfcUid,
+                    'status' => NFCCard::STATUS_ACTIVE,
+                    'issued_by' => auth()->id(),
+                    'issued_at' => now(),
+                ]);
+            }
+
+            // อัพเดทข้อมูลบัตร
+            $nfcCard->update([
+                'nfc_written_at' => now(),
+                'nfc_written_by' => auth()->id(),
+                'ndef_records_count' => count($records),
+                'ndef_records_data' => $records,
+                'last_read_at' => now(),
+            ]);
+
+            // บันทึก Transaction
+            NFCTransaction::create([
+                'nfc_card_id' => $nfcCard->id,
+                'user_id' => auth()->id(),
+                'transaction_type' => 'nfc_write',
+                'amount' => 0,
+                'description' => "เขียนข้อมูล NFC ประเภท: {$template}",
+                'metadata' => [
+                    'template' => $template,
+                    'data' => $data,
+                    'records_count' => count($records),
+                    'written_by' => auth()->user()->name ?? 'Admin',
+                ],
+                'status' => 'completed',
+            ]);
+
+            Log::info('NFC Write Log saved', [
+                'card_id' => $nfcCard->id,
+                'nfc_uid' => $nfcUid,
+                'template' => $template,
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกข้อมูลสำเร็จ',
+                'card' => [
+                    'id' => $nfcCard->id,
+                    'card_number' => $nfcCard->card_number,
+                    'nfc_uid' => $nfcCard->nfc_uid,
+                ],
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Failed to save NFC write log', [
+                'error' => $e->getMessage(),
+                'request' => $request->all(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถบันทึกข้อมูลได้: ' . $e->getMessage()
             ], 500);
         }
     }

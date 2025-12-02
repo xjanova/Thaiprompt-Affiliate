@@ -56,6 +56,26 @@ class NFCCard extends Model
         'notes',
         'issued_by',
         'paired_by',
+        // 🆕 NFC Security & Anti-Counterfeit Columns
+        'nfc_uid',
+        'anti_counterfeit_code',
+        'nfc_signature',
+        'nfc_written_at',
+        'nfc_written_by',
+        // 🆕 Card Lock System Columns
+        'is_locked',
+        'locked_at',
+        'locked_by',
+        'unlocked_at',
+        'unlocked_by',
+        // 🆕 Card Info Columns (จากการอ่านบัตร)
+        'card_type_detected',
+        'memory_size',
+        'ndef_writeable',
+        'ndef_records_count',
+        'ndef_records_data',
+        'last_read_at',
+        'read_count',
     ];
 
     protected $casts = [
@@ -86,6 +106,22 @@ class NFCCard extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
+        // 🆕 NFC Security Casts
+        'nfc_written_at' => 'datetime',
+        'nfc_written_by' => 'integer',
+        // 🆕 Card Lock Casts
+        'is_locked' => 'boolean',
+        'locked_at' => 'datetime',
+        'locked_by' => 'integer',
+        'unlocked_at' => 'datetime',
+        'unlocked_by' => 'integer',
+        // 🆕 Card Info Casts
+        'memory_size' => 'integer',
+        'ndef_writeable' => 'boolean',
+        'ndef_records_count' => 'integer',
+        'ndef_records_data' => 'array',
+        'last_read_at' => 'datetime',
+        'read_count' => 'integer',
     ];
 
     /**
@@ -846,5 +882,140 @@ class NFCCard extends Model
     public function scopeWithWallet($query)
     {
         return $query->whereNotNull('wallet_id');
+    }
+
+    // ==========================================
+    // 🆕 NFC Lock & Card Info Methods
+    // ==========================================
+
+    /**
+     * ผู้ที่เขียนข้อมูลลงบัตร NFC
+     *
+     * @return BelongsTo
+     */
+    public function nfcWriter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'nfc_written_by');
+    }
+
+    /**
+     * ผู้ที่ล็อคบัตร
+     *
+     * @return BelongsTo
+     */
+    public function locker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'locked_by');
+    }
+
+    /**
+     * ผู้ที่ปลดล็อคบัตร
+     *
+     * @return BelongsTo
+     */
+    public function unlocker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'unlocked_by');
+    }
+
+    /**
+     * ตรวจสอบว่าบัตรถูกล็อคหรือไม่
+     *
+     * @return bool
+     */
+    public function isLocked(): bool
+    {
+        return $this->is_locked === true;
+    }
+
+    /**
+     * ตรวจสอบว่าบัตรถูกเขียนข้อมูลลงแล้วหรือยัง
+     *
+     * @return bool
+     */
+    public function isNfcWritten(): bool
+    {
+        return !empty($this->nfc_uid) && !empty($this->anti_counterfeit_code);
+    }
+
+    /**
+     * ดึงข้อมูลประเภทบัตรที่ตรวจพบ
+     *
+     * @return string|null
+     */
+    public function getCardTypeDetectedLabelAttribute(): ?string
+    {
+        if (!$this->card_type_detected) {
+            return null;
+        }
+
+        $labels = [
+            'NTAG213' => 'NTAG213 (144 bytes)',
+            'NTAG215' => 'NTAG215 (504 bytes)',
+            'NTAG216' => 'NTAG216 (888 bytes)',
+            'MIFARE_CLASSIC_1K' => 'Mifare Classic 1K',
+            'MIFARE_CLASSIC_4K' => 'Mifare Classic 4K',
+            'MIFARE_ULTRALIGHT' => 'Mifare Ultralight',
+            'MIFARE_ULTRALIGHT_C' => 'Mifare Ultralight C',
+        ];
+
+        return $labels[$this->card_type_detected] ?? $this->card_type_detected;
+    }
+
+    /**
+     * ดึงข้อมูลขนาดหน่วยความจำในหน่วยที่อ่านได้
+     *
+     * @return string|null
+     */
+    public function getMemorySizeLabelAttribute(): ?string
+    {
+        if (!$this->memory_size) {
+            return null;
+        }
+
+        if ($this->memory_size >= 1024) {
+            return round($this->memory_size / 1024, 1) . ' KB';
+        }
+
+        return $this->memory_size . ' bytes';
+    }
+
+    /**
+     * Scope สำหรับบัตรที่ถูกล็อค
+     */
+    public function scopeLocked($query)
+    {
+        return $query->where('is_locked', true);
+    }
+
+    /**
+     * Scope สำหรับบัตรที่ยังไม่ได้เขียน NFC
+     */
+    public function scopeNotWritten($query)
+    {
+        return $query->whereNull('nfc_uid');
+    }
+
+    /**
+     * Scope สำหรับบัตรที่เขียน NFC แล้ว
+     */
+    public function scopeWritten($query)
+    {
+        return $query->whereNotNull('nfc_uid')
+                     ->whereNotNull('anti_counterfeit_code');
+    }
+
+    /**
+     * พักการใช้งานบัตร (Suspend)
+     *
+     * @param string|null $reason
+     * @return bool
+     */
+    public function suspend(?string $reason = null): bool
+    {
+        return $this->update([
+            'status' => self::STATUS_SUSPENDED,
+            'blocked_reason' => $reason,
+        ]);
     }
 }
