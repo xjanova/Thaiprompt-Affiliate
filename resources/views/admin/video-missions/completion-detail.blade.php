@@ -41,7 +41,7 @@
                     </div>
                     @if($completion->status === 'completed')
                     <div class="flex gap-2">
-                        <form action="{{ route('admin.video-missions.completions.verify', $completion) }}" method="POST">
+                        <form action="{{ route('admin.video-missions.completion.verify', $completion) }}" method="POST">
                             @csrf
                             <button type="submit"
                                     class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition">
@@ -248,7 +248,7 @@
 <div id="rejectModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
     <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md mx-4">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ปฏิเสธการทำภารกิจ</h3>
-        <form action="{{ route('admin.video-missions.completions.reject', $completion) }}" method="POST">
+        <form action="{{ route('admin.video-missions.completion.reject', $completion) }}" method="POST">
             @csrf
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เหตุผล <span class="text-red-500">*</span></label>
