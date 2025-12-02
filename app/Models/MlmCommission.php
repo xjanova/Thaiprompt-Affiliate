@@ -34,6 +34,14 @@ class MlmCommission extends Model
         'notes',
         'rejection_reason',
         'wallet_transaction_id',
+        // Roll-up tracking fields
+        'is_rollup',
+        'rollup_from_member_id',
+        'rollup_original_level',
+        'rollup_chain',
+        'source_leg',
+        'tree_type',
+        'calculation_details',
     ];
 
     protected function casts(): array
@@ -48,6 +56,10 @@ class MlmCommission extends Model
             'approved_at' => 'datetime',
             'paid_at' => 'datetime',
             'rejected_at' => 'datetime',
+            // Roll-up tracking casts
+            'is_rollup' => 'boolean',
+            'rollup_chain' => 'array',
+            'calculation_details' => 'array',
         ];
     }
 
