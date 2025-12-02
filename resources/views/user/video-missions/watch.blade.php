@@ -2,6 +2,13 @@
 
 @section('title', 'ดูคลิป: ' . $mission->display_title)
 
+@push('head')
+{{-- ป้องกัน browser cache สำหรับหน้านี้ --}}
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+@endpush
+
 @push('styles')
 <style>
     /* Circular Progress Ring */
@@ -929,6 +936,14 @@ function videoWatcher(config) {
         },
     };
 }
+
+// ป้องกัน bfcache (back-forward cache) - reload เมื่อกลับมาที่หน้านี้ด้วย back button
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+        // Page was restored from bfcache - reload เพื่อตรวจสอบสิทธิ์
+        location.reload();
+    }
+});
 </script>
 @endpush
 @endsection

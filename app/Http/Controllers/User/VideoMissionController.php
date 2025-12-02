@@ -69,9 +69,17 @@ class VideoMissionController extends Controller
             ->take(4)
             ->get();
 
+        // เพิ่มข้อมูลสิทธิ์ให้ featured missions
+        $featuredMissions = $this->attachEligibilityInfo($featuredMissions, $user);
+
         // ภารกิจทั้งหมด
         $missions = $this->getAvailableMissions($user)
             ->paginate(12);
+
+        // เพิ่มข้อมูลสิทธิ์ให้ missions
+        $missions->getCollection()->transform(function ($mission) use ($user) {
+            return $this->addEligibilityToMission($mission, $user);
+        });
 
         // ภารกิจที่กำลังทำอยู่
         $inProgressMissions = VideoMissionCompletion::where('user_id', $user->id)
@@ -141,7 +149,7 @@ class VideoMissionController extends Controller
      * แสดงรายละเอียดภารกิจ
      *
      * @param VideoMission $mission
-     * @return \Illuminate\View\View
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function show(VideoMission $mission)
     {
@@ -149,6 +157,16 @@ class VideoMissionController extends Controller
 
         // ตรวจสอบสิทธิ์
         $eligibility = $mission->checkUserEligibility($user);
+
+        // ตรวจสอบว่าทำได้ตอนนี้ไหม
+        $canDoNow = $mission->canUserDoNow($user);
+
+        // ถ้าไม่มีสิทธิ์เลย (ไม่ใช่แค่รอ cooldown) ให้ redirect กลับไปหน้า index
+        if (!$eligibility['eligible'] && !$canDoNow['can']) {
+            return redirect()
+                ->route('user.video-missions.index')
+                ->with('error', $eligibility['reason'] ?? $canDoNow['reason'] ?? 'คุณไม่มีสิทธิ์เข้าถึงภารกิจนี้');
+        }
 
         // ดึงประวัติการทำภารกิจของ user
         $userCompletions = VideoMissionCompletion::where('user_id', $user->id)
@@ -160,9 +178,6 @@ class VideoMissionController extends Controller
         // ดึง rank limit
         $rankLimit = VideoMissionRankLimit::getForRank($user->current_rank_id ?? 0);
         $rewards = $mission->calculateRewards($rankLimit->reward_multiplier);
-
-        // ตรวจสอบว่าทำได้ตอนนี้ไหม
-        $canDoNow = $mission->canUserDoNow($user);
 
         return view('user.video-missions.show', compact(
             'mission',
@@ -603,5 +618,42 @@ class VideoMissionController extends Controller
         }
 
         // TPIX จะต้อง implement เพิ่มตาม blockchain system ของระบบ
+    }
+
+    /**
+     * เพิ่มข้อมูลสิทธิ์การทำภารกิจให้กับแต่ละ mission
+     *
+     * @param \Illuminate\Support\Collection $missions
+     * @param \App\Models\User $user
+     * @return \Illuminate\Support\Collection
+     */
+    protected function attachEligibilityInfo($missions, $user)
+    {
+        return $missions->map(function ($mission) use ($user) {
+            return $this->addEligibilityToMission($mission, $user);
+        });
+    }
+
+    /**
+     * เพิ่มข้อมูลสิทธิ์ให้ mission เดียว
+     *
+     * @param \App\Models\VideoMission $mission
+     * @param \App\Models\User $user
+     * @return \App\Models\VideoMission
+     */
+    protected function addEligibilityToMission($mission, $user)
+    {
+        // ตรวจสอบสิทธิ์พื้นฐาน
+        $eligibility = $mission->checkUserEligibility($user);
+
+        // ตรวจสอบว่าทำได้ตอนนี้หรือไม่
+        $canDoNow = $mission->canUserDoNow($user);
+
+        // รวมผลการตรวจสอบ
+        $mission->user_eligible = $eligibility['eligible'] && $canDoNow['can'];
+        $mission->eligibility_reason = $eligibility['reason'] ?? $canDoNow['reason'] ?? null;
+        $mission->next_available_at = $canDoNow['next_available_at'] ?? null;
+
+        return $mission;
     }
 }

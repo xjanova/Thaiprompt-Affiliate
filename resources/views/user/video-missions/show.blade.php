@@ -2,6 +2,13 @@
 
 @section('title', $mission->display_title)
 
+@push('head')
+{{-- ป้องกัน browser cache สำหรับหน้านี้ --}}
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+@endpush
+
 @section('content')
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
     {{-- Back Button --}}
@@ -226,4 +233,25 @@
     </div>
     @endif
 </div>
+
+@push('scripts')
+<script>
+// ป้องกันการใช้ back button เข้าถึงหน้านี้หลังจากไม่มีสิทธิ์แล้ว
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+        // เมื่อกลับมาที่หน้านี้ (เช่น กด back) ให้ reload เพื่อตรวจสอบสิทธิ์ใหม่
+        // Server จะ redirect ถ้าไม่มีสิทธิ์
+        location.reload();
+    }
+});
+
+// ป้องกัน bfcache (back-forward cache)
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+        // Page was restored from bfcache - reload เพื่อตรวจสอบสิทธิ์
+        location.reload();
+    }
+});
+</script>
+@endpush
 @endsection

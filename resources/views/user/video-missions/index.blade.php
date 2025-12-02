@@ -4,6 +4,25 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" x-data="videoMissions()">
+    {{-- Flash Messages --}}
+    @if(session('error'))
+    <div class="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">⚠️</span>
+            <p class="text-red-800 dark:text-red-200 font-medium">{{ session('error') }}</p>
+        </div>
+    </div>
+    @endif
+
+    @if(session('success'))
+    <div class="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">✅</span>
+            <p class="text-green-800 dark:text-green-200 font-medium">{{ session('success') }}</p>
+        </div>
+    </div>
+    @endif
+
     {{-- Header --}}
     <div class="glass-fusion dark:bg-gray-800/50 rounded-2xl shadow-lg p-6 mb-6 backdrop-blur-sm border border-white/20 dark:border-gray-700/50">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -157,6 +176,8 @@
         </h2>
         <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             @foreach($featuredMissions as $mission)
+            @if($mission->user_eligible ?? true)
+            {{-- ภารกิจที่ทำได้ --}}
             <a href="{{ route('user.video-missions.show', $mission) }}"
                class="glass-fusion dark:bg-gray-800/50 rounded-xl overflow-hidden hover:shadow-lg transition-all border border-white/20 dark:border-gray-700/50 group">
                 <div class="relative">
@@ -183,6 +204,40 @@
                     </p>
                 </div>
             </a>
+            @else
+            {{-- ภารกิจที่ไม่มีสิทธิ์ - แสดงสีมืดและกดไม่ได้ --}}
+            <div class="glass-fusion dark:bg-gray-800/50 rounded-xl overflow-hidden border border-gray-300 dark:border-gray-600 opacity-60 grayscale cursor-not-allowed select-none">
+                <div class="relative">
+                    @if($mission->thumbnail_url)
+                    <img src="{{ $mission->thumbnail_url }}" alt="" class="w-full h-32 object-cover filter brightness-50">
+                    @else
+                    <div class="w-full h-32 bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center">
+                        <span class="text-4xl opacity-50">{{ $mission->icon ?? '🎬' }}</span>
+                    </div>
+                    @endif
+                    {{-- Overlay แสดงสถานะ --}}
+                    <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <div class="text-center px-2">
+                            <span class="text-2xl">🔒</span>
+                            <p class="text-white text-xs mt-1 font-medium">
+                                {{ $mission->eligibility_reason ?? 'ไม่มีสิทธิ์' }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="absolute top-2 right-2 px-2 py-1 bg-gray-500 text-white text-xs font-bold rounded">
+                        ⭐ แนะนำ
+                    </div>
+                </div>
+                <div class="p-4">
+                    <h3 class="font-semibold text-gray-500 dark:text-gray-400 truncate">
+                        {{ $mission->display_title }}
+                    </h3>
+                    <p class="text-sm text-gray-400 dark:text-gray-500 mt-1 font-medium">
+                        🎁 {{ $mission->reward_summary }}
+                    </p>
+                </div>
+            </div>
+            @endif
             @endforeach
         </div>
     </div>
@@ -209,8 +264,13 @@
 
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             @forelse($missions as $mission)
+            @php
+                $canAccess = ($mission->user_eligible ?? true) && ($limits['can_do_more'] ?? true);
+            @endphp
+            @if($canAccess)
+            {{-- ภารกิจที่ทำได้ --}}
             <a href="{{ route('user.video-missions.show', $mission) }}"
-               class="glass-fusion dark:bg-gray-800/50 rounded-xl overflow-hidden hover:shadow-lg transition-all border border-white/20 dark:border-gray-700/50 group {{ !$limits['can_do_more'] ? 'opacity-50 pointer-events-none' : '' }}">
+               class="glass-fusion dark:bg-gray-800/50 rounded-xl overflow-hidden hover:shadow-lg transition-all border border-white/20 dark:border-gray-700/50 group">
                 <div class="relative">
                     @if($mission->thumbnail_url)
                     <img src="{{ $mission->thumbnail_url }}" alt="" class="w-full h-40 object-cover group-hover:scale-105 transition-transform">
@@ -250,6 +310,61 @@
                     </div>
                 </div>
             </a>
+            @else
+            {{-- ภารกิจที่ไม่มีสิทธิ์ - แสดงสีมืดและกดไม่ได้ --}}
+            <div class="glass-fusion dark:bg-gray-800/50 rounded-xl overflow-hidden border border-gray-300 dark:border-gray-600 opacity-60 grayscale cursor-not-allowed select-none">
+                <div class="relative">
+                    @if($mission->thumbnail_url)
+                    <img src="{{ $mission->thumbnail_url }}" alt="" class="w-full h-40 object-cover filter brightness-50">
+                    @else
+                    <div class="w-full h-40 bg-gradient-to-br from-gray-400 to-gray-500 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
+                        <span class="text-5xl opacity-50">{{ $mission->icon ?? '🎬' }}</span>
+                    </div>
+                    @endif
+                    {{-- Overlay แสดงสถานะ --}}
+                    <div class="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <div class="text-center px-3">
+                            <span class="text-3xl">🔒</span>
+                            <p class="text-white text-sm mt-2 font-medium">
+                                @if(!($limits['can_do_more'] ?? true))
+                                    {{ $limits['reason'] ?? 'ถึงลิมิตแล้ว' }}
+                                @else
+                                    {{ $mission->eligibility_reason ?? 'ไม่มีสิทธิ์' }}
+                                @endif
+                            </p>
+                            @if($mission->next_available_at)
+                            <p class="text-gray-300 text-xs mt-1">
+                                ทำได้อีกครั้ง: {{ $mission->next_available_at->diffForHumans() }}
+                            </p>
+                            @endif
+                        </div>
+                    </div>
+                    @if($mission->is_premium)
+                    <div class="absolute top-2 left-2 px-2 py-1 bg-gray-500 text-white text-xs font-bold rounded">
+                        👑 Premium
+                    </div>
+                    @endif
+                </div>
+                <div class="p-4">
+                    <h3 class="font-semibold text-gray-500 dark:text-gray-400 truncate">
+                        {{ $mission->display_title }}
+                    </h3>
+                    @if($mission->display_description)
+                    <p class="text-sm text-gray-400 dark:text-gray-500 mt-1 line-clamp-2">
+                        {{ Str::limit($mission->display_description, 60) }}
+                    </p>
+                    @endif
+                    <div class="flex items-center justify-between mt-3">
+                        <span class="text-sm text-gray-400 dark:text-gray-500 font-medium">
+                            🎁 {{ $mission->reward_summary }}
+                        </span>
+                        <span class="text-xs text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
+                            {{ $mission->completion_count }} ทำแล้ว
+                        </span>
+                    </div>
+                </div>
+            </div>
+            @endif
             @empty
             <div class="col-span-full text-center py-12">
                 <span class="text-5xl mb-4 block">🎬</span>
