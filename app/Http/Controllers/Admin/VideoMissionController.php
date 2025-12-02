@@ -182,7 +182,8 @@ class VideoMissionController extends Controller
             'require_email_verified' => 'boolean',
             'require_phone_verified' => 'boolean',
 
-            'frequency' => ['required', Rule::in(['once', 'daily', 'weekly', 'monthly', 'unlimited'])],
+            'frequency' => ['required', Rule::in(['once', 'daily', 'weekly', 'monthly', 'yearly', 'unlimited'])],
+            'reset_period_value' => 'nullable|integer|min:1',
             'cooldown_minutes' => 'nullable|integer|min:0',
             'max_completions_per_user' => 'nullable|integer|min:1',
             'max_total_completions' => 'nullable|integer|min:1',
@@ -218,15 +219,34 @@ class VideoMissionController extends Controller
                 ->store('video-missions/thumbnails', 'public');
         }
 
+        // ตรวจสอบความขัดแย้งของภารกิจ
+        $conflictCheck = VideoMission::validateMissionConflicts($validated);
+
+        if (!$conflictCheck['valid']) {
+            // มี error - ไม่อนุญาตให้สร้าง
+            return back()
+                ->withInput()
+                ->withErrors(['conflict' => $conflictCheck['errors']])
+                ->with('conflict_errors', $conflictCheck['errors'])
+                ->with('conflict_warnings', $conflictCheck['warnings']);
+        }
+
         // Set created_by
         $validated['created_by'] = auth()->id();
 
         // Create mission
         $mission = VideoMission::create($validated);
 
+        // ถ้ามี warnings แสดงด้วย
+        $message = 'สร้างภารกิจใหม่สำเร็จ';
+        if (count($conflictCheck['warnings']) > 0) {
+            $message .= ' (มีคำเตือน: ' . implode(', ', $conflictCheck['warnings']) . ')';
+        }
+
         return redirect()
             ->route('admin.video-missions.missions')
-            ->with('success', 'สร้างภารกิจใหม่สำเร็จ');
+            ->with('success', $message)
+            ->with('conflict_warnings', $conflictCheck['warnings']);
     }
 
     /**
@@ -318,7 +338,8 @@ class VideoMissionController extends Controller
             'require_email_verified' => 'boolean',
             'require_phone_verified' => 'boolean',
 
-            'frequency' => ['required', Rule::in(['once', 'daily', 'weekly', 'monthly', 'unlimited'])],
+            'frequency' => ['required', Rule::in(['once', 'daily', 'weekly', 'monthly', 'yearly', 'unlimited'])],
+            'reset_period_value' => 'nullable|integer|min:1',
             'cooldown_minutes' => 'nullable|integer|min:0',
             'max_completions_per_user' => 'nullable|integer|min:1',
             'max_total_completions' => 'nullable|integer|min:1',
@@ -359,15 +380,34 @@ class VideoMissionController extends Controller
                 ->store('video-missions/thumbnails', 'public');
         }
 
+        // ตรวจสอบความขัดแย้งของภารกิจ
+        $conflictCheck = VideoMission::validateMissionConflicts($validated);
+
+        if (!$conflictCheck['valid']) {
+            // มี error - ไม่อนุญาตให้อัพเดท
+            return back()
+                ->withInput()
+                ->withErrors(['conflict' => $conflictCheck['errors']])
+                ->with('conflict_errors', $conflictCheck['errors'])
+                ->with('conflict_warnings', $conflictCheck['warnings']);
+        }
+
         // Set updated_by
         $validated['updated_by'] = auth()->id();
 
         // Update mission
         $mission->update($validated);
 
+        // ถ้ามี warnings แสดงด้วย
+        $message = 'อัพเดทภารกิจสำเร็จ';
+        if (count($conflictCheck['warnings']) > 0) {
+            $message .= ' (มีคำเตือน: ' . implode(', ', $conflictCheck['warnings']) . ')';
+        }
+
         return redirect()
             ->route('admin.video-missions.show', $mission)
-            ->with('success', 'อัพเดทภารกิจสำเร็จ');
+            ->with('success', $message)
+            ->with('conflict_warnings', $conflictCheck['warnings']);
     }
 
     /**

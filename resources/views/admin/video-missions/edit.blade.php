@@ -22,6 +22,41 @@
         @csrf
         @method('PUT')
 
+        {{-- Conflict Errors --}}
+        @if(session('conflict_errors') || $errors->has('conflict'))
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-4">
+            <div class="flex items-start gap-3">
+                <span class="text-2xl">🚫</span>
+                <div class="flex-1">
+                    <h3 class="font-semibold text-red-800 dark:text-red-200 mb-2">ไม่สามารถบันทึกภารกิจได้</h3>
+                    <p class="text-red-700 dark:text-red-300 text-sm mb-2">พบข้อขัดแย้งในการตั้งค่าภารกิจ:</p>
+                    <ul class="list-disc list-inside text-red-700 dark:text-red-300 text-sm space-y-1">
+                        @foreach(session('conflict_errors', $errors->get('conflict') ?? []) as $error)
+                        <li>{{ is_array($error) ? implode(', ', $error) : $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        {{-- Conflict Warnings --}}
+        @if(session('conflict_warnings') && count(session('conflict_warnings')) > 0)
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4">
+            <div class="flex items-start gap-3">
+                <span class="text-2xl">⚠️</span>
+                <div class="flex-1">
+                    <h3 class="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">คำเตือน</h3>
+                    <ul class="list-disc list-inside text-yellow-700 dark:text-yellow-300 text-sm space-y-1">
+                        @foreach(session('conflict_warnings') as $warning)
+                        <li>{{ $warning }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+        </div>
+        @endif
+
         {{-- ข้อมูลพื้นฐาน --}}
         <div class="glass-fusion dark:bg-gray-800/50 rounded-2xl shadow-lg p-6 backdrop-blur-sm border border-white/20 dark:border-gray-700/50">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -193,16 +228,26 @@
                     <select name="frequency" required
                             class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500">
                         <option value="once" {{ old('frequency', $mission->frequency) == 'once' ? 'selected' : '' }}>ครั้งเดียวต่อผู้ใช้</option>
-                        <option value="daily" {{ old('frequency', $mission->frequency) == 'daily' ? 'selected' : '' }}>วันละครั้ง</option>
-                        <option value="weekly" {{ old('frequency', $mission->frequency) == 'weekly' ? 'selected' : '' }}>สัปดาห์ละครั้ง</option>
-                        <option value="monthly" {{ old('frequency', $mission->frequency) == 'monthly' ? 'selected' : '' }}>เดือนละครั้ง</option>
+                        <option value="daily" {{ old('frequency', $mission->frequency) == 'daily' ? 'selected' : '' }}>ทุกกี่วัน</option>
+                        <option value="weekly" {{ old('frequency', $mission->frequency) == 'weekly' ? 'selected' : '' }}>ทุกกี่สัปดาห์</option>
+                        <option value="monthly" {{ old('frequency', $mission->frequency) == 'monthly' ? 'selected' : '' }}>ทุกกี่เดือน</option>
+                        <option value="yearly" {{ old('frequency', $mission->frequency) == 'yearly' ? 'selected' : '' }}>ทุกกี่ปี</option>
                         <option value="unlimited" {{ old('frequency', $mission->frequency) == 'unlimited' ? 'selected' : '' }}>ไม่จำกัด (มี cooldown)</option>
                     </select>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">เลือกประเภทรอบรีเซ็ต</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">รอบรีเซ็ตทุกกี่หน่วย</label>
+                    <input type="number" name="reset_period_value" value="{{ old('reset_period_value', $mission->reset_period_value ?? 1) }}" min="1"
+                           placeholder="เช่น 1 = ทุกวัน, 3 = ทุก 3 วัน"
+                           class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">เช่น 1=ทุกวัน, 3=ทุก 3 วัน, 7=ทุก 7 วัน</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cooldown (นาที)</label>
                     <input type="number" name="cooldown_minutes" value="{{ old('cooldown_minutes', $mission->cooldown_minutes) }}" min="0"
                            class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ใช้เฉพาะเมื่อเลือก "ไม่จำกัด"</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">จำกัดต่อผู้ใช้ (ครั้ง)</label>

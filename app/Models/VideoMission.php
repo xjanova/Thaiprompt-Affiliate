@@ -89,6 +89,7 @@ class VideoMission extends Model
 
         // จำกัดการทำ
         'frequency',
+        'reset_period_value',
         'cooldown_minutes',
         'max_completions_per_user',
         'max_total_completions',
@@ -164,6 +165,7 @@ class VideoMission extends Model
         'max_skip_seconds' => 'integer',
         'min_user_level' => 'integer',
         'min_days_registered' => 'integer',
+        'reset_period_value' => 'integer',
         'cooldown_minutes' => 'integer',
         'max_completions_per_user' => 'integer',
         'max_total_completions' => 'integer',
@@ -554,6 +556,64 @@ class VideoMission extends Model
         };
     }
 
+    /**
+     * ดึง label ความถี่/รอบรีเซ็ตภาษาไทย
+     *
+     * @return string
+     */
+    public function getResetPeriodLabelAttribute(): string
+    {
+        $periodValue = max(1, $this->reset_period_value ?? 1);
+
+        return match ($this->frequency) {
+            'once' => 'ทำได้ครั้งเดียว',
+            'daily' => $periodValue == 1 ? 'วันละครั้ง' : "ทุก {$periodValue} วัน",
+            'weekly' => $periodValue == 1 ? 'สัปดาห์ละครั้ง' : "ทุก {$periodValue} สัปดาห์",
+            'monthly' => $periodValue == 1 ? 'เดือนละครั้ง' : "ทุก {$periodValue} เดือน",
+            'yearly' => $periodValue == 1 ? 'ปีละครั้ง' : "ทุก {$periodValue} ปี",
+            'unlimited' => $this->cooldown_minutes > 0
+                ? "รอ {$this->cooldown_minutes} นาที"
+                : 'ไม่จำกัด',
+            default => 'ไม่ระบุ',
+        };
+    }
+
+    /**
+     * ดึง icon สำหรับแสดงความถี่
+     *
+     * @return string
+     */
+    public function getResetPeriodIconAttribute(): string
+    {
+        return match ($this->frequency) {
+            'once' => '1️⃣',
+            'daily' => '📅',
+            'weekly' => '📆',
+            'monthly' => '🗓️',
+            'yearly' => '🎊',
+            'unlimited' => '♾️',
+            default => '⏰',
+        };
+    }
+
+    /**
+     * ดึง badge class สำหรับแสดงความถี่
+     *
+     * @return string
+     */
+    public function getResetPeriodBadgeClassAttribute(): string
+    {
+        return match ($this->frequency) {
+            'once' => 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+            'daily' => 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+            'weekly' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+            'monthly' => 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+            'yearly' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+            'unlimited' => 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
+            default => 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+        };
+    }
+
     // ==================== METHODS ====================
 
     /**
@@ -679,7 +739,7 @@ class VideoMission extends Model
     }
 
     /**
-     * ตรวจสอบว่า user สามารถทำภารกิจได้ตอนนี้หรือไม่ (ตาม frequency)
+     * ตรวจสอบว่า user สามารถทำภารกิจได้ตอนนี้หรือไม่ (ตาม frequency และ reset_period_value)
      *
      * @param User $user
      * @return array ['can' => bool, 'reason' => string|null, 'next_available_at' => Carbon|null]
@@ -698,6 +758,7 @@ class VideoMission extends Model
 
         $now = now();
         $lastCompletedAt = $lastCompletion->completed_at;
+        $periodValue = max(1, $this->reset_period_value ?? 1); // ค่าเริ่มต้น 1
 
         switch ($this->frequency) {
             case 'once':
@@ -708,31 +769,62 @@ class VideoMission extends Model
                 ];
 
             case 'daily':
-                if ($lastCompletedAt->isSameDay($now)) {
+                // ทุก X วัน
+                $nextAvailable = $lastCompletedAt->copy()->addDays($periodValue)->startOfDay();
+                if ($now->lt($nextAvailable)) {
+                    $daysLeft = $now->diffInDays($nextAvailable) + 1;
+                    $reasonText = $periodValue == 1
+                        ? 'ภารกิจนี้ทำได้วันละครั้ง'
+                        : "ภารกิจนี้ทำได้ทุก {$periodValue} วัน";
                     return [
                         'can' => false,
-                        'reason' => 'ภารกิจนี้ทำได้วันละครั้ง',
-                        'next_available_at' => $now->copy()->addDay()->startOfDay(),
+                        'reason' => $reasonText,
+                        'next_available_at' => $nextAvailable,
                     ];
                 }
                 break;
 
             case 'weekly':
-                if ($lastCompletedAt->isSameWeek($now)) {
+                // ทุก X สัปดาห์
+                $nextAvailable = $lastCompletedAt->copy()->addWeeks($periodValue)->startOfWeek();
+                if ($now->lt($nextAvailable)) {
+                    $reasonText = $periodValue == 1
+                        ? 'ภารกิจนี้ทำได้สัปดาห์ละครั้ง'
+                        : "ภารกิจนี้ทำได้ทุก {$periodValue} สัปดาห์";
                     return [
                         'can' => false,
-                        'reason' => 'ภารกิจนี้ทำได้สัปดาห์ละครั้ง',
-                        'next_available_at' => $now->copy()->addWeek()->startOfWeek(),
+                        'reason' => $reasonText,
+                        'next_available_at' => $nextAvailable,
                     ];
                 }
                 break;
 
             case 'monthly':
-                if ($lastCompletedAt->isSameMonth($now)) {
+                // ทุก X เดือน
+                $nextAvailable = $lastCompletedAt->copy()->addMonths($periodValue)->startOfMonth();
+                if ($now->lt($nextAvailable)) {
+                    $reasonText = $periodValue == 1
+                        ? 'ภารกิจนี้ทำได้เดือนละครั้ง'
+                        : "ภารกิจนี้ทำได้ทุก {$periodValue} เดือน";
                     return [
                         'can' => false,
-                        'reason' => 'ภารกิจนี้ทำได้เดือนละครั้ง',
-                        'next_available_at' => $now->copy()->addMonth()->startOfMonth(),
+                        'reason' => $reasonText,
+                        'next_available_at' => $nextAvailable,
+                    ];
+                }
+                break;
+
+            case 'yearly':
+                // ทุก X ปี
+                $nextAvailable = $lastCompletedAt->copy()->addYears($periodValue)->startOfYear();
+                if ($now->lt($nextAvailable)) {
+                    $reasonText = $periodValue == 1
+                        ? 'ภารกิจนี้ทำได้ปีละครั้ง'
+                        : "ภารกิจนี้ทำได้ทุก {$periodValue} ปี";
+                    return [
+                        'can' => false,
+                        'reason' => $reasonText,
+                        'next_available_at' => $nextAvailable,
                     ];
                 }
                 break;
@@ -985,5 +1077,162 @@ class VideoMission extends Model
             'tpix' => round($this->reward_tpix * $multiplier, 8),
             'exp' => (int) round($this->reward_exp * $multiplier),
         ];
+    }
+
+    // ==================== CONFLICT VALIDATION ====================
+
+    /**
+     * ตรวจสอบความขัดแย้งของภารกิจ
+     *
+     * ตรวจสอบว่าการตั้งค่าภารกิจเป็นไปได้หรือไม่ เช่น
+     * - เวลาที่ต้องดูไม่ควรมากกว่าความยาวคลิป
+     * - มีรางวัลอย่างน้อย 1 อย่าง
+     * - ช่วงเวลาเปิดให้ทำถูกต้อง
+     *
+     * @param array $data ข้อมูลที่จะตรวจสอบ (ใช้สำหรับ create/update)
+     * @return array ['valid' => bool, 'errors' => array, 'warnings' => array]
+     */
+    public static function validateMissionConflicts(array $data): array
+    {
+        $errors = [];
+        $warnings = [];
+
+        // 1. ตรวจสอบเวลาที่ต้องดู vs ความยาวคลิป
+        $requiredSeconds = (int) ($data['required_watch_seconds'] ?? 0);
+        $videoDuration = isset($data['video_duration_seconds']) ? (int) $data['video_duration_seconds'] : null;
+
+        if ($requiredSeconds <= 0) {
+            $errors[] = 'เวลาที่ต้องดูต้องมากกว่า 0 วินาที';
+        }
+
+        if ($videoDuration !== null && $videoDuration > 0) {
+            if ($requiredSeconds > $videoDuration) {
+                $errors[] = "เวลาที่ต้องดู ({$requiredSeconds} วินาที) มากกว่าความยาวคลิป ({$videoDuration} วินาที) - ไม่สามารถทำภารกิจสำเร็จได้";
+            }
+
+            // เตือนถ้าเวลาที่ต้องดูใกล้เคียงกับความยาวคลิปมาก
+            if ($requiredSeconds > ($videoDuration * 0.95)) {
+                $warnings[] = 'เวลาที่ต้องดูใกล้เคียงกับความยาวคลิปมาก อาจทำให้ผู้ใช้ทำภารกิจไม่สำเร็จ';
+            }
+        }
+
+        // 2. ตรวจสอบว่ามีรางวัลอย่างน้อย 1 อย่าง
+        $rewardMoney = (float) ($data['reward_money'] ?? 0);
+        $rewardCoins = (float) ($data['reward_coins'] ?? 0);
+        $rewardPoints = (int) ($data['reward_points'] ?? 0);
+        $rewardTpix = (float) ($data['reward_tpix'] ?? 0);
+        $rewardExp = (int) ($data['reward_exp'] ?? 0);
+
+        $hasReward = ($rewardMoney > 0 || $rewardCoins > 0 || $rewardPoints > 0 || $rewardTpix > 0 || $rewardExp > 0);
+
+        if (!$hasReward) {
+            $errors[] = 'ต้องกำหนดรางวัลอย่างน้อย 1 อย่าง (เงิน, Coins, แต้ม, TPIX, หรือ EXP)';
+        }
+
+        // 3. ตรวจสอบช่วงเวลาเปิดให้ทำ
+        $startAt = isset($data['start_at']) ? \Carbon\Carbon::parse($data['start_at']) : null;
+        $endAt = isset($data['end_at']) ? \Carbon\Carbon::parse($data['end_at']) : null;
+
+        if ($startAt && $endAt) {
+            if ($endAt->lte($startAt)) {
+                $errors[] = 'วันสิ้นสุดต้องอยู่หลังวันเริ่มต้น';
+            }
+
+            if ($endAt->lt(now())) {
+                $warnings[] = 'วันสิ้นสุดอยู่ในอดีต ภารกิจนี้จะไม่แสดงผล';
+            }
+        }
+
+        // 4. ตรวจสอบเวลาเริ่มต้น/สิ้นสุดในแต่ละวัน
+        $timeStart = $data['available_time_start'] ?? null;
+        $timeEnd = $data['available_time_end'] ?? null;
+
+        if ($timeStart && $timeEnd) {
+            if (strtotime($timeEnd) <= strtotime($timeStart)) {
+                $errors[] = 'เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น';
+            }
+        }
+
+        // 5. ตรวจสอบ Rank ขั้นต่ำ/สูงสุด
+        $minRankId = $data['min_rank_id'] ?? null;
+        $maxRankId = $data['max_rank_id'] ?? null;
+
+        if ($minRankId && $maxRankId) {
+            $minRank = \App\Models\Rank::find($minRankId);
+            $maxRank = \App\Models\Rank::find($maxRankId);
+
+            if ($minRank && $maxRank && $minRank->level > $maxRank->level) {
+                $errors[] = 'Rank ขั้นต่ำต้องน้อยกว่าหรือเท่ากับ Rank สูงสุด';
+            }
+        }
+
+        // 6. ตรวจสอบ frequency และ reset_period_value
+        $frequency = $data['frequency'] ?? 'daily';
+        $resetPeriodValue = (int) ($data['reset_period_value'] ?? 1);
+
+        if ($frequency !== 'once' && $frequency !== 'unlimited' && $resetPeriodValue <= 0) {
+            $errors[] = 'ค่ารอบรีเซ็ตต้องมากกว่า 0';
+        }
+
+        // 7. ตรวจสอบ cooldown สำหรับ unlimited
+        if ($frequency === 'unlimited') {
+            $cooldownMinutes = (int) ($data['cooldown_minutes'] ?? 0);
+            if ($cooldownMinutes <= 0) {
+                $warnings[] = 'ไม่ได้กำหนด cooldown สำหรับ frequency "unlimited" - ผู้ใช้สามารถทำภารกิจได้ไม่จำกัด';
+            }
+        }
+
+        // 8. ตรวจสอบ max_skip_seconds vs required_watch_seconds
+        $allowSkip = (bool) ($data['allow_skip'] ?? false);
+        $maxSkipSeconds = (int) ($data['max_skip_seconds'] ?? 0);
+
+        if ($allowSkip && $maxSkipSeconds >= $requiredSeconds) {
+            $errors[] = "จำนวนวินาทีที่ข้ามได้ ({$maxSkipSeconds}) ต้องน้อยกว่าเวลาที่ต้องดู ({$requiredSeconds})";
+        }
+
+        // 9. ตรวจสอบ interaction_interval vs required_watch_seconds
+        $requireInteraction = (bool) ($data['require_interaction'] ?? false);
+        $interactionInterval = (int) ($data['interaction_interval_seconds'] ?? 60);
+
+        if ($requireInteraction && $interactionInterval >= $requiredSeconds) {
+            $warnings[] = 'ช่วงเวลา interaction มากกว่าหรือเท่ากับเวลาที่ต้องดู อาจไม่มีการถามระหว่างดู';
+        }
+
+        // 10. ตรวจสอบ budget
+        $maxBudget = (float) ($data['max_reward_budget'] ?? 0);
+        $totalRewardPerCompletion = $rewardMoney + $rewardCoins;
+
+        if ($maxBudget > 0 && $totalRewardPerCompletion > 0) {
+            $possibleCompletions = floor($maxBudget / $totalRewardPerCompletion);
+            if ($possibleCompletions < 1) {
+                $errors[] = 'งบประมาณไม่เพียงพอสำหรับรางวัลแม้แต่ครั้งเดียว';
+            } elseif ($possibleCompletions < 10) {
+                $warnings[] = "งบประมาณเพียงพอสำหรับ {$possibleCompletions} ครั้งเท่านั้น";
+            }
+        }
+
+        // 11. ตรวจสอบ max_completions vs max_total_completions
+        $maxPerUser = $data['max_completions_per_user'] ?? null;
+        $maxTotal = $data['max_total_completions'] ?? null;
+
+        if ($maxPerUser !== null && $maxTotal !== null && $maxPerUser > $maxTotal) {
+            $warnings[] = 'จำนวนครั้งสูงสุดต่อคน มากกว่าจำนวนครั้งสูงสุดทั้งหมด';
+        }
+
+        return [
+            'valid' => count($errors) === 0,
+            'errors' => $errors,
+            'warnings' => $warnings,
+        ];
+    }
+
+    /**
+     * ตรวจสอบความขัดแย้งของ instance ปัจจุบัน
+     *
+     * @return array ['valid' => bool, 'errors' => array, 'warnings' => array]
+     */
+    public function checkConflicts(): array
+    {
+        return self::validateMissionConflicts($this->toArray());
     }
 }
