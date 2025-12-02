@@ -33,6 +33,8 @@ class User extends Authenticatable
         // ✅ ลบ 'permissions' ออกแล้ว
         'preferred_language',
         'menu_theme_preference',
+        'theme_settings',
+        'arrow_x_mode',
         'game_preferences',
         // LINE OA fields
         'line_user_id',
@@ -160,6 +162,7 @@ class User extends Authenticatable
             'is_super_admin' => 'boolean',
             'is_hotel_admin' => 'boolean',
             'permissions' => 'array',
+            'theme_settings' => 'array',
             'game_preferences' => 'array',
             'rank_updated_at' => 'datetime',
             'line_linked_at' => 'datetime',

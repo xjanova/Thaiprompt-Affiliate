@@ -1141,6 +1141,21 @@ return [
             'order' => 14,
             'permissions' => [],
         ],
+
+        [
+            'id' => 'wealth-guide',
+            'label' => 'หนังสือเส้นทางเศรษฐี',
+            'icon' => '📖',
+            'route' => null,
+            'order' => 15,
+            'permissions' => [],
+            'badge' => 'HOT',
+            'badge_color' => 'bg-gradient-to-r from-yellow-500 to-orange-500',
+            'submenu' => [
+                ['label' => '📚 เส้นทางเศรษฐี (คู่มือเริ่มต้น)', 'route' => 'user.wealth-guide', 'description' => 'เรียนรู้พื้นฐานสู่ความสำเร็จ'],
+                ['label' => '💎 เส้นทางเศรษฐี PRO', 'route' => 'user.wealth-guide-pro', 'description' => 'เทคนิคขั้นสูงสำหรับมืออาชีพ', 'badge' => 'PRO', 'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500'],
+            ],
+        ],
     ],
 
 ];
