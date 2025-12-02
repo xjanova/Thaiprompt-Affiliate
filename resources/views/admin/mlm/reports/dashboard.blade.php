@@ -317,7 +317,7 @@
             การดำเนินการด่วน
         </h3>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             {{-- Pending Commissions Link --}}
             <a href="{{ route('admin.mlm.commissions.index', ['status' => 'pending']) }}"
                class="glass-fusion dark:bg-gray-800 hover:shadow-xl transition-all duration-300 rounded-xl p-5 flex items-center gap-4 group transform hover:scale-105">
@@ -361,6 +361,22 @@
                     </p>
                 </div>
                 <i class="fas fa-arrow-right text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200 group-hover:translate-x-2 transition-all"></i>
+            </a>
+
+            {{-- MLM Documentation Link --}}
+            <a href="/mlm-documentation.html"
+               target="_blank"
+               class="glass-fusion dark:bg-gray-800 hover:shadow-xl transition-all duration-300 rounded-xl p-5 flex items-center gap-4 group transform hover:scale-105 border-2 border-dashed border-indigo-300 dark:border-indigo-600">
+                <div class="bg-indigo-100 dark:bg-indigo-900/30 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-900/50 transition-colors rounded-xl p-4 flex-shrink-0">
+                    <i class="fas fa-book text-3xl text-indigo-600 dark:text-indigo-400"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">เอกสาร MLM</p>
+                    <p class="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                        ดู Documentation
+                    </p>
+                </div>
+                <i class="fas fa-external-link-alt text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-2 transition-all"></i>
             </a>
         </div>
     </div>
