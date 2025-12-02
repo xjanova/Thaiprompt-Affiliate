@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.298.1] - 2025-12-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไข query User จาก status เป็น blocked_at (1d27e800)
+- fix: ลบ routes NFC verify ที่ซ้ำกันเพื่อแก้ปัญหา route caching (9d534455)
+### 🔧 Other Changes
+- Merge pull request #1901 from xjanova/claude/nfc-admin-integration-01LQtRUDPgf5yeArJamc31FG (7b646bd1)
+
 ## [v3.298.0] - 2025-12-02
 
 ### ✨ Features
