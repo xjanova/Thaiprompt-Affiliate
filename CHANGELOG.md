@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.302.0] - 2025-12-02
+
+### ✨ Features
+- Merge pull request #1907 from xjanova/claude/fix-maintenance-mode-toggle-01WHxZDF1bdDb216u6matVwT (b432e4f5)
+- feat: เพิ่มระบบรีเซ็ตภารกิจรายวัน/สัปดาห์/เดือน/ปี และการตรวจสอบความขัดแย้ง (4346fb5f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.301.0] - 2025-12-02
 
 ### ✨ Features
