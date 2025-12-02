@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.298.2] - 2025-12-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1902 from xjanova/claude/nfc-admin-integration-01LQtRUDPgf5yeArJamc31FG (a9cc2295)
+- fix: แก้ไข icon NFC system เป็น emoji และปรับชื่อเมนู NFC Writer (cf338fc9)
+### 🔧 Other Changes
+
+
 ## [v3.298.1] - 2025-12-02
 
 ### ✨ Features
