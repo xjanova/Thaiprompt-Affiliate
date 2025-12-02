@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.307.1] - 2025-12-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1919 from xjanova/claude/review-mlm-system-015MEWVh8USoiWTaQKZw1sh4 (52583c55)
+- docs: เพิ่มหน้า MLM Documentation แบบ interactive (89005317)
+
 ## [v3.307.0] - 2025-12-02
 
 ### ✨ Features
