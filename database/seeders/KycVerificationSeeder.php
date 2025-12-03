@@ -100,7 +100,7 @@ class KycVerificationSeeder extends Seeder
             KycVerification::create([
                 'user_id' => $users[2]->id,
                 'id_card_image' => 'kyc/idcard_' . $users[2]->id . '.jpg',
-                'selfie_image' => null,
+                'selfie_image' => 'kyc/selfie_' . $users[2]->id . '_rejected.jpg', // ไฟล์ที่ถูกปฏิเสธ
                 'status' => 'rejected',
                 'submitted_at' => Carbon::now()->subDays(7),
                 'reviewed_by' => $admin?->id,
