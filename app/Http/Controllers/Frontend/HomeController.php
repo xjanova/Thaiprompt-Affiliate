@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Setting;
+use App\Models\HomepageSection;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -17,6 +18,7 @@ class HomeController extends Controller
      * - ซ่อน sidebar เสมอ (ใช้ burger menu)
      * - มี top navigation bar
      * - แสดงข้อมูลโครงการปัจจุบัน
+     * - **เชื่อมต่อกับระบบ Homepage Manager**
      *
      * @return \Illuminate\View\View
      */
@@ -27,8 +29,16 @@ class HomeController extends Controller
             return redirect()->route('setup.index');
         }
 
-        // แสดงหน้าแรกใหม่แบบมืออาชีพ
-        return view('frontend.home-new');
+        // ดึง sections จาก Homepage Manager
+        $sections = HomepageSection::with('activeElements')
+            ->active()
+            ->ordered()
+            ->get();
+
+        // แสดงหน้าแรกใหม่แบบมืออาชีพ พร้อมข้อมูลจาก Homepage Manager
+        return view('frontend.home-new', [
+            'sections' => $sections,
+        ]);
     }
 
     /**

@@ -464,6 +464,56 @@
 </section>
 
 {{-- ================================================================
+    HOMEPAGE MANAGER SECTIONS - แสดง sections จากระบบจัดการหน้าแรก
+    ผู้ดูแลระบบสามารถเพิ่ม/แก้ไข sections ได้ที่ Admin > Homepage Manager
+================================================================ --}}
+@if(isset($sections) && $sections->count() > 0)
+    @foreach($sections as $section)
+        <section
+            class="relative overflow-hidden"
+            style="{{ $section->getStyleAttribute(false) }}"
+            @if($section->animation && $section->animation !== 'none')
+                x-data="{ shown: false }"
+                x-intersect="shown = true"
+                :class="{ 'animate-{{ $section->animation }}': shown }"
+                style="animation-delay: {{ $section->animation_delay }}ms;"
+            @endif
+        >
+            {{-- Background Video --}}
+            @if($section->background_type === 'video' && $section->background_video)
+                <video class="absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline>
+                    <source src="{{ $section->background_video }}" type="video/mp4">
+                </video>
+            @endif
+
+            {{-- Background Overlay --}}
+            @if($section->background_overlay)
+                <div class="absolute inset-0" style="background-color: {{ $section->background_overlay }};"></div>
+            @endif
+
+            {{-- Section Content --}}
+            <div class="{{ $section->is_fullwidth ? 'w-full' : 'max-w-7xl mx-auto' }} px-4 sm:px-6 lg:px-8 relative z-10">
+                {{-- Section Name (ถ้าต้องการแสดง) --}}
+                @if($section->settings['show_title'] ?? false)
+                    <h2 class="text-3xl md:text-4xl font-bold text-center mb-8 text-slate-900 dark:text-white">
+                        {{ $section->name }}
+                    </h2>
+                @endif
+
+                {{-- Elements --}}
+                @if($section->activeElements->count() > 0)
+                    <div class="relative">
+                        @foreach($section->activeElements as $element)
+                            @include('components.homepage.element', ['element' => $element])
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </section>
+    @endforeach
+@endif
+
+{{-- ================================================================
     CTA SECTION - Call to Action
 ================================================================ --}}
 <section class="py-24 lg:py-32 bg-white dark:bg-slate-900">
