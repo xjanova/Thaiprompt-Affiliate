@@ -165,18 +165,24 @@ class SuperAdminMlmSeeder extends Seeder
     /**
      * หา Default MLM Package
      *
+     * ⚠️ หมายเหตุ: ตาราง mlm_packages ไม่มีคอลัมน์ is_default
+     * ใช้ sort_order หรือ slug ในการหา default package แทน
+     *
      * @return MlmPackage|null
      */
     private function getDefaultPackage(): ?MlmPackage
     {
-        // หา package ที่เป็น default
-        $package = MlmPackage::where('is_default', true)->first();
+        // หา bronze-package (standard package)
+        $package = MlmPackage::where('slug', 'bronze-package')->first();
         if ($package) {
             return $package;
         }
 
-        // หา bronze-package (standard package)
-        $package = MlmPackage::where('slug', 'bronze-package')->first();
+        // หา package ที่ active และราคาต่ำสุด (เหมาะสำหรับ default)
+        $package = MlmPackage::where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('price')
+            ->first();
         if ($package) {
             return $package;
         }
