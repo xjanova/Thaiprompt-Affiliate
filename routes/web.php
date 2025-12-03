@@ -775,6 +775,44 @@ Route::prefix('tpix')->name('tpix.')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| Feature Documents Routes (Public)
+|--------------------------------------------------------------------------
+|
+| Routes สำหรับหน้าเอกสารอธิบาย Feature ของระบบ
+| ใช้สำหรับแสดงรายละเอียดจากหน้าแรก "ทำไมต้องเลือกร้านค้าชุมชนไทยพร๊อม"
+|
+*/
+use App\Http\Controllers\FeatureDocumentController;
+
+// ⚠️ SEO Critical: Feature documents ต้องถูก index โดย search engines
+Route::prefix('documents')->name('documents.')->group(function () {
+    // All-in-One Platform
+    Route::match(['GET', 'HEAD'], '/all-in-one', [FeatureDocumentController::class, 'allInOne'])
+        ->name('all-in-one');
+
+    // AI-Powered Automation
+    Route::match(['GET', 'HEAD'], '/ai-automation', [FeatureDocumentController::class, 'aiAutomation'])
+        ->name('ai-automation');
+
+    // Blockchain & TPIX Token (รวม Whitepaper ทั้งหมด)
+    Route::match(['GET', 'HEAD'], '/blockchain-tpix', [FeatureDocumentController::class, 'blockchainTpix'])
+        ->name('blockchain-tpix');
+
+    // Multi-Currency Wallet
+    Route::match(['GET', 'HEAD'], '/multi-currency-wallet', [FeatureDocumentController::class, 'multiCurrencyWallet'])
+        ->name('multi-currency-wallet');
+
+    // MLM & Commission System
+    Route::match(['GET', 'HEAD'], '/mlm-commission', [FeatureDocumentController::class, 'mlmCommission'])
+        ->name('mlm-commission');
+
+    // Enterprise Security
+    Route::match(['GET', 'HEAD'], '/enterprise-security', [FeatureDocumentController::class, 'enterpriseSecurity'])
+        ->name('enterprise-security');
+});
+
+/*
+|--------------------------------------------------------------------------
 | NFC Card Verification Routes (Public)
 |--------------------------------------------------------------------------
 |
