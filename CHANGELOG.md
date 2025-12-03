@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.316.0] - 2025-12-03
+
+### ✨ Features
+- feat: redesign register page with modern V3 theme (0a30c8dc)
+### 🐛 Bug Fixes
+- fix: hide site name in navigation when logo is present (3fcdedbc)
+- fix: replace inline TPIX logo placeholders with actual tpix-logo.svg (d9858bbd)
+### 🔧 Other Changes
+- Merge pull request #1943 from xjanova/claude/redesign-homepage-015E39nVgPNxodNQGUVo4yf2 (99d51253)
+
 ## [v3.315.1] - 2025-12-03
 
 ### ✨ Features
