@@ -1299,6 +1299,24 @@ Route::prefix('ecommerce')->name('ecommerce.')->group(function () {
     Route::get('/reports', [ECommerceController::class, 'reports'])->name('reports');
 });
 
+// Storefront Management (Banner, Settings)
+Route::prefix('storefront')->name('storefront.')->group(function () {
+    // Storefront Settings Index
+    Route::get('/', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'index'])->name('index');
+
+    // Banners Management
+    Route::prefix('banners')->name('banners.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'banners'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'createBanner'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'storeBanner'])->name('store');
+        Route::get('/{banner}/edit', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'editBanner'])->name('edit');
+        Route::put('/{banner}', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'updateBanner'])->name('update');
+        Route::delete('/{banner}', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'destroyBanner'])->name('destroy');
+        Route::post('/reorder', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'reorderBanners'])->name('reorder');
+        Route::post('/{banner}/toggle', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'toggleBannerStatus'])->name('toggle');
+    });
+});
+
 // Featured Stores Management (Homepage)
 Route::prefix('featured-stores')->name('featured-stores.')->group(function () {
     Route::get('/', [FeaturedStoreController::class, 'index'])->name('index');

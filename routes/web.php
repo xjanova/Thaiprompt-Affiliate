@@ -350,6 +350,19 @@ Route::middleware('auth')->prefix('owner-dashboard')->name('owner-dashboard.')->
 // E-COMMERCE ROUTES (Shop System)
 // ========================================
 
+// NEW: Storefront Routes (AliExpress-style Premium Storefront)
+// ⚠️ E-commerce Critical: หน้าร้านหลักแบบ AliExpress ต้องถูก index
+Route::prefix('storefront')->name('storefront.')->group(function () {
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\StorefrontController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/search', [\App\Http\Controllers\StorefrontController::class, 'quickSearch'])->name('search');
+});
+
+// Store Pages (Individual Vendor Store Pages)
+// ⚠️ E-commerce Critical: หน้าร้านค้าแต่ละร้าน ต้องถูก index
+Route::prefix('store')->name('store.')->group(function () {
+    Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\StorefrontController::class, 'showStore'])->name('show');
+});
+
 // Shop Routes (Public browsing)
 // ⚠️ E-commerce Critical: Shop system ต้องถูก index โดย search engines
 Route::prefix('shop')->name('shop.')->group(function () {
