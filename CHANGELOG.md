@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.312.8] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1936 from xjanova/claude/skip-existing-app-settings-013ErB5QsS4LptYNEWnyWDSj (962ff866)
+- fix: improve route verification regex for Laravel 11 table format (25877553)
+### 🔧 Other Changes
+
+
 ## [v3.312.7] - 2025-12-03
 
 ### ✨ Features
