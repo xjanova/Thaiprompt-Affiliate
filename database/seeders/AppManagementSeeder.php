@@ -87,6 +87,13 @@ class AppManagementSeeder extends Seeder
             return;
         }
 
+        // ✅ ตรวจสอบว่าใช้ JSON schema ใหม่หรือไม่ (ตาราง V2 ใช้ JSON columns แทน individual columns)
+        // ถ้าไม่มี logo_url column แสดงว่าใช้ JSON schema ใหม่ - ข้ามการ seed เพราะใช้ Arrow X theme แทน
+        if (!Schema::hasColumn('app_theme_settings', 'logo_url')) {
+            $this->command->warn('⚠️  App Theme Settings uses JSON schema (V2) - skipping (Arrow X theme is used by default)');
+            return;
+        }
+
         // Check if theme settings exist
         if (AppThemeSetting::find(1)) {
             $this->command->warn('⚠️  App Theme Settings already exist - skipping to preserve customizations');
