@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.321.0] - 2025-12-03
+
+### ✨ Features
+- Merge pull request #1962 from xjanova/claude/add-user-guides-profile-0128idxyAZ2dxzsDfEb6f9F1 (8e6e7e49)
+- feat: add user guides for Admin, User, and Seller dashboards (a3341511)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.320.1] - 2025-12-03
 
 ### ✨ Features
