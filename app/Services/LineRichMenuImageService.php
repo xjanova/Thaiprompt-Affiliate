@@ -4,7 +4,8 @@ namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 /**
  * LINE Rich Menu Image Service
@@ -35,6 +36,8 @@ class LineRichMenuImageService
     /**
      * Process และ store ภาพ Rich Menu
      *
+     * ใช้ Intervention Image v3 API
+     *
      * @param UploadedFile $file
      * @param string $size 'full' หรือ 'half'
      * @param bool $needsResize ต้อง resize หรือไม่
@@ -51,8 +54,11 @@ class LineRichMenuImageService
         $targetWidth = self::DIMENSIONS[$size]['width'];
         $targetHeight = self::DIMENSIONS[$size]['height'];
 
-        // โหลดภาพด้วย Intervention Image
-        $image = Image::make($file);
+        // สร้าง ImageManager ด้วย GD driver (Intervention Image v3)
+        $manager = new ImageManager(new Driver());
+
+        // โหลดภาพด้วย Intervention Image v3
+        $image = $manager->read($file->getPathname());
 
         // ตรวจสอบขนาดปัจจุบัน
         $currentWidth = $image->width();
@@ -60,21 +66,21 @@ class LineRichMenuImageService
 
         // ถ้าต้อง resize
         if ($needsResize || $currentWidth !== $targetWidth || $currentHeight !== $targetHeight) {
-            // Resize แบบ fit (รักษา aspect ratio แล้ว crop)
-            $image = $this->resizeAndCrop($image, $targetWidth, $targetHeight);
+            // Resize แบบ cover (รักษา aspect ratio แล้ว crop)
+            $image->cover($targetWidth, $targetHeight);
         }
 
-        // Optimize quality
-        $image->sharpen(10); // เพิ่มความคมชัด
+        // Optimize quality - เพิ่มความคมชัด
+        $image->sharpen(10);
 
         // สร้างชื่อไฟล์
         $filename = $this->generateFilename($size);
 
-        // แปลงเป็น WebP และบันทึก
+        // แปลงเป็น WebP และบันทึก (v3 API)
         $path = "rich-menus/{$filename}";
-        $webpData = $image->encode('webp', 90)->getEncoded(); // quality 90%
+        $webpData = $image->toWebp(quality: 90);
 
-        Storage::disk('public')->put($path, $webpData);
+        Storage::disk('public')->put($path, (string) $webpData);
 
         // ดึงข้อมูลไฟล์
         $sizeKb = round(Storage::disk('public')->size($path) / 1024, 2);
@@ -86,48 +92,6 @@ class LineRichMenuImageService
             'height' => $targetHeight,
             'size_kb' => $sizeKb,
         ];
-    }
-
-    /**
-     * Resize และ crop ภาพให้ตรงขนาดที่ต้องการ
-     *
-     * Strategy:
-     * 1. Resize ให้ใหญ่กว่าหรือเท่ากับขนาดเป้าหมาย (รักษา aspect ratio)
-     * 2. Crop ส่วนเกินออก (จากตรงกลาง)
-     *
-     * @param \Intervention\Image\Image $image
-     * @param int $targetWidth
-     * @param int $targetHeight
-     * @return \Intervention\Image\Image
-     */
-    protected function resizeAndCrop($image, int $targetWidth, int $targetHeight)
-    {
-        $currentWidth = $image->width();
-        $currentHeight = $image->height();
-
-        // คำนวณ ratio
-        $targetRatio = $targetWidth / $targetHeight;
-        $currentRatio = $currentWidth / $currentHeight;
-
-        // Resize ให้ใหญ่กว่าขนาดเป้าหมายเล็กน้อย (เพื่อเตรียม crop)
-        if ($currentRatio > $targetRatio) {
-            // ภาพกว้างกว่า → resize ตาม height แล้ว crop width
-            $image->resize(null, $targetHeight, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
-            });
-        } else {
-            // ภาพสูงกว่า → resize ตาม width แล้ว crop height
-            $image->resize($targetWidth, null, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
-            });
-        }
-
-        // Crop ให้ตรงขนาดเป้าหมาย (จากตรงกลาง)
-        $image->fit($targetWidth, $targetHeight, null, 'center');
-
-        return $image;
     }
 
     /**
