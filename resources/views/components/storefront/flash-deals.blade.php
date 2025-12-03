@@ -258,7 +258,7 @@
 
         {{-- View All Link --}}
         <div class="flex justify-center mt-6">
-            <a href="{{ route('shop.index', ['sort_by' => 'discount']) }}"
+            <a href="{{ route('storefront.index', ['sort_by' => 'discount']) }}"
                class="inline-flex items-center gap-2 px-8 py-3
                      bg-white hover:bg-gray-100
                      text-red-600 font-bold text-sm

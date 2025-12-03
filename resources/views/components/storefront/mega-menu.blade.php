@@ -58,7 +58,7 @@
                 @foreach($categories as $category)
                 <div class="relative"
                      @mouseenter="activeCategory = {{ $category->id }}">
-                    <a href="{{ route('shop.category', $category->slug) }}"
+                    <a href="{{ route('storefront.index', ['category' => $category->slug]) }}"
                        class="flex items-center justify-between px-5 py-3.5
                               text-gray-700 dark:text-gray-300
                               hover:bg-gradient-to-r hover:from-orange-50 hover:to-pink-50
@@ -119,7 +119,7 @@
                             @endif
                         </div>
 
-                        <a href="{{ route('shop.category', $category->slug) }}"
+                        <a href="{{ route('storefront.index', ['category' => $category->slug]) }}"
                            class="flex items-center gap-1 px-4 py-2
                                   bg-gradient-to-r from-orange-500 to-pink-500
                                   hover:from-orange-600 hover:to-pink-600
@@ -136,7 +136,7 @@
                     @if($category->children && $category->children->count() > 0)
                     <div class="grid grid-cols-3 gap-3">
                         @foreach($category->children->take(9) as $child)
-                        <a href="{{ route('shop.category', $child->slug) }}"
+                        <a href="{{ route('storefront.index', ['category' => $child->slug]) }}"
                            class="flex items-center gap-2 p-3
                                   bg-gray-50 dark:bg-gray-800
                                   hover:bg-gradient-to-r hover:from-orange-50 hover:to-pink-50
@@ -247,7 +247,7 @@
                     </div>
                 </div>
 
-                <a href="{{ route('shop.index') }}"
+                <a href="{{ route('storefront.index') }}"
                    class="px-6 py-2 bg-white text-orange-600 font-bold rounded-lg
                          hover:bg-orange-50 transition-colors shadow-lg">
                     ดูสินค้าทั้งหมด
