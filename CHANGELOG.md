@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.312.2] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1930 from xjanova/claude/fix-forum-reports-migration-01LMxz7yNg944BQXKhBtm4Eb (dc40162a)
+- fix: remove duplicate index in forum_reports migration (80a060ac)
+### 🔧 Other Changes
+
+
 ## [v3.312.1] - 2025-12-03
 
 ### ✨ Features
