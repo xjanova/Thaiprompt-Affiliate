@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.316.9] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1952 from xjanova/claude/fix-banner-drag-positioning-01VYABsucV51PKLxkjSzKfE6 (a09e2777)
+- fix: แก้ไขชื่อคอลัมน์ order_items.price เป็น unit_price (af76337a)
+### 🔧 Other Changes
+
+
 ## [v3.316.8] - 2025-12-03
 
 ### ✨ Features
