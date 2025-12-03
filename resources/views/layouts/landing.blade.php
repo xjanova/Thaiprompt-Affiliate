@@ -337,137 +337,141 @@
                 </div>
             </div>
         </nav>
+    </header>
 
-        {{-- Mobile/Burger Menu Overlay --}}
-        <div x-show="mobileMenuOpen"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             class="fixed inset-0 bg-black/50 z-[110]"
-             @click="mobileMenuOpen = false"
-             x-cloak>
-        </div>
+    {{-- ================================================================
+        MOBILE MENU - อยู่นอก header เพื่อหลีกเลี่ยง stacking context issues
+    ================================================================ --}}
 
-        {{-- Mobile/Burger Menu Panel --}}
-        <div x-show="mobileMenuOpen"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="translate-x-full"
-             x-transition:enter-end="translate-x-0"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="translate-x-0"
-             x-transition:leave-end="translate-x-full"
-             class="fixed top-0 right-0 bottom-0 w-80 max-w-full glass-dark z-[120] overflow-y-auto"
-             x-cloak>
+    {{-- Mobile/Burger Menu Overlay --}}
+    <div x-show="mobileMenuOpen"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-black/50 z-[9998]"
+         @click="mobileMenuOpen = false"
+         x-cloak>
+    </div>
 
-            <div class="p-6">
-                {{-- Menu Header --}}
-                <div class="flex items-center justify-between mb-8">
-                    <span class="text-lg font-bold text-white">เมนู</span>
-                    <button @click="mobileMenuOpen = false"
-                            class="p-2 rounded-lg hover:bg-slate-700 transition-colors">
-                        <i class="fas fa-times text-xl text-white"></i>
-                    </button>
-                </div>
+    {{-- Mobile/Burger Menu Panel --}}
+    <div x-show="mobileMenuOpen"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="translate-x-full"
+         x-transition:enter-end="translate-x-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="translate-x-0"
+         x-transition:leave-end="translate-x-full"
+         class="fixed top-0 right-0 bottom-0 w-80 max-w-full glass-dark z-[9999] overflow-y-auto"
+         x-cloak>
 
-                {{-- Menu Links --}}
-                <nav class="space-y-2">
-                    <a href="{{ route('home') }}" @click="mobileMenuOpen = false"
-                       class="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-900/30 text-white font-medium">
-                        <i class="fas fa-home w-5 text-center"></i>
-                        หน้าแรก
+        <div class="p-6">
+            {{-- Menu Header --}}
+            <div class="flex items-center justify-between mb-8">
+                <span class="text-lg font-bold text-white">เมนู</span>
+                <button @click="mobileMenuOpen = false"
+                        class="p-2 rounded-lg hover:bg-slate-700 transition-colors">
+                    <i class="fas fa-times text-xl text-white"></i>
+                </button>
+            </div>
+
+            {{-- Menu Links --}}
+            <nav class="space-y-2">
+                <a href="{{ route('home') }}" @click="mobileMenuOpen = false"
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-900/30 text-white font-medium">
+                    <i class="fas fa-home w-5 text-center"></i>
+                    หน้าแรก
+                </a>
+                <a href="#demo" @click="mobileMenuOpen = false"
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
+                    <i class="fas fa-play-circle w-5 text-center"></i>
+                    สื่อการเรียนรู้
+                </a>
+                <a href="#features" @click="mobileMenuOpen = false"
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
+                    <i class="fas fa-star w-5 text-center"></i>
+                    คุณสมบัติ
+                </a>
+                <a href="#systems" @click="mobileMenuOpen = false"
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
+                    <i class="fas fa-cubes w-5 text-center"></i>
+                    ระบบทั้งหมด
+                </a>
+                <a href="#stats" @click="mobileMenuOpen = false"
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
+                    <i class="fas fa-chart-bar w-5 text-center"></i>
+                    สถิติ
+                </a>
+                <a href="{{ route('about') }}" @click="mobileMenuOpen = false"
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
+                    <i class="fas fa-info-circle w-5 text-center"></i>
+                    เกี่ยวกับเรา
+                </a>
+                <a href="{{ route('contact') }}" @click="mobileMenuOpen = false"
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
+                    <i class="fas fa-envelope w-5 text-center"></i>
+                    ติดต่อเรา
+                </a>
+
+                {{-- Wiki Section --}}
+                <div class="pt-4 border-t border-white/10">
+                    <p class="px-4 py-2 text-xs uppercase tracking-wider text-slate-400 font-semibold">
+                        ข้อมูลเพิ่มเติม
+                    </p>
+                    <a href="{{ route('wiki.index') }}" @click="mobileMenuOpen = false"
+                       class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
+                        <i class="fas fa-book w-5 text-center"></i>
+                        คู่มือการใช้งาน
                     </a>
-                    <a href="#demo" @click="mobileMenuOpen = false"
+                    <a href="/demo" @click="mobileMenuOpen = false"
                        class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
                         <i class="fas fa-play-circle w-5 text-center"></i>
-                        สื่อการเรียนรู้
+                        ทดลองใช้งาน
                     </a>
-                    <a href="#features" @click="mobileMenuOpen = false"
-                       class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
-                        <i class="fas fa-star w-5 text-center"></i>
-                        คุณสมบัติ
-                    </a>
-                    <a href="#systems" @click="mobileMenuOpen = false"
-                       class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
-                        <i class="fas fa-cubes w-5 text-center"></i>
-                        ระบบทั้งหมด
-                    </a>
-                    <a href="#stats" @click="mobileMenuOpen = false"
-                       class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
-                        <i class="fas fa-chart-bar w-5 text-center"></i>
-                        สถิติ
-                    </a>
-                    <a href="{{ route('about') }}" @click="mobileMenuOpen = false"
-                       class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
-                        <i class="fas fa-info-circle w-5 text-center"></i>
-                        เกี่ยวกับเรา
-                    </a>
-                    <a href="{{ route('contact') }}" @click="mobileMenuOpen = false"
-                       class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
-                        <i class="fas fa-envelope w-5 text-center"></i>
-                        ติดต่อเรา
-                    </a>
-
-                    {{-- Wiki Section --}}
-                    <div class="pt-4 border-t border-white/10">
-                        <p class="px-4 py-2 text-xs uppercase tracking-wider text-slate-400 font-semibold">
-                            ข้อมูลเพิ่มเติม
-                        </p>
-                        <a href="{{ route('wiki.index') }}" @click="mobileMenuOpen = false"
-                           class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
-                            <i class="fas fa-book w-5 text-center"></i>
-                            คู่มือการใช้งาน
-                        </a>
-                        <a href="/demo" @click="mobileMenuOpen = false"
-                           class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
-                            <i class="fas fa-play-circle w-5 text-center"></i>
-                            ทดลองใช้งาน
-                        </a>
-                    </div>
-                </nav>
-
-                {{-- Auth Buttons --}}
-                <div class="mt-8 pt-6 border-t border-white/10 space-y-3">
-                    @auth
-                        <a href="{{ route('user.dashboard') }}"
-                           class="flex items-center justify-center gap-2 w-full px-5 py-3 btn-primary text-white font-semibold rounded-xl">
-                            <i class="fas fa-tachometer-alt"></i>
-                            Dashboard
-                        </a>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit"
-                                    class="flex items-center justify-center gap-2 w-full px-5 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors">
-                                <i class="fas fa-sign-out-alt"></i>
-                                ออกจากระบบ
-                            </button>
-                        </form>
-                    @else
-                        <a href="{{ route('login') }}"
-                           class="flex items-center justify-center gap-2 w-full px-5 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-colors">
-                            <i class="fas fa-sign-in-alt"></i>
-                            เข้าสู่ระบบ
-                        </a>
-                        <a href="{{ route('register') }}"
-                           class="flex items-center justify-center gap-2 w-full px-5 py-3 btn-secondary text-white font-semibold rounded-xl">
-                            <i class="fas fa-user-plus"></i>
-                            ลงทะเบียนฟรี
-                        </a>
-                    @endauth
                 </div>
+            </nav>
 
-                {{-- App Info --}}
-                <div class="mt-8 pt-6 border-t border-white/10">
-                    <div class="text-center text-slate-400 text-sm">
-                        <p>{{ $appName }}</p>
-                        <p class="mt-1">Version 3.310.0</p>
-                    </div>
+            {{-- Auth Buttons --}}
+            <div class="mt-8 pt-6 border-t border-white/10 space-y-3">
+                @auth
+                    <a href="{{ route('user.dashboard') }}"
+                       class="flex items-center justify-center gap-2 w-full px-5 py-3 btn-primary text-white font-semibold rounded-xl">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
+                    </a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit"
+                                class="flex items-center justify-center gap-2 w-full px-5 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors">
+                            <i class="fas fa-sign-out-alt"></i>
+                            ออกจากระบบ
+                        </button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}"
+                       class="flex items-center justify-center gap-2 w-full px-5 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-colors">
+                        <i class="fas fa-sign-in-alt"></i>
+                        เข้าสู่ระบบ
+                    </a>
+                    <a href="{{ route('register') }}"
+                       class="flex items-center justify-center gap-2 w-full px-5 py-3 btn-secondary text-white font-semibold rounded-xl">
+                        <i class="fas fa-user-plus"></i>
+                        ลงทะเบียนฟรี
+                    </a>
+                @endauth
+            </div>
+
+            {{-- App Info --}}
+            <div class="mt-8 pt-6 border-t border-white/10">
+                <div class="text-center text-slate-400 text-sm">
+                    <p>{{ $appName }}</p>
+                    <p class="mt-1">Version 3.310.0</p>
                 </div>
             </div>
         </div>
-    </header>
+    </div>
 
     {{-- ================================================================
         MAIN CONTENT
