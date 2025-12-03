@@ -195,23 +195,90 @@
                     วิดีโอสอนการใช้งาน
                 </h2>
 
+                {{-- Featured Video - Click to Play --}}
+                <div class="mb-8" x-data="{ playing: false }">
+                    <h3 class="text-lg font-semibold text-white/90 mb-4">
+                        <i class="fas fa-star text-yellow-400 mr-2"></i>
+                        วิดีโอแนะนำระบบ
+                    </h3>
+                    <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20 group cursor-pointer"
+                         @click="playing = true">
+                        {{-- Thumbnail --}}
+                        <div class="aspect-video" x-show="!playing">
+                            <img src="https://img.youtube.com/vi/-GsrFb2tO1I/maxresdefault.jpg"
+                                 alt="วิดีโอแนะนำ TP-Affiliate"
+                                 class="w-full h-full object-cover">
+
+                            {{-- Overlay --}}
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col items-center justify-center">
+                                {{-- Play Button --}}
+                                <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300 border border-white/30">
+                                    <i class="fas fa-play text-4xl text-white ml-1"></i>
+                                </div>
+                                <h4 class="text-2xl font-bold text-white drop-shadow-lg mb-2">
+                                    แนะนำระบบ TP-Affiliate
+                                </h4>
+                                <p class="text-white/80 text-sm">
+                                    เริ่มต้นสร้างรายได้กับระบบ Affiliate
+                                </p>
+                            </div>
+                        </div>
+
+                        {{-- Video iframe (loads when clicked) --}}
+                        <div class="aspect-video" x-show="playing" x-cloak>
+                            <template x-if="playing">
+                                <iframe
+                                    src="https://www.youtube.com/embed/-GsrFb2tO1I?autoplay=1&rel=0"
+                                    title="TP-Affiliate User Introduction"
+                                    class="w-full h-full"
+                                    frameborder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowfullscreen>
+                                </iframe>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Other Videos Grid --}}
+                <h3 class="text-lg font-semibold text-white/90 mb-4">
+                    <i class="fas fa-list text-blue-400 mr-2"></i>
+                    วิดีโอทั้งหมด
+                </h3>
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <template x-for="video in videos" :key="video.id">
-                        <div class="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden border border-white/20 hover:border-white/40 transition hover:shadow-2xl cursor-pointer group">
-                            {{-- Thumbnail --}}
-                            <div class="relative aspect-video bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center group-hover:scale-105 transition-transform">
-                                <i class="fas fa-play-circle text-6xl text-white/80 group-hover:text-white transition"></i>
-                                <div class="absolute bottom-2 right-2 px-2 py-1 bg-black/70 rounded text-white text-xs" x-text="video.duration"></div>
+                        <div class="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden border border-white/20 hover:border-white/40 transition hover:shadow-2xl cursor-pointer group"
+                             x-data="{ videoPlaying: false }">
+                            {{-- Thumbnail with Click to Play --}}
+                            <div class="relative aspect-video" @click="videoPlaying = true">
+                                <template x-if="!videoPlaying">
+                                    <div class="w-full h-full">
+                                        <img :src="'https://img.youtube.com/vi/' + video.youtubeId + '/mqdefault.jpg'"
+                                             :alt="video.title"
+                                             class="w-full h-full object-cover bg-gradient-to-br from-gray-800 to-gray-900">
+                                        <div class="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/20 transition">
+                                            <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 group-hover:scale-110 transition-all border border-white/30">
+                                                <i class="fas fa-play text-2xl text-white ml-1"></i>
+                                            </div>
+                                        </div>
+                                        <div class="absolute bottom-2 right-2 px-2 py-1 bg-black/70 rounded text-white text-xs" x-text="video.duration"></div>
+                                    </div>
+                                </template>
+                                <template x-if="videoPlaying">
+                                    <iframe
+                                        :src="'https://www.youtube.com/embed/' + video.youtubeId + '?autoplay=1&rel=0'"
+                                        :title="video.title"
+                                        class="w-full h-full"
+                                        frameborder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowfullscreen>
+                                    </iframe>
+                                </template>
                             </div>
                             {{-- Info --}}
                             <div class="p-4">
                                 <h3 class="font-bold text-white mb-2 line-clamp-2" x-text="video.title"></h3>
                                 <p class="text-white/60 text-xs mb-3" x-text="video.description"></p>
-                                <button @click="playVideo(video)"
-                                        class="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition font-medium text-sm">
-                                    <i class="fas fa-play mr-2"></i>
-                                    เล่นวิดีโอ
-                                </button>
                             </div>
                         </div>
                     </template>
@@ -488,37 +555,43 @@ function userGuideManager() {
                 id: 1,
                 title: 'วิธีสมัครสมาชิกและเริ่มต้นใช้งาน',
                 description: 'สอนการสมัครและตั้งค่าบัญชีครั้งแรก',
-                duration: '05:30'
+                duration: '05:30',
+                youtubeId: '-GsrFb2tO1I'
             },
             {
                 id: 2,
                 title: 'วิธีสร้างลิงก์ Affiliate',
                 description: 'สร้างลิงก์แนะนำและวิธีแชร์ที่มีประสิทธิภาพ',
-                duration: '06:45'
+                duration: '06:45',
+                youtubeId: '-GsrFb2tO1I'
             },
             {
                 id: 3,
                 title: 'การใช้งานกระเป๋าเงิน',
                 description: 'วิธีเติมเงิน ถอนเงิน และดูประวัติธุรกรรม',
-                duration: '08:20'
+                duration: '08:20',
+                youtubeId: '-GsrFb2tO1I'
             },
             {
                 id: 4,
                 title: 'ทำความเข้าใจระบบยศ',
                 description: 'เงื่อนไขการอัพยศและสิทธิพิเศษที่ได้รับ',
-                duration: '07:15'
+                duration: '07:15',
+                youtubeId: '-GsrFb2tO1I'
             },
             {
                 id: 5,
                 title: 'เทคนิคการสร้างรายได้',
                 description: 'วิธีเพิ่มรายได้จากระบบ Affiliate',
-                duration: '10:50'
+                duration: '10:50',
+                youtubeId: '-GsrFb2tO1I'
             },
             {
                 id: 6,
                 title: 'การใช้งาน Dashboard',
                 description: 'อ่านและวิเคราะห์ข้อมูลใน Dashboard',
-                duration: '05:40'
+                duration: '05:40',
+                youtubeId: '-GsrFb2tO1I'
             }
         ],
 
