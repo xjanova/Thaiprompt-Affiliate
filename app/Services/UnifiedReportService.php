@@ -854,14 +854,14 @@ class UnifiedReportService
         return DB::table('order_items')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->join('categories', 'products.category_id', '=', 'categories.id')
+            ->join('product_categories', 'products.category_id', '=', 'product_categories.id')
             ->whereBetween('orders.created_at', [$dates['start'], $dates['end']])
             ->where('orders.status', 'completed')
             ->select(
-                'categories.name',
+                'product_categories.name',
                 DB::raw('SUM(order_items.unit_price * order_items.quantity) as total_revenue')
             )
-            ->groupBy('categories.id', 'categories.name')
+            ->groupBy('product_categories.id', 'product_categories.name')
             ->orderByDesc('total_revenue')
             ->get()
             ->toArray();
