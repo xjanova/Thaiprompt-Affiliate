@@ -109,8 +109,7 @@
                                  alt="Store Banner Preview"
                                  class="select-none"
                                  style="width: 100%; height: auto; position: absolute; top: 0; left: 0; user-select: none; -webkit-user-drag: none; pointer-events: none;"
-                                 draggable="false"
-                                 id="draggable-banner">
+                                 draggable="false">
                             <button type="button" id="remove-banner"
                                     class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition z-20 {{ $store->store_banner ? '' : 'hidden' }}"
                                     onclick="removeBanner(event)">
@@ -520,9 +519,9 @@
     }
 
     // === Banner Preview & Drag Functionality ===
+    // ตัวแปรสำหรับการจัดการแบนเนอร์และการลาก
     const bannerInput = document.getElementById('store_banner');
     const bannerPreview = document.getElementById('banner-preview');
-    const draggableBanner = document.getElementById('draggable-banner');
     const removeBannerBtn = document.getElementById('remove-banner');
     const bannerContainer = document.getElementById('banner-preview-container');
     const bannerPositionInput = document.getElementById('banner_position_y');
@@ -544,9 +543,9 @@
         positionValue.textContent = Math.round(value) + 'px';
     }
 
-    // Apply transform - simple translateY only
+    // Apply transform - ใช้ translateY สำหรับเลื่อนแบนเนอร์แนวตั้ง
     function applyBannerTransform(yPos) {
-        draggableBanner.style.transform = `translateY(${yPos}px)`;
+        bannerPreview.style.transform = `translateY(${yPos}px)`;
     }
 
     // Initialize banner position on image load
@@ -623,7 +622,7 @@
         const newY = startPosY + deltaY;
 
         const containerHeight = bannerContainer.offsetHeight;
-        const imageHeight = draggableBanner.offsetHeight;
+        const imageHeight = bannerPreview.offsetHeight;
 
         console.log('Container height:', containerHeight, 'Image height:', imageHeight);
 
@@ -665,7 +664,7 @@
         const newY = startPosY + deltaY;
 
         const containerHeight = bannerContainer.offsetHeight;
-        const imageHeight = draggableBanner.offsetHeight;
+        const imageHeight = bannerPreview.offsetHeight;
 
         const maxY = 0;
         const minY = Math.min(0, containerHeight - imageHeight);
