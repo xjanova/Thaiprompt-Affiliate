@@ -162,7 +162,7 @@
         @endif
 
         {{-- Visit Store Button --}}
-        <a href="{{ $store ? route('store.show', $store->store_slug) : ($isOfficial ? route('official-shop.index') : '#') }}"
+        <a href="{{ $store ? route('store.show', $store->store_slug) : ($isOfficial ? route('storefront.index', ['filter' => 'official']) : '#') }}"
            class="block w-full py-3 text-center
                  bg-gradient-to-r from-purple-500 to-pink-500
                  hover:from-purple-600 hover:to-pink-600

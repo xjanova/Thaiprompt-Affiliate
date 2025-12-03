@@ -363,42 +363,58 @@ Route::prefix('store')->name('store.')->group(function () {
     Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\StorefrontController::class, 'showStore'])->name('show');
 });
 
-// Shop Routes (Public browsing)
-// ⚠️ E-commerce Critical: Shop system ต้องถูก index โดย search engines
+// Shop Routes (Legacy - Redirect to Storefront)
+// ⚠️ Redirects: เปลี่ยนมาใช้ Storefront ใหม่แทน
 Route::prefix('shop')->name('shop.')->group(function () {
-    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\ShopController::class, 'index'])->name('index');
-    Route::match(['GET', 'HEAD'], '/category/{slug}', [\App\Http\Controllers\ShopController::class, 'category'])->name('category');
-    Route::match(['GET', 'HEAD'], '/search', [\App\Http\Controllers\ShopController::class, 'quickSearch'])->name('search');
+    Route::match(['GET', 'HEAD'], '/', function () {
+        return redirect()->route('storefront.index');
+    })->name('index');
+    Route::match(['GET', 'HEAD'], '/category/{slug}', function ($slug) {
+        return redirect()->route('storefront.index', ['category' => $slug]);
+    })->name('category');
+    Route::match(['GET', 'HEAD'], '/search', function (\Illuminate\Http\Request $request) {
+        return redirect()->route('storefront.index', ['q' => $request->q]);
+    })->name('search');
     Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\ShopController::class, 'show'])->name('show');
 });
 
-// Vendor Store Routes (Public browsing of individual vendor stores)
-// ⚠️ E-commerce: Vendor stores ต้องถูก index
+// Vendor Store Routes (Legacy - Redirect to Storefront)
+// ⚠️ Redirects: เปลี่ยนมาใช้ Storefront ใหม่แทน
 Route::prefix('stores')->name('vendor.stores.')->group(function () {
-    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\VendorStoreController::class, 'index'])->name('index');
-    Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\VendorStoreController::class, 'show'])->name('show');
-});
-
-// Official Shop Routes (ร้านของระบบ - แยกจากร้านผู้เช่า)
-// ⚠️ E-commerce Critical: ร้านของระบบต้องถูก index โดย search engines
-// โทนสีและ UI แตกต่างจากร้านทั่วไป (3D, Premium, Glassmorphism)
-Route::prefix('official-shop')->name('official-shop.')->group(function () {
-    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\OfficialShopController::class, 'index'])->name('index');
-    Route::match(['GET', 'HEAD'], '/featured', [\App\Http\Controllers\OfficialShopController::class, 'featured'])->name('featured');
-    Route::match(['GET', 'HEAD'], '/category/{slug}', [\App\Http\Controllers\OfficialShopController::class, 'category'])->name('category');
-    Route::match(['GET', 'HEAD'], '/search', [\App\Http\Controllers\OfficialShopController::class, 'quickSearch'])->name('search');
-    Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\OfficialShopController::class, 'show'])->name('show');
-});
-
-// Admin Store Routes (Legacy - เก็บไว้เพื่อ backward compatibility)
-// ⚠️ E-commerce: Admin store ต้องถูก index
-Route::prefix('admin-store')->name('admin-store.')->group(function () {
-    // Redirect to official shop
     Route::match(['GET', 'HEAD'], '/', function () {
-        return redirect()->route('official-shop.index');
+        return redirect()->route('storefront.index');
     })->name('index');
     Route::match(['GET', 'HEAD'], '/{slug}', function ($slug) {
-        return redirect()->route('official-shop.show', $slug);
+        return redirect()->route('store.show', $slug);
+    })->name('show');
+});
+
+// Official Shop Routes (Legacy - Redirect to Storefront)
+// ⚠️ Redirects: เปลี่ยนมาใช้ Storefront ใหม่แทน (Premium Design)
+Route::prefix('official-shop')->name('official-shop.')->group(function () {
+    Route::match(['GET', 'HEAD'], '/', function () {
+        return redirect()->route('storefront.index', ['filter' => 'official']);
+    })->name('index');
+    Route::match(['GET', 'HEAD'], '/featured', function () {
+        return redirect()->route('storefront.index', ['filter' => 'featured']);
+    })->name('featured');
+    Route::match(['GET', 'HEAD'], '/category/{slug}', function ($slug) {
+        return redirect()->route('storefront.index', ['category' => $slug, 'filter' => 'official']);
+    })->name('category');
+    Route::match(['GET', 'HEAD'], '/search', function (\Illuminate\Http\Request $request) {
+        return redirect()->route('storefront.index', ['q' => $request->q, 'filter' => 'official']);
+    })->name('search');
+    Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\ShopController::class, 'show'])->name('show');
+});
+
+// Admin Store Routes (Legacy - Redirect to Storefront)
+// ⚠️ Redirects: เปลี่ยนมาใช้ Storefront ใหม่แทน
+Route::prefix('admin-store')->name('admin-store.')->group(function () {
+    Route::match(['GET', 'HEAD'], '/', function () {
+        return redirect()->route('storefront.index', ['filter' => 'official']);
+    })->name('index');
+    Route::match(['GET', 'HEAD'], '/{slug}', function ($slug) {
+        return redirect()->route('shop.show', $slug);
     })->name('show');
 });
 

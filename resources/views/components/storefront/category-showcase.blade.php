@@ -33,7 +33,7 @@
             </div>
         </div>
 
-        <a href="{{ route('shop.index') }}"
+        <a href="{{ route('storefront.index') }}"
            class="hidden md:flex items-center gap-2 px-6 py-3
                  bg-gradient-to-r from-purple-500 to-pink-500
                  hover:from-purple-600 hover:to-pink-600
@@ -65,7 +65,7 @@
             $gradient = $gradients[$index % count($gradients)];
         @endphp
 
-        <a href="{{ route('shop.category', $category->slug) }}"
+        <a href="{{ route('storefront.index', ['category' => $category->slug]) }}"
            class="group relative bg-white dark:bg-gray-800
                  rounded-2xl overflow-hidden
                  shadow-md hover:shadow-2xl
@@ -149,7 +149,7 @@
 
     {{-- Mobile View All Button --}}
     <div class="mt-6 md:hidden text-center">
-        <a href="{{ route('shop.index') }}"
+        <a href="{{ route('storefront.index') }}"
            class="inline-flex items-center gap-2 px-8 py-3
                  bg-gradient-to-r from-purple-500 to-pink-500
                  text-white font-bold rounded-xl
