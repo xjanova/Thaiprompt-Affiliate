@@ -101,17 +101,17 @@
 
                 {{-- Quick Links --}}
                 <div class="hidden lg:flex items-center gap-4">
-                    <a href="{{ route('shop.index', ['sort_by' => 'popular']) }}"
+                    <a href="{{ route('storefront.index', ['sort_by' => 'popular']) }}"
                        class="text-sm font-semibold text-gray-600 dark:text-gray-400
                              hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
                         ยอดนิยม
                     </a>
-                    <a href="{{ route('official-shop.index') }}"
+                    <a href="{{ route('storefront.index', ['filter' => 'official']) }}"
                        class="text-sm font-semibold text-gray-600 dark:text-gray-400
                              hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
                         Official
                     </a>
-                    <a href="{{ route('shop.index', ['sort_by' => 'newest']) }}"
+                    <a href="{{ route('storefront.index', ['sort_by' => 'newest']) }}"
                        class="text-sm font-semibold text-gray-600 dark:text-gray-400
                              hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
                         สินค้าใหม่
@@ -569,7 +569,7 @@ function storefrontManager() {
             }
 
             try {
-                const response = await fetch(`{{ route('shop.search') }}?q=${encodeURIComponent(this.searchQuery)}`);
+                const response = await fetch(`{{ route('storefront.search') }}?q=${encodeURIComponent(this.searchQuery)}`);
                 const data = await response.json();
                 this.suggestions = data;
             } catch (error) {

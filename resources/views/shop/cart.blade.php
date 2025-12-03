@@ -15,7 +15,7 @@
                 </li>
                 <li class="text-gray-400 dark:text-gray-600">/</li>
                 <li>
-                    <a href="{{ route('shop.index') }}" class="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+                    <a href="{{ route('storefront.index') }}" class="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
                         ร้านค้า
                     </a>
                 </li>
@@ -239,7 +239,7 @@
                     </a>
 
                     <!-- Continue Shopping -->
-                    <a href="{{ route('shop.index') }}"
+                    <a href="{{ route('storefront.index') }}"
                        class="block w-full text-center px-6 py-3 mt-3 border-2 border-gray-300 dark:border-gray-600 hover:border-indigo-600 dark:hover:border-indigo-400 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-semibold rounded-xl transition">
                         ← ช๊อปปิ้งต่อ
                     </a>
@@ -271,7 +271,7 @@
             <div class="text-8xl mb-6">🛒</div>
             <h2 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3">ตะกร้าสินค้าว่างเปล่า</h2>
             <p class="text-gray-600 dark:text-gray-400 mb-8 text-lg">คุณยังไม่มีสินค้าในตะกร้า เริ่มช๊อปปิ้งกันเลย!</p>
-            <a href="{{ route('shop.index') }}"
+            <a href="{{ route('storefront.index') }}"
                class="inline-block px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-700 hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-600 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
                 🛍️ เริ่มช๊อปปิ้ง
             </a>

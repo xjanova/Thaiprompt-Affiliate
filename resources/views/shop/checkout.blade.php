@@ -15,7 +15,7 @@
                 </li>
                 <li class="text-gray-400">/</li>
                 <li>
-                    <a href="{{ route('shop.index') }}" class="text-gray-500 hover:text-indigo-600 transition">
+                    <a href="{{ route('storefront.index') }}" class="text-gray-500 hover:text-indigo-600 transition">
                         ร้านค้า
                     </a>
                 </li>

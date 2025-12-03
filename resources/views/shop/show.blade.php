@@ -23,14 +23,14 @@
                 </li>
                 <li><span class="text-gray-400">/</span></li>
                 <li>
-                    <a href="{{ route('shop.index') }}" class="text-gray-500 hover:text-indigo-600 transition">
+                    <a href="{{ route('storefront.index') }}" class="text-gray-500 hover:text-indigo-600 transition">
                         ร้านค้า
                     </a>
                 </li>
                 @if($product->category)
                 <li><span class="text-gray-400">/</span></li>
                 <li>
-                    <a href="{{ route('shop.category', $product->category->slug) }}" class="text-gray-500 hover:text-indigo-600 transition">
+                    <a href="{{ route('storefront.index', ['category' => $product->category->slug]) }}" class="text-gray-500 hover:text-indigo-600 transition">
                         {{ $product->category->name }}
                     </a>
                 </li>
@@ -135,7 +135,7 @@
                     <!-- Category & Brand -->
                     <div class="flex items-center gap-3 flex-wrap">
                         @if($product->category)
-                            <a href="{{ route('shop.category', $product->category->slug) }}"
+                            <a href="{{ route('storefront.index', ['category' => $product->category->slug]) }}"
                                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600 text-sm font-bold rounded-xl border border-indigo-200 hover:border-indigo-400 transition-all">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>

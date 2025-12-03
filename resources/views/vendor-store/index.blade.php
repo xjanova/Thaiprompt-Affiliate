@@ -66,7 +66,7 @@
                         🔍 ค้นหา
                     </button>
                     @if(request()->hasAny(['search', 'sort']))
-                    <a href="{{ route('vendor.stores.index') }}"
+                    <a href="{{ route('storefront.index') }}"
                        class="px-6 py-3 border-2 border-gray-300 hover:border-red-500 text-gray-700 dark:text-gray-200 hover:text-red-500 font-bold rounded-xl transition-all bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20">
                         ล้างตัวกรอง
                     </a>
@@ -78,7 +78,7 @@
             @if($stores->count() > 0)
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
                     @foreach($stores as $store)
-                        <a href="{{ route('vendor.stores.show', $store->store_slug) }}"
+                        <a href="{{ route('store.show', $store->store_slug) }}"
                            class="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 overflow-hidden border-2 border-transparent hover:border-indigo-500">
 
                             <!-- Store Banner/Logo -->
@@ -169,7 +169,7 @@
                         ลองค้นหาด้วยคำอื่นหรือล้างตัวกรองเพื่อดูร้านค้าทั้งหมด
                     </p>
                     @if(request()->hasAny(['search', 'sort']))
-                        <a href="{{ route('vendor.stores.index') }}"
+                        <a href="{{ route('storefront.index') }}"
                            class="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
