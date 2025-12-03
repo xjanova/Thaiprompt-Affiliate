@@ -231,7 +231,7 @@
                class="flex-1 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-center font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
                 📋 ดูรายละเอียดคำสั่งซื้อ
             </a>
-            <a href="{{ route('shop.index') }}"
+            <a href="{{ route('storefront.index') }}"
                class="flex-1 px-6 py-4 border-2 border-gray-300 hover:border-indigo-600 text-gray-700 hover:text-indigo-600 text-center font-bold text-lg rounded-xl transition">
                 🛍️ ช๊อปปิ้งต่อ
             </a>
