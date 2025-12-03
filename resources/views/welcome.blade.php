@@ -50,7 +50,13 @@
             <p class="text-xl text-gray-600 dark:text-gray-300 mb-8">
                 ระบบ Affiliate Marketing ครบวงจร พร้อมระบบ MLM, E-Commerce, AI Bots และอื่นๆ อีกมากมาย
             </p>
-            <div class="flex items-center justify-center space-x-4">
+            <div class="flex items-center justify-center space-x-4 flex-wrap gap-y-4">
+                <a href="{{ route('storefront.index') }}" class="px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-xl font-semibold text-lg transition shadow-lg hover:shadow-xl flex items-center gap-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    🛒 ช้อปปิ้งเลย!
+                </a>
                 <a href="{{ route('register') }}" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold text-lg transition shadow-lg hover:shadow-xl">
                     เริ่มต้นใช้งาน ฟรี!
                 </a>
