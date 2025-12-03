@@ -166,10 +166,12 @@
                             @endif
                         </div>
 
-                        {{-- App Name --}}
+                        {{-- App Name - แสดงเฉพาะเมื่อไม่มีโลโก้ --}}
+                        @if(!$systemLogo)
                         <h2 class="text-2xl lg:text-3xl font-bold text-white text-center mb-2">
                             {{ $appName }}
                         </h2>
+                        @endif
                         <p class="text-slate-400 text-center mb-8">
                             Enterprise Affiliate Platform
                         </p>
