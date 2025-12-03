@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.315.1] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1942 from xjanova/claude/fix-groupby-syntax-error-01CPLcEqfcNT8xaAZmyfjvib (c1564cc0)
+- fix: resolve MySQL ONLY_FULL_GROUP_BY error in ECommerceController reports (1b0c8f50)
+### 🔧 Other Changes
+
+
 ## [v3.315.0] - 2025-12-03
 
 ### ✨ Features
