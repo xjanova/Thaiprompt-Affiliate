@@ -837,7 +837,7 @@ class UnifiedReportService
                 'products.id',
                 'products.name',
                 DB::raw('SUM(order_items.quantity) as total_sold'),
-                DB::raw('SUM(order_items.price * order_items.quantity) as total_revenue')
+                DB::raw('SUM(order_items.unit_price * order_items.quantity) as total_revenue')
             )
             ->groupBy('products.id', 'products.name')
             ->orderByDesc('total_sold')
@@ -859,7 +859,7 @@ class UnifiedReportService
             ->where('orders.status', 'completed')
             ->select(
                 'categories.name',
-                DB::raw('SUM(order_items.price * order_items.quantity) as total_revenue')
+                DB::raw('SUM(order_items.unit_price * order_items.quantity) as total_revenue')
             )
             ->groupBy('categories.id', 'categories.name')
             ->orderByDesc('total_revenue')
