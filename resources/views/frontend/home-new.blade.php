@@ -171,18 +171,49 @@
                             @endif
                         </div>
 
-                        {{-- YouTube Video - Autoplay --}}
-                        <div class="mb-8">
-                            <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20">
-                                <div class="aspect-video">
-                                    <iframe
-                                        src="https://www.youtube.com/embed/-GsrFb2tO1I?autoplay=1&mute=1&loop=1&playlist=-GsrFb2tO1I&controls=1&rel=0"
-                                        title="TP-Affiliate Introduction"
-                                        class="w-full h-full"
-                                        frameborder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowfullscreen>
-                                    </iframe>
+                        {{-- YouTube Video - Click to Play --}}
+                        <div class="mb-8" x-data="{ playing: false }">
+                            <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20 group cursor-pointer"
+                                 @click="playing = true">
+                                {{-- Thumbnail --}}
+                                <div class="aspect-video" x-show="!playing">
+                                    <img src="https://img.youtube.com/vi/-GsrFb2tO1I/maxresdefault.jpg"
+                                         alt="วิดีโอแนะนำ TP-Affiliate"
+                                         class="w-full h-full object-cover">
+
+                                    {{-- Overlay --}}
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col items-center justify-center">
+                                        {{-- Play Button --}}
+                                        <div class="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center shadow-2xl
+                                                    transform group-hover:scale-110 transition-all duration-300
+                                                    group-hover:bg-red-500">
+                                            <svg class="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M8 5v14l11-7z"/>
+                                            </svg>
+                                        </div>
+
+                                        {{-- Invite Text --}}
+                                        <p class="mt-4 text-white text-lg font-semibold drop-shadow-lg">
+                                            ▶ คลิกเพื่อดูวิดีโอแนะนำ
+                                        </p>
+                                        <p class="text-white/70 text-sm mt-1">
+                                            ทำความรู้จักกับระบบของเรา
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {{-- Video iframe (loads when clicked) --}}
+                                <div class="aspect-video" x-show="playing" x-cloak>
+                                    <template x-if="playing">
+                                        <iframe
+                                            src="https://www.youtube.com/embed/-GsrFb2tO1I?autoplay=1&rel=0"
+                                            title="TP-Affiliate Introduction"
+                                            class="w-full h-full"
+                                            frameborder="0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowfullscreen>
+                                        </iframe>
+                                    </template>
                                 </div>
                             </div>
                         </div>
@@ -193,9 +224,6 @@
                             {{ $appName }}
                         </h2>
                         @endif
-                        <p class="text-slate-400 text-center mb-8">
-                            Enterprise Affiliate Platform
-                        </p>
 
                         {{-- Quick Stats --}}
                         <div class="grid grid-cols-2 gap-4">
