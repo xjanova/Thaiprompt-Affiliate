@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.318.0] - 2025-12-03
+
+### ✨ Features
+- Merge pull request #1957 from xjanova/claude/redesign-ecommerce-storefront-01UHAwtzerA3ghF9zAt5m8K5 (6d7ca223)
+- feat: add prominent storefront link to homepage hero section (6662041c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.317.3] - 2025-12-03
 
 ### ✨ Features
