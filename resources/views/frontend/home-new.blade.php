@@ -25,9 +25,10 @@
 @section('meta_description', 'TP-Affiliate Pro - แพลตฟอร์ม Affiliate Marketing ระดับ Enterprise ที่ครบครันที่สุด พร้อมระบบ AI, Blockchain, E-Commerce และ 20+ ระบบรองรับธุรกิจของคุณ')
 
 @php
-    // ดึงข้อมูลจากระบบ
-    $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate Pro');
-    $systemLogo = \App\Models\Setting::get('logo');
+    // ดึงข้อมูลจาก SiteSetting (ที่แอดมินตั้งค่าใน admin/site-settings)
+    $siteSettings = \App\Models\SiteSetting::getSetting();
+    $appName = $siteSettings->site_name ?? 'TP-Affiliate Pro';
+    $systemLogo = $siteSettings->logo;
 
     // ดึง version จาก package.json
     $version = '3.310.0';
@@ -141,7 +142,7 @@
 
                                     {{-- Logo Container --}}
                                     <div class="relative bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/30 shadow-2xl">
-                                        <img src="{{ asset($systemLogo) }}"
+                                        <img src="{{ asset('storage/' . $systemLogo) }}"
                                              alt="{{ $appName }}"
                                              class="h-32 sm:h-40 lg:h-48 w-auto drop-shadow-2xl transition-transform duration-500 group-hover:scale-105"
                                              style="filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.3));">
