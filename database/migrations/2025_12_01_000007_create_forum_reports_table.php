@@ -71,7 +71,7 @@ return new class extends Migration
             // Indexes
             $table->index('status');
             $table->index('reason_type');
-            $table->index(['reportable_type', 'reportable_id']);
+            // หมายเหตุ: morphs() สร้าง index สำหรับ reportable_type และ reportable_id ให้อัตโนมัติแล้ว
         });
     }
 
