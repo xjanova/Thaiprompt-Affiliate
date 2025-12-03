@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.316.3] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1946 from xjanova/claude/fix-forum-reports-migration-01LMxz7yNg944BQXKhBtm4Eb (f27b0bd7)
+- fix: add missing orders() relationship to User model (f8ae3e10)
+### 🔧 Other Changes
+
+
 ## [v3.316.2] - 2025-12-03
 
 ### ✨ Features
