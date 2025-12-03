@@ -150,15 +150,15 @@
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
-                        <a href="{{ route('user.orders.index') }}"
+                        <a href="{{ route('orders.index') }}"
                            class="text-center py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs font-medium
                                  hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors">
                             คำสั่งซื้อ
                         </a>
-                        <a href="{{ route('user.wishlist') }}"
+                        <a href="{{ route('user.dashboard') }}"
                            class="text-center py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs font-medium
                                  hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors">
-                            รายการโปรด
+                            แดชบอร์ด
                         </a>
                     </div>
                 </div>
