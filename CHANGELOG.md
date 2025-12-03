@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.316.2] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1945 from xjanova/claude/fix-groupby-syntax-error-01CPLcEqfcNT8xaAZmyfjvib (f1034cc1)
+- fix: remove is_default query from SuperAdminMlmSeeder for mlm_packages (1518eba7)
+### 🔧 Other Changes
+
+
 ## [v3.316.1] - 2025-12-03
 
 ### ✨ Features
