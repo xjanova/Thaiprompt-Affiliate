@@ -192,6 +192,126 @@
 </section>
 
 {{-- ================================================================
+    PLATFORM DEMO SECTION - สื่อการเรียนรู้ระบบ
+================================================================ --}}
+<section id="demo" class="py-20 lg:py-28 bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 relative overflow-hidden">
+    {{-- Background Effects --}}
+    <div class="absolute inset-0 opacity-10">
+        <div class="absolute inset-0" style="background-image:
+            linear-gradient(to right, rgba(99, 102, 241, 0.15) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(99, 102, 241, 0.15) 1px, transparent 1px);
+            background-size: 40px 40px;"></div>
+    </div>
+    <div class="absolute top-20 left-10 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+    <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {{-- Section Header --}}
+        <div class="text-center mb-12 lg:mb-16">
+            <div class="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 mb-8">
+                <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <span class="text-white font-semibold">สื่อการเรียนรู้ระบบ</span>
+            </div>
+
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-purple-200">
+                    เรียนรู้ {{ $appName }}
+                </span>
+            </h2>
+            <p class="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+                สไลด์นำเสนอระบบแบบครบถ้วน สวยงาม มืออาชีพ พร้อมใช้งานทันที
+                <br class="hidden md:block">
+                <span class="text-indigo-300 font-medium">เหมาะสำหรับนักลงทุน ผู้อยากร่วม และผู้สนใจทุกท่าน</span>
+            </p>
+        </div>
+
+        {{-- Demo Cards Grid --}}
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-12">
+            {{-- Card 1: System Overview --}}
+            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
+                 onclick="if(typeof openPresentationFullscreen === 'function') openPresentationFullscreen()">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-desktop text-3xl text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-3">ภาพรวมระบบ</h3>
+                <p class="text-slate-400 mb-4">เรียนรู้ระบบทั้งหมดใน {{ $appName }} รวมถึง Affiliate, MLM, E-Commerce และระบบอื่นๆ</p>
+                <div class="flex items-center text-indigo-400 font-medium group-hover:text-indigo-300">
+                    <span>ดูสไลด์</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+
+            {{-- Card 2: MLM Plans --}}
+            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
+                 onclick="if(typeof openPresentationFullscreen === 'function') openPresentationFullscreen()">
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-sitemap text-3xl text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-3">แผนการตลาด MLM</h3>
+                <p class="text-slate-400 mb-4">เรียนรู้แผน Unilevel, Binary และระบบคอมมิชชั่นหลายชั้นที่ยืดหยุ่น</p>
+                <div class="flex items-center text-purple-400 font-medium group-hover:text-purple-300">
+                    <span>ดูสไลด์</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+
+            {{-- Card 3: AI & Automation --}}
+            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
+                 onclick="if(typeof openPresentationFullscreen === 'function') openPresentationFullscreen()">
+                <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-robot text-3xl text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-3">AI & Automation</h3>
+                <p class="text-slate-400 mb-4">เรียนรู้ระบบ AI Chatbot, LINE Bot และระบบอัตโนมัติที่ช่วยประหยัดเวลา</p>
+                <div class="flex items-center text-emerald-400 font-medium group-hover:text-emerald-300">
+                    <span>ดูสไลด์</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+        </div>
+
+        {{-- Main CTA Button --}}
+        <div class="text-center">
+            <div class="relative inline-block">
+                <div class="absolute -inset-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl blur-lg opacity-75 animate-pulse"></div>
+                <button onclick="if(typeof openPresentationFullscreen === 'function') openPresentationFullscreen()"
+                        class="relative inline-flex items-center gap-3 px-10 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xl font-bold rounded-2xl shadow-2xl hover:shadow-indigo-500/50 transition-all duration-300 transform hover:scale-105 group">
+                    <i class="fas fa-play-circle text-2xl group-hover:scale-110 transition-transform"></i>
+                    <span>เปิดสไลด์นำเสนอ</span>
+                    <i class="fas fa-arrow-right group-hover:translate-x-2 transition-transform"></i>
+                </button>
+            </div>
+
+            {{-- Features List --}}
+            <div class="flex flex-wrap items-center justify-center gap-6 mt-8 text-white/70 text-sm">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-check-circle text-emerald-400"></i>
+                    <span>เต็มจอ Fullscreen</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-check-circle text-emerald-400"></i>
+                    <span>Auto-play อัจฉริยะ</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-check-circle text-emerald-400"></i>
+                    <span>รองรับ Keyboard</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-check-circle text-emerald-400"></i>
+                    <span>ตั้งค่าได้หลากหลาย</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{{-- Include Presentation Slides Modal (แค่ส่วน modal และ scripts ไม่ซ้ำกับ section ด้านบน) --}}
+@include('components.presentation-slides-modal')
+
+{{-- ================================================================
     FEATURES SECTION - จุดเด่นของระบบ
 ================================================================ --}}
 <section id="features" class="py-24 lg:py-32 bg-white dark:bg-slate-900">
@@ -462,56 +582,6 @@
         </div>
     </div>
 </section>
-
-{{-- ================================================================
-    HOMEPAGE MANAGER SECTIONS - แสดง sections จากระบบจัดการหน้าแรก
-    ผู้ดูแลระบบสามารถเพิ่ม/แก้ไข sections ได้ที่ Admin > Homepage Manager
-================================================================ --}}
-@if(isset($sections) && $sections->count() > 0)
-    @foreach($sections as $section)
-        <section
-            class="relative overflow-hidden"
-            style="{{ $section->getStyleAttribute(false) }}"
-            @if($section->animation && $section->animation !== 'none')
-                x-data="{ shown: false }"
-                x-intersect="shown = true"
-                :class="{ 'animate-{{ $section->animation }}': shown }"
-                style="animation-delay: {{ $section->animation_delay }}ms;"
-            @endif
-        >
-            {{-- Background Video --}}
-            @if($section->background_type === 'video' && $section->background_video)
-                <video class="absolute inset-0 w-full h-full object-cover" autoplay muted loop playsinline>
-                    <source src="{{ $section->background_video }}" type="video/mp4">
-                </video>
-            @endif
-
-            {{-- Background Overlay --}}
-            @if($section->background_overlay)
-                <div class="absolute inset-0" style="background-color: {{ $section->background_overlay }};"></div>
-            @endif
-
-            {{-- Section Content --}}
-            <div class="{{ $section->is_fullwidth ? 'w-full' : 'max-w-7xl mx-auto' }} px-4 sm:px-6 lg:px-8 relative z-10">
-                {{-- Section Name (ถ้าต้องการแสดง) --}}
-                @if($section->settings['show_title'] ?? false)
-                    <h2 class="text-3xl md:text-4xl font-bold text-center mb-8 text-slate-900 dark:text-white">
-                        {{ $section->name }}
-                    </h2>
-                @endif
-
-                {{-- Elements --}}
-                @if($section->activeElements->count() > 0)
-                    <div class="relative">
-                        @foreach($section->activeElements as $element)
-                            @include('components.homepage.element', ['element' => $element])
-                        @endforeach
-                    </div>
-                @endif
-            </div>
-        </section>
-    @endforeach
-@endif
 
 {{-- ================================================================
     CTA SECTION - Call to Action

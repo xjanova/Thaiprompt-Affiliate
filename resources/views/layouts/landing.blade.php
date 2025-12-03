@@ -257,7 +257,7 @@
     {{-- ================================================================
         TOP NAVIGATION BAR - Fixed
     ================================================================ --}}
-    <header class="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+    <header class="fixed top-0 left-0 right-0 z-[100] transition-all duration-300"
             :class="scrolled ? 'glass-dark shadow-lg' : 'bg-transparent'"
             @scroll.window="scrolled = window.scrollY > 50">
         <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -279,6 +279,9 @@
 
                 {{-- Desktop Navigation --}}
                 <div class="hidden lg:flex items-center gap-8">
+                    <a href="#demo" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
+                        สื่อการเรียนรู้
+                    </a>
                     <a href="#features" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
                         คุณสมบัติ
                     </a>
@@ -343,7 +346,7 @@
              x-transition:leave="transition ease-in duration-200"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             class="fixed inset-0 bg-black/50 z-40"
+             class="fixed inset-0 bg-black/50 z-[110]"
              @click="mobileMenuOpen = false"
              x-cloak>
         </div>
@@ -356,7 +359,7 @@
              x-transition:leave="transition ease-in duration-200"
              x-transition:leave-start="translate-x-0"
              x-transition:leave-end="translate-x-full"
-             class="fixed top-0 right-0 bottom-0 w-80 max-w-full glass-dark z-50 overflow-y-auto"
+             class="fixed top-0 right-0 bottom-0 w-80 max-w-full glass-dark z-[120] overflow-y-auto"
              x-cloak>
 
             <div class="p-6">
@@ -375,6 +378,11 @@
                        class="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-900/30 text-white font-medium">
                         <i class="fas fa-home w-5 text-center"></i>
                         หน้าแรก
+                    </a>
+                    <a href="#demo" @click="mobileMenuOpen = false"
+                       class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
+                        <i class="fas fa-play-circle w-5 text-center"></i>
+                        สื่อการเรียนรู้
                     </a>
                     <a href="#features" @click="mobileMenuOpen = false"
                        class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
