@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.309.0] - 2025-12-03
+
+### ✨ Features
+- Merge pull request #1923 from xjanova/claude/enhance-admin-reports-012SXzDRAJ91ktZcLKAPJx6V (5127ec13)
+- feat: ปรับปรุงหน้ารายงาน E-commerce ให้สวยงามและมีฟังก์ชันครบครัน (70b6ca3e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.308.1] - 2025-12-03
 
 ### ✨ Features
