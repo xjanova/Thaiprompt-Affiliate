@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.316.8] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1951 from xjanova/claude/fix-banner-drag-positioning-01VYABsucV51PKLxkjSzKfE6 (f52116ff)
+- fix: แก้ไขปัญหาลากเพื่อปรับตำแหน่งรูปแบนเนอร์ไม่ทำงาน (f84ab3ec)
+### 🔧 Other Changes
+
+
 ## [v3.316.7] - 2025-12-03
 
 ### ✨ Features
