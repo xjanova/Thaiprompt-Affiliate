@@ -7,7 +7,8 @@ use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class StoreController extends Controller
 {
@@ -117,42 +118,46 @@ class StoreController extends Controller
     }
 
     /**
-     * Convert and save image as WebP format
+     * แปลงและบันทึกรูปภาพเป็นรูปแบบ WebP
      *
-     * @param \Illuminate\Http\UploadedFile $file
-     * @param string $directory
-     * @param int $maxWidth
-     * @param int $maxHeight
-     * @return string The saved file path
+     * ใช้ Intervention Image v3 API สำหรับการแปลงรูปภาพ
+     *
+     * @param \Illuminate\Http\UploadedFile $file ไฟล์รูปภาพที่อัปโหลด
+     * @param string $directory โฟลเดอร์ที่จะบันทึก
+     * @param int $maxWidth ความกว้างสูงสุด
+     * @param int $maxHeight ความสูงสูงสุด
+     * @return string เส้นทางไฟล์ที่บันทึก
      */
     private function convertAndSaveAsWebP($file, $directory, $maxWidth = 1920, $maxHeight = 1080)
     {
         try {
-            // Generate unique filename
+            // สร้างชื่อไฟล์ unique
             $filename = Str::random(40) . '.webp';
             $fullPath = $directory . '/' . $filename;
 
-            // Load the image using Intervention Image
-            $image = Image::make($file);
+            // สร้าง ImageManager ด้วย GD driver (Intervention Image v3)
+            $manager = new ImageManager(new Driver());
 
-            // Resize image while maintaining aspect ratio
-            $image->resize($maxWidth, $maxHeight, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
-            });
+            // โหลดรูปภาพโดยใช้ Intervention Image v3 API
+            $image = $manager->read($file->getPathname());
 
-            // Encode to WebP with quality of 85
-            $encodedImage = $image->encode('webp', 85);
+            // ปรับขนาดรูปภาพโดยรักษาสัดส่วน (ไม่ขยายถ้าเล็กกว่า)
+            if ($image->width() > $maxWidth || $image->height() > $maxHeight) {
+                $image->scaleDown(width: $maxWidth, height: $maxHeight);
+            }
 
-            // Save to storage
-            Storage::disk('public')->put($fullPath, $encodedImage);
+            // เข้ารหัสเป็น WebP ที่คุณภาพ 85
+            $encodedImage = $image->toWebp(quality: 85);
+
+            // บันทึกลง storage
+            Storage::disk('public')->put($fullPath, (string) $encodedImage);
 
             return $fullPath;
         } catch (\Exception $e) {
-            // Fallback: If WebP conversion fails, save the original file
+            // Fallback: ถ้าแปลง WebP ไม่สำเร็จ ให้บันทึกไฟล์ต้นฉบับ
             \Log::error('WebP conversion failed: ' . $e->getMessage());
 
-            // Save original file without conversion
+            // บันทึกไฟล์ต้นฉบับโดยไม่แปลง
             $originalPath = $file->store($directory, 'public');
             return $originalPath;
         }
