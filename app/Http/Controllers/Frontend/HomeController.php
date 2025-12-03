@@ -10,12 +10,13 @@ use Illuminate\Http\Request;
 class HomeController extends Controller
 {
     /**
-     * Show the homepage - 3 Doors Storytelling Design
+     * Show the homepage - Professional & Trustworthy Design
      *
-     * แสดงหน้าแรกแบบ "3 ประตู" (3 Doors):
-     * - ประตูที่ 1: นักลงทุน (Investors)
-     * - ประตูที่ 2: นักพัฒนา (Developers)
-     * - ประตูที่ 3: ชุมชน (Community)
+     * แสดงหน้าแรกใหม่ที่ออกแบบมาให้:
+     * - มีความน่าเชื่อถือ มืออาชีพ
+     * - ซ่อน sidebar เสมอ (ใช้ burger menu)
+     * - มี top navigation bar
+     * - แสดงข้อมูลโครงการปัจจุบัน
      *
      * @return \Illuminate\View\View
      */
@@ -26,9 +27,8 @@ class HomeController extends Controller
             return redirect()->route('setup.index');
         }
 
-        // แสดงหน้าแรกแบบ 3 ประตู (Storytelling Design)
-        // ไม่ต้องการข้อมูลเพิ่มเติม เพราะใช้ Alpine.js component
-        return view('frontend.home');
+        // แสดงหน้าแรกใหม่แบบมืออาชีพ
+        return view('frontend.home-new');
     }
 
     /**
@@ -152,162 +152,7 @@ class HomeController extends Controller
         return view('frontend.contact');
     }
 
-    /**
-     * Show the Investors detail page (Door 1)
-     *
-     * แสดงหน้าละเอียดสำหรับนักลงทุน (ประตูที่ 1)
-     * - อธิบายระบบลงทุนที่เชื่อมกับชีวิตจริง
-     * - ROI, ความปลอดภัย, ความโปร่งใส
-     * - เชื่อมโยงกับครอบครัว อนาคต เวลา
-     *
-     * @return \Illuminate\View\View
-     */
-    public function investors()
-    {
-        return view('frontend.investors', [
-            'pageTitle' => 'สำหรับนักลงทุน - การลงทุนที่เชื่อมกับชีวิตจริง',
-        ]);
-    }
-
-    /**
-     * Show the Developers detail page (Door 2)
-     *
-     * แสดงหน้าละเอียดสำหรับนักพัฒนา (ประตูที่ 2)
-     * - เปลี่ยน Code เป็นรายได้
-     * - Marketplace, Revenue Share 70%
-     * - Passive Income, Community
-     *
-     * @return \Illuminate\View\View
-     */
-    public function developers()
-    {
-        return view('frontend.developers', [
-            'pageTitle' => 'สำหรับนักพัฒนา - เปลี่ยน Code เป็นรายได้',
-        ]);
-    }
-
-    /**
-     * Show the Community detail page (Door 3)
-     *
-     * แสดงหน้าละเอียดสำหรับชุมชน (ประตูที่ 3)
-     * - เติบโตไปด้วยกัน ไม่ทิ้งใครไว้ข้างหลัง
-     * - Affiliate System, Knowledge Sharing
-     * - Community Events, Give Back
-     *
-     * @return \Illuminate\View\View
-     */
-    public function community()
-    {
-        return view('frontend.community', [
-            'pageTitle' => 'สำหรับชุมชน - เติบโตไปด้วยกัน',
-        ]);
-    }
-
-    /**
-     * Show the 3D Interactive Presentation
-     */
-    public function presentation()
-    {
-        // System data for presentation
-        $systems = [
-            [
-                'id' => 'blockchain',
-                'name' => 'Blockchain & TPIX',
-                'icon' => '🔗',
-                'color' => '#7C3AED',
-                'description' => 'Native Blockchain with Token Ecosystem',
-                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/tpix-blockchain/README.md'
-            ],
-            [
-                'id' => 'foodpassport',
-                'name' => 'Food Passport',
-                'icon' => '🌱',
-                'color' => '#059669',
-                'description' => 'Food Traceability & Carbon Credit System',
-                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/FOOD_PASSPORT_README.md'
-            ],
-            [
-                'id' => 'games',
-                'name' => 'Games & Entertainment',
-                'icon' => '🎮',
-                'color' => '#DC2626',
-                'description' => 'Interactive Gaming Platform',
-                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/DEMO_GAMES.md'
-            ],
-            [
-                'id' => 'mlm',
-                'name' => 'MLM System',
-                'icon' => '💎',
-                'color' => '#8B5CF6',
-                'description' => 'Multi-Level Marketing Platform',
-                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MLM_SYSTEM_DOCUMENTATION.md'
-            ],
-            [
-                'id' => 'ecommerce',
-                'name' => 'E-Commerce',
-                'icon' => '🛒',
-                'color' => '#EC4899',
-                'description' => 'Multi-Vendor Marketplace',
-                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MULTIVENDOR_DESIGN.md'
-            ],
-            [
-                'id' => 'wallet',
-                'name' => 'Digital Wallet',
-                'icon' => '💰',
-                'color' => '#10B981',
-                'description' => 'Crypto & Fiat Payment System',
-                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/WALLET_SYSTEM.md'
-            ],
-            [
-                'id' => 'ai',
-                'name' => 'AI Integration',
-                'icon' => '🤖',
-                'color' => '#F59E0B',
-                'description' => 'AI-Powered Automation',
-                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/LINE_BOT_AI_IMPLEMENTATION.md'
-            ],
-            [
-                'id' => 'investment',
-                'name' => 'Investment & Staking',
-                'icon' => '📈',
-                'color' => '#6366F1',
-                'description' => 'Yield Farming & Staking Pools',
-                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/TPIX_TOKEN_SYSTEM.md'
-            ],
-            [
-                'id' => 'hotel',
-                'name' => 'Hotel Booking',
-                'icon' => '🏨',
-                'color' => '#EF4444',
-                'description' => 'Accommodation Management',
-                'wiki' => '/wiki'
-            ],
-            [
-                'id' => 'academy',
-                'name' => 'Academy & Learning',
-                'icon' => '🎓',
-                'color' => '#14B8A6',
-                'description' => 'Online Education Platform',
-                'wiki' => '/wiki'
-            ],
-            [
-                'id' => 'hrm',
-                'name' => 'HRM System',
-                'icon' => '👥',
-                'color' => '#F97316',
-                'description' => 'Human Resource Management',
-                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/HRM_SYSTEM_README.md'
-            ],
-            [
-                'id' => 'platform',
-                'name' => 'Platform Overview',
-                'icon' => '🌐',
-                'color' => '#3B82F6',
-                'description' => 'Complete Ecosystem',
-                'wiki' => '/about'
-            ],
-        ];
-
-        return view('frontend.presentation', compact('systems'));
-    }
+    // หน้าเก่า 3 Doors (investors, developers, community) และ presentation ถูกลบออกแล้ว
+    // เปลี่ยนไปใช้หน้าแรกใหม่ที่มืออาชีพและน่าเชื่อถือกว่า
+    // @deprecated 2025-12-03
 }
