@@ -234,6 +234,14 @@ class User extends Authenticatable
     }
 
     /**
+     * คำสั่งซื้อทั้งหมดของผู้ใช้
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
      * Get all payment methods for the user
      */
     public function paymentMethods()
