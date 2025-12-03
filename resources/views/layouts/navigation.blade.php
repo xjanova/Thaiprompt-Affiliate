@@ -300,6 +300,14 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">ติดต่อเรา</span>
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-sky-600 to-blue-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
+                    <a href="{{ route('forum.index') }}"
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl hover:shadow-purple-500/30 transform hover:scale-105"
+                       title="ฟอรั่มชุมชน - พูดคุยแลกเปลี่ยนความรู้">
+                        <span class="text-lg group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">💬</span>
+                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">ฟอรั่ม</span>
+                        <span class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-ping"></span>
+                        <span class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></span>
+                    </a>
                 @endif
             </div>
 
@@ -489,6 +497,13 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                    class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
                    style="color: {{ $headerTextColor }};">
                     ติดต่อเรา
+                </a>
+                <a href="{{ route('forum.index') }}"
+                   class="block mx-3 my-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl text-base font-bold text-center shadow-lg relative overflow-hidden"
+                   style="border: none;">
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-ping"></span>
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center text-xs">!</span>
+                    💬 ฟอรั่มชุมชน
                 </a>
             @endif
         </div>

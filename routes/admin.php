@@ -3034,6 +3034,78 @@ Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () 
         Route::post('/playground/generate', [\App\Http\Controllers\Admin\AiContentWriterController::class, 'quickGenerate'])
             ->name('playground.generate');
     });
+
+    // =========================================
+    // Forum Management System - ระบบจัดการฟอรั่มชุมชน
+    // =========================================
+    Route::prefix('forum')->name('forum.')->group(function () {
+
+        // Categories (จัดการหมวดหมู่)
+        Route::get('/categories', [\App\Http\Controllers\Admin\ForumAdminController::class, 'categories'])
+            ->name('categories.index');
+        Route::get('/categories/create', [\App\Http\Controllers\Admin\ForumAdminController::class, 'createCategory'])
+            ->name('categories.create');
+        Route::post('/categories', [\App\Http\Controllers\Admin\ForumAdminController::class, 'storeCategory'])
+            ->name('categories.store');
+        Route::get('/categories/{category}/edit', [\App\Http\Controllers\Admin\ForumAdminController::class, 'editCategory'])
+            ->name('categories.edit');
+        Route::put('/categories/{category}', [\App\Http\Controllers\Admin\ForumAdminController::class, 'updateCategory'])
+            ->name('categories.update');
+        Route::delete('/categories/{category}', [\App\Http\Controllers\Admin\ForumAdminController::class, 'deleteCategory'])
+            ->name('categories.delete');
+        Route::post('/categories/reorder', [\App\Http\Controllers\Admin\ForumAdminController::class, 'reorderCategories'])
+            ->name('categories.reorder');
+
+        // Threads (จัดการกระทู้)
+        Route::get('/threads', [\App\Http\Controllers\Admin\ForumAdminController::class, 'threads'])
+            ->name('threads.index');
+        Route::get('/threads/{thread}', [\App\Http\Controllers\Admin\ForumAdminController::class, 'showThread'])
+            ->name('threads.show');
+        Route::put('/threads/{thread}/pin', [\App\Http\Controllers\Admin\ForumAdminController::class, 'togglePin'])
+            ->name('threads.pin');
+        Route::put('/threads/{thread}/lock', [\App\Http\Controllers\Admin\ForumAdminController::class, 'toggleLock'])
+            ->name('threads.lock');
+        Route::put('/threads/{thread}/feature', [\App\Http\Controllers\Admin\ForumAdminController::class, 'toggleFeature'])
+            ->name('threads.feature');
+        Route::delete('/threads/{thread}', [\App\Http\Controllers\Admin\ForumAdminController::class, 'deleteThread'])
+            ->name('threads.delete');
+
+        // Reports (จัดการรายงาน)
+        Route::get('/reports', [\App\Http\Controllers\Admin\ForumAdminController::class, 'reports'])
+            ->name('reports.index');
+        Route::get('/reports/{report}', [\App\Http\Controllers\Admin\ForumAdminController::class, 'showReport'])
+            ->name('reports.show');
+        Route::put('/reports/{report}/resolve', [\App\Http\Controllers\Admin\ForumAdminController::class, 'resolveReport'])
+            ->name('reports.resolve');
+        Route::put('/reports/{report}/dismiss', [\App\Http\Controllers\Admin\ForumAdminController::class, 'dismissReport'])
+            ->name('reports.dismiss');
+
+        // Trophies (จัดการถ้วยรางวัล)
+        Route::get('/trophies', [\App\Http\Controllers\Admin\ForumAdminController::class, 'trophies'])
+            ->name('trophies.index');
+        Route::get('/trophies/create', [\App\Http\Controllers\Admin\ForumAdminController::class, 'createTrophy'])
+            ->name('trophies.create');
+        Route::post('/trophies', [\App\Http\Controllers\Admin\ForumAdminController::class, 'storeTrophy'])
+            ->name('trophies.store');
+        Route::get('/trophies/{trophy}/edit', [\App\Http\Controllers\Admin\ForumAdminController::class, 'editTrophy'])
+            ->name('trophies.edit');
+        Route::put('/trophies/{trophy}', [\App\Http\Controllers\Admin\ForumAdminController::class, 'updateTrophy'])
+            ->name('trophies.update');
+        Route::delete('/trophies/{trophy}', [\App\Http\Controllers\Admin\ForumAdminController::class, 'deleteTrophy'])
+            ->name('trophies.delete');
+        Route::post('/trophies/{trophy}/award/{user}', [\App\Http\Controllers\Admin\ForumAdminController::class, 'awardTrophy'])
+            ->name('trophies.award');
+
+        // Analytics (สถิติ)
+        Route::get('/analytics', [\App\Http\Controllers\Admin\ForumAdminController::class, 'analytics'])
+            ->name('analytics.index');
+
+        // Settings (ตั้งค่า)
+        Route::get('/settings', [\App\Http\Controllers\Admin\ForumAdminController::class, 'settings'])
+            ->name('settings.index');
+        Route::post('/settings', [\App\Http\Controllers\Admin\ForumAdminController::class, 'saveSettings'])
+            ->name('settings.save');
+    });
 });
 
 /*

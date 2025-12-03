@@ -14,12 +14,14 @@
                     <li><a href="{{ route('home') }}" class="text-gray-300 hover:text-white transition">หน้าแรก</a></li>
                     <li><a href="{{ route('about') }}" class="text-gray-300 hover:text-white transition">เกี่ยวกับเรา</a></li>
                     <li><a href="{{ route('contact') }}" class="text-gray-300 hover:text-white transition">ติดต่อเรา</a></li>
+                    <li><a href="{{ route('forum.index') }}" class="text-gray-300 hover:text-white transition flex items-center gap-1">💬 ฟอรั่มชุมชน <span class="text-xs bg-green-500 text-white px-1 rounded">NEW</span></a></li>
                 </ul>
             </div>
 
             <div>
                 <h4 class="text-lg font-semibold mb-4">ช่วยเหลือ</h4>
                 <ul class="space-y-2">
+                    <li><a href="{{ route('forum.index') }}" class="text-gray-300 hover:text-white transition">💬 ฟอรั่มถาม-ตอบ</a></li>
                     <li><a href="#" class="text-gray-300 hover:text-white transition">คำถามที่พบบ่อย</a></li>
                     <li><a href="#" class="text-gray-300 hover:text-white transition">เอกสาร</a></li>
                     <li><a href="#" class="text-gray-300 hover:text-white transition">สนับสนุน</a></li>
