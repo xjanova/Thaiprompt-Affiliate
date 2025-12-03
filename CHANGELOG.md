@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.312.6] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1934 from xjanova/claude/redesign-homepage-015E39nVgPNxodNQGUVo4yf2 (e65bd732)
+- fix: move mobile menu outside header to fix z-index stacking (3b6eb49d)
+### 🔧 Other Changes
+
+
 ## [v3.312.5] - 2025-12-03
 
 ### ✨ Features
