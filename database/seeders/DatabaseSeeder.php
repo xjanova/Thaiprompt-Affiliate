@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
 
             // 1. Core Settings & Configuration (ต้องมาก่อนสุด)
             AppNameSettingSeeder::class,        // ตั้งค่าชื่อแอพ
+            SiteSettingSeeder::class,           // 🆕 ตั้งค่าเว็บไซต์ (ชื่อ, โลโก้, SEO, Social)
             TwoFactorSettingsSeeder::class,     // ตั้งค่า 2FA และ OTP
             ArrowXThemeSeeder::class,           // ✅ Arrow X Theme System (V3) - Default theme data
             ThemePresetSeeder::class,           // ✅ Theme Presets (Classic, Modern Blue, Dark Professional, etc.)
@@ -66,6 +67,7 @@ class DatabaseSeeder extends Seeder
             HuggingFaceModelNewsSeeder::class,  // 🆕 Hugging Face Model News (Updates, Tutorials, Best Practices)
 
             // 6. Payment Systems
+            WalletSettingSeeder::class,         // 🆕 ตั้งค่า Wallet (ค่าธรรมเนียม, ภาษี, ยอดถอน)
             PaymentGatewaySeeder::class,        // Payment Gateways (PromptPay, Bank, TrueMoney, Omise, Stripe, PayPal, etc.)
             PaySolutionsGatewaySeeder::class,   // PaySolutions Gateway Integration
             CryptoCurrencySeeder::class,        // Cryptocurrency Support (BTC, ETH, USDT, etc.)
@@ -79,6 +81,7 @@ class DatabaseSeeder extends Seeder
             MlmPlanSeeder::class,               // แผนคอมมิชชัน MLM หลัก (แผนเดียวบังคับทั้งระบบ)
             MlmPackageSeeder::class,            // แพคเกจสมาชิก MLM (Bronze, Silver, Gold, Diamond, Premier)
             RankSeeder::class,                  // ระบบยศ/ระดับ (Bronze, Silver, Gold, Platinum, Diamond)
+            RankSettingSeeder::class,           // 🆕 ตั้งค่าระบบ Rank (Auto Promotion, Points, Display)
             IdCardSettingSeeder::class,         // 🆕 การตั้งค่า Virtual ID Card ตาม Rank (8 ระดับ)
             SuperAdminMlmSeeder::class,         // 👑 SuperAdmin เป็น Root Leader (แม่ทีมใหญ่) - ต้องรันก่อน MlmHierarchySeeder
             MlmHierarchySeeder::class,          // 🆕 ระบบสายงาน MLM 5 ชั้น (31 สมาชิก, 3 ผัง: Binary, Unilevel, Genealogy)
@@ -86,6 +89,7 @@ class DatabaseSeeder extends Seeder
             PlatformRevenueSeeder::class,       // 🆕 ระบบรายได้ Platform (Wallets, Payout Settings)
 
             // 8. E-commerce & Products
+            MarketplaceSettingSeeder::class,    // 🆕 ตั้งค่า Marketplace (ค่าธรรมเนียม, Commission, Shipping)
             ProductCategorySeeder::class,       // หมวดหมู่สินค้า (ต้องมาก่อน ProductSeeder)
             ProductSeeder::class,               // สินค้าตัวอย่าง
             OfficialShopProductsSeeder::class,  // 🆕 สินค้าของระบบ (Official Shop) - seller_id = null, คอมมิชชั่นสูง 25-40%
