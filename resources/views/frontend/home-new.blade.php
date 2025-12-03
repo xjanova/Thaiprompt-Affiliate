@@ -349,85 +349,109 @@
             </p>
         </div>
 
-        {{-- Features Grid --}}
+        {{-- Features Grid - แต่ละ Card มีลิงก์ไปหน้าเอกสารละเอียด --}}
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {{-- Feature 1: All-in-One --}}
-            <div class="group card-hover bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-8">
+            <a href="{{ route('documents.all-in-one') }}" class="group card-hover bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 block hover:border-blue-500 dark:hover:border-blue-500 transition-all">
                 <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-layer-group text-2xl text-white"></i>
                 </div>
                 <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">
                     All-in-One Platform
                 </h3>
-                <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+                <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
                     รวมทุกระบบไว้ในที่เดียว Affiliate, MLM, E-Commerce, AI Bot และอีก 20+ ระบบ ไม่ต้องซื้อแยก ประหยัดกว่า
                 </p>
-            </div>
+                <div class="flex items-center text-blue-600 dark:text-blue-400 font-medium text-sm group-hover:underline">
+                    <span>อ่านเอกสารเพิ่มเติม</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
 
             {{-- Feature 2: AI Powered --}}
-            <div class="group card-hover bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-8">
+            <a href="{{ route('documents.ai-automation') }}" class="group card-hover bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 block hover:border-purple-500 dark:hover:border-purple-500 transition-all">
                 <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-robot text-2xl text-white"></i>
                 </div>
                 <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">
                     AI-Powered Automation
                 </h3>
-                <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+                <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
                     ระบบ AI อัจฉริยะ ช่วยตอบแชท วิเคราะห์ข้อมูล และทำงานอัตโนมัติ 24 ชั่วโมง ลดต้นทุน เพิ่มประสิทธิภาพ
                 </p>
-            </div>
+                <div class="flex items-center text-purple-600 dark:text-purple-400 font-medium text-sm group-hover:underline">
+                    <span>อ่านเอกสารเพิ่มเติม</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
 
             {{-- Feature 3: Blockchain --}}
-            <div class="group card-hover bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-8">
+            <a href="{{ route('documents.blockchain-tpix') }}" class="group card-hover bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 block hover:border-amber-500 dark:hover:border-amber-500 transition-all">
                 <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-link text-2xl text-white"></i>
                 </div>
                 <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">
                     Blockchain & TPIX Token
                 </h3>
-                <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+                <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
                     รองรับ Cryptocurrency และ Token TPIX สำหรับระบบ Staking, Farming และการชำระเงินแบบ Web3
                 </p>
-            </div>
+                <div class="flex items-center text-amber-600 dark:text-amber-400 font-medium text-sm group-hover:underline">
+                    <span>อ่าน Whitepaper</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
 
             {{-- Feature 4: Multi-Currency Wallet --}}
-            <div class="group card-hover bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-8">
+            <a href="{{ route('documents.multi-currency-wallet') }}" class="group card-hover bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 block hover:border-emerald-500 dark:hover:border-emerald-500 transition-all">
                 <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-wallet text-2xl text-white"></i>
                 </div>
                 <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">
                     Multi-Currency Wallet
                 </h3>
-                <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+                <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
                     กระเป๋าเงินหลายสกุล THB, USD, Crypto พร้อมระบบถอนเงินหลายช่องทาง Bank, PromptPay, Crypto
                 </p>
-            </div>
+                <div class="flex items-center text-emerald-600 dark:text-emerald-400 font-medium text-sm group-hover:underline">
+                    <span>อ่านเอกสารเพิ่มเติม</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
 
             {{-- Feature 5: MLM System --}}
-            <div class="group card-hover bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-8">
+            <a href="{{ route('documents.mlm-commission') }}" class="group card-hover bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 block hover:border-pink-500 dark:hover:border-pink-500 transition-all">
                 <div class="w-14 h-14 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-sitemap text-2xl text-white"></i>
                 </div>
                 <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">
                     MLM & Commission System
                 </h3>
-                <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+                <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
                     ระบบ Multi-Level Marketing ไม่จำกัดชั้น คำนวณคอมมิชชันอัตโนมัติ พร้อมรายงานละเอียด
                 </p>
-            </div>
+                <div class="flex items-center text-pink-600 dark:text-pink-400 font-medium text-sm group-hover:underline">
+                    <span>อ่านเอกสารเพิ่มเติม</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
 
             {{-- Feature 6: Security --}}
-            <div class="group card-hover bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-8">
+            <a href="{{ route('documents.enterprise-security') }}" class="group card-hover bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 block hover:border-cyan-500 dark:hover:border-cyan-500 transition-all">
                 <div class="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-shield-alt text-2xl text-white"></i>
                 </div>
                 <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">
                     Enterprise Security
                 </h3>
-                <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+                <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
                     ความปลอดภัยระดับ Enterprise พร้อม 2FA, SSL, IP Whitelist และ License System
                 </p>
-            </div>
+                <div class="flex items-center text-cyan-600 dark:text-cyan-400 font-medium text-sm group-hover:underline">
+                    <span>อ่านเอกสารเพิ่มเติม</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
         </div>
     </div>
 </section>
