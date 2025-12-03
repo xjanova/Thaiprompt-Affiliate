@@ -21,9 +21,11 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     @php
-        $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate Pro');
-        $favicon = \App\Models\Setting::get('favicon');
-        $systemLogo = \App\Models\Setting::get('logo');
+        // ดึงจาก SiteSetting (ที่แอดมินตั้งค่าใน admin/site-settings)
+        $siteSettings = \App\Models\SiteSetting::getSetting();
+        $appName = $siteSettings->site_name ?? 'TP-Affiliate Pro';
+        $favicon = $siteSettings->favicon;
+        $systemLogo = $siteSettings->logo;
     @endphp
 
     <title>@yield('title', 'หน้าแรก') - {{ $appName }}</title>
@@ -37,10 +39,10 @@
     <meta property="og:title" content="@yield('title', 'หน้าแรก') - {{ $appName }}">
     <meta property="og:description" content="@yield('meta_description', 'TP-Affiliate Pro - ระบบ Affiliate Marketing ระดับ Enterprise')">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="{{ $systemLogo ? asset($systemLogo) : asset('images/og-image.png') }}">
+    <meta property="og:image" content="{{ $systemLogo ? asset('storage/' . $systemLogo) : asset('images/og-image.png') }}">
 
     @if($favicon)
-        <link rel="icon" type="image/x-icon" href="{{ asset($favicon) }}">
+        <link rel="icon" type="image/x-icon" href="{{ asset('storage/' . $favicon) }}">
     @endif
 
     {{-- Google Fonts - Kanit (Thai) + Inter (English) --}}
@@ -267,7 +269,7 @@
                 <a href="{{ route('home') }}" class="flex items-center gap-4 group">
                     @if($systemLogo)
                         <div class="relative">
-                            <img src="{{ asset($systemLogo) }}"
+                            <img src="{{ asset('storage/' . $systemLogo) }}"
                                  alt="{{ $appName }}"
                                  class="h-12 lg:h-16 w-auto transition-all duration-300 group-hover:scale-110 drop-shadow-lg">
                             {{-- Glow effect on hover --}}
