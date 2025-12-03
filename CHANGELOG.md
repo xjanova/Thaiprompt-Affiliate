@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.310.0] - 2025-12-03
+
+### ✨ Features
+- Merge pull request #1925 from xjanova/claude/add-forum-navigation-menu-01FL4aVD1bqu6PyXmXb8oXCr (c405dc89)
+- feat: เพิ่มเมนูนำทางและระบบจัดการฟอรั่มชุมชน (26400487)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.309.1] - 2025-12-03
 
 ### ✨ Features
