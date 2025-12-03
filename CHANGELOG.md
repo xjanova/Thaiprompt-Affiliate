@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.309.1] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1924 from xjanova/claude/update-tarot-theme-v3-019771q5TvGcTXnTU3RU2Qh1 (15958286)
+- refactor: อัพเกรดหน้า Tarot เป็น V3 Premium Design (c716f642)
+
 ## [v3.309.0] - 2025-12-03
 
 ### ✨ Features
