@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.316.4] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1947 from xjanova/claude/fix-image-facade-error-01VfU8GnEyHRguEMXS6MCDns (3e27b927)
+- fix: update Intervention Image to v3 API (71dc79a2)
+### 🔧 Other Changes
+
+
 ## [v3.316.3] - 2025-12-03
 
 ### ✨ Features
