@@ -1629,7 +1629,16 @@ php artisan route:cache || print_warning "Route cache failed (continuing anyway)
 
 # ⚠️ CRITICAL: Verify home route accepts GET method
 print_info "→ Verifying home route methods..."
-ROUTE_METHODS=$(php artisan route:list --path=/ --method=GET 2>/dev/null | grep -E "^\s+GET\|HEAD\s+/\s+" || echo "")
+
+# Laravel 11 route:list outputs table format with │ borders
+# Use simple pattern: look for "GET|HEAD" and "home" on the same line
+# This works for both old and new Laravel output formats
+ROUTE_METHODS=$(php artisan route:list --path=/ --method=GET --name=home 2>/dev/null | grep -i "home" || echo "")
+
+# Fallback: try with just --path=/ if named route check fails
+if [ -z "$ROUTE_METHODS" ]; then
+    ROUTE_METHODS=$(php artisan route:list --path=/ --method=GET 2>/dev/null | grep "GET" | head -1 || echo "")
+fi
 
 if [ -z "$ROUTE_METHODS" ]; then
     print_critical "⚠️  HOME ROUTE VERIFICATION FAILED!"
