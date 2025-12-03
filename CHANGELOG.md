@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.310.1] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1926 from xjanova/claude/fix-missing-config-016ahqsvjMHrs9Jcn1FT2S25 (5249bd67)
+- fix: เพิ่ม Seeders สำหรับ Settings ที่หายไปหลัง deploy (c3d073b1)
+### 🔧 Other Changes
+
+
 ## [v3.310.0] - 2025-12-03
 
 ### ✨ Features
