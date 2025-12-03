@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.312.7] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1935 from xjanova/claude/skip-existing-app-settings-013ErB5QsS4LptYNEWnyWDSj (a8f5a907)
+- fix: skip app theme settings seeding when JSON schema (V2) is detected (01d081e4)
+### 🔧 Other Changes
+
+
 ## [v3.312.6] - 2025-12-03
 
 ### ✨ Features
