@@ -1,338 +1,318 @@
+{{--
+/**
+ * หน้าเข้าสู่ระบบ - Modern Login Page
+ *
+ * ออกแบบใหม่ให้สอดคล้องกับธีม V3:
+ * - Deep Blue + Purple gradient background
+ * - Glassmorphism card
+ * - Smooth animations
+ * - Responsive & fit screen
+ *
+ * @version 2.0.0
+ * @author Thaiprompt Team
+ */
+--}}
 <!DOCTYPE html>
-<html lang="th" x-data="{ darkMode: localStorage.getItem('darkMode') === 'dark' }" :class="{ 'dark': darkMode }">
+<html lang="th" x-data="{ darkMode: true }" class="dark">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
     @php
-        $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
-        $logo = \App\Models\Setting::get('logo');
-        $logoUrl = $logo ? asset($logo) : asset('images/logo.svg');
-        $logoAuthWidth = \App\Models\Setting::get('logo_auth_width', 112);
-        $logoAuthHeight = \App\Models\Setting::get('logo_auth_height', 112);
+        // ดึงข้อมูลจาก SiteSetting (ที่แอดมินตั้งค่า)
+        $siteSettings = \App\Models\SiteSetting::getSetting();
+        $appName = $siteSettings->site_name ?? 'TP-Affiliate Pro';
+        $logo = $siteSettings->logo;
+        $favicon = $siteSettings->favicon;
     @endphp
+
     <title>เข้าสู่ระบบ - {{ $appName }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    @if($favicon)
+        <link rel="icon" type="image/x-icon" href="{{ asset('storage/' . $favicon) }}">
+    @endif
+
+    {{-- Google Fonts --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Kanit:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    {{-- Font Awesome --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    {{-- Vite Assets --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     @if(config('turnstile.enabled') && config('turnstile.points.login'))
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     @endif
-    <style>
-        /* Animated gradient background */
-        @keyframes gradient {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
-        }
 
-        .animated-gradient {
-            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #4facfe);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
+    <style>
+        body {
+            font-family: 'Kanit', 'Inter', sans-serif;
         }
 
         /* Floating animation */
         @keyframes float {
-            0%, 100% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-20px);
-            }
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
         }
 
-        .float-animation {
-            animation: float 6s ease-in-out infinite;
-        }
-
-        /* Fade in animation */
+        /* Fade in up animation */
         @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: translateY(20px);
             }
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-
-        .fade-in-up {
-            animation: fadeInUp 0.8s ease-out;
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
         }
 
-        /* Glass morphism effect */
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        /* Glass effect */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* Dark mode support */
-        .dark .glass-effect {
-            background: rgba(31, 41, 55, 0.95);
-            border: 1px solid rgba(75, 85, 99, 0.3);
+        /* Input focus glow */
+        .input-glow:focus {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
         }
 
-        .dark .animated-gradient {
-            background: linear-gradient(-45deg, #1e1b4b, #312e81, #581c87, #1e293b);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
-        }
-
-        .dark .particle {
-            background: rgba(139, 92, 246, 0.2);
-        }
-
-        /* Glow effect for logo */
-        @keyframes glow {
-            0%, 100% {
-                filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.5));
-            }
-            50% {
-                filter: drop-shadow(0 0 30px rgba(118, 75, 162, 0.8));
-            }
-        }
-
-        .logo-glow {
-            animation: glow 3s ease-in-out infinite;
-        }
-
-        /* Premium input styling */
-        .premium-input {
-            transition: all 0.3s ease;
-        }
-
-        .premium-input:focus {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
-        }
-
-        /* Button hover effect */
-        .premium-button {
+        /* Button shine effect */
+        .btn-shine {
             position: relative;
             overflow: hidden;
-            transition: all 0.3s ease;
         }
-
-        .premium-button:before {
+        .btn-shine::before {
             content: '';
             position: absolute;
             top: 0;
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
             transition: left 0.5s;
         }
-
-        .premium-button:hover:before {
+        .btn-shine:hover::before {
             left: 100%;
-        }
-
-        .premium-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-        }
-
-        /* Floating particles */
-        @keyframes float-particle {
-            0%, 100% {
-                transform: translate(0, 0) rotate(0deg);
-                opacity: 0.5;
-            }
-            33% {
-                transform: translate(30px, -30px) rotate(120deg);
-                opacity: 0.8;
-            }
-            66% {
-                transform: translate(-20px, 20px) rotate(240deg);
-                opacity: 0.6;
-            }
-        }
-
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            animation: float-particle 10s infinite;
         }
     </style>
 </head>
-<body class="animated-gradient min-h-screen relative overflow-hidden">
-    <!-- Decorative particles -->
-    <div class="particle" style="width: 100px; height: 100px; top: 10%; left: 10%; animation-delay: 0s;"></div>
-    <div class="particle" style="width: 60px; height: 60px; top: 70%; left: 80%; animation-delay: 2s;"></div>
-    <div class="particle" style="width: 80px; height: 80px; top: 40%; left: 5%; animation-delay: 4s;"></div>
-    <div class="particle" style="width: 120px; height: 120px; top: 60%; left: 90%; animation-delay: 6s;"></div>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-purple-950 relative overflow-x-hidden">
+    {{-- Background Effects --}}
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        {{-- Grid Pattern --}}
+        <div class="absolute inset-0 opacity-[0.02]"
+             style="background-image: linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
+                                      linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
+                    background-size: 50px 50px;">
+        </div>
 
-    <div class="min-h-screen flex items-center justify-center px-4 relative z-10">
-        <div class="max-w-md w-full fade-in-up">
-            <div class="glass-effect rounded-2xl shadow-2xl p-10">
-                <!-- Logo Section -->
-                <div class="text-center mb-8">
-                    <div class="flex justify-center mb-6">
-                        <img src="{{ $logoUrl }}"
-                             alt="{{ $appName }} Logo"
-                             style="width: {{ $logoAuthWidth }}px; height: {{ $logoAuthHeight }}px;"
-                             class="logo-glow float-animation object-contain">
+        {{-- Gradient Orbs --}}
+        <div class="absolute top-0 -left-40 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 -right-40 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl"></div>
+    </div>
+
+    {{-- Main Content --}}
+    <div class="relative z-10 min-h-screen flex items-center justify-center p-4 sm:p-6">
+        <div class="w-full max-w-md animate-fade-in-up">
+
+            {{-- Login Card --}}
+            <div class="glass-card rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-8">
+
+                {{-- Logo & Header --}}
+                <div class="text-center mb-6 sm:mb-8">
+                    {{-- Logo --}}
+                    <div class="flex justify-center mb-4">
+                        @if($logo)
+                            <div class="relative group">
+                                {{-- Glow Effect --}}
+                                <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity"></div>
+                                {{-- Logo Image --}}
+                                <div class="relative bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+                                    <img src="{{ asset('storage/' . $logo) }}"
+                                         alt="{{ $appName }}"
+                                         class="h-16 sm:h-20 w-auto animate-float">
+                                </div>
+                            </div>
+                        @else
+                            <div class="relative group">
+                                <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-xl opacity-50"></div>
+                                <div class="relative w-20 h-20 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 rounded-2xl flex items-center justify-center shadow-2xl animate-float">
+                                    <span class="text-white font-black text-3xl">TP</span>
+                                </div>
+                            </div>
+                        @endif
                     </div>
-                    <h1 class="text-5xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent mb-3">
-                        {{ $appName }}
-                    </h1>
-                    <p class="text-gray-600 dark:text-gray-300 text-lg font-medium">ระบบบริหารจัดการพันธมิตร</p>
-                    <div class="w-24 h-1 bg-gradient-to-r from-indigo-600 to-purple-600 mx-auto mt-4 rounded-full"></div>
+
+                    {{-- Title --}}
+                    <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">{{ $appName }}</h1>
+                    <p class="text-slate-400 text-sm sm:text-base">เข้าสู่ระบบเพื่อจัดการธุรกิจของคุณ</p>
                 </div>
 
+                {{-- Info Message --}}
                 @if (session('info'))
-                    <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-l-4 border-blue-500 text-blue-800 dark:text-blue-200 px-5 py-4 rounded-lg shadow-md">
-                        <div class="flex items-center">
-                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                            </svg>
-                            <span class="font-medium">{{ session('info') }}</span>
+                    <div class="mb-4 bg-blue-500/20 border border-blue-500/30 text-blue-200 px-4 py-3 rounded-xl text-sm">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-info-circle"></i>
+                            <span>{{ session('info') }}</span>
                         </div>
                     </div>
                 @endif
 
+                {{-- Error Messages --}}
                 @if ($errors->any())
-                    <div class="mb-6 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/30 dark:to-pink-900/30 border-l-4 border-red-500 text-red-800 dark:text-red-200 px-5 py-4 rounded-lg shadow-md">
-                        <div class="flex items-start">
-                            <svg class="w-5 h-5 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                            </svg>
-                            <ul class="list-disc list-inside space-y-1">
+                    <div class="mb-4 bg-red-500/20 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl text-sm">
+                        <div class="flex items-start gap-2">
+                            <i class="fas fa-exclamation-circle mt-0.5"></i>
+                            <ul class="space-y-1">
                                 @foreach ($errors->all() as $error)
-                                    <li class="font-medium">{{ $error }}</li>
+                                    <li>{{ $error }}</li>
                                 @endforeach
                             </ul>
                         </div>
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('login') }}" class="space-y-6">
+                {{-- Login Form --}}
+                <form method="POST" action="{{ route('login') }}" class="space-y-4 sm:space-y-5">
                     @csrf
 
+                    {{-- Email Field --}}
                     <div>
-                        <label for="email" class="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2">
-                            <span class="flex items-center">
-                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
-                                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
-                                </svg>
-                                อีเมล
-                            </span>
+                        <label for="email" class="block text-sm font-medium text-slate-300 mb-2">
+                            <i class="fas fa-envelope mr-2 text-blue-400"></i>อีเมล
                         </label>
-                        <input type="email" name="email" id="email" value="{{ old('email') }}"
-                               class="premium-input w-full px-5 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-700 dark:text-white dark:bg-gray-700 font-medium shadow-sm"
-                               placeholder="example@email.com"
-                               required autofocus>
+                        <input type="email"
+                               name="email"
+                               id="email"
+                               value="{{ old('email') }}"
+                               class="input-glow w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none transition-all"
+                               placeholder="your@email.com"
+                               required
+                               autofocus>
                     </div>
 
-                    <div>
-                        <label for="password" class="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-2">
-                            <span class="flex items-center">
-                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
-                                </svg>
-                                รหัสผ่าน
-                            </span>
+                    {{-- Password Field --}}
+                    <div x-data="{ showPassword: false }">
+                        <label for="password" class="block text-sm font-medium text-slate-300 mb-2">
+                            <i class="fas fa-lock mr-2 text-purple-400"></i>รหัสผ่าน
                         </label>
-                        <input type="password" name="password" id="password"
-                               class="premium-input w-full px-5 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-700 dark:text-white dark:bg-gray-700 font-medium shadow-sm"
-                               placeholder="••••••••"
-                               required>
+                        <div class="relative">
+                            <input :type="showPassword ? 'text' : 'password'"
+                                   name="password"
+                                   id="password"
+                                   class="input-glow w-full px-4 py-3 pr-12 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none transition-all"
+                                   placeholder="••••••••"
+                                   required>
+                            <button type="button"
+                                    @click="showPassword = !showPassword"
+                                    class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
+                                <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            </button>
+                        </div>
                     </div>
 
+                    {{-- Remember Me --}}
                     <div class="flex items-center justify-between">
                         <label class="flex items-center cursor-pointer group">
-                            <input type="checkbox" name="remember"
-                                   class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-2 focus:ring-indigo-500 transition">
-                            <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">จดจำฉัน</span>
+                            <input type="checkbox"
+                                   name="remember"
+                                   class="w-4 h-4 rounded border-slate-600 bg-white/5 text-blue-500 focus:ring-blue-500 focus:ring-offset-0">
+                            <span class="ml-2 text-sm text-slate-400 group-hover:text-slate-300 transition-colors">จดจำฉัน</span>
                         </label>
+                        @if (Route::has('password.request'))
+                            <a href="{{ route('password.request') }}" class="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                                ลืมรหัสผ่าน?
+                            </a>
+                        @endif
                     </div>
 
+                    {{-- Turnstile --}}
                     @if(config('turnstile.enabled') && config('turnstile.points.login'))
                     <div class="flex justify-center">
                         <div class="cf-turnstile"
                              data-sitekey="{{ config('turnstile.site_key') }}"
-                             data-theme="{{ config('turnstile.theme') }}"
+                             data-theme="dark"
                              data-size="{{ config('turnstile.size') }}">
                         </div>
                     </div>
                     @endif
 
+                    {{-- Submit Button --}}
                     <button type="submit"
-                            class="premium-button w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-2xl transition duration-300">
-                        <span class="flex items-center justify-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
-                            </svg>
-                            เข้าสู่ระบบ
-                        </span>
+                            class="btn-shine w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 text-white py-3 sm:py-3.5 rounded-xl font-semibold text-base shadow-lg hover:shadow-purple-500/25 hover:-translate-y-0.5 transition-all duration-300">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        เข้าสู่ระบบ
                     </button>
                 </form>
 
+                {{-- LINE Login --}}
                 @php
                     $lineSettings = \App\Models\LineOaSetting::getActive();
                     $showLineLogin = $lineSettings && $lineSettings->channel_id && $lineSettings->channel_secret;
                 @endphp
 
                 @if($showLineLogin)
-                <div class="mt-6">
-                    <div class="relative flex items-center justify-center">
-                        <div class="border-t border-gray-300 dark:border-gray-600 w-full"></div>
-                        <span class="bg-white dark:bg-gray-800 px-4 text-gray-500 dark:text-gray-400 text-sm font-medium absolute">หรือ</span>
+                <div class="mt-5 sm:mt-6">
+                    <div class="relative flex items-center justify-center my-4">
+                        <div class="border-t border-white/10 w-full"></div>
+                        <span class="bg-transparent px-4 text-slate-500 text-sm absolute">หรือ</span>
                     </div>
 
                     <a href="{{ route('line.login') }}"
-                       class="mt-6 w-full flex items-center justify-center px-6 py-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 font-bold text-lg shadow-md hover:shadow-lg transition duration-300 group">
-                        <svg class="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="#06C755">
+                       class="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#06C755] hover:bg-[#05B34D] text-white font-semibold rounded-xl shadow-lg hover:shadow-green-500/25 hover:-translate-y-0.5 transition-all duration-300">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
                         </svg>
-                        <span class="group-hover:text-gray-900 dark:group-hover:text-white transition">เข้าสู่ระบบด้วย LINE</span>
+                        เข้าสู่ระบบด้วย LINE
                     </a>
                 </div>
                 @endif
 
-                <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600">
-                    <div class="text-center">
-                        <a href="{{ route('register') }}"
-                           class="inline-flex items-center text-indigo-600 dark:text-indigo-400 hover:text-purple-600 dark:hover:text-purple-400 font-semibold transition duration-300 group">
-                            <span class="mr-2">ยังไม่มีบัญชี?</span>
-                            <span class="underline">สมัครสมาชิก</span>
-                            <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                            </svg>
+                {{-- Register Link --}}
+                <div class="mt-6 pt-5 border-t border-white/10 text-center">
+                    <p class="text-slate-400 text-sm">
+                        ยังไม่มีบัญชี?
+                        <a href="{{ route('register') }}" class="text-blue-400 hover:text-blue-300 font-semibold ml-1 transition-colors">
+                            สมัครสมาชิก
+                            <i class="fas fa-arrow-right ml-1 text-xs"></i>
                         </a>
-                    </div>
+                    </p>
                 </div>
             </div>
 
-            <!-- Back to Home Link -->
+            {{-- Back to Home --}}
             <div class="mt-6 text-center">
                 <a href="{{ route('home') }}"
-                   class="inline-flex items-center px-6 py-3 bg-white/20 backdrop-blur-md text-white font-semibold rounded-xl hover:bg-white/30 transition duration-300 shadow-lg group">
-                    <svg class="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                    </svg>
+                   class="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white/80 hover:text-white text-sm font-medium rounded-xl transition-all duration-300">
+                    <i class="fas fa-arrow-left"></i>
                     กลับหน้าแรก
                 </a>
             </div>
 
-            <!-- Footer Text -->
-            <div class="mt-8 text-center">
-                <p class="text-white/80 dark:text-gray-400 text-sm font-medium">
-                    ระบบปลอดภัยด้วยการเข้ารหัสระดับสูง 🔒
+            {{-- Security Badge --}}
+            <div class="mt-4 text-center">
+                <p class="text-slate-500 text-xs flex items-center justify-center gap-2">
+                    <i class="fas fa-shield-alt text-green-500"></i>
+                    ระบบปลอดภัยด้วยการเข้ารหัส SSL
                 </p>
             </div>
         </div>
     </div>
+
+    {{-- Alpine.js --}}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </body>
 </html>
