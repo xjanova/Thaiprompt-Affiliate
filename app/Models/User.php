@@ -242,6 +242,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get all orders for the user (E-commerce)
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
      * Get default payment method
      */
     public function defaultPaymentMethod()
