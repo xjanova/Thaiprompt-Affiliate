@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.314.2] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1940 from xjanova/claude/skip-existing-app-settings-013ErB5QsS4LptYNEWnyWDSj (420ca884)
+- fix: provide selfie_image path for rejected KYC record in seeder (cb55a7e5)
+### 🔧 Other Changes
+
+
 ## [v3.314.1] - 2025-12-03
 
 ### ✨ Features
