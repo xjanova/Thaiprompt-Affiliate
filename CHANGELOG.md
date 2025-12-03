@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.320.1] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1961 from xjanova/claude/redesign-ecommerce-storefront-01UHAwtzerA3ghF9zAt5m8K5 (d17ed465)
+- refactor: change video to thumbnail with click-to-play (91c42809)
+
 ## [v3.320.0] - 2025-12-03
 
 ### ✨ Features
