@@ -10,6 +10,7 @@ use App\Http\Controllers\Seller\AnalyticsController;
 use App\Http\Controllers\Seller\SystemMonitoringController;
 use App\Http\Controllers\Seller\StaffController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Seller\UserGuideController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,6 +35,9 @@ Route::get('/profile', [DashboardController::class, 'profile'])->name('profile')
 Route::put('/profile', [DashboardController::class, 'updateProfile'])->name('profile.update');
 Route::get('/commissions', [DashboardController::class, 'commissions'])->name('commissions');
 Route::get('/settings', [DashboardController::class, 'settings'])->name('settings');
+
+// Seller Guide (คู่มือการใช้งาน)
+Route::get('/user-guide', [UserGuideController::class, 'index'])->name('user-guide.index');
 
 // ========================================
 // ANALYTICS
