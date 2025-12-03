@@ -171,6 +171,22 @@
                             @endif
                         </div>
 
+                        {{-- YouTube Video - Autoplay --}}
+                        <div class="mb-8">
+                            <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20">
+                                <div class="aspect-video">
+                                    <iframe
+                                        src="https://www.youtube.com/embed/-GsrFb2tO1I?autoplay=1&mute=1&loop=1&playlist=-GsrFb2tO1I&controls=1&rel=0"
+                                        title="TP-Affiliate Introduction"
+                                        class="w-full h-full"
+                                        frameborder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowfullscreen>
+                                    </iframe>
+                                </div>
+                            </div>
+                        </div>
+
                         {{-- App Name - แสดงเฉพาะเมื่อไม่มีโลโก้ --}}
                         @if(!$systemLogo)
                         <h2 class="text-2xl lg:text-3xl font-bold text-white text-center mb-2">
