@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.308.1] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1922 from xjanova/claude/fix-tetris-block-removal-01QoJNEhmSNcBHRovwFnGzMY (8e8594c7)
+- fix: แก้ไขปัญหาบล็อกทับซ้อนใน hold และ next piece ของเกม Tetris (932fa397)
+### 🔧 Other Changes
+
+
 ## [v3.308.0] - 2025-12-03
 
 ### ✨ Features
