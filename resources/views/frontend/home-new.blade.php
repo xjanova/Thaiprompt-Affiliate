@@ -99,6 +99,11 @@
 
                 {{-- CTA Buttons --}}
                 <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-10">
+                    <a href="{{ route('storefront.index') }}"
+                       class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-orange-500/40 transition-all">
+                        <i class="fas fa-shopping-cart"></i>
+                        🛒 ช้อปปิ้งเลย!
+                    </a>
                     <a href="{{ route('register') }}"
                        class="inline-flex items-center justify-center gap-2 px-8 py-4 btn-accent font-bold text-lg rounded-xl shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30">
                         <i class="fas fa-rocket"></i>
