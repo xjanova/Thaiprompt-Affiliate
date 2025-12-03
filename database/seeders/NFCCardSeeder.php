@@ -216,11 +216,14 @@ class NFCCardSeeder extends Seeder
                 'timestamp' => now()->timestamp,
             ];
 
+            // สร้าง transaction ID แบบ unique (ใช้ card_id + index + microtime เพื่อป้องกันซ้ำ)
+            $uniqueTransactionId = 'NFC' . now()->format('YmdHis') . $card->id . str_pad($i, 3, '0', STR_PAD_LEFT) . rand(100, 999);
+
             // สร้าง transaction
             NFCTransaction::create([
                 'nfc_card_id' => $card->id,
                 'user_id' => $card->user_id,
-                'transaction_id' => 'NFC' . now()->format('YmdHis') . rand(1000, 9999),
+                'transaction_id' => $uniqueTransactionId,
                 'type' => $type,
                 'amount' => $amount,
                 'balance_before' => $balance,
