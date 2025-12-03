@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.312.4] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1932 from xjanova/claude/add-quick-install-guide-01Xy8UxaP6wZ81jAkwURmD28 (fb01a2ba)
+- docs: add comprehensive deploy.sh setup guide to QUICK_INSTALL.md (204f9f51)
+
 ## [v3.312.3] - 2025-12-03
 
 ### ✨ Features
