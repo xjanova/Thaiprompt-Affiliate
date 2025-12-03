@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.314.0] - 2025-12-03
+
+### ✨ Features
+- Merge pull request #1938 from xjanova/claude/create-homepage-documents-01Sv752hEhALH1ErZqKE9mQ4 (a7bd3cc4)
+- feat: add professional documentation pages for 6 homepage features (82ecb9f0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.313.0] - 2025-12-03
 
 ### ✨ Features
