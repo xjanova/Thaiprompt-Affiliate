@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.316.6] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1949 from xjanova/claude/fix-groupby-syntax-error-01CPLcEqfcNT8xaAZmyfjvib (088f73e8)
+- fix: remove duplicate orders() method from User model (e49bc7ff)
+### 🔧 Other Changes
+
+
 ## [v3.316.5] - 2025-12-03
 
 ### ✨ Features
