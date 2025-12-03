@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.312.3] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1931 from xjanova/claude/fix-forum-reports-migration-01LMxz7yNg944BQXKhBtm4Eb (5ccc0dcf)
+- fix: use SafeMigration trait instead of deprecated Doctrine DBAL (640b3200)
+### 🔧 Other Changes
+
+
 ## [v3.312.2] - 2025-12-03
 
 ### ✨ Features
