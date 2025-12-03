@@ -263,18 +263,22 @@
         <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16 lg:h-20">
 
-                {{-- Logo --}}
-                <a href="{{ route('home') }}" class="flex items-center gap-3 group">
+                {{-- Logo - ใหญ่ขึ้นและเท่ --}}
+                <a href="{{ route('home') }}" class="flex items-center gap-4 group">
                     @if($systemLogo)
-                        <img src="{{ asset($systemLogo) }}"
-                             alt="{{ $appName }}"
-                             class="h-10 lg:h-12 w-auto transition-transform group-hover:scale-105">
+                        <div class="relative">
+                            <img src="{{ asset($systemLogo) }}"
+                                 alt="{{ $appName }}"
+                                 class="h-12 lg:h-16 w-auto transition-all duration-300 group-hover:scale-110 drop-shadow-lg">
+                            {{-- Glow effect on hover --}}
+                            <div class="absolute inset-0 bg-blue-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
+                        </div>
                     @else
-                        <div class="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-900 to-purple-600 rounded-xl flex items-center justify-center">
-                            <span class="text-white font-bold text-lg lg:text-xl">TP</span>
+                        <div class="w-12 h-12 lg:w-16 lg:h-16 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30 transition-all duration-300 group-hover:scale-110 group-hover:shadow-purple-500/50">
+                            <span class="text-white font-black text-xl lg:text-2xl">TP</span>
                         </div>
                     @endif
-                    <span class="hidden sm:block text-lg lg:text-xl font-bold gradient-text">{{ $appName }}</span>
+                    <span class="hidden sm:block text-xl lg:text-2xl font-bold gradient-text transition-transform duration-300 group-hover:translate-x-1">{{ $appName }}</span>
                 </a>
 
                 {{-- Desktop Navigation --}}

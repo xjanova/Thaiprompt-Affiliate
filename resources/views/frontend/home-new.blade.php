@@ -131,16 +131,36 @@
             <div class="relative animate-fade-in-up" style="animation-delay: 0.2s;">
                 <div class="relative">
                     {{-- Main Card --}}
-                    <div class="relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-3xl p-8 lg:p-10 shadow-2xl animate-float">
-                        {{-- Logo --}}
+                    <div class="relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-3xl p-8 lg:p-12 shadow-2xl animate-float">
+                        {{-- Logo - ใหญ่และเท่ --}}
                         <div class="flex items-center justify-center mb-8">
                             @if($systemLogo)
-                                <img src="{{ asset($systemLogo) }}"
-                                     alt="{{ $appName }}"
-                                     class="h-24 lg:h-32 w-auto drop-shadow-2xl">
+                                <div class="relative group">
+                                    {{-- Glow Effect Background --}}
+                                    <div class="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl blur-2xl opacity-50 group-hover:opacity-75 transition-opacity duration-500 scale-110"></div>
+
+                                    {{-- Logo Container --}}
+                                    <div class="relative bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/30 shadow-2xl">
+                                        <img src="{{ asset($systemLogo) }}"
+                                             alt="{{ $appName }}"
+                                             class="h-32 sm:h-40 lg:h-48 w-auto drop-shadow-2xl transition-transform duration-500 group-hover:scale-105"
+                                             style="filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.3));">
+                                    </div>
+
+                                    {{-- Shine Effect --}}
+                                    <div class="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-3xl pointer-events-none"></div>
+                                </div>
                             @else
-                                <div class="w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 rounded-3xl flex items-center justify-center shadow-2xl">
-                                    <span class="text-white font-black text-4xl lg:text-5xl">TP</span>
+                                <div class="relative group">
+                                    {{-- Glow Effect --}}
+                                    <div class="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 rounded-3xl blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500 scale-110"></div>
+
+                                    {{-- Logo Placeholder --}}
+                                    <div class="relative w-40 h-40 lg:w-52 lg:h-52 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 rounded-3xl flex items-center justify-center shadow-2xl transition-transform duration-500 group-hover:scale-105">
+                                        <span class="text-white font-black text-6xl lg:text-7xl drop-shadow-lg">TP</span>
+                                        {{-- Inner glow --}}
+                                        <div class="absolute inset-4 bg-white/10 rounded-2xl"></div>
+                                    </div>
                                 </div>
                             @endif
                         </div>
