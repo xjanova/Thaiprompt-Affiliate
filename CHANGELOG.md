@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.312.5] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: reorder deploy.sh steps to fix MethodNotAllowedHttpException (ee8740f1)
+### 🔧 Other Changes
+- Merge pull request #1933 from xjanova/claude/add-quick-install-guide-01Xy8UxaP6wZ81jAkwURmD28 (25aecdd8)
+
 ## [v3.312.4] - 2025-12-03
 
 ### ✨ Features
