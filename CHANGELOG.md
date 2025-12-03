@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.316.5] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1948 from xjanova/claude/fix-groupby-syntax-error-01CPLcEqfcNT8xaAZmyfjvib (b1bca408)
+- fix: add missing orders() relationship to User model (557a8e1d)
+### 🔧 Other Changes
+
+
 ## [v3.316.4] - 2025-12-03
 
 ### ✨ Features
