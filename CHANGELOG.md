@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.316.1] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1944 from xjanova/claude/skip-existing-app-settings-013ErB5QsS4LptYNEWnyWDSj (68165b01)
+- fix: generate unique transaction IDs in NFCCardSeeder (83d221b2)
+### 🔧 Other Changes
+
+
 ## [v3.316.0] - 2025-12-03
 
 ### ✨ Features
