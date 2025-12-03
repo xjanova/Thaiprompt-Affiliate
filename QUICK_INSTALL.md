@@ -2,7 +2,7 @@
 
 > **คู่มือติดตั้ง TP-Affiliate แบบ Step-by-Step**
 >
-> Version: 3.3.0 | Last Updated: 2025-11-30
+> Version: 3.3.1 | Last Updated: 2025-12-03
 
 ---
 
@@ -14,6 +14,8 @@
 4. [ตัวเลือกการติดตั้ง](#-ตัวเลือกการติดตั้ง)
 5. [หลังติดตั้งเสร็จ](#-หลังติดตั้งเสร็จ)
 6. [การแก้ปัญหา](#-การแก้ปัญหา)
+7. [การอัพเดท](#-การอัพเดท)
+8. [**ตั้งค่า deploy.sh ให้ Deploy สำเร็จ 100%**](#-ตั้งค่า-deploysh-ให้-deploy-สำเร็จ-100) ⭐ NEW
 
 ---
 
@@ -460,6 +462,321 @@ git pull origin claude/Main
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force
 php artisan optimize
+```
+
+---
+
+## 🚀 ตั้งค่า deploy.sh ให้ Deploy สำเร็จ 100%
+
+> **คู่มือการตั้งค่า deploy.sh อย่างละเอียด เพื่อให้ Deploy สำเร็จทุกครั้ง**
+
+### ✅ Checklist ก่อนรัน deploy.sh
+
+**สิ่งที่ต้องมีก่อนรัน:**
+
+| # | รายการ | คำสั่งตรวจสอบ | ต้องได้ผลลัพธ์ |
+|---|--------|--------------|----------------|
+| 1 | Git repository | `ls -la .git` | พบโฟลเดอร์ .git |
+| 2 | .env file | `ls -la .env` | พบไฟล์ .env |
+| 3 | Database connection | `php artisan db:show` | แสดงข้อมูล DB |
+| 4 | Composer | `composer --version` | แสดง version |
+| 5 | PHP 8.1+ | `php --version` | PHP 8.1.x ขึ้นไป |
+| 6 | mysqldump (optional) | `which mysqldump` | พบ path |
+
+### 📝 ขั้นตอนที่ 1: ตรวจสอบและเตรียม .env
+
+```bash
+# 1. ตรวจสอบว่ามี .env
+ls -la .env
+
+# 2. ถ้าไม่มี ให้สร้างจาก .env.example
+cp .env.example .env
+
+# 3. แก้ไขค่าสำคัญ
+nano .env
+```
+
+**ค่าที่ต้องตั้งใน .env (บังคับ):**
+
+```env
+# === Application ===
+APP_NAME="TP-Affiliate"
+APP_ENV=production          # ⚠️ ต้องเป็น production สำหรับ live server
+APP_KEY=                    # จะถูก generate อัตโนมัติ
+APP_DEBUG=false             # ⚠️ ต้องเป็น false ใน production
+APP_URL=https://yourdomain.com
+
+# === Database (บังคับ) ===
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=thaiprompt_affiliate
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+```
+
+### 📝 ขั้นตอนที่ 2: ตั้งค่า Database
+
+```bash
+# 1. เข้า MySQL
+mysql -u root -p
+
+# 2. สร้าง Database
+CREATE DATABASE thaiprompt_affiliate CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+# 3. สร้าง User และให้สิทธิ์ (แนะนำ)
+CREATE USER 'tpaffiliate'@'localhost' IDENTIFIED BY 'your_secure_password';
+GRANT ALL PRIVILEGES ON thaiprompt_affiliate.* TO 'tpaffiliate'@'localhost';
+FLUSH PRIVILEGES;
+exit;
+
+# 4. ทดสอบ connection
+php artisan db:show
+```
+
+### 📝 ขั้นตอนที่ 3: ตั้งค่า Permissions
+
+```bash
+# ให้สิทธิ์เขียนโฟลเดอร์สำคัญ
+chmod -R 775 storage bootstrap/cache
+
+# ตั้ง owner (Linux - Apache)
+sudo chown -R $USER:www-data storage bootstrap/cache
+
+# หรือ (Linux - Nginx)
+sudo chown -R $USER:nginx storage bootstrap/cache
+
+# สร้างโฟลเดอร์ที่จำเป็น (ถ้าไม่มี)
+mkdir -p storage/{app,framework,logs}
+mkdir -p storage/framework/{cache,sessions,views}
+mkdir -p bootstrap/cache
+```
+
+### 📝 ขั้นตอนที่ 4: ตั้งค่า GitHub Token (แนะนำ)
+
+> **ทำไมต้องใช้?** เพิ่ม rate limit จาก 60 → 5,000 requests/hour ป้องกัน error ขณะ deploy
+
+```bash
+# 1. สร้าง GitHub Personal Access Token
+#    ไปที่: https://github.com/settings/tokens
+#    กด "Generate new token (classic)"
+#    เลือก: repo (read access)
+
+# 2. ตั้งค่า environment variable (ชั่วคราว)
+export GITHUB_TOKEN=ghp_your_token_here
+
+# 3. หรือเพิ่มใน .bashrc/.zshrc (ถาวร)
+echo 'export GITHUB_TOKEN=ghp_your_token_here' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### 📝 ขั้นตอนที่ 5: ตั้งค่า Cloudflare (ถ้าใช้)
+
+> **สำหรับเว็บที่ใช้ Cloudflare CDN** - deploy.sh จะ purge cache ให้อัตโนมัติ
+
+```env
+# เพิ่มใน .env
+CLOUDFLARE_ZONE_ID=your_zone_id_here
+CLOUDFLARE_API_TOKEN=your_api_token_here
+```
+
+**วิธีหา Zone ID และ API Token:**
+1. เข้า Cloudflare Dashboard
+2. เลือก Domain ของคุณ
+3. Zone ID อยู่ที่ sidebar ขวามือ
+4. API Token: ไปที่ My Profile → API Tokens → Create Token
+
+### 📝 ขั้นตอนที่ 6: ทดสอบก่อน Deploy จริง
+
+```bash
+# 1. ทดสอบ database connection
+php artisan db:show
+
+# 2. ทดสอบ artisan commands
+php artisan --version
+
+# 3. ทดสอบ composer
+composer diagnose
+
+# 4. ทดสอบ git connection
+git fetch origin --dry-run
+
+# 5. ทดสอบ permissions
+touch storage/logs/test.log && rm storage/logs/test.log && echo "✓ Permissions OK"
+```
+
+### 🎯 รัน deploy.sh
+
+```bash
+# วิธีที่ 1: Deploy จาก branch ปัจจุบัน
+./deploy.sh
+
+# วิธีที่ 2: Deploy จาก branch ที่ระบุ
+./deploy.sh claude/Main
+
+# วิธีที่ 3: Deploy พร้อม GitHub token (ถ้าไม่ได้ตั้งถาวร)
+GITHUB_TOKEN=ghp_xxx ./deploy.sh
+```
+
+### 🔧 การตั้งค่าเพิ่มเติมสำหรับ Production
+
+#### ตั้งค่า PHP-FPM ให้ restart ได้โดยไม่ต้องใส่ password
+
+```bash
+# 1. แก้ไข sudoers
+sudo visudo
+
+# 2. เพิ่มบรรทัดนี้ (แทน your_username ด้วย username จริง)
+your_username ALL=(ALL) NOPASSWD: /usr/bin/systemctl reload php8.2-fpm
+your_username ALL=(ALL) NOPASSWD: /usr/bin/systemctl reload php8.3-fpm
+your_username ALL=(ALL) NOPASSWD: /usr/sbin/service php8.2-fpm reload
+
+# 3. บันทึกและออก (Ctrl+X, Y, Enter)
+```
+
+#### ตั้งค่า Cron สำหรับ Laravel Scheduler
+
+```bash
+# เปิด crontab
+crontab -e
+
+# เพิ่มบรรทัดนี้
+* * * * * cd /path/to/your/project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+#### ตั้งค่า Supervisor สำหรับ Queue Worker
+
+```bash
+# 1. ติดตั้ง supervisor
+sudo apt install supervisor
+
+# 2. สร้าง config file
+sudo nano /etc/supervisor/conf.d/tpaffiliate-worker.conf
+```
+
+```ini
+[program:tpaffiliate-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /path/to/your/project/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=2
+redirect_stderr=true
+stdout_logfile=/path/to/your/project/storage/logs/worker.log
+stopwaitsecs=3600
+```
+
+```bash
+# 3. อัพเดท supervisor
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start tpaffiliate-worker:*
+```
+
+### ❌ การแก้ปัญหาที่พบบ่อยขณะ Deploy
+
+#### ปัญหา: "Database connection failed"
+
+```bash
+# ตรวจสอบ MySQL service
+sudo systemctl status mysql
+
+# ตรวจสอบ credentials ใน .env
+grep "^DB_" .env
+
+# ทดสอบ connection ด้วย mysql client
+mysql -h 127.0.0.1 -u your_username -p your_database
+```
+
+#### ปัญหา: "Permission denied"
+
+```bash
+# Reset permissions ทั้งหมด
+chmod -R 775 storage bootstrap/cache
+sudo chown -R $USER:www-data storage bootstrap/cache
+
+# ตรวจสอบ SELinux (CentOS/RHEL)
+sudo setenforce 0  # ปิดชั่วคราว
+# หรือ
+sudo chcon -R -t httpd_sys_rw_content_t storage/
+```
+
+#### ปัญหา: "Composer install failed - timeout"
+
+```bash
+# เพิ่ม timeout
+COMPOSER_PROCESS_TIMEOUT=600 composer install
+
+# ใช้ GitHub token
+export GITHUB_TOKEN=ghp_your_token
+./deploy.sh
+```
+
+#### ปัญหา: "OPcache not cleared"
+
+```bash
+# Restart PHP-FPM ด้วยมือ
+sudo systemctl reload php8.2-fpm
+
+# หรือ restart apache
+sudo systemctl restart apache2
+```
+
+#### ปัญหา: "Migration failed - table already exists"
+
+```bash
+# ดูสถานะ migrations
+php artisan migrate:status
+
+# รัน smart migration
+php artisan migrate:smart --force
+
+# หรือ sync schema
+php artisan schema:verify --auto-fix --force
+```
+
+### 📊 สิ่งที่ deploy.sh ทำโดยอัตโนมัติ
+
+| ขั้นตอน | รายละเอียด | Auto-retry |
+|--------|------------|------------|
+| 1 | เปิด Maintenance Mode | ❌ |
+| 2 | Backup Database | ❌ |
+| 3 | Backup Critical Files (.env, uploads) | ❌ |
+| 4 | Git Force Sync กับ GitHub | ✅ 3 ครั้ง |
+| 5 | Sync .env กับ .env.example | ❌ |
+| 6 | Composer Install | ✅ 3 ครั้ง |
+| 7 | Sanctum Install | ❌ |
+| 8 | Clear All Caches | ❌ |
+| 9 | Smart Database Migration | ❌ |
+| 10 | Smart Database Seeding | ❌ |
+| 11 | Create Storage Symlink | ❌ |
+| 12 | Set File Permissions | ❌ |
+| 13-16 | Cache Config/Routes/Views/Autoloader | ❌ |
+| 17 | Restart PHP-FPM & Services | ❌ |
+| 18-19 | Verify & Disable Maintenance | ❌ |
+| 20 | Cloudflare Cache Purge | ❌ |
+| 21-22 | Post-Deploy Verification | ❌ |
+
+### ✅ Checklist หลัง Deploy สำเร็จ
+
+```bash
+# 1. ตรวจสอบ HTTP response
+curl -I https://yourdomain.com
+
+# 2. ตรวจสอบ logs
+tail -f storage/logs/laravel.log
+
+# 3. ตรวจสอบ deployment logs
+tail -f storage/logs/deployment.log
+
+# 4. ตรวจสอบ queue workers
+php artisan queue:monitor
+
+# 5. ตรวจสอบ database migrations
+php artisan migrate:status
 ```
 
 ---
