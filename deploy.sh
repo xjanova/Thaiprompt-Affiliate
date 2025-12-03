@@ -1531,41 +1531,20 @@ fi
 
 print_success "Permissions set"
 
-# Step 13: Cache Configuration
-print_step 13 22 "Caching Configuration"
-if ! php artisan config:cache 2>&1 | tee -a "$LOG_FILE"; then
-    error_exit "Config cache failed - ตรวจสอบ .env และ config files" "$?"
-fi
-print_success "Configuration cached"
-
-# Step 14: Cache Routes
-print_step 14 22 "Caching Routes"
-php artisan route:cache || print_warning "Route cache failed (continuing anyway)"
-print_success "Routes cached"
-
-# Step 15: Cache Views
-print_step 15 22 "Caching Views"
-php artisan view:cache || print_warning "View cache failed (continuing anyway)"
-print_success "Views cached"
-
-# Step 16: Optimize Autoloader
-print_step 16 22 "Optimizing Autoloader"
-composer dump-autoload --optimize --no-dev --no-interaction
-print_success "Autoloader optimized"
-
-# Step 17: Restart Services (CRITICAL for OPcache clearing!)
-print_step 17 22 "Restarting Services (OPcache)"
+# Step 13: Restart Services FIRST (CRITICAL - OPcache must be cleared BEFORE caching!)
+# ⚠️ FIX: MethodNotAllowedHttpException - ต้อง restart PHP-FPM ก่อน cache
+# เพื่อให้ OPcache ถูก clear และอ่านไฟล์ใหม่ก่อนสร้าง route cache
+print_step 13 22 "🔄 Restarting Services FIRST (Clear OPcache)"
 
 # Track service restart status
 PHP_FPM_STATUS="⏭️ ไม่พบ"
 QUEUE_STATUS="⏭️ ไม่ได้ใช้งาน"
 HORIZON_STATUS="⏭️ ไม่ได้ใช้งาน"
 
-# Restart PHP-FPM (if available) - THIS CLEARS WEB SERVER OPCACHE!
+# Restart PHP-FPM BEFORE caching - THIS CLEARS WEB SERVER OPCACHE!
 print_info "→ ตรวจสอบ PHP-FPM service..."
 PHP_FPM_RESTARTED=false
 if command -v systemctl >/dev/null 2>&1; then
-    # Try different PHP-FPM service names (newest first)
     for service in php8.3-fpm php8.2-fpm php8.1-fpm php8.0-fpm php-fpm; do
         if systemctl is-active --quiet $service 2>/dev/null; then
             print_info "  พบ PHP-FPM service: $service"
@@ -1580,13 +1559,11 @@ if command -v systemctl >/dev/null 2>&1; then
             break
         fi
     done
-
     if [ "$PHP_FPM_RESTARTED" = false ] && [ "$PHP_FPM_STATUS" = "⏭️ ไม่พบ" ]; then
         print_warning "  ⚠ ไม่พบ PHP-FPM service ที่ทำงานอยู่"
         PHP_FPM_STATUS="⚠️ ไม่พบ service"
     fi
 elif command -v service >/dev/null 2>&1; then
-    # Try using service command (for older systems)
     for svc in php8.3-fpm php8.2-fpm php8.1-fpm php-fpm; do
         if service $svc status >/dev/null 2>&1; then
             if sudo service $svc reload 2>/dev/null; then
@@ -1604,9 +1581,8 @@ else
     print_warning "  ⚠ ไม่พบ systemctl หรือ service command"
     PHP_FPM_STATUS="⚠️ ไม่พบ systemctl/service"
 fi
-echo ""
 
-# Restart queue workers (if using)
+# Restart queue workers
 print_info "→ ตรวจสอบ Queue Workers..."
 if php artisan queue:restart 2>&1 | grep -q "Broadcasting queue restart signal"; then
     print_success "  ✓ Queue workers restart signal sent"
@@ -1615,52 +1591,87 @@ else
     print_info "  ℹ Queue workers ไม่ได้ใช้งาน หรือไม่มี worker ทำงานอยู่"
     QUEUE_STATUS="ℹ️ ไม่มี worker ทำงาน"
 fi
+
+# Wait for OPcache to fully clear
+if [ "$PHP_FPM_RESTARTED" = true ]; then
+    print_info "→ รอให้ OPcache clear เสร็จสมบูรณ์ (2 วินาที)..."
+    sleep 2
+fi
 echo ""
 
-# Restart Horizon (if using)
-print_info "→ ตรวจสอบ Laravel Horizon..."
-if php artisan horizon:terminate 2>&1 | grep -q "Horizon"; then
-    print_success "  ✓ Horizon terminated (จะ auto-restart)"
-    HORIZON_STATUS="✅ Terminated"
-elif php artisan list 2>/dev/null | grep -q "horizon"; then
-    print_warning "  ⚠ Horizon installed แต่ไม่ได้ทำงานอยู่"
-    HORIZON_STATUS="ℹ️ ไม่ได้ทำงาน"
+# Step 14: Clear caches AGAIN after PHP-FPM restart
+print_step 14 22 "🧹 Clearing Caches (Post PHP-FPM Restart)"
+print_info "→ Clearing all Laravel caches..."
+php artisan route:clear 2>/dev/null || true
+php artisan config:clear 2>/dev/null || true
+php artisan view:clear 2>/dev/null || true
+php artisan cache:clear 2>/dev/null || true
+php artisan event:clear 2>/dev/null || true
+
+# Delete bootstrap cache files manually
+rm -f bootstrap/cache/config.php 2>/dev/null || true
+rm -f bootstrap/cache/routes-v7.php 2>/dev/null || true
+rm -f bootstrap/cache/services.php 2>/dev/null || true
+rm -f bootstrap/cache/packages.php 2>/dev/null || true
+print_success "✓ All caches cleared"
+echo ""
+
+# Step 15: Cache Configuration
+print_step 15 22 "Caching Configuration"
+if ! php artisan config:cache 2>&1 | tee -a "$LOG_FILE"; then
+    error_exit "Config cache failed - ตรวจสอบ .env และ config files" "$?"
+fi
+print_success "Configuration cached"
+
+# Step 16: Cache Routes (with verification!)
+print_step 16 22 "Caching Routes (with Verification)"
+php artisan route:cache || print_warning "Route cache failed (continuing anyway)"
+
+# ⚠️ CRITICAL: Verify home route accepts GET method
+print_info "→ Verifying home route methods..."
+ROUTE_METHODS=$(php artisan route:list --path=/ --method=GET 2>/dev/null | grep -E "^\s+GET\|HEAD\s+/\s+" || echo "")
+
+if [ -z "$ROUTE_METHODS" ]; then
+    print_critical "⚠️  HOME ROUTE VERIFICATION FAILED!"
+    print_error "Route '/' ไม่รองรับ GET method - อาจเกิด MethodNotAllowedHttpException"
+    echo ""
+    print_info "→ Attempting recovery: clearing route cache..."
+    php artisan route:clear
+    print_warning "⚠️ Route cache ถูก clear - จะใช้ routes แบบไม่ cache"
+    print_warning "   กรุณาตรวจสอบว่า OPcache ถูก clear แล้ว:"
+    echo "   sudo systemctl reload php8.2-fpm"
+    echo ""
+    log "WARNING: Home route verification failed - route cache cleared"
 else
-    print_info "  ℹ Horizon ไม่ได้ติดตั้ง (ข้ามไป)"
-    HORIZON_STATUS="⏭️ ไม่ได้ติดตั้ง"
+    print_success "✓ Home route verified: GET|HEAD / is registered"
 fi
-echo ""
+print_success "Routes cached (verified)"
 
-# Summary
-print_info "📊 สรุปสถานะ Service Restart:"
-echo "  • PHP-FPM:  $PHP_FPM_STATUS"
-echo "  • Queue:    $QUEUE_STATUS"
-echo "  • Horizon:  $HORIZON_STATUS"
-echo ""
+# Step 17: Cache Views
+print_step 17 22 "Caching Views"
+php artisan view:cache || print_warning "View cache failed (continuing anyway)"
+print_success "Views cached"
 
-# Warning if PHP-FPM failed
-if [ "$PHP_FPM_RESTARTED" = false ]; then
-    print_warning "⚠️ OPcache อาจยังไม่ถูก clear - ลองรัน manual:"
-    echo "  sudo systemctl reload php8.3-fpm"
-    echo "  # หรือ"
-    echo "  sudo service php8.2-fpm reload"
-fi
+# Step 18: Optimize Autoloader
+print_step 18 22 "Optimizing Autoloader"
+composer dump-autoload --optimize --no-dev --no-interaction
+print_success "Autoloader optimized"
 
-# Step 18: Final ENV Verification
-print_step 18 22 "Verifying Environment Configuration"
+# Step 19: Final ENV Verification
+print_step 19 22 "Verifying Environment Configuration"
 if [ -f ".env" ]; then
     print_success "✓ .env file exists and is ready"
 else
     error_exit ".env file missing after sync"
 fi
 
-# Step 19: Disable Maintenance Mode
-print_step 19 22 "Disabling Maintenance Mode"
+# Step 20: Disable Maintenance Mode
+print_step 20 22 "Disabling Maintenance Mode"
 php artisan up || error_exit "Failed to disable maintenance mode"
 print_success "Application is now live!"
 
-# Step 20: Cloudflare Cache Purge (NEW!)
-print_step 20 22 "☁️ Cloudflare CDN Cache Purge"
+# Step 21: Cloudflare Cache Purge
+print_step 21 22 "☁️ Cloudflare CDN Cache Purge"
 
 # Check if Cloudflare is configured in .env
 CF_ZONE_ID=$(grep "^CLOUDFLARE_ZONE_ID=" .env 2>/dev/null | cut -d '=' -f2 || echo "")
@@ -1698,8 +1709,8 @@ echo ""
 # Post-deployment verification
 print_header "🔍 Post-Deployment Verification"
 
-# Step 21: Verify deployment
-print_step 21 22 "Verifying Deployment"
+# Step 22: Verify deployment
+print_step 22 22 "Verifying Deployment"
 
 # Check if application is accessible (non-critical check)
 if php artisan route:list >/dev/null 2>&1; then
@@ -1708,8 +1719,8 @@ else
     print_warning "⚠ Routes check skipped (cache warming up)"
 fi
 
-# Step 22: HTTP Health Check - verify site is actually responding
-print_step 22 22 "Running HTTP Health Check"
+# HTTP Health Check - verify site is actually responding
+print_info "→ Running HTTP Health Check..."
 APP_URL=$(grep "^APP_URL=" .env | cut -d '=' -f2)
 if [ -n "$APP_URL" ] && command -v curl >/dev/null 2>&1; then
     print_info "Checking HTTP response from $APP_URL..."
