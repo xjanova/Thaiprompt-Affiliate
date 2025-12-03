@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\ProductCategory;
 use App\Models\ProductReview;
 use App\Models\User;
@@ -831,30 +832,44 @@ class ECommerceController extends Controller
             ->orderBy('date')
             ->get();
 
-        // สินค้าขายดี Top 10
-        $topProducts = Product::select('products.*')
-            ->leftJoin('order_items', 'products.id', '=', 'order_items.product_id')
-            ->leftJoin('orders', function ($join) use ($dateFrom, $dateTo) {
-                $join->on('order_items.order_id', '=', 'orders.id')
-                    ->whereBetween('orders.created_at', [$dateFrom, $dateTo . ' 23:59:59']);
+        // สินค้าขายดี Top 10 - ใช้ subquery เพื่อหลีกเลี่ยง GROUP BY issue กับ MySQL ONLY_FULL_GROUP_BY
+        $salesSubquery = OrderItem::query()
+            ->select('order_items.product_id')
+            ->selectRaw('SUM(order_items.quantity) as total_sales')
+            ->selectRaw('SUM(order_items.subtotal) as total_revenue')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->whereBetween('orders.created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->groupBy('order_items.product_id');
+
+        $topProducts = Product::query()
+            ->leftJoinSub($salesSubquery, 'sales_data', function ($join) {
+                $join->on('products.id', '=', 'sales_data.product_id');
             })
-            ->selectRaw('products.*, COALESCE(SUM(order_items.quantity), 0) as total_sales, COALESCE(SUM(order_items.subtotal), 0) as total_revenue')
-            ->groupBy('products.id')
+            ->select('products.*')
+            ->selectRaw('COALESCE(sales_data.total_sales, 0) as total_sales')
+            ->selectRaw('COALESCE(sales_data.total_revenue, 0) as total_revenue')
             ->orderByDesc('total_sales')
             ->limit(10)
             ->get();
 
-        // ยอดขายตามหมวดหมู่
-        $categoryPerformance = ProductCategory::select('product_categories.*')
-            ->leftJoin('products', 'product_categories.id', '=', 'products.category_id')
-            ->leftJoin('order_items', 'products.id', '=', 'order_items.product_id')
-            ->leftJoin('orders', function ($join) use ($dateFrom, $dateTo) {
-                $join->on('order_items.order_id', '=', 'orders.id')
-                    ->where('orders.payment_status', 'paid')
-                    ->whereBetween('orders.created_at', [$dateFrom, $dateTo . ' 23:59:59']);
+        // ยอดขายตามหมวดหมู่ - ใช้ subquery เพื่อหลีกเลี่ยง GROUP BY issue กับ MySQL ONLY_FULL_GROUP_BY
+        $categorySalesSubquery = OrderItem::query()
+            ->select('products.category_id')
+            ->selectRaw('SUM(order_items.quantity) as total_sales')
+            ->selectRaw('SUM(order_items.subtotal) as total_revenue')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.payment_status', 'paid')
+            ->whereBetween('orders.created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->groupBy('products.category_id');
+
+        $categoryPerformance = ProductCategory::query()
+            ->leftJoinSub($categorySalesSubquery, 'category_sales', function ($join) {
+                $join->on('product_categories.id', '=', 'category_sales.category_id');
             })
-            ->selectRaw('product_categories.*, COALESCE(SUM(order_items.quantity), 0) as total_sales, COALESCE(SUM(order_items.subtotal), 0) as total_revenue')
-            ->groupBy('product_categories.id')
+            ->select('product_categories.*')
+            ->selectRaw('COALESCE(category_sales.total_sales, 0) as total_sales')
+            ->selectRaw('COALESCE(category_sales.total_revenue, 0) as total_revenue')
             ->orderByDesc('total_revenue')
             ->get();
 
