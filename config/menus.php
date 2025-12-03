@@ -666,6 +666,26 @@ return [
         ],
 
         [
+            'id' => 'forum',
+            'label' => 'ฟอรั่มชุมชน',
+            'icon' => '💬',
+            'route' => null,
+            'order' => 24.9,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-blue-500 to-purple-500',
+            'submenu' => [
+                ['label' => '📊 Dashboard', 'route' => 'forum.index', 'description' => 'ภาพรวมฟอรั่ม'],
+                ['label' => '📁 หมวดหมู่', 'route' => 'admin.forum.categories.index', 'description' => 'จัดการหมวดหมู่'],
+                ['label' => '📝 กระทู้ทั้งหมด', 'route' => 'admin.forum.threads.index', 'description' => 'จัดการกระทู้'],
+                ['label' => '🚨 รายงาน', 'route' => 'admin.forum.reports.index', 'description' => 'รายงานเนื้อหาไม่เหมาะสม', 'badge' => 'count', 'badge_color' => 'bg-red-500'],
+                ['label' => '🏆 ถ้วยรางวัล', 'route' => 'admin.forum.trophies.index', 'description' => 'จัดการ Trophies'],
+                ['label' => '📈 สถิติ', 'route' => 'admin.forum.analytics.index', 'description' => 'สถิติการใช้งาน'],
+                ['label' => '⚙️ ตั้งค่า', 'route' => 'admin.forum.settings.index', 'description' => 'ตั้งค่าฟอรั่ม'],
+            ],
+        ],
+
+        [
             'id' => 'settings',
             'label' => 'ตั้งค่าระบบ',
             'icon' => '⚙️',
@@ -975,9 +995,26 @@ return [
         ],
 
         [
+            'id' => 'forum',
+            'label' => 'ฟอรั่มชุมชน',
+            'icon' => '💬',
+            'route' => null,
+            'order' => 6.3,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-blue-500 to-purple-500',
+            'submenu' => [
+                ['label' => '🏠 หน้าแรกฟอรั่ม', 'route' => 'forum.index', 'description' => 'เข้าสู่ชุมชน'],
+                ['label' => '📝 กระทู้ของฉัน', 'route' => 'forum.my-threads', 'description' => 'กระทู้ที่สร้างไว้'],
+                ['label' => '💬 ความคิดเห็นของฉัน', 'route' => 'forum.my-posts', 'description' => 'โพสต์ที่ตอบไว้'],
+                ['label' => '🔔 การแจ้งเตือน', 'route' => 'forum.notifications', 'description' => 'แจ้งเตือนจากฟอรั่ม'],
+            ],
+        ],
+
+        [
             'id' => 'chatbot',
             'label' => 'ระบบบอทแชท',
-            'icon' => '💬',
+            'icon' => '🤖',
             'route' => null,
             'order' => 6.5,
             'permissions' => [],
