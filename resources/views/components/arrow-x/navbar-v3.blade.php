@@ -296,7 +296,13 @@
                 <div class="px-2 py-2 border-b border-white/20">
                     <p class="px-2 py-1 text-xs font-bold text-white/60 uppercase tracking-wider">เมนูลัด</p>
 
-                    <a href="{{ route('admin.profile.index') }}"
+                    {{-- โปรไฟล์ - ใช้ route ตาม dashboard ที่กำลังใช้งาน --}}
+                    @php
+                        $profileRoute = $isAdmin ? 'admin.profile.index' :
+                                       ($isSeller ? 'seller.profile' :
+                                       'user.profile');
+                    @endphp
+                    <a href="{{ route($profileRoute) }}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-all group">
                         <div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center text-white/80 group-hover:bg-indigo-500/30 group-hover:text-white transition-all">
                             <i class="fas fa-user-circle"></i>
@@ -304,7 +310,13 @@
                         <span class="text-white text-sm drop-shadow">โปรไฟล์</span>
                     </a>
 
-                    <a href="{{ route('admin.settings.index') }}"
+                    {{-- ตั้งค่า - ใช้ route ตาม dashboard ที่กำลังใช้งาน --}}
+                    @php
+                        $settingsRoute = $isAdmin ? 'admin.settings.index' :
+                                        ($isSeller ? 'seller.settings' :
+                                        'user.settings');
+                    @endphp
+                    <a href="{{ route($settingsRoute) }}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-all group">
                         <div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center text-white/80 group-hover:bg-indigo-500/30 group-hover:text-white transition-all">
                             <i class="fas fa-cog"></i>
@@ -312,7 +324,13 @@
                         <span class="text-white text-sm drop-shadow">ตั้งค่า</span>
                     </a>
 
-                    <a href="{{ route('admin.user-guide.index') }}"
+                    {{-- คู่มือการใช้งาน - ใช้ route ตาม dashboard ที่กำลังใช้งาน --}}
+                    @php
+                        $userGuideRoute = $isAdmin ? 'admin.user-guide.index' :
+                                         ($isSeller ? 'seller.user-guide.index' :
+                                         'user.user-guide.index');
+                    @endphp
+                    <a href="{{ route($userGuideRoute) }}"
                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-all group">
                         <div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center text-white/80 group-hover:bg-indigo-500/30 group-hover:text-white transition-all">
                             <i class="fas fa-book-open"></i>

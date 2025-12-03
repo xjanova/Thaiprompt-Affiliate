@@ -15,6 +15,7 @@ use App\Http\Controllers\User\InvestmentController;
 use App\Http\Controllers\User\MarketplaceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EmailPreferenceController;
+use App\Http\Controllers\User\UserGuideController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -47,6 +48,9 @@ Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
 Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
 Route::delete('/settings/sessions/{sessionId}', [SettingsController::class, 'deleteSession'])->name('settings.sessions.delete');
 Route::delete('/settings/sessions', [SettingsController::class, 'deleteOtherSessions'])->name('settings.sessions.delete-others');
+
+// User Guide (คู่มือการใช้งาน)
+Route::get('/user-guide', [UserGuideController::class, 'index'])->name('user-guide.index');
 
 // MLM Prospects (ผู้มุ่งหวัง)
 Route::prefix('prospects')->name('prospects.')->group(function () {
