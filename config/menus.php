@@ -447,6 +447,7 @@ return [
                 ['label' => 'Product PV', 'route' => 'admin.mlm.product-pv.index'],
                 ['label' => 'รายงาน', 'route' => 'admin.mlm.reports.dashboard'],
                 ['label' => 'ตั้งค่า MLM', 'route' => 'admin.mlm.settings.index'],
+                ['label' => '📚 คู่มือ MLM', 'url' => '/mlm-documentation.html'],
             ],
         ],
 
