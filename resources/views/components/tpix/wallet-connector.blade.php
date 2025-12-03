@@ -60,9 +60,7 @@
                         <button @click="connectTpixWallet()"
                                 :disabled="connecting"
                                 class="flex items-center justify-center gap-3 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg transition disabled:opacity-50">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 2a6 6 0 110 12 6 6 0 010-12z"></path>
-                            </svg>
+                            <img src="{{ asset('images/tpix-logo.svg') }}" alt="TPIX" class="w-6 h-6" onerror="this.style.display='none'">
                             <span class="font-semibold">TPIX Wallet</span>
                         </button>
                     </div>
