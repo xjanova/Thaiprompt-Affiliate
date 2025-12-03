@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.317.3] - 2025-12-03
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1956 from xjanova/claude/fix-categories-table-01RqXCCoy2vpdUKMsofozc3Q (a7dbce77)
+- fix: correct categories table reference to product_categories in UnifiedReportService (23aefbfd)
+### 🔧 Other Changes
+
+
 ## [v3.317.2] - 2025-12-03
 
 ### ✨ Features
