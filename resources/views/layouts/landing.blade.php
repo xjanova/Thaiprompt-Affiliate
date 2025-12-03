@@ -279,8 +279,9 @@
                         <div class="w-12 h-12 lg:w-16 lg:h-16 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30 transition-all duration-300 group-hover:scale-110 group-hover:shadow-purple-500/50">
                             <span class="text-white font-black text-xl lg:text-2xl">TP</span>
                         </div>
+                        {{-- แสดงชื่อเฉพาะเมื่อไม่มีโลโก้ --}}
+                        <span class="hidden sm:block text-xl lg:text-2xl font-bold gradient-text transition-transform duration-300 group-hover:translate-x-1">{{ $appName }}</span>
                     @endif
-                    <span class="hidden sm:block text-xl lg:text-2xl font-bold gradient-text transition-transform duration-300 group-hover:translate-x-1">{{ $appName }}</span>
                 </a>
 
                 {{-- Desktop Navigation --}}
@@ -496,13 +497,14 @@
                 <div>
                     <div class="flex items-center gap-3 mb-6">
                         @if($systemLogo)
-                            <img src="{{ asset($systemLogo) }}" alt="{{ $appName }}" class="h-10 w-auto">
+                            <img src="{{ asset('storage/' . $systemLogo) }}" alt="{{ $appName }}" class="h-10 w-auto">
                         @else
                             <div class="w-10 h-10 bg-gradient-to-br from-blue-900 to-purple-600 rounded-xl flex items-center justify-center">
                                 <span class="text-white font-bold text-lg">TP</span>
                             </div>
+                            {{-- แสดงชื่อเฉพาะเมื่อไม่มีโลโก้ --}}
+                            <span class="text-xl font-bold text-white">{{ $appName }}</span>
                         @endif
-                        <span class="text-xl font-bold text-white">{{ $appName }}</span>
                     </div>
                     <p class="text-slate-400 leading-relaxed">
                         ระบบ Affiliate Marketing ระดับ Enterprise ที่ครบครันที่สุด พร้อมระบบ AI, Blockchain และ E-Commerce แบบครบวงจร
