@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.2] - 2025-12-04
+
+### ✨ Features
+- feat(storefront): เพิ่มโลโก้และปรับปรุง mega-menu icon (c6f5a183)
+### 🐛 Bug Fixes
+- fix(product): แก้ไข tags แสดงเป็น unicode escape sequences (9292dfb9)
+- fix(storefront): แปลข้อความภาษาอังกฤษเป็นไทย (afe8175b)
+- fix(lava-effect): แก้ไข liquid lava lamp effect ไม่แสดงผล (dc465d7c)
+### 🔧 Other Changes
+- Merge pull request #2023 from xjanova/claude/fix-hotel-booking-system-01YQzDeveGyv8V4qf3q8xd2D (d1ad7a3f)
+
 ## [v3.358.1] - 2025-12-04
 
 ### ✨ Features
