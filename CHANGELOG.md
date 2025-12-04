@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.13] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #2034 from xjanova/claude/debug-forum-views-01GByStgHFeUYigYqvrfao7o (44ac1390)
+- feat(academy): add Academy/Learning Center for users (b07c6cab)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.358.12] - 2025-12-04
 
 ### ✨ Features
