@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.345.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #1998 from xjanova/claude/fix-learning-center-slug-01B4XHap49oVAFHGJBGoLXCa (a6695164)
+- feat: เพิ่ม show.blade.php สำหรับ Cloud Provider (13db29ac)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.344.2] - 2025-12-04
 
 ### ✨ Features
