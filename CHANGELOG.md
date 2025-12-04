@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.357.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #2018 from xjanova/claude/pin-favorite-menu-items-01SiGzJUiABbos3TmfKWAFtD (38b3d188)
+- feat: เพิ่มการ pin เมนูที่มี submenu ได้ (admin menus) (35ebd740)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.356.1] - 2025-12-04
 
 ### ✨ Features
