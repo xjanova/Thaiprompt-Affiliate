@@ -34,12 +34,12 @@ class MenuItemSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('🍔 กำลังนำเข้าเมนูจาก config/menus.php...');
+        $this->log('🍔 กำลังนำเข้าเมนูจาก config/menus.php...');
 
         // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่
         if (MenuItem::count() > 0) {
-            $this->command->warn('⚠️ ตาราง menu_items มีข้อมูลอยู่แล้ว กำลังข้าม...');
-            $this->command->info('   หากต้องการนำเข้าใหม่ กรุณาลบข้อมูลเก่าก่อน');
+            $this->log('⚠️ ตาราง menu_items มีข้อมูลอยู่แล้ว กำลังข้าม...', 'warn');
+            $this->log('   หากต้องการนำเข้าใหม่ กรุณาลบข้อมูลเก่าก่อน');
             return;
         }
 
@@ -51,23 +51,38 @@ class MenuItemSeeder extends Seeder
                 $menus = config("menus.{$type}", []);
 
                 if (empty($menus)) {
-                    $this->command->warn("⚠️ ไม่พบเมนูสำหรับ {$type} ใน config/menus.php");
+                    $this->log("⚠️ ไม่พบเมนูสำหรับ {$type} ใน config/menus.php", 'warn');
                     continue;
                 }
 
-                $this->command->info("📁 กำลังนำเข้าเมนู {$type}...");
+                $this->log("📁 กำลังนำเข้าเมนู {$type}...");
                 $this->orderCounters[$type] = 0;
 
                 $this->importMenus($menus, $type, null);
 
                 $count = MenuItem::where('dashboard_type', $type)->count();
-                $this->command->info("   ✅ นำเข้า {$count} รายการสำเร็จ");
+                $this->log("   ✅ นำเข้า {$count} รายการสำเร็จ");
             }
         });
 
         $totalCount = MenuItem::count();
-        $this->command->info('');
-        $this->command->info("✨ นำเข้าเมนูทั้งหมด {$totalCount} รายการสำเร็จ!");
+        $this->log('');
+        $this->log("✨ นำเข้าเมนูทั้งหมด {$totalCount} รายการสำเร็จ!");
+    }
+
+    /**
+     * Log message (รองรับทั้ง console และ controller)
+     *
+     * @param string $message
+     * @param string $type info|warn|error
+     * @return void
+     */
+    protected function log(string $message, string $type = 'info'): void
+    {
+        // ตรวจสอบว่ามี command object หรือไม่
+        if ($this->command && method_exists($this->command, $type)) {
+            $this->command->{$type}($message);
+        }
     }
 
     /**

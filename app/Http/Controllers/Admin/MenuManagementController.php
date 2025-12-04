@@ -388,13 +388,16 @@ class MenuManagementController extends Controller
     public function syncFromConfig(Request $request): JsonResponse
     {
         try {
-            // ลบเมนูเก่าทั้งหมด
+            // ลบเมนูเก่าทั้งหมด (ต้องลบ role settings ก่อนเนื่องจาก foreign key)
+            MenuRoleSetting::truncate();
             MenuItem::truncate();
 
             // เรียก Seeder เพื่อนำเข้าใหม่
             $seeder = new \Database\Seeders\MenuItemSeeder();
-            $seeder->setCommand(new \Symfony\Component\Console\Output\NullOutput());
             $seeder->run();
+
+            // Clear menu cache
+            \App\Services\MenuService::clearCache();
 
             return response()->json([
                 'success' => true,
