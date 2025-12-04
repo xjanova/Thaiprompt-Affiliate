@@ -5,7 +5,7 @@
 @endphp
 
 <!-- Slide 1: Title / Cover -->
-<div class="slide active">
+<div class="slide">
     <div class="h-full flex items-center justify-center bg-gradient-to-br from-indigo-900/90 via-purple-900/80 to-pink-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
         <!-- Animated background particles -->
         <div class="absolute inset-0 opacity-20">
