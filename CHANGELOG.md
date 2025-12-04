@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.3] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #2024 from xjanova/claude/migrate-react-native-expo-01NNGuAY5F1SgzjtcCEyBGxY (b1af47c8)
+- feat(mobile): add all main screens and offline support (a283c7f2)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.358.2] - 2025-12-04
 
 ### ✨ Features
