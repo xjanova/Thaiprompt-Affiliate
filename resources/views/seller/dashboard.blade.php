@@ -62,37 +62,116 @@
         </div>
     </div>
 
-    {{-- คำขวัญ TP-Affiliate - เตือนใจพาร์ทเนอร์ --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 dark:from-amber-500/20 dark:via-orange-500/20 dark:to-red-500/20 border border-amber-300/50 dark:border-amber-500/30 rounded-2xl p-4 md:p-6">
+    {{-- คำขวัญ TP-Affiliate - แบบสุ่มพร้อมเอฟเฟค Animation --}}
+    <div x-data="sloganCarousel()" x-init="init()" class="relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 dark:from-amber-500/20 dark:via-orange-500/20 dark:to-red-500/20 border border-amber-300/50 dark:border-amber-500/30 rounded-2xl p-4 md:p-6">
+        {{-- Animated Background Effects --}}
         <div class="absolute inset-0 bg-gradient-to-r from-amber-400/5 via-orange-400/5 to-red-400/5"></div>
-        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/20 to-orange-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
-        <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-red-400/20 to-pink-500/20 rounded-full blur-2xl -ml-12 -mb-12"></div>
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/20 to-orange-500/20 rounded-full blur-3xl -mr-16 -mt-16 animate-pulse"></div>
+        <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-red-400/20 to-pink-500/20 rounded-full blur-2xl -ml-12 -mb-12 animate-pulse" style="animation-delay: 1s;"></div>
+
+        {{-- Floating Particles --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute w-2 h-2 bg-amber-400/30 rounded-full animate-float" style="left: 10%; top: 20%; animation-delay: 0s;"></div>
+            <div class="absolute w-3 h-3 bg-orange-400/20 rounded-full animate-float" style="left: 80%; top: 60%; animation-delay: 1s;"></div>
+            <div class="absolute w-2 h-2 bg-pink-400/30 rounded-full animate-float" style="left: 50%; top: 80%; animation-delay: 2s;"></div>
+            <div class="absolute w-1.5 h-1.5 bg-yellow-400/40 rounded-full animate-float" style="left: 30%; top: 40%; animation-delay: 0.5s;"></div>
+            <div class="absolute w-2 h-2 bg-rose-400/25 rounded-full animate-float" style="left: 70%; top: 30%; animation-delay: 1.5s;"></div>
+        </div>
 
         <div class="relative flex items-start gap-4">
-            <div class="flex-shrink-0 w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center text-2xl md:text-3xl shadow-lg transform rotate-3 hover:rotate-0 transition-transform duration-300">
-                🇹🇭
+            {{-- Animated Icon --}}
+            <div class="flex-shrink-0 w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center text-2xl md:text-3xl shadow-lg transform rotate-3 hover:rotate-0 hover:scale-110 transition-all duration-300 cursor-pointer"
+                 :class="{ 'animate-bounce-gentle': isTransitioning }">
+                <span x-text="currentSlogan.icon" class="transition-transform duration-500" :class="{ 'scale-0': isTransitioning, 'scale-100': !isTransitioning }">🇹🇭</span>
             </div>
+
+            {{-- Slogan Content with Fade Animation --}}
             <div class="flex-1 min-w-0">
                 <h3 class="text-lg md:text-xl font-bold text-amber-800 dark:text-amber-300 mb-2 flex items-center gap-2">
-                    <span class="text-xl">💝</span>
-                    พันธสัญญาจากเรา
-                </h3>
-                <blockquote class="text-sm md:text-base text-amber-900/80 dark:text-amber-100/90 leading-relaxed">
-                    <span class="font-semibold text-amber-700 dark:text-amber-400">"เราช่วยคุณ คุณช่วยเรา ไทยช่วยไทย"</span>
-                    <br class="hidden md:block">
-                    <span class="text-amber-800/70 dark:text-amber-200/80">
-                        เราจะพัฒนาสิ่งที่คุณต้องการ อยู่ด้วยกันอย่าลากลูกค้าไปไหนเลย
-                        <br>
-                        <span class="font-medium text-orange-600 dark:text-orange-400">เราจะให้ในสิ่งที่อื่นไม่ให้คุณ เพียงบอกเรา</span>
+                    <span class="text-xl animate-pulse">💝</span>
+                    <span x-text="currentSlogan.category_name || 'พันธสัญญาจากเรา'"
+                          class="transition-all duration-500"
+                          :class="{ 'opacity-0 translate-y-2': isTransitioning, 'opacity-100 translate-y-0': !isTransitioning }">
+                        พันธสัญญาจากเรา
                     </span>
+                </h3>
+                <blockquote class="min-h-[60px] md:min-h-[50px]">
+                    <p class="text-sm md:text-base text-amber-900/80 dark:text-amber-100/90 leading-relaxed font-semibold text-amber-700 dark:text-amber-400 transition-all duration-500"
+                       :class="{ 'opacity-0 -translate-x-4': isTransitioning, 'opacity-100 translate-x-0': !isTransitioning }"
+                       x-text="currentSlogan.content || 'เราช่วยคุณ คุณช่วยเรา ไทยช่วยไทย'">
+                        "เราช่วยคุณ คุณช่วยเรา ไทยช่วยไทย"
+                    </p>
+                    <p class="text-xs md:text-sm text-amber-800/70 dark:text-amber-200/80 mt-2 italic transition-all duration-500 delay-100"
+                       :class="{ 'opacity-0 translate-x-4': isTransitioning, 'opacity-100 translate-x-0': !isTransitioning }"
+                       x-show="currentSlogan.author"
+                       x-text="'— ' + (currentSlogan.author || '')">
+                    </p>
                 </blockquote>
             </div>
-            <div class="hidden md:flex flex-shrink-0 items-center gap-1 text-3xl">
-                <span class="animate-pulse">🤝</span>
-                <span class="animate-bounce delay-100">❤️</span>
+
+            {{-- Navigation & Animated Icons --}}
+            <div class="hidden md:flex flex-col items-end gap-2">
+                <div class="flex items-center gap-1 text-2xl">
+                    <span class="animate-pulse cursor-pointer hover:scale-125 transition-transform" @click="prevSlogan()">🤝</span>
+                    <span class="animate-bounce cursor-pointer hover:scale-125 transition-transform" style="animation-delay: 0.2s;" @click="nextSlogan()">❤️</span>
+                </div>
+                {{-- Progress Dots --}}
+                <div class="flex items-center gap-1 mt-2">
+                    <template x-for="(slogan, index) in slogans" :key="index">
+                        <button @click="goToSlogan(index)"
+                                class="w-2 h-2 rounded-full transition-all duration-300 hover:scale-125"
+                                :class="currentIndex === index ? 'bg-amber-500 w-4' : 'bg-amber-300/50 hover:bg-amber-400/70'">
+                        </button>
+                    </template>
+                </div>
+                {{-- Auto-play Toggle --}}
+                <button @click="toggleAutoPlay()"
+                        class="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition mt-1">
+                    <span x-text="isAutoPlaying ? '⏸️ หยุด' : '▶️ เล่น'"></span>
+                </button>
             </div>
         </div>
+
+        {{-- Mobile Navigation --}}
+        <div class="flex md:hidden items-center justify-center gap-2 mt-4">
+            <button @click="prevSlogan()" class="p-2 bg-amber-200/50 dark:bg-amber-700/30 rounded-full hover:bg-amber-300/50 transition">
+                <svg class="w-4 h-4 text-amber-700 dark:text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+            <div class="flex items-center gap-1">
+                <template x-for="(slogan, index) in slogans" :key="index">
+                    <button @click="goToSlogan(index)"
+                            class="w-2 h-2 rounded-full transition-all duration-300"
+                            :class="currentIndex === index ? 'bg-amber-500 w-4' : 'bg-amber-300/50'">
+                    </button>
+                </template>
+            </div>
+            <button @click="nextSlogan()" class="p-2 bg-amber-200/50 dark:bg-amber-700/30 rounded-full hover:bg-amber-300/50 transition">
+                <svg class="w-4 h-4 text-amber-700 dark:text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+        </div>
     </div>
+
+    {{-- Custom Animation Styles --}}
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.5; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        }
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+        @keyframes bounce-gentle {
+            0%, 100% { transform: translateY(0) rotate(3deg); }
+            50% { transform: translateY(-5px) rotate(-3deg); }
+        }
+        .animate-bounce-gentle {
+            animation: bounce-gentle 0.5s ease-in-out;
+        }
+    </style>
 
     {{-- Quick Stats Cards --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -398,6 +477,94 @@
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Slogan Carousel with Animation
+    function sloganCarousel() {
+        return {
+            slogans: @json($slogans ?? []),
+            currentIndex: 0,
+            isTransitioning: false,
+            isAutoPlaying: true,
+            autoPlayInterval: null,
+
+            get currentSlogan() {
+                if (this.slogans.length === 0) {
+                    return {
+                        icon: '🇹🇭',
+                        content: 'เราช่วยคุณ คุณช่วยเรา ไทยช่วยไทย',
+                        author: '',
+                        category_name: 'พันธสัญญาจากเรา'
+                    };
+                }
+                return this.slogans[this.currentIndex];
+            },
+
+            init() {
+                // เริ่ม autoplay ถ้ามีคำขวัญมากกว่า 1 คำ
+                if (this.slogans.length > 1) {
+                    this.startAutoPlay();
+                }
+            },
+
+            nextSlogan() {
+                if (this.slogans.length <= 1) return;
+                this.transition(() => {
+                    this.currentIndex = (this.currentIndex + 1) % this.slogans.length;
+                });
+            },
+
+            prevSlogan() {
+                if (this.slogans.length <= 1) return;
+                this.transition(() => {
+                    this.currentIndex = (this.currentIndex - 1 + this.slogans.length) % this.slogans.length;
+                });
+            },
+
+            goToSlogan(index) {
+                if (index === this.currentIndex || this.slogans.length <= 1) return;
+                this.transition(() => {
+                    this.currentIndex = index;
+                });
+            },
+
+            transition(callback) {
+                if (this.isTransitioning) return;
+                this.isTransitioning = true;
+
+                setTimeout(() => {
+                    callback();
+                    setTimeout(() => {
+                        this.isTransitioning = false;
+                    }, 50);
+                }, 300);
+            },
+
+            startAutoPlay() {
+                this.stopAutoPlay();
+                this.isAutoPlaying = true;
+                this.autoPlayInterval = setInterval(() => {
+                    this.nextSlogan();
+                }, 8000); // เปลี่ยนทุก 8 วินาที
+            },
+
+            stopAutoPlay() {
+                if (this.autoPlayInterval) {
+                    clearInterval(this.autoPlayInterval);
+                    this.autoPlayInterval = null;
+                }
+                this.isAutoPlaying = false;
+            },
+
+            toggleAutoPlay() {
+                if (this.isAutoPlaying) {
+                    this.stopAutoPlay();
+                } else {
+                    this.startAutoPlay();
+                }
+            }
+        };
+    }
+</script>
 <script>
     // Revenue Chart
     const ctx = document.getElementById('revenueChart').getContext('2d');

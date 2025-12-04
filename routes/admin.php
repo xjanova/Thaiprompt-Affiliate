@@ -79,6 +79,7 @@ use App\Http\Controllers\Admin\ApiKeyController;
 use App\Http\Controllers\Admin\NFCCardController;
 use App\Http\Controllers\Admin\NFCReaderController;
 use App\Http\Controllers\Admin\NFCTransactionController;
+use App\Http\Controllers\Admin\SloganController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -3416,6 +3417,23 @@ Route::prefix('documentation')->name('documentation.')->group(function () {
     Route::get('/registration-flow', function () {
         return view('admin.documentation.registration-flow');
     })->name('registration-flow');
+});
+
+// ============================================
+// Slogan Management Routes (จัดการคำขวัญ)
+// ============================================
+Route::prefix('slogans')->name('slogans.')->group(function () {
+    // CRUD Routes
+    Route::get('/', [SloganController::class, 'index'])->name('index');
+    Route::get('/create', [SloganController::class, 'create'])->name('create');
+    Route::post('/', [SloganController::class, 'store'])->name('store');
+    Route::get('/{slogan}/edit', [SloganController::class, 'edit'])->name('edit');
+    Route::put('/{slogan}', [SloganController::class, 'update'])->name('update');
+    Route::delete('/{slogan}', [SloganController::class, 'destroy'])->name('destroy');
+
+    // API Routes
+    Route::post('/{slogan}/toggle-active', [SloganController::class, 'toggleActive'])->name('toggle-active');
+    Route::get('/api/random', [SloganController::class, 'random'])->name('random');
 });
 
 // ============================================
