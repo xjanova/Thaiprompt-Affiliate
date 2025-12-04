@@ -220,18 +220,57 @@
 
     <!-- Slides Container -->
     <div class="relative h-full flex items-center justify-center" id="slides-container">
+        {{-- ภาพรวมระบบ --}}
         <div id="slides-system-overview" class="slides-topic-container active">
-            @include('components.presentation-slides-content')
+            @include('components.presentation-slides-system-overview')
         </div>
+
+        {{-- แผนการตลาด MLM --}}
         <div id="slides-mlm-plans" class="slides-topic-container">
             @include('components.presentation-slides-mlm-plans')
         </div>
+
+        {{-- AI & Automation --}}
         <div id="slides-ai-automation" class="slides-topic-container">
             @include('components.presentation-slides-ai-automation')
         </div>
+
+        {{-- TPIX Token --}}
+        <div id="slides-tpix-token" class="slides-topic-container">
+            @include('components.presentation-slides-tpix-token')
+        </div>
+
+        {{-- Academy & ปลดแอกธุรกิจ --}}
+        <div id="slides-academy-freedom" class="slides-topic-container">
+            @include('components.presentation-slides-academy-freedom')
+        </div>
+
+        {{-- Ecosystem & Vision --}}
+        <div id="slides-ecosystem-vision" class="slides-topic-container">
+            @include('components.presentation-slides-ecosystem-vision')
+        </div>
+
+        {{-- พลิกเกมส์ธุรกิจ --}}
+        <div id="slides-game-changer" class="slides-topic-container">
+            @include('components.presentation-slides-game-changer')
+        </div>
+
+        {{-- E-Commerce Empire --}}
+        <div id="slides-ecommerce-empire" class="slides-topic-container">
+            @include('components.presentation-slides-ecommerce-empire')
+        </div>
+
+        {{-- Community & Partnership --}}
+        <div id="slides-community" class="slides-topic-container">
+            @include('components.presentation-slides-community')
+        </div>
+
+        {{-- สมัครผ่านเว็บ --}}
         <div id="slides-signup-web" class="slides-topic-container">
             @include('components.presentation-slides-signup-web')
         </div>
+
+        {{-- สมัครผ่าน LINE --}}
         <div id="slides-signup-line" class="slides-topic-container">
             @include('components.presentation-slides-signup-line')
         </div>
@@ -422,19 +461,20 @@ function toggleTopicMenu() {
     arrow.classList.toggle('rotated');
 }
 
-// Topics ที่มี container แยก (ไม่อยู่ใน system-overview)
-const standaloneTopics = ['mlm-plans', 'ai-automation', 'signup-web', 'signup-line'];
-
-// Mapping topics ไปยัง slide index ใน system-overview (สำหรับ topic ที่ยังอยู่ใน system-overview)
-const topicSlideMapping = {
-    'system-overview': 0,     // Slide 1: Title
-    'tpix-token': 11,         // Slide 6: TPIX Token (index 11)
-    'academy-freedom': 15,    // Slide 7: Academy & ปลดแอกธุรกิจ (index 15)
-    'ecosystem-vision': 19,   // Slide 8: Ecosystem & Vision (index 19)
-    'game-changer': 23,       // Slide 9: พลิกเกมส์ธุรกิจ (index 23)
-    'ecommerce-empire': 27,   // Slide 10: E-Commerce Empire (index 27)
-    'community': 31           // Slide 11: Community & Partnership (index 31)
-};
+// ทุก topic มี container แยกของตัวเอง
+const allTopics = [
+    'system-overview',    // ภาพรวมระบบ
+    'mlm-plans',          // แผนการตลาด MLM
+    'ai-automation',      // AI & Automation
+    'tpix-token',         // TPIX Token
+    'academy-freedom',    // Academy & ปลดแอกธุรกิจ
+    'ecosystem-vision',   // Ecosystem & Vision
+    'game-changer',       // พลิกเกมส์ธุรกิจ
+    'ecommerce-empire',   // E-Commerce Empire
+    'community',          // Community & Partnership
+    'signup-web',         // สมัครผ่านเว็บ
+    'signup-line'         // สมัครผ่าน LINE
+];
 
 function switchTopic(topicId) {
     if (currentTopic === topicId) {
@@ -446,31 +486,21 @@ function switchTopic(topicId) {
         stopAutoplay();
     }
 
-    // ตรวจสอบว่า topic นี้มี container แยกหรือไม่
-    let containerId = topicId;
-    let startSlide = 0;
+    // ทุก topic มี container แยกของตัวเอง
+    const containerId = topicId;
 
-    // ถ้าไม่ใช่ standalone topic ให้ใช้ system-overview และ jump ไป slide ที่เกี่ยวข้อง
-    if (!standaloneTopics.includes(topicId) && topicId !== 'system-overview') {
-        containerId = 'system-overview';
-        startSlide = topicSlideMapping[topicId] || 0;
-    }
-
-    // สำหรับ signup topics
-    const signupTopics = ['signup-web', 'signup-line'];
-    if (signupTopics.includes(topicId)) {
-        containerId = 'signup-web';
-    }
-
+    // ซ่อน container ทั้งหมด
     document.querySelectorAll('.slides-topic-container').forEach(container => {
         container.classList.remove('active');
     });
 
+    // แสดง container ที่เลือก
     const selectedContainer = document.getElementById('slides-' + containerId);
     if (selectedContainer) {
         selectedContainer.classList.add('active');
     }
 
+    // อัพเดท active state ของ dropdown
     document.querySelectorAll('.topic-option').forEach(option => {
         option.classList.remove('active');
     });
@@ -479,15 +509,11 @@ function switchTopic(topicId) {
 
     currentTopic = topicId;
 
-    // กรอง slides ตาม data-topic attribute สำหรับ signup topics
-    if (signupTopics.includes(topicId)) {
-        slides = document.querySelectorAll(`#slides-signup-web .slide[data-topic="${topicId}"]`);
-    } else {
-        slides = document.querySelectorAll(`#slides-${containerId} .slide`);
-    }
+    // ดึง slides จาก container ที่เลือก
+    slides = document.querySelectorAll(`#slides-${containerId} .slide`);
     totalSlides = slides.length;
 
-    showSlide(startSlide);
+    showSlide(0);
     initializeProgressDots();
     updateSlideCounter();
     updateTopicDisplay();
@@ -515,27 +541,25 @@ function openPresentationWithTopic(topicId) {
         window.dispatchEvent(new Event('resize'));
     }, 100);
 
-    // เรียก switchTopic โดยไม่ toggle menu
     if (isAutoplayActive) {
         stopAutoplay();
     }
 
-    let containerId = topicId;
-    let startSlide = 0;
+    // ทุก topic มี container แยกของตัวเอง
+    const containerId = topicId;
 
-    // ใช้ logic เดียวกับ switchTopic - ตรวจสอบว่า topic นี้มี container แยกหรือไม่
-    if (!standaloneTopics.includes(topicId) && topicId !== 'system-overview') {
-        containerId = 'system-overview';
-        startSlide = topicSlideMapping[topicId] || 0;
-    }
-
+    // ซ่อน container ทั้งหมด
     document.querySelectorAll('.slides-topic-container').forEach(container => {
         container.classList.remove('active');
     });
 
+    // แสดง container ที่เลือก
     const selectedContainer = document.getElementById('slides-' + containerId);
-    selectedContainer.classList.add('active');
+    if (selectedContainer) {
+        selectedContainer.classList.add('active');
+    }
 
+    // อัพเดท active state ของ dropdown
     document.querySelectorAll('.topic-option').forEach(option => {
         option.classList.remove('active');
     });
@@ -543,10 +567,12 @@ function openPresentationWithTopic(topicId) {
     if (topicOption) topicOption.classList.add('active');
 
     currentTopic = topicId;
+
+    // ดึง slides จาก container ที่เลือก
     slides = document.querySelectorAll(`#slides-${containerId} .slide`);
     totalSlides = slides.length;
 
-    showSlide(startSlide);
+    showSlide(0);
     initializeProgressDots();
     updateSlideCounter();
     updateTopicDisplay();
@@ -571,62 +597,8 @@ function updateTopicDisplay() {
 
 // ฟังก์ชันสำหรับเปิด Signup Tutorial จากหน้า Home
 function openSignupTutorial(topicId) {
-    const fullscreen = document.getElementById('presentation-fullscreen');
-    fullscreen.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-
-    const requestFullscreen = fullscreen.requestFullscreen ||
-                             fullscreen.webkitRequestFullscreen ||
-                             fullscreen.mozRequestFullScreen ||
-                             fullscreen.msRequestFullscreen;
-
-    if (requestFullscreen) {
-        requestFullscreen.call(fullscreen).catch(err => {
-            console.log('Fullscreen request failed:', err);
-        });
-    }
-
-    setTimeout(() => {
-        window.dispatchEvent(new Event('resize'));
-    }, 100);
-
-    // สลับไป topic ที่เลือก
-    if (isAutoplayActive) {
-        stopAutoplay();
-    }
-
-    // สำหรับ signup topics ให้ใช้ container signup-web แต่กรอง slides ตาม data-topic
-    let containerId = topicId;
-
-    document.querySelectorAll('.slides-topic-container').forEach(container => {
-        container.classList.remove('active');
-    });
-
-    const selectedContainer = document.getElementById('slides-' + containerId);
-    if (selectedContainer) {
-        selectedContainer.classList.add('active');
-    }
-
-    document.querySelectorAll('.topic-option').forEach(option => {
-        option.classList.remove('active');
-    });
-    const topicOption = document.querySelector(`.topic-option[data-topic="${topicId}"]`);
-    if (topicOption) topicOption.classList.add('active');
-
-    currentTopic = topicId;
-
-    // กรอง slides ตาม data-topic attribute
-    if (topicId === 'signup-web' || topicId === 'signup-line') {
-        slides = document.querySelectorAll(`#slides-signup-web .slide[data-topic="${topicId}"]`);
-    } else {
-        slides = document.querySelectorAll(`#slides-${containerId} .slide`);
-    }
-    totalSlides = slides.length;
-
-    showSlide(0);
-    initializeProgressDots();
-    updateSlideCounter();
-    updateTopicDisplay();
+    // ใช้ openPresentationWithTopic แทน เพราะทุก topic มี container แยกของตัวเองแล้ว
+    openPresentationWithTopic(topicId);
 }
 
 function openPresentationFullscreen() {
