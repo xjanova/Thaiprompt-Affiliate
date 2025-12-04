@@ -30,7 +30,7 @@
     <!-- Search and Filter Section -->
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-7xl mx-auto">
-            <form method="GET" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+            <form method="GET" class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg p-6 mb-8">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- ค้นหา -->
                     <div>
@@ -79,7 +79,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
                     @foreach($stores as $store)
                         <a href="{{ route('store.show', $store->store_slug) }}"
-                           class="group bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 overflow-hidden border-2 border-transparent hover:border-indigo-500">
+                           class="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 overflow-hidden border-2 border-transparent hover:border-indigo-500">
 
                             <!-- Store Banner/Logo -->
                             <div class="relative h-48 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 overflow-hidden">
@@ -160,7 +160,7 @@
                 </div>
             @else
                 <!-- Empty State -->
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center">
+                <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg p-12 text-center">
                     <div class="text-6xl mb-4">🔍</div>
                     <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                         ไม่พบร้านค้า

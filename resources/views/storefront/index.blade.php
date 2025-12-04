@@ -34,6 +34,20 @@
     <div class="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-md">
         <div class="container mx-auto px-4">
             <div class="flex items-center gap-4 py-3">
+                {{-- Logo --}}
+                @php
+                    $themeSetting = \App\Models\ThemeSetting::active();
+                    $logoPath = $themeSetting && $themeSetting->logo_path
+                        ? asset('storage/' . $themeSetting->logo_path)
+                        : asset('images/logo.png');
+                @endphp
+                <a href="{{ route('storefront.index') }}" class="flex-shrink-0">
+                    <img src="{{ $logoPath }}"
+                         alt="{{ config('app.name') }}"
+                         class="h-10 w-auto object-contain"
+                         onerror="this.onerror=null; this.src='{{ asset('images/logo.png') }}';">
+                </a>
+
                 {{-- Mega Menu --}}
                 <x-storefront.mega-menu :categories="$categories" />
 
@@ -111,7 +125,7 @@
                        class="text-sm font-semibold transition-colors
                              {{ request('shop_type') === 'official' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400' }}">
                         <i class="fas fa-check-circle mr-1"></i>
-                        Official
+                        ร้านทางการ
                     </a>
                     <a href="{{ route('storefront.index', ['sort_by' => 'newest']) }}"
                        class="text-sm font-semibold transition-colors
@@ -406,7 +420,7 @@
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
                 </svg>
-                Tag: {{ request('tag') }}
+                แท็ก: {{ request('tag') }}
                 <a href="{{ route('storefront.index', array_filter(request()->except('tag'))) }}"
                    class="ml-1 hover:text-red-600 transition-colors">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -494,7 +508,7 @@
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                         </svg>
-                        Official Store
+                        ร้านทางการ
                         <span class="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full text-xs">
                             {{ number_format($stats['official'] ?? 0) }}
                         </span>
@@ -582,12 +596,12 @@
                                                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                                 </svg>
-                                                Official
+                                                ทางการ
                                             </span>
                                         </template>
                                         <template x-if="product.is_featured">
                                             <span class="px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-orange-400
-                                                       text-white text-xs font-bold rounded">HOT</span>
+                                                       text-white text-xs font-bold rounded">ขายดี</span>
                                         </template>
                                     </div>
 
