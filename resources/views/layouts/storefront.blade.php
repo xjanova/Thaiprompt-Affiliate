@@ -108,7 +108,8 @@
         .lava-blob {
             position: absolute;
             border-radius: 45% 55% 60% 40% / 55% 45% 55% 45%;
-            filter: blur(1px);
+            filter: blur(40px);
+            opacity: 0.6;
             will-change: transform, border-radius;
         }
 
@@ -277,7 +278,8 @@
 
         /* ===== Dark Mode - RGB Glow Effect ===== */
         .dark .lava-blob {
-            filter: blur(2px);
+            filter: blur(60px);
+            opacity: 0.7;
         }
 
         .dark .lava-blob:nth-child(1) {
@@ -355,13 +357,14 @@
         /* ลดขนาดและจำนวนบนมือถือเพื่อประสิทธิภาพ */
         @media (max-width: 768px) {
             .lava-blob {
-                transform: scale(0.6);
+                transform: scale(0.7);
+                filter: blur(30px);
             }
             .lava-blob:nth-child(n+6) {
                 display: none;
             }
             .dark .lava-blob {
-                filter: blur(1px);
+                filter: blur(40px);
             }
         }
 
@@ -377,7 +380,7 @@
 
     @stack('styles')
 </head>
-<body class="min-h-full font-sans bg-gray-50 dark:bg-gray-900"
+<body class="min-h-full font-sans bg-white/80 dark:bg-gray-900/80"
       x-data="{}"
       x-init="
           // Initialize theme store ถ้ามี

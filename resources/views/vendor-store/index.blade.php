@@ -7,7 +7,7 @@
 @endsection
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+<div class="min-h-screen bg-transparent">
 
     <!-- Header Section -->
     <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
