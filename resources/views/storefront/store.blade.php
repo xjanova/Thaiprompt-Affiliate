@@ -21,6 +21,20 @@
 <meta name="description" content="{{ $store->store_description ?? 'สินค้าคุณภาพจากร้านค้าที่ได้รับการยืนยัน' }}">
 @endsection
 
+{{-- Lava Lamp Background - เฉพาะหน้าร้านค้าผู้เช่า --}}
+@section('lava-background')
+<div class="lava-background" aria-hidden="true">
+    <div class="lava-blob"></div>
+    <div class="lava-blob"></div>
+    <div class="lava-blob"></div>
+    <div class="lava-blob"></div>
+    <div class="lava-blob"></div>
+    <div class="lava-blob"></div>
+    <div class="lava-blob"></div>
+    <div class="lava-blob"></div>
+</div>
+@endsection
+
 {{-- Custom Theme Colors --}}
 @push('styles')
 <style>
