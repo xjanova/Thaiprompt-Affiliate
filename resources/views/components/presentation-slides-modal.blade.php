@@ -511,7 +511,9 @@ function updateTopicDisplay() {
         'ecosystem-vision': 'Ecosystem & Vision',
         'game-changer': 'พลิกเกมส์ธุรกิจ',
         'ecommerce-empire': 'E-Commerce Empire',
-        'community': 'Community & Partnership'
+        'community': 'Community & Partnership',
+        'signup-web': 'สมัครผ่านเว็บ',
+        'signup-line': 'สมัครผ่าน LINE'
     };
     document.getElementById('current-topic-name').textContent = topicNames[currentTopic] || 'ภาพรวมระบบ';
 }
