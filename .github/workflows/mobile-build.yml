@@ -1,0 +1,179 @@
+# GitHub Actions Workflow สำหรับ Build Mobile App
+# ใช้ EAS Cloud Build - ฟรี 30 builds/เดือน
+#
+# วิธีใช้:
+# 1. สร้าง Expo account ที่ https://expo.dev
+# 2. สร้าง Access Token ที่ Settings > Access Tokens
+# 3. เพิ่ม Token ใน GitHub Secrets ชื่อ EXPO_TOKEN
+# 4. Push code หรือ create tag เพื่อ trigger build
+
+name: 📱 Mobile App Build
+
+on:
+  # Build เมื่อสร้าง tag
+  push:
+    tags:
+      - 'mobile-v*'
+
+  # Build เมื่อ push ไป main (preview build)
+  push:
+    branches:
+      - main
+    paths:
+      - 'mobile-app/**'
+
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build'
+        required: true
+        default: 'android'
+        type: choice
+        options:
+          - android
+          - ios
+          - all
+      profile:
+        description: 'Build profile'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+
+env:
+  WORKING_DIR: mobile-app
+
+jobs:
+  # =====================================================
+  # Build Android APK
+  # =====================================================
+  build-android:
+    name: 🤖 Build Android
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' ||
+      github.event.inputs.platform == 'android' ||
+      github.event.inputs.platform == 'all'
+
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '${{ env.WORKING_DIR }}/package-lock.json'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔐 Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 🏗️ Build Android APK
+        run: |
+          PROFILE=${{ github.event.inputs.profile || 'preview' }}
+          echo "Building with profile: $PROFILE"
+          eas build --platform android --profile $PROFILE --non-interactive
+
+      - name: 📤 Get build URL
+        if: success()
+        run: |
+          echo "✅ Build completed!"
+          echo "📱 Download APK from Expo dashboard: https://expo.dev"
+
+  # =====================================================
+  # Build iOS (ต้องมี Apple Developer Account)
+  # =====================================================
+  build-ios:
+    name: 🍎 Build iOS
+    runs-on: ubuntu-latest
+    if: |
+      github.event.inputs.platform == 'ios' ||
+      github.event.inputs.platform == 'all'
+
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '${{ env.WORKING_DIR }}/package-lock.json'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔐 Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 🏗️ Build iOS IPA
+        run: |
+          PROFILE=${{ github.event.inputs.profile || 'preview' }}
+          echo "Building with profile: $PROFILE"
+          eas build --platform ios --profile $PROFILE --non-interactive
+
+      - name: 📤 Get build URL
+        if: success()
+        run: |
+          echo "✅ Build completed!"
+          echo "📱 Download IPA from Expo dashboard: https://expo.dev"
+
+  # =====================================================
+  # Update (OTA - Over The Air)
+  # =====================================================
+  update:
+    name: 🔄 OTA Update
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')
+
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '${{ env.WORKING_DIR }}/package-lock.json'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔐 Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 🔄 Publish OTA Update
+        run: |
+          eas update --auto --non-interactive
+        continue-on-error: true
