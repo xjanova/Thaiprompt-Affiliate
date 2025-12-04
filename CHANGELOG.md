@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.345.2] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2000 from xjanova/claude/fix-rank-limits-icon-0113rELdSMtEbERxmHhNGDFK (2f6e6b9b)
+- fix: use badge_icon instead of icon for rank display in video-missions rank-limits (267db7bc)
+### 🔧 Other Changes
+
+
 ## [v3.345.1] - 2025-12-04
 
 ### ✨ Features
