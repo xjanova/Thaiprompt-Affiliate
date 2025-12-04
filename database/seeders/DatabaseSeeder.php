@@ -157,6 +157,9 @@ class DatabaseSeeder extends Seeder
             // 18. Community Forum System
             ForumCategorySeeder::class,         // 🆕 หมวดหมู่ฟอรั่ม (MLM, E-commerce, AI, Crypto, Help, etc.)
             ForumTrophySeeder::class,           // 🆕 โทรฟี่ฟอรั่ม (Positive/Negative badges, ติดชื่อตลอด)
+
+            // 19. Menu Management System
+            MenuItemSeeder::class,              // 🆕 ระบบจัดการเมนู (นำเข้าจาก config/menus.php)
         ]);
 
         $this->command->info('');
