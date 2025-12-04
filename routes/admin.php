@@ -1321,6 +1321,12 @@ Route::prefix('storefront')->name('storefront.')->group(function () {
     // Storefront Settings Index
     Route::get('/', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'index'])->name('index');
 
+    // Theme Settings
+    Route::put('/theme', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'updateTheme'])->name('update-theme');
+
+    // Layout Settings
+    Route::put('/layout', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'updateLayout'])->name('update-layout');
+
     // Banners Management
     Route::prefix('banners')->name('banners.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'banners'])->name('index');
