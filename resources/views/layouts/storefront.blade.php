@@ -101,7 +101,7 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 9990;
+            z-index: -5;
             overflow: hidden;
         }
 
@@ -399,6 +399,256 @@
     <div class="min-h-screen relative z-0">
         @yield('content')
     </div>
+
+    {{-- Floating Cart Button (สำหรับหน้าที่ไม่มี cart ใน navbar) --}}
+    @auth
+    <div x-data="floatingCart()"
+         x-init="init()"
+         @cart-updated.window="loadCartCount()"
+         class="fixed bottom-6 right-6 z-[9997]">
+
+        {{-- Cart FAB Button --}}
+        <button @click="openDrawer()"
+                type="button"
+                class="relative w-14 h-14 rounded-full
+                       bg-gradient-to-r from-orange-500 to-red-500
+                       text-white shadow-xl
+                       hover:shadow-2xl hover:scale-110
+                       active:scale-95 transition-all
+                       flex items-center justify-center
+                       group">
+            <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+
+            {{-- Badge --}}
+            <span x-show="cartCount > 0"
+                  x-text="cartCount > 99 ? '99+' : cartCount"
+                  x-transition
+                  class="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1
+                         bg-yellow-400 text-gray-900 text-xs font-bold
+                         rounded-full flex items-center justify-center
+                         shadow-lg animate-bounce">
+            </span>
+        </button>
+
+        {{-- Backdrop --}}
+        <div x-show="isOpen"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="closeDrawer()"
+             class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]"
+             style="display: none;">
+        </div>
+
+        {{-- Drawer Panel --}}
+        <div x-show="isOpen"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="translate-x-full"
+             x-transition:enter-end="translate-x-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="translate-x-0"
+             x-transition:leave-end="translate-x-full"
+             @keydown.escape.window="closeDrawer()"
+             class="fixed top-0 right-0 w-full max-w-md h-full
+                    bg-white dark:bg-gray-800
+                    shadow-2xl z-[9999]
+                    flex flex-col"
+             style="display: none;">
+
+            {{-- Header --}}
+            <div class="flex items-center justify-between px-6 py-4
+                        border-b border-gray-200 dark:border-gray-700
+                        bg-gradient-to-r from-orange-500 to-red-500">
+                <h2 class="text-xl font-bold text-white flex items-center gap-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    ตะกร้าสินค้า
+                    <span x-show="cartCount > 0" x-text="`(${cartCount})`" class="text-white/80"></span>
+                </h2>
+                <button @click="closeDrawer()" type="button"
+                        class="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-all">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Content --}}
+            <div class="flex-1 overflow-y-auto">
+                {{-- Loading --}}
+                <div x-show="loading" class="flex items-center justify-center py-16">
+                    <svg class="animate-spin h-10 w-10 text-orange-500" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </div>
+
+                {{-- Empty State --}}
+                <div x-show="!loading && items.length === 0" class="flex flex-col items-center justify-center py-16 px-6">
+                    <div class="w-20 h-20 mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                        <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">ตะกร้าว่างเปล่า</h3>
+                    <p class="text-gray-500 dark:text-gray-400 text-center text-sm">เลือกซื้อสินค้าได้เลย!</p>
+                </div>
+
+                {{-- Cart Items --}}
+                <div x-show="!loading && items.length > 0" class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <template x-for="item in items" :key="item.id">
+                        <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all">
+                            <div class="flex gap-3">
+                                <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+                                    <img :src="item.image || '/images/no-image.png'" :alt="item.name"
+                                         class="w-full h-full object-cover" onerror="this.src='/images/no-image.png'">
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="font-medium text-gray-900 dark:text-white text-sm line-clamp-2" x-text="item.name"></h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="formatPrice(item.price)"></p>
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <div class="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg">
+                                            <button @click="updateQuantity(item.id, item.quantity - 1)"
+                                                    class="w-7 h-7 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+                                            </button>
+                                            <span class="w-8 text-center text-sm font-medium text-gray-900 dark:text-white" x-text="item.quantity"></span>
+                                            <button @click="updateQuantity(item.id, item.quantity + 1)"
+                                                    class="w-7 h-7 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                            </button>
+                                        </div>
+                                        <button @click="removeItem(item.id)"
+                                                class="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                        <span class="ml-auto font-bold text-orange-600 dark:text-orange-400 text-sm" x-text="formatPrice(item.price * item.quantity)"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div x-show="items.length > 0"
+                 class="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-gray-600 dark:text-gray-400">รวมทั้งหมด</span>
+                    <span class="text-xl font-bold text-orange-600 dark:text-orange-400" x-text="formatPrice(cartTotal)"></span>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <a href="{{ route('checkout.index') }}" @click="closeDrawer()"
+                       class="w-full py-3 text-center font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 rounded-xl shadow-lg hover:shadow-xl transition-all">
+                        ดำเนินการชำระเงิน
+                    </a>
+                    <a href="{{ route('cart.index') }}" @click="closeDrawer()"
+                       class="w-full py-2.5 text-center font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl transition-all">
+                        ดูตะกร้าแบบเต็ม
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function floatingCart() {
+        return {
+            isOpen: false,
+            loading: false,
+            items: [],
+            cartCount: 0,
+            cartTotal: 0,
+
+            init() {
+                this.loadCartCount();
+                setInterval(() => this.loadCartCount(), 30000);
+            },
+
+            async loadCartCount() {
+                try {
+                    const res = await fetch('{{ route("cart.count") }}', {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.cartCount = data.count || 0;
+                    }
+                } catch (e) { console.debug('Cart count error:', e); }
+            },
+
+            async loadCart() {
+                this.loading = true;
+                try {
+                    const res = await fetch('{{ route("cart.mini") }}', {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.items = data.items || [];
+                        this.cartCount = data.count || 0;
+                        this.cartTotal = data.total || 0;
+                    }
+                } catch (e) { console.error('Cart load error:', e); }
+                this.loading = false;
+            },
+
+            async updateQuantity(itemId, qty) {
+                if (qty < 1) { this.removeItem(itemId); return; }
+                try {
+                    const res = await fetch(`/cart/${itemId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ quantity: qty })
+                    });
+                    if (res.ok) { await this.loadCart(); window.dispatchEvent(new CustomEvent('cart-updated')); }
+                } catch (e) { console.error('Update error:', e); }
+            },
+
+            async removeItem(itemId) {
+                try {
+                    const res = await fetch(`/cart/${itemId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    if (res.ok) { await this.loadCart(); window.dispatchEvent(new CustomEvent('cart-updated')); }
+                } catch (e) { console.error('Remove error:', e); }
+            },
+
+            openDrawer() {
+                this.isOpen = true;
+                this.loadCart();
+                document.body.style.overflow = 'hidden';
+            },
+
+            closeDrawer() {
+                this.isOpen = false;
+                document.body.style.overflow = '';
+            },
+
+            formatPrice(price) {
+                return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 0 }).format(price);
+            }
+        };
+    }
+    </script>
+    @endauth
 
     {{-- Toast Notifications --}}
     <div class="fixed bottom-4 right-4 z-[9999] space-y-2 max-w-md"
