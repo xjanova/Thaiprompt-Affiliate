@@ -395,15 +395,24 @@ function profileManager() {
 
                 const data = await response.json();
 
-                if (response.ok) {
+                if (response.ok && data.success) {
                     alert('✅ เปลี่ยนรหัสผ่านสำเร็จ!');
                     this.resetPasswordForm();
                 } else {
-                    alert('❌ เกิดข้อผิดพลาด: ' + (data.message || 'Unknown error'));
+                    // จัดการ error message
+                    let errorMsg = data.message || '';
+
+                    // ถ้ามี validation errors ให้แสดงด้วย
+                    if (data.errors) {
+                        const errors = Object.values(data.errors).flat();
+                        errorMsg = errors.join('\n');
+                    }
+
+                    alert('❌ ' + (errorMsg || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'));
                 }
             } catch (error) {
                 console.error('Error changing password:', error);
-                alert('❌ เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน');
+                alert('❌ เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
             } finally {
                 this.savingPassword = false;
             }

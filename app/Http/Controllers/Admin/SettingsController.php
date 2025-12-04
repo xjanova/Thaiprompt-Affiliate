@@ -82,14 +82,23 @@ class SettingsController extends Controller
 
     /**
      * เปลี่ยนรหัสผ่าน
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function changePassword(Request $request)
     {
         $validated = $request->validate([
             'current_password' => ['required', 'string'],
             'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'current_password.required' => 'กรุณากรอกรหัสผ่านปัจจุบัน',
+            'new_password.required' => 'กรุณากรอกรหัสผ่านใหม่',
+            'new_password.min' => 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร',
+            'new_password.confirmed' => 'รหัสผ่านใหม่ไม่ตรงกัน',
         ]);
 
+        /** @var \App\Models\User $user */
         $user = auth()->user();
 
         // ตรวจสอบรหัสผ่านปัจจุบัน
@@ -100,10 +109,17 @@ class SettingsController extends Controller
             ], 422);
         }
 
-        // อัพเดทรหัสผ่านใหม่
-        $user->update([
-            'password' => \Hash::make($validated['new_password'])
-        ]);
+        // ตรวจสอบว่ารหัสผ่านใหม่ไม่เหมือนเดิม
+        if (\Hash::check($validated['new_password'], $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'รหัสผ่านใหม่ต้องไม่เหมือนรหัสผ่านเดิม'
+            ], 422);
+        }
+
+        // อัพเดทรหัสผ่านใหม่ (ใช้ save() แทน update() เพื่อความแน่นอน)
+        $user->password = \Hash::make($validated['new_password']);
+        $user->save();
 
         return response()->json([
             'success' => true,
