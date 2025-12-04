@@ -101,7 +101,7 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: -10;
+            z-index: 9990;
             overflow: hidden;
         }
 
@@ -392,8 +392,8 @@
     {{-- Base Background Layer - สำหรับ light/dark mode --}}
     <div class="fixed inset-0 bg-gray-50 dark:bg-gray-900 -z-20"></div>
 
-    {{-- Liquid Lava Lamp Background - RGB Glow ลอยขึ้นลงเหมือนลาวา --}}
-    <div class="lava-background -z-10" aria-hidden="true">
+    {{-- Liquid Lava Lamp Background - RGB Glow ลอยขึ้นลงเหมือนลาวา (อยู่บน content แต่ pointer-events: none) --}}
+    <div class="lava-background" aria-hidden="true">
         <div class="lava-blob"></div>
         <div class="lava-blob"></div>
         <div class="lava-blob"></div>
