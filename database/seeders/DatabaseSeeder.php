@@ -86,7 +86,7 @@ class DatabaseSeeder extends Seeder
             IdCardSettingSeeder::class,         // 🆕 การตั้งค่า Virtual ID Card ตาม Rank (8 ระดับ)
             SuperAdminMlmSeeder::class,         // 👑 SuperAdmin เป็น Root Leader (แม่ทีมใหญ่) - ต้องรันก่อน ThaipromptMlmSeeder
             // MlmHierarchySeeder::class,          // ❌ ลบ - ใช้ ThaipromptMlmSeeder แทน
-            ThaipromptMlmSeeder::class,         // 🆕 ระบบสายงาน MLM 5 ชั้น (31 สมาชิก Thaiprompt 00-30)
+            // ThaipromptMlmSeeder::class,         // ❌ ปิดไว้ - ทดสอบสมัครปกติ
             RecruitTemplateSeeder::class,       // 🆕 เทมเพลตหน้า Recruit สำหรับแม่ทีม
             PlatformRevenueSeeder::class,       // 🆕 ระบบรายได้ Platform (Wallets, Payout Settings)
 
