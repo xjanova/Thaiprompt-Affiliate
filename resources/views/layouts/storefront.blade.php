@@ -91,9 +91,10 @@
         }
 
         /* ========================================
-           Animated Particle Background - อะตอม/เกสรสี
+           Liquid Lava Lamp Background - RGB Glow
+           ลิควิดลาวาลอยขึ้นลง พร้อมเรืองแสงในโหมดมืด
            ======================================== */
-        .particle-background {
+        .lava-background {
             position: fixed;
             top: 0;
             left: 0;
@@ -104,149 +105,272 @@
             overflow: hidden;
         }
 
-        .particle {
+        .lava-blob {
             position: absolute;
-            border-radius: 50%;
-            animation: float 20s ease-in-out infinite;
-            opacity: 0.4;
+            border-radius: 45% 55% 60% 40% / 55% 45% 55% 45%;
+            filter: blur(1px);
+            will-change: transform, border-radius;
         }
 
-        /* สร้าง particles หลายขนาดและสี */
-        .particle:nth-child(1) {
-            width: 20px;
-            height: 20px;
-            background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
-            left: 10%;
-            top: 20%;
-            animation-delay: 0s;
-            animation-duration: 25s;
-        }
-
-        .particle:nth-child(2) {
-            width: 15px;
-            height: 15px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-            left: 20%;
-            top: 60%;
-            animation-delay: -2s;
-            animation-duration: 20s;
-        }
-
-        .particle:nth-child(3) {
-            width: 25px;
-            height: 25px;
-            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-            left: 35%;
-            top: 30%;
-            animation-delay: -4s;
-            animation-duration: 28s;
-        }
-
-        .particle:nth-child(4) {
-            width: 12px;
-            height: 12px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            left: 50%;
-            top: 70%;
-            animation-delay: -6s;
-            animation-duration: 22s;
-        }
-
-        .particle:nth-child(5) {
-            width: 18px;
-            height: 18px;
-            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
-            left: 65%;
-            top: 15%;
-            animation-delay: -8s;
-            animation-duration: 26s;
-        }
-
-        .particle:nth-child(6) {
-            width: 22px;
-            height: 22px;
-            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
-            left: 75%;
-            top: 50%;
-            animation-delay: -10s;
-            animation-duration: 24s;
-        }
-
-        .particle:nth-child(7) {
-            width: 14px;
-            height: 14px;
-            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
-            left: 85%;
-            top: 80%;
-            animation-delay: -12s;
-            animation-duration: 30s;
-        }
-
-        .particle:nth-child(8) {
-            width: 16px;
-            height: 16px;
-            background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+        /* RGB Gradient สีสันสดใส - Light Mode */
+        .lava-blob:nth-child(1) {
+            width: 180px;
+            height: 200px;
+            background: linear-gradient(180deg, #ff0844 0%, #ffb199 50%, #ff0844 100%);
             left: 5%;
-            top: 85%;
-            animation-delay: -14s;
-            animation-duration: 23s;
+            bottom: -100px;
+            animation: lavaRise1 18s ease-in-out infinite, morphBlob1 8s ease-in-out infinite;
         }
 
-        .particle:nth-child(9) {
-            width: 10px;
-            height: 10px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
-            left: 45%;
-            top: 45%;
-            animation-delay: -16s;
-            animation-duration: 27s;
+        .lava-blob:nth-child(2) {
+            width: 150px;
+            height: 170px;
+            background: linear-gradient(180deg, #00d4ff 0%, #00ffab 50%, #00d4ff 100%);
+            left: 20%;
+            bottom: -80px;
+            animation: lavaRise2 22s ease-in-out infinite, morphBlob2 10s ease-in-out infinite;
+            animation-delay: -5s;
         }
 
-        .particle:nth-child(10) {
-            width: 20px;
-            height: 20px;
-            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
-            left: 90%;
-            top: 25%;
-            animation-delay: -18s;
-            animation-duration: 21s;
+        .lava-blob:nth-child(3) {
+            width: 200px;
+            height: 220px;
+            background: linear-gradient(180deg, #a855f7 0%, #ec4899 50%, #a855f7 100%);
+            left: 38%;
+            bottom: -120px;
+            animation: lavaRise3 20s ease-in-out infinite, morphBlob3 12s ease-in-out infinite;
+            animation-delay: -8s;
         }
 
-        /* Animation สำหรับการลอย */
-        @keyframes float {
+        .lava-blob:nth-child(4) {
+            width: 130px;
+            height: 150px;
+            background: linear-gradient(180deg, #facc15 0%, #fb923c 50%, #facc15 100%);
+            left: 55%;
+            bottom: -70px;
+            animation: lavaRise4 16s ease-in-out infinite, morphBlob1 9s ease-in-out infinite;
+            animation-delay: -3s;
+        }
+
+        .lava-blob:nth-child(5) {
+            width: 170px;
+            height: 190px;
+            background: linear-gradient(180deg, #22c55e 0%, #06b6d4 50%, #22c55e 100%);
+            left: 72%;
+            bottom: -90px;
+            animation: lavaRise5 24s ease-in-out infinite, morphBlob2 11s ease-in-out infinite;
+            animation-delay: -12s;
+        }
+
+        .lava-blob:nth-child(6) {
+            width: 160px;
+            height: 180px;
+            background: linear-gradient(180deg, #3b82f6 0%, #8b5cf6 50%, #3b82f6 100%);
+            left: 88%;
+            bottom: -85px;
+            animation: lavaRise1 19s ease-in-out infinite, morphBlob3 7s ease-in-out infinite;
+            animation-delay: -7s;
+        }
+
+        .lava-blob:nth-child(7) {
+            width: 140px;
+            height: 160px;
+            background: linear-gradient(180deg, #f43f5e 0%, #fb7185 50%, #f43f5e 100%);
+            left: 12%;
+            bottom: -75px;
+            animation: lavaRise3 21s ease-in-out infinite, morphBlob1 10s ease-in-out infinite;
+            animation-delay: -15s;
+        }
+
+        .lava-blob:nth-child(8) {
+            width: 120px;
+            height: 140px;
+            background: linear-gradient(180deg, #14b8a6 0%, #0ea5e9 50%, #14b8a6 100%);
+            left: 62%;
+            bottom: -65px;
+            animation: lavaRise2 17s ease-in-out infinite, morphBlob2 8s ease-in-out infinite;
+            animation-delay: -10s;
+        }
+
+        /* Animation - ลอยขึ้นจากล่างขึ้นบน แล้วกลับลงมา */
+        @keyframes lavaRise1 {
             0%, 100% {
-                transform: translateY(0) translateX(0) rotate(0deg) scale(1);
-            }
-            25% {
-                transform: translateY(-100px) translateX(50px) rotate(90deg) scale(1.1);
+                transform: translateY(0) scale(1);
             }
             50% {
-                transform: translateY(-50px) translateX(-30px) rotate(180deg) scale(0.9);
+                transform: translateY(calc(-100vh - 100px)) scale(1.1);
+            }
+        }
+
+        @keyframes lavaRise2 {
+            0%, 100% {
+                transform: translateY(0) scale(0.9);
+            }
+            50% {
+                transform: translateY(calc(-100vh - 150px)) scale(1);
+            }
+        }
+
+        @keyframes lavaRise3 {
+            0%, 100% {
+                transform: translateY(0) scale(1.05);
+            }
+            50% {
+                transform: translateY(calc(-100vh - 80px)) scale(0.95);
+            }
+        }
+
+        @keyframes lavaRise4 {
+            0%, 100% {
+                transform: translateY(0) scale(0.95);
+            }
+            50% {
+                transform: translateY(calc(-100vh - 120px)) scale(1.08);
+            }
+        }
+
+        @keyframes lavaRise5 {
+            0%, 100% {
+                transform: translateY(0) scale(1);
+            }
+            50% {
+                transform: translateY(calc(-100vh - 180px)) scale(1.05);
+            }
+        }
+
+        /* Blob morphing - เปลี่ยนรูปร่าง */
+        @keyframes morphBlob1 {
+            0%, 100% {
+                border-radius: 45% 55% 60% 40% / 55% 45% 55% 45%;
+            }
+            25% {
+                border-radius: 60% 40% 45% 55% / 40% 60% 50% 50%;
+            }
+            50% {
+                border-radius: 50% 50% 55% 45% / 45% 55% 60% 40%;
             }
             75% {
-                transform: translateY(-150px) translateX(20px) rotate(270deg) scale(1.05);
+                border-radius: 40% 60% 50% 50% / 60% 40% 45% 55%;
             }
         }
 
-        /* Dark mode adjustments */
-        .dark .particle {
-            opacity: 0.25;
+        @keyframes morphBlob2 {
+            0%, 100% {
+                border-radius: 55% 45% 50% 50% / 45% 55% 45% 55%;
+            }
+            33% {
+                border-radius: 40% 60% 55% 45% / 55% 45% 55% 45%;
+            }
+            66% {
+                border-radius: 60% 40% 45% 55% / 50% 50% 50% 50%;
+            }
         }
 
-        /* ลดการแสดงผลบนมือถือเพื่อประสิทธิภาพ */
+        @keyframes morphBlob3 {
+            0%, 100% {
+                border-radius: 50% 50% 45% 55% / 55% 45% 60% 40%;
+            }
+            50% {
+                border-radius: 45% 55% 55% 45% / 40% 60% 45% 55%;
+            }
+        }
+
+        /* ===== Dark Mode - RGB Glow Effect ===== */
+        .dark .lava-blob {
+            filter: blur(2px);
+        }
+
+        .dark .lava-blob:nth-child(1) {
+            background: linear-gradient(180deg, #ff0844 0%, #ff3366 50%, #ff0844 100%);
+            box-shadow:
+                0 0 40px rgba(255, 8, 68, 0.8),
+                0 0 80px rgba(255, 8, 68, 0.6),
+                0 0 120px rgba(255, 8, 68, 0.4),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .dark .lava-blob:nth-child(2) {
+            background: linear-gradient(180deg, #00d4ff 0%, #00ffff 50%, #00d4ff 100%);
+            box-shadow:
+                0 0 40px rgba(0, 212, 255, 0.8),
+                0 0 80px rgba(0, 212, 255, 0.6),
+                0 0 120px rgba(0, 212, 255, 0.4),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .dark .lava-blob:nth-child(3) {
+            background: linear-gradient(180deg, #a855f7 0%, #d946ef 50%, #a855f7 100%);
+            box-shadow:
+                0 0 40px rgba(168, 85, 247, 0.8),
+                0 0 80px rgba(168, 85, 247, 0.6),
+                0 0 120px rgba(168, 85, 247, 0.4),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .dark .lava-blob:nth-child(4) {
+            background: linear-gradient(180deg, #facc15 0%, #fde047 50%, #facc15 100%);
+            box-shadow:
+                0 0 40px rgba(250, 204, 21, 0.8),
+                0 0 80px rgba(250, 204, 21, 0.6),
+                0 0 120px rgba(250, 204, 21, 0.4),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .dark .lava-blob:nth-child(5) {
+            background: linear-gradient(180deg, #22c55e 0%, #4ade80 50%, #22c55e 100%);
+            box-shadow:
+                0 0 40px rgba(34, 197, 94, 0.8),
+                0 0 80px rgba(34, 197, 94, 0.6),
+                0 0 120px rgba(34, 197, 94, 0.4),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .dark .lava-blob:nth-child(6) {
+            background: linear-gradient(180deg, #3b82f6 0%, #60a5fa 50%, #3b82f6 100%);
+            box-shadow:
+                0 0 40px rgba(59, 130, 246, 0.8),
+                0 0 80px rgba(59, 130, 246, 0.6),
+                0 0 120px rgba(59, 130, 246, 0.4),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .dark .lava-blob:nth-child(7) {
+            background: linear-gradient(180deg, #f43f5e 0%, #fb7185 50%, #f43f5e 100%);
+            box-shadow:
+                0 0 40px rgba(244, 63, 94, 0.8),
+                0 0 80px rgba(244, 63, 94, 0.6),
+                0 0 120px rgba(244, 63, 94, 0.4),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .dark .lava-blob:nth-child(8) {
+            background: linear-gradient(180deg, #14b8a6 0%, #2dd4bf 50%, #14b8a6 100%);
+            box-shadow:
+                0 0 40px rgba(20, 184, 166, 0.8),
+                0 0 80px rgba(20, 184, 166, 0.6),
+                0 0 120px rgba(20, 184, 166, 0.4),
+                inset 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        /* ลดขนาดและจำนวนบนมือถือเพื่อประสิทธิภาพ */
         @media (max-width: 768px) {
-            .particle {
-                opacity: 0.2;
+            .lava-blob {
+                transform: scale(0.6);
             }
-            .particle:nth-child(n+7) {
+            .lava-blob:nth-child(n+6) {
                 display: none;
+            }
+            .dark .lava-blob {
+                filter: blur(1px);
             }
         }
 
         /* ปิดการแสดงผลถ้าผู้ใช้ต้องการลด motion */
         @media (prefers-reduced-motion: reduce) {
-            .particle {
+            .lava-blob {
                 animation: none;
+                bottom: 50%;
+                transform: translateY(50%);
             }
         }
     </style>
@@ -262,18 +386,16 @@
           }
       ">
 
-    {{-- Animated Particle Background - อะตอม/เกสรสีลอยๆ --}}
-    <div class="particle-background" aria-hidden="true">
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
+    {{-- Liquid Lava Lamp Background - RGB Glow ลอยขึ้นลงเหมือนลาวา --}}
+    <div class="lava-background" aria-hidden="true">
+        <div class="lava-blob"></div>
+        <div class="lava-blob"></div>
+        <div class="lava-blob"></div>
+        <div class="lava-blob"></div>
+        <div class="lava-blob"></div>
+        <div class="lava-blob"></div>
+        <div class="lava-blob"></div>
+        <div class="lava-blob"></div>
     </div>
 
     {{-- Main Content Area - Full Width --}}
