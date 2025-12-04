@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.327.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #1968 from xjanova/stoic-shockley (c7a2c98b)
+- feat: พัฒนา TP-POS MAUI App - เพิ่ม ViewModels และปรับปรุง UI (4d03d948)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.326.0] - 2025-12-04
 
 ### ✨ Features
