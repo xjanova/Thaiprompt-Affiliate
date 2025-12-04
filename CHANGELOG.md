@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.345.1] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1999 from xjanova/claude/fix-learning-center-slug-01B4XHap49oVAFHGJBGoLXCa (71ae5114)
+- fix: แก้ไขชื่อ route ใน video-missions completions view (b959f11c)
+### 🔧 Other Changes
+
+
 ## [v3.345.0] - 2025-12-04
 
 ### ✨ Features
