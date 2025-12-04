@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.12] - 2025-12-04
+
+### ✨ Features
+- feat(official-shop): เพิ่ม lava effect พรีเมียมและสร้างหน้า index (2b824a0b)
+### 🐛 Bug Fixes
+- Merge pull request #2033 from xjanova/claude/fix-product-effects-018VczxiTSU15X7XE5i2Mtuw (361fa8d0)
+- fix(storefront): ย้าย lava effect ไปเฉพาะหน้าร้านค้าผู้เช่า (2663b823)
+### 🔧 Other Changes
+
+
 ## [v3.358.11] - 2025-12-04
 
 ### ✨ Features
