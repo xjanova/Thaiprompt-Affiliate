@@ -226,11 +226,14 @@
         <div id="slides-mlm-plans" class="slides-topic-container">
             @include('components.presentation-slides-mlm-plans')
         </div>
+        <div id="slides-ai-automation" class="slides-topic-container">
+            @include('components.presentation-slides-ai-automation')
+        </div>
         <div id="slides-signup-web" class="slides-topic-container">
-            @include('components.signup-tutorial-slides')
+            @include('components.presentation-slides-signup-web')
         </div>
         <div id="slides-signup-line" class="slides-topic-container">
-            {{-- Slides สำหรับ LINE จะถูกกรองจาก signup-tutorial-slides --}}
+            @include('components.presentation-slides-signup-line')
         </div>
     </div>
 
@@ -419,10 +422,12 @@ function toggleTopicMenu() {
     arrow.classList.toggle('rotated');
 }
 
-// Mapping topics ไปยัง slide index ใน system-overview (Total: 38 slides, index 0-37)
+// Topics ที่มี container แยก (ไม่อยู่ใน system-overview)
+const standaloneTopics = ['mlm-plans', 'ai-automation', 'signup-web', 'signup-line'];
+
+// Mapping topics ไปยัง slide index ใน system-overview (สำหรับ topic ที่ยังอยู่ใน system-overview)
 const topicSlideMapping = {
     'system-overview': 0,     // Slide 1: Title
-    'ai-automation': 7,       // Slide 5: AI & Automation (index 7)
     'tpix-token': 11,         // Slide 6: TPIX Token (index 11)
     'academy-freedom': 15,    // Slide 7: Academy & ปลดแอกธุรกิจ (index 15)
     'ecosystem-vision': 19,   // Slide 8: Ecosystem & Vision (index 19)
@@ -441,12 +446,12 @@ function switchTopic(topicId) {
         stopAutoplay();
     }
 
-    // ถ้าเป็น topic ที่อยู่ใน system-overview container ให้ jump ไป slide ที่เกี่ยวข้อง
+    // ตรวจสอบว่า topic นี้มี container แยกหรือไม่
     let containerId = topicId;
     let startSlide = 0;
 
-    const systemOverviewTopics = ['ai-automation', 'tpix-token', 'academy-freedom', 'ecosystem-vision', 'game-changer', 'ecommerce-empire', 'community'];
-    if (systemOverviewTopics.includes(topicId)) {
+    // ถ้าไม่ใช่ standalone topic ให้ใช้ system-overview และ jump ไป slide ที่เกี่ยวข้อง
+    if (!standaloneTopics.includes(topicId) && topicId !== 'system-overview') {
         containerId = 'system-overview';
         startSlide = topicSlideMapping[topicId] || 0;
     }
@@ -518,8 +523,8 @@ function openPresentationWithTopic(topicId) {
     let containerId = topicId;
     let startSlide = 0;
 
-    const systemOverviewTopics = ['ai-automation', 'tpix-token', 'academy-freedom', 'ecosystem-vision', 'game-changer', 'ecommerce-empire', 'community'];
-    if (systemOverviewTopics.includes(topicId)) {
+    // ใช้ logic เดียวกับ switchTopic - ตรวจสอบว่า topic นี้มี container แยกหรือไม่
+    if (!standaloneTopics.includes(topicId) && topicId !== 'system-overview') {
         containerId = 'system-overview';
         startSlide = topicSlideMapping[topicId] || 0;
     }
