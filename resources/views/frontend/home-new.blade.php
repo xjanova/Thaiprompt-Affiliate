@@ -264,6 +264,127 @@
 </section>
 
 {{-- ================================================================
+    SIGNUP TUTORIAL SECTION - วิธีสมัครสมาชิก
+================================================================ --}}
+<section id="signup-tutorial" class="py-20 lg:py-28 bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 relative overflow-hidden">
+    {{-- Background Effects --}}
+    <div class="absolute inset-0 opacity-10">
+        <div class="absolute inset-0" style="background-image:
+            linear-gradient(to right, rgba(16, 185, 129, 0.15) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(16, 185, 129, 0.15) 1px, transparent 1px);
+            background-size: 40px 40px;"></div>
+    </div>
+    <div class="absolute top-20 right-10 w-96 h-96 bg-green-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+    <div class="absolute bottom-20 left-10 w-96 h-96 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {{-- Section Header --}}
+        <div class="text-center mb-12 lg:mb-16">
+            <div class="inline-flex items-center gap-2 px-6 py-3 bg-green-500/20 backdrop-blur-sm rounded-full border border-green-500/30 mb-8">
+                <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span class="text-green-300 font-semibold">สมัครสมาชิกฟรี!</span>
+            </div>
+
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400">
+                    วิธีสมัครสมาชิก
+                </span>
+            </h2>
+            <p class="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+                เลือกวิธีสมัครที่สะดวกสำหรับคุณ ไม่ว่าจะผ่านเว็บหรือ LINE ก็ทำได้ง่ายๆ
+                <br class="hidden md:block">
+                <span class="text-green-300 font-medium">ใช้เวลาไม่ถึง 2 นาที!</span>
+            </p>
+        </div>
+
+        {{-- Signup Methods Cards --}}
+        <div class="grid md:grid-cols-2 gap-8 lg:gap-10 mb-12">
+            {{-- Card 1: สมัครผ่านเว็บ --}}
+            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-green-500/30 transition-all duration-300 cursor-pointer"
+                 onclick="if(typeof openSignupTutorial === 'function') openSignupTutorial('signup-web')">
+                <div class="flex items-start gap-6">
+                    <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/20">
+                        <i class="fas fa-globe text-4xl text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-2xl font-bold text-white mb-3">สมัครผ่านเว็บ</h3>
+                        <p class="text-slate-400 mb-4">กรอกข้อมูลผ่านฟอร์มบนเว็บไซต์ สะดวก ครบถ้วน ทำได้จากทุกอุปกรณ์</p>
+                        <div class="flex flex-wrap gap-3 mb-4">
+                            <span class="px-3 py-1.5 bg-blue-500/20 text-blue-300 rounded-full text-sm font-medium">
+                                <i class="fas fa-clock mr-1"></i>2 นาที
+                            </span>
+                            <span class="px-3 py-1.5 bg-purple-500/20 text-purple-300 rounded-full text-sm font-medium">
+                                <i class="fas fa-list-ol mr-1"></i>4 ขั้นตอน
+                            </span>
+                        </div>
+                        <div class="flex items-center text-green-400 font-medium group-hover:text-green-300">
+                            <span>ดูขั้นตอน</span>
+                            <i class="fas fa-arrow-right ml-2 group-hover:translate-x-2 transition-transform"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Card 2: สมัครผ่าน LINE --}}
+            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-[#06C755]/30 transition-all duration-300 cursor-pointer"
+                 onclick="if(typeof openSignupTutorial === 'function') openSignupTutorial('signup-line')">
+                <div class="flex items-start gap-6">
+                    <div class="w-20 h-20 bg-gradient-to-br from-[#06C755] to-[#00B900] rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-lg shadow-green-500/20">
+                        <svg class="w-12 h-12" viewBox="0 0 24 24" fill="white">
+                            <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-2xl font-bold text-white mb-3">สมัครผ่าน LINE</h3>
+                        <p class="text-slate-400 mb-4">ใช้บัญชี LINE ที่มีอยู่แล้ว สะดวก รวดเร็ว ปลอดภัย รับแจ้งเตือนทาง LINE</p>
+                        <div class="flex flex-wrap gap-3 mb-4">
+                            <span class="px-3 py-1.5 bg-green-500/20 text-green-300 rounded-full text-sm font-medium">
+                                <i class="fas fa-bolt mr-1"></i>เร็วที่สุด
+                            </span>
+                            <span class="px-3 py-1.5 bg-green-500/20 text-green-300 rounded-full text-sm font-medium">
+                                <i class="fas fa-list-ol mr-1"></i>3 ขั้นตอน
+                            </span>
+                        </div>
+                        <div class="flex items-center text-[#06C755] font-medium group-hover:text-green-400">
+                            <span>ดูขั้นตอน</span>
+                            <i class="fas fa-arrow-right ml-2 group-hover:translate-x-2 transition-transform"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Quick Actions --}}
+        <div class="text-center">
+            <p class="text-slate-400 mb-6">พร้อมเริ่มต้นแล้ว?</p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="{{ route('register') }}"
+                   class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-green-500/30 hover:shadow-green-500/40 transition-all">
+                    <i class="fas fa-rocket"></i>
+                    สมัครสมาชิกเลย!
+                </a>
+                <a href="{{ route('login') }}"
+                   class="inline-flex items-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-lg rounded-xl transition-all">
+                    <i class="fas fa-sign-in-alt"></i>
+                    เข้าสู่ระบบ
+                </a>
+            </div>
+            {{-- Link to detailed documentation --}}
+            <p class="mt-6 text-slate-400">
+                <a href="{{ route('documents.how-to-register') }}"
+                   class="text-green-400 hover:text-green-300 underline underline-offset-4 transition-colors">
+                    <i class="fas fa-book-open mr-1"></i>
+                    อ่านคู่มือการสมัครฉบับละเอียด
+                </a>
+            </p>
+        </div>
+    </div>
+</section>
+
+{{-- ================================================================
     PLATFORM DEMO SECTION - สื่อการเรียนรู้ระบบ
 ================================================================ --}}
 <section id="demo" class="py-20 lg:py-28 bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 relative overflow-hidden">

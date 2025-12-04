@@ -42,7 +42,7 @@
     </Shell.FlyoutHeader>
 
     <!-- หน้าขาย -->
-    <FlyoutItem Title="ขายสินค้า" Icon="cart.png">
+    <FlyoutItem Title="🛒 ขายสินค้า">
         <ShellContent
             Title="ขายสินค้า"
             ContentTemplate="{DataTemplate views:PosPage}"
@@ -50,7 +50,7 @@
     </FlyoutItem>
 
     <!-- รายการขาย -->
-    <FlyoutItem Title="ประวัติการขาย" Icon="receipt.png">
+    <FlyoutItem Title="🧾 ประวัติการขาย">
         <ShellContent
             Title="ประวัติการขาย"
             ContentTemplate="{DataTemplate views:TransactionsPage}"
@@ -58,7 +58,7 @@
     </FlyoutItem>
 
     <!-- สินค้า/สต็อก -->
-    <FlyoutItem Title="จัดการสต็อก" Icon="inventory.png">
+    <FlyoutItem Title="📦 จัดการสต็อก">
         <ShellContent
             Title="จัดการสต็อก"
             ContentTemplate="{DataTemplate views:InventoryPage}"
@@ -66,7 +66,7 @@
     </FlyoutItem>
 
     <!-- รายงาน -->
-    <FlyoutItem Title="รายงาน" Icon="chart.png">
+    <FlyoutItem Title="📊 รายงาน">
         <ShellContent
             Title="รายงาน"
             ContentTemplate="{DataTemplate views:ReportsPage}"
@@ -74,7 +74,7 @@
     </FlyoutItem>
 
     <!-- ตั้งค่า -->
-    <FlyoutItem Title="ตั้งค่า" Icon="settings.png">
+    <FlyoutItem Title="⚙️ ตั้งค่า">
         <ShellContent
             Title="ตั้งค่า"
             ContentTemplate="{DataTemplate views:SettingsPage}"

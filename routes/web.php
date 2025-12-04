@@ -290,6 +290,11 @@ Route::match(['GET', 'HEAD'], '/about', [HomeController::class, 'about'])->name(
 Route::match(['GET', 'HEAD'], '/about-us', [HomeController::class, 'aboutProfessional'])->name('about.professional');
 Route::match(['GET', 'HEAD'], '/contact', [HomeController::class, 'contact'])->name('contact');
 
+// เอกสารวิธีการสมัครสมาชิก (สำหรับผู้ใช้ทั่วไป)
+Route::match(['GET', 'HEAD'], '/how-to-register', function () {
+    return view('frontend.pages.how-to-register');
+})->name('documents.how-to-register');
+
 // หน้าเก่า 3 Doors และ Presentation ถูกลบออกแล้ว (เปลี่ยนไปใช้หน้าแรกใหม่)
 // @deprecated 2025-12-03
 

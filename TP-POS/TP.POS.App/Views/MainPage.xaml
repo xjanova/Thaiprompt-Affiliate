@@ -1,62 +1,261 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:TP.POS.App.ViewModels"
              x:Class="TP.POS.App.Views.MainPage"
-             Title="TP-POS"
-             Shell.NavBarIsVisible="False">
+             x:DataType="vm:MainViewModel"
+             Title="หน้าหลัก"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#F3F4F6">
 
-    <Grid BackgroundColor="{StaticResource Primary}">
-        <VerticalStackLayout
-            HorizontalOptions="Center"
-            VerticalOptions="Center"
-            Spacing="20">
+    <Grid>
+        <ScrollView>
+            <VerticalStackLayout Padding="20" Spacing="20">
 
-            <!-- Logo -->
-            <Border StrokeThickness="0"
-                    HeightRequest="120"
-                    WidthRequest="120"
-                    BackgroundColor="White"
-                    HorizontalOptions="Center">
+                <!-- Header -->
+                <Grid ColumnDefinitions="*,Auto" Margin="0,10,0,0">
+                    <VerticalStackLayout>
+                        <Label Text="{Binding ShopName}" FontSize="22" FontAttributes="Bold" TextColor="#111827"/>
+                        <Label Text="{Binding CurrentDateTime}" FontSize="12" TextColor="#6B7280"/>
+                    </VerticalStackLayout>
+
+                    <HorizontalStackLayout Grid.Column="1" Spacing="10" VerticalOptions="Center">
+                        <!-- Connection Status -->
+                        <Border BackgroundColor="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#DCFCE7|#FEE2E2'}"
+                                StrokeThickness="0" Padding="10,6">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="8"/>
+                            </Border.StrokeShape>
+                            <HorizontalStackLayout Spacing="5">
+                                <Label Text="{Binding IsConnected, Converter={StaticResource BoolToStringConverter}, ConverterParameter='🟢|🔴'}" FontSize="12"/>
+                                <Label Text="{Binding IsConnected, Converter={StaticResource BoolToStringConverter}, ConverterParameter='Online|Offline'}"
+                                       FontSize="12" TextColor="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#22C55E|#EF4444'}"/>
+                            </HorizontalStackLayout>
+                        </Border>
+
+                        <!-- Sync Button -->
+                        <Button Text="🔄" BackgroundColor="#3B82F6" TextColor="White"
+                                FontSize="16" HeightRequest="40" WidthRequest="40" CornerRadius="10"
+                                Command="{Binding SyncCommand}"
+                                IsEnabled="{Binding IsSyncing, Converter={StaticResource InverseBoolConverter}}"/>
+                    </HorizontalStackLayout>
+                </Grid>
+
+                <!-- Welcome Card -->
+                <Border BackgroundColor="#22C55E" StrokeThickness="0" Padding="20">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#20000000" Offset="0,4" Radius="10"/>
+                    </Border.Shadow>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="{Binding UserName, StringFormat='สวัสดี, {0}'}" FontSize="20" FontAttributes="Bold" TextColor="White"/>
+                            <Label Text="ยินดีต้อนรับสู่ TP-POS" FontSize="14" TextColor="White" Opacity="0.9"/>
+                            <Label Text="{Binding StatusMessage}" FontSize="12" TextColor="White" Opacity="0.8" Margin="0,5,0,0"/>
+                        </VerticalStackLayout>
+                        <Label Grid.Column="1" Text="👋" FontSize="50" VerticalOptions="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Quick Stats -->
+                <Label Text="📊 สถิติวันนี้" FontSize="18" FontAttributes="Bold" TextColor="#111827"/>
+
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="15" RowSpacing="15">
+                    <!-- Today Sales -->
+                    <Border BackgroundColor="White" StrokeThickness="0" Padding="15">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16"/>
+                        </Border.StrokeShape>
+                        <Border.Shadow>
+                            <Shadow Brush="#10000000" Offset="0,2" Radius="8"/>
+                        </Border.Shadow>
+                        <VerticalStackLayout Spacing="8">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="💰" FontSize="20"/>
+                                <Label Text="ยอดขายวันนี้" FontSize="14" TextColor="#6B7280"/>
+                            </HorizontalStackLayout>
+                            <Label Text="{Binding TodaySales, StringFormat='฿{0:N0}'}" FontSize="24" FontAttributes="Bold" TextColor="#22C55E"/>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Transactions -->
+                    <Border Grid.Column="1" BackgroundColor="White" StrokeThickness="0" Padding="15">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16"/>
+                        </Border.StrokeShape>
+                        <Border.Shadow>
+                            <Shadow Brush="#10000000" Offset="0,2" Radius="8"/>
+                        </Border.Shadow>
+                        <VerticalStackLayout Spacing="8">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="🧾" FontSize="20"/>
+                                <Label Text="บิลวันนี้" FontSize="14" TextColor="#6B7280"/>
+                            </HorizontalStackLayout>
+                            <Label Text="{Binding TodayTransactionCount, StringFormat='{0} รายการ'}" FontSize="24" FontAttributes="Bold" TextColor="#3B82F6"/>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Average Sale -->
+                    <Border Grid.Row="1" BackgroundColor="White" StrokeThickness="0" Padding="15">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16"/>
+                        </Border.StrokeShape>
+                        <Border.Shadow>
+                            <Shadow Brush="#10000000" Offset="0,2" Radius="8"/>
+                        </Border.Shadow>
+                        <VerticalStackLayout Spacing="8">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="📈" FontSize="20"/>
+                                <Label Text="เฉลี่ย/บิล" FontSize="14" TextColor="#6B7280"/>
+                            </HorizontalStackLayout>
+                            <Label Text="{Binding AverageSale, StringFormat='฿{0:N0}'}" FontSize="24" FontAttributes="Bold" TextColor="#8B5CF6"/>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Low Stock -->
+                    <Border Grid.Row="1" Grid.Column="1" BackgroundColor="White" StrokeThickness="0" Padding="15">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16"/>
+                        </Border.StrokeShape>
+                        <Border.Shadow>
+                            <Shadow Brush="#10000000" Offset="0,2" Radius="8"/>
+                        </Border.Shadow>
+                        <VerticalStackLayout Spacing="8">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="⚠️" FontSize="20"/>
+                                <Label Text="สินค้าใกล้หมด" FontSize="14" TextColor="#6B7280"/>
+                            </HorizontalStackLayout>
+                            <Label Text="{Binding LowStockCount, StringFormat='{0} รายการ'}" FontSize="24" FontAttributes="Bold"
+                                   TextColor="{Binding LowStockCount, Converter={StaticResource IntToColorConverter}, ConverterParameter='0|#22C55E|#F59E0B'}"/>
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <!-- Quick Actions -->
+                <Label Text="⚡ เมนูลัด" FontSize="18" FontAttributes="Bold" TextColor="#111827" Margin="0,10,0,0"/>
+
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="15" RowSpacing="15">
+                    <!-- POS -->
+                    <Border BackgroundColor="#22C55E" StrokeThickness="0" Padding="20">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16"/>
+                        </Border.StrokeShape>
+                        <Border.Shadow>
+                            <Shadow Brush="#20000000" Offset="0,4" Radius="10"/>
+                        </Border.Shadow>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToPosCommand}"/>
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                            <Label Text="🛒" FontSize="40" HorizontalOptions="Center"/>
+                            <Label Text="ขายสินค้า" FontSize="16" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Inventory -->
+                    <Border Grid.Column="1" BackgroundColor="#3B82F6" StrokeThickness="0" Padding="20">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16"/>
+                        </Border.StrokeShape>
+                        <Border.Shadow>
+                            <Shadow Brush="#20000000" Offset="0,4" Radius="10"/>
+                        </Border.Shadow>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToInventoryCommand}"/>
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                            <Label Text="📦" FontSize="40" HorizontalOptions="Center"/>
+                            <Label Text="จัดการสต็อก" FontSize="16" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Reports -->
+                    <Border Grid.Row="1" BackgroundColor="#8B5CF6" StrokeThickness="0" Padding="20">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16"/>
+                        </Border.StrokeShape>
+                        <Border.Shadow>
+                            <Shadow Brush="#20000000" Offset="0,4" Radius="10"/>
+                        </Border.Shadow>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToReportsCommand}"/>
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                            <Label Text="📊" FontSize="40" HorizontalOptions="Center"/>
+                            <Label Text="รายงาน" FontSize="16" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Settings -->
+                    <Border Grid.Row="1" Grid.Column="1" BackgroundColor="#6B7280" StrokeThickness="0" Padding="20">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16"/>
+                        </Border.StrokeShape>
+                        <Border.Shadow>
+                            <Shadow Brush="#20000000" Offset="0,4" Radius="10"/>
+                        </Border.Shadow>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToSettingsCommand}"/>
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                            <Label Text="⚙️" FontSize="40" HorizontalOptions="Center"/>
+                            <Label Text="ตั้งค่า" FontSize="16" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <!-- Pending Sync Info -->
+                <Border BackgroundColor="#FEF3C7" StrokeThickness="0" Padding="15" IsVisible="{Binding PendingSyncCount, Converter={StaticResource IntToBoolConverter}}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12"/>
+                    </Border.StrokeShape>
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                        <Label Text="⏳" FontSize="24" VerticalOptions="Center"/>
+                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                            <Label Text="มี Transaction รอ Sync" FontSize="14" FontAttributes="Bold" TextColor="#92400E"/>
+                            <Label Text="{Binding PendingSyncCount, StringFormat='{0} รายการรอส่งขึ้น Server'}" FontSize="12" TextColor="#B45309"/>
+                        </VerticalStackLayout>
+                        <Button Grid.Column="2" Text="Sync"
+                                BackgroundColor="#F59E0B" TextColor="White"
+                                FontSize="14" HeightRequest="36" Padding="15,0"
+                                CornerRadius="8" Command="{Binding SyncCommand}"/>
+                    </Grid>
+                </Border>
+
+                <!-- Footer Space -->
+                <BoxView HeightRequest="20"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Busy Overlay -->
+        <Grid IsVisible="{Binding IsBusy}" BackgroundColor="#80000000">
+            <Border BackgroundColor="White" StrokeThickness="0"
+                    HeightRequest="120" WidthRequest="200"
+                    HorizontalOptions="Center" VerticalOptions="Center"
+                    Padding="20">
                 <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="25"/>
+                    <RoundRectangle CornerRadius="16"/>
                 </Border.StrokeShape>
-                <Border.Shadow>
-                    <Shadow Brush="Black" Offset="0,4" Radius="10" Opacity="0.3"/>
-                </Border.Shadow>
-                <Label Text="TP"
-                       FontSize="60"
-                       FontAttributes="Bold"
-                       TextColor="{StaticResource Primary}"
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center"/>
+                <VerticalStackLayout VerticalOptions="Center" Spacing="15">
+                    <ActivityIndicator IsRunning="True" Color="#22C55E" HeightRequest="40" WidthRequest="40" HorizontalOptions="Center"/>
+                    <Label Text="{Binding BusyMessage}" FontSize="14" TextColor="#374151" HorizontalOptions="Center"/>
+                </VerticalStackLayout>
             </Border>
+        </Grid>
 
-            <!-- App Name -->
-            <Label Text="TP-POS"
-                   FontSize="36"
-                   FontAttributes="Bold"
-                   TextColor="White"
-                   HorizontalOptions="Center"/>
-
-            <Label Text="ระบบขายหน้าร้าน"
-                   FontSize="18"
-                   TextColor="White"
-                   Opacity="0.9"
-                   HorizontalOptions="Center"/>
-
-            <!-- Loading -->
-            <ActivityIndicator IsRunning="True"
-                               Color="White"
-                               HeightRequest="40"
-                               WidthRequest="40"
-                               Margin="0,30,0,0"/>
-
-            <Label Text="กำลังโหลด..."
-                   FontSize="14"
-                   TextColor="White"
-                   Opacity="0.8"
-                   HorizontalOptions="Center"/>
-
-        </VerticalStackLayout>
+        <!-- Syncing Indicator -->
+        <Border BackgroundColor="#3B82F6" StrokeThickness="0"
+                HeightRequest="50" VerticalOptions="End"
+                IsVisible="{Binding IsSyncing}">
+            <HorizontalStackLayout Spacing="10" HorizontalOptions="Center" VerticalOptions="Center">
+                <ActivityIndicator IsRunning="True" Color="White" HeightRequest="20" WidthRequest="20"/>
+                <Label Text="กำลัง Sync ข้อมูล..." FontSize="14" TextColor="White"/>
+            </HorizontalStackLayout>
+        </Border>
     </Grid>
+
 </ContentPage>

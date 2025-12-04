@@ -25,22 +25,53 @@ class LearningArticle extends Model
         'is_published',
         'is_featured',
         'difficulty',
+        'course_level',
+        'require_quiz_pass',
+        'min_quiz_score',
+        'unlock_condition',
+        'unlock_after_days',
+        'points_reward',
+        'coin_reward',
+        'money_reward',
+        'exp_reward',
+        'pv_value',
+        'max_reward_budget',
+        'total_rewards_given',
+        'budget_exhausted_at',
+        'badge_reward_id',
         'tags',
         'metadata',
         'published_at',
         'created_by',
         'updated_by',
+        'instructor_id',
+        'instructor_commission',
     ];
 
     protected $casts = [
         'is_published' => 'boolean',
         'is_featured' => 'boolean',
+        'require_quiz_pass' => 'boolean',
         'tags' => 'array',
         'metadata' => 'array',
         'published_at' => 'datetime',
+        'budget_exhausted_at' => 'datetime',
         'views' => 'integer',
         'estimated_duration' => 'integer',
         'order' => 'integer',
+        'course_level' => 'integer',
+        'min_quiz_score' => 'integer',
+        'unlock_after_days' => 'integer',
+        'points_reward' => 'integer',
+        'coin_reward' => 'decimal:2',
+        'money_reward' => 'decimal:2',
+        'exp_reward' => 'integer',
+        'pv_value' => 'decimal:2',
+        'max_reward_budget' => 'decimal:2',
+        'total_rewards_given' => 'decimal:2',
+        'badge_reward_id' => 'integer',
+        'instructor_id' => 'integer',
+        'instructor_commission' => 'decimal:2',
     ];
 
     /**
@@ -315,5 +346,241 @@ class LearningArticle extends Model
         ];
 
         return $labels[$this->difficulty] ?? $this->difficulty;
+    }
+
+    /**
+     * Get course level label
+     *
+     * @return string
+     */
+    public function getCourseLevelLabelAttribute(): string
+    {
+        $labels = [
+            1 => 'ระดับ 1 (เริ่มต้น)',
+            2 => 'ระดับ 2 (พื้นฐาน)',
+            3 => 'ระดับ 3 (กลาง)',
+            4 => 'ระดับ 4 (ก้าวหน้า)',
+            5 => 'ระดับ 5 (ขั้นสูง)',
+        ];
+
+        return $labels[$this->course_level] ?? 'ระดับ ' . $this->course_level;
+    }
+
+    /**
+     * Get unlock condition label
+     *
+     * @return string
+     */
+    public function getUnlockConditionLabelAttribute(): string
+    {
+        $labels = [
+            'none' => 'ไม่มีเงื่อนไข',
+            'prerequisite' => 'ต้องเรียนจบคอร์สก่อนหน้า',
+            'quiz_pass' => 'ต้องผ่านแบบทดสอบ',
+            'time_based' => 'ปลดล็อคตามเวลา',
+            'manual' => 'ปลดล็อคโดยผู้ดูแล',
+        ];
+
+        return $labels[$this->unlock_condition] ?? 'ไม่ทราบ';
+    }
+
+    /**
+     * Check if this article has quiz requirement
+     *
+     * @return bool
+     */
+    public function hasQuizRequirement(): bool
+    {
+        return $this->require_quiz_pass &&
+               $this->requiredQuizzes()->exists();
+    }
+
+    /**
+     * Get previous article in the same category
+     *
+     * @return LearningArticle|null
+     */
+    public function getPreviousArticle(): ?LearningArticle
+    {
+        return self::where('category_id', $this->category_id)
+            ->where(function ($query) {
+                $query->where('course_level', '<', $this->course_level ?? 1)
+                    ->orWhere(function ($q) {
+                        $q->where('course_level', $this->course_level ?? 1)
+                            ->where('order', '<', $this->order);
+                    });
+            })
+            ->where('is_published', true)
+            ->orderBy('course_level', 'desc')
+            ->orderBy('order', 'desc')
+            ->first();
+    }
+
+    /**
+     * Get next article in the same category
+     *
+     * @return LearningArticle|null
+     */
+    public function getNextArticle(): ?LearningArticle
+    {
+        return self::where('category_id', $this->category_id)
+            ->where(function ($query) {
+                $query->where('course_level', '>', $this->course_level ?? 1)
+                    ->orWhere(function ($q) {
+                        $q->where('course_level', $this->course_level ?? 1)
+                            ->where('order', '>', $this->order);
+                    });
+            })
+            ->where('is_published', true)
+            ->orderBy('course_level', 'asc')
+            ->orderBy('order', 'asc')
+            ->first();
+    }
+
+    /**
+     * Scope: by course level
+     */
+    public function scopeByLevel($query, int $level)
+    {
+        return $query->where('course_level', $level);
+    }
+
+    /**
+     * Scope: ordered by level
+     */
+    public function scopeOrderedByLevel($query)
+    {
+        return $query->orderBy('course_level')
+            ->orderBy('order');
+    }
+
+    /**
+     * Get the instructor
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function instructor()
+    {
+        return $this->belongsTo(User::class, 'instructor_id');
+    }
+
+    /**
+     * ตรวจสอบว่างบประมาณหมดหรือไม่
+     *
+     * @return bool
+     */
+    public function isBudgetExhausted(): bool
+    {
+        if ($this->max_reward_budget === null) {
+            return false; // ไม่จำกัดงบประมาณ
+        }
+
+        return $this->total_rewards_given >= $this->max_reward_budget;
+    }
+
+    /**
+     * ดึงงบประมาณที่เหลือ
+     *
+     * @return float|null
+     */
+    public function getRemainingBudget(): ?float
+    {
+        if ($this->max_reward_budget === null) {
+            return null; // ไม่จำกัดงบประมาณ
+        }
+
+        return max(0, $this->max_reward_budget - $this->total_rewards_given);
+    }
+
+    /**
+     * คำนวณรางวัลที่จะได้รับ (ตรวจสอบงบประมาณด้วย)
+     *
+     * @param float $multiplier ตัวคูณรางวัล
+     * @return array
+     */
+    public function calculateRewards(float $multiplier = 1.0): array
+    {
+        $rewards = [
+            'points' => (int) ($this->points_reward * $multiplier),
+            'coins' => (float) ($this->coin_reward * $multiplier),
+            'money' => (float) ($this->money_reward * $multiplier),
+            'exp' => (int) ($this->exp_reward * $multiplier),
+            'pv' => (float) ($this->pv_value * $multiplier),
+        ];
+
+        // ตรวจสอบงบประมาณ
+        if ($this->isBudgetExhausted()) {
+            $rewards['coins'] = 0;
+            $rewards['money'] = 0;
+        }
+
+        return $rewards;
+    }
+
+    /**
+     * บันทึกการจ่ายรางวัล
+     *
+     * @param float $amount จำนวนที่จ่าย
+     * @return void
+     */
+    public function recordRewardGiven(float $amount): void
+    {
+        $this->total_rewards_given += $amount;
+
+        // เช็คว่างบประมาณหมดหรือยัง
+        if ($this->max_reward_budget !== null &&
+            $this->total_rewards_given >= $this->max_reward_budget &&
+            $this->budget_exhausted_at === null
+        ) {
+            $this->budget_exhausted_at = now();
+        }
+
+        $this->save();
+    }
+
+    /**
+     * รีเซ็ตงบประมาณ
+     *
+     * @param float|null $newBudget งบประมาณใหม่
+     * @return void
+     */
+    public function resetBudget(?float $newBudget = null): void
+    {
+        $this->total_rewards_given = 0;
+        $this->budget_exhausted_at = null;
+
+        if ($newBudget !== null) {
+            $this->max_reward_budget = $newBudget;
+        }
+
+        $this->save();
+    }
+
+    /**
+     * รางวัลรวมทั้งหมดที่จะได้
+     *
+     * @return string
+     */
+    public function getTotalRewardsLabelAttribute(): string
+    {
+        $parts = [];
+
+        if ($this->points_reward > 0) {
+            $parts[] = "{$this->points_reward} แต้ม";
+        }
+        if ($this->coin_reward > 0) {
+            $parts[] = number_format($this->coin_reward, 2) . ' Coins';
+        }
+        if ($this->money_reward > 0) {
+            $parts[] = '฿' . number_format($this->money_reward, 2);
+        }
+        if ($this->exp_reward > 0) {
+            $parts[] = "{$this->exp_reward} EXP";
+        }
+        if ($this->pv_value > 0) {
+            $parts[] = number_format($this->pv_value, 2) . ' PV';
+        }
+
+        return empty($parts) ? 'ไม่มีรางวัล' : implode(' + ', $parts);
     }
 }

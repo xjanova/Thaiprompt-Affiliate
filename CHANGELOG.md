@@ -2,6 +2,137 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.332.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #1976 from xjanova/claude/add-signup-tutorial-slides-015nLYFL2D6P9yBS6F45czNQ (caab9509)
+- feat: add detailed registration documentation page (5d271736)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.331.2] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1975 from xjanova/claude/improve-home-overview-01FmhxU8bkxq3hYCF1ApZUP7 (7e1d36b8)
+- fix: merge topicNames with signup-web and signup-line entries (76ca0089)
+- fix: update topicSlideMapping to match new slide structure (1140f3a7)
+### 🔧 Other Changes
+
+
+## [v3.331.1] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1974 from xjanova/claude/improve-home-overview-01FmhxU8bkxq3hYCF1ApZUP7 (d3a2fbcf)
+- fix: split topic slides into sub-slides and correct MLM data (477b89d4)
+### 🔧 Other Changes
+
+
+## [v3.331.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #1973 from xjanova/claude/add-signup-tutorial-slides-015nLYFL2D6P9yBS6F45czNQ (eebac7e5)
+- feat: add signup tutorial slides for web and LINE registration (4739c4cb)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.330.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #1972 from xjanova/claude/improve-home-overview-01FmhxU8bkxq3hYCF1ApZUP7 (563e5821)
+- feat: add 4 more topic slides and cards for complete 3x3 grid (86be6019)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.329.1] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1971 from xjanova/claude/improve-academy-system-01AmLLXGwCkSoF73mBY8v8d7 (f4894c91)
+- fix: แก้ไข route names ใน InstructorDashboardController (b5139663)
+### 🔧 Other Changes
+
+
+## [v3.329.0] - 2025-12-04
+
+### ✨ Features
+- feat: add Academy & Business Freedom slides with topic card (1c887042)
+- feat: add AI slides, topic selector, and auto-hide toolbar (c1237d2d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1970 from xjanova/claude/improve-home-overview-01FmhxU8bkxq3hYCF1ApZUP7 (02afec94)
+
+## [v3.328.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #1969 from xjanova/claude/improve-academy-system-01AmLLXGwCkSoF73mBY8v8d7 (321e11f1)
+- feat: เพิ่มระบบ Instructor Dashboard และปรับปรุง Academy System (36fdb488)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.327.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #1968 from xjanova/stoic-shockley (c7a2c98b)
+- feat: พัฒนา TP-POS MAUI App - เพิ่ม ViewModels และปรับปรุง UI (4d03d948)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.326.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #1967 from xjanova/claude/improve-academy-system-01AmLLXGwCkSoF73mBY8v8d7 (7d60f8ef)
+- feat: เพิ่มระบบ Academy System พร้อมระบบเลื่อนคลาสเรียน (f493cf45)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.325.0] - 2025-12-04
+
+### ✨ Features
+- feat: add TPIX Token card to home learning section (f4cfb7d5)
+- feat: add comprehensive TPIX Token slides to home presentation (5ee65589)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1966 from xjanova/claude/improve-home-overview-01FmhxU8bkxq3hYCF1ApZUP7 (21d75701)
+
+## [v3.324.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #1965 from xjanova/claude/improve-home-overview-01FmhxU8bkxq3hYCF1ApZUP7 (e398b9ea)
+- feat: enhance MLM slides with comprehensive system details (b2bddd32)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.323.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #1964 from xjanova/claude/improve-home-overview-01FmhxU8bkxq3hYCF1ApZUP7 (c93c0c65)
+- feat: improve home presentation slides to focus on system overview (bab7aacb)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.322.0] - 2025-12-03
 
 ### ✨ Features

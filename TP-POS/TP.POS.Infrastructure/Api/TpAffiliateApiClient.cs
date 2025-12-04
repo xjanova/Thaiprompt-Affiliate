@@ -53,6 +53,25 @@ public class TpAffiliateApiClient
         }
     }
 
+    /// <summary>
+    /// ทดสอบการเชื่อมต่อด้วย API Key
+    /// </summary>
+    public async Task<bool> TestConnectionAsync(string apiKey)
+    {
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "/pos/api/health");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+
+            var response = await _httpClient.SendAsync(request);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     #region Authentication
 
     /// <summary>
@@ -338,8 +357,8 @@ public class TpAffiliateApiClient
             {
                 device_name = deviceName,
                 device_type = deviceType,
-                platform = DeviceInfo.Current.Platform.ToString(),
-                os_version = DeviceInfo.Current.VersionString
+                platform = Environment.OSVersion.Platform.ToString(),
+                os_version = Environment.OSVersion.VersionString
             });
             if (response.IsSuccessStatusCode)
             {

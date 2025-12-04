@@ -1124,13 +1124,30 @@ Route::prefix('learning-center')->name('learning-center.')->group(function () {
     Route::get('/article/{slug}', [\App\Http\Controllers\Admin\LearningCenterController::class, 'article'])->name('article');
     Route::post('/article/{slug}/complete', [\App\Http\Controllers\Admin\LearningCenterController::class, 'complete'])->name('article.complete');
     Route::post('/article/{slug}/progress', [\App\Http\Controllers\Admin\LearningCenterController::class, 'updateProgress'])->name('article.progress');
+    Route::get('/article/{slug}/check-access', [\App\Http\Controllers\Admin\LearningCenterController::class, 'checkAccess'])->name('article.check-access');
+    Route::get('/my-stats', [\App\Http\Controllers\Admin\LearningCenterController::class, 'getMyStats'])->name('my-stats');
 });
 
-// Instructor Dashboard - For Course Instructors
+// Instructor Dashboard - For Course Instructors (แยกจาก Admin)
 Route::prefix('instructor')->name('instructor.')->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\Admin\InstructorDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/course/{id}/analytics', [\App\Http\Controllers\Admin\InstructorDashboardController::class, 'courseAnalytics'])->name('course.analytics');
-    Route::get('/earnings', [\App\Http\Controllers\Admin\InstructorDashboardController::class, 'earnings'])->name('earnings');
+    // Dashboard หลัก
+    Route::get('/', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'index'])->name('index');
+
+    // จัดการคอร์ส
+    Route::prefix('courses')->name('courses.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'courses'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'createCourse'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'storeCourse'])->name('store');
+        Route::get('/{article}/edit', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'editCourse'])->name('edit');
+        Route::put('/{article}', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'updateCourse'])->name('update');
+        Route::get('/{article}/stats', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'courseStats'])->name('stats');
+        Route::get('/{article}/quiz', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'manageQuiz'])->name('quiz');
+        Route::post('/{article}/submit-approval', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'submitForApproval'])->name('submit-approval');
+    });
+
+    // รายได้และสถิติ
+    Route::get('/earnings', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'earnings'])->name('earnings');
 });
 
 // Quiz - Student View

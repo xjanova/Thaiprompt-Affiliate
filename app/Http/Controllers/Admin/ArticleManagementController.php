@@ -87,6 +87,13 @@ class ArticleManagementController extends Controller
             'tags' => 'nullable|string',
             'prerequisites' => 'nullable|array',
             'prerequisites.*' => 'exists:learning_articles,id',
+            // Course Progression Fields
+            'course_level' => 'nullable|integer|min:1|max:10',
+            'require_quiz_pass' => 'boolean',
+            'min_quiz_score' => 'nullable|integer|min:0|max:100',
+            'unlock_condition' => 'nullable|in:none,prerequisite,quiz_pass,time_based,manual',
+            'unlock_after_days' => 'nullable|integer|min:0',
+            'points_reward' => 'nullable|integer|min:0',
         ]);
 
         // Handle thumbnail upload
@@ -165,6 +172,13 @@ class ArticleManagementController extends Controller
             'tags' => 'nullable|string',
             'prerequisites' => 'nullable|array',
             'prerequisites.*' => 'exists:learning_articles,id',
+            // Course Progression Fields
+            'course_level' => 'nullable|integer|min:1|max:10',
+            'require_quiz_pass' => 'boolean',
+            'min_quiz_score' => 'nullable|integer|min:0|max:100',
+            'unlock_condition' => 'nullable|in:none,prerequisite,quiz_pass,time_based,manual',
+            'unlock_after_days' => 'nullable|integer|min:0',
+            'points_reward' => 'nullable|integer|min:0',
         ]);
 
         // Handle thumbnail upload

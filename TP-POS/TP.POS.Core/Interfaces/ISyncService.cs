@@ -66,6 +66,31 @@ public interface ISyncService
     Task<PendingSyncCount> GetPendingCountAsync();
 
     /// <summary>
+    /// ดึงจำนวนรายการที่รอ Sync (int)
+    /// </summary>
+    Task<int> GetPendingSyncCountAsync();
+
+    /// <summary>
+    /// ดึงจำนวนสินค้าในเครื่อง
+    /// </summary>
+    Task<int> GetLocalProductCountAsync();
+
+    /// <summary>
+    /// ทดสอบการเชื่อมต่อ Server
+    /// </summary>
+    Task<bool> TestConnectionAsync(string serverUrl, string apiKey);
+
+    /// <summary>
+    /// นำเข้าสินค้าทั้งหมดจาก Server
+    /// </summary>
+    Task<int> ImportAllProductsAsync();
+
+    /// <summary>
+    /// ล้างข้อมูลทั้งหมดในเครื่อง
+    /// </summary>
+    Task ClearAllDataAsync();
+
+    /// <summary>
     /// ดาวน์โหลดข้อมูลทั้งหมดจาก Server (ครั้งแรก)
     /// </summary>
     Task<SyncResult> FullDownloadAsync(IProgress<SyncProgress>? progress = null);

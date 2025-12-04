@@ -155,4 +155,97 @@ public class TransactionService : ITransactionService
 
         return result;
     }
+
+    public async Task<SalesSummary> GetSalesSummaryAsync(DateTime startDate, DateTime endDate)
+    {
+        var transactions = await _database.GetTransactionsByDateRangeAsync(startDate, endDate);
+        var completedTransactions = transactions
+            .Where(t => t.Status == Core.Enums.TransactionStatus.Completed)
+            .ToList();
+
+        return new SalesSummary
+        {
+            TotalSales = completedTransactions.Sum(t => t.TotalAmount),
+            TransactionCount = completedTransactions.Count,
+            AverageSale = completedTransactions.Count > 0
+                ? completedTransactions.Average(t => t.TotalAmount)
+                : 0,
+            TotalDiscount = completedTransactions.Sum(t => t.DiscountAmount),
+            TotalTax = completedTransactions.Sum(t => t.TaxAmount)
+        };
+    }
+
+    public async Task<List<PaymentSummary>> GetPaymentBreakdownAsync(DateTime startDate, DateTime endDate)
+    {
+        var transactions = await _database.GetTransactionsByDateRangeAsync(startDate, endDate);
+        var completedTransactions = transactions
+            .Where(t => t.Status == Core.Enums.TransactionStatus.Completed)
+            .ToList();
+
+        var totalAmount = completedTransactions.Sum(t => t.TotalAmount);
+
+        return completedTransactions
+            .GroupBy(t => t.PaymentMethod)
+            .Select(g => new PaymentSummary
+            {
+                PaymentMethod = g.Key,
+                PaymentMethodName = g.Key.ToThaiName(),
+                TotalAmount = g.Sum(t => t.TotalAmount),
+                TransactionCount = g.Count(),
+                Percentage = totalAmount > 0
+                    ? Math.Round(g.Sum(t => t.TotalAmount) / totalAmount * 100, 2)
+                    : 0
+            })
+            .OrderByDescending(p => p.TotalAmount)
+            .ToList();
+    }
+
+    public async Task<List<TopProductSummary>> GetTopProductsAsync(DateTime startDate, DateTime endDate, int limit = 10)
+    {
+        var transactions = await _database.GetTransactionsByDateRangeAsync(startDate, endDate);
+        var completedTransactionIds = transactions
+            .Where(t => t.Status == Core.Enums.TransactionStatus.Completed)
+            .Select(t => t.Id)
+            .ToList();
+
+        var allItems = new List<TransactionItem>();
+        foreach (var transactionId in completedTransactionIds)
+        {
+            var items = await _database.GetTransactionItemsAsync(transactionId);
+            allItems.AddRange(items);
+        }
+
+        return allItems
+            .GroupBy(i => new { i.ProductId, i.ProductName, i.Sku })
+            .Select(g => new TopProductSummary
+            {
+                ProductId = g.Key.ProductId,
+                ProductName = g.Key.ProductName,
+                Sku = g.Key.Sku,
+                QuantitySold = g.Sum(i => i.Quantity),
+                TotalRevenue = g.Sum(i => i.LineTotal)
+            })
+            .OrderByDescending(p => p.QuantitySold)
+            .Take(limit)
+            .ToList();
+    }
+
+    public async Task<List<DailySalesSummary>> GetDailySalesAsync(DateTime startDate, DateTime endDate)
+    {
+        var transactions = await _database.GetTransactionsByDateRangeAsync(startDate, endDate);
+        var completedTransactions = transactions
+            .Where(t => t.Status == Core.Enums.TransactionStatus.Completed)
+            .ToList();
+
+        return completedTransactions
+            .GroupBy(t => t.TransactionDate.Date)
+            .Select(g => new DailySalesSummary
+            {
+                Date = g.Key,
+                TotalSales = g.Sum(t => t.TotalAmount),
+                TransactionCount = g.Count()
+            })
+            .OrderBy(d => d.Date)
+            .ToList();
+    }
 }

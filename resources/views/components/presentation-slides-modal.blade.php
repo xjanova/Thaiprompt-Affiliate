@@ -128,6 +128,31 @@
                                     <p class="text-white/60 text-xs">ชุมชน & พันธมิตรธุรกิจ</p>
                                 </div>
                             </button>
+
+                            {{-- Divider --}}
+                            <div class="border-t border-white/10 my-2"></div>
+                            <p class="px-4 py-2 text-xs text-white/40 font-medium uppercase tracking-wider">วิธีสมัครสมาชิก</p>
+
+                            <button onclick="switchTopic('signup-web')" class="topic-option flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left" data-topic="signup-web">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-xl">
+                                    <i class="fas fa-globe"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-white font-semibold">สมัครผ่านเว็บ</p>
+                                    <p class="text-white/60 text-xs">Web Registration</p>
+                                </div>
+                            </button>
+                            <button onclick="switchTopic('signup-line')" class="topic-option flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left" data-topic="signup-line">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#06C755] to-[#00B900] rounded-lg flex items-center justify-center text-xl">
+                                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="white">
+                                        <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-white font-semibold">สมัครผ่าน LINE</p>
+                                    <p class="text-white/60 text-xs">LINE Registration</p>
+                                </div>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -431,20 +456,35 @@ function switchTopic(topicId) {
         startSlide = topicSlideMapping[topicId] || 0;
     }
 
+    // สำหรับ signup topics
+    const signupTopics = ['signup-web', 'signup-line'];
+    if (signupTopics.includes(topicId)) {
+        containerId = 'signup-web';
+    }
+
     document.querySelectorAll('.slides-topic-container').forEach(container => {
         container.classList.remove('active');
     });
 
     const selectedContainer = document.getElementById('slides-' + containerId);
-    selectedContainer.classList.add('active');
+    if (selectedContainer) {
+        selectedContainer.classList.add('active');
+    }
 
     document.querySelectorAll('.topic-option').forEach(option => {
         option.classList.remove('active');
     });
-    document.querySelector(`.topic-option[data-topic="${topicId}"]`).classList.add('active');
+    const topicOption = document.querySelector(`.topic-option[data-topic="${topicId}"]`);
+    if (topicOption) topicOption.classList.add('active');
 
     currentTopic = topicId;
-    slides = document.querySelectorAll(`#slides-${containerId} .slide`);
+
+    // กรอง slides ตาม data-topic attribute สำหรับ signup topics
+    if (signupTopics.includes(topicId)) {
+        slides = document.querySelectorAll(`#slides-signup-web .slide[data-topic="${topicId}"]`);
+    } else {
+        slides = document.querySelectorAll(`#slides-${containerId} .slide`);
+    }
     totalSlides = slides.length;
 
     showSlide(startSlide);
@@ -527,6 +567,66 @@ function updateTopicDisplay() {
         'signup-line': 'สมัครผ่าน LINE'
     };
     document.getElementById('current-topic-name').textContent = topicNames[currentTopic] || 'ภาพรวมระบบ';
+}
+
+// ฟังก์ชันสำหรับเปิด Signup Tutorial จากหน้า Home
+function openSignupTutorial(topicId) {
+    const fullscreen = document.getElementById('presentation-fullscreen');
+    fullscreen.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    const requestFullscreen = fullscreen.requestFullscreen ||
+                             fullscreen.webkitRequestFullscreen ||
+                             fullscreen.mozRequestFullScreen ||
+                             fullscreen.msRequestFullscreen;
+
+    if (requestFullscreen) {
+        requestFullscreen.call(fullscreen).catch(err => {
+            console.log('Fullscreen request failed:', err);
+        });
+    }
+
+    setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+    }, 100);
+
+    // สลับไป topic ที่เลือก
+    if (isAutoplayActive) {
+        stopAutoplay();
+    }
+
+    // สำหรับ signup topics ให้ใช้ container signup-web แต่กรอง slides ตาม data-topic
+    let containerId = topicId;
+
+    document.querySelectorAll('.slides-topic-container').forEach(container => {
+        container.classList.remove('active');
+    });
+
+    const selectedContainer = document.getElementById('slides-' + containerId);
+    if (selectedContainer) {
+        selectedContainer.classList.add('active');
+    }
+
+    document.querySelectorAll('.topic-option').forEach(option => {
+        option.classList.remove('active');
+    });
+    const topicOption = document.querySelector(`.topic-option[data-topic="${topicId}"]`);
+    if (topicOption) topicOption.classList.add('active');
+
+    currentTopic = topicId;
+
+    // กรอง slides ตาม data-topic attribute
+    if (topicId === 'signup-web' || topicId === 'signup-line') {
+        slides = document.querySelectorAll(`#slides-signup-web .slide[data-topic="${topicId}"]`);
+    } else {
+        slides = document.querySelectorAll(`#slides-${containerId} .slide`);
+    }
+    totalSlides = slides.length;
+
+    showSlide(0);
+    initializeProgressDots();
+    updateSlideCounter();
+    updateTopicDisplay();
 }
 
 function openPresentationFullscreen() {

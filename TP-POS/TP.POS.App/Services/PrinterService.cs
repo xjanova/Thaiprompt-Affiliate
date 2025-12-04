@@ -35,6 +35,12 @@ public class PrinterService : IPrinterService
         };
     }
 
+    public async Task<List<string>> GetAvailablePrintersAsync()
+    {
+        var printers = await DiscoverPrintersAsync();
+        return printers.Select(p => p.Name).ToList();
+    }
+
     public async Task<bool> ConnectAsync(string printerAddress)
     {
         try

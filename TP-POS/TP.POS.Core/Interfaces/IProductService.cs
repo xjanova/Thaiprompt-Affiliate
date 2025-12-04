@@ -38,6 +38,11 @@ public interface IProductService
     Task<List<Product>> GetByCategoryAsync(int categoryId);
 
     /// <summary>
+    /// ดึงหมวดหมู่ทั้งหมด
+    /// </summary>
+    Task<List<Category>> GetCategoriesAsync();
+
+    /// <summary>
     /// เพิ่มสินค้าใหม่
     /// </summary>
     Task<Product> CreateAsync(Product product);

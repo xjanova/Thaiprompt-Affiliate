@@ -1610,6 +1610,89 @@
             </div>
         </div>
 
+        {{-- Academy System (ระบบการเรียนรู้) 🎓 --}}
+        <div class="space-y-1"
+             x-data="{ academyOpen: {{ request()->routeIs('admin.academy.*') || request()->routeIs('admin.learning-center.*') || request()->routeIs('admin.quiz-management.*') || request()->routeIs('admin.certificates.*') || request()->routeIs('admin.instructor.*') || request()->routeIs('admin.articles.*') || request()->routeIs('admin.categories.*') ? 'true' : 'false' }} }">
+            {{-- Academy Header Button --}}
+            <button @click="academyOpen = !academyOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.academy.*') || request()->routeIs('admin.learning-center.*') || request()->routeIs('admin.quiz-management.*') || request()->routeIs('admin.certificates.*') || request()->routeIs('admin.instructor.*') || request()->routeIs('admin.articles.*') || request()->routeIs('admin.categories.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-graduation-cap w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">🎓 Academy</span>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="ml-auto px-1.5 py-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-bold rounded-full shadow-lg">LMS</span>
+                <i x-show="$store.sidebar.shouldExpand && academyOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !academyOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Academy Submenu --}}
+            <div x-show="academyOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Learning Center Dashboard --}}
+                <a href="{{ route('admin.learning-center.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.learning-center.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-book-open w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ศูนย์เรียนรู้</span>
+                </a>
+
+                {{-- คอร์สเรียน/บทความ --}}
+                <a href="{{ route('admin.articles.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.articles.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chalkboard-teacher w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">คอร์สเรียน</span>
+                </a>
+
+                {{-- หมวดหมู่ --}}
+                <a href="{{ route('admin.categories.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.categories.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-folder-tree w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">หมวดหมู่</span>
+                </a>
+
+                {{-- จัดการแบบทดสอบ --}}
+                <a href="{{ route('admin.quiz-management.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.quiz-management.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-clipboard-question w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">แบบทดสอบ</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="ml-auto px-1.5 py-0.5 bg-blue-500 text-white text-[9px] font-bold rounded-full">Quiz</span>
+                </a>
+
+                {{-- ใบประกาศนียบัตร (Student) --}}
+                <a href="{{ route('admin.certificates.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.certificates.*') && !request()->routeIs('admin.academy.certificates.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-award w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ใบประกาศนักเรียน</span>
+                </a>
+
+                {{-- ใบประกาศนียบัตร (System Management) --}}
+                <a href="{{ route('admin.academy.certificates.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.academy.certificates.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-certificate w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">จัดการใบประกาศ</span>
+                </a>
+
+                {{-- แดชบอร์ดอาจารย์ --}}
+                <a href="{{ route('admin.instructor.dashboard') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.instructor.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chalkboard w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">แดชบอร์ดอาจารย์</span>
+                </a>
+
+                {{-- ตั้งค่า Academy --}}
+                <a href="{{ route('admin.academy.settings.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.academy.settings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-cog w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า Academy</span>
+                </a>
+            </div>
+        </div>
+
         {{-- Divider --}}
         <div x-show="$store.sidebar.shouldExpand" x-transition class="border-t border-white/30 my-4"></div>
 
