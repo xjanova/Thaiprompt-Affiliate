@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.349.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #2006 from xjanova/claude/fix-guest-shopping-role-01WaHLh37CzemK2rCJyJojPx (70f5e4b2)
+- feat: upgrade background to liquid lava lamp with RGB glow (0510c55d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.348.0] - 2025-12-04
 
 ### ✨ Features
