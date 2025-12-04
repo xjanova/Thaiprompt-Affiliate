@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.356.1] - 2025-12-04
+
+### ✨ Features
+- feat(hotels): เพิ่มระบบจังหวัด, GPS search และอัพเกรด V3 theme (7e66a76a)
+### 🐛 Bug Fixes
+- fix(lava-effect): แก้ไข liquid lava lamp effect ไม่แสดงผล (3c0e09dd)
+- fix(vendor-store): แก้ไข lava lamp effect ไม่แสดงในหน้าร้านค้า (2aa89b09)
+### 🔧 Other Changes
+- Merge pull request #2017 from xjanova/claude/fix-hotel-booking-system-01YQzDeveGyv8V4qf3q8xd2D (4f237578)
+
 ## [v3.356.0] - 2025-12-04
 
 ### ✨ Features
