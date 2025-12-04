@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.331.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #1973 from xjanova/claude/add-signup-tutorial-slides-015nLYFL2D6P9yBS6F45czNQ (eebac7e5)
+- feat: add signup tutorial slides for web and LINE registration (4739c4cb)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.330.0] - 2025-12-04
 
 ### ✨ Features
