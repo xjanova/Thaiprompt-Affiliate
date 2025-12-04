@@ -20,6 +20,7 @@ class Hotel extends Model
         'city',
         'state',
         'country',
+        'province_id',
         'postal_code',
         'latitude',
         'longitude',
@@ -95,6 +96,16 @@ class Hotel extends Model
         return $this->belongsTo(User::class, 'owner_id');
     }
 
+    /**
+     * ความสัมพันธ์กับจังหวัด
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function province()
+    {
+        return $this->belongsTo(Province::class, 'province_id');
+    }
+
     public function facilities()
     {
         return $this->belongsToMany(HotelFacility::class, 'hotel_facility')
@@ -143,6 +154,38 @@ class Hotel extends Model
     public function scopeByType($query, $type)
     {
         return $query->where('type', $type);
+    }
+
+    /**
+     * กรองตามจังหวัด
+     */
+    public function scopeByProvince($query, $provinceId)
+    {
+        return $query->where('province_id', $provinceId);
+    }
+
+    /**
+     * ค้นหาโรงแรมใกล้เคียงจากพิกัด GPS
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param float $latitude ละติจูด
+     * @param float $longitude ลองจิจูด
+     * @param float $radius รัศมีเป็นกิโลเมตร (default: 50km)
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeNearby($query, float $latitude, float $longitude, float $radius = 50)
+    {
+        // ใช้ Haversine formula คำนวณระยะทาง
+        return $query->selectRaw('*,
+            (6371 * acos(
+                cos(radians(?)) *
+                cos(radians(latitude)) *
+                cos(radians(longitude) - radians(?)) +
+                sin(radians(?)) *
+                sin(radians(latitude))
+            )) AS distance', [$latitude, $longitude, $latitude])
+            ->having('distance', '<', $radius)
+            ->orderBy('distance', 'asc');
     }
 
     public function scopeMinRating($query, $rating)
