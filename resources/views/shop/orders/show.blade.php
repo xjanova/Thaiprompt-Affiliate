@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.storefront')
 
 @section('title', 'รายละเอียดคำสั่งซื้อ #' . $order->order_number)
 

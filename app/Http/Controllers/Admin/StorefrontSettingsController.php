@@ -261,6 +261,66 @@ class StorefrontSettingsController extends Controller
     }
 
     /**
+     * อัพเดทการตั้งค่าธีมและสี
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateTheme(Request $request)
+    {
+        $validated = $request->validate([
+            'primary_color' => 'required|string|max:20',
+            'secondary_color' => 'required|string|max:20',
+            'accent_color' => 'required|string|max:20',
+        ]);
+
+        // บันทึกการตั้งค่าสี
+        setting(['storefront_primary_color' => $validated['primary_color']]);
+        setting(['storefront_secondary_color' => $validated['secondary_color']]);
+        setting(['storefront_accent_color' => $validated['accent_color']]);
+
+        // ล้าง cache
+        Cache::forget('storefront_settings');
+
+        return redirect()
+            ->route('admin.storefront.index')
+            ->with('success', 'อัพเดทการตั้งค่าธีมสำเร็จ');
+    }
+
+    /**
+     * อัพเดทการตั้งค่าเลย์เอาต์
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateLayout(Request $request)
+    {
+        $validated = $request->validate([
+            'products_per_row' => 'required|in:4,5,6',
+            'show_flash_deals' => 'boolean',
+            'show_featured_stores' => 'boolean',
+            'show_categories' => 'boolean',
+            'show_pv_on_products' => 'boolean',
+            'show_commission_on_products' => 'boolean',
+        ]);
+
+        // บันทึกการตั้งค่าเลย์เอาต์
+        setting(['storefront_products_per_row' => $validated['products_per_row']]);
+        setting(['storefront_show_flash_deals' => $request->has('show_flash_deals') ? '1' : '0']);
+        setting(['storefront_show_featured_stores' => $request->has('show_featured_stores') ? '1' : '0']);
+        setting(['storefront_show_categories' => $request->has('show_categories') ? '1' : '0']);
+        setting(['storefront_show_pv' => $request->has('show_pv_on_products') ? '1' : '0']);
+        setting(['storefront_show_commission' => $request->has('show_commission_on_products') ? '1' : '0']);
+
+        // ล้าง cache
+        Cache::forget('storefront_settings');
+
+        return redirect()
+            ->route('admin.storefront.index')
+            ->with('success', 'อัพเดทการตั้งค่าเลย์เอาต์สำเร็จ');
+    }
+
+    /**
      * ดึงรายการ Gradient Options
      *
      * @return array

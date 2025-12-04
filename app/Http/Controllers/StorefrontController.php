@@ -383,4 +383,75 @@ class StorefrontController extends Controller
 
         return response()->json($products);
     }
+
+    /**
+     * แสดงหน้ารายการร้านค้าทั้งหมด (Stores Listing)
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function stores(Request $request)
+    {
+        // ดึงร้านค้าทั้งหมดพร้อม filter
+        $query = VendorStore::where('is_active', true)
+            ->with(['products' => function ($query) {
+                $query->active()->inStock()->latest()->take(4);
+            }])
+            ->withCount(['products' => function ($query) {
+                $query->active()->inStock();
+            }]);
+
+        // Filter by search
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('store_name', 'like', "%{$search}%")
+                    ->orWhere('store_description', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by featured
+        if ($request->get('featured')) {
+            $query->where('is_featured_home', true);
+        }
+
+        // Sort options
+        $sortBy = $request->get('sort_by', 'rating');
+        switch ($sortBy) {
+            case 'newest':
+                $query->latest();
+                break;
+            case 'products':
+                $query->orderByDesc('products_count');
+                break;
+            case 'name':
+                $query->orderBy('store_name');
+                break;
+            case 'rating':
+            default:
+                $query->orderByDesc('rating_average');
+                break;
+        }
+
+        $stores = $query->paginate(12);
+
+        // ดึง Categories สำหรับ filter
+        $categories = ProductCategory::active()
+            ->root()
+            ->orderBy('sort_order')
+            ->get();
+
+        // สถิติ
+        $stats = [
+            'total_stores' => VendorStore::where('is_active', true)->count(),
+            'featured_stores' => VendorStore::where('is_active', true)->where('is_featured_home', true)->count(),
+            'total_products' => Product::active()->inStock()->count(),
+        ];
+
+        return view('storefront.stores', compact(
+            'stores',
+            'categories',
+            'stats',
+            'sortBy'
+        ));
+    }
 }

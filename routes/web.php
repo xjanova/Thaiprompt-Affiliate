@@ -359,6 +359,7 @@ Route::middleware('auth')->prefix('owner-dashboard')->name('owner-dashboard.')->
 // ⚠️ E-commerce Critical: หน้าร้านหลักแบบ AliExpress ต้องถูก index
 Route::prefix('storefront')->name('storefront.')->group(function () {
     Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\StorefrontController::class, 'index'])->name('index');
+    Route::match(['GET', 'HEAD'], '/stores', [\App\Http\Controllers\StorefrontController::class, 'stores'])->name('stores');
     Route::match(['GET', 'HEAD'], '/search', [\App\Http\Controllers\StorefrontController::class, 'quickSearch'])->name('search');
 });
 

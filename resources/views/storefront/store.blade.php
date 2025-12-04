@@ -13,7 +13,7 @@
     - Product Grid
 --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.storefront')
 
 @section('title', ($store->store_name ?? 'ร้านค้า') . ' - สินค้าคุณภาพดี')
 
