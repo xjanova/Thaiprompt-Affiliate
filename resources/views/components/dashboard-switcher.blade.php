@@ -12,8 +12,9 @@
     // ใช้ hasRole() method จาก User model ซึ่งรองรับ super_admin อัตโนมัติ
     $hasAdminAccess = $user->hasRole(['admin', 'super_admin']);
     $hasSellerAccess = $user->hasRole(['seller', 'super_admin']);
-    // Instructor สามารถเข้าได้ถ้าเป็น admin, super_admin หรือมี instructor_id ในคอร์ส
-    $hasInstructorAccess = $user->hasRole(['admin', 'super_admin', 'instructor']) ||
+    // Instructor: admin/super_admin เข้าได้เสมอ, หรือมี role instructor, หรือมีคอร์สที่สร้าง
+    $hasInstructorAccess = $hasAdminAccess ||
+        $user->hasRole('instructor') ||
         \App\Models\LearningArticle::where('instructor_id', $user->id)->orWhere('created_by', $user->id)->exists();
     // ทุกคนสามารถเข้าใช้ user dashboard ได้ (แต่ต้องมี authentication)
     $hasUserAccess = true;
