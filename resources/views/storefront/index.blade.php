@@ -153,25 +153,8 @@
                         </svg>
                     </button>
 
-                    {{-- Cart Button --}}
-                    <a href="{{ route('cart.index') }}"
-                       class="relative p-2.5 rounded-xl bg-gray-100 dark:bg-gray-700
-                              hover:bg-orange-100 dark:hover:bg-orange-900/30
-                              text-gray-600 dark:text-gray-300
-                              hover:text-orange-600 dark:hover:text-orange-400
-                              transition-all hover:scale-105"
-                       title="ตะกร้าสินค้า">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-                        </svg>
-                        {{-- Cart Count Badge --}}
-                        <span x-show="cartCount > 0"
-                              x-text="cartCount"
-                              class="absolute -top-1 -right-1 w-5 h-5
-                                     bg-red-500 text-white text-xs font-bold
-                                     rounded-full flex items-center justify-center">
-                        </span>
-                    </a>
+                    {{-- Cart Button with Drawer --}}
+                    <x-storefront.cart-drawer />
 
                     {{-- User Menu --}}
                     @auth
