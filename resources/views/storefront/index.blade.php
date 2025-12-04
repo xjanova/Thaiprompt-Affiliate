@@ -14,7 +14,7 @@
     - Infinite Scroll / Load More
 --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.storefront')
 
 @section('title', 'ร้านค้าออนไลน์ - สินค้าคุณภาพ ราคาดี ส่งฟรี')
 
@@ -116,6 +116,137 @@
                              hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
                         สินค้าใหม่
                     </a>
+                </div>
+
+                {{-- Right Side Actions: Cart, Dark Mode, User --}}
+                <div class="flex items-center gap-3 ml-auto">
+                    {{-- Dark Mode Toggle --}}
+                    <button @click="toggleDarkMode()"
+                            type="button"
+                            class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-700
+                                   hover:bg-gray-200 dark:hover:bg-gray-600
+                                   text-gray-600 dark:text-gray-300
+                                   transition-all hover:scale-105"
+                            title="สลับโหมดมืด/สว่าง">
+                        <svg class="w-5 h-5 hidden dark:block" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+                        </svg>
+                        <svg class="w-5 h-5 block dark:hidden" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                        </svg>
+                    </button>
+
+                    {{-- Cart Button --}}
+                    <a href="{{ route('cart.index') }}"
+                       class="relative p-2.5 rounded-xl bg-gray-100 dark:bg-gray-700
+                              hover:bg-orange-100 dark:hover:bg-orange-900/30
+                              text-gray-600 dark:text-gray-300
+                              hover:text-orange-600 dark:hover:text-orange-400
+                              transition-all hover:scale-105"
+                       title="ตะกร้าสินค้า">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        {{-- Cart Count Badge --}}
+                        <span x-show="cartCount > 0"
+                              x-text="cartCount"
+                              class="absolute -top-1 -right-1 w-5 h-5
+                                     bg-red-500 text-white text-xs font-bold
+                                     rounded-full flex items-center justify-center">
+                        </span>
+                    </a>
+
+                    {{-- User Menu --}}
+                    @auth
+                    <div x-data="{ userMenuOpen: false }" class="relative">
+                        <button @click="userMenuOpen = !userMenuOpen"
+                                type="button"
+                                class="flex items-center gap-2 p-2 pr-3 rounded-xl
+                                       bg-gray-100 dark:bg-gray-700
+                                       hover:bg-gray-200 dark:hover:bg-gray-600
+                                       transition-all hover:scale-105">
+                            <img src="{{ auth()->user()->profile_picture_url }}"
+                                 alt="{{ auth()->user()->name }}"
+                                 class="w-8 h-8 rounded-lg object-cover"
+                                 onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr(auth()->user()->name, 0, 1)) }}&background=F59E0B&color=fff&size=64';">
+                            <span class="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {{ auth()->user()->name }}
+                            </span>
+                            <svg class="w-4 h-4 text-gray-400 transition-transform duration-200"
+                                 :class="userMenuOpen && 'rotate-180'"
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+
+                        {{-- User Dropdown --}}
+                        <div x-show="userMenuOpen"
+                             x-cloak
+                             @click.outside="userMenuOpen = false"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             class="absolute top-full right-0 mt-2 w-56
+                                    bg-white dark:bg-gray-800
+                                    rounded-xl shadow-xl
+                                    border border-gray-100 dark:border-gray-700
+                                    overflow-hidden z-50">
+                            <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ auth()->user()->name }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ auth()->user()->email }}</p>
+                            </div>
+                            <div class="py-2">
+                                <a href="{{ route('user.dashboard') }}"
+                                   class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300
+                                          hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <i class="fas fa-tachometer-alt w-5"></i>
+                                    แดชบอร์ด
+                                </a>
+                                <a href="{{ route('orders.index') }}"
+                                   class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300
+                                          hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <i class="fas fa-shopping-bag w-5"></i>
+                                    คำสั่งซื้อของฉัน
+                                </a>
+                                <a href="{{ route('user.profile') }}"
+                                   class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300
+                                          hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <i class="fas fa-user-circle w-5"></i>
+                                    โปรไฟล์
+                                </a>
+                            </div>
+                            <div class="py-2 border-t border-gray-100 dark:border-gray-700">
+                                <form action="{{ route('logout') }}" method="POST">
+                                    @csrf
+                                    <button type="submit"
+                                            class="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400
+                                                   hover:bg-red-50 dark:hover:bg-red-900/20">
+                                        <i class="fas fa-sign-out-alt w-5"></i>
+                                        ออกจากระบบ
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    @else
+                    <div class="flex items-center gap-2">
+                        <a href="{{ route('login') }}"
+                           class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300
+                                  hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+                            เข้าสู่ระบบ
+                        </a>
+                        <a href="{{ route('register') }}"
+                           class="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500
+                                  hover:from-orange-600 hover:to-red-600
+                                  text-white text-sm font-bold rounded-lg
+                                  transition-all hover:scale-105">
+                            สมัครสมาชิก
+                        </a>
+                    </div>
+                    @endauth
                 </div>
             </div>
         </div>
@@ -534,6 +665,7 @@ function storefrontManager() {
         activeTab: '{{ request("shop_type", "all") }}',
         sortBy: '{{ request("sort_by", "newest") }}',
         newsletterEmail: '',
+        cartCount: {{ auth()->check() ? (auth()->user()->cart?->items?->count() ?? 0) : 0 }},
 
         /**
          * เริ่มต้น component
@@ -545,6 +677,29 @@ function storefrontManager() {
             this.$watch('activeTab', (value) => {
                 this.applyFilters();
             });
+
+            // Initialize dark mode จาก localStorage
+            this.initDarkMode();
+        },
+
+        /**
+         * Initialize dark mode
+         */
+        initDarkMode() {
+            if (localStorage.getItem('theme') === 'dark' ||
+                (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        },
+
+        /**
+         * Toggle dark mode
+         */
+        toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
         },
 
         /**
