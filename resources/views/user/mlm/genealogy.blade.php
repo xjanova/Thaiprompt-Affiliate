@@ -3,7 +3,7 @@
 @section('title', 'ผังสายงานของฉัน - MLM')
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('js/mlm-genealogy-premium.js') }}">
+{{-- CSS styles for MLM Genealogy (ถ้าจำเป็น) --}}
 @endpush
 
 @section('content')
@@ -158,15 +158,16 @@
     </div>
 </div>
 
-<script src="{{ asset('js/mlm-genealogy-premium.js') }}"></script>
+@vite('resources/js/mlm-genealogy-premium.js')
 <script>
 let viewer = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize genealogy viewer
+    // ใช้ route /user/mlm/genealogy-data สำหรับดึงข้อมูล
     viewer = new MlmGenealogyPremium('genealogy-container', {
         memberCode: '{{ $member->member_code }}',
-        apiUrl: '/api/user/mlm/genealogy',
+        apiUrl: '{{ route("user.mlm.genealogy-data") }}',
         type: '{{ ($member->plan?->type === "binary" || $member->plan?->type === "hybrid") ? "binary" : "unilevel" }}',
         maxDepth: 5,
         showMinimap: true,
