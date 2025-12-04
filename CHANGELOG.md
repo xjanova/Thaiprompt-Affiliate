@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #2021 from xjanova/claude/update-academy-theme-01PTm2ZrMzXNMbMrk9LHdnhG (fbb4f79f)
+- feat: เพิ่มระบบกันโกงสำหรับหน้าทำแบบทดสอบ (Anti-Cheat System) (40f9e30b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.357.2] - 2025-12-04
 
 ### ✨ Features
