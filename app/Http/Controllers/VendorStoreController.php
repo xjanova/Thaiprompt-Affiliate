@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\StoreLayoutSetting;
 use App\Models\VendorStore;
 use Illuminate\Http\Request;
 
@@ -131,6 +132,37 @@ class VendorStoreController extends Controller
             'rating' => $store->rating_average ?? 0,
             'rating_count' => $store->rating_count ?? 0,
         ];
+
+        // ดึง layout settings ที่เผยแพร่แล้ว (ถ้ามี)
+        $layoutSettings = StoreLayoutSetting::getPublishedForUser($store->user_id);
+
+        // ถ้ามี custom layout ที่เผยแพร่แล้ว ให้ใช้ view แบบ custom
+        if ($layoutSettings && $layoutSettings->is_published) {
+            // ดึงสินค้าแนะนำ (featured products)
+            $featuredProducts = null;
+            if ($layoutSettings->show_featured_products) {
+                $featuredProducts = Product::where('seller_id', $store->user_id)
+                    ->where('is_active', true)
+                    ->where('is_featured', true)
+                    ->with(['category', 'images'])
+                    ->take($layoutSettings->featured_products_count ?? 8)
+                    ->get();
+
+                // ถ้าไม่มีสินค้า featured ให้ดึงสินค้าล่าสุดแทน
+                if ($featuredProducts->isEmpty()) {
+                    $featuredProducts = Product::where('seller_id', $store->user_id)
+                        ->where('is_active', true)
+                        ->with(['category', 'images'])
+                        ->latest()
+                        ->take($layoutSettings->featured_products_count ?? 8)
+                        ->get();
+                }
+            }
+
+            return view('vendor-store.show-custom', compact(
+                'store', 'products', 'categories', 'stats', 'layoutSettings', 'featuredProducts'
+            ));
+        }
 
         return view('vendor-store.show', compact('store', 'products', 'categories', 'stats'));
     }
