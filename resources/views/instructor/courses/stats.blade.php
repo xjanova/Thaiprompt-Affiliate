@@ -100,6 +100,7 @@
                             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-300">ผู้เรียน</th>
                             <th class="px-6 py-4 text-center text-sm font-semibold text-gray-300">ความคืบหน้า</th>
                             <th class="px-6 py-4 text-center text-sm font-semibold text-gray-300">สถานะ</th>
+                            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-300">ใบประกาศ</th>
                             <th class="px-6 py-4 text-center text-sm font-semibold text-gray-300">เวลา</th>
                             <th class="px-6 py-4 text-right text-sm font-semibold text-gray-300">วันที่เริ่ม</th>
                         </tr>
@@ -146,6 +147,34 @@
                                     @endif
                                 </td>
 
+                                {{-- Certificate --}}
+                                <td class="px-6 py-4 text-center">
+                                    @if($progress->status === 'completed')
+                                        @php
+                                            $hasCert = \App\Models\Certificate::where('user_id', $progress->user_id)
+                                                ->where('article_id', $article->id)
+                                                ->where('is_revoked', false)
+                                                ->exists();
+                                        @endphp
+                                        @if($hasCert)
+                                            <span class="px-3 py-1 bg-purple-500/20 text-purple-400 text-sm rounded-full">
+                                                <i class="fas fa-certificate mr-1"></i>
+                                                มีใบประกาศ
+                                            </span>
+                                        @else
+                                            <form action="{{ route('admin.instructor.courses.issue-certificate', ['article' => $article->id, 'user' => $progress->user_id]) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit" class="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded-full transition">
+                                                    <i class="fas fa-certificate mr-1"></i>
+                                                    ออกใบประกาศ
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @else
+                                        <span class="text-gray-500 text-sm">-</span>
+                                    @endif
+                                </td>
+
                                 {{-- Time --}}
                                 <td class="px-6 py-4 text-center text-gray-300">
                                     {{ number_format(($progress->time_spent ?? 0) / 60, 0) }} นาที
@@ -158,7 +187,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-6 py-12 text-center text-gray-400">
+                                <td colspan="6" class="px-6 py-12 text-center text-gray-400">
                                     <i class="fas fa-users text-4xl mb-4"></i>
                                     <p>ยังไม่มีผู้เรียน</p>
                                 </td>
