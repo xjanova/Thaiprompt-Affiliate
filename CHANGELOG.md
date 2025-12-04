@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.7] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(storefront): ปรับ lava effect ให้เห็นได้ทันที (cf5256c3)
+- fix(storefront): ย้าย lava effect ไปอยู่บน content (6f5a5e7e)
+### 🔧 Other Changes
+- Merge pull request #2028 from xjanova/claude/fix-product-effects-018VczxiTSU15X7XE5i2Mtuw (7152b79f)
+
 ## [v3.358.6] - 2025-12-04
 
 ### ✨ Features
