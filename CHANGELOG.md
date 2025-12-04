@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.345.3] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2001 from xjanova/claude/fix-learning-center-slug-01B4XHap49oVAFHGJBGoLXCa (04b13b1b)
+- fix: เพิ่ม accessor สำหรับ tags ใน Product model (a383783c)
+### 🔧 Other Changes
+
+
 ## [v3.345.2] - 2025-12-04
 
 ### ✨ Features
