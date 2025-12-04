@@ -26,7 +26,7 @@
 @section('content')
 <div x-data="storefrontManager()"
      x-init="init()"
-     class="min-h-screen bg-gray-50 dark:bg-gray-900">
+     class="min-h-screen">
 
     {{-- ========================================
          TOP NAVIGATION SECTION
