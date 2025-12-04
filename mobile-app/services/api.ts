@@ -18,8 +18,12 @@ import type {
   ApiResponse,
   User,
   DashboardStats,
+  Commission,
   PaginatedCommissions,
   ReferralsData,
+  ReferralStats,
+  Product,
+  ProductCategory,
 } from '@/types';
 
 // สร้าง Axios instance
@@ -240,12 +244,12 @@ export const getDashboardStats = async (): Promise<DashboardStats | null> => {
  */
 export const getCommissions = async (
   page: number = 1
-): Promise<PaginatedCommissions | null> => {
+): Promise<Commission[] | null> => {
   try {
     const response = await apiClient.get<ApiResponse<PaginatedCommissions>>(
       `${API_ENDPOINTS.COMMISSIONS}?page=${page}`
     );
-    return response.data.data || null;
+    return response.data.data?.data || null;
   } catch (error) {
     console.error('Get commissions error:', error);
     return null;
@@ -286,6 +290,80 @@ export const getSettings = async (): Promise<Record<string, unknown> | null> => 
     return response.data.data || null;
   } catch (error) {
     console.error('Get settings error:', error);
+    return null;
+  }
+};
+
+// =====================================================
+// Products APIs
+// =====================================================
+
+/**
+ * ดึงรายการสินค้า
+ */
+export const getProducts = async (
+  params?: { category?: string | null; search?: string }
+): Promise<Product[] | null> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.category) queryParams.append('category', params.category);
+    if (params?.search) queryParams.append('search', params.search);
+
+    const response = await apiClient.get<ApiResponse<Product[]>>(
+      `${API_ENDPOINTS.PRODUCTS}?${queryParams.toString()}`
+    );
+    return response.data.data || null;
+  } catch (error) {
+    console.error('Get products error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงรายการหมวดหมู่สินค้า
+ */
+export const getProductCategories = async (): Promise<ProductCategory[] | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<ProductCategory[]>>(
+      API_ENDPOINTS.PRODUCT_CATEGORIES
+    );
+    return response.data.data || null;
+  } catch (error) {
+    console.error('Get product categories error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงรายละเอียดสินค้า
+ */
+export const getProductDetail = async (id: string): Promise<Product | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<Product>>(
+      `${API_ENDPOINTS.PRODUCTS}/${id}`
+    );
+    return response.data.data || null;
+  } catch (error) {
+    console.error('Get product detail error:', error);
+    return null;
+  }
+};
+
+// =====================================================
+// Referral Stats APIs
+// =====================================================
+
+/**
+ * ดึงสถิติการแนะนำ
+ */
+export const getReferralStats = async (): Promise<ReferralStats | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<ReferralStats>>(
+      `${API_ENDPOINTS.REFERRALS}/stats`
+    );
+    return response.data.data || null;
+  } catch (error) {
+    console.error('Get referral stats error:', error);
     return null;
   }
 };
