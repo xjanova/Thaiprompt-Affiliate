@@ -92,6 +92,42 @@
                                     <p class="text-white/60 text-xs">การเรียนรู้ & อิสรภาพทางธุรกิจ</p>
                                 </div>
                             </button>
+                            <button onclick="switchTopic('ecosystem-vision')" class="topic-option flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left" data-topic="ecosystem-vision">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center text-xl">
+                                    <i class="fas fa-globe"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-white font-semibold">Ecosystem & Vision</p>
+                                    <p class="text-white/60 text-xs">ระบบนิเวศ & Roadmap 2025-2027</p>
+                                </div>
+                            </button>
+                            <button onclick="switchTopic('game-changer')" class="topic-option flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left" data-topic="game-changer">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-lg flex items-center justify-center text-xl">
+                                    <i class="fas fa-gem"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-white font-semibold">พลิกเกมส์ธุรกิจ</p>
+                                    <p class="text-white/60 text-xs">โอกาสลงทุนเปลี่ยนอนาคต</p>
+                                </div>
+                            </button>
+                            <button onclick="switchTopic('ecommerce-empire')" class="topic-option flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left" data-topic="ecommerce-empire">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-teal-600 rounded-lg flex items-center justify-center text-xl">
+                                    <i class="fas fa-store"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-white font-semibold">E-Commerce Empire</p>
+                                    <p class="text-white/60 text-xs">อาณาจักรค้าขายออนไลน์</p>
+                                </div>
+                            </button>
+                            <button onclick="switchTopic('community')" class="topic-option flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left" data-topic="community">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg flex items-center justify-center text-xl">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-white font-semibold">Community & Partnership</p>
+                                    <p class="text-white/60 text-xs">ชุมชน & พันธมิตรธุรกิจ</p>
+                                </div>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -355,9 +391,13 @@ function toggleTopicMenu() {
 // Mapping topics ไปยัง slide index ใน system-overview
 const topicSlideMapping = {
     'system-overview': 0,
-    'ai-automation': 7,      // Slide 5: AI & Automation
-    'tpix-token': 11,        // Slide 6: TPIX Token
-    'academy-freedom': 15    // Slide 7: Academy & ปลดแอกธุรกิจ
+    'ai-automation': 7,       // Slide 5: AI & Automation
+    'tpix-token': 11,         // Slide 6: TPIX Token
+    'academy-freedom': 15,    // Slide 7: Academy & ปลดแอกธุรกิจ
+    'ecosystem-vision': 19,   // Slide 8: Ecosystem & Vision
+    'game-changer': 20,       // Slide 9: พลิกเกมส์ธุรกิจ
+    'ecommerce-empire': 21,   // Slide 10: E-Commerce Empire
+    'community': 22           // Slide 11: Community & Partnership
 };
 
 function switchTopic(topicId) {
@@ -370,11 +410,12 @@ function switchTopic(topicId) {
         stopAutoplay();
     }
 
-    // ถ้าเป็น AI, TPIX หรือ Academy ใช้ system-overview container แต่ jump ไป slide ที่เกี่ยวข้อง
+    // ถ้าเป็น topic ที่อยู่ใน system-overview container ให้ jump ไป slide ที่เกี่ยวข้อง
     let containerId = topicId;
     let startSlide = 0;
 
-    if (topicId === 'ai-automation' || topicId === 'tpix-token' || topicId === 'academy-freedom') {
+    const systemOverviewTopics = ['ai-automation', 'tpix-token', 'academy-freedom', 'ecosystem-vision', 'game-changer', 'ecommerce-empire', 'community'];
+    if (systemOverviewTopics.includes(topicId)) {
         containerId = 'system-overview';
         startSlide = topicSlideMapping[topicId] || 0;
     }
@@ -431,7 +472,8 @@ function openPresentationWithTopic(topicId) {
     let containerId = topicId;
     let startSlide = 0;
 
-    if (topicId === 'ai-automation' || topicId === 'tpix-token' || topicId === 'academy-freedom') {
+    const systemOverviewTopics = ['ai-automation', 'tpix-token', 'academy-freedom', 'ecosystem-vision', 'game-changer', 'ecommerce-empire', 'community'];
+    if (systemOverviewTopics.includes(topicId)) {
         containerId = 'system-overview';
         startSlide = topicSlideMapping[topicId] || 0;
     }

@@ -300,8 +300,8 @@
             </p>
         </div>
 
-        {{-- Demo Cards Grid --}}
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 lg:gap-8 mb-12">
+        {{-- Demo Cards Grid - 9 Cards = 3x3 Layout --}}
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-12">
             {{-- Card 1: System Overview --}}
             <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
                  onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('system-overview')">
@@ -367,6 +367,62 @@
                 <h3 class="text-xl font-bold text-white mb-3">Academy & ปลดแอกธุรกิจ</h3>
                 <p class="text-slate-400 mb-4">เรียนรู้ระบบ Academy ออนไลน์และอิสรภาพจากแพลตฟอร์มต่างชาติ</p>
                 <div class="flex items-center text-rose-400 font-medium group-hover:text-rose-300">
+                    <span>ดูสไลด์</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+
+            {{-- Card 6: Ecosystem & Vision --}}
+            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
+                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('ecosystem-vision')">
+                <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-globe text-3xl text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-3">Ecosystem & Vision</h3>
+                <p class="text-slate-400 mb-4">ระบบนิเวศครบวงจรและ Roadmap การพัฒนา 2025-2027</p>
+                <div class="flex items-center text-indigo-400 font-medium group-hover:text-indigo-300">
+                    <span>ดูสไลด์</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+
+            {{-- Card 7: พลิกเกมส์ธุรกิจ --}}
+            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
+                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('game-changer')">
+                <div class="w-16 h-16 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-chess-king text-3xl text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-3">พลิกเกมส์ธุรกิจ</h3>
+                <p class="text-slate-400 mb-4">โอกาสการลงทุนที่แตกต่าง หลากหลายช่องทางรายได้</p>
+                <div class="flex items-center text-amber-400 font-medium group-hover:text-amber-300">
+                    <span>ดูสไลด์</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+
+            {{-- Card 8: E-Commerce Empire --}}
+            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
+                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('ecommerce-empire')">
+                <div class="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-shopping-bag text-3xl text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-3">E-Commerce Empire</h3>
+                <p class="text-slate-400 mb-4">ระบบ E-Commerce ครบวงจร จาก Marketplace ถึง Food Passport</p>
+                <div class="flex items-center text-cyan-400 font-medium group-hover:text-cyan-300">
+                    <span>ดูสไลด์</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+
+            {{-- Card 9: Community & Partnership --}}
+            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
+                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('community')">
+                <div class="w-16 h-16 bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-users text-3xl text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-3">Community & Partnership</h3>
+                <p class="text-slate-400 mb-4">ชุมชนผู้ใช้ พันธมิตรธุรกิจ และบริการสนับสนุน</p>
+                <div class="flex items-center text-pink-400 font-medium group-hover:text-pink-300">
                     <span>ดูสไลด์</span>
                     <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                 </div>
