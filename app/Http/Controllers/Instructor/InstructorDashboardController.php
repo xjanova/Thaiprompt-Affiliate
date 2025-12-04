@@ -177,7 +177,7 @@ class InstructorDashboardController extends Controller
         $article = LearningArticle::create($validated);
 
         return redirect()
-            ->route('instructor.courses.edit', $article)
+            ->route('admin.instructor.courses.edit', $article)
             ->with('success', 'สร้างคอร์สสำเร็จ! กรุณาเพิ่ม Quiz และส่งขออนุมัติ');
     }
 
@@ -255,7 +255,7 @@ class InstructorDashboardController extends Controller
         $article->update($validated);
 
         return redirect()
-            ->route('instructor.courses.edit', $article)
+            ->route('admin.instructor.courses.edit', $article)
             ->with('success', 'อัปเดตคอร์สสำเร็จ!');
     }
 
