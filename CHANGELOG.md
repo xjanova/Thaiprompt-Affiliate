@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.11] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #2032 from xjanova/claude/debug-forum-views-01GByStgHFeUYigYqvrfao7o (36d90001)
+- feat(forum): add 7 missing forum views (e58955f8)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.358.10] - 2025-12-04
 
 ### ✨ Features
