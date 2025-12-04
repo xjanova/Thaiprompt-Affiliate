@@ -111,6 +111,9 @@
     <nav class="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
          x-data="{ mlmOpen: {{ request()->routeIs('admin.mlm.*') || request()->routeIs('admin.mlm-prospects.*') ? 'true' : 'false' }} }">
 
+        {{-- Pinned Menus Section --}}
+        <x-menu.pinned-section :dashboardType="$type" />
+
         @if($useMenuService)
             {{-- Dynamic Menu for User/Seller (from MenuService) --}}
             @foreach($menus as $menu)
@@ -157,33 +160,31 @@
                         </div>
                     </div>
                 @else
-                    {{-- Single Menu Item --}}
-                    <a href="{{ $menu['url'] }}"
-                       @click="$store.sidebar.closeOnMenuClick()"
-                       class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->is(ltrim($menu['url'] ?? '', '/')) ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-                        @if(isset($menu['icon']))
-                            @if(str_starts_with($menu['icon'], 'fa'))
-                                <i class="{{ $menu['icon'] }} w-5 text-center drop-shadow"></i>
-                            @else
-                                <span class="w-5 text-center text-lg drop-shadow">{{ $menu['icon'] }}</span>
-                            @endif
-                        @endif
-                        <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">{{ $menu['label'] }}</span>
-                        @if(isset($menu['badge']) && $menu['badge'] > 0)
-                            <span x-show="$store.sidebar.shouldExpand" x-transition class="ml-auto px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg">{{ $menu['badge'] }}</span>
-                        @endif
-                    </a>
+                    {{-- Single Menu Item with Pin Support --}}
+                    <x-menu.pinnable-menu-item
+                        :menuKey="$menu['id'] ?? $menu['route'] ?? Str::slug($menu['label'])"
+                        :label="$menu['label']"
+                        :icon="$menu['icon'] ?? ''"
+                        :url="$menu['url']"
+                        :route="$menu['route'] ?? null"
+                        :dashboardType="$type"
+                        :isActive="request()->is(ltrim($menu['url'] ?? '', '/'))"
+                        :badge="$menu['badge'] ?? null"
+                    />
                 @endif
             @endforeach
         @else
             {{-- Static Admin Menu (original hardcoded menu) --}}
             {{-- Dashboard --}}
-            <a href="{{ route('admin.dashboard') }}"
-           @click="$store.sidebar.closeOnMenuClick()"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.dashboard') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-            <i class="fas fa-home w-5 text-center drop-shadow"></i>
-            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">แดชบอร์ด</span>
-        </a>
+            <x-menu.pinnable-menu-item
+                menuKey="admin.dashboard"
+                label="แดชบอร์ด"
+                icon="fas fa-home"
+                :url="route('admin.dashboard')"
+                route="admin.dashboard"
+                dashboardType="admin"
+                :isActive="request()->routeIs('admin.dashboard')"
+            />
 
         {{-- Users & Roles (Collapsible Menu) 👥 --}}
         <div class="space-y-1"
@@ -569,36 +570,48 @@
         </div>
 
         {{-- TPIX Blockchain --}}
-        <a href="{{ route('admin.tpix.dashboard') }}"
-           @click="$store.sidebar.closeOnMenuClick()"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tpix.dashboard') ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-            <i class="fas fa-cube w-5 text-center drop-shadow"></i>
-            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">TPIX Blockchain</span>
-        </a>
+        <x-menu.pinnable-menu-item
+            menuKey="admin.tpix.dashboard"
+            label="TPIX Blockchain"
+            icon="fas fa-cube"
+            :url="route('admin.tpix.dashboard')"
+            route="admin.tpix.dashboard"
+            dashboardType="admin"
+            :isActive="request()->routeIs('admin.tpix.dashboard')"
+        />
 
         {{-- TPIX Deployment Wizard --}}
-        <a href="{{ route('admin.tpix.deployment.index') }}"
-           @click="$store.sidebar.closeOnMenuClick()"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tpix.deployment.*') && !request()->routeIs('admin.tpix.deployment.tutorial') ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-            <i class="fas fa-rocket w-5 text-center drop-shadow"></i>
-            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">TPIX Deployment Wizard</span>
-        </a>
+        <x-menu.pinnable-menu-item
+            menuKey="admin.tpix.deployment"
+            label="TPIX Deployment Wizard"
+            icon="fas fa-rocket"
+            :url="route('admin.tpix.deployment.index')"
+            route="admin.tpix.deployment.index"
+            dashboardType="admin"
+            :isActive="request()->routeIs('admin.tpix.deployment.*') && !request()->routeIs('admin.tpix.deployment.tutorial')"
+        />
 
         {{-- TPIX Deployment Tutorial --}}
-        <a href="{{ route('admin.tpix.deployment.tutorial') }}"
-           @click="$store.sidebar.closeOnMenuClick()"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tpix.deployment.tutorial') ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-            <i class="fas fa-book-open w-5 text-center drop-shadow"></i>
-            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">📖 คู่มือ Deploy TPIX</span>
-        </a>
+        <x-menu.pinnable-menu-item
+            menuKey="admin.tpix.deployment.tutorial"
+            label="📖 คู่มือ Deploy TPIX"
+            icon="fas fa-book-open"
+            :url="route('admin.tpix.deployment.tutorial')"
+            route="admin.tpix.deployment.tutorial"
+            dashboardType="admin"
+            :isActive="request()->routeIs('admin.tpix.deployment.tutorial')"
+        />
 
         {{-- Token Management --}}
-        <a href="{{ route('admin.tokens.index') }}"
-           @click="$store.sidebar.closeOnMenuClick()"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tokens.*') ? 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-            <i class="fas fa-coins w-5 text-center drop-shadow"></i>
-            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">Token Management</span>
-        </a>
+        <x-menu.pinnable-menu-item
+            menuKey="admin.tokens"
+            label="Token Management"
+            icon="fas fa-coins"
+            :url="route('admin.tokens.index')"
+            route="admin.tokens.index"
+            dashboardType="admin"
+            :isActive="request()->routeIs('admin.tokens.*')"
+        />
 
         {{-- LINE System (Collapsible Menu) 🆕 --}}
         <div class="space-y-1"
