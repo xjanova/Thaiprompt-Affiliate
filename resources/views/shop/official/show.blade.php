@@ -4,6 +4,19 @@
 
 @section('title', $product->name . ' - ร้านของระบบ')
 
+{{-- Premium Lava Background สำหรับ Official Shop --}}
+@section('lava-background')
+<div class="lava-background premium-lava" aria-hidden="true">
+    {{-- Premium blobs ใช้สี Purple, Pink, Gold เพื่อความหรูหรา --}}
+    <div class="lava-blob premium-blob-1"></div>
+    <div class="lava-blob premium-blob-2"></div>
+    <div class="lava-blob premium-blob-3"></div>
+    <div class="lava-blob premium-blob-4"></div>
+    <div class="lava-blob premium-blob-5"></div>
+    <div class="lava-blob premium-blob-6"></div>
+</div>
+@endsection
+
 @section('content')
 <div x-data="officialProductManager()" x-init="init()" class="min-h-screen pb-12">
 
@@ -516,6 +529,243 @@ window.officialProductManager = officialProductManager;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+/* ========================================
+   Premium Lava Effect สำหรับ Official Shop
+   สีม่วง, ชมพู, ทอง - หรูหราและพรีเมียม
+   ======================================== */
+
+/* Premium blob 1 - Purple/Violet (ใหญ่กว่า, ช้ากว่า) */
+.premium-blob-1 {
+    width: 350px;
+    height: 380px;
+    background: linear-gradient(180deg, #7c3aed 0%, #a855f7 40%, #c084fc 70%, #7c3aed 100%);
+    left: 5%;
+    top: 15%;
+    animation: premiumFloat1 18s ease-in-out infinite, premiumMorph1 12s ease-in-out infinite;
+    filter: blur(70px);
+    opacity: 0.35;
+}
+
+/* Premium blob 2 - Pink/Magenta */
+.premium-blob-2 {
+    width: 280px;
+    height: 300px;
+    background: linear-gradient(180deg, #ec4899 0%, #f472b6 40%, #fb7185 70%, #ec4899 100%);
+    right: 15%;
+    top: 25%;
+    animation: premiumFloat2 20s ease-in-out infinite, premiumMorph2 14s ease-in-out infinite;
+    animation-delay: -4s;
+    filter: blur(70px);
+    opacity: 0.35;
+}
+
+/* Premium blob 3 - Gold/Amber (ความหรูหรา) */
+.premium-blob-3 {
+    width: 300px;
+    height: 320px;
+    background: linear-gradient(180deg, #f59e0b 0%, #fbbf24 40%, #fcd34d 70%, #f59e0b 100%);
+    left: 40%;
+    top: 55%;
+    animation: premiumFloat3 22s ease-in-out infinite, premiumMorph1 16s ease-in-out infinite;
+    animation-delay: -8s;
+    filter: blur(70px);
+    opacity: 0.3;
+}
+
+/* Premium blob 4 - Deep Purple */
+.premium-blob-4 {
+    width: 250px;
+    height: 270px;
+    background: linear-gradient(180deg, #6d28d9 0%, #8b5cf6 40%, #a78bfa 70%, #6d28d9 100%);
+    right: 5%;
+    top: 65%;
+    animation: premiumFloat1 16s ease-in-out infinite, premiumMorph2 10s ease-in-out infinite;
+    animation-delay: -2s;
+    filter: blur(70px);
+    opacity: 0.35;
+}
+
+/* Premium blob 5 - Rose Pink */
+.premium-blob-5 {
+    width: 220px;
+    height: 240px;
+    background: linear-gradient(180deg, #db2777 0%, #f472b6 50%, #db2777 100%);
+    left: 20%;
+    top: 70%;
+    animation: premiumFloat2 19s ease-in-out infinite, premiumMorph1 13s ease-in-out infinite;
+    animation-delay: -6s;
+    filter: blur(70px);
+    opacity: 0.3;
+}
+
+/* Premium blob 6 - Warm Orange (accent) */
+.premium-blob-6 {
+    width: 200px;
+    height: 220px;
+    background: linear-gradient(180deg, #ea580c 0%, #f97316 50%, #ea580c 100%);
+    left: 60%;
+    top: 20%;
+    animation: premiumFloat3 17s ease-in-out infinite, premiumMorph2 11s ease-in-out infinite;
+    animation-delay: -10s;
+    filter: blur(70px);
+    opacity: 0.3;
+}
+
+/* Premium Float Animations - ช้าและนุ่มนวลกว่า */
+@keyframes premiumFloat1 {
+    0%, 100% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+    }
+    25% {
+        transform: translate(40px, -60px) scale(1.08) rotate(3deg);
+    }
+    50% {
+        transform: translate(-30px, -120px) scale(0.95) rotate(-2deg);
+    }
+    75% {
+        transform: translate(50px, -60px) scale(1.05) rotate(1deg);
+    }
+}
+
+@keyframes premiumFloat2 {
+    0%, 100% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+    }
+    33% {
+        transform: translate(-50px, -100px) scale(1.1) rotate(-3deg);
+    }
+    66% {
+        transform: translate(40px, -50px) scale(0.92) rotate(2deg);
+    }
+}
+
+@keyframes premiumFloat3 {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        transform: translate(60px, -140px) scale(1.12);
+    }
+}
+
+/* Premium Morph Animations */
+@keyframes premiumMorph1 {
+    0%, 100% {
+        border-radius: 40% 60% 55% 45% / 55% 45% 60% 40%;
+    }
+    25% {
+        border-radius: 55% 45% 40% 60% / 45% 55% 50% 50%;
+    }
+    50% {
+        border-radius: 45% 55% 50% 50% / 50% 50% 55% 45%;
+    }
+    75% {
+        border-radius: 50% 50% 60% 40% / 60% 40% 45% 55%;
+    }
+}
+
+@keyframes premiumMorph2 {
+    0%, 100% {
+        border-radius: 50% 50% 45% 55% / 45% 55% 50% 50%;
+    }
+    33% {
+        border-radius: 45% 55% 50% 50% / 55% 45% 55% 45%;
+    }
+    66% {
+        border-radius: 55% 45% 55% 45% / 45% 55% 45% 55%;
+    }
+}
+
+/* ===== Dark Mode - Premium RGB Glow ===== */
+.dark .premium-blob-1 {
+    background: linear-gradient(180deg, #8b5cf6 0%, #a78bfa 50%, #8b5cf6 100%);
+    filter: blur(60px);
+    opacity: 0.6;
+    box-shadow:
+        0 0 60px rgba(139, 92, 246, 0.8),
+        0 0 120px rgba(139, 92, 246, 0.6),
+        0 0 180px rgba(139, 92, 246, 0.4),
+        inset 0 0 40px rgba(255, 255, 255, 0.15);
+}
+
+.dark .premium-blob-2 {
+    background: linear-gradient(180deg, #ec4899 0%, #f472b6 50%, #ec4899 100%);
+    filter: blur(60px);
+    opacity: 0.6;
+    box-shadow:
+        0 0 60px rgba(236, 72, 153, 0.8),
+        0 0 120px rgba(236, 72, 153, 0.6),
+        0 0 180px rgba(236, 72, 153, 0.4),
+        inset 0 0 40px rgba(255, 255, 255, 0.15);
+}
+
+.dark .premium-blob-3 {
+    background: linear-gradient(180deg, #fbbf24 0%, #fcd34d 50%, #fbbf24 100%);
+    filter: blur(60px);
+    opacity: 0.55;
+    box-shadow:
+        0 0 60px rgba(251, 191, 36, 0.8),
+        0 0 120px rgba(251, 191, 36, 0.6),
+        0 0 180px rgba(251, 191, 36, 0.4),
+        inset 0 0 40px rgba(255, 255, 255, 0.15);
+}
+
+.dark .premium-blob-4 {
+    background: linear-gradient(180deg, #7c3aed 0%, #8b5cf6 50%, #7c3aed 100%);
+    filter: blur(60px);
+    opacity: 0.6;
+    box-shadow:
+        0 0 60px rgba(124, 58, 237, 0.8),
+        0 0 120px rgba(124, 58, 237, 0.6),
+        0 0 180px rgba(124, 58, 237, 0.4),
+        inset 0 0 40px rgba(255, 255, 255, 0.15);
+}
+
+.dark .premium-blob-5 {
+    background: linear-gradient(180deg, #db2777 0%, #ec4899 50%, #db2777 100%);
+    filter: blur(60px);
+    opacity: 0.55;
+    box-shadow:
+        0 0 60px rgba(219, 39, 119, 0.8),
+        0 0 120px rgba(219, 39, 119, 0.6),
+        0 0 180px rgba(219, 39, 119, 0.4),
+        inset 0 0 40px rgba(255, 255, 255, 0.15);
+}
+
+.dark .premium-blob-6 {
+    background: linear-gradient(180deg, #f97316 0%, #fb923c 50%, #f97316 100%);
+    filter: blur(60px);
+    opacity: 0.55;
+    box-shadow:
+        0 0 60px rgba(249, 115, 22, 0.8),
+        0 0 120px rgba(249, 115, 22, 0.6),
+        0 0 180px rgba(249, 115, 22, 0.4),
+        inset 0 0 40px rgba(255, 255, 255, 0.15);
+}
+
+/* Mobile: ลดขนาดและจำนวน blob เพื่อประสิทธิภาพ */
+@media (max-width: 768px) {
+    .premium-lava .lava-blob {
+        transform: scale(0.6);
+        filter: blur(40px);
+    }
+    .premium-blob-5,
+    .premium-blob-6 {
+        display: none;
+    }
+    .dark .premium-lava .lava-blob {
+        filter: blur(50px);
+    }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .premium-lava .lava-blob {
+        animation: none;
+        transform: translateY(0);
+    }
 }
 </style>
 @endpush
