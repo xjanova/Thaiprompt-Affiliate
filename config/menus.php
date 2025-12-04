@@ -273,6 +273,11 @@ return [
                 ['label' => 'ตั้งค่า Payment Gateway', 'route' => 'admin.payment-gateways.index'],
                 ['label' => 'ตั้งค่ากระเป๋าเงิน', 'route' => 'admin.wallet-settings.index'],
                 ['label' => 'ตั้งค่า Cashback', 'route' => 'admin.cashback.index'],
+                ['label' => '---', 'route' => null], // Divider
+                ['label' => '💸 จ่ายเงินออก', 'route' => 'admin.payouts.index', 'description' => 'จัดการการจ่ายเงิน'],
+                ['label' => '📊 รายได้แพลตฟอร์ม', 'route' => 'admin.platform-revenue.index', 'description' => 'สถิติรายได้ระบบ'],
+                ['label' => '📝 จัดการหนี้สิน', 'route' => 'admin.debts.index', 'description' => 'ติดตามหนี้สิน'],
+                ['label' => '🔑 HD Wallets', 'route' => 'admin.hd-wallets.index', 'description' => 'Hierarchical Deterministic'],
             ],
         ],
 
@@ -447,6 +452,9 @@ return [
                 ['label' => 'Product PV', 'route' => 'admin.mlm.product-pv.index'],
                 ['label' => 'รายงาน', 'route' => 'admin.mlm.reports.dashboard'],
                 ['label' => 'ตั้งค่า MLM', 'route' => 'admin.mlm.settings.index'],
+                ['label' => '---', 'route' => null], // Divider
+                ['label' => '🔄 โอนย้ายทีม', 'route' => 'admin.team-transfer.index', 'description' => 'ย้ายสายงาน'],
+                ['label' => '📄 แม่แบบรับสมัคร', 'route' => 'admin.recruit-templates.index', 'description' => 'Templates สำหรับรับสมาชิก'],
                 ['label' => '📚 คู่มือ MLM', 'url' => '/mlm-documentation.html'],
             ],
         ],
@@ -463,6 +471,9 @@ return [
                 ['label' => 'จัดการระดับ Rank', 'route' => 'admin.ranks.index'],
                 ['label' => 'การเลื่อนระดับ', 'route' => 'admin.ranks.promotions.index'],
                 ['label' => 'Cashback', 'route' => 'admin.cashback.index'],
+                ['label' => '---', 'route' => null], // Divider
+                ['label' => '⭐ อัพเกรดดาว', 'route' => 'admin.star-upgrade.index', 'description' => 'ราคาอัพเกรด Star'],
+                ['label' => '📈 เทรนด์', 'route' => 'admin.trends.index', 'description' => 'Trending Items'],
             ],
         ],
 
@@ -499,6 +510,9 @@ return [
                 ['label' => 'ตำแหน่ง', 'route' => 'admin.hrm.positions.index'],
                 ['label' => 'การลา', 'route' => 'admin.hrm.leave.index'],
                 ['label' => 'เงินเดือน', 'route' => 'admin.hrm.payroll.index'],
+                ['label' => '---', 'route' => null], // Divider
+                ['label' => '⏰ ลงเวลา', 'route' => 'admin.attendance.index', 'description' => 'บันทึกเข้า-ออก'],
+                ['label' => '📚 อบรม', 'route' => 'admin.training.index', 'description' => 'หลักสูตรฝึกอบรม'],
             ],
         ],
 
@@ -548,6 +562,8 @@ return [
                 ['label' => 'Analytics', 'route' => 'admin.security.analytics'],
                 ['label' => 'ตั้งค่า OTP', 'route' => 'admin.otp.settings'],
                 ['label' => 'ตั้งค่า 2FA', 'route' => 'admin.two-factor.settings'],
+                ['label' => '---', 'route' => null], // Divider
+                ['label' => '🛡️ ป้องกันการละเมิด', 'route' => 'admin.anti-abuse.index', 'description' => 'Anti-Abuse System'],
             ],
         ],
 
@@ -561,6 +577,22 @@ return [
             'submenu' => [
                 ['label' => 'จัดการเพจ', 'route' => 'admin.pages.index'],
                 ['label' => 'SEO Settings', 'route' => 'admin.seo.index'],
+            ],
+        ],
+
+        [
+            'id' => 'games',
+            'label' => 'เกม & ความบันเทิง',
+            'icon' => '🎮',
+            'route' => null,
+            'order' => 21.5,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-green-500 to-teal-500',
+            'submenu' => [
+                ['label' => '🪙 ร้านค้าเหรียญ', 'route' => 'admin.coin-shop.index', 'description' => 'ขายเหรียญในเกม'],
+                ['label' => '🐍 เกมงู', 'route' => 'admin.snake-io.index', 'description' => 'Snake.io Game'],
+                ['label' => '📍 ติดตาม GPS', 'route' => 'admin.gps-monitoring.index', 'description' => 'Location Tracking'],
             ],
         ],
 
@@ -704,6 +736,11 @@ return [
                 ['label' => 'API Keys', 'route' => 'admin.api-management.keys.index'],
                 ['label' => '🧹 จัดการข้อมูลทดสอบ', 'route' => 'admin.demo-data.index'],
                 ['label' => 'รีเซ็ตระบบ', 'route' => 'admin.system-reset.index'],
+                ['label' => '---', 'route' => null], // Divider
+                ['label' => '🏠 จัดการหน้าแรก', 'route' => 'admin.homepage-manager.index', 'description' => 'ปรับแต่งหน้า Homepage'],
+                ['label' => '🎨 ไอคอน', 'route' => 'admin.icons.index', 'description' => 'จัดการไอคอนระบบ'],
+                ['label' => '🔧 เครื่องมือลอย', 'route' => 'admin.floating-tools.index', 'description' => 'Floating Widgets'],
+                ['label' => '☁️ Cloudflare', 'route' => 'admin.cloudflare.index', 'description' => 'จัดการ CDN'],
             ],
         ],
     ],
