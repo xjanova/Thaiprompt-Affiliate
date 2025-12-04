@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.334.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #1978 from xjanova/claude/improve-home-overview-01FmhxU8bkxq3hYCF1ApZUP7 (d46d62f3)
+- feat: separate all topic slides into individual files (f5fc2d98)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.333.0] - 2025-12-04
 
 ### ✨ Features
