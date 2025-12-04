@@ -154,6 +154,28 @@
                         @endif
                     </div>
 
+                    {{-- Tags Section - คลิกเพื่อค้นหาสินค้าที่มี tag เดียวกัน --}}
+                    @if($product->tags && count($product->tags) > 0)
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($product->tags as $tag)
+                            <a href="{{ route('storefront.index', ['tag' => $tag]) }}"
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5
+                                      bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800
+                                      text-gray-600 dark:text-gray-300 text-sm font-medium
+                                      rounded-full border border-gray-200 dark:border-gray-600
+                                      hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30
+                                      hover:text-orange-600 dark:hover:text-orange-400
+                                      transition-all duration-200
+                                      shadow-sm hover:shadow">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                                </svg>
+                                {{ $tag }}
+                            </a>
+                        @endforeach
+                    </div>
+                    @endif
+
                     <!-- Product Name -->
                     <h1 class="text-3xl lg:text-4xl font-black text-gray-900 leading-tight">
                         {{ $product->name }}
