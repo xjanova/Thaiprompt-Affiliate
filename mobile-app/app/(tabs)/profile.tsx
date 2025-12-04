@@ -1,8 +1,9 @@
 /**
  * Profile Screen - หน้าโปรไฟล์และตั้งค่า
+ * รองรับ Offline Mode - แสดงข้อมูลจาก local storage
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +11,7 @@ import {
   Pressable,
   Alert,
   Switch,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,6 +21,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import * as Sync from '@/services/sync';
+import * as Network from '@/services/network';
 
 // Menu Item
 const MenuItem = ({
@@ -28,6 +31,7 @@ const MenuItem = ({
   onPress,
   showArrow = true,
   danger = false,
+  disabled = false,
   delay,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
@@ -36,13 +40,16 @@ const MenuItem = ({
   onPress: () => void;
   showArrow?: boolean;
   danger?: boolean;
+  disabled?: boolean;
   delay: number;
 }) => (
   <Animated.View entering={FadeInDown.delay(delay).springify()}>
     <Pressable
-      onPress={onPress}
-      className="flex-row items-center py-4 px-4 bg-white dark:bg-dark-50 mb-1"
-      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+      onPress={disabled ? undefined : onPress}
+      className={`flex-row items-center py-4 px-4 bg-white dark:bg-dark-50 mb-1 ${
+        disabled ? 'opacity-50' : ''
+      }`}
+      style={({ pressed }) => ({ opacity: disabled ? 0.5 : pressed ? 0.7 : 1 })}
     >
       <View
         className={`w-9 h-9 rounded-xl items-center justify-center mr-3 ${
@@ -65,7 +72,7 @@ const MenuItem = ({
       {value && (
         <Text className="text-gray-500 text-sm mr-2">{value}</Text>
       )}
-      {showArrow && (
+      {showArrow && !disabled && (
         <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
       )}
     </Pressable>
@@ -105,14 +112,49 @@ const ToggleItem = ({
 );
 
 export default function ProfileScreen() {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, isOfflineMode, logout, refreshUser } = useAuthStore();
   const { themeMode, setThemeMode, resolvedTheme } = useAppStore();
   const isDark = resolvedTheme === 'dark';
 
+  const [isOnline, setIsOnline] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
   const lastSync = Sync.getLastSyncFormatted();
+
+  // ตรวจสอบสถานะเน็ตเมื่อเปิดหน้า
+  useEffect(() => {
+    const checkNetwork = async () => {
+      const online = await Network.checkNetworkStatus();
+      setIsOnline(online);
+    };
+    checkNetwork();
+
+    // Subscribe network changes
+    const unsubscribe = Network.subscribeNetworkChanges((online) => {
+      setIsOnline(online);
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  // Pull to refresh
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshUser();
+    const online = await Network.checkNetworkStatus();
+    setIsOnline(online);
+    setRefreshing(false);
+  };
 
   // Handle logout
   const handleLogout = () => {
+    if (!isOnline) {
+      Alert.alert('ออฟไลน์', 'ไม่สามารถออกจากระบบขณะออฟไลน์ได้');
+      return;
+    }
+
     Alert.alert('ออกจากระบบ', 'คุณต้องการออกจากระบบใช่หรือไม่?', [
       { text: 'ยกเลิก', style: 'cancel' },
       {
@@ -128,8 +170,14 @@ export default function ProfileScreen() {
 
   // Handle sync
   const handleSync = async () => {
+    if (!isOnline) {
+      Alert.alert('ออฟไลน์', 'ไม่สามารถ sync ข้อมูลขณะออฟไลน์ได้');
+      return;
+    }
+
     Alert.alert('Sync ข้อมูล', 'กำลัง sync ข้อมูล...');
     const success = await Sync.syncAll();
+    await refreshUser();
     Alert.alert(
       success ? 'สำเร็จ' : 'ผิดพลาด',
       success ? 'Sync ข้อมูลเรียบร้อย' : 'ไม่สามารถ sync ได้'
@@ -137,7 +185,7 @@ export default function ProfileScreen() {
   };
 
   // ถ้ายังไม่ login
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !user) {
     return (
       <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
         <SafeAreaView className="flex-1 justify-center items-center px-6">
@@ -166,7 +214,29 @@ export default function ProfileScreen() {
   return (
     <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-100'}`}>
       <SafeAreaView className="flex-1" edges={['top']}>
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#3B82F6"
+            />
+          }
+        >
+          {/* Offline Banner */}
+          {(!isOnline || isOfflineMode) && (
+            <View className="bg-yellow-100 dark:bg-yellow-900/30 px-4 py-2">
+              <View className="flex-row items-center justify-center">
+                <Ionicons name="cloud-offline" size={16} color="#D97706" />
+                <Text className="text-yellow-700 dark:text-yellow-400 text-sm ml-2">
+                  โหมดออฟไลน์ - แสดงข้อมูลที่บันทึกไว้
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* Profile Header */}
           <LinearGradient
             colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
@@ -187,11 +257,18 @@ export default function ProfileScreen() {
                 <Text className="text-white text-xl font-bold">{user?.name}</Text>
                 <Text className="text-blue-100">{user?.email}</Text>
                 <View className="flex-row items-center mt-1">
-                  <View className="bg-white/20 px-2 py-0.5 rounded-full">
+                  <View className="bg-white/20 px-2 py-0.5 rounded-full mr-2">
                     <Text className="text-white text-xs">
                       {user?.role || 'Member'}
                     </Text>
                   </View>
+                  {user?.referralCode && (
+                    <View className="bg-green-500/30 px-2 py-0.5 rounded-full">
+                      <Text className="text-white text-xs">
+                        รหัส: {user.referralCode}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </View>
             </View>
@@ -207,19 +284,42 @@ export default function ProfileScreen() {
               icon="person"
               label="แก้ไขโปรไฟล์"
               onPress={() => Alert.alert('แก้ไขโปรไฟล์', 'กำลังพัฒนา...')}
+              disabled={!isOnline}
               delay={100}
             />
             <MenuItem
               icon="key"
               label="เปลี่ยนรหัสผ่าน"
               onPress={() => Alert.alert('เปลี่ยนรหัสผ่าน', 'กำลังพัฒนา...')}
+              disabled={!isOnline}
               delay={150}
             />
             <MenuItem
               icon="shield-checkmark"
               label="ความปลอดภัย"
               onPress={() => Alert.alert('ความปลอดภัย', 'กำลังพัฒนา...')}
+              disabled={!isOnline}
               delay={200}
+            />
+          </View>
+
+          <View className="mt-4">
+            {/* Referral - always available offline */}
+            <Text className="text-gray-500 text-xs font-medium uppercase px-4 mb-2">
+              การแนะนำ
+            </Text>
+            <MenuItem
+              icon="share-social"
+              label="แนะนำเพื่อน"
+              value={user?.referralCode || ''}
+              onPress={() => router.push('/referral')}
+              delay={220}
+            />
+            <MenuItem
+              icon="qr-code"
+              label="QR Code ของฉัน"
+              onPress={() => router.push('/referral')}
+              delay={240}
             />
           </View>
 
@@ -260,7 +360,23 @@ export default function ProfileScreen() {
               label="Sync ข้อมูล"
               value={lastSync}
               onPress={handleSync}
+              disabled={!isOnline}
               delay={400}
+            />
+            <MenuItem
+              icon="cloud-download"
+              label="ดาวน์โหลดข้อมูลออฟไลน์"
+              onPress={async () => {
+                if (!isOnline) {
+                  Alert.alert('ออฟไลน์', 'ต้องมีเน็ตเพื่อดาวน์โหลด');
+                  return;
+                }
+                Alert.alert('กำลังดาวน์โหลด', 'ดาวน์โหลดข้อมูลสำหรับใช้งานออฟไลน์...');
+                await Sync.syncAll();
+                Alert.alert('สำเร็จ', 'ดาวน์โหลดข้อมูลออฟไลน์เรียบร้อย');
+              }}
+              disabled={!isOnline}
+              delay={430}
             />
             <MenuItem
               icon="trash"
@@ -321,6 +437,7 @@ export default function ProfileScreen() {
               onPress={handleLogout}
               showArrow={false}
               danger
+              disabled={!isOnline}
               delay={700}
             />
           </View>
