@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.357.1] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #2019 from xjanova/claude/fix-hotel-booking-system-01YQzDeveGyv8V4qf3q8xd2D (0f5ff5b0)
+- feat(hotels): เพิ่ม dark mode support สำหรับ hotel booking views ทั้งหมด (19e7743e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.357.0] - 2025-12-04
 
 ### ✨ Features
