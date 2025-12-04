@@ -175,7 +175,7 @@ export default function LoginScreen() {
                 {/* Register Link */}
                 <View className="flex-row justify-center mt-6">
                   <Text className="text-gray-400">ยังไม่มีบัญชี? </Text>
-                  <Pressable onPress={() => Alert.alert('สมัครสมาชิก', 'หน้าสมัครสมาชิกกำลังพัฒนา')}>
+                  <Pressable onPress={() => router.push('/register')}>
                     <Text className="text-primary-400 font-bold">สมัครเลย</Text>
                   </Pressable>
                 </View>

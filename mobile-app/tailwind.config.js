@@ -8,49 +8,73 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Primary Colors
+        // ========================================
+        // 🔥 LAVA LAMP THEME + SHOPPING COLORS
+        // ========================================
+
+        // Primary - Coral/Orange (Shopping CTA)
         primary: {
-          DEFAULT: "#3B82F6",
-          50: "#EFF6FF",
-          100: "#DBEAFE",
-          200: "#BFDBFE",
-          300: "#93C5FD",
-          400: "#60A5FA",
-          500: "#3B82F6",
-          600: "#2563EB",
-          700: "#1D4ED8",
-          800: "#1E40AF",
-          900: "#1E3A8A",
+          DEFAULT: "#FF6B35",
+          50: "#FFF5F0",
+          100: "#FFE8DB",
+          200: "#FFD4BD",
+          300: "#FFBA94",
+          400: "#FF9966",
+          500: "#FF6B35",
+          600: "#E5561F",
+          700: "#CC4A16",
+          800: "#A33D12",
+          900: "#7A2E0D",
         },
-        // Secondary Colors
+
+        // Secondary - Teal (Success/Action)
         secondary: {
-          DEFAULT: "#10B981",
-          50: "#ECFDF5",
-          100: "#D1FAE5",
-          200: "#A7F3D0",
-          300: "#6EE7B7",
-          400: "#34D399",
-          500: "#10B981",
-          600: "#059669",
-          700: "#047857",
-          800: "#065F46",
-          900: "#064E3B",
+          DEFAULT: "#2EC4B6",
+          50: "#E6FAF8",
+          100: "#C2F4EF",
+          200: "#9AEDE4",
+          300: "#6DE4D7",
+          400: "#45DBC9",
+          500: "#2EC4B6",
+          600: "#25A89C",
+          700: "#1D8A81",
+          800: "#156C65",
+          900: "#0E4F4A",
         },
-        // Accent Colors
+
+        // Accent - Purple (Highlights)
         accent: {
-          DEFAULT: "#8B5CF6",
-          50: "#F5F3FF",
-          100: "#EDE9FE",
-          200: "#DDD6FE",
-          300: "#C4B5FD",
-          400: "#A78BFA",
-          500: "#8B5CF6",
-          600: "#7C3AED",
-          700: "#6D28D9",
-          800: "#5B21B6",
-          900: "#4C1D95",
+          DEFAULT: "#7B2CBF",
+          50: "#F5EAFA",
+          100: "#E8D0F4",
+          200: "#D3A6E9",
+          300: "#BD7BDD",
+          400: "#A651D2",
+          500: "#7B2CBF",
+          600: "#6523A3",
+          700: "#501B87",
+          800: "#3B146B",
+          900: "#260D4F",
         },
-        // Dark Theme Background
+
+        // Lava - Warm Gradient Colors
+        lava: {
+          red: "#FF6B6B",
+          orange: "#FF8E53",
+          yellow: "#FFE66D",
+          coral: "#FF7F7F",
+          pink: "#FF9A9E",
+        },
+
+        // Shopping Theme
+        shop: {
+          sale: "#FF4757",      // Sale/Discount
+          gold: "#FFD700",      // Premium
+          green: "#2ED573",     // In Stock
+          gray: "#747D8C",      // Neutral
+        },
+
+        // Dark Theme Background (Lava Dark)
         dark: {
           DEFAULT: "#0F0F23",
           50: "#1A1A2E",
@@ -60,22 +84,95 @@ module.exports = {
           400: "#4B5563",
           500: "#6B7280",
         },
+
+        // Glass Effect Colors
+        glass: {
+          light: "rgba(255, 255, 255, 0.15)",
+          dark: "rgba(0, 0, 0, 0.25)",
+          white: "rgba(255, 255, 255, 0.25)",
+          black: "rgba(0, 0, 0, 0.5)",
+        },
+
         // Status Colors
-        success: "#10B981",
-        warning: "#F59E0B",
-        error: "#EF4444",
-        info: "#3B82F6",
+        success: "#2ED573",
+        warning: "#FFA502",
+        error: "#FF4757",
+        info: "#1E90FF",
       },
+
+      // Gradients (เรียกใช้ใน Linear Gradient)
+      gradientColorStops: {
+        'lava-start': '#FF6B6B',
+        'lava-mid': '#FF8E53',
+        'lava-end': '#FFE66D',
+        'ocean-start': '#4ECDC4',
+        'ocean-end': '#556270',
+        'sunset-start': '#FF6B35',
+        'sunset-mid': '#7B2CBF',
+        'sunset-end': '#2EC4B6',
+      },
+
       fontFamily: {
         sans: ["OpenSans", "System"],
         heading: ["OpenSans-Bold", "System"],
+        semibold: ["OpenSans-SemiBold", "System"],
       },
+
       borderRadius: {
         "4xl": "2rem",
+        "5xl": "2.5rem",
       },
+
+      boxShadow: {
+        'lava': '0 4px 30px rgba(255, 107, 107, 0.3)',
+        'glow': '0 0 20px rgba(255, 107, 53, 0.5)',
+        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+      },
+
       animation: {
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "bounce-slow": "bounce 2s infinite",
+        "blob": "blob 7s infinite",
+        "glow": "glow 2s ease-in-out infinite alternate",
+        "float": "float 3s ease-in-out infinite",
+        "shimmer": "shimmer 2s linear infinite",
+      },
+
+      keyframes: {
+        blob: {
+          "0%": {
+            transform: "translate(0px, 0px) scale(1)",
+          },
+          "33%": {
+            transform: "translate(30px, -50px) scale(1.1)",
+          },
+          "66%": {
+            transform: "translate(-20px, 20px) scale(0.9)",
+          },
+          "100%": {
+            transform: "translate(0px, 0px) scale(1)",
+          },
+        },
+        glow: {
+          "from": {
+            boxShadow: "0 0 10px #FF6B6B, 0 0 20px #FF6B6B, 0 0 30px #FF6B6B",
+          },
+          "to": {
+            boxShadow: "0 0 20px #FF8E53, 0 0 30px #FF8E53, 0 0 40px #FFE66D",
+          },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "-1000px 0" },
+          "100%": { backgroundPosition: "1000px 0" },
+        },
+      },
+
+      backdropBlur: {
+        xs: "2px",
       },
     },
   },

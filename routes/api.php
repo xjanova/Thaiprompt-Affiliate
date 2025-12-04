@@ -79,6 +79,9 @@ Route::prefix('v1')->group(function () {
     // Public routes
     Route::post('/login', [AuthController::class, 'login']);
 
+    // Register (public - for mobile app)
+    Route::post('/register', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'register']);
+
     // App settings (public)
     Route::get('/settings', [DashboardController::class, 'settings']);
 
@@ -112,6 +115,31 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard/statistics', [DashboardController::class, 'statistics']);
         Route::get('/dashboard/commissions', [DashboardController::class, 'commissions']);
         Route::get('/dashboard/referrals', [DashboardController::class, 'referrals']);
+        Route::get('/dashboard/charts', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getDashboardCharts']);
+        Route::get('/dashboard/referral-link', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getReferralLink']);
+
+        // Profile (Mobile App)
+        Route::prefix('profile')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getProfile']);
+            Route::put('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateProfile']);
+            Route::post('/change-password', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'changePassword']);
+            Route::get('/referral-code', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getReferralCode']);
+        });
+
+        // Products (Mobile App E-commerce)
+        Route::prefix('products')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getProducts']);
+            Route::get('/categories', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getProductCategories']);
+            Route::get('/{id}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getProduct']);
+        });
+
+        // Cart (Mobile App)
+        Route::prefix('cart')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCart']);
+            Route::post('/add', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'addToCart']);
+            Route::put('/update', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateCart']);
+            Route::delete('/remove', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'removeFromCart']);
+        });
 
         // Translation (Google Translate API)
         Route::prefix('translate')->group(function () {

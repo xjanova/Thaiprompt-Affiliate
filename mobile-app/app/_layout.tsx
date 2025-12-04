@@ -94,6 +94,13 @@ export default function RootLayout() {
               animation: 'fade',
             }}
           />
+          <Stack.Screen
+            name="register"
+            options={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          />
 
           {/* Feature Screens */}
           <Stack.Screen
