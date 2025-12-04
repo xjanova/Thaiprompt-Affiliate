@@ -417,27 +417,27 @@
 
                     <div class="space-y-4">
                         <div class="bg-white/5 rounded-xl p-5">
-                            <p class="text-white/70 text-sm mb-1">Commission Rate</p>
-                            <p class="text-3xl font-black text-blue-300">10%</p>
+                            <p class="text-white/70 text-sm mb-1">Pair Commission</p>
+                            <p class="text-3xl font-black text-blue-300">100 บาท/คู่</p>
+                            <p class="text-white/60 text-xs">จ่ายเมื่อจับคู่ซ้าย-ขวาสำเร็จ</p>
+                        </div>
+
+                        <div class="bg-white/5 rounded-xl p-5">
+                            <p class="text-white/70 text-sm mb-1">Match Percentage</p>
+                            <p class="text-3xl font-black text-indigo-300">50%</p>
                             <p class="text-white/60 text-xs">จากขาที่อ่อนกว่า (Weak Leg)</p>
                         </div>
 
                         <div class="bg-white/5 rounded-xl p-5">
-                            <p class="text-white/70 text-sm mb-1">Match Ratio</p>
-                            <p class="text-3xl font-black text-indigo-300">1 : 2</p>
-                            <p class="text-white/60 text-xs">สัดส่วนขาซ้าย : ขาขวา</p>
+                            <p class="text-white/70 text-sm mb-1">Pairing Type</p>
+                            <p class="text-3xl font-black text-purple-300">1 : 1</p>
+                            <p class="text-white/60 text-xs">สัดส่วนการจับคู่ซ้าย : ขวา</p>
                         </div>
 
                         <div class="bg-white/5 rounded-xl p-5">
-                            <p class="text-white/70 text-sm mb-1">Daily Capping</p>
-                            <p class="text-3xl font-black text-purple-300">50,000 บาท</p>
-                            <p class="text-white/60 text-xs">รับได้สูงสุดต่อวัน</p>
-                        </div>
-
-                        <div class="bg-white/5 rounded-xl p-5">
-                            <p class="text-white/70 text-sm mb-1">Minimum Payout</p>
-                            <p class="text-3xl font-black text-pink-300">500 บาท</p>
-                            <p class="text-white/60 text-xs">จำนวนขั้นต่ำในการถอน</p>
+                            <p class="text-white/70 text-sm mb-1">Daily / Pair Limit</p>
+                            <p class="text-3xl font-black text-green-300">ไม่จำกัด</p>
+                            <p class="text-white/60 text-xs">ไม่จำกัดคู่และคอมมิชชันต่อวัน</p>
                         </div>
                     </div>
                 </div>
@@ -477,26 +477,27 @@
 
                         <!-- Step 2 -->
                         <div class="bg-white/5 rounded-xl p-5">
-                            <p class="font-bold mb-2">2️⃣ คำนวณคอมมิชชั่น</p>
+                            <p class="font-bold mb-2">2️⃣ คำนวณคอมมิชชั่น (Match 50%)</p>
                             <p class="text-sm text-white/80 mb-2">
-                                3,000 PV × 100 บาท/PV × 10%
+                                Weak Leg 3,000 PV × 1 บาท/PV × 50%
                             </p>
                             <div class="bg-gradient-to-r from-green-600/30 to-emerald-600/30 rounded-lg p-4 mt-3 animate-pulse-slow">
                                 <p class="text-green-300 font-black text-3xl">
-                                    = 30,000 บาท
+                                    = 1,500 บาท
                                 </p>
                             </div>
                         </div>
 
                         <!-- Step 3 -->
                         <div class="bg-white/5 rounded-xl p-5">
-                            <p class="font-bold mb-2">3️⃣ Carry Forward</p>
+                            <p class="font-bold mb-2">3️⃣ Flush (ล้าง PV)</p>
                             <p class="text-sm text-white/80">
-                                ส่วนต่าง: 5,000 - 3,000 = 2,000 PV
+                                ล้าง 100% ทั้งสองขาหลังจับคู่
                             </p>
                             <p class="text-purple-300 font-bold mt-2">
-                                → ยกไปวันพรุ่งนี้: <span class="text-xl">2,000 PV</span>
+                                → ขาซ้าย: <span class="text-xl">0 PV</span>, ขาขวา: <span class="text-xl">2,000 PV</span>
                             </p>
+                            <p class="text-xs text-white/50 mt-1">(Carry Forward ปิดอยู่ในระบบปัจจุบัน)</p>
                         </div>
                     </div>
                 </div>
@@ -749,7 +750,138 @@
     </div>
 </div>
 
-<!-- Slide 8: Comparison - Unilevel vs Binary -->
+<!-- Slide 8: Rank System - 8 ระดับ -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-amber-900/90 via-yellow-900/80 to-orange-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-5xl md:text-6xl font-black text-white mb-8 text-center">
+                🏆 ระบบ Rank 8 ระดับ
+            </h2>
+
+            <div class="grid grid-cols-4 gap-4">
+                <!-- Bronze -->
+                <div class="rank-card bg-gradient-to-br from-amber-700/40 to-amber-900/40 backdrop-blur-lg border border-amber-400/30 rounded-2xl p-5 shadow-xl animate-fade-in">
+                    <div class="text-center">
+                        <div class="text-5xl mb-2">🥉</div>
+                        <h3 class="text-xl font-bold text-amber-300 mb-1">Bronze</h3>
+                        <p class="text-white/70 text-sm mb-3">สำริด</p>
+                        <div class="bg-amber-600/30 rounded-lg p-3 mb-2">
+                            <p class="text-amber-200 font-black text-2xl">5%</p>
+                            <p class="text-white/60 text-xs">Commission Rate</p>
+                        </div>
+                        <p class="text-white/50 text-xs">ระดับเริ่มต้น</p>
+                    </div>
+                </div>
+
+                <!-- Silver -->
+                <div class="rank-card bg-gradient-to-br from-gray-400/40 to-gray-600/40 backdrop-blur-lg border border-gray-300/30 rounded-2xl p-5 shadow-xl animate-fade-in" style="animation-delay: 0.1s;">
+                    <div class="text-center">
+                        <div class="text-5xl mb-2">🥈</div>
+                        <h3 class="text-xl font-bold text-gray-200 mb-1">Silver</h3>
+                        <p class="text-white/70 text-sm mb-3">เงิน</p>
+                        <div class="bg-gray-500/30 rounded-lg p-3 mb-2">
+                            <p class="text-gray-100 font-black text-2xl">7.5%</p>
+                            <p class="text-white/60 text-xs">Commission Rate</p>
+                        </div>
+                        <p class="text-green-300 text-xs font-bold">+500 บาท</p>
+                    </div>
+                </div>
+
+                <!-- Gold -->
+                <div class="rank-card bg-gradient-to-br from-yellow-500/40 to-yellow-700/40 backdrop-blur-lg border border-yellow-400/30 rounded-2xl p-5 shadow-xl animate-fade-in" style="animation-delay: 0.2s;">
+                    <div class="text-center">
+                        <div class="text-5xl mb-2">🥇</div>
+                        <h3 class="text-xl font-bold text-yellow-300 mb-1">Gold</h3>
+                        <p class="text-white/70 text-sm mb-3">ทอง</p>
+                        <div class="bg-yellow-600/30 rounded-lg p-3 mb-2">
+                            <p class="text-yellow-200 font-black text-2xl">10%</p>
+                            <p class="text-white/60 text-xs">Commission Rate</p>
+                        </div>
+                        <p class="text-green-300 text-xs font-bold">+2,000 บาท</p>
+                    </div>
+                </div>
+
+                <!-- Platinum -->
+                <div class="rank-card bg-gradient-to-br from-slate-400/40 to-slate-600/40 backdrop-blur-lg border border-slate-300/30 rounded-2xl p-5 shadow-xl animate-fade-in" style="animation-delay: 0.3s;">
+                    <div class="text-center">
+                        <div class="text-5xl mb-2">💎</div>
+                        <h3 class="text-xl font-bold text-slate-200 mb-1">Platinum</h3>
+                        <p class="text-white/70 text-sm mb-3">แพลตินัม</p>
+                        <div class="bg-slate-500/30 rounded-lg p-3 mb-2">
+                            <p class="text-slate-100 font-black text-2xl">15%</p>
+                            <p class="text-white/60 text-xs">Commission Rate</p>
+                        </div>
+                        <p class="text-green-300 text-xs font-bold">+10,000 บาท</p>
+                    </div>
+                </div>
+
+                <!-- Diamond -->
+                <div class="rank-card bg-gradient-to-br from-cyan-400/40 to-cyan-600/40 backdrop-blur-lg border border-cyan-300/30 rounded-2xl p-5 shadow-xl animate-fade-in" style="animation-delay: 0.4s;">
+                    <div class="text-center">
+                        <div class="text-5xl mb-2">💠</div>
+                        <h3 class="text-xl font-bold text-cyan-200 mb-1">Diamond</h3>
+                        <p class="text-white/70 text-sm mb-3">เพชร</p>
+                        <div class="bg-cyan-500/30 rounded-lg p-3 mb-2">
+                            <p class="text-cyan-100 font-black text-2xl">20%</p>
+                            <p class="text-white/60 text-xs">Commission Rate</p>
+                        </div>
+                        <p class="text-green-300 text-xs font-bold">+50,000 บาท</p>
+                    </div>
+                </div>
+
+                <!-- Crown -->
+                <div class="rank-card bg-gradient-to-br from-amber-500/40 to-orange-600/40 backdrop-blur-lg border border-amber-300/30 rounded-2xl p-5 shadow-xl animate-fade-in" style="animation-delay: 0.5s;">
+                    <div class="text-center">
+                        <div class="text-5xl mb-2">👑</div>
+                        <h3 class="text-xl font-bold text-amber-200 mb-1">Crown</h3>
+                        <p class="text-white/70 text-sm mb-3">มงกุฎ</p>
+                        <div class="bg-amber-500/30 rounded-lg p-3 mb-2">
+                            <p class="text-amber-100 font-black text-2xl">25%</p>
+                            <p class="text-white/60 text-xs">Commission Rate</p>
+                        </div>
+                        <p class="text-green-300 text-xs font-bold">+100,000 บาท</p>
+                    </div>
+                </div>
+
+                <!-- Royal -->
+                <div class="rank-card bg-gradient-to-br from-purple-500/40 to-violet-600/40 backdrop-blur-lg border border-purple-300/30 rounded-2xl p-5 shadow-xl animate-fade-in" style="animation-delay: 0.6s;">
+                    <div class="text-center">
+                        <div class="text-5xl mb-2">🏆</div>
+                        <h3 class="text-xl font-bold text-purple-200 mb-1">Royal</h3>
+                        <p class="text-white/70 text-sm mb-3">รอยัล</p>
+                        <div class="bg-purple-500/30 rounded-lg p-3 mb-2">
+                            <p class="text-purple-100 font-black text-2xl">30%</p>
+                            <p class="text-white/60 text-xs">Commission Rate</p>
+                        </div>
+                        <p class="text-green-300 text-xs font-bold">+300,000 บาท</p>
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div class="rank-card bg-gradient-to-br from-pink-500/40 to-rose-600/40 backdrop-blur-lg border border-pink-300/30 rounded-2xl p-5 shadow-xl animate-pulse-slow animate-fade-in" style="animation-delay: 0.7s;">
+                    <div class="text-center">
+                        <div class="text-5xl mb-2">🌟</div>
+                        <h3 class="text-xl font-bold text-pink-200 mb-1">Legend</h3>
+                        <p class="text-white/70 text-sm mb-3">ตำนาน</p>
+                        <div class="bg-pink-500/30 rounded-lg p-3 mb-2">
+                            <p class="text-pink-100 font-black text-2xl">35%</p>
+                            <p class="text-white/60 text-xs">Commission Rate</p>
+                        </div>
+                        <p class="text-yellow-300 text-xs font-bold">+1,000,000 บาท!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-md border border-yellow-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-2xl text-white font-bold">
+                    🎯 ยิ่งระดับสูง ยิ่งได้คอมมิชชันเยอะ + โบนัสเลื่อนระดับ!
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 9: Comparison - Unilevel vs Binary -->
 <div class="slide">
     <div class="h-full flex items-center justify-center bg-gradient-to-br from-slate-900/90 via-gray-900/80 to-zinc-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
         <div class="max-w-6xl w-full relative z-10">
@@ -775,8 +907,8 @@
                             </tr>
                             <tr class="border-b border-white/10 hover:bg-white/5 transition-colors">
                                 <td class="p-4 font-bold">ความลึก</td>
-                                <td class="p-4 text-center text-green-300">10-15 ระดับ</td>
-                                <td class="p-4 text-center text-blue-300">ไม่จำกัด</td>
+                                <td class="p-4 text-center text-green-300">10 ระดับ</td>
+                                <td class="p-4 text-center text-blue-300">10 ระดับ</td>
                             </tr>
                             <tr class="border-b border-white/10 hover:bg-white/5 transition-colors">
                                 <td class="p-4 font-bold">Spillover</td>
@@ -790,13 +922,13 @@
                             </tr>
                             <tr class="border-b border-white/10 hover:bg-white/5 transition-colors">
                                 <td class="p-4 font-bold">Capping</td>
-                                <td class="p-4 text-center text-green-300">ไม่มี</td>
-                                <td class="p-4 text-center text-blue-300">มี (รายวัน/สัปดาห์)</td>
+                                <td class="p-4 text-center text-green-300">ไม่จำกัด</td>
+                                <td class="p-4 text-center text-green-300">ไม่จำกัด</td>
                             </tr>
                             <tr class="border-b border-white/10 hover:bg-white/5 transition-colors">
                                 <td class="p-4 font-bold">Carry Forward</td>
                                 <td class="p-4 text-center text-red-300">❌ ไม่มี</td>
-                                <td class="p-4 text-center text-green-300">✅ มี</td>
+                                <td class="p-4 text-center text-red-300">❌ ปิดอยู่</td>
                             </tr>
                             <tr class="border-b border-white/10 hover:bg-white/5 transition-colors">
                                 <td class="p-4 font-bold">เหมาะสำหรับ</td>
@@ -811,7 +943,7 @@
                             <tr class="hover:bg-white/5 transition-colors">
                                 <td class="p-4 font-bold">รายได้สูงสุด</td>
                                 <td class="p-4 text-center text-green-300">ไม่จำกัด</td>
-                                <td class="p-4 text-center text-blue-300">ตาม Capping</td>
+                                <td class="p-4 text-center text-green-300">ไม่จำกัด</td>
                             </tr>
                         </tbody>
                     </table>
