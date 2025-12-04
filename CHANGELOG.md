@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.339.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #1987 from xjanova/claude/fix-guest-shopping-role-01WaHLh37CzemK2rCJyJojPx (16335b27)
+- feat: make storefront page full-width without sidebar/navbar (bd48074d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.338.0] - 2025-12-04
 
 ### ✨ Features
