@@ -118,11 +118,12 @@
             {{-- Dynamic Menu for User/Seller (from MenuService) --}}
             @foreach($menus as $menu)
                 @if(isset($menu['submenu']) && count($menu['submenu']) > 0)
-                    {{-- Menu with Submenu --}}
+                    {{-- Menu with Submenu (Pinnable Group) --}}
                     @php
                         // ตรวจสอบว่า submenu item ใดตรงกับ URL ปัจจุบัน
                         $isSubmenuActive = false;
                         $currentPath = request()->path();
+                        $firstSubmenuUrl = $menu['submenu'][0]['url'] ?? '#';
                         foreach ($menu['submenu'] as $child) {
                             $childPath = ltrim($child['url'] ?? '', '/');
                             if ($currentPath === $childPath || str_starts_with($currentPath, $childPath . '/')) {
@@ -131,34 +132,15 @@
                             }
                         }
                     @endphp
-                    <div class="space-y-1" x-data="{ menuOpen: {{ $isSubmenuActive ? 'true' : 'false' }} }">
-                        <button @click="menuOpen = !menuOpen"
-                                type="button"
-                                class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ $isSubmenuActive ? 'bg-gradient-to-r from-blue-500/50 to-purple-600/50 text-white shadow-lg' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-                            @if(isset($menu['icon']))
-                                @if(str_starts_with($menu['icon'], 'fa'))
-                                    <i class="{{ $menu['icon'] }} w-5 text-center drop-shadow"></i>
-                                @else
-                                    <span class="w-5 text-center text-lg drop-shadow">{{ $menu['icon'] }}</span>
-                                @endif
-                            @endif
-                            <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">{{ $menu['label'] }}</span>
-                            <i x-show="$store.sidebar.shouldExpand && menuOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
-                            <i x-show="$store.sidebar.shouldExpand && !menuOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
-                        </button>
-
-                        {{-- Submenu --}}
-                        <div x-show="menuOpen" x-collapse x-cloak class="ml-8 space-y-1">
-                            @foreach($menu['submenu'] as $child)
-                                <a href="{{ $child['url'] }}"
-                                   @click="$store.sidebar.closeOnMenuClick()"
-                                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->is(ltrim($child['url'] ?? '', '/')) ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                                    <div class="w-1.5 h-1.5 rounded-full bg-white/50"></div>
-                                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">{{ $child['label'] }}</span>
-                                </a>
-                            @endforeach
-                        </div>
-                    </div>
+                    <x-menu.pinnable-menu-group
+                        :menuKey="$menu['id'] ?? $menu['route'] ?? Str::slug($menu['label'])"
+                        :label="$menu['label']"
+                        :icon="$menu['icon'] ?? ''"
+                        :dashboardType="$type"
+                        :isActive="$isSubmenuActive"
+                        :submenu="$menu['submenu']"
+                        :defaultUrl="$firstSubmenuUrl"
+                    />
                 @else
                     {{-- Single Menu Item with Pin Support --}}
                     <x-menu.pinnable-menu-item
@@ -187,37 +169,18 @@
             />
 
         {{-- Users & Roles (Collapsible Menu) 👥 --}}
-        <div class="space-y-1"
-             x-data="{ usersOpen: {{ request()->routeIs('admin.users.*') || request()->routeIs('admin.roles.*') ? 'true' : 'false' }} }">
-            {{-- Users Header Button --}}
-            <button @click="usersOpen = !usersOpen"
-                    type="button"
-                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.users.*') || request()->routeIs('admin.roles.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-                <i class="fas fa-users w-5 text-center drop-shadow"></i>
-                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">ผู้ใช้งาน</span>
-                <i x-show="$store.sidebar.shouldExpand && usersOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
-                <i x-show="$store.sidebar.shouldExpand && !usersOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
-            </button>
-
-            {{-- Users Submenu --}}
-            <div x-show="usersOpen" x-collapse x-cloak class="ml-8 space-y-1">
-                {{-- Users List --}}
-                <a href="{{ route('admin.users.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.users.index') || request()->routeIs('admin.users.show') || request()->routeIs('admin.users.edit') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-list w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">รายชื่อผู้ใช้</span>
-                </a>
-
-                {{-- Roles & Permissions ⭐ สำคัญ! --}}
-                <a href="{{ route('admin.roles.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.roles.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-user-shield w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">บทบาทและสิทธิ์</span>
-                </a>
-            </div>
-        </div>
+        <x-menu.pinnable-menu-group
+            menuKey="admin.users"
+            label="ผู้ใช้งาน"
+            icon="fas fa-users"
+            dashboardType="admin"
+            :isActive="request()->routeIs('admin.users.*') || request()->routeIs('admin.roles.*')"
+            :submenu="[
+                ['label' => 'รายชื่อผู้ใช้', 'url' => route('admin.users.index'), 'icon' => 'fas fa-list'],
+                ['label' => 'บทบาทและสิทธิ์', 'url' => route('admin.roles.index'), 'icon' => 'fas fa-user-shield'],
+            ]"
+            :defaultUrl="route('admin.users.index')"
+        />
 
         {{-- ========================================
              🏪 Storefront Management (Collapsible Menu)
@@ -305,124 +268,30 @@
 
         {{-- MLM System (Collapsible Menu) - เฉพาะแอดมิน --}}
         @if($type === 'admin')
-        <div class="space-y-1">
-            {{-- MLM Header Button --}}
-            <button @click="mlmOpen = !mlmOpen"
-                    type="button"
-                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.mlm.*') || request()->routeIs('admin.mlm-prospects.*') ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-                <i class="fas fa-sitemap w-5 text-center drop-shadow"></i>
-                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">MLM System</span>
-                <i x-show="$store.sidebar.shouldExpand && mlmOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
-                <i x-show="$store.sidebar.shouldExpand && !mlmOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
-            </button>
-
-            {{-- MLM Submenu --}}
-            <div x-show="mlmOpen" x-collapse x-cloak class="ml-8 space-y-1">
-                {{-- Dashboard MLM --}}
-                <a href="{{ route('admin.mlm.reports.dashboard') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.reports.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
-                </a>
-
-                {{-- สมาชิก MLM --}}
-                <a href="{{ route('admin.mlm.members.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.members.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-users-cog w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">สมาชิก</span>
-                </a>
-
-                {{-- แผน MLM --}}
-                <a href="{{ route('admin.mlm.plans.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.plans.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-layer-group w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">แผน MLM</span>
-                </a>
-
-                {{-- คอมมิชชั่น MLM --}}
-                <a href="{{ route('admin.mlm.commissions.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.commissions.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-money-bill-wave w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
-                </a>
-
-                {{-- Product PV --}}
-                <a href="{{ route('admin.mlm.product-pv.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.product-pv.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-tags w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Product PV</span>
-                </a>
-
-                {{-- รายงาน --}}
-                <a href="{{ route('admin.mlm.reports.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.reports.*') && !request()->routeIs('admin.mlm.reports.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">รายงาน</span>
-                </a>
-
-                {{-- Genealogy --}}
-                <a href="{{ route('admin.mlm.genealogy.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.genealogy.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-project-diagram w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Genealogy</span>
-                </a>
-
-                {{-- Ranks ⭐ สำคัญ! --}}
-                <a href="{{ route('admin.ranks.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ranks.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-medal w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ระดับสมาชิก</span>
-                </a>
-
-                {{-- Prospects --}}
-                <a href="{{ route('admin.mlm-prospects.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm-prospects.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-user-plus w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Prospects</span>
-                </a>
-
-                {{-- เครื่องคิดเลข --}}
-                <a href="{{ route('admin.mlm.calculator') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.calculator') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-calculator w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">เครื่องคิดเลข</span>
-                </a>
-
-                {{-- ตัวอย่าง Placement --}}
-                <a href="{{ route('admin.mlm.placement-examples') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.placement-examples') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-lightbulb w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตัวอย่าง Placement</span>
-                </a>
-
-                {{-- การย้ายทีม --}}
-                <a href="{{ route('admin.team-transfer.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.team-transfer.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-exchange-alt w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">การย้ายทีม</span>
-                </a>
-
-                {{-- ตั้งค่า MLM --}}
-                <a href="{{ route('admin.mlm.settings.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.settings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-cogs w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
-                </a>
-            </div>
-        </div>
+        <x-menu.pinnable-menu-group
+            menuKey="admin.mlm"
+            label="MLM System"
+            icon="fas fa-sitemap"
+            dashboardType="admin"
+            activeGradient="from-purple-500 to-pink-600"
+            :isActive="request()->routeIs('admin.mlm.*') || request()->routeIs('admin.mlm-prospects.*')"
+            :submenu="[
+                ['label' => 'Dashboard', 'url' => route('admin.mlm.reports.dashboard'), 'icon' => 'fas fa-chart-pie'],
+                ['label' => 'สมาชิก', 'url' => route('admin.mlm.members.index'), 'icon' => 'fas fa-users-cog'],
+                ['label' => 'แผน MLM', 'url' => route('admin.mlm.plans.index'), 'icon' => 'fas fa-layer-group'],
+                ['label' => 'คอมมิชชั่น', 'url' => route('admin.mlm.commissions.index'), 'icon' => 'fas fa-money-bill-wave'],
+                ['label' => 'Product PV', 'url' => route('admin.mlm.product-pv.index'), 'icon' => 'fas fa-tags'],
+                ['label' => 'รายงาน', 'url' => route('admin.mlm.reports.index'), 'icon' => 'fas fa-chart-line'],
+                ['label' => 'Genealogy', 'url' => route('admin.mlm.genealogy.index'), 'icon' => 'fas fa-project-diagram'],
+                ['label' => 'ระดับสมาชิก', 'url' => route('admin.ranks.index'), 'icon' => 'fas fa-medal'],
+                ['label' => 'Prospects', 'url' => route('admin.mlm-prospects.index'), 'icon' => 'fas fa-user-plus'],
+                ['label' => 'เครื่องคิดเลข', 'url' => route('admin.mlm.calculator'), 'icon' => 'fas fa-calculator'],
+                ['label' => 'ตัวอย่าง Placement', 'url' => route('admin.mlm.placement-examples'), 'icon' => 'fas fa-lightbulb'],
+                ['label' => 'การย้ายทีม', 'url' => route('admin.team-transfer.index'), 'icon' => 'fas fa-exchange-alt'],
+                ['label' => 'ตั้งค่า', 'url' => route('admin.mlm.settings.index'), 'icon' => 'fas fa-cogs'],
+            ]"
+            :defaultUrl="route('admin.mlm.reports.dashboard')"
+        />
         @endif
 
         {{-- Marketplace Affiliate (Collapsible Menu) 🛒 --}}
