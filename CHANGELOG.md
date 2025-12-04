@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.356.0] - 2025-12-04
+
+### ✨ Features
+- feat: add blocked products view for e-commerce admin (a94c12bf)
+- feat: consolidate e-commerce menus into Storefront Management (5c0a68e0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2016 from xjanova/claude/fix-guest-shopping-role-01WaHLh37CzemK2rCJyJojPx (ed9d6f6e)
+
 ## [v3.355.0] - 2025-12-04
 
 ### ✨ Features
