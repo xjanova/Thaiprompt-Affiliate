@@ -304,7 +304,7 @@
         <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12">
             {{-- Card 1: System Overview --}}
             <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openPresentationFullscreen === 'function') openPresentationFullscreen()">
+                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('system-overview')">
                 <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-desktop text-3xl text-white"></i>
                 </div>
@@ -318,7 +318,7 @@
 
             {{-- Card 2: MLM Plans --}}
             <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openPresentationFullscreen === 'function') openPresentationFullscreen()">
+                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('mlm-plans')">
                 <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-sitemap text-3xl text-white"></i>
                 </div>
@@ -332,7 +332,7 @@
 
             {{-- Card 3: TPIX Token --}}
             <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openPresentationFullscreen === 'function') openPresentationFullscreen()">
+                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('tpix-token')">
                 <div class="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform overflow-hidden">
                     <img src="{{ asset('images/tpix-logo.svg') }}" alt="TPIX" class="w-12 h-12 object-contain">
                 </div>
@@ -346,7 +346,7 @@
 
             {{-- Card 4: AI & Automation --}}
             <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openPresentationFullscreen === 'function') openPresentationFullscreen()">
+                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('ai-automation')">
                 <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-robot text-3xl text-white"></i>
                 </div>

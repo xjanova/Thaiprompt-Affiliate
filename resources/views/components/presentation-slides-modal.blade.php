@@ -65,6 +65,24 @@
                                     <p class="text-white/60 text-xs">Unilevel & Binary Plans</p>
                                 </div>
                             </button>
+                            <button onclick="switchTopic('ai-automation')" class="topic-option flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left" data-topic="ai-automation">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center text-xl">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-white font-semibold">AI & Automation</p>
+                                    <p class="text-white/60 text-xs">AI Chatbot, LINE Bot & Marketing</p>
+                                </div>
+                            </button>
+                            <button onclick="switchTopic('tpix-token')" class="topic-option flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left" data-topic="tpix-token">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center text-xl overflow-hidden">
+                                    <img src="{{ asset('images/tpix-logo.svg') }}" alt="TPIX" class="w-7 h-7 object-contain">
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-white font-semibold">TPIX Token</p>
+                                    <p class="text-white/60 text-xs">Blockchain, Staking & DEX</p>
+                                </div>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -247,6 +265,50 @@
     #topic-arrow.rotated {
         transform: rotate(180deg);
     }
+
+    /* Auto-hide toolbar styles เมื่อ autoplay */
+    #presentation-fullscreen.toolbar-hidden #control-panel {
+        opacity: 0;
+        transform: translateY(-100%);
+        pointer-events: none;
+    }
+
+    #presentation-fullscreen.toolbar-hidden .absolute.bottom-8 {
+        opacity: 0;
+        transform: translateY(100%);
+        pointer-events: none;
+    }
+
+    #presentation-fullscreen.toolbar-hidden #countdown-timer {
+        opacity: 0;
+        transform: translateY(100%);
+        pointer-events: none;
+    }
+
+    #control-panel,
+    .absolute.bottom-8,
+    #countdown-timer {
+        transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    /* เมื่อ hover หรือคลิก ให้แสดง toolbar ชั่วคราว */
+    #presentation-fullscreen.toolbar-hidden.toolbar-peek #control-panel {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    #presentation-fullscreen.toolbar-hidden.toolbar-peek .absolute.bottom-8 {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    #presentation-fullscreen.toolbar-hidden.toolbar-peek #countdown-timer {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
 </style>
 @endpush
 
@@ -260,6 +322,9 @@ let isAutoplayActive = false;
 let showCountdown = true;
 let loopSlides = true;
 let currentTopic = 'system-overview';
+let toolbarHideTimeout = null;
+let autoHideToolbar = true;  // เปิดใช้งาน auto-hide เมื่อ autoplay
+const TOOLBAR_HIDE_DELAY = 3000;  // ซ่อน toolbar หลังจาก 3 วินาที
 
 let slides = document.querySelectorAll('#slides-system-overview .slide');
 let totalSlides = slides.length;
@@ -278,6 +343,13 @@ function toggleTopicMenu() {
     arrow.classList.toggle('rotated');
 }
 
+// Mapping topics ไปยัง slide index ใน system-overview
+const topicSlideMapping = {
+    'system-overview': 0,
+    'ai-automation': 7,      // Slide 5: AI & Automation
+    'tpix-token': 11         // Slide 6: TPIX Token
+};
+
 function switchTopic(topicId) {
     if (currentTopic === topicId) {
         toggleTopicMenu();
@@ -288,11 +360,20 @@ function switchTopic(topicId) {
         stopAutoplay();
     }
 
+    // ถ้าเป็น AI หรือ TPIX ใช้ system-overview container แต่ jump ไป slide ที่เกี่ยวข้อง
+    let containerId = topicId;
+    let startSlide = 0;
+
+    if (topicId === 'ai-automation' || topicId === 'tpix-token') {
+        containerId = 'system-overview';
+        startSlide = topicSlideMapping[topicId] || 0;
+    }
+
     document.querySelectorAll('.slides-topic-container').forEach(container => {
         container.classList.remove('active');
     });
 
-    const selectedContainer = document.getElementById('slides-' + topicId);
+    const selectedContainer = document.getElementById('slides-' + containerId);
     selectedContainer.classList.add('active');
 
     document.querySelectorAll('.topic-option').forEach(option => {
@@ -301,21 +382,79 @@ function switchTopic(topicId) {
     document.querySelector(`.topic-option[data-topic="${topicId}"]`).classList.add('active');
 
     currentTopic = topicId;
-    slides = document.querySelectorAll(`#slides-${topicId} .slide`);
+    slides = document.querySelectorAll(`#slides-${containerId} .slide`);
     totalSlides = slides.length;
 
-    currentSlide = 0;
-    showSlide(0);
+    showSlide(startSlide);
     initializeProgressDots();
     updateSlideCounter();
     updateTopicDisplay();
     toggleTopicMenu();
 }
 
+// เปิด presentation พร้อมเลือก topic (สำหรับเรียกจากการ์ด)
+function openPresentationWithTopic(topicId) {
+    const fullscreen = document.getElementById('presentation-fullscreen');
+    fullscreen.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    const requestFullscreen = fullscreen.requestFullscreen ||
+                             fullscreen.webkitRequestFullscreen ||
+                             fullscreen.mozRequestFullScreen ||
+                             fullscreen.msRequestFullscreen;
+
+    if (requestFullscreen) {
+        requestFullscreen.call(fullscreen).catch(err => {
+            console.log('Fullscreen request failed:', err);
+        });
+    }
+
+    setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+    }, 100);
+
+    // เรียก switchTopic โดยไม่ toggle menu
+    if (isAutoplayActive) {
+        stopAutoplay();
+    }
+
+    let containerId = topicId;
+    let startSlide = 0;
+
+    if (topicId === 'ai-automation' || topicId === 'tpix-token') {
+        containerId = 'system-overview';
+        startSlide = topicSlideMapping[topicId] || 0;
+    }
+
+    document.querySelectorAll('.slides-topic-container').forEach(container => {
+        container.classList.remove('active');
+    });
+
+    const selectedContainer = document.getElementById('slides-' + containerId);
+    selectedContainer.classList.add('active');
+
+    document.querySelectorAll('.topic-option').forEach(option => {
+        option.classList.remove('active');
+    });
+    const topicOption = document.querySelector(`.topic-option[data-topic="${topicId}"]`);
+    if (topicOption) topicOption.classList.add('active');
+
+    currentTopic = topicId;
+    slides = document.querySelectorAll(`#slides-${containerId} .slide`);
+    totalSlides = slides.length;
+
+    showSlide(startSlide);
+    initializeProgressDots();
+    updateSlideCounter();
+    updateTopicDisplay();
+}
+
 function updateTopicDisplay() {
     const topicNames = {
         'system-overview': 'ภาพรวมระบบ',
-        'mlm-plans': 'แผนการตลาด MLM'
+        'mlm-plans': 'แผนการตลาด MLM',
+        'ai-automation': 'AI & Automation',
+        'tpix-token': 'TPIX Token'
     };
     document.getElementById('current-topic-name').textContent = topicNames[currentTopic] || 'ภาพรวมระบบ';
 }
@@ -454,6 +593,11 @@ function startAutoplay() {
     }
 
     resetCountdown();
+
+    // เริ่มการซ่อน toolbar อัตโนมัติ
+    if (autoHideToolbar) {
+        startToolbarHideTimer();
+    }
 }
 
 function stopAutoplay() {
@@ -474,6 +618,10 @@ function stopAutoplay() {
     if (timer) {
         timer.style.display = 'none';
     }
+
+    // แสดง toolbar กลับมาเมื่อหยุด autoplay
+    stopToolbarHideTimer();
+    showToolbar();
 }
 
 function resetCountdown() {
@@ -532,6 +680,82 @@ function toggleCountdownVisibility() {
 function toggleLoop() {
     loopSlides = document.getElementById('loop-slides').checked;
 }
+
+// Auto-hide toolbar functions
+function startToolbarHideTimer() {
+    stopToolbarHideTimer();  // Clear existing timer
+    toolbarHideTimeout = setTimeout(() => {
+        hideToolbar();
+    }, TOOLBAR_HIDE_DELAY);
+}
+
+function stopToolbarHideTimer() {
+    if (toolbarHideTimeout) {
+        clearTimeout(toolbarHideTimeout);
+        toolbarHideTimeout = null;
+    }
+}
+
+function hideToolbar() {
+    const fullscreen = document.getElementById('presentation-fullscreen');
+    if (fullscreen && isAutoplayActive && autoHideToolbar) {
+        fullscreen.classList.add('toolbar-hidden');
+    }
+}
+
+function showToolbar() {
+    const fullscreen = document.getElementById('presentation-fullscreen');
+    if (fullscreen) {
+        fullscreen.classList.remove('toolbar-hidden');
+    }
+}
+
+function peekToolbar() {
+    const fullscreen = document.getElementById('presentation-fullscreen');
+    if (fullscreen && fullscreen.classList.contains('toolbar-hidden')) {
+        fullscreen.classList.add('toolbar-peek');
+
+        // ซ่อนอีกครั้งหลังจาก 3 วินาที
+        stopToolbarHideTimer();
+        toolbarHideTimeout = setTimeout(() => {
+            fullscreen.classList.remove('toolbar-peek');
+        }, TOOLBAR_HIDE_DELAY);
+    }
+}
+
+// Event listeners สำหรับการแสดง toolbar เมื่อ click
+document.addEventListener('DOMContentLoaded', function() {
+    const fullscreen = document.getElementById('presentation-fullscreen');
+    if (fullscreen) {
+        // คลิกที่หน้าจอจะแสดง toolbar ชั่วคราว
+        fullscreen.addEventListener('click', function(e) {
+            // ไม่ทำงานถ้าคลิกที่ปุ่มควบคุม
+            if (e.target.closest('#control-panel') ||
+                e.target.closest('.absolute.bottom-8') ||
+                e.target.closest('#settings-panel') ||
+                e.target.closest('#topic-menu')) {
+                return;
+            }
+
+            if (isAutoplayActive && fullscreen.classList.contains('toolbar-hidden')) {
+                peekToolbar();
+            }
+        });
+
+        // เมื่อเลื่อนเมาส์ไปที่ขอบบนหรือล่าง แสดง toolbar
+        fullscreen.addEventListener('mousemove', function(e) {
+            if (!isAutoplayActive || !fullscreen.classList.contains('toolbar-hidden')) return;
+
+            const rect = fullscreen.getBoundingClientRect();
+            const topZone = rect.top + 100;  // 100px จากขอบบน
+            const bottomZone = rect.bottom - 100;  // 100px จากขอบล่าง
+
+            if (e.clientY <= topZone || e.clientY >= bottomZone) {
+                peekToolbar();
+            }
+        });
+    }
+});
 
 // Keyboard navigation
 document.addEventListener('keydown', function(e) {
