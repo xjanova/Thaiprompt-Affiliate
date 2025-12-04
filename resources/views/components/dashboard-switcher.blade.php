@@ -3,7 +3,8 @@
     $currentRoute = request()->route()->getName();
 
     // Determine current dashboard (ตรวจสอบว่ากำลังอยู่ที่ dashboard ไหน)
-    $isAdmin = str_starts_with($currentRoute, 'admin.');
+    $isAdmin = str_starts_with($currentRoute, 'admin.') && !str_starts_with($currentRoute, 'admin.instructor.');
+    $isInstructor = str_starts_with($currentRoute, 'admin.instructor.');
     $isSeller = str_starts_with($currentRoute, 'seller.');
     $isUser = str_starts_with($currentRoute, 'user.');
 
@@ -11,12 +12,16 @@
     // ใช้ hasRole() method จาก User model ซึ่งรองรับ super_admin อัตโนมัติ
     $hasAdminAccess = $user->hasRole(['admin', 'super_admin']);
     $hasSellerAccess = $user->hasRole(['seller', 'super_admin']);
+    // Instructor สามารถเข้าได้ถ้าเป็น admin, super_admin หรือมี instructor_id ในคอร์ส
+    $hasInstructorAccess = $user->hasRole(['admin', 'super_admin', 'instructor']) ||
+        \App\Models\LearningArticle::where('instructor_id', $user->id)->orWhere('created_by', $user->id)->exists();
     // ทุกคนสามารถเข้าใช้ user dashboard ได้ (แต่ต้องมี authentication)
     $hasUserAccess = true;
 
     // Count available dashboards (นับจำนวน dashboard ที่สามารถเข้าถึงได้)
     $availableDashboards = 0;
     if ($hasAdminAccess) $availableDashboards++;
+    if ($hasInstructorAccess) $availableDashboards++;
     if ($hasSellerAccess) $availableDashboards++;
     if ($hasUserAccess) $availableDashboards++;
 
@@ -99,6 +104,8 @@
                     </span>
                     @if($isAdmin)
                         <span class="px-3 py-1.5 bg-red-500/90 backdrop-blur-sm rounded-full text-xs font-semibold shadow-sm">แอดมิน</span>
+                    @elseif($isInstructor)
+                        <span class="px-3 py-1.5 bg-amber-500/90 backdrop-blur-sm rounded-full text-xs font-semibold shadow-sm">ผู้สอน</span>
                     @elseif($isSeller)
                         <span class="px-3 py-1.5 bg-green-500/90 backdrop-blur-sm rounded-full text-xs font-semibold shadow-sm">ร้านค้า</span>
                     @else
@@ -127,6 +134,26 @@
                         <p class="text-xs text-gray-500 dark:text-gray-400">จัดการระบบ</p>
                     </div>
                     @if($isAdmin)
+                        <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                    @endif
+                </a>
+            @endif
+
+            @if($hasInstructorAccess)
+                <a href="{{ route('admin.instructor.dashboard') }}"
+                   class="flex items-center gap-3 px-3 py-3 mt-1 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-900/20 dark:hover:to-orange-900/20 rounded-xl transition-all duration-300 group relative overflow-hidden {{ $isInstructor ? 'bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 shadow-sm' : '' }}">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-md group-hover:shadow-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-bold text-sm text-gray-900 dark:text-gray-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">ผู้สอน</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">จัดการคอร์ส</p>
+                    </div>
+                    @if($isInstructor)
                         <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                         </svg>
@@ -208,6 +235,44 @@
                     </div>
                     <span class="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">ทีมงาน</span>
                 </a>
+            {{-- เมนูลัดสำหรับ Instructor Dashboard --}}
+            @elseif($isInstructor)
+                <a href="{{ route('admin.instructor.courses.index') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-900/20 dark:hover:to-orange-900/20 rounded-xl transition-all duration-300 group">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:from-amber-100 group-hover:to-orange-100 dark:group-hover:from-amber-900/50 dark:group-hover:to-orange-900/50 group-hover:text-amber-600 dark:group-hover:text-amber-400 group-hover:scale-110 transition-all duration-300 shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </div>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">คอร์สของฉัน</span>
+                </a>
+
+                <a href="{{ route('admin.instructor.courses.create') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-900/20 dark:hover:to-emerald-900/20 rounded-xl transition-all duration-300 group">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:from-green-100 group-hover:to-emerald-100 dark:group-hover:from-green-900/50 dark:group-hover:to-emerald-900/50 group-hover:text-green-600 dark:group-hover:text-green-400 group-hover:scale-110 transition-all duration-300 shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </div>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">สร้างคอร์สใหม่</span>
+                </a>
+
+                <a href="{{ route('admin.instructor.earnings') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20 rounded-xl transition-all duration-300 group">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:from-purple-100 group-hover:to-pink-100 dark:group-hover:from-purple-900/50 dark:group-hover:to-pink-900/50 group-hover:text-purple-600 dark:group-hover:text-purple-400 group-hover:scale-110 transition-all duration-300 shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">รายได้</span>
+                </a>
+
+                <a href="{{ route('user.profile') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/20 dark:hover:to-purple-900/20 rounded-xl transition-all duration-300 group">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:from-indigo-100 group-hover:to-purple-100 dark:group-hover:from-indigo-900/50 dark:group-hover:to-purple-900/50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:scale-110 transition-all duration-300 shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </div>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">โปรไฟล์ของฉัน</span>
+                </a>
+
             {{-- เมนูลัดสำหรับ Admin Dashboard --}}
             @elseif($isAdmin)
                 <a href="{{ route('user.dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/20 rounded-xl transition-all duration-300 group">
