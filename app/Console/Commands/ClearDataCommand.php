@@ -143,17 +143,39 @@ class ClearDataCommand extends Command
     }
 
     /**
-     * Clear users table
+     * ล้างข้อมูลในตาราง users
+     *
+     * เมื่อใช้ --except-admin จะเก็บ Admin/Super Admin ไว้โดยเช็คจาก:
+     * - is_super_admin = true (วิธีหลักสำหรับ Super Admin)
+     * - role = 'admin' (สำรอง เพื่อป้องกัน Admin ทั่วไป)
+     *
+     * ⚠️ หมายเหตุ: Super Admin ใช้ is_super_admin = true + role = 'admin'
+     *    ไม่ได้ใช้ role = 'super_admin'
      */
     protected function clearUsers(): void
     {
         if ($this->option('except-admin')) {
-            // Delete all users except super admin
+            // ลบ users ทั้งหมด ยกเว้น Super Admin และ Admin
+            // เก็บไว้ถ้า: is_super_admin = true หรือ role = 'admin'
             $deleted = DB::table('users')
-                ->where('role', '!=', 'super_admin')
+                ->where(function ($query) {
+                    // ไม่ใช่ super admin: is_super_admin = false หรือ NULL
+                    // ⚠️ ต้องเช็ค NULL แยก เพราะ MySQL: NULL != true → NULL (ไม่ใช่ TRUE)
+                    $query->where('is_super_admin', false)
+                          ->orWhereNull('is_super_admin');
+                })
+                ->where('role', '!=', 'admin')  // และไม่ใช่ admin
                 ->delete();
 
-            $this->line("  ✓ Cleared users table (kept admin users)");
+            // นับจำนวน admin ที่เหลือ
+            $adminCount = DB::table('users')
+                ->where(function ($query) {
+                    $query->where('is_super_admin', true)
+                          ->orWhere('role', 'admin');
+                })
+                ->count();
+
+            $this->line("  ✓ Cleared users table (kept {$adminCount} admin users)");
             $this->line("    Deleted: {$deleted} users");
         } else {
             // Delete all users
