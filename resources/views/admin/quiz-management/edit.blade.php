@@ -246,12 +246,8 @@ function confirmDelete() {
 }
 </script>
 
-<style>
-.line-clamp-2 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-}
-</style>
+{{--
+    หมายเหตุ: line-clamp-2 มีใน Tailwind CSS 3.x แล้ว
+    ไม่ต้องกำหนด custom CSS
+--}}
 @endsection

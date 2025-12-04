@@ -185,34 +185,9 @@
     </div>
 </div>
 
-<style>
-@keyframes fade-in {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.animate-fade-in {
-    animation: fade-in 0.3s ease-out;
-}
-
-.line-clamp-1 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-}
-
-.line-clamp-2 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-}
-</style>
+{{--
+    หมายเหตุ: ใช้ Tailwind CSS utilities แทน custom CSS
+    - line-clamp-1, line-clamp-2 มีใน Tailwind 3.x แล้ว
+    - ใช้ transition และ transform classes สำหรับ animation
+--}}
 @endsection
