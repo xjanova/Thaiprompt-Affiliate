@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.339.1] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1988 from xjanova/claude/fix-mlm-binary-tree-018J9z7WSPqQRJEsf8rinLBr (dcb60617)
+- fix: MLM tree relationships not connecting properly (64f194fa)
+### 🔧 Other Changes
+
+
 ## [v3.339.0] - 2025-12-04
 
 ### ✨ Features
