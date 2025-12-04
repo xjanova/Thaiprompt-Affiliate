@@ -459,8 +459,8 @@ class CleanupUserData extends Command
 
         $count = User::whereIn('id', $userIds)->count();
 
-        // Force delete (รวม soft deleted)
-        User::withTrashed()->whereIn('id', $userIds)->forceDelete();
+        // ลบ users (ใช้ delete ปกติ)
+        User::whereIn('id', $userIds)->delete();
 
         $this->info("   ✓ ลบ Users: {$count} คน");
     }
