@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.5] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #2026 from xjanova/claude/migrate-react-native-expo-01NNGuAY5F1SgzjtcCEyBGxY (fae364aa)
+- feat(mobile): add register, product detail screens with lava lamp theme (63719310)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.358.4] - 2025-12-04
 
 ### ✨ Features
