@@ -90,19 +90,12 @@ class LearningCenterController extends Controller
                 ];
             });
 
-        // ดึงบทความแนะนำ
+        // ดึงบทความแนะนำ - คืนค่าเป็น model objects โดยตรง
         $featured_articles = LearningArticle::published()
             ->featured()
             ->with(['category'])
             ->limit(3)
-            ->get()
-            ->map(function ($article) use ($user) {
-                $accessInfo = $this->progressionService->canAccessArticle($user, $article);
-                return [
-                    'article' => $article,
-                    'can_access' => $accessInfo['can_access'],
-                ];
-            });
+            ->get();
 
         // ดึงสถิติการเรียนของผู้ใช้
         $learningStats = $this->progressionService->getUserLearningStats($user);
