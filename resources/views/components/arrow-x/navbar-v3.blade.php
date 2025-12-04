@@ -169,7 +169,8 @@
             <i x-show="$store.theme.isDark" class="fas fa-sun text-yellow-300 drop-shadow"></i>
         </button>
 
-        {{-- User Profile Dropdown with Dashboard Switcher --}}
+        {{-- User Profile Dropdown with Dashboard Switcher (สำหรับผู้ใช้ที่ล็อกอินแล้ว) --}}
+        @auth
         @php
             $user = Auth::user();
             $currentRoute = request()->route() ? request()->route()->getName() : '';
@@ -354,6 +355,25 @@
                 </div>
             </div>
         </div>
+        @endauth
+
+        {{-- Guest Login/Register Buttons (สำหรับผู้เยี่ยมชมที่ยังไม่ได้ล็อกอิน) --}}
+        @guest
+        <div class="flex items-center gap-2">
+            {{-- ปุ่มเข้าสู่ระบบ --}}
+            <a href="{{ route('login') }}"
+               class="flex items-center gap-2 px-4 py-2.5 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-105 active:scale-95 text-white text-sm font-medium">
+                <i class="fas fa-sign-in-alt"></i>
+                <span class="hidden sm:inline">เข้าสู่ระบบ</span>
+            </a>
+            {{-- ปุ่มสมัครสมาชิก --}}
+            <a href="{{ route('register') }}"
+               class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 transition-all hover:scale-105 active:scale-95 text-white text-sm font-medium shadow-lg">
+                <i class="fas fa-user-plus"></i>
+                <span class="hidden sm:inline">สมัครสมาชิก</span>
+            </a>
+        </div>
+        @endguest
     </div>
 </header>
 
