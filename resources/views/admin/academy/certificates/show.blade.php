@@ -1,379 +1,131 @@
+{{--
+    หน้ารายละเอียดใบประกาศนียบัตร
+    ใช้ Tailwind CSS + Alpine.js ตาม V3 standards
+--}}
 @extends('layouts.admin-v3')
 
 @section('title', 'รายละเอียดใบประกาศนียบัตร')
 
-@push('styles')
-<style>
-:root {
-    --primary: #6366f1;
-    --success: #10b981;
-    --danger: #ef4444;
-    --gray-50: #f9fafb;
-    --gray-100: #f3f4f6;
-    --gray-200: #e5e7eb;
-    --gray-600: #4b5563;
-    --gray-700: #374151;
-    --gray-900: #111827;
-}
-
-.show-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 32px 20px;
-}
-
-.page-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 16px;
-    padding: 32px;
-    color: white;
-    margin-bottom: 32px;
-}
-
-.header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-}
-
-.page-title {
-    font-size: 32px;
-    font-weight: 800;
-    margin: 0 0 8px 0;
-}
-
-.cert-number {
-    font-family: 'Monaco', monospace;
-    font-size: 18px;
-    opacity: 0.95;
-}
-
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.badge-active {
-    background: rgba(255, 255, 255, 0.25);
-    color: white;
-}
-
-.badge-revoked {
-    background: rgba(239, 68, 68, 0.2);
-    color: white;
-}
-
-.actions-bar {
-    display: flex;
-    gap: 12px;
-}
-
-.content-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 24px;
-}
-
-.card {
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.card-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--gray-900);
-    margin: 0 0 20px 0;
-    padding-bottom: 12px;
-    border-bottom: 2px solid var(--gray-100);
-}
-
-.info-grid {
-    display: grid;
-    gap: 16px;
-}
-
-.info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 12px;
-    background: var(--gray-50);
-    border-radius: 8px;
-}
-
-.info-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--gray-600);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.info-value {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--gray-900);
-    text-align: right;
-}
-
-.cert-preview {
-    border: 2px solid var(--gray-200);
-    border-radius: 8px;
-    overflow: hidden;
-    margin-top: 20px;
-}
-
-.cert-preview iframe {
-    width: 100%;
-    height: 600px;
-    border: none;
-}
-
-.btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-}
-
-.btn-primary {
-    background: var(--primary);
-    color: white;
-}
-
-.btn-primary:hover {
-    background: #4f46e5;
-    transform: translateY(-1px);
-}
-
-.btn-success {
-    background: var(--success);
-    color: white;
-}
-
-.btn-success:hover {
-    background: #059669;
-}
-
-.btn-danger {
-    background: var(--danger);
-    color: white;
-}
-
-.btn-danger:hover {
-    background: #dc2626;
-}
-
-.btn-secondary {
-    background: var(--gray-200);
-    color: var(--gray-700);
-}
-
-.btn-secondary:hover {
-    background: var(--gray-300);
-}
-
-.quick-actions {
-    display: grid;
-    gap: 12px;
-}
-
-.action-btn {
-    width: 100%;
-    justify-content: flex-start;
-}
-
-.revoke-info {
-    background: #fee2e2;
-    border: 1px solid #fca5a5;
-    border-radius: 8px;
-    padding: 16px;
-    margin-top: 16px;
-}
-
-.revoke-title {
-    font-weight: 700;
-    color: #991b1b;
-    margin-bottom: 8px;
-}
-
-.revoke-text {
-    font-size: 14px;
-    color: #991b1b;
-    margin: 0;
-}
-
-@media (max-width: 1024px) {
-    .content-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 768px) {
-    .show-container {
-        padding: 20px 16px;
-    }
-
-    .page-header {
-        padding: 24px 20px;
-    }
-
-    .page-title {
-        font-size: 24px;
-    }
-
-    .header-top {
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .actions-bar {
-        flex-wrap: wrap;
-        width: 100%;
-    }
-
-    .actions-bar .btn {
-        flex: 1;
-        justify-content: center;
-    }
-}
-</style>
-@endpush
-
 @section('content')
-<div class="show-container">
+<div x-data="certificateDetail()" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header -->
-    <div class="page-header">
-        <div class="header-top">
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 sm:p-8 text-white mb-8 shadow-xl">
+        <div class="flex flex-col lg:flex-row justify-between items-start gap-4 mb-6">
             <div>
-                <h1 class="page-title">📜 รายละเอียดใบประกาศนียบัตร</h1>
-                <p class="cert-number">{{ $certificate->certificate_number }}</p>
+                <h1 class="text-2xl sm:text-3xl font-extrabold mb-2">📜 รายละเอียดใบประกาศนียบัตร</h1>
+                <p class="font-mono text-lg text-indigo-100">{{ $certificate->certificate_number }}</p>
             </div>
             <div>
                 @if($certificate->is_revoked)
-                    <span class="status-badge badge-revoked">
+                    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-red-500/20 text-red-100">
                         ❌ ถูกเพิกถอนแล้ว
                     </span>
                 @else
-                    <span class="status-badge badge-active">
+                    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-green-500/20 text-green-100">
                         ✅ ใช้งานได้
                     </span>
                 @endif
             </div>
         </div>
 
-        <div class="actions-bar">
-            <a href="{{ route('admin.academy.certificates.index') }}" class="btn btn-secondary">
+        <!-- Actions Bar -->
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ route('admin.academy.certificates.index') }}"
+               class="inline-flex items-center gap-2 px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition">
                 ← กลับ
             </a>
-            <a href="{{ route('admin.academy.certificates.edit', $certificate->id) }}" class="btn btn-primary">
+            <a href="{{ route('admin.academy.certificates.edit', $certificate->id) }}"
+               class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-semibold rounded-lg transition">
                 ✏️ แก้ไข
             </a>
-            <a href="{{ route('admin.certificates.download', $certificate->id) }}" class="btn btn-success" target="_blank">
+            <a href="{{ route('admin.certificates.download', $certificate->id) }}" target="_blank"
+               class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-500 hover:bg-green-400 text-white font-semibold rounded-lg transition">
                 📥 ดาวน์โหลด
             </a>
             @if(!$certificate->is_revoked)
-                <button onclick="revokeCertificate()" class="btn btn-danger">
+                <button @click="revokeCertificate()"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-red-500 hover:bg-red-400 text-white font-semibold rounded-lg transition">
                     🚫 เพิกถอน
                 </button>
             @else
-                <button onclick="restoreCertificate()" class="btn btn-success">
+                <button @click="restoreCertificate()"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-500 hover:bg-green-400 text-white font-semibold rounded-lg transition">
                     ♻️ กู้คืน
                 </button>
             @endif
         </div>
     </div>
 
-    <div class="content-grid">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Main Content -->
-        <div>
+        <div class="lg:col-span-2 space-y-6">
             <!-- Certificate Details -->
-            <div class="card">
-                <h2 class="card-title">ข้อมูลใบประกาศ</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white pb-3 mb-5 border-b-2 border-gray-100 dark:border-gray-700">
+                    ข้อมูลใบประกาศ
+                </h2>
 
-                <div class="info-grid">
-                    <div class="info-row">
-                        <span class="info-label">นักเรียน</span>
-                        <span class="info-value">{{ $certificate->student_name }}</span>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-start p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">นักเรียน</span>
+                        <span class="font-semibold text-gray-900 dark:text-white text-right">{{ $certificate->student_name }}</span>
                     </div>
 
-                    <div class="info-row">
-                        <span class="info-label">อีเมล</span>
-                        <span class="info-value">{{ $certificate->student_email }}</span>
+                    <div class="flex justify-between items-start p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">อีเมล</span>
+                        <span class="font-semibold text-gray-900 dark:text-white text-right">{{ $certificate->student_email }}</span>
                     </div>
 
-                    <div class="info-row">
-                        <span class="info-label">คอร์ส</span>
-                        <span class="info-value">{{ $certificate->course_title }}</span>
+                    <div class="flex justify-between items-start p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">คอร์ส</span>
+                        <span class="font-semibold text-gray-900 dark:text-white text-right">{{ $certificate->course_title }}</span>
                     </div>
 
-                    <div class="info-row">
-                        <span class="info-label">ครูผู้สอน</span>
-                        <span class="info-value">{{ $certificate->instructor_name }}</span>
+                    <div class="flex justify-between items-start p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">ครูผู้สอน</span>
+                        <span class="font-semibold text-gray-900 dark:text-white text-right">{{ $certificate->instructor_name }}</span>
                     </div>
 
                     @if($certificate->quiz_score)
-                        <div class="info-row">
-                            <span class="info-label">คะแนน Quiz</span>
-                            <span class="info-value" style="color: var(--success);">
-                                {{ number_format($certificate->quiz_score, 2) }}%
-                            </span>
+                        <div class="flex justify-between items-start p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">คะแนน Quiz</span>
+                            <span class="font-bold text-green-600 dark:text-green-400">{{ number_format($certificate->quiz_score, 2) }}%</span>
                         </div>
                     @endif
 
                     @if($certificate->total_hours)
-                        <div class="info-row">
-                            <span class="info-label">ชั่วโมงเรียน</span>
-                            <span class="info-value">{{ number_format($certificate->total_hours, 1) }} ชม.</span>
+                        <div class="flex justify-between items-start p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">ชั่วโมงเรียน</span>
+                            <span class="font-semibold text-gray-900 dark:text-white">{{ number_format($certificate->total_hours, 1) }} ชม.</span>
                         </div>
                     @endif
 
-                    <div class="info-row">
-                        <span class="info-label">วันที่ออกใบประกาศ</span>
-                        <span class="info-value">{{ $certificate->issued_at->format('d/m/Y H:i') }}</span>
+                    <div class="flex justify-between items-start p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">วันที่ออกใบประกาศ</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">{{ $certificate->issued_at->format('d/m/Y H:i') }}</span>
                     </div>
 
-                    <div class="info-row">
-                        <span class="info-label">รหัสยืนยัน</span>
-                        <span class="info-value" style="font-family: monospace;">
-                            {{ $certificate->verification_code }}
-                        </span>
+                    <div class="flex justify-between items-start p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">รหัสยืนยัน</span>
+                        <span class="font-mono font-semibold text-gray-900 dark:text-white">{{ $certificate->verification_code }}</span>
                     </div>
 
                     @if($certificate->custom_text)
-                        <div class="info-row" style="flex-direction: column; align-items: flex-start;">
-                            <span class="info-label">ข้อความพิเศษ</span>
-                            <p style="margin: 8px 0 0 0; color: var(--gray-700); font-size: 14px;">
-                                {{ $certificate->custom_text }}
-                            </p>
+                        <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide block mb-2">ข้อความพิเศษ</span>
+                            <p class="text-gray-700 dark:text-gray-300">{{ $certificate->custom_text }}</p>
                         </div>
                     @endif
                 </div>
 
                 @if($certificate->is_revoked)
-                    <div class="revoke-info">
-                        <div class="revoke-title">ใบประกาศนี้ถูกเพิกถอนแล้ว</div>
-                        <p class="revoke-text">
+                    <div class="mt-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                        <div class="font-bold text-red-800 dark:text-red-200 mb-2">ใบประกาศนี้ถูกเพิกถอนแล้ว</div>
+                        <p class="text-sm text-red-700 dark:text-red-300">
                             <strong>วันที่เพิกถอน:</strong> {{ $certificate->revoked_at->format('d/m/Y H:i') }}
                         </p>
                         @if($certificate->revoked_reason)
-                            <p class="revoke-text">
+                            <p class="text-sm text-red-700 dark:text-red-300 mt-1">
                                 <strong>เหตุผล:</strong> {{ $certificate->revoked_reason }}
                             </p>
                         @endif
@@ -382,120 +134,119 @@
             </div>
 
             <!-- Certificate Preview -->
-            <div class="card" style="margin-top: 24px;">
-                <h2 class="card-title">ตัวอย่างใบประกาศ</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white pb-3 mb-5 border-b-2 border-gray-100 dark:border-gray-700">
+                    ตัวอย่างใบประกาศ
+                </h2>
 
                 @if($certificate->pdf_path && Storage::disk('public')->exists($certificate->pdf_path))
-                    <div class="cert-preview">
-                        <iframe src="{{ Storage::disk('public')->url($certificate->pdf_path) }}"></iframe>
+                    <div class="border-2 border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+                        <iframe src="{{ Storage::disk('public')->url($certificate->pdf_path) }}"
+                                class="w-full h-[600px] border-0"></iframe>
                     </div>
                 @else
-                    <div style="text-align: center; padding: 60px 20px; background: var(--gray-50); border-radius: 8px;">
-                        <div style="font-size: 48px; margin-bottom: 16px;">📄</div>
-                        <p style="color: var(--gray-600); margin: 0;">ไม่พบไฟล์ใบประกาศ</p>
-                        <p style="color: var(--gray-600); font-size: 14px; margin: 8px 0 0 0;">
-                            อาจจะยังไม่ได้สร้างหรือถูกลบไปแล้ว
-                        </p>
+                    <div class="text-center py-16 px-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div class="text-5xl mb-4">📄</div>
+                        <p class="text-gray-600 dark:text-gray-400 font-medium">ไม่พบไฟล์ใบประกาศ</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">อาจจะยังไม่ได้สร้างหรือถูกลบไปแล้ว</p>
                     </div>
                 @endif
             </div>
         </div>
 
         <!-- Sidebar -->
-        <div>
+        <div class="space-y-6">
             <!-- Quick Actions -->
-            <div class="card">
-                <h2 class="card-title">การกระทำ</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white pb-3 mb-5 border-b-2 border-gray-100 dark:border-gray-700">
+                    การกระทำ
+                </h2>
 
-                <div class="quick-actions">
-                    <a href="{{ route('certificate.verify', $certificate->verification_code) }}"
-                       target="_blank"
-                       class="btn btn-primary action-btn">
+                <div class="space-y-3">
+                    <a href="{{ route('certificate.verify', $certificate->verification_code) }}" target="_blank"
+                       class="flex items-center gap-3 w-full px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition">
                         🔍 ตรวจสอบใบประกาศ (Public)
                     </a>
 
-                    <a href="{{ route('certificate.share', $certificate->id) }}"
-                       target="_blank"
-                       class="btn btn-secondary action-btn">
+                    <a href="{{ route('certificate.share', $certificate->id) }}" target="_blank"
+                       class="flex items-center gap-3 w-full px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-lg transition">
                         🔗 หน้าแชร์
                     </a>
 
-                    <button onclick="copyVerificationLink()" class="btn btn-secondary action-btn">
+                    <button @click="copyVerificationLink()"
+                            class="flex items-center gap-3 w-full px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-lg transition">
                         📋 คัดลอกลิงก์ตรวจสอบ
                     </button>
 
-                    <a href="mailto:{{ $certificate->student_email }}" class="btn btn-secondary action-btn">
+                    <a href="mailto:{{ $certificate->student_email }}"
+                       class="flex items-center gap-3 w-full px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-lg transition">
                         ✉️ ส่งอีเมลถึงนักเรียน
                     </a>
                 </div>
             </div>
 
             <!-- User Info -->
-            <div class="card" style="margin-top: 24px;">
-                <h2 class="card-title">ข้อมูลผู้ใช้</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white pb-3 mb-5 border-b-2 border-gray-100 dark:border-gray-700">
+                    ข้อมูลผู้ใช้
+                </h2>
 
-                <div style="text-align: center; margin-bottom: 16px;">
-                    <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; font-weight: 700;">
+                <div class="text-center mb-4">
+                    <div class="w-20 h-20 mx-auto mb-3 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold">
                         {{ strtoupper(substr($certificate->user->name, 0, 1)) }}
                     </div>
-                    <div style="font-weight: 700; font-size: 16px; color: var(--gray-900);">
-                        {{ $certificate->user->name }}
-                    </div>
-                    <div style="font-size: 14px; color: var(--gray-600); margin-top: 4px;">
-                        {{ $certificate->user->email }}
-                    </div>
+                    <div class="font-bold text-lg text-gray-900 dark:text-white">{{ $certificate->user->name }}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ $certificate->user->email }}</div>
                 </div>
 
                 <a href="{{ route('admin.users.show', $certificate->user->id) }}"
-                   class="btn btn-secondary"
-                   style="width: 100%; justify-content: center;">
+                   class="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-lg transition">
                     👤 ดูโปรไฟล์ผู้ใช้
                 </a>
             </div>
 
             <!-- Course Info -->
-            <div class="card" style="margin-top: 24px;">
-                <h2 class="card-title">ข้อมูลคอร์ส</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white pb-3 mb-5 border-b-2 border-gray-100 dark:border-gray-700">
+                    ข้อมูลคอร์ส
+                </h2>
 
-                <div style="margin-bottom: 16px;">
+                <div class="mb-4">
                     @if($certificate->article->thumbnail_url)
                         <img src="{{ $certificate->article->thumbnail_url }}"
-                             style="width: 100%; border-radius: 8px; margin-bottom: 12px;"
-                             alt="Course thumbnail">
+                             class="w-full rounded-lg mb-3" alt="Course thumbnail">
                     @endif
 
-                    <h3 style="font-size: 16px; font-weight: 700; color: var(--gray-900); margin: 0 0 8px 0;">
-                        {{ $certificate->article->title }}
-                    </h3>
-
-                    <p style="font-size: 14px; color: var(--gray-600); margin: 0;">
+                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">{{ $certificate->article->title }}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
                         {{ Str::limit($certificate->article->description ?? 'ไม่มีคำอธิบาย', 100) }}
                     </p>
                 </div>
 
                 <a href="{{ route('admin.articles.edit', $certificate->article->id) }}"
-                   class="btn btn-secondary"
-                   style="width: 100%; justify-content: center;">
+                   class="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-lg transition">
                     📝 จัดการคอร์ส
                 </a>
             </div>
 
             <!-- System Info -->
-            <div class="card" style="margin-top: 24px;">
-                <h2 class="card-title">ข้อมูลระบบ</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white pb-3 mb-5 border-b-2 border-gray-100 dark:border-gray-700">
+                    ข้อมูลระบบ
+                </h2>
 
-                <div style="font-size: 13px; color: var(--gray-600); line-height: 1.8;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                    <div class="flex justify-between">
                         <span>Created:</span>
                         <span>{{ $certificate->created_at->format('d/m/Y H:i') }}</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <div class="flex justify-between">
                         <span>Updated:</span>
                         <span>{{ $certificate->updated_at->format('d/m/Y H:i') }}</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between;">
+                    <div class="flex justify-between">
                         <span>ID:</span>
-                        <span style="font-family: monospace;">#{{ $certificate->id }}</span>
+                        <span class="font-mono">#{{ $certificate->id }}</span>
                     </div>
                 </div>
             </div>
@@ -505,57 +256,82 @@
 
 @push('scripts')
 <script>
-function revokeCertificate() {
-    const reason = prompt('กรุณาระบุเหตุผลในการเพิกถอน (ถ้ามี):');
-    if (reason === null) return;
+/**
+ * Alpine.js component สำหรับแสดงรายละเอียดใบประกาศ
+ * ใช้ Tailwind CSS + Alpine.js ตาม V3 standards
+ */
+function certificateDetail() {
+    return {
+        /**
+         * เพิกถอนใบประกาศ
+         */
+        async revokeCertificate() {
+            const reason = prompt('กรุณาระบุเหตุผลในการเพิกถอน (ถ้ามี):');
+            if (reason === null) return;
 
-    fetch('{{ route("admin.academy.certificates.revoke", $certificate->id) }}', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json'
+            try {
+                const response = await fetch('{{ route("admin.academy.certificates.revoke", $certificate->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ revoked_reason: reason })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ เพิกถอนใบประกาศเรียบร้อยแล้ว');
+                    location.reload();
+                } else {
+                    alert('❌ เกิดข้อผิดพลาด');
+                }
+            } catch (error) {
+                alert('❌ เกิดข้อผิดพลาด');
+                console.error(error);
+            }
         },
-        body: JSON.stringify({ revoked_reason: reason })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('✅ เพิกถอนใบประกาศเรียบร้อยแล้ว');
-            location.reload();
-        } else {
-            alert('❌ เกิดข้อผิดพลาด');
-        }
-    });
-}
 
-function restoreCertificate() {
-    if (!confirm('ต้องการกู้คืนใบประกาศนี้?')) return;
+        /**
+         * กู้คืนใบประกาศ
+         */
+        async restoreCertificate() {
+            if (!confirm('ต้องการกู้คืนใบประกาศนี้?')) return;
 
-    fetch('{{ route("admin.academy.certificates.restore", $certificate->id) }}', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('✅ กู้คืนใบประกาศเรียบร้อยแล้ว');
-            location.reload();
-        } else {
-            alert('❌ เกิดข้อผิดพลาด');
-        }
-    });
-}
+            try {
+                const response = await fetch('{{ route("admin.academy.certificates.restore", $certificate->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
 
-function copyVerificationLink() {
-    const link = '{{ route("certificate.verify", $certificate->verification_code) }}';
-    navigator.clipboard.writeText(link).then(() => {
-        alert('✅ คัดลอกลิงก์เรียบร้อยแล้ว!');
-    }).catch(() => {
-        prompt('คัดลอกลิงก์นี้:', link);
-    });
+                if (data.success) {
+                    alert('✅ กู้คืนใบประกาศเรียบร้อยแล้ว');
+                    location.reload();
+                } else {
+                    alert('❌ เกิดข้อผิดพลาด');
+                }
+            } catch (error) {
+                alert('❌ เกิดข้อผิดพลาด');
+                console.error(error);
+            }
+        },
+
+        /**
+         * คัดลอกลิงก์ตรวจสอบ
+         */
+        copyVerificationLink() {
+            const link = '{{ route("certificate.verify", $certificate->verification_code) }}';
+            navigator.clipboard.writeText(link).then(() => {
+                alert('✅ คัดลอกลิงก์เรียบร้อยแล้ว!');
+            }).catch(() => {
+                prompt('คัดลอกลิงก์นี้:', link);
+            });
+        }
+    }
 }
 </script>
 @endpush
