@@ -462,3 +462,694 @@
         </div>
     </div>
 </div>
+
+<!-- Slide 5: AI Chatbot Demo/Flow -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-indigo-900/95 via-blue-900/90 to-sky-900/95 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-30">
+            <div class="absolute top-1/4 left-1/4 w-80 h-80 bg-indigo-400 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>
+            <div class="absolute bottom-1/3 right-1/3 w-80 h-80 bg-blue-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000"></div>
+            <div class="absolute top-1/2 right-1/4 w-72 h-72 bg-sky-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-4000"></div>
+        </div>
+
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 text-center">
+                💡 AI Chatbot ทำงานยังไง?
+            </h2>
+            <p class="text-center text-xl text-indigo-200 mb-10">
+                ดูตัวอย่างการสนทนาระหว่าง AI กับลูกค้า
+            </p>
+
+            <!-- Conversation Flow Diagram -->
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- Scenario 1: Product Inquiry -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 shadow-xl">
+                    <div class="flex items-center gap-3 mb-5">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                            <span class="text-2xl">🛍️</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-white">สอบถามข้อมูลสินค้า</h3>
+                    </div>
+                    <div class="space-y-3">
+                        <!-- Customer Message -->
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-sm">👤</div>
+                            <div class="bg-gray-700/50 rounded-2xl rounded-tl-none px-4 py-2 flex-1">
+                                <p class="text-white/90 text-sm">สินค้าตัวนี้มีสีอะไรบ้างครับ?</p>
+                            </div>
+                        </div>
+                        <!-- AI Response -->
+                        <div class="flex items-start gap-3 flex-row-reverse">
+                            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-sm">🤖</div>
+                            <div class="bg-gradient-to-r from-blue-600/80 to-indigo-600/80 rounded-2xl rounded-tr-none px-4 py-2 flex-1">
+                                <p class="text-white text-sm">มีให้เลือก 5 สี ครับ: ดำ, ขาว, แดง, น้ำเงิน, เทา สนใจสีไหนดีครับ?</p>
+                            </div>
+                        </div>
+                        <!-- Customer Message -->
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-sm">👤</div>
+                            <div class="bg-gray-700/50 rounded-2xl rounded-tl-none px-4 py-2 flex-1">
+                                <p class="text-white/90 text-sm">ราคาเท่าไหร่ครับ?</p>
+                            </div>
+                        </div>
+                        <!-- AI Response -->
+                        <div class="flex items-start gap-3 flex-row-reverse">
+                            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-sm">🤖</div>
+                            <div class="bg-gradient-to-r from-blue-600/80 to-indigo-600/80 rounded-2xl rounded-tr-none px-4 py-2 flex-1">
+                                <p class="text-white text-sm">ราคาปกติ ฿1,990 ตอนนี้ลด 30% เหลือ <strong>฿1,393</strong> ครับ! สั่งเลยไหมครับ? 😊</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scenario 2: Customer Service -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 shadow-xl">
+                    <div class="flex items-center gap-3 mb-5">
+                        <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center">
+                            <span class="text-2xl">💬</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-white">แก้ปัญหาลูกค้า</h3>
+                    </div>
+                    <div class="space-y-3">
+                        <!-- Customer Message -->
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-sm">👤</div>
+                            <div class="bg-gray-700/50 rounded-2xl rounded-tl-none px-4 py-2 flex-1">
+                                <p class="text-white/90 text-sm">สั่งไปแล้วครับ ติดตามพัสดุได้ไหม?</p>
+                            </div>
+                        </div>
+                        <!-- AI Response -->
+                        <div class="flex items-start gap-3 flex-row-reverse">
+                            <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center text-sm">🤖</div>
+                            <div class="bg-gradient-to-r from-emerald-600/80 to-green-600/80 rounded-2xl rounded-tr-none px-4 py-2 flex-1">
+                                <p class="text-white text-sm">ขอเลขออเดอร์หน่อยครับ จะเช็คให้</p>
+                            </div>
+                        </div>
+                        <!-- Customer Message -->
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-sm">👤</div>
+                            <div class="bg-gray-700/50 rounded-2xl rounded-tl-none px-4 py-2 flex-1">
+                                <p class="text-white/90 text-sm">TP12345678</p>
+                            </div>
+                        </div>
+                        <!-- AI Response -->
+                        <div class="flex items-start gap-3 flex-row-reverse">
+                            <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center text-sm">🤖</div>
+                            <div class="bg-gradient-to-r from-emerald-600/80 to-green-600/80 rounded-2xl rounded-tr-none px-4 py-2 flex-1">
+                                <p class="text-white text-sm">📦 พัสดุอยู่ระหว่างขนส่งครับ คาดว่าถึงพรุ่งนี้ (12 ธ.ค.) 🚚 ติดตามได้ที่: TH1234567890TH</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Capabilities in Conversation -->
+            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 mb-6">
+                <h3 class="text-xl font-bold text-white text-center mb-6">
+                    🧠 ความสามารถของ AI ในการสนทนา
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="text-center p-4 bg-white/5 rounded-xl">
+                        <div class="text-3xl mb-2">🎯</div>
+                        <h4 class="text-sm font-bold text-white mb-1">เข้าใจบริบท</h4>
+                        <p class="text-xs text-white/60">จำการสนทนาก่อนหน้า</p>
+                    </div>
+                    <div class="text-center p-4 bg-white/5 rounded-xl">
+                        <div class="text-3xl mb-2">🔍</div>
+                        <h4 class="text-sm font-bold text-white mb-1">ค้นหาข้อมูล</h4>
+                        <p class="text-xs text-white/60">เชื่อมฐานข้อมูลสินค้า</p>
+                    </div>
+                    <div class="text-center p-4 bg-white/5 rounded-xl">
+                        <div class="text-3xl mb-2">😊</div>
+                        <h4 class="text-sm font-bold text-white mb-1">มีอารมณ์</h4>
+                        <p class="text-xs text-white/60">ตอบอย่างมิตรภาพ</p>
+                    </div>
+                    <div class="text-center p-4 bg-white/5 rounded-xl">
+                        <div class="text-3xl mb-2">⚡</div>
+                        <h4 class="text-sm font-bold text-white mb-1">ตอบไว</h4>
+                        <p class="text-xs text-white/60">&lt;3 วินาที</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-indigo-500/20 to-blue-500/20 backdrop-blur-md border border-indigo-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-xl md:text-2xl text-white font-bold">
+                    🎉 <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-blue-300">ลูกค้าได้คำตอบทันที ไม่ต้องรอ = ขายได้เร็วขึ้น</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 6: Supported AI Models -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-violet-900/95 via-purple-900/90 to-fuchsia-900/95 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-25">
+            <div class="absolute top-1/3 left-1/3 w-80 h-80 bg-violet-400 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>
+            <div class="absolute bottom-1/3 right-1/3 w-80 h-80 bg-purple-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000"></div>
+            <div class="absolute top-1/2 left-1/2 w-72 h-72 bg-fuchsia-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-4000"></div>
+        </div>
+
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 text-center">
+                🧠 AI Models ที่รองรับ
+            </h2>
+            <p class="text-center text-xl text-violet-200 mb-10">
+                เชื่อมต่อกับ AI ระดับโลก รวมถึง AI ภาษาไทย
+            </p>
+
+            <!-- Main AI Models Grid -->
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- GPT-4 by OpenAI -->
+                <div class="bg-gradient-to-br from-green-500/25 to-emerald-500/15 backdrop-blur-lg border border-green-300/30 rounded-2xl p-6 shadow-xl">
+                    <div class="flex items-center gap-4 mb-5">
+                        <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center">
+                            <span class="text-3xl">🟢</span>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white">GPT-4 Turbo</h3>
+                            <p class="text-white/70 text-sm">by OpenAI</p>
+                        </div>
+                    </div>
+                    <ul class="space-y-3 text-white/90 text-sm">
+                        <li class="flex items-start gap-3">
+                            <span class="text-green-400 text-lg">✓</span>
+                            <div>
+                                <strong class="text-white">ฉลาดที่สุดในโลก</strong>
+                                <p class="text-xs text-white/60">เข้าใจภาษา 50+ ภาษา รวมไทย</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-green-400 text-lg">✓</span>
+                            <div>
+                                <strong class="text-white">วิเคราะห์ภาพได้</strong>
+                                <p class="text-xs text-white/60">อ่านรูปภาพ, สแกนเอกสาร</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-green-400 text-lg">✓</span>
+                            <div>
+                                <strong class="text-white">128K Context Window</strong>
+                                <p class="text-xs text-white/60">จำบทสนทนาได้ยาวมาก</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Claude 3 by Anthropic -->
+                <div class="bg-gradient-to-br from-orange-500/25 to-amber-500/15 backdrop-blur-lg border border-orange-300/30 rounded-2xl p-6 shadow-xl">
+                    <div class="flex items-center gap-4 mb-5">
+                        <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center">
+                            <span class="text-3xl">🟠</span>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white">Claude 3 Opus</h3>
+                            <p class="text-white/70 text-sm">by Anthropic</p>
+                        </div>
+                    </div>
+                    <ul class="space-y-3 text-white/90 text-sm">
+                        <li class="flex items-start gap-3">
+                            <span class="text-orange-400 text-lg">✓</span>
+                            <div>
+                                <strong class="text-white">เข้าใจบริบทลึก</strong>
+                                <p class="text-xs text-white/60">วิเคราะห์ความหมายได้แม่นยำ</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-orange-400 text-lg">✓</span>
+                            <div>
+                                <strong class="text-white">ปลอดภัยสูง</strong>
+                                <p class="text-xs text-white/60">ไม่รั่วไหลข้อมูล, ไม่สแปม</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-orange-400 text-lg">✓</span>
+                            <div>
+                                <strong class="text-white">200K Context</strong>
+                                <p class="text-xs text-white/60">จำประวัติลูกค้าได้มากที่สุด</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Google Gemini -->
+                <div class="bg-gradient-to-br from-blue-500/25 to-cyan-500/15 backdrop-blur-lg border border-blue-300/30 rounded-2xl p-6 shadow-xl">
+                    <div class="flex items-center gap-4 mb-5">
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center">
+                            <span class="text-3xl">🔵</span>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white">Gemini Pro</h3>
+                            <p class="text-white/70 text-sm">by Google</p>
+                        </div>
+                    </div>
+                    <ul class="space-y-3 text-white/90 text-sm">
+                        <li class="flex items-start gap-3">
+                            <span class="text-blue-400 text-lg">✓</span>
+                            <div>
+                                <strong class="text-white">Multimodal AI</strong>
+                                <p class="text-xs text-white/60">ข้อความ, รูป, เสียง, วิดีโอ</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-blue-400 text-lg">✓</span>
+                            <div>
+                                <strong class="text-white">เชื่อม Google Services</strong>
+                                <p class="text-xs text-white/60">Maps, Search, Workspace</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-blue-400 text-lg">✓</span>
+                            <div>
+                                <strong class="text-white">ความเร็วสูง</strong>
+                                <p class="text-xs text-white/60">ตอบไว อัพเดทข้อมูลล่าสุด</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Thai NLP (Custom) -->
+                <div class="bg-gradient-to-br from-pink-500/25 to-rose-500/15 backdrop-blur-lg border border-pink-300/30 rounded-2xl p-6 shadow-xl">
+                    <div class="flex items-center gap-4 mb-5">
+                        <div class="w-16 h-16 bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center">
+                            <span class="text-3xl">🇹🇭</span>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white">Thai NLP</h3>
+                            <p class="text-white/70 text-sm">Custom Trained</p>
+                        </div>
+                    </div>
+                    <ul class="space-y-3 text-white/90 text-sm">
+                        <li class="flex items-start gap-3">
+                            <span class="text-pink-400 text-lg">✓</span>
+                            <div>
+                                <strong class="text-white">เข้าใจภาษาไทย 100%</strong>
+                                <p class="text-xs text-white/60">ภาษาถิ่น, สแลง, อีโมจิ</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-pink-400 text-lg">✓</span>
+                            <div>
+                                <strong class="text-white">วิเคราะห์อารมณ์</strong>
+                                <p class="text-xs text-white/60">รู้ว่าลูกค้าดีใจ/เสียใจ/โกรธ</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-pink-400 text-lg">✓</span>
+                            <div>
+                                <strong class="text-white">ตัดคำไทยแม่นยำ</strong>
+                                <p class="text-xs text-white/60">แยกคำได้ถูกต้อง ไม่สับสน</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Model Switching Feature -->
+            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 mb-6">
+                <h3 class="text-xl font-bold text-white text-center mb-6">
+                    🔄 สลับ AI Model ได้ตามงาน
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-xl p-4 text-center">
+                        <div class="text-3xl mb-2">💬</div>
+                        <h4 class="text-white font-bold mb-1">แชทธรรมดา</h4>
+                        <p class="text-white/60 text-xs">→ GPT-4 หรือ Claude</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-pink-500/20 to-pink-500/10 rounded-xl p-4 text-center">
+                        <div class="text-3xl mb-2">🇹🇭</div>
+                        <h4 class="text-white font-bold mb-1">ลูกค้าไทย</h4>
+                        <p class="text-white/60 text-xs">→ Thai NLP (แม่นสุด)</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-500/20 to-purple-500/10 rounded-xl p-4 text-center">
+                        <div class="text-3xl mb-2">📊</div>
+                        <h4 class="text-white font-bold mb-1">วิเคราะห์ข้อมูล</h4>
+                        <p class="text-white/60 text-xs">→ Gemini Pro (ไวสุด)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-violet-500/20 to-purple-500/20 backdrop-blur-md border border-violet-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-xl md:text-2xl text-white font-bold">
+                    🌟 <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-300 to-fuchsia-300">ใช้ AI หลายตัวพร้อมกัน ไม่ต้องจ่ายค่า API เอง!</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 7: Voice AI & Multilingual -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-teal-900/95 via-cyan-900/90 to-blue-900/95 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-25">
+            <div class="absolute top-1/4 right-1/4 w-80 h-80 bg-teal-400 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>
+            <div class="absolute bottom-1/4 left-1/3 w-80 h-80 bg-cyan-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000"></div>
+        </div>
+
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 text-center">
+                🎙️ Voice AI & Multilingual
+            </h2>
+            <p class="text-center text-xl text-teal-200 mb-10">
+                คุยด้วยเสียง รองรับหลายภาษา ทั่วโลก
+            </p>
+
+            <!-- Main Features Grid -->
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <!-- Voice Recognition -->
+                <div class="bg-gradient-to-br from-rose-500/25 to-pink-500/15 backdrop-blur-lg border border-rose-300/30 rounded-2xl p-6 shadow-xl">
+                    <div class="text-center mb-5">
+                        <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl mb-4">
+                            <span class="text-3xl">🎤</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Voice Recognition</h3>
+                        <p class="text-white/60 text-sm">รู้จำเสียงพูด</p>
+                    </div>
+                    <ul class="space-y-3 text-white/80 text-sm">
+                        <li class="flex items-center gap-2">
+                            <span class="text-rose-400">✓</span>
+                            <span>แปลงเสียงเป็นข้อความ</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-rose-400">✓</span>
+                            <span>รองรับ 50+ ภาษา</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-rose-400">✓</span>
+                            <span>แม่นยำ 95%+</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-rose-400">✓</span>
+                            <span>กรองเสียงรบกวน</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Text-to-Speech -->
+                <div class="bg-gradient-to-br from-purple-500/25 to-violet-500/15 backdrop-blur-lg border border-purple-300/30 rounded-2xl p-6 shadow-xl">
+                    <div class="text-center mb-5">
+                        <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl mb-4">
+                            <span class="text-3xl">🔊</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Text-to-Speech</h3>
+                        <p class="text-white/60 text-sm">อ่านข้อความเป็นเสียง</p>
+                    </div>
+                    <ul class="space-y-3 text-white/80 text-sm">
+                        <li class="flex items-center gap-2">
+                            <span class="text-purple-400">✓</span>
+                            <span>เสียงธรรมชาติ ไม่เหมือนหุ่นยนต์</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-purple-400">✓</span>
+                            <span>ปรับน้ำเสียงได้</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-purple-400">✓</span>
+                            <span>เลือกเสียงชาย/หญิง</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-purple-400">✓</span>
+                            <span>อ่านภาษาไทยชัดเจน</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Language Translation -->
+                <div class="bg-gradient-to-br from-amber-500/25 to-orange-500/15 backdrop-blur-lg border border-amber-300/30 rounded-2xl p-6 shadow-xl">
+                    <div class="text-center mb-5">
+                        <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl mb-4">
+                            <span class="text-3xl">🌍</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Auto Translation</h3>
+                        <p class="text-white/60 text-sm">แปลภาษาอัตโนมัติ</p>
+                    </div>
+                    <ul class="space-y-3 text-white/80 text-sm">
+                        <li class="flex items-center gap-2">
+                            <span class="text-amber-400">✓</span>
+                            <span>แปลแบบเรียลไทม์</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-amber-400">✓</span>
+                            <span>รักษาความหมายเดิม</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-amber-400">✓</span>
+                            <span>รู้จักศัพท์เฉพาะทาง</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <span class="text-amber-400">✓</span>
+                            <span>ตรวจสอบไวยากรณ์</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Supported Languages -->
+            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 mb-6">
+                <h3 class="text-xl font-bold text-white text-center mb-6">
+                    🌐 รองรับภาษาทั่วโลก 50+ ภาษา
+                </h3>
+                <div class="grid grid-cols-3 md:grid-cols-6 gap-4">
+                    <div class="bg-white/5 rounded-xl p-3 text-center">
+                        <div class="text-2xl mb-1">🇹🇭</div>
+                        <div class="text-white text-xs font-bold">ไทย</div>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-3 text-center">
+                        <div class="text-2xl mb-1">🇬🇧</div>
+                        <div class="text-white text-xs font-bold">English</div>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-3 text-center">
+                        <div class="text-2xl mb-1">🇨🇳</div>
+                        <div class="text-white text-xs font-bold">中文</div>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-3 text-center">
+                        <div class="text-2xl mb-1">🇯🇵</div>
+                        <div class="text-white text-xs font-bold">日本語</div>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-3 text-center">
+                        <div class="text-2xl mb-1">🇰🇷</div>
+                        <div class="text-white text-xs font-bold">한국어</div>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-3 text-center">
+                        <div class="text-2xl mb-1">🇻🇳</div>
+                        <div class="text-white text-xs font-bold">Tiếng Việt</div>
+                    </div>
+                </div>
+                <p class="text-center text-white/60 text-sm mt-4">
+                    + อีก 44+ ภาษา รวมถึง ฝรั่งเศส, เยอรมัน, สเปน, อิตาลี, รัสเซีย, อารบิก และอื่นๆ
+                </p>
+            </div>
+
+            <!-- Use Cases -->
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <!-- Voice Shopping -->
+                <div class="bg-gradient-to-br from-blue-500/20 to-indigo-500/10 backdrop-blur-md border border-blue-300/30 rounded-2xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-3xl">🛒</span>
+                        <h4 class="text-lg font-bold text-white">Voice Shopping</h4>
+                    </div>
+                    <p class="text-white/70 text-sm mb-3">
+                        "สั่งของด้วยเสียง - ลูกค้าพูดว่า 'ซื้อเสื้อสีแดง ไซส์ M' AI ก็เข้าใจและสั่งให้ทันที"
+                    </p>
+                    <div class="flex gap-2">
+                        <span class="px-3 py-1 bg-blue-500/30 rounded-full text-xs text-white">สะดวก</span>
+                        <span class="px-3 py-1 bg-blue-500/30 rounded-full text-xs text-white">รวดเร็ว</span>
+                        <span class="px-3 py-1 bg-blue-500/30 rounded-full text-xs text-white">แฮนด์ฟรี</span>
+                    </div>
+                </div>
+
+                <!-- Global Customer Support -->
+                <div class="bg-gradient-to-br from-emerald-500/20 to-green-500/10 backdrop-blur-md border border-emerald-300/30 rounded-2xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-3xl">🌏</span>
+                        <h4 class="text-lg font-bold text-white">Support ลูกค้าต่างชาติ</h4>
+                    </div>
+                    <p class="text-white/70 text-sm mb-3">
+                        "ลูกค้าจีนแชทมา AI แปลเป็นไทยให้คุณ คุณตอบไทย AI แปลเป็นจีนส่งกลับ - ไม่ต้องรู้ภาษา!"
+                    </p>
+                    <div class="flex gap-2">
+                        <span class="px-3 py-1 bg-emerald-500/30 rounded-full text-xs text-white">ทำเลทั่วโลก</span>
+                        <span class="px-3 py-1 bg-emerald-500/30 rounded-full text-xs text-white">ไร้ขีดจำกัด</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-teal-500/20 to-cyan-500/20 backdrop-blur-md border border-teal-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-xl md:text-2xl text-white font-bold">
+                    🗣️ <span class="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-cyan-300">ทำธุรกิจระดับโลก ไม่ต้องเก่งภาษา!</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 8: ROI & Success Metrics -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-emerald-900/95 via-green-900/90 to-lime-900/95 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-25">
+            <div class="absolute top-1/4 left-1/4 w-80 h-80 bg-emerald-400 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-green-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000"></div>
+            <div class="absolute top-1/2 right-1/3 w-72 h-72 bg-lime-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-4000"></div>
+        </div>
+
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 text-center">
+                📈 ROI & ผลลัพธ์จริง
+            </h2>
+            <p class="text-center text-xl text-emerald-200 mb-10">
+                ดูตัวเลขประสิทธิภาพที่เพิ่มขึ้นจริง
+            </p>
+
+            <!-- Key Metrics Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-gradient-to-br from-blue-500/30 to-blue-500/10 backdrop-blur-lg border border-blue-300/30 rounded-2xl p-5 text-center transform hover:scale-105 transition-all">
+                    <div class="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-cyan-300 mb-2">
+                        87%
+                    </div>
+                    <h4 class="text-white font-bold mb-1 text-sm md:text-base">ลดเวลาตอบลูกค้า</h4>
+                    <p class="text-white/60 text-xs">จาก 15 นาที → 2 วินาที</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-emerald-500/30 to-emerald-500/10 backdrop-blur-lg border border-emerald-300/30 rounded-2xl p-5 text-center transform hover:scale-105 transition-all">
+                    <div class="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-green-300 mb-2">
+                        3.5x
+                    </div>
+                    <h4 class="text-white font-bold mb-1 text-sm md:text-base">เพิ่มยอดขาย</h4>
+                    <p class="text-white/60 text-xs">ปิดการขายเร็วขึ้น</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-amber-500/30 to-amber-500/10 backdrop-blur-lg border border-amber-300/30 rounded-2xl p-5 text-center transform hover:scale-105 transition-all">
+                    <div class="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-300 mb-2">
+                        80%
+                    </div>
+                    <h4 class="text-white font-bold mb-1 text-sm md:text-base">ลดต้นทุนพนักงาน</h4>
+                    <p class="text-white/60 text-xs">ประหยัด ฿30,000+/เดือน</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-pink-500/30 to-pink-500/10 backdrop-blur-lg border border-pink-300/30 rounded-2xl p-5 text-center transform hover:scale-105 transition-all">
+                    <div class="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-rose-300 mb-2">
+                        95%
+                    </div>
+                    <h4 class="text-white font-bold mb-1 text-sm md:text-base">ความพึงพอใจลูกค้า</h4>
+                    <p class="text-white/60 text-xs">ได้รับคำตอบทันที</p>
+                </div>
+            </div>
+
+            <!-- Before vs After Comparison -->
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- Before -->
+                <div class="bg-gradient-to-br from-red-500/25 to-rose-500/15 backdrop-blur-lg border border-red-300/30 rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-xl font-bold text-red-300 mb-5 flex items-center gap-3">
+                        <span class="text-2xl">😰</span> ก่อนใช้ AI
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3 p-3 bg-white/5 rounded-xl">
+                            <span class="text-xl">⏰</span>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">ตอบลูกค้าช้า</h4>
+                                <p class="text-white/60 text-xs">เฉลี่ย 15-30 นาที/คน</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 p-3 bg-white/5 rounded-xl">
+                            <span class="text-xl">👥</span>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">ต้องจ้างพนักงาน 3-5 คน</h4>
+                                <p class="text-white/60 text-xs">ค่าแรง ฿45,000-75,000/เดือน</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 p-3 bg-white/5 rounded-xl">
+                            <span class="text-xl">😴</span>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">ทำงานแค่ 8-10 ชม.</h4>
+                                <p class="text-white/60 text-xs">พักเสาร์-อาทิตย์ หยุดนักขัตฤกษ์</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 p-3 bg-white/5 rounded-xl">
+                            <span class="text-xl">📉</span>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">ลูกค้าหนีไป</h4>
+                                <p class="text-white/60 text-xs">รอนาน ไม่ได้รับคำตอบ</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- After -->
+                <div class="bg-gradient-to-br from-emerald-500/25 to-green-500/15 backdrop-blur-lg border border-emerald-300/30 rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-xl font-bold text-emerald-300 mb-5 flex items-center gap-3">
+                        <span class="text-2xl">🎉</span> หลังใช้ AI
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3 p-3 bg-white/5 rounded-xl">
+                            <span class="text-xl">⚡</span>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">ตอบทันที &lt;3 วินาที</h4>
+                                <p class="text-white/60 text-xs">ไม่ต้องรอ ได้คำตอบเลย</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 p-3 bg-white/5 rounded-xl">
+                            <span class="text-xl">🤖</span>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">AI ทำงานแทน ฟรี!</h4>
+                                <p class="text-white/60 text-xs">ประหยัดค่าแรง 80%+</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 p-3 bg-white/5 rounded-xl">
+                            <span class="text-xl">🌟</span>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">ทำงาน 24/7/365</h4>
+                                <p class="text-white/60 text-xs">ไม่มีวันหยุด ไม่ลาป่วย</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3 p-3 bg-white/5 rounded-xl">
+                            <span class="text-xl">📈</span>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">ยอดขายพุ่ง 3-5 เท่า</h4>
+                                <p class="text-white/60 text-xs">ปิดการขายได้มากขึ้น</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROI Calculation -->
+            <div class="bg-gradient-to-r from-emerald-600/30 via-green-600/30 to-lime-600/30 backdrop-blur-md border border-emerald-300/40 rounded-2xl p-6 md:p-8 mb-6 shadow-xl">
+                <h3 class="text-2xl md:text-3xl font-black text-white mb-6 text-center">
+                    💰 คำนวณ ROI (ผลตอบแทนจากการลงทุน)
+                </h3>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <div class="text-red-300 font-bold text-lg mb-2">ค่าใช้จ่ายเดิม (ต่อเดือน)</div>
+                        <div class="bg-red-500/20 rounded-xl p-4 mb-2">
+                            <div class="text-3xl font-black text-white">฿50,000+</div>
+                            <div class="text-white/60 text-sm">พนักงาน 3 คน</div>
+                        </div>
+                    </div>
+                    <div class="text-center flex items-center justify-center">
+                        <div class="text-4xl text-white/60">→</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-emerald-300 font-bold text-lg mb-2">ค่าใช้จ่ายใหม่ (ต่อเดือน)</div>
+                        <div class="bg-emerald-500/20 rounded-xl p-4 mb-2">
+                            <div class="text-3xl font-black text-white">รวมในแพ็ค</div>
+                            <div class="text-white/60 text-sm">ไม่มีค่าใช้จ่ายเพิ่ม</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-6">
+                    <div class="inline-block bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full px-8 py-4">
+                        <div class="text-white text-sm font-bold mb-1">ประหยัดได้</div>
+                        <div class="text-white text-4xl font-black">฿50,000+/เดือน</div>
+                        <div class="text-white text-sm mt-1">= ฿600,000+/ปี</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-emerald-500/20 to-green-500/20 backdrop-blur-md border border-emerald-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-xl md:text-2xl text-white font-bold">
+                    💎 <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-green-300">คุ้มค่าที่สุด! ลงทุนครั้งเดียว ใช้ได้ตลอด ประหยัดทุกวัน</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
