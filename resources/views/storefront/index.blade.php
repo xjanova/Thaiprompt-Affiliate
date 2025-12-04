@@ -99,21 +99,24 @@
                     </div>
                 </div>
 
-                {{-- Quick Links --}}
+                {{-- Quick Filter Links --}}
                 <div class="hidden lg:flex items-center gap-4">
                     <a href="{{ route('storefront.index', ['sort_by' => 'popular']) }}"
-                       class="text-sm font-semibold text-gray-600 dark:text-gray-400
-                             hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+                       class="text-sm font-semibold transition-colors
+                             {{ request('sort_by') === 'popular' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400' }}">
+                        <i class="fas fa-fire-alt mr-1"></i>
                         ยอดนิยม
                     </a>
-                    <a href="{{ route('storefront.index', ['filter' => 'official']) }}"
-                       class="text-sm font-semibold text-gray-600 dark:text-gray-400
-                             hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+                    <a href="{{ route('storefront.index', ['shop_type' => 'official']) }}"
+                       class="text-sm font-semibold transition-colors
+                             {{ request('shop_type') === 'official' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400' }}">
+                        <i class="fas fa-check-circle mr-1"></i>
                         Official
                     </a>
                     <a href="{{ route('storefront.index', ['sort_by' => 'newest']) }}"
-                       class="text-sm font-semibold text-gray-600 dark:text-gray-400
-                             hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+                       class="text-sm font-semibold transition-colors
+                             {{ request('sort_by') === 'newest' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400' }}">
+                        <i class="fas fa-star mr-1"></i>
                         สินค้าใหม่
                     </a>
                 </div>
@@ -272,9 +275,10 @@
                 <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg
                            border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center gap-3 mb-3">
-                        <img src="{{ auth()->user()->avatar_url ?? 'https://via.placeholder.com/50' }}"
+                        <img src="{{ auth()->user()->profile_picture_url }}"
                              alt="{{ auth()->user()->name }}"
-                             class="w-12 h-12 rounded-full object-cover ring-2 ring-orange-500">
+                             class="w-12 h-12 rounded-full object-cover ring-2 ring-orange-500"
+                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr(auth()->user()->name, 0, 1)) }}&background=F59E0B&color=fff&size=96';">
                         <div>
                             <p class="text-sm text-gray-500 dark:text-gray-400">ยินดีต้อนรับ</p>
                             <p class="font-bold text-gray-900 dark:text-white">{{ auth()->user()->name }}</p>
@@ -387,6 +391,76 @@
     @endif
 
     {{-- ========================================
+         ACTIVE FILTERS INDICATOR
+         ======================================== --}}
+    @if(request('tag') || request('search') || request('category'))
+    <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center flex-wrap gap-3">
+            <span class="text-sm text-gray-500 dark:text-gray-400">กำลังกรอง:</span>
+
+            @if(request('tag'))
+            <span class="inline-flex items-center gap-2 px-4 py-2
+                        bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30
+                        text-orange-700 dark:text-orange-300 text-sm font-semibold
+                        rounded-full border border-orange-200 dark:border-orange-700">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                </svg>
+                Tag: {{ request('tag') }}
+                <a href="{{ route('storefront.index', array_filter(request()->except('tag'))) }}"
+                   class="ml-1 hover:text-red-600 transition-colors">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </a>
+            </span>
+            @endif
+
+            @if(request('search'))
+            <span class="inline-flex items-center gap-2 px-4 py-2
+                        bg-blue-100 dark:bg-blue-900/30
+                        text-blue-700 dark:text-blue-300 text-sm font-semibold
+                        rounded-full border border-blue-200 dark:border-blue-700">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                ค้นหา: "{{ request('search') }}"
+                <a href="{{ route('storefront.index', array_filter(request()->except('search'))) }}"
+                   class="ml-1 hover:text-red-600 transition-colors">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </a>
+            </span>
+            @endif
+
+            @if(request('category'))
+            <span class="inline-flex items-center gap-2 px-4 py-2
+                        bg-purple-100 dark:bg-purple-900/30
+                        text-purple-700 dark:text-purple-300 text-sm font-semibold
+                        rounded-full border border-purple-200 dark:border-purple-700">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6z"/>
+                </svg>
+                หมวดหมู่: {{ request('category') }}
+                <a href="{{ route('storefront.index', array_filter(request()->except('category'))) }}"
+                   class="ml-1 hover:text-red-600 transition-colors">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </a>
+            </span>
+            @endif
+
+            <a href="{{ route('storefront.index') }}"
+               class="text-sm text-red-600 dark:text-red-400 hover:underline font-medium ml-2">
+                ล้างตัวกรองทั้งหมด
+            </a>
+        </div>
+    </div>
+    @endif
+
+    {{-- ========================================
          TABS SECTION - Shop by Type
          ======================================== --}}
     <div class="container mx-auto px-4 py-8">
@@ -461,78 +535,171 @@
                 </div>
             </div>
 
-            {{-- Products Content --}}
-            <div class="p-4 md:p-6">
-                <x-storefront.product-grid-aliexpress
-                    :products="$products"
-                    columns="auto"
-                    :showPv="true"
-                    :showCommission="auth()->check()" />
+            {{-- Products Content with Infinite Scroll --}}
+            <div class="p-4 md:p-6"
+                 x-data="infiniteProducts()"
+                 x-init="init()">
 
-                {{-- Pagination / Load More --}}
-                @if($products->hasPages())
-                <div class="mt-8 flex justify-center">
-                    <div class="inline-flex items-center gap-2">
-                        {{-- Previous --}}
-                        @if($products->onFirstPage())
-                        <span class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-400 rounded-lg cursor-not-allowed">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                            </svg>
-                        </span>
-                        @else
-                        <a href="{{ $products->previousPageUrl() }}"
-                           class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700
-                                 text-gray-700 dark:text-gray-300 rounded-lg
-                                 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-500
-                                 transition-all">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                            </svg>
-                        </a>
-                        @endif
+                {{-- Initial Products Grid --}}
+                <div id="products-container">
+                    <x-storefront.product-grid-aliexpress
+                        :products="$products"
+                        columns="auto"
+                        :showPv="true"
+                        :showCommission="auth()->check()" />
+                </div>
 
-                        {{-- Page Numbers --}}
-                        @foreach($products->getUrlRange(1, $products->lastPage()) as $page => $url)
-                            @if($page == $products->currentPage())
-                            <span class="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500
-                                       text-white font-bold rounded-lg shadow">
-                                {{ $page }}
-                            </span>
-                            @elseif($page == 1 || $page == $products->lastPage() || abs($page - $products->currentPage()) <= 2)
-                            <a href="{{ $url }}"
-                               class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700
-                                     text-gray-700 dark:text-gray-300 rounded-lg
-                                     hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-500
-                                     transition-all">
-                                {{ $page }}
+                {{-- Additional Products (loaded via infinite scroll) --}}
+                <div id="additional-products"
+                     class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 mt-4">
+                    <template x-for="product in additionalProducts" :key="product.id">
+                        <div class="group">
+                            <a :href="product.url"
+                               class="block bg-white dark:bg-gray-800
+                                     rounded-xl md:rounded-2xl overflow-hidden
+                                     shadow hover:shadow-xl
+                                     transform hover:-translate-y-1
+                                     transition-all duration-300
+                                     border border-gray-100 dark:border-gray-700
+                                     hover:border-orange-200 dark:hover:border-orange-700">
+
+                                {{-- Product Image --}}
+                                <div class="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                    <img :src="product.main_image_url"
+                                         :alt="product.name"
+                                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                         loading="lazy">
+
+                                    {{-- Badges --}}
+                                    <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                                        <template x-if="product.discount > 0">
+                                            <span class="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded"
+                                                  x-text="`-${product.discount}%`"></span>
+                                        </template>
+                                        <template x-if="product.is_official">
+                                            <span class="px-2 py-0.5 bg-gradient-to-r from-orange-500 to-red-500
+                                                       text-white text-xs font-bold rounded flex items-center gap-0.5">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                </svg>
+                                                Official
+                                            </span>
+                                        </template>
+                                        <template x-if="product.is_featured">
+                                            <span class="px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-orange-400
+                                                       text-white text-xs font-bold rounded">HOT</span>
+                                        </template>
+                                    </div>
+
+                                    {{-- Free Shipping --}}
+                                    <template x-if="product.free_shipping">
+                                        <div class="absolute bottom-0 left-0 right-0
+                                                   bg-gradient-to-r from-green-500 to-emerald-500
+                                                   text-white text-xs font-semibold py-1 px-2 text-center">
+                                            <span class="flex items-center justify-center gap-1">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                                                    <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                                                </svg>
+                                                ส่งฟรี
+                                            </span>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                {{-- Product Info --}}
+                                <div class="p-2 md:p-3">
+                                    <h3 class="text-xs md:text-sm font-medium text-gray-800 dark:text-gray-200
+                                              line-clamp-2 mb-1.5 min-h-[2.5rem]
+                                              group-hover:text-orange-600 dark:group-hover:text-orange-400
+                                              transition-colors leading-tight"
+                                        x-text="product.name"></h3>
+
+                                    <div class="flex items-baseline gap-1.5 mb-1.5">
+                                        <span class="text-sm md:text-lg font-bold text-red-600 dark:text-red-500"
+                                              x-text="`฿${product.price.toLocaleString()}`"></span>
+                                        <template x-if="product.compare_at_price && product.compare_at_price > product.price">
+                                            <span class="text-xs text-gray-400 line-through"
+                                                  x-text="`฿${product.compare_at_price.toLocaleString()}`"></span>
+                                        </template>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+                                        <template x-if="product.rating_average > 0">
+                                            <div class="flex items-center gap-0.5">
+                                                <svg class="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                                </svg>
+                                                <span x-text="product.rating_average.toFixed(1)"></span>
+                                            </div>
+                                        </template>
+                                        <template x-if="product.sales_count > 0">
+                                            <span x-text="`${product.sales_count.toLocaleString()}+ ขายแล้ว`"></span>
+                                        </template>
+                                    </div>
+
+                                    {{-- PV Badge --}}
+                                    <template x-if="product.pv > 0">
+                                        <div class="flex items-center gap-1 text-xs">
+                                            <span class="px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30
+                                                       text-yellow-700 dark:text-yellow-400
+                                                       rounded font-semibold"
+                                                  x-text="`PV: ${product.pv.toLocaleString()}`"></span>
+                                        </div>
+                                    </template>
+                                </div>
                             </a>
-                            @elseif(abs($page - $products->currentPage()) == 3)
-                            <span class="px-2 text-gray-400">...</span>
-                            @endif
-                        @endforeach
+                        </div>
+                    </template>
+                </div>
 
-                        {{-- Next --}}
-                        @if($products->hasMorePages())
-                        <a href="{{ $products->nextPageUrl() }}"
-                           class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700
-                                 text-gray-700 dark:text-gray-300 rounded-lg
-                                 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-500
-                                 transition-all">
+                {{-- Load More / Infinite Scroll Trigger --}}
+                <div class="mt-8 flex flex-col items-center gap-4"
+                     x-intersect:enter.margin.300px="!isLoading && hasMore && loadMore()">
+
+                    {{-- Loading Indicator --}}
+                    <div x-show="isLoading" class="flex items-center gap-3">
+                        <svg class="animate-spin h-6 w-6 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="text-gray-600 dark:text-gray-400 font-medium">กำลังโหลดสินค้าเพิ่มเติม...</span>
+                    </div>
+
+                    {{-- Load More Button (fallback) --}}
+                    <button x-show="!isLoading && hasMore"
+                            @click="loadMore()"
+                            class="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500
+                                  hover:from-orange-600 hover:to-red-600
+                                  text-white font-bold rounded-xl
+                                  shadow-lg hover:shadow-xl
+                                  transform hover:scale-105
+                                  transition-all duration-300">
+                        <span class="flex items-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
-                        </a>
-                        @else
-                        <span class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-400 rounded-lg cursor-not-allowed">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                            </svg>
+                            โหลดสินค้าเพิ่มเติม
                         </span>
-                        @endif
+                    </button>
+
+                    {{-- End of Products --}}
+                    <div x-show="!hasMore && totalProducts > 0" class="text-center py-4">
+                        <div class="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-800
+                                   text-gray-600 dark:text-gray-400 rounded-xl">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>แสดงสินค้าทั้งหมด <span x-text="totalProducts"></span> รายการแล้ว</span>
+                        </div>
+                    </div>
+
+                    {{-- Products Count --}}
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                        กำลังแสดง <span class="font-bold text-gray-700 dark:text-gray-300" x-text="displayedCount"></span>
+                        จาก <span class="font-bold text-gray-700 dark:text-gray-300" x-text="totalProducts"></span> รายการ
                     </div>
                 </div>
-                @endif
             </div>
         </div>
     </div>
@@ -765,6 +932,79 @@ function storefrontManager() {
             } catch (error) {
                 console.error('Error:', error);
                 alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+            }
+        }
+    };
+}
+
+/**
+ * Infinite Products - จัดการ Infinite Scroll สำหรับสินค้า
+ *
+ * ใช้ Alpine.js + Intersection Observer สำหรับ lazy loading
+ */
+function infiniteProducts() {
+    return {
+        // State
+        additionalProducts: [],
+        currentPage: {{ $products->currentPage() }},
+        lastPage: {{ $products->lastPage() }},
+        totalProducts: {{ $products->total() }},
+        initialCount: {{ $products->count() }},
+        isLoading: false,
+        hasMore: {{ $products->hasMorePages() ? 'true' : 'false' }},
+
+        // Computed
+        get displayedCount() {
+            return this.initialCount + this.additionalProducts.length;
+        },
+
+        /**
+         * เริ่มต้น component
+         */
+        init() {
+            console.log('Infinite Products initialized', {
+                currentPage: this.currentPage,
+                lastPage: this.lastPage,
+                totalProducts: this.totalProducts
+            });
+        },
+
+        /**
+         * โหลดสินค้าเพิ่มเติม
+         */
+        async loadMore() {
+            if (this.isLoading || !this.hasMore) return;
+
+            this.isLoading = true;
+            const nextPage = this.currentPage + 1;
+
+            try {
+                // สร้าง URL พร้อม parameters ที่มีอยู่
+                const params = new URLSearchParams(window.location.search);
+                params.set('page', nextPage);
+
+                const response = await fetch(`{{ route('storefront.products') }}?${params.toString()}`);
+                const data = await response.json();
+
+                if (data.products && data.products.length > 0) {
+                    // เพิ่มสินค้าใหม่ลงใน array
+                    this.additionalProducts = [...this.additionalProducts, ...data.products];
+                    this.currentPage = data.current_page;
+                    this.hasMore = data.has_more;
+                    this.totalProducts = data.total;
+
+                    console.log(`Loaded page ${nextPage}, ${data.products.length} products`);
+                } else {
+                    this.hasMore = false;
+                }
+            } catch (error) {
+                console.error('Error loading more products:', error);
+                // แสดง notification ถ้ามี
+                if (window.showNotification) {
+                    window.showNotification('ไม่สามารถโหลดสินค้าเพิ่มเติมได้', 'error');
+                }
+            } finally {
+                this.isLoading = false;
             }
         }
     };

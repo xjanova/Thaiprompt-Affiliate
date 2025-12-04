@@ -361,6 +361,7 @@ Route::prefix('storefront')->name('storefront.')->group(function () {
     Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\StorefrontController::class, 'index'])->name('index');
     Route::match(['GET', 'HEAD'], '/stores', [\App\Http\Controllers\StorefrontController::class, 'stores'])->name('stores');
     Route::match(['GET', 'HEAD'], '/search', [\App\Http\Controllers\StorefrontController::class, 'quickSearch'])->name('search');
+    Route::match(['GET', 'HEAD'], '/products', [\App\Http\Controllers\StorefrontController::class, 'loadMoreProducts'])->name('products');
 });
 
 // Store Pages (Individual Vendor Store Pages)

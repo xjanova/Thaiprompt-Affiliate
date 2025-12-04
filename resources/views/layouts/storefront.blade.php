@@ -89,6 +89,166 @@
         .dark ::-webkit-scrollbar-thumb:hover {
             background: #6b7280;
         }
+
+        /* ========================================
+           Animated Particle Background - อะตอม/เกสรสี
+           ======================================== */
+        .particle-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: float 20s ease-in-out infinite;
+            opacity: 0.4;
+        }
+
+        /* สร้าง particles หลายขนาดและสี */
+        .particle:nth-child(1) {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+            left: 10%;
+            top: 20%;
+            animation-delay: 0s;
+            animation-duration: 25s;
+        }
+
+        .particle:nth-child(2) {
+            width: 15px;
+            height: 15px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            left: 20%;
+            top: 60%;
+            animation-delay: -2s;
+            animation-duration: 20s;
+        }
+
+        .particle:nth-child(3) {
+            width: 25px;
+            height: 25px;
+            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+            left: 35%;
+            top: 30%;
+            animation-delay: -4s;
+            animation-duration: 28s;
+        }
+
+        .particle:nth-child(4) {
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            left: 50%;
+            top: 70%;
+            animation-delay: -6s;
+            animation-duration: 22s;
+        }
+
+        .particle:nth-child(5) {
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            left: 65%;
+            top: 15%;
+            animation-delay: -8s;
+            animation-duration: 26s;
+        }
+
+        .particle:nth-child(6) {
+            width: 22px;
+            height: 22px;
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            left: 75%;
+            top: 50%;
+            animation-delay: -10s;
+            animation-duration: 24s;
+        }
+
+        .particle:nth-child(7) {
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+            left: 85%;
+            top: 80%;
+            animation-delay: -12s;
+            animation-duration: 30s;
+        }
+
+        .particle:nth-child(8) {
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+            left: 5%;
+            top: 85%;
+            animation-delay: -14s;
+            animation-duration: 23s;
+        }
+
+        .particle:nth-child(9) {
+            width: 10px;
+            height: 10px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            left: 45%;
+            top: 45%;
+            animation-delay: -16s;
+            animation-duration: 27s;
+        }
+
+        .particle:nth-child(10) {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+            left: 90%;
+            top: 25%;
+            animation-delay: -18s;
+            animation-duration: 21s;
+        }
+
+        /* Animation สำหรับการลอย */
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) translateX(0) rotate(0deg) scale(1);
+            }
+            25% {
+                transform: translateY(-100px) translateX(50px) rotate(90deg) scale(1.1);
+            }
+            50% {
+                transform: translateY(-50px) translateX(-30px) rotate(180deg) scale(0.9);
+            }
+            75% {
+                transform: translateY(-150px) translateX(20px) rotate(270deg) scale(1.05);
+            }
+        }
+
+        /* Dark mode adjustments */
+        .dark .particle {
+            opacity: 0.25;
+        }
+
+        /* ลดการแสดงผลบนมือถือเพื่อประสิทธิภาพ */
+        @media (max-width: 768px) {
+            .particle {
+                opacity: 0.2;
+            }
+            .particle:nth-child(n+7) {
+                display: none;
+            }
+        }
+
+        /* ปิดการแสดงผลถ้าผู้ใช้ต้องการลด motion */
+        @media (prefers-reduced-motion: reduce) {
+            .particle {
+                animation: none;
+            }
+        }
     </style>
 
     @stack('styles')
@@ -102,8 +262,22 @@
           }
       ">
 
+    {{-- Animated Particle Background - อะตอม/เกสรสีลอยๆ --}}
+    <div class="particle-background" aria-hidden="true">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
     {{-- Main Content Area - Full Width --}}
-    <div class="min-h-screen">
+    <div class="min-h-screen relative z-10">
         @yield('content')
     </div>
 

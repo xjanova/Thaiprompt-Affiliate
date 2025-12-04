@@ -212,6 +212,16 @@ class StorefrontController extends Controller
             });
         }
 
+        // กรองตาม tag
+        if ($request->filled('tag')) {
+            $tag = $request->tag;
+            $query->where(function ($q) use ($tag) {
+                // ค้นหาใน JSON array - รองรับทั้ง MySQL และ MariaDB
+                $q->whereJsonContains('tags', $tag)
+                    ->orWhere('tags', 'like', "%\"{$tag}\"%");
+            });
+        }
+
         // กรองตามช่วงราคา
         if ($request->filled('min_price')) {
             $query->where('price', '>=', $request->min_price);
@@ -382,6 +392,61 @@ class StorefrontController extends Controller
             ->get();
 
         return response()->json($products);
+    }
+
+    /**
+     * Load More Products API - สำหรับ Infinite Scroll
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function loadMoreProducts(Request $request)
+    {
+        $products = $this->getFilteredProducts($request);
+
+        // เตรียมข้อมูลสินค้าสำหรับ JSON response
+        $productData = $products->map(function ($product) {
+            $discount = 0;
+            if ($product->compare_at_price && $product->compare_at_price > $product->price) {
+                $discount = round((($product->compare_at_price - $product->price) / $product->compare_at_price) * 100);
+            }
+
+            // คำนวณ PV
+            $totalPv = 0;
+            if ($product->mlmProductPv && $product->mlmProductPv->count() > 0) {
+                foreach ($product->mlmProductPv as $pv) {
+                    $totalPv += $pv->pv_value;
+                }
+                $totalPv = $totalPv / $product->mlmProductPv->count();
+            }
+
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'slug' => $product->slug,
+                'price' => $product->price,
+                'compare_at_price' => $product->compare_at_price,
+                'main_image_url' => $product->main_image_url ?? 'https://via.placeholder.com/300',
+                'discount' => $discount,
+                'is_featured' => $product->is_featured,
+                'is_official' => !$product->seller_id,
+                'rating_average' => $product->rating_average ?? 0,
+                'rating_count' => $product->rating_count ?? 0,
+                'sales_count' => $product->sales_count ?? 0,
+                'pv' => $totalPv,
+                'commission_rate' => $product->commission_rate ?? 0,
+                'free_shipping' => $product->price >= 500,
+                'url' => route('shop.show', $product->slug),
+            ];
+        });
+
+        return response()->json([
+            'products' => $productData,
+            'has_more' => $products->hasMorePages(),
+            'current_page' => $products->currentPage(),
+            'last_page' => $products->lastPage(),
+            'total' => $products->total(),
+        ]);
     }
 
     /**
