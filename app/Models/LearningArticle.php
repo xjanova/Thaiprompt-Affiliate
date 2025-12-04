@@ -25,6 +25,13 @@ class LearningArticle extends Model
         'is_published',
         'is_featured',
         'difficulty',
+        'course_level',
+        'require_quiz_pass',
+        'min_quiz_score',
+        'unlock_condition',
+        'unlock_after_days',
+        'points_reward',
+        'badge_reward_id',
         'tags',
         'metadata',
         'published_at',
@@ -35,12 +42,18 @@ class LearningArticle extends Model
     protected $casts = [
         'is_published' => 'boolean',
         'is_featured' => 'boolean',
+        'require_quiz_pass' => 'boolean',
         'tags' => 'array',
         'metadata' => 'array',
         'published_at' => 'datetime',
         'views' => 'integer',
         'estimated_duration' => 'integer',
         'order' => 'integer',
+        'course_level' => 'integer',
+        'min_quiz_score' => 'integer',
+        'unlock_after_days' => 'integer',
+        'points_reward' => 'integer',
+        'badge_reward_id' => 'integer',
     ];
 
     /**
@@ -315,5 +328,111 @@ class LearningArticle extends Model
         ];
 
         return $labels[$this->difficulty] ?? $this->difficulty;
+    }
+
+    /**
+     * Get course level label
+     *
+     * @return string
+     */
+    public function getCourseLevelLabelAttribute(): string
+    {
+        $labels = [
+            1 => 'ระดับ 1 (เริ่มต้น)',
+            2 => 'ระดับ 2 (พื้นฐาน)',
+            3 => 'ระดับ 3 (กลาง)',
+            4 => 'ระดับ 4 (ก้าวหน้า)',
+            5 => 'ระดับ 5 (ขั้นสูง)',
+        ];
+
+        return $labels[$this->course_level] ?? 'ระดับ ' . $this->course_level;
+    }
+
+    /**
+     * Get unlock condition label
+     *
+     * @return string
+     */
+    public function getUnlockConditionLabelAttribute(): string
+    {
+        $labels = [
+            'none' => 'ไม่มีเงื่อนไข',
+            'prerequisite' => 'ต้องเรียนจบคอร์สก่อนหน้า',
+            'quiz_pass' => 'ต้องผ่านแบบทดสอบ',
+            'time_based' => 'ปลดล็อคตามเวลา',
+            'manual' => 'ปลดล็อคโดยผู้ดูแล',
+        ];
+
+        return $labels[$this->unlock_condition] ?? 'ไม่ทราบ';
+    }
+
+    /**
+     * Check if this article has quiz requirement
+     *
+     * @return bool
+     */
+    public function hasQuizRequirement(): bool
+    {
+        return $this->require_quiz_pass &&
+               $this->requiredQuizzes()->exists();
+    }
+
+    /**
+     * Get previous article in the same category
+     *
+     * @return LearningArticle|null
+     */
+    public function getPreviousArticle(): ?LearningArticle
+    {
+        return self::where('category_id', $this->category_id)
+            ->where(function ($query) {
+                $query->where('course_level', '<', $this->course_level ?? 1)
+                    ->orWhere(function ($q) {
+                        $q->where('course_level', $this->course_level ?? 1)
+                            ->where('order', '<', $this->order);
+                    });
+            })
+            ->where('is_published', true)
+            ->orderBy('course_level', 'desc')
+            ->orderBy('order', 'desc')
+            ->first();
+    }
+
+    /**
+     * Get next article in the same category
+     *
+     * @return LearningArticle|null
+     */
+    public function getNextArticle(): ?LearningArticle
+    {
+        return self::where('category_id', $this->category_id)
+            ->where(function ($query) {
+                $query->where('course_level', '>', $this->course_level ?? 1)
+                    ->orWhere(function ($q) {
+                        $q->where('course_level', $this->course_level ?? 1)
+                            ->where('order', '>', $this->order);
+                    });
+            })
+            ->where('is_published', true)
+            ->orderBy('course_level', 'asc')
+            ->orderBy('order', 'asc')
+            ->first();
+    }
+
+    /**
+     * Scope: by course level
+     */
+    public function scopeByLevel($query, int $level)
+    {
+        return $query->where('course_level', $level);
+    }
+
+    /**
+     * Scope: ordered by level
+     */
+    public function scopeOrderedByLevel($query)
+    {
+        return $query->orderBy('course_level')
+            ->orderBy('order');
     }
 }
