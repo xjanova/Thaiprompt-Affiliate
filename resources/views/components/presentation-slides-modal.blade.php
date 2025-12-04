@@ -83,6 +83,15 @@
                                     <p class="text-white/60 text-xs">Blockchain, Staking & DEX</p>
                                 </div>
                             </button>
+                            <button onclick="switchTopic('academy-freedom')" class="topic-option flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left" data-topic="academy-freedom">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-rose-500 to-orange-600 rounded-lg flex items-center justify-center text-xl">
+                                    <i class="fas fa-graduation-cap"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-white font-semibold">Academy & ปลดแอกธุรกิจ</p>
+                                    <p class="text-white/60 text-xs">การเรียนรู้ & อิสรภาพทางธุรกิจ</p>
+                                </div>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -347,7 +356,8 @@ function toggleTopicMenu() {
 const topicSlideMapping = {
     'system-overview': 0,
     'ai-automation': 7,      // Slide 5: AI & Automation
-    'tpix-token': 11         // Slide 6: TPIX Token
+    'tpix-token': 11,        // Slide 6: TPIX Token
+    'academy-freedom': 15    // Slide 7: Academy & ปลดแอกธุรกิจ
 };
 
 function switchTopic(topicId) {
@@ -360,11 +370,11 @@ function switchTopic(topicId) {
         stopAutoplay();
     }
 
-    // ถ้าเป็น AI หรือ TPIX ใช้ system-overview container แต่ jump ไป slide ที่เกี่ยวข้อง
+    // ถ้าเป็น AI, TPIX หรือ Academy ใช้ system-overview container แต่ jump ไป slide ที่เกี่ยวข้อง
     let containerId = topicId;
     let startSlide = 0;
 
-    if (topicId === 'ai-automation' || topicId === 'tpix-token') {
+    if (topicId === 'ai-automation' || topicId === 'tpix-token' || topicId === 'academy-freedom') {
         containerId = 'system-overview';
         startSlide = topicSlideMapping[topicId] || 0;
     }
@@ -421,7 +431,7 @@ function openPresentationWithTopic(topicId) {
     let containerId = topicId;
     let startSlide = 0;
 
-    if (topicId === 'ai-automation' || topicId === 'tpix-token') {
+    if (topicId === 'ai-automation' || topicId === 'tpix-token' || topicId === 'academy-freedom') {
         containerId = 'system-overview';
         startSlide = topicSlideMapping[topicId] || 0;
     }
@@ -454,7 +464,8 @@ function updateTopicDisplay() {
         'system-overview': 'ภาพรวมระบบ',
         'mlm-plans': 'แผนการตลาด MLM',
         'ai-automation': 'AI & Automation',
-        'tpix-token': 'TPIX Token'
+        'tpix-token': 'TPIX Token',
+        'academy-freedom': 'Academy & ปลดแอกธุรกิจ'
     };
     document.getElementById('current-topic-name').textContent = topicNames[currentTopic] || 'ภาพรวมระบบ';
 }

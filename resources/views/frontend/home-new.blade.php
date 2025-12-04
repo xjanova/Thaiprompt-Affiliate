@@ -301,7 +301,7 @@
         </div>
 
         {{-- Demo Cards Grid --}}
-        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12">
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 lg:gap-8 mb-12">
             {{-- Card 1: System Overview --}}
             <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
                  onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('system-overview')">
@@ -353,6 +353,20 @@
                 <h3 class="text-xl font-bold text-white mb-3">AI & Automation</h3>
                 <p class="text-slate-400 mb-4">เรียนรู้ระบบ AI Chatbot, LINE Bot และระบบอัตโนมัติที่ช่วยประหยัดเวลา</p>
                 <div class="flex items-center text-emerald-400 font-medium group-hover:text-emerald-300">
+                    <span>ดูสไลด์</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+
+            {{-- Card 5: Academy & ปลดแอกธุรกิจ --}}
+            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
+                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('academy-freedom')">
+                <div class="w-16 h-16 bg-gradient-to-br from-rose-500 to-orange-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-graduation-cap text-3xl text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-3">Academy & ปลดแอกธุรกิจ</h3>
+                <p class="text-slate-400 mb-4">เรียนรู้ระบบ Academy ออนไลน์และอิสรภาพจากแพลตฟอร์มต่างชาติ</p>
+                <div class="flex items-center text-rose-400 font-medium group-hover:text-rose-300">
                     <span>ดูสไลด์</span>
                     <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                 </div>
