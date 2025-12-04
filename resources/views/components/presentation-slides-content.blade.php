@@ -803,78 +803,475 @@
     </div>
 </div>
 
-<!-- Slide 6: ระบบ Blockchain & TPIX Token -->
+<!-- Slide 6: รู้จักกับ TPIX Token -->
 <div class="slide">
-    <div class="h-full flex items-center justify-center bg-gradient-to-br from-amber-900/90 via-orange-900/80 to-red-900/90 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
-        <div class="absolute inset-0 opacity-20">
-            <div class="absolute top-1/4 left-1/4 w-80 h-80 bg-amber-400 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>
-            <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-orange-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000"></div>
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-violet-900/95 via-purple-900/90 to-fuchsia-900/95 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+        <!-- Animated background effects -->
+        <div class="absolute inset-0 opacity-30">
+            <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-400 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-fuchsia-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000"></div>
+            <div class="absolute top-1/2 left-1/2 w-72 h-72 bg-pink-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-4000"></div>
         </div>
 
         <div class="max-w-6xl w-full relative z-10">
-            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 md:mb-12 text-center">
-                ⛓️ Blockchain & TPIX Token
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 md:mb-8 text-center">
+                🪙 รู้จักกับ TPIX Token
             </h2>
+            <p class="text-center text-xl md:text-2xl text-purple-200 mb-8 md:mb-10">
+                Native Cryptocurrency ของ Thaiprompt Ecosystem
+            </p>
 
             <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-3xl p-6 md:p-8 mb-8 shadow-2xl">
-                <div class="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12">
-                    <div class="text-center">
-                        <div class="text-6xl md:text-8xl mb-2">🪙</div>
-                        <h3 class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-300">TPIX</h3>
-                        <p class="text-white/70">Native Token</p>
+                <div class="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
+                    <!-- TPIX Logo -->
+                    <div class="text-center flex-shrink-0">
+                        <div class="w-32 h-32 md:w-40 md:h-40 mx-auto mb-4 animate-float">
+                            <img src="{{ asset('images/tpix-logo.svg') }}" alt="TPIX Token" class="w-full h-full object-contain filter drop-shadow-2xl">
+                        </div>
+                        <h3 class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-300 via-purple-300 to-fuchsia-300">TPIX</h3>
+                        <p class="text-white/70 text-lg">Thaiprompt Index</p>
                     </div>
-                    <div class="text-white text-center md:text-left">
-                        <h3 class="text-2xl md:text-3xl font-bold mb-4">TPIX Token Ecosystem</h3>
-                        <p class="text-lg md:text-xl text-white/80">
-                            Token ของแพลตฟอร์มที่ใช้งานได้จริง<br>
-                            ทั้งการชำระเงิน, Staking และ Rewards
+
+                    <!-- Description -->
+                    <div class="text-white text-center md:text-left max-w-xl">
+                        <h3 class="text-2xl md:text-3xl font-bold mb-4">เหรียญที่สร้างเพื่อคนไทย</h3>
+                        <p class="text-lg md:text-xl text-white/80 leading-relaxed mb-4">
+                            <strong class="text-transparent bg-clip-text bg-gradient-to-r from-violet-300 to-fuchsia-300">TPIX (Thaiprompt Index)</strong>
+                            เป็น Native Cryptocurrency ที่มี <strong>Blockchain ของตัวเอง</strong>
+                            ไม่ใช่แค่ Token บน Ethereum หรือ BSC
+                        </p>
+                        <p class="text-md text-white/70 leading-relaxed">
+                            พัฒนาโดยทีมนักพัฒนาไทย เพื่อตอบโจทย์การใช้งานจริงในประเทศไทย
+                            และรองรับการขยายตลาดสู่เอเชียตะวันออกเฉียงใต้
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div class="grid md:grid-cols-3 gap-6 mb-8">
-                <!-- Staking -->
-                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 text-center hover:bg-white/15 transition-all shadow-xl">
-                    <div class="text-5xl mb-4">🏦</div>
-                    <h3 class="text-xl font-bold text-white mb-3">Staking & Farming</h3>
-                    <ul class="space-y-2 text-white/80 text-sm">
-                        <li>• Flexible & Locked Staking</li>
-                        <li>• APY สูงสุด 30%+</li>
-                        <li>• Auto-compound</li>
-                        <li>• Multiple Pools</li>
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-gradient-to-br from-violet-500/30 to-purple-500/20 backdrop-blur-lg border border-violet-300/30 rounded-2xl p-4 md:p-6 text-center transform hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-300 to-purple-300 mb-2">7B</div>
+                    <div class="text-white/70 text-sm md:text-base">Total Supply</div>
+                    <div class="text-white/50 text-xs mt-1">Fixed (ไม่เพิ่มอีก)</div>
+                </div>
+                <div class="bg-gradient-to-br from-fuchsia-500/30 to-pink-500/20 backdrop-blur-lg border border-fuchsia-300/30 rounded-2xl p-4 md:p-6 text-center transform hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-300 to-pink-300 mb-2">2 วิ</div>
+                    <div class="text-white/70 text-sm md:text-base">Block Time</div>
+                    <div class="text-white/50 text-xs mt-1">เร็วกว่า Bitcoin 300x</div>
+                </div>
+                <div class="bg-gradient-to-br from-purple-500/30 to-violet-500/20 backdrop-blur-lg border border-purple-300/30 rounded-2xl p-4 md:p-6 text-center transform hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-violet-300 mb-2">&lt;฿0.3</div>
+                    <div class="text-white/70 text-sm md:text-base">ค่าธรรมเนียม/รายการ</div>
+                    <div class="text-white/50 text-xs mt-1">vs Ethereum ฿150+</div>
+                </div>
+                <div class="bg-gradient-to-br from-pink-500/30 to-fuchsia-500/20 backdrop-blur-lg border border-pink-300/30 rounded-2xl p-4 md:p-6 text-center transform hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-fuchsia-300 mb-2">1,500</div>
+                    <div class="text-white/70 text-sm md:text-base">TPS</div>
+                    <div class="text-white/50 text-xs mt-1">ธุรกรรม/วินาที</div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 backdrop-blur-md border border-purple-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-xl md:text-2xl text-white font-bold">
+                    🏗️ <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-300 to-fuchsia-300">Blockchain ของเราเอง</span> • ไม่พึ่งพาใคร • ควบคุมได้เต็มที่
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 6.1: ทำไมต้อง TPIX -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-emerald-900/95 via-teal-900/90 to-cyan-900/95 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-25">
+            <div class="absolute top-1/3 left-1/4 w-80 h-80 bg-emerald-400 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>
+            <div class="absolute bottom-1/3 right-1/4 w-80 h-80 bg-cyan-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000"></div>
+        </div>
+
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 text-center">
+                💡 ทำไมต้อง TPIX?
+            </h2>
+            <p class="text-center text-xl text-emerald-200 mb-10">
+                เหตุผลที่เราสร้าง Blockchain ของตัวเอง แทนที่จะใช้ Ethereum หรือ BSC
+            </p>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- Problem vs Solution Cards -->
+                <div class="bg-gradient-to-br from-red-500/20 to-rose-500/10 backdrop-blur-lg border border-red-300/30 rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-xl font-bold text-red-300 mb-4 flex items-center gap-2">
+                        <span class="text-2xl">❌</span> ปัญหาของ Blockchain อื่น
+                    </h3>
+                    <ul class="space-y-3 text-white/80">
+                        <li class="flex items-start gap-3">
+                            <span class="text-red-400 text-lg">•</span>
+                            <div>
+                                <strong class="text-white">ค่าแก๊สสูงลิบ</strong>
+                                <p class="text-sm text-white/60">Ethereum: ฿150-1,500 ต่อรายการ</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-red-400 text-lg">•</span>
+                            <div>
+                                <strong class="text-white">ช้า & แออัด</strong>
+                                <p class="text-sm text-white/60">Bitcoin: 10 นาที, Ethereum: 15 วินาที</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-red-400 text-lg">•</span>
+                            <div>
+                                <strong class="text-white">ไม่มี Use Case จริง</strong>
+                                <p class="text-sm text-white/60">ส่วนใหญ่แค่เก็งกำไร ไม่มีการใช้งานจริง</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-red-400 text-lg">•</span>
+                            <div>
+                                <strong class="text-white">ต้องพึ่งพาคนอื่น</strong>
+                                <p class="text-sm text-white/60">Network congestion กระทบธุรกิจ</p>
+                            </div>
+                        </li>
                     </ul>
                 </div>
 
-                <!-- Payment -->
-                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 text-center hover:bg-white/15 transition-all shadow-xl">
-                    <div class="text-5xl mb-4">💸</div>
-                    <h3 class="text-xl font-bold text-white mb-3">Crypto Payment</h3>
-                    <ul class="space-y-2 text-white/80 text-sm">
-                        <li>• รับชำระด้วย Crypto</li>
-                        <li>• TPIX, USDT, BNB</li>
-                        <li>• Auto Convert</li>
-                        <li>• Low Gas Fee</li>
+                <div class="bg-gradient-to-br from-emerald-500/20 to-green-500/10 backdrop-blur-lg border border-emerald-300/30 rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-xl font-bold text-emerald-300 mb-4 flex items-center gap-2">
+                        <span class="text-2xl">✅</span> ทางออกของ TPIX
+                    </h3>
+                    <ul class="space-y-3 text-white/80">
+                        <li class="flex items-start gap-3">
+                            <span class="text-emerald-400 text-lg">•</span>
+                            <div>
+                                <strong class="text-white">ค่าธรรมเนียมต่ำมาก</strong>
+                                <p class="text-sm text-white/60">TPIX: &lt;฿0.30 ต่อรายการ (ถูกกว่า 500x)</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-emerald-400 text-lg">•</span>
+                            <div>
+                                <strong class="text-white">เร็วสุดยอด</strong>
+                                <p class="text-sm text-white/60">Block time 2 วินาที, 1,500 TPS</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-emerald-400 text-lg">•</span>
+                            <div>
+                                <strong class="text-white">11+ Use Cases จริง</strong>
+                                <p class="text-sm text-white/60">E-Commerce, MLM, FoodPassport, DEX...</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-emerald-400 text-lg">•</span>
+                            <div>
+                                <strong class="text-white">ควบคุมได้ 100%</strong>
+                                <p class="text-sm text-white/60">Own Blockchain = อิสระเต็มที่</p>
+                            </div>
+                        </li>
                     </ul>
                 </div>
+            </div>
 
-                <!-- NFT -->
-                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 text-center hover:bg-white/15 transition-all shadow-xl">
-                    <div class="text-5xl mb-4">🎨</div>
-                    <h3 class="text-xl font-bold text-white mb-3">NFT & Collectibles</h3>
-                    <ul class="space-y-2 text-white/80 text-sm">
-                        <li>• NFT Marketplace</li>
-                        <li>• Membership NFT</li>
-                        <li>• Exclusive Benefits</li>
-                        <li>• Royalty System</li>
-                    </ul>
+            <!-- Comparison Chart -->
+            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 mb-6 overflow-x-auto">
+                <table class="w-full text-white text-sm md:text-base">
+                    <thead>
+                        <tr class="border-b border-white/20">
+                            <th class="text-left py-3 px-2 md:px-4">เปรียบเทียบ</th>
+                            <th class="text-center py-3 px-2 md:px-4 text-amber-300">Bitcoin</th>
+                            <th class="text-center py-3 px-2 md:px-4 text-indigo-300">Ethereum</th>
+                            <th class="text-center py-3 px-2 md:px-4 text-emerald-300">🪙 TPIX</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-white/80">
+                        <tr class="border-b border-white/10">
+                            <td class="py-3 px-2 md:px-4">ความเร็ว</td>
+                            <td class="text-center py-3 px-2 md:px-4 text-red-400">10 นาที</td>
+                            <td class="text-center py-3 px-2 md:px-4 text-yellow-400">15 วินาที</td>
+                            <td class="text-center py-3 px-2 md:px-4 text-emerald-400 font-bold">2 วินาที ✅</td>
+                        </tr>
+                        <tr class="border-b border-white/10">
+                            <td class="py-3 px-2 md:px-4">ค่าธรรมเนียม</td>
+                            <td class="text-center py-3 px-2 md:px-4 text-red-400">฿50+</td>
+                            <td class="text-center py-3 px-2 md:px-4 text-red-400">฿150-1,500</td>
+                            <td class="text-center py-3 px-2 md:px-4 text-emerald-400 font-bold">&lt;฿0.30 ✅</td>
+                        </tr>
+                        <tr class="border-b border-white/10">
+                            <td class="py-3 px-2 md:px-4">TPS</td>
+                            <td class="text-center py-3 px-2 md:px-4 text-red-400">7</td>
+                            <td class="text-center py-3 px-2 md:px-4 text-yellow-400">30</td>
+                            <td class="text-center py-3 px-2 md:px-4 text-emerald-400 font-bold">1,500 ✅</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-2 md:px-4">Smart Contract</td>
+                            <td class="text-center py-3 px-2 md:px-4 text-red-400">❌</td>
+                            <td class="text-center py-3 px-2 md:px-4 text-emerald-400">✅</td>
+                            <td class="text-center py-3 px-2 md:px-4 text-emerald-400 font-bold">✅ EVM</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 backdrop-blur-md border border-emerald-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-xl md:text-2xl text-white font-bold">
+                    ⚡ <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-cyan-300">เร็วกว่า ถูกกว่า ใช้งานได้จริง</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 6.2: ประโยชน์และการใช้งาน TPIX -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-amber-900/95 via-orange-900/90 to-yellow-900/95 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-25">
+            <div class="absolute top-1/4 left-1/3 w-80 h-80 bg-amber-400 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>
+            <div class="absolute bottom-1/4 right-1/3 w-80 h-80 bg-yellow-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000"></div>
+        </div>
+
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 text-center">
+                🎯 ใช้ TPIX ทำอะไรได้บ้าง?
+            </h2>
+            <p class="text-center text-xl text-amber-200 mb-10">
+                11+ Use Cases ที่ใช้งานได้จริงในแพลตฟอร์ม
+            </p>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+                <!-- Use Case Cards -->
+                <div class="bg-gradient-to-br from-blue-500/25 to-indigo-500/15 backdrop-blur-lg border border-blue-300/30 rounded-2xl p-4 md:p-5 text-center transform hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-3">💰</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">ชำระค่าสินค้า</h4>
+                    <p class="text-white/60 text-xs mt-1">E-Commerce & ร้านค้า</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-purple-500/25 to-violet-500/15 backdrop-blur-lg border border-purple-300/30 rounded-2xl p-4 md:p-5 text-center transform hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-3">🎯</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">รับคอมมิชชัน</h4>
+                    <p class="text-white/60 text-xs mt-1">Affiliate & MLM</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-emerald-500/25 to-green-500/15 backdrop-blur-lg border border-emerald-300/30 rounded-2xl p-4 md:p-5 text-center transform hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-3">🏦</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">Staking</h4>
+                    <p class="text-white/60 text-xs mt-1">รับ APY สูงสุด 200%</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-cyan-500/25 to-teal-500/15 backdrop-blur-lg border border-cyan-300/30 rounded-2xl p-4 md:p-5 text-center transform hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-3">🔄</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">DEX Trading</h4>
+                    <p class="text-white/60 text-xs mt-1">แลกเปลี่ยน Token</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-rose-500/25 to-pink-500/15 backdrop-blur-lg border border-rose-300/30 rounded-2xl p-4 md:p-5 text-center transform hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-3">🪙</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">สร้าง Token</h4>
+                    <p class="text-white/60 text-xs mt-1">Token Factory</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-orange-500/25 to-amber-500/15 backdrop-blur-lg border border-orange-300/30 rounded-2xl p-4 md:p-5 text-center transform hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-3">🍴</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">FoodPassport</h4>
+                    <p class="text-white/60 text-xs mt-1">ตรวจสอบอาหารปลอดภัย</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-lime-500/25 to-green-500/15 backdrop-blur-lg border border-lime-300/30 rounded-2xl p-4 md:p-5 text-center transform hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-3">🌱</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">Carbon Credit</h4>
+                    <p class="text-white/60 text-xs mt-1">ซื้อขายคาร์บอนเครดิต</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-indigo-500/25 to-blue-500/15 backdrop-blur-lg border border-indigo-300/30 rounded-2xl p-4 md:p-5 text-center transform hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-3">🎁</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">Rewards</h4>
+                    <p class="text-white/60 text-xs mt-1">รางวัล & Bonus</p>
+                </div>
+            </div>
+
+            <!-- Featured Use Case -->
+            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 mb-6 shadow-xl">
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="text-center p-4 bg-gradient-to-br from-amber-500/20 to-yellow-500/10 rounded-xl">
+                        <div class="text-5xl mb-3">📈</div>
+                        <h4 class="text-lg font-bold text-white mb-2">Staking Rewards</h4>
+                        <p class="text-white/70 text-sm">ล็อค TPIX รับผลตอบแทนสูงสุด <strong class="text-amber-300">200% APY</strong></p>
+                        <p class="text-white/50 text-xs mt-2">ระยะเวลา 7 วัน - 365 วัน</p>
+                    </div>
+                    <div class="text-center p-4 bg-gradient-to-br from-purple-500/20 to-violet-500/10 rounded-xl">
+                        <div class="text-5xl mb-3">💎</div>
+                        <h4 class="text-lg font-bold text-white mb-2">Liquidity Provider</h4>
+                        <p class="text-white/70 text-sm">เพิ่มสภาพคล่อง DEX รับค่าธรรมเนียม <strong class="text-purple-300">0.25%</strong></p>
+                        <p class="text-white/50 text-xs mt-2">ทุกการ Swap</p>
+                    </div>
+                    <div class="text-center p-4 bg-gradient-to-br from-emerald-500/20 to-green-500/10 rounded-xl">
+                        <div class="text-5xl mb-3">🎯</div>
+                        <h4 class="text-lg font-bold text-white mb-2">Referral Bonus</h4>
+                        <p class="text-white/70 text-sm">แนะนำเพื่อนรับ <strong class="text-emerald-300">5%</strong> + ผู้ถูกแนะนำรับ <strong class="text-emerald-300">2%</strong></p>
+                        <p class="text-white/50 text-xs mt-2">ทุกธุรกรรม</p>
+                    </div>
                 </div>
             </div>
 
             <div class="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-md border border-amber-300/30 rounded-2xl p-6 text-center shadow-xl">
                 <p class="text-xl md:text-2xl text-white font-bold">
-                    🔥 เข้าสู่โลก Web3 กับ TPIX Token
+                    🔥 <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-300">ใช้งานได้จริง ทุกวัน ทุกธุรกรรม</span>
                 </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 6.3: TPIX Tokenomics -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-slate-900/95 via-gray-900/90 to-zinc-900/95 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-20">
+            <div class="absolute top-1/4 left-1/4 w-80 h-80 bg-blue-500 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000"></div>
+        </div>
+
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 text-center">
+                📊 TPIX Tokenomics
+            </h2>
+            <p class="text-center text-xl text-gray-300 mb-10">
+                การกระจาย Token อย่างยุติธรรม • ระบบ Deflationary
+            </p>
+
+            <div class="grid md:grid-cols-2 gap-8 mb-8">
+                <!-- Token Distribution -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-2xl font-bold text-white mb-6 text-center">🥧 การกระจาย 7 พันล้าน TPIX</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full bg-blue-500"></div>
+                                <span class="text-white">💧 Liquidity</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="h-3 rounded-full bg-blue-500" style="width: 120px"></div>
+                                <span class="text-blue-300 font-bold">30%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full bg-purple-500"></div>
+                                <span class="text-white">👥 Team</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="h-3 rounded-full bg-purple-500" style="width: 80px"></div>
+                                <span class="text-purple-300 font-bold">20%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full bg-amber-500"></div>
+                                <span class="text-white">🏦 Staking Rewards</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="h-3 rounded-full bg-amber-500" style="width: 80px"></div>
+                                <span class="text-amber-300 font-bold">20%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full bg-emerald-500"></div>
+                                <span class="text-white">🛠️ Development</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="h-3 rounded-full bg-emerald-500" style="width: 40px"></div>
+                                <span class="text-emerald-300 font-bold">10%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full bg-cyan-500"></div>
+                                <span class="text-white">🌍 Ecosystem</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="h-3 rounded-full bg-cyan-500" style="width: 40px"></div>
+                                <span class="text-cyan-300 font-bold">10%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full bg-rose-500"></div>
+                                <span class="text-white">🚀 Public Sale</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="h-3 rounded-full bg-rose-500" style="width: 40px"></div>
+                                <span class="text-rose-300 font-bold">10%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Benefits -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-2xl font-bold text-white mb-6 text-center">🎁 ทำไมต้องถือ TPIX?</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-4 p-3 bg-gradient-to-r from-emerald-500/20 to-green-500/10 rounded-xl">
+                            <div class="text-3xl">🔥</div>
+                            <div>
+                                <h4 class="font-bold text-emerald-300">Deflationary</h4>
+                                <p class="text-white/70 text-sm">เผาทุกธุรกรรม = Supply ลดลงเรื่อยๆ</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 p-3 bg-gradient-to-r from-amber-500/20 to-orange-500/10 rounded-xl">
+                            <div class="text-3xl">📈</div>
+                            <div>
+                                <h4 class="font-bold text-amber-300">Staking APY สูง</h4>
+                                <p class="text-white/70 text-sm">5% - 200% ขึ้นอยู่กับระยะเวลา</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 p-3 bg-gradient-to-r from-purple-500/20 to-violet-500/10 rounded-xl">
+                            <div class="text-3xl">💎</div>
+                            <div>
+                                <h4 class="font-bold text-purple-300">Utility Token</h4>
+                                <p class="text-white/70 text-sm">ใช้งานได้จริงใน 11+ ระบบ</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 p-3 bg-gradient-to-r from-cyan-500/20 to-teal-500/10 rounded-xl">
+                            <div class="text-3xl">🗳️</div>
+                            <div>
+                                <h4 class="font-bold text-cyan-300">Governance Rights</h4>
+                                <p class="text-white/70 text-sm">มีสิทธิ์โหวตการพัฒนาแพลตฟอร์ม</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CTA Section -->
+            <div class="bg-gradient-to-r from-violet-600/30 via-purple-600/30 to-fuchsia-600/30 backdrop-blur-md border border-purple-300/40 rounded-2xl p-6 md:p-8 shadow-xl">
+                <div class="text-center">
+                    <div class="flex justify-center mb-4">
+                        <img src="{{ asset('images/tpix-logo.svg') }}" alt="TPIX" class="w-16 h-16 md:w-20 md:h-20 animate-float">
+                    </div>
+                    <h3 class="text-2xl md:text-3xl font-black text-white mb-3">
+                        🚀 เริ่มต้นกับ TPIX วันนี้
+                    </h3>
+                    <p class="text-lg text-white/80 mb-4">
+                        เป็นส่วนหนึ่งของ Ecosystem ที่เติบโตเร็วที่สุด
+                    </p>
+                    <div class="flex flex-wrap justify-center gap-4">
+                        <div class="bg-white/10 rounded-xl px-6 py-3 border border-white/20">
+                            <div class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-green-300">7B</div>
+                            <div class="text-white/60 text-xs">Total Supply</div>
+                        </div>
+                        <div class="bg-white/10 rounded-xl px-6 py-3 border border-white/20">
+                            <div class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-300">200%</div>
+                            <div class="text-white/60 text-xs">Max APY</div>
+                        </div>
+                        <div class="bg-white/10 rounded-xl px-6 py-3 border border-white/20">
+                            <div class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-fuchsia-300">11+</div>
+                            <div class="text-white/60 text-xs">Use Cases</div>
+                        </div>
+                        <div class="bg-white/10 rounded-xl px-6 py-3 border border-white/20">
+                            <div class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300">&lt;฿0.30</div>
+                            <div class="text-white/60 text-xs">ค่าธรรมเนียม</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
