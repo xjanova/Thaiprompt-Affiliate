@@ -137,7 +137,7 @@
                         </td>
                         <td class="px-4 py-4 text-right">
                             <div class="flex items-center justify-end gap-2">
-                                <a href="{{ route('admin.video-missions.completions.show', $completion) }}"
+                                <a href="{{ route('admin.video-missions.completion', $completion) }}"
                                    class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-lg transition"
                                    title="ดูรายละเอียด">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,7 +146,7 @@
                                     </svg>
                                 </a>
                                 @if($completion->status === 'completed')
-                                <form action="{{ route('admin.video-missions.completions.verify', $completion) }}" method="POST" class="inline">
+                                <form action="{{ route('admin.video-missions.completion.verify', $completion) }}" method="POST" class="inline">
                                     @csrf
                                     <button type="submit"
                                             class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/50 rounded-lg transition"
@@ -154,7 +154,7 @@
                                         ✅
                                     </button>
                                 </form>
-                                <form action="{{ route('admin.video-missions.completions.reject', $completion) }}" method="POST" class="inline"
+                                <form action="{{ route('admin.video-missions.completion.reject', $completion) }}" method="POST" class="inline"
                                       onsubmit="return confirm('ยืนยันการปฏิเสธ?')">
                                     @csrf
                                     <input type="hidden" name="reason" value="Manual rejection">
