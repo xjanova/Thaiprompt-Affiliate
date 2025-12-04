@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.351.1] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2009 from xjanova/claude/fix-super-admin-access-0173SAr8JQ7h6KGH47B4Lkvy (f4963c8e)
+- fix: protect super admin when clearing users with --except-admin (613baad0)
+### 🔧 Other Changes
+
+
 ## [v3.351.0] - 2025-12-04
 
 ### ✨ Features
