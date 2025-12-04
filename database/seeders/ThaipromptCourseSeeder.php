@@ -300,310 +300,64 @@ class ThaipromptCourseSeeder extends Seeder
             [
                 'title' => 'ระบบ Crypto และ TPIX Token',
                 'slug' => 'thaiprompt-crypto-tpix',
-                'excerpt' => 'เรียนรู้เกี่ยวกับ Cryptocurrency, TPIX Token, Staking และ NFT',
-                'duration' => 40,
+                'excerpt' => 'เรียนรู้ระบบ Cryptocurrency ครบวงจร: TPIX Token, การซื้อ/ขาย, Staking, NFT และการรักษาความปลอดภัย Crypto',
+                'duration' => 45,
                 'difficulty' => 'intermediate',
                 'course_level' => 4,
                 'is_featured' => true,
-                'tags' => ['Crypto', 'TPIX', 'Staking', 'Blockchain'],
-                'content' => $this->generateContent('ระบบ Crypto และ TPIX Token', [
-                    [
-                        'title' => 'TPIX Token คืออะไร?',
-                        'content' => "**TPIX** คือ Native Token ของ Thaiprompt Ecosystem:\n\n• **Symbol:** TPIX\n• **Network:** BSC (Binance Smart Chain)\n• **Type:** Utility Token\n\n**ใช้งานได้:**\n• ชำระค่าสินค้าและบริการ\n• Staking รับผลตอบแทน\n• ซื้อ NFT และสินค้าพิเศษ\n• แลกเป็นเงินสด\n• Governance - โหวตตัดสินใจ",
-                    ],
-                    [
-                        'title' => 'การซื้อ/ขาย TPIX',
-                        'content' => "**ช่องทางซื้อ TPIX:**\n\n1. **ในระบบ** - ซื้อด้วย Wallet Balance\n2. **DEX** - แลกบน PancakeSwap\n3. **P2P** - ซื้อจากสมาชิกอื่น\n\n**ขั้นตอน:**\n1. ไปที่ \"Crypto\" > \"TPIX\"\n2. เลือก \"ซื้อ\" หรือ \"ขาย\"\n3. ระบุจำนวน\n4. ยืนยันธุรกรรม\n5. TPIX จะเข้ากระเป๋าภายใน 1-5 นาที",
-                    ],
-                    [
-                        'title' => 'Staking TPIX',
-                        'content' => "**Staking คือการฝากเหรียญเพื่อรับผลตอบแทน:**\n\n**แพ็กเกจ Staking:**\n\n| ระยะเวลา | APY | ขั้นต่ำ |\n|----------|-----|--------|\n| 30 วัน | 12% | 100 TPIX |\n| 90 วัน | 18% | 500 TPIX |\n| 180 วัน | 24% | 1,000 TPIX |\n| 365 วัน | 36% | 5,000 TPIX |\n\n**ขั้นตอน Staking:**\n1. มี TPIX ในกระเป๋า\n2. ไปที่ \"Staking\"\n3. เลือกแพ็กเกจ\n4. ระบุจำนวน\n5. ยืนยัน\n6. รอรับผลตอบแทน",
-                    ],
-                ]),
-                'quiz' => [
-                    'time_limit' => 18,
-                    'questions' => [
-                        [
-                            'question' => 'TPIX อยู่บน Network ใด?',
-                            'answers' => [
-                                ['text' => 'Ethereum', 'is_correct' => false],
-                                ['text' => 'BSC (Binance Smart Chain)', 'is_correct' => true],
-                                ['text' => 'Solana', 'is_correct' => false],
-                                ['text' => 'Polygon', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'Staking 365 วัน ได้ APY เท่าไร?',
-                            'answers' => [
-                                ['text' => '18%', 'is_correct' => false],
-                                ['text' => '24%', 'is_correct' => false],
-                                ['text' => '36%', 'is_correct' => true],
-                                ['text' => '48%', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'TPIX สามารถใช้ทำอะไรได้บ้าง?',
-                            'answers' => [
-                                ['text' => 'ชำระค่าสินค้าเท่านั้น', 'is_correct' => false],
-                                ['text' => 'Staking เท่านั้น', 'is_correct' => false],
-                                ['text' => 'ชำระค่าสินค้า, Staking, ซื้อ NFT, แลกเงินสด', 'is_correct' => true],
-                                ['text' => 'แลกเงินสดเท่านั้น', 'is_correct' => false],
-                            ],
-                        ],
-                    ],
-                ],
+                'tags' => ['Crypto', 'TPIX', 'Staking', 'Blockchain', 'NFT', 'BSC', 'DeFi'],
+                'content' => $this->generateContent('ระบบ Crypto และ TPIX Token', $this->getCourse11Content()),
+                'quiz' => $this->getCourse11Quiz(),
             ],
             [
                 'title' => 'ความปลอดภัยและ 2FA',
                 'slug' => 'thaiprompt-security-2fa',
-                'excerpt' => 'เรียนรู้การรักษาความปลอดภัยบัญชี การตั้งค่า 2FA และการป้องกันภัย',
-                'duration' => 25,
+                'excerpt' => 'เรียนรู้การป้องกันบัญชีอย่างครบวงจร: Strong Password, 2FA, TOTP, การป้องกัน Phishing และ Security Best Practices',
+                'duration' => 35,
                 'difficulty' => 'intermediate',
                 'course_level' => 4,
                 'is_featured' => false,
-                'tags' => ['Security', '2FA', 'ความปลอดภัย'],
-                'content' => $this->generateContent('ความปลอดภัยและ 2FA', [
-                    [
-                        'title' => 'ความสำคัญของความปลอดภัย',
-                        'content' => "**ทำไมต้องใส่ใจความปลอดภัย?**\n\n• บัญชีมียอดเงินและค่าคอมมิชชั่น\n• มีข้อมูลส่วนตัวและข้อมูลธนาคาร\n• มี TPIX และ Crypto\n• มีสายงานและทีมงาน\n\n**ภัยคุกคามที่พบบ่อย:**\n• Phishing - เว็บปลอม\n• Password Leak - รหัสผ่านรั่วไหล\n• Social Engineering - หลอกลวงทางสังคม\n• Malware - โปรแกรมไม่พึงประสงค์",
-                    ],
-                    [
-                        'title' => 'การตั้งค่า 2FA',
-                        'content' => "**Two-Factor Authentication (2FA):**\n\nคือการยืนยันตัวตน 2 ขั้นตอน:\n1. รหัสผ่าน (Something you know)\n2. รหัสจาก App (Something you have)\n\n**ขั้นตอนเปิด 2FA:**\n1. ไปที่ \"ตั้งค่า\" > \"ความปลอดภัย\"\n2. คลิก \"เปิดใช้งาน 2FA\"\n3. ดาวน์โหลด Authenticator App\n   • Google Authenticator\n   • Authy\n   • Microsoft Authenticator\n4. สแกน QR Code\n5. กรอกรหัส 6 หลัก\n6. บันทึก Backup Codes ไว้ที่ปลอดภัย",
-                    ],
-                    [
-                        'title' => 'Best Practices',
-                        'content' => "**แนวปฏิบัติที่ดี:**\n\n✅ ใช้รหัสผ่านยาวและซับซ้อน\n✅ เปิด 2FA เสมอ\n✅ ไม่แชร์รหัสผ่านกับใคร\n✅ ตรวจสอบ URL ก่อน Login\n✅ Logout หลังใช้งานบนเครื่องสาธารณะ\n✅ อัปเดตข้อมูลติดต่อให้เป็นปัจจุบัน\n\n❌ อย่าใช้รหัสผ่านเดียวกันทุกที่\n❌ อย่าบันทึกรหัสผ่านบน Browser สาธารณะ\n❌ อย่าคลิกลิงก์ที่น่าสงสัย",
-                    ],
-                ]),
-                'quiz' => [
-                    'time_limit' => 15,
-                    'questions' => [
-                        [
-                            'question' => '2FA คืออะไร?',
-                            'answers' => [
-                                ['text' => 'รหัสผ่าน 2 ชุด', 'is_correct' => false],
-                                ['text' => 'การยืนยันตัวตน 2 ขั้นตอน', 'is_correct' => true],
-                                ['text' => 'บัญชี 2 อัน', 'is_correct' => false],
-                                ['text' => 'อุปกรณ์ 2 เครื่อง', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'Authenticator App ใดใช้สำหรับ 2FA ได้?',
-                            'answers' => [
-                                ['text' => 'Instagram', 'is_correct' => false],
-                                ['text' => 'TikTok', 'is_correct' => false],
-                                ['text' => 'Google Authenticator', 'is_correct' => true],
-                                ['text' => 'Facebook', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'Backup Codes ควรเก็บไว้ที่ไหน?',
-                            'answers' => [
-                                ['text' => 'โพสต์บน Social Media', 'is_correct' => false],
-                                ['text' => 'ที่ปลอดภัยและส่วนตัว', 'is_correct' => true],
-                                ['text' => 'ส่งให้เพื่อน', 'is_correct' => false],
-                                ['text' => 'ไม่ต้องเก็บ', 'is_correct' => false],
-                            ],
-                        ],
-                    ],
-                ],
+                'tags' => ['Security', '2FA', 'ความปลอดภัย', 'TOTP', 'Password', 'Phishing'],
+                'content' => $this->generateContent('ความปลอดภัยและ 2FA', $this->getCourse12Content()),
+                'quiz' => $this->getCourse12Quiz(),
             ],
 
             // ========== ระดับ 5: ขั้นสูง ==========
             [
                 'title' => 'API Integration และการพัฒนา',
                 'slug' => 'thaiprompt-api-integration',
-                'excerpt' => 'เรียนรู้การใช้งาน API เชื่อมต่อระบบภายนอก Webhook และการพัฒนา',
-                'duration' => 45,
+                'excerpt' => 'เรียนรู้การใช้งาน REST API ครบวงจร: HTTP Methods, Authentication, Thaiprompt Endpoints, Webhooks และตัวอย่างโค้ดหลายภาษา',
+                'duration' => 50,
                 'difficulty' => 'advanced',
                 'course_level' => 5,
                 'is_featured' => false,
-                'tags' => ['API', 'Integration', 'Webhook', 'Developer'],
-                'content' => $this->generateContent('API Integration และการพัฒนา', [
-                    [
-                        'title' => 'ภาพรวม API',
-                        'content' => "**Thaiprompt API:**\n\n• **Base URL:** `https://api.thaiprompt.com/v1`\n• **Authentication:** Bearer Token\n• **Format:** JSON\n• **Rate Limit:** 60 requests/minute\n\n**API Categories:**\n• Users API - จัดการผู้ใช้\n• Orders API - จัดการคำสั่งซื้อ\n• Products API - จัดการสินค้า\n• Commissions API - ดึงข้อมูลคอมมิชชั่น\n• Wallet API - ดึงข้อมูลกระเป๋าเงิน",
-                    ],
-                    [
-                        'title' => 'การ Authentication',
-                        'content' => "**ขั้นตอนการขอ API Key:**\n\n1. ไปที่ \"ตั้งค่า\" > \"API\"\n2. คลิก \"สร้าง API Key ใหม่\"\n3. ตั้งชื่อและกำหนดสิทธิ์\n4. คัดลอก API Key (แสดงครั้งเดียว!)\n\n**การใช้งาน:**\n```\nAuthorization: Bearer YOUR_API_KEY\n```\n\n**ตัวอย่าง Request:**\n```bash\ncurl -X GET \\\n  https://api.thaiprompt.com/v1/me \\\n  -H 'Authorization: Bearer YOUR_API_KEY'\n```",
-                    ],
-                    [
-                        'title' => 'Webhook',
-                        'content' => "**Webhook คือ?**\n\nเป็นการแจ้งเตือนอัตโนมัติเมื่อมี Event เกิดขึ้น\n\n**Event ที่รองรับ:**\n• `order.created` - มีคำสั่งซื้อใหม่\n• `order.paid` - ชำระเงินแล้ว\n• `commission.received` - ได้รับค่าคอมมิชชั่น\n• `member.registered` - สมาชิกใหม่สมัคร\n\n**ตั้งค่า Webhook:**\n1. ไปที่ \"ตั้งค่า\" > \"Webhooks\"\n2. เพิ่ม Webhook URL\n3. เลือก Events ที่ต้องการ\n4. บันทึก\n\n**Security:** ทุก Webhook มี Signature Header ให้ตรวจสอบ",
-                    ],
-                ]),
-                'quiz' => [
-                    'time_limit' => 20,
-                    'questions' => [
-                        [
-                            'question' => 'API Authentication ใช้วิธีใด?',
-                            'answers' => [
-                                ['text' => 'Username/Password', 'is_correct' => false],
-                                ['text' => 'Bearer Token', 'is_correct' => true],
-                                ['text' => 'API Key ใน URL', 'is_correct' => false],
-                                ['text' => 'Cookie', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'Webhook คือ?',
-                            'answers' => [
-                                ['text' => 'API สำหรับดึงข้อมูล', 'is_correct' => false],
-                                ['text' => 'การแจ้งเตือนอัตโนมัติเมื่อมี Event', 'is_correct' => true],
-                                ['text' => 'หน้าจัดการผู้ใช้', 'is_correct' => false],
-                                ['text' => 'ระบบชำระเงิน', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'Rate Limit ของ API คือ?',
-                            'answers' => [
-                                ['text' => '30 requests/minute', 'is_correct' => false],
-                                ['text' => '60 requests/minute', 'is_correct' => true],
-                                ['text' => '100 requests/minute', 'is_correct' => false],
-                                ['text' => 'ไม่จำกัด', 'is_correct' => false],
-                            ],
-                        ],
-                    ],
-                ],
+                'tags' => ['API', 'Integration', 'Webhook', 'Developer', 'REST', 'JWT', 'OAuth'],
+                'content' => $this->generateContent('API Integration และการพัฒนา', $this->getCourse13Content()),
+                'quiz' => $this->getCourse13Quiz(),
             ],
             [
                 'title' => 'การบริหารทีมขนาดใหญ่',
                 'slug' => 'thaiprompt-team-leadership',
-                'excerpt' => 'กลยุทธ์การสร้างทีม การบริหารสายงานขนาดใหญ่ และการเป็นผู้นำที่ดี',
-                'duration' => 50,
+                'excerpt' => 'กลยุทธ์การสร้างและบริหารทีม MLM ขนาดใหญ่: EDDC Framework, KPIs, Recognition Culture และการพัฒนา Sub-Leaders',
+                'duration' => 55,
                 'difficulty' => 'advanced',
                 'course_level' => 5,
                 'is_featured' => true,
-                'tags' => ['Leadership', 'ทีม', 'กลยุทธ์', 'MLM'],
-                'content' => $this->generateContent('การบริหารทีมขนาดใหญ่', [
-                    [
-                        'title' => 'หลักการสร้างทีมที่แข็งแกร่ง',
-                        'content' => "**3 เสาหลักของทีมที่ประสบความสำเร็จ:**\n\n1. **การสรรหา (Recruiting)**\n   • หาคนที่มี Mindset ที่ใช่\n   • สอนตั้งแต่เริ่มต้นอย่างเป็นระบบ\n   • ไม่เน้นปริมาณ แต่เน้นคุณภาพ\n\n2. **การฝึกอบรม (Training)**\n   • มีระบบ Onboarding ที่ชัดเจน\n   • จัดอบรมสม่ำเสมอ\n   • ใช้เครื่องมือช่วยเรียนรู้\n\n3. **การรักษา (Retention)**\n   • สร้างวัฒนธรรมทีม\n   • ให้ Recognition และ Reward\n   • ช่วยเหลือเมื่อติดปัญหา",
-                    ],
-                    [
-                        'title' => 'การบริหารสายงานหลายชั้น',
-                        'content' => "**โครงสร้างการบริหาร:**\n\n```\n        Leader (คุณ)\n           │\n    ┌──────┼──────┐\n  Leader A    Leader B    Leader C\n    │           │           │\n  Sub-team   Sub-team   Sub-team\n```\n\n**หลักการ:**\n• สร้าง Leader ในแต่ละสาย\n• มอบหมายความรับผิดชอบ\n• ประชุมทีม Leader สม่ำเสมอ\n• ติดตามผลด้วย KPIs\n\n**KPIs ที่ควรดู:**\n• จำนวนสมาชิกใหม่/เดือน\n• Retention Rate\n• Group PV\n• Leader Development",
-                    ],
-                    [
-                        'title' => 'การเป็นผู้นำที่ดี',
-                        'content' => "**คุณสมบัติผู้นำที่ดี:**\n\n✅ **Lead by Example** - ทำให้ดูเป็นตัวอย่าง\n✅ **Good Listener** - รับฟังความคิดเห็น\n✅ **Problem Solver** - แก้ปัญหาได้\n✅ **Positive Mindset** - คิดบวก\n✅ **Continuous Learner** - เรียนรู้ตลอดเวลา\n\n**สิ่งที่ควรหลีกเลี่ยง:**\n\n❌ โทษลูกทีมเมื่อล้มเหลว\n❌ เอาเครดิตคนเดียว\n❌ ไม่รับฟังความคิดเห็น\n❌ สอนแต่ไม่ทำเอง\n❌ สื่อสารไม่ชัดเจน",
-                    ],
-                    [
-                        'title' => 'เครื่องมือบริหารทีมใน Thaiprompt',
-                        'content' => "**เครื่องมือที่มี:**\n\n📊 **Team Dashboard** - ดูสถิติทีมแบบ Real-time\n📣 **Broadcast** - ส่งข้อความถึงทั้งทีม\n📅 **Events** - จัดกิจกรรมและนัดหมาย\n🏆 **Leaderboard** - กระดานผู้นำ\n📈 **Reports** - รายงานประสิทธิภาพ\n🎯 **Goals** - ตั้งเป้าหมายทีม\n\n**Tips:** ใช้เครื่องมือเหล่านี้ร่วมกับการพบปะตัวจริงเพื่อผลลัพธ์ที่ดีที่สุด",
-                    ],
-                ]),
-                'quiz' => [
-                    'time_limit' => 20,
-                    'questions' => [
-                        [
-                            'question' => '3 เสาหลักของทีมที่ประสบความสำเร็จคือ?',
-                            'answers' => [
-                                ['text' => 'ขาย, โฆษณา, ปิดการขาย', 'is_correct' => false],
-                                ['text' => 'Recruiting, Training, Retention', 'is_correct' => true],
-                                ['text' => 'Facebook, Instagram, TikTok', 'is_correct' => false],
-                                ['text' => 'เงิน, คน, เวลา', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => '"Lead by Example" หมายถึง?',
-                            'answers' => [
-                                ['text' => 'สั่งให้ลูกทีมทำ', 'is_correct' => false],
-                                ['text' => 'ทำให้ดูเป็นตัวอย่าง', 'is_correct' => true],
-                                ['text' => 'อ่านหนังสือ', 'is_correct' => false],
-                                ['text' => 'ให้เงินลูกทีม', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'KPI ใดควรดูเพื่อวัดผลทีม?',
-                            'answers' => [
-                                ['text' => 'จำนวน Like บน Facebook', 'is_correct' => false],
-                                ['text' => 'จำนวนสมาชิกใหม่, Retention Rate, Group PV', 'is_correct' => true],
-                                ['text' => 'จำนวนข้อความใน LINE', 'is_correct' => false],
-                                ['text' => 'จำนวนรูปที่โพสต์', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'ผู้นำที่ดีควรทำอย่างไรเมื่อทีมล้มเหลว?',
-                            'answers' => [
-                                ['text' => 'โทษลูกทีม', 'is_correct' => false],
-                                ['text' => 'หาสาเหตุและช่วยแก้ไข', 'is_correct' => true],
-                                ['text' => 'เพิกเฉย', 'is_correct' => false],
-                                ['text' => 'ลาออก', 'is_correct' => false],
-                            ],
-                        ],
-                    ],
-                ],
+                'tags' => ['Leadership', 'ทีม', 'กลยุทธ์', 'MLM', 'KPIs', 'Training', 'Delegation'],
+                'content' => $this->generateContent('การบริหารทีมขนาดใหญ่', $this->getCourse14Content()),
+                'quiz' => $this->getCourse14Quiz(),
             ],
             [
                 'title' => 'กลยุทธ์การตลาดออนไลน์ขั้นสูง',
                 'slug' => 'thaiprompt-advanced-marketing',
-                'excerpt' => 'เรียนรู้กลยุทธ์การตลาดดิจิทัลขั้นสูง Content Marketing, Funnel และ Automation',
-                'duration' => 50,
+                'excerpt' => 'เรียนรู้การตลาดดิจิทัลขั้นสูง: Marketing Funnel (TOFU-MOFU-BOFU), 4E Framework, Email Marketing, Video Content และ Data Analytics',
+                'duration' => 55,
                 'difficulty' => 'advanced',
                 'course_level' => 5,
                 'is_featured' => true,
-                'tags' => ['Marketing', 'Funnel', 'Content', 'Automation'],
-                'content' => $this->generateContent('กลยุทธ์การตลาดออนไลน์ขั้นสูง', [
-                    [
-                        'title' => 'Marketing Funnel',
-                        'content' => "**Sales Funnel คือ?**\n\nเส้นทางที่นำพาผู้คนจากไม่รู้จักไปสู่การซื้อสินค้า\n\n```\n    ┌─────────────────────┐\n    │     AWARENESS       │  รู้จักแบรนด์\n    │ (เห็นโฆษณา/Content) │\n    └──────────┬──────────┘\n               ↓\n    ┌─────────────────────┐\n    │      INTEREST       │  สนใจ\n    │  (อ่าน/ดูเนื้อหา)   │\n    └──────────┬──────────┘\n               ↓\n    ┌─────────────────────┐\n    │     DECISION        │  ตัดสินใจ\n    │ (เปรียบเทียบ/ถาม)   │\n    └──────────┬──────────┘\n               ↓\n    ┌─────────────────────┐\n    │      ACTION         │  ซื้อ/สมัคร\n    │    (Conversion)     │\n    └─────────────────────┘\n```",
-                    ],
-                    [
-                        'title' => 'Content Marketing',
-                        'content' => "**ประเภท Content:**\n\n📝 **Blog/Article** - สร้างความน่าเชื่อถือ\n📹 **Video** - Engagement สูง\n🎙️ **Podcast** - สร้างความสัมพันธ์\n📸 **Infographic** - Share ง่าย\n📧 **Email** - Direct Communication\n\n**Content Calendar:**\n• วางแผนล่วงหน้า 1 เดือน\n• Mix Content Types\n• สม่ำเสมอ (เช่น 3 ครั้ง/สัปดาห์)\n• วัดผลและปรับปรุง\n\n**80/20 Rule:**\n• 80% Value Content (ให้ความรู้)\n• 20% Promotional Content (ขาย)",
-                    ],
-                    [
-                        'title' => 'Marketing Automation',
-                        'content' => "**ระบบ Automation ใน Thaiprompt:**\n\n🤖 **Auto Response** - ตอบกลับอัตโนมัติ\n📧 **Email Sequence** - ส่งอีเมลตามลำดับ\n📱 **LINE Broadcast** - ส่งข้อความอัตโนมัติ\n🎯 **Retargeting** - โฆษณาซ้ำ\n\n**ตัวอย่าง Sequence:**\n```\nDay 0: Welcome Email\nDay 2: แนะนำระบบ\nDay 5: Case Study ความสำเร็จ\nDay 7: Offer พิเศษ\n```\n\n**Tips:** ตั้ง Trigger ตาม Behavior เช่น:\n• สมัครแต่ไม่ซื้อ → ส่ง Offer\n• ซื้อแล้ว → ส่ง Upsell",
-                    ],
-                    [
-                        'title' => 'การวัดผลการตลาด',
-                        'content' => "**Metrics ที่ควรติดตาม:**\n\n📊 **Traffic Metrics:**\n• Visitors\n• Page Views\n• Bounce Rate\n• Time on Site\n\n💰 **Conversion Metrics:**\n• Conversion Rate\n• Cost per Lead (CPL)\n• Cost per Acquisition (CPA)\n• Customer Lifetime Value (CLV)\n\n🎯 **Social Metrics:**\n• Reach\n• Engagement Rate\n• Share/Save\n• Comment Sentiment\n\n**การคำนวณ ROI:**\n```\nROI = (Revenue - Cost) / Cost x 100\n```",
-                    ],
-                ]),
-                'quiz' => [
-                    'time_limit' => 20,
-                    'questions' => [
-                        [
-                            'question' => 'Sales Funnel ขั้นตอนแรกคือ?',
-                            'answers' => [
-                                ['text' => 'Action', 'is_correct' => false],
-                                ['text' => 'Decision', 'is_correct' => false],
-                                ['text' => 'Awareness', 'is_correct' => true],
-                                ['text' => 'Interest', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => '80/20 Rule ใน Content Marketing คือ?',
-                            'answers' => [
-                                ['text' => '80% ขาย, 20% ให้ความรู้', 'is_correct' => false],
-                                ['text' => '80% ให้ความรู้, 20% ขาย', 'is_correct' => true],
-                                ['text' => '80% Video, 20% Text', 'is_correct' => false],
-                                ['text' => '80% Facebook, 20% Instagram', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'CPA หมายถึง?',
-                            'answers' => [
-                                ['text' => 'Click Per Action', 'is_correct' => false],
-                                ['text' => 'Cost Per Acquisition', 'is_correct' => true],
-                                ['text' => 'Content Per Article', 'is_correct' => false],
-                                ['text' => 'Customer Per Account', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'สูตรคำนวณ ROI คือ?',
-                            'answers' => [
-                                ['text' => 'Revenue + Cost', 'is_correct' => false],
-                                ['text' => '(Revenue - Cost) / Cost x 100', 'is_correct' => true],
-                                ['text' => 'Revenue / Cost', 'is_correct' => false],
-                                ['text' => 'Cost - Revenue', 'is_correct' => false],
-                            ],
-                        ],
-                    ],
-                ],
+                'tags' => ['Marketing', 'Funnel', 'Content', 'Email', 'Video', 'Analytics', 'A/B Testing'],
+                'content' => $this->generateContent('กลยุทธ์การตลาดออนไลน์ขั้นสูง', $this->getCourse15Content()),
+                'quiz' => $this->getCourse15Quiz(),
             ],
         ];
     }
@@ -4239,6 +3993,3038 @@ TSHIRT-BLU-S, TSHIRT-BLU-M, ...
                         ['text' => 'Return Form', 'is_correct' => false],
                     ],
                     'explanation' => 'Shipping Label คือใบปิดหน้ากล่อง มีข้อมูลผู้รับและ Barcode สำหรับขนส่ง',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 11: ระบบ Crypto และ TPIX Token - เนื้อหา
+     */
+    private function getCourse11Content(): array
+    {
+        return [
+            [
+                'title' => '🪙 รู้จัก TPIX Token',
+                'content' => "
+## TPIX Token คืออะไร?
+
+**TPIX** คือ Native Token ของ Thaiprompt Ecosystem เป็น Utility Token ที่ใช้งานได้หลากหลายในระบบ
+
+### 📊 Token Information
+
+| รายละเอียด | ข้อมูล |
+|------------|--------|
+| **Symbol** | TPIX |
+| **Network** | BSC (Binance Smart Chain) |
+| **Type** | BEP-20 |
+| **Total Supply** | 100,000,000 TPIX |
+| **Decimals** | 18 |
+
+### 🔗 Smart Contract
+
+```
+Contract Address: 0x1234...abcd (BSC)
+Verified on: BscScan ✓
+Audit: CertiK Audited ✓
+```
+
+### 🎯 Token Utility
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  TPIX Token Uses                     │
+├─────────────────────────────────────────────────────┤
+│                                                      │
+│   💰 Payment        🔒 Staking       🗳️ Governance   │
+│   ชำระค่าสินค้า      ฝากรับดอกเบี้ย     โหวตตัดสินใจ    │
+│                                                      │
+│   🎨 NFT           🎁 Rewards       💱 Exchange     │
+│   ซื้อขาย NFT       รับรางวัลพิเศษ     แลกเปลี่ยน       │
+│                                                      │
+└─────────────────────────────────────────────────────┘
+```
+
+### ⭐ ข้อดีของ TPIX
+
+1. **Low Fees** - ค่าธรรมเนียมต่ำบน BSC
+2. **Fast Transaction** - ธุรกรรมเสร็จใน 3-5 วินาที
+3. **Earn Rewards** - Staking รับผลตอบแทน
+4. **Governance** - มีสิทธิ์โหวตตัดสินใจ
+5. **Ecosystem** - ใช้งานได้ทั่ว Thaiprompt
+                ",
+            ],
+            [
+                'title' => '💳 การซื้อ/ขาย TPIX',
+                'content' => "
+## ช่องทางซื้อ TPIX
+
+### 🏪 1. ซื้อในระบบ (In-App Purchase)
+
+**ขั้นตอน:**
+1. ไปที่ \"Crypto\" > \"TPIX\"
+2. คลิก \"ซื้อ TPIX\"
+3. ระบุจำนวนที่ต้องการ
+4. เลือกช่องทางชำระเงิน:
+   - Wallet Balance
+   - PromptPay
+   - Credit/Debit Card
+5. ยืนยันธุรกรรม
+6. รับ TPIX ภายใน 1-5 นาที
+
+### 🔄 2. ซื้อบน DEX (PancakeSwap)
+
+```
+ขั้นตอน:
+1. เตรียม BNB ใน MetaMask/Trust Wallet
+2. ไปที่ PancakeSwap.finance
+3. เชื่อมต่อ Wallet
+4. Swap BNB → TPIX
+5. ตั้ง Slippage 0.5-1%
+6. Confirm Transaction
+```
+
+**Contract Address สำหรับ Add Token:**
+```
+Network: BSC (BNB Smart Chain)
+Address: 0x1234...abcd
+Symbol: TPIX
+Decimals: 18
+```
+
+### 👥 3. ซื้อ P2P (Peer-to-Peer)
+
+| ข้อดี | ข้อเสีย |
+|------|--------|
+| ราคาอาจถูกกว่า | ต้องระวังมิจฉาชีพ |
+| หลายช่องทางชำระ | ใช้เวลานานกว่า |
+| ไม่ต้อง KYC | ไม่มี Guarantee |
+
+### 📤 การขาย TPIX
+
+**ช่องทางขาย:**
+1. **ในระบบ** - แลกเป็น Wallet Balance
+2. **DEX** - Swap เป็น BNB/USDT
+3. **P2P** - ขายให้สมาชิกอื่น
+
+**ค่าธรรมเนียม:**
+| ช่องทาง | Fee |
+|---------|-----|
+| In-App | 1% |
+| DEX | 0.25% + Gas |
+| P2P | 0% |
+                ",
+            ],
+            [
+                'title' => '🔒 Staking TPIX',
+                'content' => "
+## Staking คืออะไร?
+
+Staking คือการ **ล็อค Token** ไว้ในระบบเพื่อ **รับผลตอบแทน** คล้ายกับการฝากประจำ
+
+### 📊 Staking Packages
+
+| Package | APY | ระยะเวลา | ขั้นต่ำ | Reward |
+|---------|-----|---------|--------|--------|
+| **Flex** | 8% | ไม่ล็อค | 100 TPIX | รายวัน |
+| **30 Days** | 12% | 30 วัน | 500 TPIX | รายสัปดาห์ |
+| **90 Days** | 18% | 90 วัน | 1,000 TPIX | รายสัปดาห์ |
+| **180 Days** | 24% | 180 วัน | 2,500 TPIX | รายเดือน |
+| **365 Days** | 36% | 365 วัน | 5,000 TPIX | รายเดือน |
+
+### 📈 ตัวอย่างการคำนวณ
+
+```
+Stake: 10,000 TPIX
+Package: 365 Days (36% APY)
+
+Reward ต่อปี = 10,000 × 36% = 3,600 TPIX
+Reward ต่อเดือน = 3,600 ÷ 12 = 300 TPIX
+Reward ต่อวัน = 3,600 ÷ 365 ≈ 9.86 TPIX
+```
+
+### ⚙️ วิธี Stake
+
+```
+┌─────────────────────────────────────────────────────┐
+│              Staking Process                         │
+├─────────────────────────────────────────────────────┤
+│                                                      │
+│  1. ไปที่ \"Crypto\" > \"Staking\"                      │
+│                    ↓                                 │
+│  2. เลือก Package ที่ต้องการ                          │
+│                    ↓                                 │
+│  3. ระบุจำนวน TPIX                                   │
+│                    ↓                                 │
+│  4. อ่านและยอมรับเงื่อนไข                              │
+│                    ↓                                 │
+│  5. ยืนยัน Stake                                     │
+│                    ↓                                 │
+│  6. รอรับ Reward ตาม Schedule                        │
+│                                                      │
+└─────────────────────────────────────────────────────┘
+```
+
+### ⚠️ ข้อควรระวัง
+
+- **Early Withdrawal** - ถอนก่อนกำหนดอาจเสีย Penalty 10-30%
+- **APY Variable** - อัตราอาจปรับเปลี่ยนได้
+- **Smart Contract Risk** - เข้าใจความเสี่ยงก่อนลงทุน
+                ",
+            ],
+            [
+                'title' => '🎨 NFT และ Digital Collectibles',
+                'content' => "
+## NFT ใน Thaiprompt
+
+### 🖼️ NFT คืออะไร?
+
+**Non-Fungible Token (NFT)** คือสินทรัพย์ดิจิทัลที่มีเอกลักษณ์ ไม่สามารถแลกเปลี่ยนกันได้ 1:1
+
+### 🎯 ประเภท NFT ในระบบ
+
+| ประเภท | คำอธิบาย | ประโยชน์ |
+|--------|---------|---------|
+| **Profile NFT** | รูปโปรไฟล์พิเศษ | แสดงสถานะ, Badge |
+| **Achievement NFT** | รางวัลความสำเร็จ | Proof of Achievement |
+| **Utility NFT** | NFT ที่ใช้งานได้ | ส่วนลด, สิทธิพิเศษ |
+| **Art NFT** | งานศิลปะดิจิทัล | Collectible, Resale |
+
+### 🛒 NFT Marketplace
+
+```
+┌─────────────────────────────────────────────────────┐
+│              NFT Marketplace                         │
+├─────────────────────────────────────────────────────┤
+│                                                      │
+│  [Browse] [My NFTs] [Create] [Sell]                 │
+│                                                      │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐   │
+│  │  #001   │ │  #002   │ │  #003   │ │  #004   │   │
+│  │ [Image] │ │ [Image] │ │ [Image] │ │ [Image] │   │
+│  │ 500 TPIX│ │ 800 TPIX│ │ 1.2K   │ │ 350 TPIX│   │
+│  │  [Buy]  │ │  [Buy]  │ │  [Buy]  │ │  [Buy]  │   │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────┘   │
+│                                                      │
+└─────────────────────────────────────────────────────┘
+```
+
+### 💰 การซื้อ NFT
+
+1. เชื่อมต่อ Wallet (มี TPIX/BNB)
+2. Browse NFT ที่ต้องการ
+3. คลิก \"Buy Now\" หรือ \"Place Bid\"
+4. ยืนยันธุรกรรม
+5. NFT จะเข้า Collection ของคุณ
+
+### 📤 การขาย NFT
+
+1. ไปที่ \"My NFTs\"
+2. เลือก NFT ที่จะขาย
+3. ตั้งราคา (Fixed หรือ Auction)
+4. จ่ายค่า Listing Fee (ถ้ามี)
+5. NFT จะแสดงบน Marketplace
+
+### 📊 Royalty System
+
+```
+Creator Royalty: 5-10%
+Platform Fee: 2.5%
+
+ตัวอย่าง: ขาย NFT ได้ 1,000 TPIX
+- Creator ได้: 50-100 TPIX
+- Platform: 25 TPIX
+- Seller ได้: 875-925 TPIX
+```
+                ",
+            ],
+            [
+                'title' => '🔐 ความปลอดภัย Crypto',
+                'content' => "
+## รักษาความปลอดภัย Crypto
+
+### 🛡️ Best Practices
+
+**1. Private Key & Seed Phrase**
+
+```
+⚠️ CRITICAL: ห้ามแชร์กับใครเด็ดขาด!
+
+- เขียนใส่กระดาษ เก็บที่ปลอดภัย
+- ห้ามเก็บในโทรศัพท์/คอมพิวเตอร์
+- ห้ามถ่ายรูป
+- ห้ามส่งทาง Chat/Email
+```
+
+**2. Wallet Security**
+
+| ประเภท | ความปลอดภัย | ความสะดวก |
+|--------|-----------|----------|
+| **Hardware Wallet** | ⭐⭐⭐⭐⭐ | ⭐⭐ |
+| **Software Wallet** | ⭐⭐⭐ | ⭐⭐⭐⭐ |
+| **Exchange Wallet** | ⭐⭐ | ⭐⭐⭐⭐⭐ |
+
+**3. ป้องกัน Scam**
+
+```
+🚨 สัญญาณอันตราย:
+- ขอ Private Key / Seed Phrase
+- สัญญาผลตอบแทนเกินจริง (100%+ APY)
+- Pressure ให้รีบตัดสินใจ
+- Link/Website ที่ดูแปลก
+- ติดต่อมาเองไม่ได้ร้องขอ
+```
+
+### 🔒 Security Checklist
+
+- [ ] เปิด 2FA ทุก Platform
+- [ ] ใช้ Hardware Wallet สำหรับยอดมาก
+- [ ] เก็บ Seed Phrase ที่ปลอดภัย
+- [ ] ตรวจสอบ URL ก่อนเชื่อมต่อ Wallet
+- [ ] Approve เฉพาะ Contract ที่เชื่อถือได้
+- [ ] Revoke Approval ที่ไม่ใช้แล้ว
+
+### 🚨 เมื่อถูก Hack
+
+1. **รีบย้าย Assets** ที่เหลือไป Wallet ใหม่
+2. **Revoke** ทุก Approval
+3. **เปลี่ยนรหัสผ่าน** ทุก Platform
+4. **แจ้ง Support** ของ Platform
+5. **บันทึกหลักฐาน** ทุกอย่าง
+                ",
+            ],
+            [
+                'title' => '📝 แบบฝึกหัดท้ายบท',
+                'content' => "
+## แบบฝึกหัด: Crypto และ TPIX Token
+
+### 📋 แบบฝึกหัดที่ 1: คำนวณ Staking Reward
+
+**โจทย์:** Stake 5,000 TPIX เป็นเวลา 180 วัน (APY 24%)
+
+**คำนวณ:**
+1. Reward ทั้งหมดหลัง 180 วัน
+2. Reward ต่อเดือน
+3. Total ที่จะได้รับเมื่อ Unstake
+
+```
+คำตอบ:
+1. Reward 180 วัน = 5,000 × 24% × (180/365) = 591.78 TPIX
+2. Reward/เดือน = 591.78 ÷ 6 = 98.63 TPIX
+3. Total = 5,000 + 591.78 = 5,591.78 TPIX
+```
+
+---
+
+### 📋 แบบฝึกหัดที่ 2: เปรียบเทียบช่องทางซื้อ
+
+**โจทย์:** ต้องการซื้อ 1,000 TPIX ราคา 10 บาท/TPIX
+
+**เปรียบเทียบ:**
+| ช่องทาง | Fee | ค่าใช้จ่ายรวม |
+|---------|-----|-------------|
+| In-App (1%) | ? | ? |
+| DEX (0.25% + 50 บาท Gas) | ? | ? |
+| P2P (0%) | ? | ? |
+
+```
+คำตอบ:
+- In-App: 10,000 × 1% = 100 บาท → รวม 10,100 บาท
+- DEX: 10,000 × 0.25% + 50 = 75 บาท → รวม 10,075 บาท
+- P2P: 0 บาท → รวม 10,000 บาท
+```
+
+---
+
+### 📋 แบบฝึกหัดที่ 3: NFT Royalty
+
+**โจทย์:** ขาย NFT ในราคา 2,000 TPIX
+- Creator Royalty: 7%
+- Platform Fee: 2.5%
+
+**คำนวณ:**
+1. Creator ได้เท่าไร?
+2. Platform ได้เท่าไร?
+3. Seller ได้เท่าไร?
+
+```
+คำตอบ:
+1. Creator = 2,000 × 7% = 140 TPIX
+2. Platform = 2,000 × 2.5% = 50 TPIX
+3. Seller = 2,000 - 140 - 50 = 1,810 TPIX
+```
+
+---
+
+### 📋 แบบฝึกหัดที่ 4: Security Check
+
+**โจทย์:** ระบุว่าข้อใดเป็น Scam
+
+1. \"ส่ง Seed Phrase มาเพื่อ verify account\"
+2. \"Stake TPIX รับ APY 500% การันตี\"
+3. \"ช่วย test Smart Contract นี้หน่อย\" (link แปลก)
+4. Website ชื่อ \"pancakeswapp.finance\" (pp)
+
+```
+คำตอบ: ทั้งหมดเป็น Scam!
+1. ❌ ไม่มีใครขอ Seed Phrase
+2. ❌ APY 500% เกินจริง
+3. ❌ Link ไม่น่าเชื่อถือ
+4. ❌ URL ปลอม (pancakeswap มี p เดียว)
+```
+
+---
+
+### ✅ Checklist ก่อนสอบ
+
+- [ ] เข้าใจ TPIX Token และ Utility
+- [ ] รู้ช่องทางซื้อขาย TPIX
+- [ ] คำนวณ Staking Reward ได้
+- [ ] เข้าใจ NFT และ Marketplace
+- [ ] รู้วิธีรักษาความปลอดภัย Crypto
+- [ ] ระบุ Scam ได้
+                ",
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 11: ระบบ Crypto และ TPIX Token - Quiz
+     */
+    private function getCourse11Quiz(): array
+    {
+        return [
+            'time_limit' => 18,
+            'description' => 'ทดสอบความเข้าใจเกี่ยวกับระบบ Crypto และ TPIX Token',
+            'questions' => [
+                [
+                    'question' => 'TPIX อยู่บน Network ใด?',
+                    'answers' => [
+                        ['text' => 'Ethereum', 'is_correct' => false],
+                        ['text' => 'BSC (Binance Smart Chain)', 'is_correct' => true],
+                        ['text' => 'Solana', 'is_correct' => false],
+                        ['text' => 'Polygon', 'is_correct' => false],
+                    ],
+                    'explanation' => 'TPIX เป็น BEP-20 Token บน Binance Smart Chain (BSC)',
+                ],
+                [
+                    'question' => 'Staking 365 วัน ได้ APY เท่าไร?',
+                    'answers' => [
+                        ['text' => '18%', 'is_correct' => false],
+                        ['text' => '24%', 'is_correct' => false],
+                        ['text' => '36%', 'is_correct' => true],
+                        ['text' => '48%', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Package 365 Days มี APY สูงสุดที่ 36%',
+                ],
+                [
+                    'question' => 'NFT ย่อมาจากอะไร?',
+                    'answers' => [
+                        ['text' => 'New Finance Token', 'is_correct' => false],
+                        ['text' => 'Non-Fungible Token', 'is_correct' => true],
+                        ['text' => 'Network File Transfer', 'is_correct' => false],
+                        ['text' => 'Next Future Technology', 'is_correct' => false],
+                    ],
+                    'explanation' => 'NFT = Non-Fungible Token คือ Token ที่มีเอกลักษณ์ไม่ซ้ำกัน',
+                ],
+                [
+                    'question' => 'ถ้า Stake 10,000 TPIX 90 วัน (APY 18%) จะได้ Reward เท่าไร?',
+                    'answers' => [
+                        ['text' => '443.84 TPIX', 'is_correct' => true],
+                        ['text' => '1,800 TPIX', 'is_correct' => false],
+                        ['text' => '150 TPIX', 'is_correct' => false],
+                        ['text' => '900 TPIX', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Reward = 10,000 × 18% × (90/365) = 443.84 TPIX',
+                ],
+                [
+                    'question' => 'สิ่งใดห้ามทำเด็ดขาดเกี่ยวกับ Seed Phrase?',
+                    'answers' => [
+                        ['text' => 'เขียนใส่กระดาษ', 'is_correct' => false],
+                        ['text' => 'แชร์ให้ Support ของ Platform', 'is_correct' => true],
+                        ['text' => 'เก็บไว้หลายที่', 'is_correct' => false],
+                        ['text' => 'ท่องจำ', 'is_correct' => false],
+                    ],
+                    'explanation' => 'ห้ามแชร์ Seed Phrase กับใครเด็ดขาด แม้แต่ Support ก็ไม่มีสิทธิ์ขอ',
+                ],
+                [
+                    'question' => 'DEX ที่นิยมใช้ Swap TPIX คือ?',
+                    'answers' => [
+                        ['text' => 'Uniswap', 'is_correct' => false],
+                        ['text' => 'PancakeSwap', 'is_correct' => true],
+                        ['text' => 'SushiSwap', 'is_correct' => false],
+                        ['text' => 'Binance', 'is_correct' => false],
+                    ],
+                    'explanation' => 'TPIX อยู่บน BSC จึงใช้ PancakeSwap ที่เป็น DEX หลักบน BSC',
+                ],
+                [
+                    'question' => 'Creator Royalty ใน NFT คืออะไร?',
+                    'answers' => [
+                        ['text' => 'ค่าธรรมเนียม Platform', 'is_correct' => false],
+                        ['text' => 'ส่วนแบ่งที่ Creator ได้ทุกครั้งที่ NFT ถูกขายต่อ', 'is_correct' => true],
+                        ['text' => 'ราคา NFT', 'is_correct' => false],
+                        ['text' => 'ค่า Gas Fee', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Creator Royalty คือส่วนแบ่ง 5-10% ที่ Creator ได้ทุกครั้งที่ NFT ถูก Resale',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 12: ความปลอดภัยและ 2FA - เนื้อหา
+     */
+    private function getCourse12Content(): array
+    {
+        return [
+            [
+                'title' => '🛡️ ความสำคัญของความปลอดภัยออนไลน์',
+                'content' => "
+## ทำไมความปลอดภัยจึงสำคัญ?
+
+ในยุคดิจิทัล บัญชีออนไลน์ของคุณคือ **ทรัพย์สินที่มีค่า** ที่ต้องปกป้อง
+
+### 📊 สถิติภัยคุกคามไซเบอร์
+
+| ประเภทภัยคุกคาม | สถิติ | ผลกระทบ |
+|----------------|-------|---------|
+| **Phishing** | 3.4 พันล้านครั้ง/วัน | ขโมยข้อมูลส่วนตัว |
+| **Password Breach** | 81% จาก weak password | บัญชีถูกแฮก |
+| **Account Takeover** | เพิ่ม 65% ต่อปี | สูญเสียเงินและข้อมูล |
+| **SIM Swap** | เพิ่ม 120% ต่อปี | ถูกขโมย OTP |
+
+### 🎯 สิ่งที่อาชญากรไซเบอร์ต้องการ
+
+```
+┌─────────────────────────────────────────┐
+│     สิ่งที่ Hacker ต้องการ              │
+├─────────────────────────────────────────┤
+│  💰 ข้อมูลทางการเงิน                    │
+│     • บัตรเครดิต                       │
+│     • บัญชีธนาคาร                      │
+│     • Crypto Wallet                    │
+├─────────────────────────────────────────┤
+│  👤 ข้อมูลส่วนตัว                       │
+│     • เลขบัตรประชาชน                   │
+│     • ที่อยู่                          │
+│     • เบอร์โทรศัพท์                    │
+├─────────────────────────────────────────┤
+│  🔑 Credential                         │
+│     • Username/Password                │
+│     • API Keys                         │
+│     • OTP/Recovery Codes               │
+└─────────────────────────────────────────┘
+```
+
+### 🔐 Defense in Depth (การป้องกันหลายชั้น)
+
+```
+     ชั้นที่ 1: Strong Password
+            ↓
+     ชั้นที่ 2: 2FA/MFA
+            ↓
+     ชั้นที่ 3: Email Verification
+            ↓
+     ชั้นที่ 4: Device Fingerprint
+            ↓
+     ชั้นที่ 5: IP Monitoring
+```
+
+> 💡 **หลักการ**: แม้ชั้นใดชั้นหนึ่งถูกเจาะ ชั้นอื่นๆ ยังคงปกป้องคุณ
+                ",
+            ],
+            [
+                'title' => '🔒 สร้างรหัสผ่านที่แข็งแกร่ง',
+                'content' => "
+## หลักการสร้าง Strong Password
+
+รหัสผ่านที่ดีคือ **ด่านแรก** ในการปกป้องบัญชีของคุณ
+
+### 📏 เกณฑ์รหัสผ่านที่แข็งแกร่ง
+
+| เกณฑ์ | ❌ Weak | ✅ Strong |
+|-------|---------|-----------|
+| **ความยาว** | < 8 ตัวอักษร | ≥ 12 ตัวอักษร |
+| **ตัวพิมพ์เล็ก** | ไม่มี | มี (a-z) |
+| **ตัวพิมพ์ใหญ่** | ไม่มี | มี (A-Z) |
+| **ตัวเลข** | ไม่มี | มี (0-9) |
+| **สัญลักษณ์** | ไม่มี | มี (!@#\$%^&*) |
+| **ความสุ่ม** | คำในพจนานุกรม | ไม่มีรูปแบบ |
+
+### ⏱️ เวลาในการ Crack รหัสผ่าน
+
+```
+┌─────────────────────────────────────────┐
+│  รหัสผ่าน        │  เวลา Crack          │
+├─────────────────────────────────────────┤
+│  123456          │  < 1 วินาที          │
+│  password123     │  < 1 นาที            │
+│  MyDog2020       │  3 วัน               │
+│  Th@!L4nd2024!   │  3 เดือน             │
+│  X#9kLm@pQ2!vNz  │  34,000 ปี           │
+└─────────────────────────────────────────┘
+```
+
+### 🎲 วิธีสร้าง Strong Password
+
+**วิธีที่ 1: Passphrase Method**
+```
+คิดประโยค    → \"แมวฉันชอบกินปลา3ตัวทุกเช้า\"
+แปลง        → \"MaewC0bG!nPla3TukChao!\"
+```
+
+**วิธีที่ 2: Random Generator**
+```
+ใช้ Password Manager → Ky#8mNpL@2!qXz
+```
+
+**วิธีที่ 3: Pattern Method**
+```
+Base Word    → ThaipromptRocks
+Add Number   → ThaipromptRocks2024
+Add Symbol   → Thaiprompt@Rocks2024!
+```
+
+### ❌ สิ่งที่ห้ามทำ
+
+- ❌ ใช้รหัสผ่านเดียวกันหลายบัญชี
+- ❌ ใช้ข้อมูลส่วนตัว (วันเกิด, ชื่อ)
+- ❌ บันทึกใน Notepad/กระดาษ
+- ❌ แชร์รหัสผ่านผ่าน LINE/Messenger
+- ❌ ใช้ Wi-Fi สาธารณะ log in บัญชีสำคัญ
+
+> 💡 **แนะนำ**: ใช้ Password Manager เช่น Bitwarden, 1Password, LastPass
+                ",
+            ],
+            [
+                'title' => '📱 เปิดใช้งาน 2FA (Two-Factor Authentication)',
+                'content' => "
+## 2FA คืออะไร?
+
+**Two-Factor Authentication (2FA)** คือการยืนยันตัวตน 2 ชั้น เพิ่มความปลอดภัยให้บัญชี
+
+### 🔑 ประเภทของ Authentication Factor
+
+```
+┌─────────────────────────────────────────────────┐
+│  Factor 1: Something You KNOW                   │
+│  ─────────────────────────────                  │
+│  • Password                                     │
+│  • PIN                                          │
+│  • Security Questions                           │
+├─────────────────────────────────────────────────┤
+│  Factor 2: Something You HAVE                   │
+│  ─────────────────────────────                  │
+│  • โทรศัพท์ (OTP/Authenticator)                │
+│  • Hardware Key (YubiKey)                       │
+│  • Smart Card                                   │
+├─────────────────────────────────────────────────┤
+│  Factor 3: Something You ARE                    │
+│  ─────────────────────────────                  │
+│  • ลายนิ้วมือ                                  │
+│  • Face ID                                      │
+│  • Voice Recognition                            │
+└─────────────────────────────────────────────────┘
+```
+
+### 📊 ประเภท 2FA และความปลอดภัย
+
+| ประเภท | ความปลอดภัย | ข้อดี | ข้อเสีย |
+|--------|-------------|-------|---------|
+| **SMS OTP** | ⭐⭐ | ง่าย, ไม่ต้องติดตั้ง | SIM Swap Risk |
+| **Email OTP** | ⭐⭐ | ง่าย | Email ถูกแฮกได้ |
+| **Authenticator App** | ⭐⭐⭐⭐ | Offline, ปลอดภัย | ต้องมีมือถือ |
+| **Hardware Key** | ⭐⭐⭐⭐⭐ | ปลอดภัยสูงสุด | ต้องซื้ออุปกรณ์ |
+
+### 📲 Authenticator App ยอดนิยม
+
+1. **Google Authenticator** - ฟรี, ง่าย
+2. **Microsoft Authenticator** - ฟรี, มี Backup
+3. **Authy** - ฟรี, Sync หลายอุปกรณ์
+4. **1Password** - รวมกับ Password Manager
+
+### 🔄 วิธีการทำงานของ TOTP
+
+```
+┌──────────────┐     ┌──────────────┐
+│   Server     │     │   Your App   │
+├──────────────┤     ├──────────────┤
+│ Secret Key + │     │ Secret Key + │
+│ Current Time │     │ Current Time │
+│      ↓       │     │      ↓       │
+│ Algorithm    │     │ Algorithm    │
+│      ↓       │     │      ↓       │
+│   123456     │ ══> │   123456     │
+│  (ตรงกัน!)   │     │  (Match!)    │
+└──────────────┘     └──────────────┘
+        ⏱️ เปลี่ยนทุก 30 วินาที
+```
+
+> 💡 **TOTP** (Time-based One-Time Password) ใช้ Secret Key + เวลาปัจจุบัน สร้างรหัส 6 หลักที่เปลี่ยนทุก 30 วินาที
+                ",
+            ],
+            [
+                'title' => '⚙️ ตั้งค่า 2FA ใน Thaiprompt',
+                'content' => "
+## ขั้นตอนเปิด 2FA ใน Thaiprompt
+
+### 📝 Step-by-Step Guide
+
+**Step 1: เข้าหน้าตั้งค่าความปลอดภัย**
+```
+เมนู → โปรไฟล์ → ความปลอดภัย → Two-Factor Authentication
+```
+
+**Step 2: เลือกประเภท 2FA**
+```
+┌─────────────────────────────────────────┐
+│  เลือกวิธีการยืนยันตัวตน              │
+├─────────────────────────────────────────┤
+│  ○ SMS OTP (ส่งรหัสผ่าน SMS)           │
+│  ● Authenticator App (แนะนำ)           │
+│  ○ Email OTP                           │
+└─────────────────────────────────────────┘
+```
+
+**Step 3: สแกน QR Code**
+```
+┌─────────────────────────────────────────┐
+│         ████████████████████            │
+│         ██              ██              │
+│         ██   QR CODE    ██              │
+│         ██              ██              │
+│         ████████████████████            │
+│                                         │
+│  หรือใส่ Manual Key:                   │
+│  JBSWY3DPEHPK3PXP                      │
+└─────────────────────────────────────────┘
+```
+
+**Step 4: ใส่รหัส OTP ยืนยัน**
+```
+กรุณาใส่รหัส 6 หลักจาก Authenticator App
+
+    ┌─┬─┬─┬─┬─┬─┐
+    │1│2│3│4│5│6│
+    └─┴─┴─┴─┴─┴─┘
+           [ยืนยัน]
+```
+
+**Step 5: บันทึก Backup Codes** ⚠️ สำคัญมาก!
+```
+┌─────────────────────────────────────────┐
+│  🔐 Backup Codes (ใช้ได้ครั้งเดียว)    │
+├─────────────────────────────────────────┤
+│  1. XXXX-XXXX-XXXX                     │
+│  2. XXXX-XXXX-XXXX                     │
+│  3. XXXX-XXXX-XXXX                     │
+│  4. XXXX-XXXX-XXXX                     │
+│  5. XXXX-XXXX-XXXX                     │
+├─────────────────────────────────────────┤
+│  ⚠️ เก็บไว้ที่ปลอดภัย!                 │
+│     ห้ามแชร์/Screenshot                │
+└─────────────────────────────────────────┘
+```
+
+### ✅ การใช้งาน 2FA
+
+**Login ปกติ:**
+```
+1. ใส่ Username/Password → [Login]
+2. ระบบขอ 2FA Code
+3. เปิด Authenticator App
+4. ใส่รหัส 6 หลัก → [ยืนยัน]
+5. เข้าสู่ระบบสำเร็จ ✅
+```
+
+**หากทำมือถือหาย:**
+```
+1. ใช้ Backup Code แทน OTP
+2. เข้าระบบ → ตั้งค่า 2FA ใหม่
+3. ลบ 2FA เก่า → เพิ่ม 2FA ใหม่
+```
+
+> ⚠️ **คำเตือน**: หากไม่มี Backup Code และมือถือหาย จะต้องติดต่อ Support พร้อมยืนยันตัวตน
+                ",
+            ],
+            [
+                'title' => '🔐 Security Best Practices',
+                'content' => "
+## แนวทางปฏิบัติด้านความปลอดภัยที่ดี
+
+### 📋 Security Checklist
+
+| หัวข้อ | ต้องทำ | สถานะ |
+|--------|--------|-------|
+| **Password** | ใช้ Password ที่แข็งแกร่ง ≥12 ตัว | ☐ |
+| **2FA** | เปิด 2FA ทุกบัญชีสำคัญ | ☐ |
+| **Backup Codes** | เก็บ Backup Codes ไว้ที่ปลอดภัย | ☐ |
+| **Email** | ตั้ง 2FA ให้ Email หลัก | ☐ |
+| **Recovery** | ตั้งค่า Recovery Email/Phone | ☐ |
+| **Sessions** | ตรวจสอบ Active Sessions | ☐ |
+| **Update** | อัพเดท Password ทุก 6 เดือน | ☐ |
+
+### 🚨 รู้จักภัยคุกคามทั่วไป
+
+**1. Phishing (หลอกลวง)**
+```
+❌ อีเมลปลอม:
+From: security@thaiprompt-verify.com  ← โดเมนปลอม!
+\"บัญชีของคุณถูกระงับ คลิกที่นี่เพื่อยืนยัน\"
+
+✅ อีเมลจริง:
+From: noreply@thaiprompt.com  ← โดเมนจริง!
+```
+
+**2. SIM Swap Attack**
+```
+Hacker โทรหา Mobile Operator
+     ↓
+ขอออก SIM ใหม่ (สวมรอยเป็นคุณ)
+     ↓
+ได้ SIM ใหม่ → รับ SMS OTP ของคุณ
+     ↓
+เข้าถึงบัญชีที่ใช้ SMS 2FA
+```
+> 💡 **ป้องกัน**: ใช้ Authenticator App แทน SMS OTP
+
+**3. Man-in-the-Middle (MITM)**
+```
+คุณ ←→ [Hacker ดักข้อมูล] ←→ เว็บไซต์
+```
+> 💡 **ป้องกัน**: ตรวจสอบ HTTPS และไม่ใช้ Wi-Fi สาธารณะ
+
+### 🛡️ การจัดการ Session
+
+**ตรวจสอบ Active Sessions:**
+```
+┌─────────────────────────────────────────┐
+│  🖥️ Active Sessions                     │
+├─────────────────────────────────────────┤
+│  Chrome - Windows                       │
+│  Bangkok, Thailand                      │
+│  Last active: 5 นาทีที่แล้ว             │
+│                          [Logout]       │
+├─────────────────────────────────────────┤
+│  Safari - iPhone                        │
+│  Chiang Mai, Thailand                   │
+│  Last active: 2 ชั่วโมงที่แล้ว          │
+│                          [Logout]       │
+├─────────────────────────────────────────┤
+│  ⚠️ Firefox - Windows                   │
+│  Moscow, Russia  ← น่าสงสัย!            │
+│  Last active: 1 วันที่แล้ว              │
+│                    [Logout] [Report]    │
+└─────────────────────────────────────────┘
+```
+
+**พบ Session แปลกๆ:**
+1. Logout ทันที
+2. เปลี่ยนรหัสผ่าน
+3. ตรวจสอบ Backup Codes
+4. แจ้ง Support
+
+### 🔑 การจัดเก็บ Sensitive Data
+
+| ข้อมูล | ❌ ห้ามเก็บที่ | ✅ ควรเก็บที่ |
+|--------|---------------|---------------|
+| **Password** | Notepad, LINE | Password Manager |
+| **Backup Codes** | มือถือ, Cloud | กระดาษในตู้เซฟ |
+| **Seed Phrase** | Screenshot | เขียนมือเก็บ Offline |
+| **API Key** | Public Repo | .env file (encrypted) |
+
+> 💡 **Rule of Thumb**: ถ้าถูกแฮก จะเสียหายมาก = ต้องเก็บอย่างปลอดภัย
+                ",
+            ],
+            [
+                'title' => '📝 แบบฝึกหัดท้ายบท',
+                'content' => "
+## แบบฝึกหัด: Security และ 2FA
+
+### 📋 Exercise 1: วิเคราะห์ความแข็งแกร่งของรหัสผ่าน
+
+**คำสั่ง:** จัดอันดับรหัสผ่านต่อไปนี้จากแข็งแกร่งที่สุดไปอ่อนแอที่สุด
+
+```
+A. password123
+B. Th@!Pr0mpt2024!
+C. แมว
+D. MyDogName2020
+E. X#9kLm@pQ2!vNz8$
+```
+
+**เฉลย:**
+```
+อันดับ 1: E. X#9kLm@pQ2!vNz8$ (Random, 16 chars, all types)
+อันดับ 2: B. Th@!Pr0mpt2024! (12+ chars, all types)
+อันดับ 3: D. MyDogName2020 (12 chars, แต่คาดเดาได้)
+อันดับ 4: A. password123 (Common password)
+อันดับ 5: C. แมว (สั้นมาก, ภาษาเดียว)
+```
+
+---
+
+### 📋 Exercise 2: เลือกประเภท 2FA ที่เหมาะสม
+
+**สถานการณ์:** คุณต้องเลือก 2FA สำหรับบัญชีต่อไปนี้ เลือกประเภทที่เหมาะสมที่สุด
+
+| บัญชี | SMS OTP | Authenticator | Hardware Key |
+|-------|---------|---------------|--------------|
+| Facebook ส่วนตัว | | | |
+| บัญชีธนาคารออนไลน์ | | | |
+| Crypto Exchange | | | |
+| Email หลัก | | | |
+
+**เฉลย:**
+```
+Facebook ส่วนตัว    → Authenticator (พอเพียง, ฟรี)
+บัญชีธนาคาร        → Authenticator หรือ Hardware Key
+Crypto Exchange    → Hardware Key (มูลค่าสูง)
+Email หลัก         → Authenticator (เป็น Master Account)
+```
+
+---
+
+### 📋 Exercise 3: วิเคราะห์ Phishing Email
+
+**คำสั่ง:** หา Red Flags ในอีเมลนี้
+
+```
+From: security-alert@thaiprompt-secure.co
+Subject: ด่วน! บัญชีถูกระงับ
+
+เรียน ลูกค้าที่เคารพ,
+
+บัญชีของคุณถูกระงับชั่วคราวเนื่องจากกิจกรรมผิดปกติ
+กรุณาคลิกลิงก์ด้านล่างเพื่อยืนยันตัวตนภายใน 24 ชั่วโมง
+มิฉะนั้นบัญชีจะถูกลบถาวร
+
+[คลิกที่นี่เพื่อยืนยัน]
+http://thaiprompt.security-verify.net/login
+
+ขอแสดงความนับถือ,
+ทีมความปลอดภัย
+```
+
+**เฉลย - Red Flags:**
+```
+🚩 1. โดเมนผิด: thaiprompt-secure.co (ไม่ใช่ .com)
+🚩 2. Urgency: \"ด่วน!\", \"ภายใน 24 ชั่วโมง\" - กดดันให้รีบ
+🚩 3. ลิงก์ผิด: thaiprompt.security-verify.net
+🚩 4. Generic greeting: \"ลูกค้าที่เคารพ\" ไม่ระบุชื่อ
+🚩 5. ขู่ลบบัญชี - สร้างความกลัว
+```
+
+---
+
+### 📋 Exercise 4: ตั้งค่า Security ของตัวเอง
+
+**Checklist:**
+
+- [ ] เปลี่ยนรหัสผ่าน Thaiprompt เป็น Strong Password (≥12 ตัว)
+- [ ] เปิด 2FA โดยใช้ Authenticator App
+- [ ] บันทึก Backup Codes ไว้ที่ปลอดภัย
+- [ ] ตรวจสอบ Active Sessions และ Logout session ที่ไม่รู้จัก
+- [ ] ตั้งค่า Recovery Email/Phone
+- [ ] ติดตั้ง Password Manager
+
+---
+
+### ✅ สรุป Security Best Practices
+
+```
+┌─────────────────────────────────────────┐
+│        🛡️ Defense in Depth             │
+├─────────────────────────────────────────┤
+│  1️⃣ Strong Password (≥12 chars)        │
+│  2️⃣ 2FA with Authenticator App         │
+│  3️⃣ Backup Codes stored safely         │
+│  4️⃣ Regular Session Review             │
+│  5️⃣ Recognize Phishing                 │
+│  6️⃣ Use Password Manager               │
+└─────────────────────────────────────────┘
+```
+                ",
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 12: ความปลอดภัยและ 2FA - Quiz
+     */
+    private function getCourse12Quiz(): array
+    {
+        return [
+            'time_limit' => 15,
+            'description' => 'ทดสอบความเข้าใจเกี่ยวกับความปลอดภัยและ Two-Factor Authentication',
+            'questions' => [
+                [
+                    'question' => '2FA ย่อมาจากอะไร?',
+                    'answers' => [
+                        ['text' => 'Two-Factor Authentication', 'is_correct' => true],
+                        ['text' => 'Two-Fast Authorization', 'is_correct' => false],
+                        ['text' => 'Total Factor Access', 'is_correct' => false],
+                        ['text' => 'Time-based Fake Authentication', 'is_correct' => false],
+                    ],
+                    'explanation' => '2FA = Two-Factor Authentication หมายถึงการยืนยันตัวตน 2 ชั้น',
+                ],
+                [
+                    'question' => 'ข้อใดเป็น \"Something You Have\" ใน Authentication Factors?',
+                    'answers' => [
+                        ['text' => 'รหัสผ่าน', 'is_correct' => false],
+                        ['text' => 'ลายนิ้วมือ', 'is_correct' => false],
+                        ['text' => 'โทรศัพท์มือถือ/Hardware Key', 'is_correct' => true],
+                        ['text' => 'คำถามความปลอดภัย', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Something You Have คือสิ่งที่คุณครอบครอง เช่น มือถือ (สำหรับ OTP) หรือ Hardware Key',
+                ],
+                [
+                    'question' => 'ประเภท 2FA ใดปลอดภัยที่สุด?',
+                    'answers' => [
+                        ['text' => 'SMS OTP', 'is_correct' => false],
+                        ['text' => 'Email OTP', 'is_correct' => false],
+                        ['text' => 'Authenticator App', 'is_correct' => false],
+                        ['text' => 'Hardware Security Key', 'is_correct' => true],
+                    ],
+                    'explanation' => 'Hardware Security Key ปลอดภัยที่สุดเพราะไม่สามารถถูก Phish หรือ SIM Swap ได้',
+                ],
+                [
+                    'question' => 'TOTP เปลี่ยนรหัสทุกกี่วินาที?',
+                    'answers' => [
+                        ['text' => '10 วินาที', 'is_correct' => false],
+                        ['text' => '30 วินาที', 'is_correct' => true],
+                        ['text' => '60 วินาที', 'is_correct' => false],
+                        ['text' => '120 วินาที', 'is_correct' => false],
+                    ],
+                    'explanation' => 'TOTP (Time-based One-Time Password) มาตรฐานเปลี่ยนรหัสทุก 30 วินาที',
+                ],
+                [
+                    'question' => 'Backup Codes ใช้ทำอะไร?',
+                    'answers' => [
+                        ['text' => 'สำรองข้อมูลไฟล์', 'is_correct' => false],
+                        ['text' => 'ใช้แทน OTP เมื่อไม่มีโทรศัพท์', 'is_correct' => true],
+                        ['text' => 'รีเซ็ตรหัสผ่าน', 'is_correct' => false],
+                        ['text' => 'สร้างบัญชีใหม่', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Backup Codes ใช้แทน OTP กรณีฉุกเฉิน เช่น ทำมือถือหาย ใช้ได้ครั้งเดียว',
+                ],
+                [
+                    'question' => 'รหัสผ่านที่ดีควรมีความยาวอย่างน้อยกี่ตัวอักษร?',
+                    'answers' => [
+                        ['text' => '6 ตัว', 'is_correct' => false],
+                        ['text' => '8 ตัว', 'is_correct' => false],
+                        ['text' => '12 ตัว', 'is_correct' => true],
+                        ['text' => '4 ตัว', 'is_correct' => false],
+                    ],
+                    'explanation' => 'รหัสผ่านที่แข็งแกร่งควรมีอย่างน้อย 12 ตัวอักษร รวมตัวพิมพ์ใหญ่-เล็ก ตัวเลข และสัญลักษณ์',
+                ],
+                [
+                    'question' => 'ข้อใดเป็น Red Flag ของ Phishing Email?',
+                    'answers' => [
+                        ['text' => 'มาจากโดเมนบริษัทจริง', 'is_correct' => false],
+                        ['text' => 'ระบุชื่อคุณถูกต้อง', 'is_correct' => false],
+                        ['text' => 'สร้างความเร่งด่วน กดดันให้รีบทำ', 'is_correct' => true],
+                        ['text' => 'ให้ข้อมูลที่เป็นประโยชน์', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Phishing มักสร้าง Urgency เช่น \"บัญชีถูกระงับ\" \"ต้องทำภายใน 24 ชม.\" เพื่อให้คุณตกใจและไม่ทันคิด',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 13: API Integration และการพัฒนา - เนื้อหา
+     */
+    private function getCourse13Content(): array
+    {
+        return [
+            [
+                'title' => '🔌 รู้จัก API คืออะไร',
+                'content' => "
+## API (Application Programming Interface) คืออะไร?
+
+**API** คือ \"ตัวกลาง\" ที่ทำให้ Application ต่างๆ สามารถคุยกันได้
+
+### 🎯 ตัวอย่างเปรียบเทียบ
+
+```
+┌─────────────────────────────────────────────────┐
+│  🍽️ API เหมือนบริกรในร้านอาหาร                  │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  คุณ (Client)     บริกร (API)    ครัว (Server)  │
+│       │               │               │         │
+│       │──── สั่งอาหาร ──▶│               │         │
+│       │               │──── บอกครัว ──▶│         │
+│       │               │               │         │
+│       │               │◀─── ทำอาหาร ───│         │
+│       │◀─── ยกมาเสิร์ฟ ──│               │         │
+│                                                 │
+└─────────────────────────────────────────────────┘
+```
+
+### 📊 ประเภทของ API
+
+| ประเภท | คำอธิบาย | ตัวอย่าง |
+|--------|----------|----------|
+| **REST API** | ใช้ HTTP Methods (GET, POST, PUT, DELETE) | Thaiprompt API |
+| **GraphQL** | Query เฉพาะข้อมูลที่ต้องการ | Facebook, GitHub |
+| **WebSocket** | Real-time, Two-way communication | Chat, Live Data |
+| **SOAP** | XML-based, Enterprise | Banking Systems |
+
+### 🔄 HTTP Methods
+
+```
+┌──────────────────────────────────────────┐
+│  Method  │  Description  │  Example      │
+├──────────────────────────────────────────┤
+│  GET     │  ดึงข้อมูล     │  GET /users   │
+│  POST    │  สร้างใหม่     │  POST /users  │
+│  PUT     │  อัพเดททั้งหมด │  PUT /users/1 │
+│  PATCH   │  อัพเดทบางส่วน │  PATCH /users/1│
+│  DELETE  │  ลบข้อมูล     │  DELETE /users/1│
+└──────────────────────────────────────────┘
+```
+
+### 📦 โครงสร้าง API Request
+
+```json
+// Request
+{
+  \"method\": \"POST\",
+  \"url\": \"https://api.thaiprompt.com/v1/orders\",
+  \"headers\": {
+    \"Content-Type\": \"application/json\",
+    \"Authorization\": \"Bearer YOUR_API_KEY\"
+  },
+  \"body\": {
+    \"product_id\": 123,
+    \"quantity\": 2
+  }
+}
+
+// Response
+{
+  \"success\": true,
+  \"data\": {
+    \"order_id\": 456,
+    \"status\": \"pending\",
+    \"total\": 1000
+  }
+}
+```
+
+> 💡 **REST API** เป็นมาตรฐานที่ใช้กันแพร่หลายที่สุด เพราะเข้าใจง่าย และใช้ได้กับทุกภาษา
+                ",
+            ],
+            [
+                'title' => '🔑 การยืนยันตัวตน API (Authentication)',
+                'content' => "
+## วิธีการ Authentication ใน API
+
+การยืนยันตัวตนเป็นสิ่งสำคัญเพื่อ **ป้องกันการเข้าถึงที่ไม่ได้รับอนุญาต**
+
+### 📊 ประเภทการยืนยันตัวตน
+
+| วิธี | ความปลอดภัย | Use Case |
+|------|-------------|----------|
+| **API Key** | ⭐⭐ | Third-party integrations |
+| **Bearer Token** | ⭐⭐⭐ | User authentication |
+| **OAuth 2.0** | ⭐⭐⭐⭐ | Social login, Third-party access |
+| **JWT** | ⭐⭐⭐⭐ | Stateless authentication |
+| **HMAC** | ⭐⭐⭐⭐⭐ | Webhook verification |
+
+### 🔐 API Key
+
+```
+┌─────────────────────────────────────────┐
+│  ส่ง API Key ผ่าน Header               │
+├─────────────────────────────────────────┤
+│  X-API-Key: tp_live_abc123xyz789       │
+│                                         │
+│  หรือ Query Parameter:                 │
+│  ?api_key=tp_live_abc123xyz789         │
+└─────────────────────────────────────────┘
+```
+
+### 🎫 Bearer Token (JWT)
+
+```
+┌─────────────────────────────────────────┐
+│  Authorization: Bearer eyJhbGciOiJI...  │
+├─────────────────────────────────────────┤
+│                                         │
+│  JWT Structure:                         │
+│  ┌───────────┬───────────┬───────────┐ │
+│  │  Header   │  Payload  │ Signature │ │
+│  │  (Base64) │  (Base64) │  (Base64) │ │
+│  └───────────┴───────────┴───────────┘ │
+│                                         │
+│  Decoded Payload:                       │
+│  {                                      │
+│    \"user_id\": 123,                     │
+│    \"email\": \"user@example.com\",       │
+│    \"exp\": 1704067200                   │
+│  }                                      │
+└─────────────────────────────────────────┘
+```
+
+### 🔄 OAuth 2.0 Flow
+
+```
+User          Your App         Thaiprompt
+  │               │                 │
+  │── Login ────▶│                 │
+  │               │── Auth Request ─▶│
+  │◀────────────── Redirect ─────────│
+  │               │                 │
+  │── Allow ────▶│                 │
+  │               │◀─ Auth Code ────│
+  │               │                 │
+  │               │── Exchange ────▶│
+  │               │◀─ Access Token ─│
+  │◀── Logged In ─│                 │
+```
+
+### 🛡️ Best Practices
+
+1. **Never expose API keys** ในโค้ด frontend
+2. ใช้ **environment variables** เก็บ keys
+3. **Rotate keys** ทุก 90 วัน
+4. ใช้ **different keys** สำหรับ dev/production
+5. **Monitor API usage** ตรวจสอบการใช้งานผิดปกติ
+                ",
+            ],
+            [
+                'title' => '📡 Thaiprompt API Endpoints',
+                'content' => "
+## Thaiprompt API Reference
+
+### 🌐 Base URL
+
+```
+Production: https://api.thaiprompt.com/v1
+Sandbox:    https://sandbox-api.thaiprompt.com/v1
+```
+
+### 📦 สำคัญ: Rate Limits
+
+| Plan | Requests/Minute | Requests/Day |
+|------|-----------------|--------------|
+| **Free** | 60 | 1,000 |
+| **Basic** | 300 | 10,000 |
+| **Pro** | 1,000 | 100,000 |
+| **Enterprise** | Unlimited | Unlimited |
+
+### 🛒 Order API
+
+**สร้าง Order ใหม่:**
+```http
+POST /v1/orders
+Content-Type: application/json
+Authorization: Bearer YOUR_TOKEN
+
+{
+  \"customer_id\": 123,
+  \"items\": [
+    { \"product_id\": 456, \"quantity\": 2 },
+    { \"product_id\": 789, \"quantity\": 1 }
+  ],
+  \"shipping_address\": {
+    \"name\": \"สมชาย ใจดี\",
+    \"address\": \"123 ถ.สุขุมวิท\",
+    \"city\": \"กรุงเทพฯ\",
+    \"postal_code\": \"10110\"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  \"success\": true,
+  \"data\": {
+    \"order_id\": \"ORD-2024-001234\",
+    \"status\": \"pending\",
+    \"total\": 2500.00,
+    \"created_at\": \"2024-01-15T10:30:00Z\"
+  }
+}
+```
+
+### 👤 User API
+
+```http
+# ดึงข้อมูล Profile
+GET /v1/users/me
+
+# อัพเดท Profile
+PATCH /v1/users/me
+{
+  \"name\": \"ชื่อใหม่\",
+  \"phone\": \"0891234567\"
+}
+
+# ดึงรายการ Affiliates
+GET /v1/users/me/affiliates?page=1&limit=20
+```
+
+### 💰 Commission API
+
+```http
+# ดึงรายงานค่าคอมมิชชั่น
+GET /v1/commissions?from=2024-01-01&to=2024-01-31
+
+# Response
+{
+  \"success\": true,
+  \"data\": {
+    \"total\": 15000.00,
+    \"pending\": 5000.00,
+    \"paid\": 10000.00,
+    \"details\": [...]
+  }
+}
+```
+
+### 🪙 Wallet API
+
+```http
+# ดูยอดคงเหลือ
+GET /v1/wallet/balance
+
+# ดึงประวัติธุรกรรม
+GET /v1/wallet/transactions?limit=50
+
+# ขอถอนเงิน
+POST /v1/wallet/withdraw
+{
+  \"amount\": 5000,
+  \"bank_code\": \"SCB\",
+  \"account_number\": \"1234567890\"
+}
+```
+                ",
+            ],
+            [
+                'title' => '⚙️ การเรียกใช้ API ด้วยภาษาต่างๆ',
+                'content' => "
+## ตัวอย่างโค้ดเรียก API
+
+### 📝 JavaScript (Fetch)
+
+```javascript
+// ดึงข้อมูล Order
+const response = await fetch('https://api.thaiprompt.com/v1/orders/123', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN',
+    'Content-Type': 'application/json'
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+### 📝 JavaScript (Axios)
+
+```javascript
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: 'https://api.thaiprompt.com/v1',
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN'
+  }
+});
+
+// สร้าง Order
+const order = await api.post('/orders', {
+  customer_id: 123,
+  items: [{ product_id: 456, quantity: 2 }]
+});
+
+console.log(order.data);
+```
+
+### 📝 PHP (cURL)
+
+```php
+<?php
+\$ch = curl_init();
+
+curl_setopt_array(\$ch, [
+    CURLOPT_URL => 'https://api.thaiprompt.com/v1/orders',
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST => true,
+    CURLOPT_HTTPHEADER => [
+        'Authorization: Bearer YOUR_TOKEN',
+        'Content-Type: application/json'
+    ],
+    CURLOPT_POSTFIELDS => json_encode([
+        'customer_id' => 123,
+        'items' => [
+            ['product_id' => 456, 'quantity' => 2]
+        ]
+    ])
+]);
+
+\$response = curl_exec(\$ch);
+\$data = json_decode(\$response, true);
+curl_close(\$ch);
+
+print_r(\$data);
+```
+
+### 📝 PHP (Guzzle)
+
+```php
+<?php
+use GuzzleHttp\\Client;
+
+\$client = new Client([
+    'base_uri' => 'https://api.thaiprompt.com/v1/',
+    'headers' => [
+        'Authorization' => 'Bearer YOUR_TOKEN'
+    ]
+]);
+
+// GET Request
+\$response = \$client->get('orders/123');
+\$order = json_decode(\$response->getBody(), true);
+
+// POST Request
+\$response = \$client->post('orders', [
+    'json' => [
+        'customer_id' => 123,
+        'items' => [
+            ['product_id' => 456, 'quantity' => 2]
+        ]
+    ]
+]);
+```
+
+### 📝 Python (Requests)
+
+```python
+import requests
+
+headers = {
+    'Authorization': 'Bearer YOUR_TOKEN',
+    'Content-Type': 'application/json'
+}
+
+# GET Request
+response = requests.get(
+    'https://api.thaiprompt.com/v1/orders/123',
+    headers=headers
+)
+data = response.json()
+
+# POST Request
+response = requests.post(
+    'https://api.thaiprompt.com/v1/orders',
+    headers=headers,
+    json={
+        'customer_id': 123,
+        'items': [{'product_id': 456, 'quantity': 2}]
+    }
+)
+```
+                ",
+            ],
+            [
+                'title' => '🔔 Webhooks และ Event Handling',
+                'content' => "
+## Webhooks คืออะไร?
+
+**Webhook** คือ \"Reverse API\" - แทนที่คุณจะ poll หาข้อมูลใหม่ ระบบจะ **push** ข้อมูลมาหาคุณเมื่อมี event เกิดขึ้น
+
+### 🔄 Webhook vs Polling
+
+```
+Polling (ไม่แนะนำ):
+┌─────────────────────────────────────────┐
+│  Your Server          Thaiprompt       │
+│       │                    │            │
+│       │── มีข้อมูลใหม่ไหม? ──▶│            │
+│       │◀─── ยังไม่มี ─────│            │
+│       │                    │            │
+│       │── มีข้อมูลใหม่ไหม? ──▶│            │
+│       │◀─── ยังไม่มี ─────│            │
+│       │                    │            │
+│       │── มีข้อมูลใหม่ไหม? ──▶│            │
+│       │◀─── มี! นี่ไง ────│            │
+│                                         │
+│  ❌ เปลืองทรัพยากร, API Calls มาก       │
+└─────────────────────────────────────────┘
+
+Webhook (แนะนำ):
+┌─────────────────────────────────────────┐
+│  Your Server          Thaiprompt       │
+│       │                    │            │
+│       │     (รอ Event)     │            │
+│       │                    │            │
+│       │◀── มี Order ใหม่! ──│            │
+│       │── OK, รับแล้ว ────▶│            │
+│                                         │
+│  ✅ ประหยัดทรัพยากร, Real-time         │
+└─────────────────────────────────────────┘
+```
+
+### 📋 Webhook Events ที่รองรับ
+
+| Event | Trigger |
+|-------|---------|
+| `order.created` | มี Order ใหม่ |
+| `order.paid` | ชำระเงินแล้ว |
+| `order.shipped` | จัดส่งแล้ว |
+| `order.completed` | สำเร็จ |
+| `commission.earned` | ได้รับค่าคอมมิชชั่น |
+| `withdrawal.approved` | อนุมัติถอนเงิน |
+| `user.rank_up` | อัพ Rank |
+
+### 🔒 การ Verify Webhook Signature
+
+```php
+<?php
+// Webhook handler
+function handleWebhook(\$payload, \$signature) {
+    \$secret = env('THAIPROMPT_WEBHOOK_SECRET');
+
+    // คำนวณ signature ที่คาดหวัง
+    \$expectedSignature = hash_hmac('sha256', \$payload, \$secret);
+
+    // เปรียบเทียบ signature
+    if (!hash_equals(\$expectedSignature, \$signature)) {
+        http_response_code(401);
+        die('Invalid signature');
+    }
+
+    // ดำเนินการตาม event
+    \$data = json_decode(\$payload, true);
+
+    switch (\$data['event']) {
+        case 'order.created':
+            handleNewOrder(\$data['data']);
+            break;
+        case 'commission.earned':
+            notifyCommission(\$data['data']);
+            break;
+    }
+
+    http_response_code(200);
+    echo 'OK';
+}
+```
+
+### ⚠️ Webhook Best Practices
+
+1. **Verify signature** ทุกครั้ง
+2. **Respond quickly** (< 5 วินาที) แล้ว process ทีหลัง
+3. **Handle duplicates** - Event อาจส่งซ้ำได้
+4. **Log everything** เพื่อ debug
+5. **Use HTTPS** endpoint เท่านั้น
+                ",
+            ],
+            [
+                'title' => '📝 แบบฝึกหัดท้ายบท',
+                'content' => "
+## แบบฝึกหัด: API Integration
+
+### 📋 Exercise 1: HTTP Methods
+
+**คำสั่ง:** จับคู่ HTTP Method กับ Action ที่ถูกต้อง
+
+| Action | HTTP Method |
+|--------|-------------|
+| ดึงรายการสินค้าทั้งหมด | ? |
+| สร้าง Order ใหม่ | ? |
+| อัพเดทที่อยู่จัดส่ง | ? |
+| ยกเลิก Order | ? |
+| เพิ่มสินค้าใน Cart | ? |
+
+**เฉลย:**
+```
+ดึงรายการสินค้าทั้งหมด  → GET
+สร้าง Order ใหม่        → POST
+อัพเดทที่อยู่จัดส่ง      → PATCH หรือ PUT
+ยกเลิก Order           → DELETE หรือ PATCH
+เพิ่มสินค้าใน Cart      → POST
+```
+
+---
+
+### 📋 Exercise 2: แก้ไขโค้ด API Call
+
+**คำสั่ง:** หาข้อผิดพลาดในโค้ดนี้
+
+```javascript
+const response = fetch('http://api.thaiprompt.com/v1/orders', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'text/html'
+  },
+  body: {
+    customer_id: 123,
+    items: [{ product_id: 456 }]
+  }
+});
+```
+
+**เฉลย - ข้อผิดพลาด:**
+```
+1. ❌ ขาด await → ควรเป็น: await fetch(...)
+2. ❌ http:// → ควรใช้: https://
+3. ❌ Content-Type ผิด → ควรเป็น: application/json
+4. ❌ ขาด Authorization header
+5. ❌ body ไม่ได้ stringify → ควรเป็น: JSON.stringify({...})
+```
+
+**โค้ดที่ถูกต้อง:**
+```javascript
+const response = await fetch('https://api.thaiprompt.com/v1/orders', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer YOUR_TOKEN'
+  },
+  body: JSON.stringify({
+    customer_id: 123,
+    items: [{ product_id: 456 }]
+  })
+});
+```
+
+---
+
+### 📋 Exercise 3: วิเคราะห์ Error Response
+
+**สถานการณ์:** ได้รับ Response นี้จาก API
+
+```json
+{
+  \"success\": false,
+  \"error\": {
+    \"code\": \"RATE_LIMIT_EXCEEDED\",
+    \"message\": \"Too many requests\",
+    \"retry_after\": 60
+  }
+}
+```
+
+**คำถาม:** สาเหตุคืออะไร และควรแก้ไขอย่างไร?
+
+**เฉลย:**
+```
+สาเหตุ: เรียก API เกิน Rate Limit (จำนวนครั้งต่อนาที)
+
+แก้ไข:
+1. รอ 60 วินาที (retry_after) แล้วลองใหม่
+2. Implement exponential backoff
+3. Cache response ที่ไม่เปลี่ยนบ่อย
+4. Upgrade plan ถ้าต้องการ limit สูงขึ้น
+```
+
+---
+
+### 📋 Exercise 4: ออกแบบ Webhook Handler
+
+**คำสั่ง:** เขียน Pseudocode สำหรับจัดการ Webhook event `commission.earned`
+
+```
+Requirements:
+- แจ้งเตือน LINE ให้ User
+- บันทึกลง Database
+- ป้องกันการ process ซ้ำ
+```
+
+**เฉลย (Pseudocode):**
+```
+function handleCommissionWebhook(request):
+    // 1. Verify signature
+    if not verifySignature(request):
+        return 401 \"Invalid signature\"
+
+    // 2. Parse data
+    data = parseJSON(request.body)
+    eventId = data.event_id
+
+    // 3. Check duplicate
+    if eventExists(eventId):
+        return 200 \"Already processed\"
+
+    // 4. Mark as processing
+    markEventProcessing(eventId)
+
+    // 5. Process async (respond quickly)
+    queueJob({
+        type: 'commission_notification',
+        user_id: data.user_id,
+        amount: data.amount
+    })
+
+    return 200 \"OK\"
+```
+
+---
+
+### ✅ สรุป API Best Practices
+
+```
+┌─────────────────────────────────────────┐
+│        🔌 API Integration               │
+├─────────────────────────────────────────┤
+│  1️⃣ ใช้ HTTPS เสมอ                      │
+│  2️⃣ ส่ง Authorization header            │
+│  3️⃣ Handle errors gracefully            │
+│  4️⃣ Implement retry with backoff        │
+│  5️⃣ Verify webhook signatures           │
+│  6️⃣ Log requests สำหรับ debugging      │
+└─────────────────────────────────────────┘
+```
+                ",
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 13: API Integration และการพัฒนา - Quiz
+     */
+    private function getCourse13Quiz(): array
+    {
+        return [
+            'time_limit' => 18,
+            'description' => 'ทดสอบความเข้าใจเกี่ยวกับ API Integration และการพัฒนา',
+            'questions' => [
+                [
+                    'question' => 'API ย่อมาจากอะไร?',
+                    'answers' => [
+                        ['text' => 'Application Programming Interface', 'is_correct' => true],
+                        ['text' => 'Automated Process Integration', 'is_correct' => false],
+                        ['text' => 'Application Process Interface', 'is_correct' => false],
+                        ['text' => 'Advanced Programming Integration', 'is_correct' => false],
+                    ],
+                    'explanation' => 'API = Application Programming Interface เป็นตัวกลางให้ Application คุยกันได้',
+                ],
+                [
+                    'question' => 'HTTP Method ใดใช้สำหรับดึงข้อมูล?',
+                    'answers' => [
+                        ['text' => 'POST', 'is_correct' => false],
+                        ['text' => 'GET', 'is_correct' => true],
+                        ['text' => 'PUT', 'is_correct' => false],
+                        ['text' => 'DELETE', 'is_correct' => false],
+                    ],
+                    'explanation' => 'GET Method ใช้สำหรับดึงข้อมูลจาก Server โดยไม่เปลี่ยนแปลงข้อมูล',
+                ],
+                [
+                    'question' => 'Bearer Token ส่งผ่าน Header ใด?',
+                    'answers' => [
+                        ['text' => 'X-API-Key', 'is_correct' => false],
+                        ['text' => 'Content-Type', 'is_correct' => false],
+                        ['text' => 'Authorization', 'is_correct' => true],
+                        ['text' => 'Accept', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Bearer Token ส่งผ่าน Authorization header ในรูปแบบ \"Bearer YOUR_TOKEN\"',
+                ],
+                [
+                    'question' => 'Webhook ต่างจาก Polling อย่างไร?',
+                    'answers' => [
+                        ['text' => 'Webhook ต้องถามซ้ำๆ', 'is_correct' => false],
+                        ['text' => 'Webhook คือการ Push ข้อมูลมาหาเรา', 'is_correct' => true],
+                        ['text' => 'Polling เร็วกว่า', 'is_correct' => false],
+                        ['text' => 'ไม่ต่างกัน', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Webhook = Push (Server ส่งมา), Polling = Pull (เราต้องถามซ้ำๆ) Webhook ประหยัดทรัพยากรกว่า',
+                ],
+                [
+                    'question' => 'HTTP Status Code 429 หมายถึงอะไร?',
+                    'answers' => [
+                        ['text' => 'Not Found', 'is_correct' => false],
+                        ['text' => 'Unauthorized', 'is_correct' => false],
+                        ['text' => 'Too Many Requests (Rate Limited)', 'is_correct' => true],
+                        ['text' => 'Server Error', 'is_correct' => false],
+                    ],
+                    'explanation' => '429 Too Many Requests หมายถึงเรียก API เกิน Rate Limit ต้องรอแล้วลองใหม่',
+                ],
+                [
+                    'question' => 'Content-Type สำหรับส่งข้อมูล JSON คือ?',
+                    'answers' => [
+                        ['text' => 'text/html', 'is_correct' => false],
+                        ['text' => 'application/json', 'is_correct' => true],
+                        ['text' => 'text/plain', 'is_correct' => false],
+                        ['text' => 'application/xml', 'is_correct' => false],
+                    ],
+                    'explanation' => 'application/json ใช้สำหรับส่งข้อมูลในรูปแบบ JSON ซึ่งเป็นมาตรฐานของ REST API',
+                ],
+                [
+                    'question' => 'ทำไมต้อง Verify Webhook Signature?',
+                    'answers' => [
+                        ['text' => 'เพื่อให้ Response เร็วขึ้น', 'is_correct' => false],
+                        ['text' => 'เพื่อป้องกัน Webhook ปลอมจาก Attacker', 'is_correct' => true],
+                        ['text' => 'เพื่อประหยัด Bandwidth', 'is_correct' => false],
+                        ['text' => 'ไม่จำเป็นต้อง Verify', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Verify Signature เพื่อยืนยันว่า Webhook มาจาก Thaiprompt จริง ไม่ใช่ Attacker ส่งมาหลอก',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 14: การบริหารทีมขนาดใหญ่ - เนื้อหา
+     */
+    private function getCourse14Content(): array
+    {
+        return [
+            [
+                'title' => '👥 พื้นฐานการบริหารทีม MLM',
+                'content' => "
+## ทำไมการบริหารทีมจึงสำคัญ?
+
+ใน MLM ความสำเร็จของคุณขึ้นอยู่กับ **ความสำเร็จของทีม** ไม่ใช่แค่ตัวคุณเอง
+
+### 📊 ความแตกต่างระหว่าง Sponsor กับ Leader
+
+| Sponsor (ผู้แนะนำ) | Leader (ผู้นำ) |
+|-------------------|---------------|
+| แนะนำคนแล้วปล่อย | แนะนำ + ดูแล + พัฒนา |
+| มุ่งเน้นจำนวน | มุ่งเน้นคุณภาพ |
+| รายได้ระยะสั้น | รายได้ยั่งยืน |
+| ทีมไม่เติบโต | ทีม Duplicate ได้ |
+
+### 🎯 หลัก 5 ขั้นตอน การพัฒนาสมาชิก
+
+```
+┌─────────────────────────────────────────┐
+│  1️⃣ RECRUIT (รับสมัคร)                   │
+│     ↓                                   │
+│  2️⃣ TRAIN (ฝึกอบรม)                     │
+│     ↓                                   │
+│  3️⃣ SUPPORT (สนับสนุน)                  │
+│     ↓                                   │
+│  4️⃣ MOTIVATE (จูงใจ)                    │
+│     ↓                                   │
+│  5️⃣ DUPLICATE (ให้ทำซ้ำได้)              │
+└─────────────────────────────────────────┘
+```
+
+### 📈 Team Growth Stages
+
+```
+Stage 1: Starter (1-10 คน)
+├── คุณทำทุกอย่างเอง
+├── Focus: สอน 1:1
+└── Goal: หา Active Members
+
+Stage 2: Growing (11-50 คน)
+├── เริ่มมี Sub-leaders
+├── Focus: สร้าง Training System
+└── Goal: Develop Leaders
+
+Stage 3: Mature (51-200 คน)
+├── Leaders บริหารสายงานย่อย
+├── Focus: Strategy & Culture
+└── Goal: Scale & Automate
+
+Stage 4: Enterprise (200+ คน)
+├── Multiple Leadership Levels
+├── Focus: Vision & Direction
+└── Goal: Legacy Building
+```
+
+> 💡 **กฎทอง**: คุณไม่สามารถจัดการทุกคนได้ด้วยตัวเอง ต้องสร้าง Leaders ขึ้นมา
+                ",
+            ],
+            [
+                'title' => '🎓 ระบบ Training ที่มีประสิทธิภาพ',
+                'content' => "
+## สร้างระบบ Training ที่ Duplicate ได้
+
+การ Training ที่ดีต้อง **ง่าย** และ **ทำซ้ำได้**
+
+### 📚 โครงสร้าง Training Program
+
+```
+┌─────────────────────────────────────────┐
+│     🎯 ONBOARDING (วันที่ 1-7)          │
+├─────────────────────────────────────────┤
+│  Day 1: Welcome & Setup Account         │
+│  Day 2: Product Knowledge               │
+│  Day 3: How to Share & Invite           │
+│  Day 4: Practice Session               │
+│  Day 5: First Sale Attempt              │
+│  Day 6: Review & Q&A                    │
+│  Day 7: Set Weekly Goals                │
+└─────────────────────────────────────────┘
+
+┌─────────────────────────────────────────┐
+│     📈 WEEKLY TRAINING                  │
+├─────────────────────────────────────────┤
+│  จันทร์: Team Meeting (Online)          │
+│  พุธ:    Product Training              │
+│  ศุกร์:  Success Stories Sharing        │
+│  อาทิตย์: 1:1 Coaching (เลือก)          │
+└─────────────────────────────────────────┘
+```
+
+### 🎯 EDDC Framework
+
+```
+E - EXPLAIN (อธิบาย)
+    ↓ บอกว่าทำอะไร ทำไม
+D - DEMONSTRATE (สาธิต)
+    ↓ ทำให้ดู
+D - DO TOGETHER (ทำด้วยกัน)
+    ↓ ทำพร้อมกัน
+C - CHECK (ตรวจสอบ)
+    ↓ ให้ทำเอง แล้วให้ feedback
+```
+
+### 📋 Training Materials ที่ควรมี
+
+| Material | Format | Purpose |
+|----------|--------|---------|
+| Welcome Kit | PDF | เริ่มต้นใหม่ |
+| Product Catalog | PDF/Web | ข้อมูลสินค้า |
+| Sales Scripts | Doc | บทพูดขาย |
+| FAQ Document | Doc | ตอบคำถามทั่วไป |
+| Video Tutorials | Video | สอนการใช้งาน |
+| Success Stories | Video/Doc | สร้างแรงบันดาลใจ |
+
+### 🎥 รูปแบบ Training
+
+**1. Online Training (Zoom/LINE)**
+- Weekly Team Meeting
+- Product Training
+- Q&A Sessions
+
+**2. Offline Training (เมื่อเป็นไปได้)**
+- Monthly Meet-up
+- Product Experience
+- Team Building Activities
+
+**3. Self-Learning**
+- Academy Courses (ที่คุณกำลังเรียน!)
+- Recorded Videos
+- Reading Materials
+
+> 💡 **เคล็ดลับ**: บันทึก Training ทุกครั้ง เพื่อให้คนที่พลาดดูย้อนหลังได้
+                ",
+            ],
+            [
+                'title' => '📊 การติดตามและ KPIs',
+                'content' => "
+## วัดผลทีมอย่างไรให้ได้ประสิทธิภาพ
+
+**\"What gets measured, gets improved\"** - สิ่งที่วัดผลได้ ย่อมพัฒนาได้
+
+### 📈 KPIs สำคัญที่ต้องติดตาม
+
+| KPI | คำอธิบาย | เป้าหมาย |
+|-----|----------|----------|
+| **Active Rate** | % สมาชิกที่ Active | ≥ 70% |
+| **Retention Rate** | % ที่อยู่ต่อหลัง 3 เดือน | ≥ 60% |
+| **Conversion Rate** | % Prospect → สมาชิก | ≥ 20% |
+| **Average PV** | PV เฉลี่ยต่อคน | ≥ 500 |
+| **Leader Development** | จำนวน Sub-leaders ใหม่ | +1-2/เดือน |
+
+### 📊 Team Dashboard
+
+```
+┌─────────────────────────────────────────────────┐
+│  📊 Team Performance Dashboard                  │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  ทีมทั้งหมด: 156 คน  │  Active: 112 (72%)     │
+│                                                 │
+│  PV เดือนนี้                                    │
+│  ████████████████████░░░░ 78,500 / 100,000    │
+│                                                 │
+│  สมาชิกใหม่เดือนนี้: 12 คน                      │
+│  ขึ้น Rank: 3 คน                               │
+│                                                 │
+│  Top Performers:                               │
+│  1. 🥇 สมชาย - 8,500 PV                        │
+│  2. 🥈 สมหญิง - 6,200 PV                       │
+│  3. 🥉 สมศักดิ์ - 5,100 PV                     │
+│                                                 │
+└─────────────────────────────────────────────────┘
+```
+
+### 🎯 การจัดกลุ่มสมาชิก (Segmentation)
+
+```
+┌─────────────────────────────────────────┐
+│  💎 A-Players (Top 20%)                 │
+│  • Active ทุกเดือน                      │
+│  • PV สูงกว่าเฉลี่ย                     │
+│  • มีศักยภาพเป็น Leader                │
+│  → Focus: พัฒนาเป็น Leader             │
+├─────────────────────────────────────────┤
+│  🌟 B-Players (Middle 60%)              │
+│  • Active แต่ไม่สม่ำเสมอ               │
+│  • PV ปานกลาง                          │
+│  → Focus: เพิ่ม Engagement             │
+├─────────────────────────────────────────┤
+│  ⚠️ C-Players (Bottom 20%)              │
+│  • Inactive หรือ PV ต่ำมาก             │
+│  → Focus: Re-engage หรือปล่อยไป        │
+└─────────────────────────────────────────┘
+```
+
+### 📅 รอบการ Review
+
+```
+Daily:   ดู Orders/Signups ใหม่
+Weekly:  Review KPIs + Team Meeting
+Monthly: 1:1 กับ Leaders + ปรับแผน
+Quarterly: วิเคราะห์ Trend + Strategic Planning
+```
+
+> 💡 **80/20 Rule**: 80% ของผลลัพธ์มาจาก 20% ของสมาชิก - Focus ที่ A-Players!
+                ",
+            ],
+            [
+                'title' => '💪 การสร้างแรงจูงใจและวัฒนธรรมทีม',
+                'content' => "
+## สร้างทีมที่มีพลังและความมุ่งมั่น
+
+ทีมที่ดีไม่ได้มาจากเงินอย่างเดียว แต่มาจาก **Culture** และ **Purpose**
+
+### 🎯 ปิรามิดแรงจูงใจ (Motivation Pyramid)
+
+```
+                 △
+                /  \\
+               / 💫 \\
+              / Self \\
+             /Actualization\\
+            /──────────────\\
+           /    👑 Status   \\
+          /   Recognition   \\
+         /──────────────────\\
+        /    👥 Belonging    \\
+       /   Team Community    \\
+      /──────────────────────\\
+     /      🛡️ Security       \\
+    /    Stable Income        \\
+   /──────────────────────────\\
+  /        💰 Basic            \\
+ /      Money & Rewards        \\
+─────────────────────────────────
+```
+
+### 🏆 Recognition Programs
+
+| Program | Frequency | Reward |
+|---------|-----------|--------|
+| **Top Performer** | Monthly | Certificate + Badge |
+| **Fast Starter** | เมื่อถึงเป้า | Welcome Gift |
+| **Rank Advancement** | เมื่อ Rank Up | Special Gift |
+| **Consistency Award** | Quarterly | Cash Bonus |
+| **Leadership Award** | Yearly | Trip/Prize |
+
+### 🎉 วิธีสร้าง Recognition Culture
+
+**1. Public Recognition (ชื่นชมต่อหน้าทีม)**
+```
+✅ ประกาศในกลุ่ม LINE/Facebook
+✅ Call-out ใน Team Meeting
+✅ Update Leaderboard
+✅ Share Success Story
+```
+
+**2. Private Recognition (ชื่นชมส่วนตัว)**
+```
+✅ ข้อความส่วนตัว
+✅ โทรแสดงความยินดี
+✅ Handwritten Card
+✅ Small Gift
+```
+
+### 💬 Communication Best Practices
+
+```
+┌─────────────────────────────────────────┐
+│  📢 Team Communication Channels         │
+├─────────────────────────────────────────┤
+│                                         │
+│  📣 Announcements                       │
+│     • Important Updates                 │
+│     • Company News                      │
+│     • Policy Changes                    │
+│                                         │
+│  💬 Discussion                          │
+│     • Q&A                              │
+│     • Tips Sharing                      │
+│     • Celebration                       │
+│                                         │
+│  🆘 Support                             │
+│     • Problem Solving                   │
+│     • Technical Help                    │
+│     • 1:1 Coaching                      │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### 🌟 สร้าง Team Identity
+
+1. **Team Name** - ตั้งชื่อทีมที่น่าจดจำ
+2. **Team Mission** - เป้าหมายร่วมกัน
+3. **Team Values** - ค่านิยมของทีม
+4. **Team Rituals** - กิจกรรมประจำ
+
+> 💡 **จำไว้**: คนไม่ออกจากบริษัท แต่ออกจาก Leader ที่ไม่ดี
+                ",
+            ],
+            [
+                'title' => '🚀 การพัฒนา Sub-Leaders',
+                'content' => "
+## สร้าง Leaders เพื่อขยายทีม
+
+คุณต้อง **สร้าง Leaders ที่สร้าง Leaders ได้** ไม่ใช่แค่สร้างลูกทีม
+
+### 🎯 คุณสมบัติ Potential Leader
+
+```
+✅ Checklist: ลักษณะของว่าที่ Leader
+
+□ Active & Consistent - ทำสม่ำเสมอ
+□ Positive Attitude - ทัศนคติดี
+□ Coachable - รับฟัง เรียนรู้
+□ Results-Oriented - มุ่งผลลัพธ์
+□ Team Player - ทำงานร่วมกับทีมได้
+□ Communication Skills - สื่อสารดี
+□ Time Available - มีเวลาให้
+□ Vision - มีเป้าหมายชัดเจน
+```
+
+### 📈 Leadership Development Path
+
+```
+Level 1: Active Member
+├── ขาย/แนะนำได้ด้วยตัวเอง
+└── PV ส่วนตัวสม่ำเสมอ
+         ↓
+Level 2: Team Builder
+├── มีทีม 5-10 คน
+├── ช่วย Onboard สมาชิกใหม่
+└── Join Training Sessions
+         ↓
+Level 3: Sub-Leader
+├── มีทีม 20+ คน
+├── จัด Training เองได้
+├── มี Sub-team ของตัวเอง
+└── ช่วยดูแลสมาชิกอื่น
+         ↓
+Level 4: Senior Leader
+├── มีทีม 50+ คน
+├── สร้าง Sub-Leaders ได้
+├── ตัดสินใจได้เอง
+└── Represent ทีมใน Events
+         ↓
+Level 5: Executive Leader
+├── มีทีม 100+ คน
+├── มี Multiple Sub-Leaders
+├── Strategic Thinker
+└── Legacy Builder
+```
+
+### 🎓 Leader Development Program
+
+**Month 1-2: Foundation**
+- Shadow คุณทำงาน
+- เรียน Advanced Courses
+- ลองช่วย Onboarding
+
+**Month 3-4: Practice**
+- จัด Mini Training
+- 1:1 Coaching สมาชิกใหม่
+- รับผิดชอบ Sub-team เล็ก
+
+**Month 5-6: Independence**
+- จัด Team Meeting เอง
+- Handle Problems เอง
+- สร้าง Content เอง
+
+### 🤝 Delegation Framework
+
+```
+┌─────────────────────────────────────────┐
+│  เมื่อไหร่ควร Delegate                  │
+├─────────────────────────────────────────┤
+│                                         │
+│  ✅ Delegate เมื่อ:                     │
+│  • งานซ้ำๆ ที่มีคนอื่นทำได้            │
+│  • Leader ต้องการ Grow                 │
+│  • คุณมีงานสำคัญกว่า                   │
+│                                         │
+│  ❌ อย่า Delegate:                      │
+│  • Strategic Decisions                  │
+│  • Sensitive Issues                     │
+│  • งานที่ต้องใช้ Authority สูง          │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+> 💡 **เป้าหมายสูงสุด**: สร้างทีมที่ทำงานได้โดยไม่ต้องพึ่งคุณตลอดเวลา
+                ",
+            ],
+            [
+                'title' => '📝 แบบฝึกหัดท้ายบท',
+                'content' => "
+## แบบฝึกหัด: Team Leadership
+
+### 📋 Exercise 1: วิเคราะห์ทีมของคุณ
+
+**คำสั่ง:** จัดกลุ่มสมาชิกในทีมของคุณ (หรือสมมติถ้ายังไม่มีทีม)
+
+| กลุ่ม | รายชื่อ | แผนพัฒนา |
+|-------|---------|----------|
+| A-Players | ? | ? |
+| B-Players | ? | ? |
+| C-Players | ? | ? |
+
+**เฉลย (ตัวอย่าง):**
+```
+A-Players (Top 20%):
+- สมชาย: Active ทุกวัน, PV 5,000+
+- สมหญิง: สร้างทีมได้ 10 คน
+→ แผน: พัฒนาเป็น Sub-Leader
+
+B-Players (Middle 60%):
+- สมศักดิ์: Active แต่ไม่สม่ำเสมอ
+- สมปอง: PV ดี แต่ไม่ค่อยเข้า Training
+→ แผน: เพิ่ม Engagement, 1:1 Coaching
+
+C-Players (Bottom 20%):
+- สมใจ: ไม่ Active 2 เดือนแล้ว
+→ แผน: ติดต่อ Re-engage หรือปล่อยไป
+```
+
+---
+
+### 📋 Exercise 2: ออกแบบ Onboarding Program
+
+**คำสั่ง:** ออกแบบ 7-Day Onboarding สำหรับสมาชิกใหม่
+
+**เฉลย (ตัวอย่าง):**
+```
+Day 1: Welcome & Account Setup
+- ส่ง Welcome Kit
+- ช่วย Setup Account
+- แนะนำ Team Group
+
+Day 2: Product Training
+- รู้จักสินค้าทั้งหมด
+- ทดลองใช้สินค้า
+- อ่าน FAQ
+
+Day 3: System Training
+- สอนใช้ Dashboard
+- ดู Academy Course 1-3
+- ตอบ Quiz
+
+Day 4: Sales Training
+- สอน Scripts ขาย
+- Role-play
+- หา List ผู้มุ่งหวัง
+
+Day 5: First Action
+- ติดต่อ Prospects 5 คน
+- Share สินค้า/โอกาส
+- Report ผลลัพธ์
+
+Day 6: Review & Adjust
+- Review ผลลัพธ์
+- แก้ปัญหาที่พบ
+- Q&A
+
+Day 7: Goal Setting
+- ตั้งเป้าสัปดาห์แรก
+- ตั้งเป้าเดือนแรก
+- Schedule 1:1 ครั้งต่อไป
+```
+
+---
+
+### 📋 Exercise 3: สร้าง Recognition Program
+
+**คำสั่ง:** ออกแบบ Monthly Recognition สำหรับทีม
+
+**เฉลย (ตัวอย่าง):**
+```
+🏆 Monthly Awards
+
+1. Top Performer (PV สูงสุด)
+   → Certificate + Badge + ของรางวัล 500 บาท
+
+2. Best Recruiter (แนะนำสมาชิกใหม่มากสุด)
+   → Certificate + Badge + ของรางวัล 300 บาท
+
+3. Most Improved (พัฒนามากที่สุด)
+   → Certificate + Badge
+
+4. Team Spirit Award (ช่วยเหลือทีมมากที่สุด)
+   → Certificate + Special Mention
+
+5. Perfect Attendance (เข้า Training ครบ)
+   → Badge + Raffle Entry
+```
+
+---
+
+### 📋 Exercise 4: วิเคราะห์ Potential Leader
+
+**สถานการณ์:** สมาชิก 3 คนมีผลงานดังนี้
+
+| ชื่อ | PV/เดือน | ทีม | ลักษณะ |
+|------|----------|-----|--------|
+| A | 8,000 | 3 คน | ขายเก่ง แต่ไม่ค่อยช่วยทีม |
+| B | 4,000 | 15 คน | สอนทีมดี แต่ไม่ค่อยขาย |
+| C | 5,000 | 8 คน | Balance ทั้งขายและสร้างทีม |
+
+**คำถาม:** ใครเหมาะจะเป็น Leader มากที่สุด?
+
+**เฉลย:**
+```
+C เหมาะที่สุด
+เพราะ:
+- Balance ระหว่างขาย (5,000 PV) และสร้างทีม (8 คน)
+- ในขณะที่ A ขายเก่งแต่ไม่ Duplicate
+- และ B สร้างทีมได้แต่ PV ต่ำ
+
+Leader ที่ดีต้อง:
+1. Lead by Example (ทำเองให้ดูก่อน)
+2. Teach Others (สอนคนอื่นได้)
+3. Duplicate (ให้คนอื่นทำซ้ำได้)
+```
+
+---
+
+### ✅ สรุป Team Leadership
+
+```
+┌─────────────────────────────────────────┐
+│        👥 Team Leadership               │
+├─────────────────────────────────────────┤
+│  1️⃣ Be a Leader, Not Just a Sponsor    │
+│  2️⃣ Build Scalable Training System     │
+│  3️⃣ Track KPIs & Segment Your Team     │
+│  4️⃣ Create Recognition Culture         │
+│  5️⃣ Develop Leaders Who Develop Leaders│
+│  6️⃣ Work ON the Team, Not IN the Team │
+└─────────────────────────────────────────┘
+```
+                ",
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 14: การบริหารทีมขนาดใหญ่ - Quiz
+     */
+    private function getCourse14Quiz(): array
+    {
+        return [
+            'time_limit' => 18,
+            'description' => 'ทดสอบความเข้าใจเกี่ยวกับการบริหารทีมขนาดใหญ่',
+            'questions' => [
+                [
+                    'question' => 'EDDC Framework ย่อมาจากอะไร?',
+                    'answers' => [
+                        ['text' => 'Explain, Demonstrate, Do together, Check', 'is_correct' => true],
+                        ['text' => 'Evaluate, Design, Develop, Control', 'is_correct' => false],
+                        ['text' => 'Engage, Direct, Deliver, Close', 'is_correct' => false],
+                        ['text' => 'Execute, Document, Deploy, Confirm', 'is_correct' => false],
+                    ],
+                    'explanation' => 'EDDC = Explain (อธิบาย), Demonstrate (สาธิต), Do together (ทำด้วยกัน), Check (ตรวจสอบ)',
+                ],
+                [
+                    'question' => 'ตาม 80/20 Rule ผลลัพธ์ส่วนใหญ่มาจากใคร?',
+                    'answers' => [
+                        ['text' => 'สมาชิกทุกคนเท่าๆ กัน', 'is_correct' => false],
+                        ['text' => '20% ของสมาชิก (A-Players)', 'is_correct' => true],
+                        ['text' => '80% ของสมาชิก', 'is_correct' => false],
+                        ['text' => 'เฉพาะ Leader', 'is_correct' => false],
+                    ],
+                    'explanation' => '80/20 Rule: 80% ของผลลัพธ์มาจาก 20% ของสมาชิก (A-Players) จึงควร Focus ที่กลุ่มนี้',
+                ],
+                [
+                    'question' => 'Active Rate ที่ดีควรเป็นเท่าไหร่?',
+                    'answers' => [
+                        ['text' => '≥ 50%', 'is_correct' => false],
+                        ['text' => '≥ 70%', 'is_correct' => true],
+                        ['text' => '≥ 90%', 'is_correct' => false],
+                        ['text' => '100%', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Active Rate ที่ดีควรอยู่ที่ 70% ขึ้นไป หมายความว่า 70% ของทีมมีการ Active ทุกเดือน',
+                ],
+                [
+                    'question' => 'ข้อใดไม่ใช่คุณสมบัติของ Potential Leader?',
+                    'answers' => [
+                        ['text' => 'Active & Consistent', 'is_correct' => false],
+                        ['text' => 'Positive Attitude', 'is_correct' => false],
+                        ['text' => 'ทำทุกอย่างเองไม่ต้องการทีม', 'is_correct' => true],
+                        ['text' => 'Coachable', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Leader ที่ดีต้องทำงานเป็นทีมได้ (Team Player) ไม่ใช่ทำทุกอย่างเองคนเดียว',
+                ],
+                [
+                    'question' => 'Delegation ควรทำเมื่อไหร่?',
+                    'answers' => [
+                        ['text' => 'งานทุกอย่างควร Delegate', 'is_correct' => false],
+                        ['text' => 'งานซ้ำๆ ที่มีคนอื่นทำได้ และ Leader ต้องการ Grow', 'is_correct' => true],
+                        ['text' => 'ไม่ควร Delegate เลย', 'is_correct' => false],
+                        ['text' => 'เฉพาะ Strategic Decisions', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Delegate งานซ้ำๆ ที่คนอื่นทำได้ เพื่อให้ Leader ได้ Grow และคุณมีเวลาทำงานสำคัญกว่า',
+                ],
+                [
+                    'question' => 'ในปิรามิดแรงจูงใจ ฐานล่างสุดคืออะไร?',
+                    'answers' => [
+                        ['text' => 'Self-Actualization', 'is_correct' => false],
+                        ['text' => 'Status & Recognition', 'is_correct' => false],
+                        ['text' => 'Basic (Money & Rewards)', 'is_correct' => true],
+                        ['text' => 'Belonging', 'is_correct' => false],
+                    ],
+                    'explanation' => 'ฐานล่างสุดคือ Basic Needs (Money & Rewards) ต้องตอบสนองก่อนแล้วค่อยขยับขึ้นไป',
+                ],
+                [
+                    'question' => 'เป้าหมายสูงสุดของ Leader คืออะไร?',
+                    'answers' => [
+                        ['text' => 'ขายให้ได้มากที่สุด', 'is_correct' => false],
+                        ['text' => 'สร้างทีมที่ทำงานได้โดยไม่ต้องพึ่งตัวเอง', 'is_correct' => true],
+                        ['text' => 'ได้ Rank สูงสุด', 'is_correct' => false],
+                        ['text' => 'มีสมาชิกมากที่สุด', 'is_correct' => false],
+                    ],
+                    'explanation' => 'เป้าหมายสูงสุดคือ Duplication - สร้างทีมและ Leaders ที่ทำงานได้เองโดยไม่ต้องพึ่งคุณตลอดเวลา',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 15: กลยุทธ์การตลาดออนไลน์ขั้นสูง - เนื้อหา
+     */
+    private function getCourse15Content(): array
+    {
+        return [
+            [
+                'title' => '🎯 Marketing Funnel ขั้นสูง',
+                'content' => "
+## เข้าใจ Marketing Funnel
+
+**Marketing Funnel** คือเส้นทางที่ลูกค้าเดินทางจาก **ไม่รู้จักคุณ** ไปจนถึง **ซื้อและบอกต่อ**
+
+### 📊 TOFU-MOFU-BOFU Model
+
+```
+┌─────────────────────────────────────────┐
+│            TOFU (Top of Funnel)         │
+│           🎯 Awareness Stage            │
+│                                         │
+│  • Content Marketing                    │
+│  • Social Media Posts                   │
+│  • SEO / Paid Ads                       │
+│  • Video Content                        │
+│                                         │
+│  เป้าหมาย: ดึงคนเข้ามารู้จัก            │
+├─────────────────────────────────────────┤
+│           MOFU (Middle of Funnel)       │
+│          🤔 Consideration Stage         │
+│                                         │
+│  • Lead Magnets                         │
+│  • Email Sequences                      │
+│  • Webinars                            │
+│  • Case Studies                         │
+│                                         │
+│  เป้าหมาย: สร้างความสนใจ/ความเชื่อมั่น  │
+├─────────────────────────────────────────┤
+│           BOFU (Bottom of Funnel)       │
+│          💰 Decision Stage              │
+│                                         │
+│  • Free Trial                           │
+│  • Demo / Consultation                  │
+│  • Special Offers                       │
+│  • Testimonials                         │
+│                                         │
+│  เป้าหมาย: ปิดการขาย                    │
+└─────────────────────────────────────────┘
+```
+
+### 📈 Metrics แต่ละขั้น
+
+| Stage | Key Metrics | Benchmark |
+|-------|-------------|-----------|
+| **TOFU** | Reach, Impressions, Traffic | CPM < 100 บาท |
+| **MOFU** | Leads, Email Open Rate | Lead Cost < 50 บาท |
+| **BOFU** | Conversion Rate, Sales | CR > 2% |
+
+### 🔄 Customer Journey
+
+```
+ไม่รู้จัก → รู้จัก → สนใจ → เชื่อมั่น → ซื้อ → ซื้อซ้ำ → บอกต่อ
+   │         │        │        │       │        │        │
+   │         │        │        │       │        │        └─ Referral
+   │         │        │        │       │        └─ Retention
+   │         │        │        │       └─ Conversion
+   │         │        │        └─ Trust Building
+   │         │        └─ Consideration
+   │         └─ Awareness
+   └─ Stranger
+```
+
+> 💡 **กฎทอง**: ทำให้ทุกขั้นของ Funnel แข็งแกร่ง อย่าโฟกัสแค่ขั้นใดขั้นหนึ่ง
+                ",
+            ],
+            [
+                'title' => '📱 Social Media Marketing Strategy',
+                'content' => "
+## กลยุทธ์ Social Media ที่ได้ผล
+
+ในยุคนี้ **Social Media** คือช่องทางหลักในการเข้าถึงกลุ่มเป้าหมาย
+
+### 📊 Platform Comparison
+
+| Platform | กลุ่มเป้าหมาย | Content Type | Best For |
+|----------|--------------|--------------|----------|
+| **Facebook** | 25-55 ปี | Video, Image, Text | Community |
+| **Instagram** | 18-40 ปี | Visual, Stories, Reels | Brand Image |
+| **TikTok** | 15-35 ปี | Short Video | Viral Content |
+| **LINE** | ทุกวัย (ไทย) | Chat, Broadcast | Direct Sales |
+| **YouTube** | ทุกวัย | Long Video | Education |
+
+### 🎯 Content Pillars (4E Framework)
+
+```
+┌─────────────────────────────────────────┐
+│  E - Educate (ให้ความรู้) 30%           │
+│  ─────────────────────────────          │
+│  • How-to Content                       │
+│  • Tips & Tricks                        │
+│  • Industry News                        │
+├─────────────────────────────────────────┤
+│  E - Entertain (สร้างความบันเทิง) 25%   │
+│  ─────────────────────────────          │
+│  • Memes                                │
+│  • Behind the Scenes                    │
+│  • Challenges                           │
+├─────────────────────────────────────────┤
+│  E - Engage (สร้าง Engagement) 25%      │
+│  ─────────────────────────────          │
+│  • Questions                            │
+│  • Polls                                │
+│  • User Generated Content               │
+├─────────────────────────────────────────┤
+│  E - Evangelize (โปรโมท) 20%            │
+│  ─────────────────────────────          │
+│  • Product Features                     │
+│  • Testimonials                         │
+│  • Promotions                           │
+└─────────────────────────────────────────┘
+```
+
+### 📅 Posting Schedule
+
+```
+Facebook:
+├── โพสต์: 1-2 ครั้ง/วัน
+├── เวลาดี: 11:00-13:00, 19:00-21:00
+└── วันดี: พุธ, พฤหัส
+
+Instagram:
+├── Feed: 1 ครั้ง/วัน
+├── Stories: 3-5 ครั้ง/วัน
+├── Reels: 3-5 ครั้ง/สัปดาห์
+└── เวลาดี: 11:00, 19:00-21:00
+
+TikTok:
+├── โพสต์: 1-3 ครั้ง/วัน
+├── เวลาดี: 12:00, 18:00-21:00
+└── ความยาว: 15-60 วินาที
+
+LINE OA:
+├── Broadcast: 1-2 ครั้ง/สัปดาห์
+└── เวลาดี: 10:00, 14:00, 20:00
+```
+
+### 📈 Engagement Tactics
+
+1. **Hook ภายใน 3 วินาทีแรก**
+2. ใช้ **CTA ชัดเจน** (Like, Share, Comment)
+3. **ตอบทุก Comment** ภายใน 1 ชั่วโมง
+4. ใช้ **Hashtag** อย่างถูกต้อง (5-10 อัน)
+5. **Collaborate** กับ Influencers
+
+> 💡 **เคล็ดลับ**: Quality > Quantity - 1 โพสต์ที่ดีดีกว่า 10 โพสต์ธรรมดา
+                ",
+            ],
+            [
+                'title' => '✉️ Email Marketing Mastery',
+                'content' => "
+## Email Marketing ที่ยังได้ผลในปี 2024
+
+**Email** ยังคงเป็นช่องทางที่ **ROI สูงที่สุด** (42:1 โดยเฉลี่ย)
+
+### 📊 Email Types
+
+| ประเภท | Purpose | Frequency |
+|--------|---------|-----------|
+| **Welcome Series** | ต้อนรับสมาชิกใหม่ | 3-5 emails |
+| **Nurture Sequence** | สร้างความสัมพันธ์ | Weekly |
+| **Promotional** | โปรโมชั่น/ขาย | 1-2x/week |
+| **Newsletter** | ให้ข้อมูล/Value | Weekly/Bi-weekly |
+| **Re-engagement** | ดึงคนกลับมา | Triggered |
+
+### 📝 Email Copywriting Formula
+
+**AIDA Formula:**
+```
+A - Attention (หัวข้อดึงดูด)
+    ↓
+I - Interest (เปิดด้วยเรื่องน่าสนใจ)
+    ↓
+D - Desire (สร้างความต้องการ)
+    ↓
+A - Action (CTA ชัดเจน)
+```
+
+### ✍️ Subject Line Best Practices
+
+```
+❌ ผิด:
+• \"Newsletter ประจำสัปดาห์\"
+• \"อย่าพลาด! โปรโมชั่นพิเศษ\"
+• \"คลิกที่นี่เพื่อดูรายละเอียด\"
+
+✅ ถูก:
+• \"[ชื่อ], วิธีเพิ่มยอดขาย 3 เท่าใน 30 วัน\"
+• \"เคล็ดลับที่ Top Sellers ไม่บอกใคร 🤫\"
+• \"ผิดพลาดที่ทำให้คุณสูญเสียลูกค้า\"
+```
+
+### 📈 Key Metrics
+
+| Metric | Benchmark | ดี |
+|--------|-----------|-----|
+| **Open Rate** | 20-25% | >30% |
+| **Click Rate** | 2-3% | >5% |
+| **Unsubscribe** | <0.5% | <0.2% |
+| **Conversion** | 1-2% | >3% |
+
+### 🔄 Automation Workflows
+
+```
+Welcome Series (สมาชิกใหม่):
+┌─────────────────────────────────────────┐
+│ Day 0: Welcome Email                    │
+│        \"ยินดีต้อนรับสู่ครอบครัว!\"       │
+│                 ↓                       │
+│ Day 2: Value Email                      │
+│        \"3 เคล็ดลับเริ่มต้นที่ควรรู้\"    │
+│                 ↓                       │
+│ Day 4: Social Proof                     │
+│        \"ดูว่าคนอื่นทำสำเร็จอย่างไร\"     │
+│                 ↓                       │
+│ Day 7: Soft Pitch                       │
+│        \"พร้อมเริ่มต้นหรือยัง?\"          │
+└─────────────────────────────────────────┘
+```
+
+> 💡 **กฎทอง**: Segment list ตาม behavior - อย่าส่ง email เดียวกันให้ทุกคน
+                ",
+            ],
+            [
+                'title' => '🎥 Video & Content Marketing',
+                'content' => "
+## Video Marketing สำหรับยุคปัจจุบัน
+
+**Video** คือ Content ที่ได้ Engagement สูงที่สุด
+
+### 📊 Video Platform Strategy
+
+| Platform | ความยาว | Format | Best For |
+|----------|---------|--------|----------|
+| **TikTok/Reels** | 15-60s | Vertical | Awareness |
+| **YouTube Shorts** | <60s | Vertical | Quick Tips |
+| **YouTube Long** | 8-15m | Horizontal | Education |
+| **Facebook Video** | 1-3m | Square/Horizontal | Engagement |
+| **LINE VOOM** | 15-60s | Vertical | Thai Audience |
+
+### 🎬 Video Content Ideas
+
+```
+┌─────────────────────────────────────────┐
+│  📚 Educational (ให้ความรู้)            │
+├─────────────────────────────────────────┤
+│  • How-to Tutorials                     │
+│  • Tips & Tricks (3 วิธี... 5 เคล็ดลับ)│
+│  • FAQ ตอบคำถาม                        │
+│  • Product Demos                        │
+└─────────────────────────────────────────┘
+
+┌─────────────────────────────────────────┐
+│  🎭 Entertainment (สร้างความบันเทิง)    │
+├─────────────────────────────────────────┤
+│  • Behind the Scenes                    │
+│  • Day in My Life                       │
+│  • Challenges                           │
+│  • Trending Audio/Memes                 │
+└─────────────────────────────────────────┘
+
+┌─────────────────────────────────────────┐
+│  💬 Social Proof (พิสูจน์ความน่าเชื่อถือ)│
+├─────────────────────────────────────────┤
+│  • Testimonials                         │
+│  • Case Studies                         │
+│  • Before/After                         │
+│  • Unboxing/Reviews                     │
+└─────────────────────────────────────────┘
+```
+
+### 🪝 Hook Formulas (3 วินาทีแรก)
+
+```
+1. Question Hook:
+   \"เคยสงสัยไหมว่าทำไม...\"
+
+2. Shock Hook:
+   \"90% ของคนทำผิดเรื่องนี้!\"
+
+3. Story Hook:
+   \"เมื่อวานฉันเพิ่งพบว่า...\"
+
+4. List Hook:
+   \"3 วิธีที่จะเปลี่ยนชีวิตคุณ\"
+
+5. Controversy Hook:
+   \"นี่คือสิ่งที่ไม่มีใครบอกคุณ...\"
+```
+
+### 📝 Video Script Template
+
+```
+[0-3s] HOOK - ดึงความสนใจ
+[3-10s] PROBLEM - ปัญหาที่คนเจอ
+[10-30s] SOLUTION - วิธีแก้ปัญหา
+[30-50s] PROOF - หลักฐาน/ตัวอย่าง
+[50-60s] CTA - บอกให้ทำอะไรต่อ
+```
+
+> 💡 **เคล็ดลับ**: ถ่าย 1 ครั้ง ตัดเป็นหลาย Platform - Work Smart!
+                ",
+            ],
+            [
+                'title' => '📊 Analytics & Optimization',
+                'content' => "
+## Data-Driven Marketing
+
+**\"If you can't measure it, you can't improve it\"** - ถ้าวัดไม่ได้ ก็พัฒนาไม่ได้
+
+### 📈 Key Marketing Metrics
+
+| Metric | สูตร | เป้าหมาย |
+|--------|------|----------|
+| **CAC** | Marketing Cost ÷ New Customers | ยิ่งต่ำยิ่งดี |
+| **LTV** | Avg Revenue × Customer Lifespan | ยิ่งสูงยิ่งดี |
+| **LTV:CAC** | LTV ÷ CAC | ≥ 3:1 |
+| **ROAS** | Revenue ÷ Ad Spend | ≥ 3:1 |
+| **Conversion Rate** | Conversions ÷ Visitors × 100 | ≥ 2% |
+
+### 🔄 A/B Testing Framework
+
+```
+┌─────────────────────────────────────────┐
+│  1️⃣ HYPOTHESIS                          │
+│     \"ถ้าเปลี่ยน X จะทำให้ Y ดีขึ้น\"     │
+│                 ↓                       │
+│  2️⃣ SETUP TEST                          │
+│     Version A (Control)                 │
+│     Version B (Variant)                 │
+│                 ↓                       │
+│  3️⃣ RUN TEST                            │
+│     Split traffic 50/50                 │
+│     รอจนได้ Statistical Significance   │
+│                 ↓                       │
+│  4️⃣ ANALYZE                             │
+│     ดู Metrics ที่กำหนด                 │
+│     ตัดสินว่าอันไหนชนะ                  │
+│                 ↓                       │
+│  5️⃣ IMPLEMENT                           │
+│     นำตัวที่ชนะไปใช้                    │
+│     ทำซ้ำกับองค์ประกอบอื่น              │
+└─────────────────────────────────────────┘
+```
+
+### 📊 สิ่งที่ควร A/B Test
+
+```
+Landing Page:
+• Headline
+• Hero Image
+• CTA Button Color/Text
+• Form Length
+• Social Proof Position
+
+Email:
+• Subject Line
+• Send Time
+• CTA Placement
+• Personalization
+
+Ads:
+• Image vs Video
+• Ad Copy
+• Audience Targeting
+• Placement
+```
+
+### 🎯 Conversion Rate Optimization (CRO)
+
+```
+┌─────────────────────────────────────────┐
+│  CRO Checklist                          │
+├─────────────────────────────────────────┤
+│                                         │
+│  □ Clear Value Proposition              │
+│  □ Compelling Headlines                 │
+│  □ Strong Social Proof                  │
+│  □ Obvious CTA Buttons                  │
+│  □ Fast Page Load (<3 seconds)          │
+│  □ Mobile Optimized                     │
+│  □ Trust Signals (Reviews, Badges)      │
+│  □ Minimal Form Fields                  │
+│  □ Clear Next Steps                     │
+│  □ Exit Intent Popup                    │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### 📉 Common Pitfalls
+
+| Pitfall | Problem | Solution |
+|---------|---------|----------|
+| Vanity Metrics | วัด Likes แทน Sales | Focus ROI Metrics |
+| No Tracking | ไม่รู้ว่าอะไร Work | Setup UTM + Analytics |
+| Too Small Sample | ตัดสินเร็วเกิน | รอ Statistical Significance |
+| Testing Too Much | สับสน | Test 1 element at a time |
+
+> 💡 **กฎทอง**: ตัดสินใจด้วย Data ไม่ใช่ Gut Feeling
+                ",
+            ],
+            [
+                'title' => '📝 แบบฝึกหัดท้ายบท',
+                'content' => "
+## แบบฝึกหัด: Advanced Marketing
+
+### 📋 Exercise 1: สร้าง Marketing Funnel
+
+**คำสั่ง:** ออกแบบ Funnel สำหรับสินค้า/โอกาส Thaiprompt
+
+| Stage | Content/Activity | Goal |
+|-------|-----------------|------|
+| TOFU | ? | ? |
+| MOFU | ? | ? |
+| BOFU | ? | ? |
+
+**เฉลย (ตัวอย่าง):**
+```
+TOFU (Awareness):
+• Content: รีวิวสินค้า, Tips การใช้งาน
+• Channel: TikTok, Facebook, YouTube
+• Goal: Reach 10,000 คน/เดือน
+
+MOFU (Consideration):
+• Content: Webinar, Case Study, Free Guide
+• Channel: Email, LINE OA
+• Goal: เก็บ 500 Leads/เดือน
+
+BOFU (Decision):
+• Content: Demo 1:1, Special Offer, Testimonials
+• Channel: Zoom, LINE Chat
+• Goal: ปิดการขาย 50 คน/เดือน
+```
+
+---
+
+### 📋 Exercise 2: วางแผน Content Calendar
+
+**คำสั่ง:** วางแผน Content 1 สัปดาห์ ตาม 4E Framework
+
+| วัน | Platform | Content Type | Topic |
+|-----|----------|--------------|-------|
+| จันทร์ | ? | ? | ? |
+| อังคาร | ? | ? | ? |
+| พุธ | ? | ? | ? |
+| พฤหัส | ? | ? | ? |
+| ศุกร์ | ? | ? | ? |
+| เสาร์ | ? | ? | ? |
+| อาทิตย์ | ? | ? | ? |
+
+**เฉลย (ตัวอย่าง):**
+```
+จันทร์: Facebook - Educate - \"3 วิธีเริ่มต้นธุรกิจออนไลน์\"
+อังคาร: Instagram - Engage - Poll: \"คุณชอบทำธุรกิจแบบไหน?\"
+พุธ: TikTok - Entertain - Behind the Scenes ชีวิตประจำวัน
+พฤหัส: Facebook - Educate - Live Q&A
+ศุกร์: Instagram - Evangelize - Testimonial จากสมาชิก
+เสาร์: TikTok - Entertain - Challenge/Trend
+อาทิตย์: All - Engage - Weekly Recap + Success Stories
+```
+
+---
+
+### 📋 Exercise 3: เขียน Email Welcome Series
+
+**คำสั่ง:** เขียนหัวข้อ (Subject Line) สำหรับ Welcome Series 4 emails
+
+**เฉลย (ตัวอย่าง):**
+```
+Email 1 (Day 0):
+\"🎉 [ชื่อ], ยินดีต้อนรับสู่ครอบครัว Thaiprompt!\"
+
+Email 2 (Day 2):
+\"3 เคล็ดลับที่ Top Earners รู้ (แต่ไม่บอกใคร)\"
+
+Email 3 (Day 4):
+\"จากศูนย์สู่ 50,000 บาท/เดือน - เรื่องจริงจาก [ชื่อสมาชิก]\"
+
+Email 4 (Day 7):
+\"[ชื่อ], พร้อมเริ่มต้นเส้นทางความสำเร็จหรือยัง?\"
+```
+
+---
+
+### 📋 Exercise 4: คำนวณ Marketing Metrics
+
+**สถานการณ์:**
+- ใช้งบ Ads 10,000 บาท
+- ได้ Leads 200 คน
+- ปิดการขายได้ 20 คน
+- ยอดขายเฉลี่ย 2,500 บาท/คน
+
+**คำถาม:** คำนวณ CAC, LTV (สมมติลูกค้าอยู่ 12 เดือน), ROAS
+
+**เฉลย:**
+```
+CAC (Cost per Acquisition):
+= 10,000 ÷ 20 = 500 บาท/คน
+
+Revenue:
+= 20 × 2,500 = 50,000 บาท
+
+ROAS (Return on Ad Spend):
+= 50,000 ÷ 10,000 = 5:1 (ดีมาก! >3:1)
+
+LTV (ถ้าซื้อทุกเดือน 12 เดือน):
+= 2,500 × 12 = 30,000 บาท
+
+LTV:CAC Ratio:
+= 30,000 ÷ 500 = 60:1 (ยอดเยี่ยม!)
+```
+
+---
+
+### ✅ สรุป Advanced Marketing
+
+```
+┌─────────────────────────────────────────┐
+│        📈 Advanced Marketing            │
+├─────────────────────────────────────────┤
+│  1️⃣ Build Strong Marketing Funnel      │
+│  2️⃣ Master Social Media (4E Framework) │
+│  3️⃣ Leverage Email Automation          │
+│  4️⃣ Create Engaging Video Content      │
+│  5️⃣ Make Data-Driven Decisions         │
+│  6️⃣ Test, Measure, Optimize, Repeat    │
+└─────────────────────────────────────────┘
+```
+                ",
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 15: กลยุทธ์การตลาดออนไลน์ขั้นสูง - Quiz
+     */
+    private function getCourse15Quiz(): array
+    {
+        return [
+            'time_limit' => 18,
+            'description' => 'ทดสอบความเข้าใจเกี่ยวกับกลยุทธ์การตลาดออนไลน์ขั้นสูง',
+            'questions' => [
+                [
+                    'question' => 'TOFU ใน Marketing Funnel หมายถึงอะไร?',
+                    'answers' => [
+                        ['text' => 'อาหารญี่ปุ่น', 'is_correct' => false],
+                        ['text' => 'Top of Funnel - Awareness Stage', 'is_correct' => true],
+                        ['text' => 'Total of Funnel Users', 'is_correct' => false],
+                        ['text' => 'Technical Online Framework', 'is_correct' => false],
+                    ],
+                    'explanation' => 'TOFU = Top of Funnel คือขั้น Awareness ดึงคนเข้ามารู้จักแบรนด์/สินค้า',
+                ],
+                [
+                    'question' => '4E Framework ประกอบด้วยอะไร?',
+                    'answers' => [
+                        ['text' => 'Engage, Educate, Entertain, Evangelize', 'is_correct' => true],
+                        ['text' => 'Email, Event, Export, Execute', 'is_correct' => false],
+                        ['text' => 'Explore, Examine, Execute, Evaluate', 'is_correct' => false],
+                        ['text' => 'Entry, Exit, Enhance, Expand', 'is_correct' => false],
+                    ],
+                    'explanation' => '4E = Educate (ให้ความรู้), Entertain (สร้างความบันเทิง), Engage (สร้าง Engagement), Evangelize (โปรโมท)',
+                ],
+                [
+                    'question' => 'LTV:CAC Ratio ที่ดีควรเป็นเท่าไหร่?',
+                    'answers' => [
+                        ['text' => '1:1', 'is_correct' => false],
+                        ['text' => '2:1', 'is_correct' => false],
+                        ['text' => '≥ 3:1', 'is_correct' => true],
+                        ['text' => '10:1', 'is_correct' => false],
+                    ],
+                    'explanation' => 'LTV:CAC ≥ 3:1 หมายความว่ามูลค่าลูกค้าตลอดชีพควรมากกว่าต้นทุนได้มา 3 เท่าขึ้นไป',
+                ],
+                [
+                    'question' => 'Hook ใน Video ควรอยู่ในกี่วินาทีแรก?',
+                    'answers' => [
+                        ['text' => '10 วินาที', 'is_correct' => false],
+                        ['text' => '3 วินาที', 'is_correct' => true],
+                        ['text' => '30 วินาที', 'is_correct' => false],
+                        ['text' => '1 นาที', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Hook ต้องอยู่ใน 3 วินาทีแรก เพราะคนตัดสินใจเลื่อนผ่านหรือดูต่อภายในเวลานี้',
+                ],
+                [
+                    'question' => 'Email Open Rate ที่ดีควรเป็นเท่าไหร่?',
+                    'answers' => [
+                        ['text' => '5-10%', 'is_correct' => false],
+                        ['text' => '10-15%', 'is_correct' => false],
+                        ['text' => '20-25%', 'is_correct' => false],
+                        ['text' => '>30%', 'is_correct' => true],
+                    ],
+                    'explanation' => 'Open Rate > 30% ถือว่าดี (Benchmark ทั่วไป 20-25%) หมายความว่า Subject Line ดึงดูดใจ',
+                ],
+                [
+                    'question' => 'A/B Testing ควรทดสอบกี่องค์ประกอบต่อครั้ง?',
+                    'answers' => [
+                        ['text' => '1 องค์ประกอบ', 'is_correct' => true],
+                        ['text' => '3 องค์ประกอบ', 'is_correct' => false],
+                        ['text' => '5 องค์ประกอบ', 'is_correct' => false],
+                        ['text' => 'ทุกองค์ประกอบพร้อมกัน', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Test 1 องค์ประกอบต่อครั้ง เพื่อให้รู้แน่ชัดว่าอะไรทำให้ผลลัพธ์เปลี่ยน',
+                ],
+                [
+                    'question' => 'AIDA Formula ใช้ในการเขียนอะไร?',
+                    'answers' => [
+                        ['text' => 'Code', 'is_correct' => false],
+                        ['text' => 'Sales Copy / Marketing Content', 'is_correct' => true],
+                        ['text' => 'Financial Report', 'is_correct' => false],
+                        ['text' => 'Technical Documentation', 'is_correct' => false],
+                    ],
+                    'explanation' => 'AIDA (Attention, Interest, Desire, Action) เป็น Formula สำหรับเขียน Sales Copy และ Marketing Content',
                 ],
             ],
         ];
