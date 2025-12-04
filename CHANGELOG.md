@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.354.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #2014 from xjanova/claude/update-academy-theme-01PTm2ZrMzXNMbMrk9LHdnhG (71f93623)
+- feat: อัพเดท Academy views ให้ใช้ Tailwind CSS + Alpine.js (V3 standards) (620cf98e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.353.0] - 2025-12-04
 
 ### ✨ Features
