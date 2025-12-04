@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.14] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2035 from xjanova/claude/migrate-react-native-expo-01NNGuAY5F1SgzjtcCEyBGxY (60d7e61a)
+- fix(mobile): update EAS project ID for cloud builds (05702949)
+### 🔧 Other Changes
+
+
 ## [v3.358.13] - 2025-12-04
 
 ### ✨ Features
