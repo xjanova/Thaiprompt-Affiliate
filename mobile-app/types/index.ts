@@ -53,6 +53,9 @@ export interface DashboardStats {
   totalEarnings: number;
   pendingEarnings: number;
   approvedEarnings: number;
+  monthlyEarnings: number;
+  directSales: number;
+  teamBonus: number;
   totalReferrals: number;
   growthPercentage: number;
   recentCommissions: Commission[];
@@ -61,8 +64,16 @@ export interface DashboardStats {
 export interface Commission {
   id: number;
   amount: number;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'paid' | 'cancelled';
+  type: 'direct' | 'team' | 'referral' | 'bonus';
+  level?: number;
   description: string;
+  date: string;
+  from_user?: {
+    id: number;
+    name: string;
+    email: string;
+  };
   createdAt: string;
 }
 
@@ -71,6 +82,51 @@ export interface PaginatedCommissions {
   currentPage: number;
   lastPage: number;
   total: number;
+}
+
+// =====================================================
+// Product Types
+// =====================================================
+
+export interface Product {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  discount_price?: number;
+  image?: string;
+  images?: string[];
+  category_id?: string;
+  category?: ProductCategory;
+  commission_rate?: number;
+  rating?: number;
+  review_count?: number;
+  stock?: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ProductCategory {
+  id: string;
+  name: string;
+  slug: string;
+  image?: string;
+  parent_id?: string;
+  products_count?: number;
+}
+
+// =====================================================
+// Referral Stats Types
+// =====================================================
+
+export interface ReferralStats {
+  totalReferrals: number;
+  activeReferrals: number;
+  pendingReferrals: number;
+  totalEarnings: number;
+  monthlyEarnings: number;
+  referralCode: string;
+  referralLink: string;
 }
 
 // =====================================================

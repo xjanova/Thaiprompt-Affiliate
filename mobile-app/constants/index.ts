@@ -32,6 +32,16 @@ export const API_ENDPOINTS = {
   REFERRALS: '/dashboard/referrals',
   REFERRAL_LINK: '/dashboard/referral-link',
 
+  // Products
+  PRODUCTS: '/products',
+  PRODUCT_CATEGORIES: '/products/categories',
+  PRODUCT_DETAIL: '/products/{id}',
+
+  // Cart
+  CART: '/cart',
+  CART_ADD: '/cart/add',
+  CART_REMOVE: '/cart/remove',
+
   // Profile
   PROFILE: '/profile',
   UPDATE_PROFILE: '/profile/update',
