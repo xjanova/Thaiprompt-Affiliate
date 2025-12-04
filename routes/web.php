@@ -484,6 +484,13 @@ Route::prefix('hotels')->name('hotels.')->group(function () {
     Route::match(['GET', 'HEAD'], '/search', [\App\Http\Controllers\HotelController::class, 'search'])->name('search');
     Route::match(['GET', 'HEAD'], '/autocomplete', [\App\Http\Controllers\HotelController::class, 'autocomplete'])->name('autocomplete');
     Route::post('/check-availability', [\App\Http\Controllers\HotelController::class, 'checkAvailability'])->name('check-availability');
+
+    // Province & Region Routes (GPS Location Search)
+    Route::match(['GET', 'HEAD'], '/province/{provinceId}', [\App\Http\Controllers\HotelController::class, 'byProvince'])->name('by-province');
+    Route::match(['GET', 'HEAD'], '/region/{region}', [\App\Http\Controllers\HotelController::class, 'byRegion'])->name('by-region');
+    Route::post('/nearby', [\App\Http\Controllers\HotelController::class, 'nearby'])->name('nearby');
+    Route::get('/provinces', [\App\Http\Controllers\HotelController::class, 'getProvinces'])->name('provinces');
+
     Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\HotelController::class, 'show'])->name('show');
 
     // Hotel Reviews (Public viewing)

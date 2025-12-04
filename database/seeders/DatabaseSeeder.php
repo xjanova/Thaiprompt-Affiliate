@@ -119,6 +119,7 @@ class DatabaseSeeder extends Seeder
 
             // 12. Additional Systems
             TarotSystemSeeder::class,           // ระบบดูดวงไพ่ทาโรต์
+            ProvinceSeeder::class,              // ข้อมูลจังหวัดไทย 77 จังหวัด พร้อมพิกัด GPS
             HotelSeeder::class,                 // ระบบจองโรงแรม
             InvestmentPlanSeeder::class,        // แพลนการลงทุน
             TradingBotSystemSeeder::class,      // ระบบเทรดดิ้งบอท (Packages, Exchanges, Strategies)
