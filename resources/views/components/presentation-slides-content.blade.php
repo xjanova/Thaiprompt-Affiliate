@@ -1,5 +1,7 @@
 @php
     $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate Pro');
+    $siteSettings = \App\Models\SiteSetting::getSetting();
+    $systemLogo = $siteSettings->logo ?? null;
 @endphp
 
 <!-- Slide 1: Title / Cover -->
@@ -15,47 +17,49 @@
         <div class="text-center text-white max-w-5xl relative z-10">
             <!-- Logo -->
             <div class="mb-8 animate-float">
-                <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}" width="200" height="200" class="w-48 h-48 mx-auto filter drop-shadow-2xl object-contain">
+                @if($systemLogo)
+                    <img src="{{ asset('storage/' . $systemLogo) }}" alt="{{ $appName }}" class="w-48 h-48 mx-auto filter drop-shadow-2xl object-contain">
+                @else
+                    <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}" width="200" height="200" class="w-48 h-48 mx-auto filter drop-shadow-2xl object-contain">
+                @endif
             </div>
 
-            <h1 class="text-7xl md:text-8xl font-black mb-6 leading-tight animate-fade-in-up">
+            <h1 class="text-6xl md:text-7xl lg:text-8xl font-black mb-6 leading-tight animate-fade-in-up">
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300">
                     {{ $appName }}
                 </span>
             </h1>
 
             <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 mb-8 shadow-2xl">
-                <h2 class="text-4xl md:text-5xl font-bold mb-4">
-                    ระบบแอฟฟิลิเอตมืออาชีพ
+                <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+                    แพลตฟอร์ม All-in-One ระดับ Enterprise
                 </h2>
-                <p class="text-2xl text-indigo-200 leading-relaxed">
-                    ระบบแอฟฟิลิเอตที่ทันสมัยและพร้อมใช้งาน
-                    <br>
-                    พัฒนาด้วย <strong class="text-pink-300">Laravel 11</strong> • รองรับ<strong class="text-purple-300">หลายภาษา</strong> • ออกแบบสวยงามด้วย <strong class="text-blue-300">Tailwind CSS</strong>
+                <p class="text-xl md:text-2xl text-indigo-200 leading-relaxed">
+                    รวม 20+ ระบบครบวงจร • Affiliate • MLM • E-Commerce • AI Bot • Blockchain
                 </p>
             </div>
 
-            <div class="flex items-center justify-center gap-8 text-lg">
+            <div class="flex flex-wrap items-center justify-center gap-4 md:gap-8 text-base md:text-lg">
                 <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
                     <div class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
-                    <span>Production Ready</span>
+                    <span>Enterprise Ready</span>
                 </div>
                 <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
                     <div class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
-                    <span>Enterprise Level</span>
+                    <span>20+ ระบบครบวงจร</span>
                 </div>
                 <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
                     <div class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
-                    <span>Open Source</span>
+                    <span>24/7 Support</span>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Slide 2: Overview / ภาพรวมระบบ -->
+<!-- Slide 2: ภาพรวมแพลตฟอร์ม -->
 <div class="slide">
-    <div class="h-full flex items-center justify-center bg-gradient-to-br from-slate-900/90 via-indigo-900/80 to-slate-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-slate-900/90 via-indigo-900/80 to-slate-900/90 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
         <!-- Background decoration -->
         <div class="absolute inset-0 opacity-10">
             <div class="absolute inset-0" style="background-image:
@@ -65,878 +69,800 @@
         </div>
 
         <div class="max-w-6xl w-full relative z-10">
-            <h2 class="text-5xl md:text-6xl font-black text-white mb-12 text-center animate-fade-in">
-                📌 เกี่ยวกับระบบ
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 md:mb-12 text-center animate-fade-in">
+                🌟 แพลตฟอร์มที่ครบครันที่สุด
             </h2>
 
-            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-3xl p-8 mb-8 shadow-2xl">
-                <p class="text-2xl text-white/90 leading-relaxed text-center">
-                    <strong class="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300">TP-Affiliate Pro</strong>
-                    คือระบบจัดการแอฟฟิลิเอตมาร์เก็ตติ้งที่สมบูรณ์แบบ พร้อมใช้งานทันทีหลังติดตั้ง
-                    เหมาะสำหรับธุรกิจที่ต้องการระบบแอฟฟิลิเอตที่มีประสิทธิภาพ
-                    มีระบบการจัดการที่ครบครัน และรองรับการปรับแต่งได้อย่างยืดหยุ่น
+            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-3xl p-6 md:p-8 mb-8 shadow-2xl">
+                <p class="text-xl md:text-2xl text-white/90 leading-relaxed text-center">
+                    <strong class="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300">{{ $appName }}</strong>
+                    คือแพลตฟอร์ม All-in-One ที่รวมทุกระบบไว้ในที่เดียว
+                    <br class="hidden md:block">
+                    ตอบโจทย์ทุกความต้องการของธุรกิจยุคใหม่ ไม่ว่าจะเป็น Affiliate, E-Commerce, AI หรือ Blockchain
                 </p>
             </div>
 
-            <div class="grid grid-cols-2 gap-8">
-                <!-- Left Card -->
-                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-3xl p-8 transform hover:scale-105 transition-all duration-300 shadow-2xl">
-                    <div class="text-6xl mb-6 text-center">🎯</div>
-                    <h3 class="text-3xl font-bold text-white mb-6 text-center">เหมาะสำหรับ</h3>
-                    <ul class="space-y-4 text-white text-lg">
-                        <li class="flex items-start gap-3">
-                            <span class="text-emerald-400 text-xl">✅</span>
-                            <span>ธุรกิจออนไลน์ที่ต้องการระบบแอฟฟิลิเอต</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-emerald-400 text-xl">✅</span>
-                            <span>บริษัทที่ต้องการสร้างเครือข่ายการตลาด</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-emerald-400 text-xl">✅</span>
-                            <span>Startup ที่ต้องการเริ่มต้นอย่างรวดเร็ว</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-emerald-400 text-xl">✅</span>
-                            <span>นักพัฒนาที่ต้องการ Template ระบบแอฟฟิลิเอต</span>
-                        </li>
-                    </ul>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                <!-- Card 1 -->
+                <div class="bg-gradient-to-br from-blue-500/20 to-blue-600/10 backdrop-blur-lg border border-blue-300/30 rounded-2xl p-4 md:p-6 text-center transform hover:scale-105 transition-all">
+                    <div class="text-4xl md:text-5xl mb-3">🎯</div>
+                    <h3 class="text-lg md:text-xl font-bold text-white">Affiliate & MLM</h3>
+                    <p class="text-white/70 text-sm mt-2">ระบบเครือข่ายไม่จำกัดชั้น</p>
                 </div>
 
-                <!-- Right Card -->
-                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-3xl p-8 transform hover:scale-105 transition-all duration-300 shadow-2xl">
-                    <div class="text-6xl mb-6 text-center">💡</div>
-                    <h3 class="text-3xl font-bold text-white mb-6 text-center">จุดเด่น</h3>
-                    <ul class="space-y-4 text-white text-lg">
-                        <li class="flex items-start gap-3">
-                            <span class="text-yellow-400 text-xl">🔥</span>
-                            <span><strong>ติดตั้งง่าย</strong> - ใช้เวลาไม่เกิน 5 นาที</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-yellow-400 text-xl">🎨</span>
-                            <span><strong>UI/UX สวยงาม</strong> - ออกแบบโดยมืออาชีพ</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-yellow-400 text-xl">🔐</span>
-                            <span><strong>ปลอดภัยสูง</strong> - มาตรฐาน Enterprise Level</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-yellow-400 text-xl">🌍</span>
-                            <span><strong>รองรับหลายภาษา</strong> - ไทย, อังกฤษ (เพิ่มได้ไม่จำกัด)</span>
-                        </li>
-                    </ul>
+                <!-- Card 2 -->
+                <div class="bg-gradient-to-br from-purple-500/20 to-purple-600/10 backdrop-blur-lg border border-purple-300/30 rounded-2xl p-4 md:p-6 text-center transform hover:scale-105 transition-all">
+                    <div class="text-4xl md:text-5xl mb-3">🛒</div>
+                    <h3 class="text-lg md:text-xl font-bold text-white">E-Commerce</h3>
+                    <p class="text-white/70 text-sm mt-2">ร้านค้าออนไลน์ครบวงจร</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="bg-gradient-to-br from-pink-500/20 to-pink-600/10 backdrop-blur-lg border border-pink-300/30 rounded-2xl p-4 md:p-6 text-center transform hover:scale-105 transition-all">
+                    <div class="text-4xl md:text-5xl mb-3">🤖</div>
+                    <h3 class="text-lg md:text-xl font-bold text-white">AI & Automation</h3>
+                    <p class="text-white/70 text-sm mt-2">ระบบอัจฉริยะอัตโนมัติ</p>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="bg-gradient-to-br from-amber-500/20 to-amber-600/10 backdrop-blur-lg border border-amber-300/30 rounded-2xl p-4 md:p-6 text-center transform hover:scale-105 transition-all">
+                    <div class="text-4xl md:text-5xl mb-3">⛓️</div>
+                    <h3 class="text-lg md:text-xl font-bold text-white">Blockchain</h3>
+                    <p class="text-white/70 text-sm mt-2">TPIX Token & Web3</p>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center">
+                <div class="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-md border border-emerald-300/30 rounded-full px-6 py-3 text-white font-semibold">
+                    <span class="text-2xl">✨</span>
+                    <span>และอีก 20+ ระบบ พร้อมใช้งานทันที</span>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Slide 3: Key Features - Affiliate System -->
+<!-- Slide 3: ระบบ Affiliate & MLM -->
 <div class="slide">
-    <div class="h-full flex items-center justify-center bg-gradient-to-br from-purple-900/90 via-pink-900/80 to-red-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-purple-900/90 via-pink-900/80 to-red-900/90 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
         <div class="absolute inset-0 opacity-20">
             <div class="absolute top-10 left-10 w-96 h-96 bg-purple-400 rounded-full mix-blend-screen filter blur-3xl animate-pulse"></div>
             <div class="absolute bottom-10 right-10 w-96 h-96 bg-pink-400 rounded-full mix-blend-screen filter blur-3xl animate-pulse animation-delay-2000"></div>
         </div>
 
         <div class="max-w-6xl w-full relative z-10">
-            <h2 class="text-5xl md:text-6xl font-black text-white mb-12 text-center">
-                🎯 ระบบแอฟฟิลิเอต
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 md:mb-12 text-center">
+                🎯 ระบบ Affiliate & MLM
             </h2>
 
-            <div class="grid grid-cols-2 gap-6">
-                <!-- Card 1 -->
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- Affiliate Features -->
                 <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
                     <div class="flex items-start gap-4">
                         <div class="text-5xl">👥</div>
                         <div class="flex-1 text-white">
-                            <h3 class="text-2xl font-bold mb-3">การจัดการสมาชิก</h3>
+                            <h3 class="text-2xl font-bold mb-3">ระบบเครือข่าย Affiliate</h3>
                             <ul class="space-y-2 text-white/90">
-                                <li>• ระบบสมัครสมาชิกอัตโนมัติ</li>
-                                <li>• การยืนยันตัวตนผ่านอีเมล</li>
-                                <li>• โปรไฟล์ที่ปรับแต่งได้</li>
-                                <li>• ระบบอัปโหลดรูปโปรไฟล์</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> ไม่จำกัดจำนวนชั้น (Unlimited Levels)</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> คำนวณคอมมิชชั่นอัตโนมัติ</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> แผนการตลาด Unilevel & Binary</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> ระบบ Rank และ Bonus</li>
                             </ul>
                         </div>
                     </div>
                 </div>
 
-                <!-- Card 2 -->
+                <!-- Commission System -->
                 <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
                     <div class="flex items-start gap-4">
                         <div class="text-5xl">💰</div>
                         <div class="flex-1 text-white">
-                            <h3 class="text-2xl font-bold mb-3">ระบบคอมมิชชั่น</h3>
+                            <h3 class="text-2xl font-bold mb-3">ระบบคอมมิชชั่นอัจฉริยะ</h3>
                             <ul class="space-y-2 text-white/90">
-                                <li>• คำนวณคอมมิชชั่นอัตโนมัติ</li>
-                                <li>• รองรับหลายระดับ (Multi-tier)</li>
-                                <li>• ตั้งค่าเปอร์เซ็นต์คอมได้</li>
-                                <li>• ประวัติคอมมิชชั่นแบบละเอียด</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Direct Commission</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Override Commission</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Pool Bonus & Matching Bonus</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> รายงานรายได้แบบ Real-time</li>
                             </ul>
                         </div>
                     </div>
                 </div>
 
-                <!-- Card 3 -->
+                <!-- Referral Links -->
                 <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
                     <div class="flex items-start gap-4">
                         <div class="text-5xl">🔗</div>
                         <div class="flex-1 text-white">
-                            <h3 class="text-2xl font-bold mb-3">ระบบลิงก์แอฟฟิลิเอต</h3>
+                            <h3 class="text-2xl font-bold mb-3">ระบบลิงก์แนะนำ</h3>
                             <ul class="space-y-2 text-white/90">
-                                <li>• สร้างลิงก์อัตโนมัติ</li>
-                                <li>• QR Code Generator</li>
-                                <li>• ติดตามการคลิก</li>
-                                <li>• สถิติการแปลง (Conversion)</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> สร้างลิงก์อัตโนมัติ</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> QR Code Generator</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> ติดตามการคลิกและ Conversion</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Short URL & Custom Link</li>
                             </ul>
                         </div>
                     </div>
                 </div>
 
-                <!-- Card 4 -->
-                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
-                    <div class="flex items-start gap-4">
-                        <div class="text-5xl">💳</div>
-                        <div class="flex-1 text-white">
-                            <h3 class="text-2xl font-bold mb-3">ระบบกระเป๋าเงิน</h3>
-                            <ul class="space-y-2 text-white/90">
-                                <li>• กระเป๋าเงินสำหรับแต่ละผู้ใช้</li>
-                                <li>• ถอนเงินผ่านหลายช่องทาง</li>
-                                <li>• ประวัติธุรกรรมแบบละเอียด</li>
-                                <li>• การอนุมัติอัตโนมัติ/Manual</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-8 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-md border border-yellow-300/30 rounded-2xl p-6 text-center shadow-xl">
-                <p class="text-2xl text-white font-bold">
-                    💡 ระบบแอฟฟิลิเอตที่สมบูรณ์แบบที่สุด พร้อมใช้งานทันที
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Slide 4: Admin Dashboard Features -->
-<div class="slide">
-    <div class="h-full flex items-center justify-center bg-gradient-to-br from-blue-900/90 via-indigo-900/80 to-purple-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
-        <div class="max-w-6xl w-full relative z-10">
-            <h2 class="text-5xl md:text-6xl font-black text-white mb-12 text-center">
-                🎨 ระบบ Admin Dashboard
-            </h2>
-
-            <div class="grid grid-cols-2 gap-6">
-                <!-- Dashboard -->
+                <!-- Team Management -->
                 <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
                     <div class="flex items-start gap-4">
                         <div class="text-5xl">📊</div>
                         <div class="flex-1 text-white">
-                            <h3 class="text-2xl font-bold mb-3">Dashboard</h3>
+                            <h3 class="text-2xl font-bold mb-3">ระบบจัดการทีม</h3>
                             <ul class="space-y-2 text-white/90">
-                                <li>• สถิติแบบ Real-time</li>
-                                <li>• กราฟวิเคราะห์ข้อมูล</li>
-                                <li>• แจ้งเตือนสำคัญ</li>
-                                <li>• Dark/Light Mode</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- User Management -->
-                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
-                    <div class="flex items-start gap-4">
-                        <div class="text-5xl">👤</div>
-                        <div class="flex-1 text-white">
-                            <h3 class="text-2xl font-bold mb-3">จัดการผู้ใช้</h3>
-                            <ul class="space-y-2 text-white/90">
-                                <li>• CRUD ผู้ใช้ทั้งหมด</li>
-                                <li>• ระบบสิทธิ์ (RBAC)</li>
-                                <li>• ดูประวัติการใช้งาน</li>
-                                <li>• ระงับ/ปลดบล็อกบัญชี</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Settings -->
-                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
-                    <div class="flex items-start gap-4">
-                        <div class="text-5xl">⚙️</div>
-                        <div class="flex-1 text-white">
-                            <h3 class="text-2xl font-bold mb-3">การตั้งค่าระบบ</h3>
-                            <ul class="space-y-2 text-white/90">
-                                <li>• ตั้งค่าทั่วไป</li>
-                                <li>• การตั้งค่าอีเมล</li>
-                                <li>• ธีมและสี</li>
-                                <li>• Payment Gateway</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Content Management -->
-                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
-                    <div class="flex items-start gap-4">
-                        <div class="text-5xl">🌍</div>
-                        <div class="flex-1 text-white">
-                            <h3 class="text-2xl font-bold mb-3">จัดการหน้าเว็บ</h3>
-                            <ul class="space-y-2 text-white/90">
-                                <li>• Header Builder</li>
-                                <li>• Menu Manager</li>
-                                <li>• Content Editor</li>
-                                <li>• SEO Management</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Genealogy Tree แบบ Interactive</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> รายงานยอดทีมแบบละเอียด</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> ระบบแจ้งเตือนสมาชิกใหม่</li>
+                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Leader Dashboard</li>
                             </ul>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="mt-8 bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md border border-blue-300/30 rounded-2xl p-6 text-center shadow-xl">
-                <p class="text-2xl text-white font-bold">
-                    ✨ Dashboard ที่ครบครัน ใช้งานง่าย และสวยงาม
+            <div class="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-md border border-yellow-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-xl md:text-2xl text-white font-bold">
+                    💡 ระบบ MLM ที่ยืดหยุ่นที่สุด ปรับแต่งได้ตามต้องการ
                 </p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Slide 5: Security Features -->
+<!-- Slide 4: ระบบ E-Commerce & Marketplace -->
 <div class="slide">
-    <div class="h-full flex items-center justify-center bg-gradient-to-br from-emerald-900/90 via-teal-900/80 to-cyan-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-blue-900/90 via-indigo-900/80 to-purple-900/90 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
         <div class="max-w-6xl w-full relative z-10">
-            <h2 class="text-5xl md:text-6xl font-black text-white mb-12 text-center">
-                🔐 ความปลอดภัย
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 md:mb-12 text-center">
+                🛒 ระบบ E-Commerce & Marketplace
             </h2>
 
-            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-3xl p-8 mb-8 shadow-2xl">
-                <p class="text-2xl text-white/90 leading-relaxed text-center mb-8">
-                    ความปลอดภัยระดับ <strong class="text-emerald-300">Enterprise Level</strong>
-                    ด้วยมาตรฐานสากลและเทคโนโลยีล่าสุด
-                </p>
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- E-Commerce -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
+                    <div class="flex items-start gap-4">
+                        <div class="text-5xl">🏪</div>
+                        <div class="flex-1 text-white">
+                            <h3 class="text-2xl font-bold mb-3">ร้านค้าออนไลน์</h3>
+                            <ul class="space-y-2 text-white/90">
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> จัดการสินค้าไม่จำกัด</li>
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> หมวดหมู่และแท็กสินค้า</li>
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> ระบบ Variants & SKU</li>
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Stock Management</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Marketplace -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
+                    <div class="flex items-start gap-4">
+                        <div class="text-5xl">🏬</div>
+                        <div class="flex-1 text-white">
+                            <h3 class="text-2xl font-bold mb-3">Marketplace Multi-Vendor</h3>
+                            <ul class="space-y-2 text-white/90">
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> หลายร้านค้าในระบบเดียว</li>
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Seller Dashboard แยกต่างหาก</li>
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> ระบบค่าคอมมิชชั่นร้านค้า</li>
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> อนุมัติร้านค้าอัตโนมัติ/Manual</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Management -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
+                    <div class="flex items-start gap-4">
+                        <div class="text-5xl">📦</div>
+                        <div class="flex-1 text-white">
+                            <h3 class="text-2xl font-bold mb-3">จัดการคำสั่งซื้อ</h3>
+                            <ul class="space-y-2 text-white/90">
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> ติดตามสถานะ Order แบบ Real-time</li>
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> ระบบจัดส่งหลากหลายช่องทาง</li>
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Tracking Number อัตโนมัติ</li>
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Invoice & Receipt</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
+                    <div class="flex items-start gap-4">
+                        <div class="text-5xl">💳</div>
+                        <div class="flex-1 text-white">
+                            <h3 class="text-2xl font-bold mb-3">ช่องทางชำระเงิน</h3>
+                            <ul class="space-y-2 text-white/90">
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> บัตรเครดิต/เดบิต</li>
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> PromptPay & QR Payment</li>
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> True Money Wallet</li>
+                                <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Cryptocurrency & TPIX</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-6">
-                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-2xl p-6 hover:scale-105 transition-all shadow-xl">
-                    <ul class="space-y-4 text-white text-lg">
-                        <li class="flex items-start gap-3">
-                            <span class="text-emerald-400 text-2xl">✅</span>
-                            <div>
-                                <strong>CSRF Protection</strong>
-                                <p class="text-white/70 text-sm">ป้องกันการโจมตีแบบ Cross-Site Request Forgery</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-emerald-400 text-2xl">✅</span>
-                            <div>
-                                <strong>XSS Prevention</strong>
-                                <p class="text-white/70 text-sm">ป้องกัน Cross-Site Scripting</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-emerald-400 text-2xl">✅</span>
-                            <div>
-                                <strong>SQL Injection Protection</strong>
-                                <p class="text-white/70 text-sm">ป้องกัน SQL Injection Attack</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-emerald-400 text-2xl">✅</span>
-                            <div>
-                                <strong>Password Hashing (bcrypt)</strong>
-                                <p class="text-white/70 text-sm">เข้ารหัสรหัสผ่านอย่างปลอดภัย</p>
-                            </div>
-                        </li>
+            <div class="bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md border border-blue-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-xl md:text-2xl text-white font-bold">
+                    🚀 ระบบ E-Commerce ที่ครบครัน พร้อมขายได้ทันที
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 5: ระบบ AI & Automation -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-cyan-900/90 via-blue-900/80 to-indigo-900/90 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-20">
+            <div class="absolute top-20 right-20 w-80 h-80 bg-cyan-400 rounded-full mix-blend-screen filter blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-20 left-20 w-80 h-80 bg-blue-400 rounded-full mix-blend-screen filter blur-3xl animate-pulse animation-delay-2000"></div>
+        </div>
+
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 md:mb-12 text-center">
+                🤖 ระบบ AI & Automation
+            </h2>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- AI Chatbot -->
+                <div class="bg-gradient-to-br from-cyan-500/20 to-blue-500/10 backdrop-blur-lg border border-cyan-300/30 rounded-2xl p-6 hover:scale-105 transition-all shadow-xl">
+                    <div class="text-5xl mb-4 text-center">💬</div>
+                    <h3 class="text-2xl font-bold text-white mb-4 text-center">AI Chatbot</h3>
+                    <ul class="space-y-2 text-white/90">
+                        <li class="flex items-center gap-2"><span class="text-cyan-400">✓</span> ตอบคำถามอัตโนมัติ 24/7</li>
+                        <li class="flex items-center gap-2"><span class="text-cyan-400">✓</span> รองรับหลายภาษา</li>
+                        <li class="flex items-center gap-2"><span class="text-cyan-400">✓</span> เชื่อมต่อกับ ChatGPT/Claude</li>
+                        <li class="flex items-center gap-2"><span class="text-cyan-400">✓</span> ปรับแต่ง Personality ได้</li>
                     </ul>
                 </div>
 
-                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-2xl p-6 hover:scale-105 transition-all shadow-xl">
-                    <ul class="space-y-4 text-white text-lg">
+                <!-- LINE Bot -->
+                <div class="bg-gradient-to-br from-green-500/20 to-emerald-500/10 backdrop-blur-lg border border-green-300/30 rounded-2xl p-6 hover:scale-105 transition-all shadow-xl">
+                    <div class="text-5xl mb-4 text-center">💚</div>
+                    <h3 class="text-2xl font-bold text-white mb-4 text-center">LINE Bot อัจฉริยะ</h3>
+                    <ul class="space-y-2 text-white/90">
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> LINE Official Account Integration</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Rich Menu & Flex Message</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> LINE LIFF Mini App</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Broadcast & Narrowcast</li>
+                    </ul>
+                </div>
+
+                <!-- Video Automation -->
+                <div class="bg-gradient-to-br from-purple-500/20 to-pink-500/10 backdrop-blur-lg border border-purple-300/30 rounded-2xl p-6 hover:scale-105 transition-all shadow-xl">
+                    <div class="text-5xl mb-4 text-center">🎬</div>
+                    <h3 class="text-2xl font-bold text-white mb-4 text-center">Video Automation</h3>
+                    <ul class="space-y-2 text-white/90">
+                        <li class="flex items-center gap-2"><span class="text-purple-400">✓</span> สร้างวิดีโอ AI อัตโนมัติ</li>
+                        <li class="flex items-center gap-2"><span class="text-purple-400">✓</span> Text-to-Video</li>
+                        <li class="flex items-center gap-2"><span class="text-purple-400">✓</span> Video Missions & Rewards</li>
+                        <li class="flex items-center gap-2"><span class="text-purple-400">✓</span> Auto-post Social Media</li>
+                    </ul>
+                </div>
+
+                <!-- Bot Trading -->
+                <div class="bg-gradient-to-br from-amber-500/20 to-orange-500/10 backdrop-blur-lg border border-amber-300/30 rounded-2xl p-6 hover:scale-105 transition-all shadow-xl">
+                    <div class="text-5xl mb-4 text-center">📈</div>
+                    <h3 class="text-2xl font-bold text-white mb-4 text-center">Trading Bot</h3>
+                    <ul class="space-y-2 text-white/90">
+                        <li class="flex items-center gap-2"><span class="text-amber-400">✓</span> Copy Trading อัตโนมัติ</li>
+                        <li class="flex items-center gap-2"><span class="text-amber-400">✓</span> Signal Trading</li>
+                        <li class="flex items-center gap-2"><span class="text-amber-400">✓</span> Portfolio Management</li>
+                        <li class="flex items-center gap-2"><span class="text-amber-400">✓</span> Risk Management Tools</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 backdrop-blur-md border border-cyan-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-xl md:text-2xl text-white font-bold">
+                    🧠 AI ที่ทำงานแทนคุณ ประหยัดเวลา เพิ่มประสิทธิภาพ
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 6: ระบบ Blockchain & TPIX Token -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-amber-900/90 via-orange-900/80 to-red-900/90 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-20">
+            <div class="absolute top-1/4 left-1/4 w-80 h-80 bg-amber-400 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-orange-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000"></div>
+        </div>
+
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 md:mb-12 text-center">
+                ⛓️ Blockchain & TPIX Token
+            </h2>
+
+            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-3xl p-6 md:p-8 mb-8 shadow-2xl">
+                <div class="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12">
+                    <div class="text-center">
+                        <div class="text-6xl md:text-8xl mb-2">🪙</div>
+                        <h3 class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-300">TPIX</h3>
+                        <p class="text-white/70">Native Token</p>
+                    </div>
+                    <div class="text-white text-center md:text-left">
+                        <h3 class="text-2xl md:text-3xl font-bold mb-4">TPIX Token Ecosystem</h3>
+                        <p class="text-lg md:text-xl text-white/80">
+                            Token ของแพลตฟอร์มที่ใช้งานได้จริง<br>
+                            ทั้งการชำระเงิน, Staking และ Rewards
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <!-- Staking -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 text-center hover:bg-white/15 transition-all shadow-xl">
+                    <div class="text-5xl mb-4">🏦</div>
+                    <h3 class="text-xl font-bold text-white mb-3">Staking & Farming</h3>
+                    <ul class="space-y-2 text-white/80 text-sm">
+                        <li>• Flexible & Locked Staking</li>
+                        <li>• APY สูงสุด 30%+</li>
+                        <li>• Auto-compound</li>
+                        <li>• Multiple Pools</li>
+                    </ul>
+                </div>
+
+                <!-- Payment -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 text-center hover:bg-white/15 transition-all shadow-xl">
+                    <div class="text-5xl mb-4">💸</div>
+                    <h3 class="text-xl font-bold text-white mb-3">Crypto Payment</h3>
+                    <ul class="space-y-2 text-white/80 text-sm">
+                        <li>• รับชำระด้วย Crypto</li>
+                        <li>• TPIX, USDT, BNB</li>
+                        <li>• Auto Convert</li>
+                        <li>• Low Gas Fee</li>
+                    </ul>
+                </div>
+
+                <!-- NFT -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 text-center hover:bg-white/15 transition-all shadow-xl">
+                    <div class="text-5xl mb-4">🎨</div>
+                    <h3 class="text-xl font-bold text-white mb-3">NFT & Collectibles</h3>
+                    <ul class="space-y-2 text-white/80 text-sm">
+                        <li>• NFT Marketplace</li>
+                        <li>• Membership NFT</li>
+                        <li>• Exclusive Benefits</li>
+                        <li>• Royalty System</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-md border border-amber-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-xl md:text-2xl text-white font-bold">
+                    🔥 เข้าสู่โลก Web3 กับ TPIX Token
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 7: ระบบ Multi-Currency Wallet -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-emerald-900/90 via-teal-900/80 to-cyan-900/90 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 md:mb-12 text-center">
+                💰 ระบบ Multi-Currency Wallet
+            </h2>
+
+            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-3xl p-6 md:p-8 mb-8 shadow-2xl">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div class="bg-white/10 rounded-2xl p-4">
+                        <div class="text-4xl mb-2">🇹🇭</div>
+                        <h4 class="text-xl font-bold text-white">THB</h4>
+                        <p class="text-white/70 text-sm">บาทไทย</p>
+                    </div>
+                    <div class="bg-white/10 rounded-2xl p-4">
+                        <div class="text-4xl mb-2">🇺🇸</div>
+                        <h4 class="text-xl font-bold text-white">USD</h4>
+                        <p class="text-white/70 text-sm">ดอลลาร์</p>
+                    </div>
+                    <div class="bg-white/10 rounded-2xl p-4">
+                        <div class="text-4xl mb-2">🪙</div>
+                        <h4 class="text-xl font-bold text-white">TPIX</h4>
+                        <p class="text-white/70 text-sm">Token</p>
+                    </div>
+                    <div class="bg-white/10 rounded-2xl p-4">
+                        <div class="text-4xl mb-2">💎</div>
+                        <h4 class="text-xl font-bold text-white">Points</h4>
+                        <p class="text-white/70 text-sm">คะแนนสะสม</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Deposit -->
+                <div class="bg-gradient-to-br from-emerald-500/20 to-green-500/10 backdrop-blur-lg border border-emerald-300/30 rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+                        <span class="text-4xl">📥</span>
+                        <span>ช่องทางฝากเงิน</span>
+                    </h3>
+                    <ul class="space-y-3 text-white/90">
+                        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> โอนธนาคาร (Auto Confirm)</li>
+                        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> PromptPay QR</li>
+                        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> บัตรเครดิต/เดบิต</li>
+                        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> True Money Wallet</li>
+                        <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Cryptocurrency</li>
+                    </ul>
+                </div>
+
+                <!-- Withdraw -->
+                <div class="bg-gradient-to-br from-blue-500/20 to-cyan-500/10 backdrop-blur-lg border border-blue-300/30 rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+                        <span class="text-4xl">📤</span>
+                        <span>ช่องทางถอนเงิน</span>
+                    </h3>
+                    <ul class="space-y-3 text-white/90">
+                        <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> โอนเข้าบัญชีธนาคาร</li>
+                        <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> PromptPay</li>
+                        <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Crypto Wallet</li>
+                        <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> True Money</li>
+                        <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> อนุมัติอัตโนมัติ/Manual</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-8 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-md border border-emerald-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-xl md:text-2xl text-white font-bold">
+                    🔐 ปลอดภัย โปร่งใส ตรวจสอบได้ทุกธุรกรรม
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 8: ระบบเสริมอื่นๆ -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-gray-900/90 via-slate-900/80 to-zinc-900/90 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 md:mb-12 text-center">
+                🎁 ระบบเสริมอีกมากมาย
+            </h2>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                <!-- Hotel Booking -->
+                <div class="bg-gradient-to-br from-red-500/20 to-pink-500/10 backdrop-blur-lg border border-red-300/30 rounded-2xl p-4 md:p-6 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-3">🏨</div>
+                    <h4 class="text-lg font-bold text-white">Hotel Booking</h4>
+                    <p class="text-white/60 text-xs mt-1">ระบบจองโรงแรม</p>
+                </div>
+
+                <!-- POS System -->
+                <div class="bg-gradient-to-br from-indigo-500/20 to-purple-500/10 backdrop-blur-lg border border-indigo-300/30 rounded-2xl p-4 md:p-6 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-3">🖥️</div>
+                    <h4 class="text-lg font-bold text-white">POS System</h4>
+                    <p class="text-white/60 text-xs mt-1">ระบบขายหน้าร้าน</p>
+                </div>
+
+                <!-- Academy LMS -->
+                <div class="bg-gradient-to-br from-teal-500/20 to-cyan-500/10 backdrop-blur-lg border border-teal-300/30 rounded-2xl p-4 md:p-6 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-3">🎓</div>
+                    <h4 class="text-lg font-bold text-white">Academy LMS</h4>
+                    <p class="text-white/60 text-xs mt-1">ระบบคอร์สออนไลน์</p>
+                </div>
+
+                <!-- HRM System -->
+                <div class="bg-gradient-to-br from-slate-500/20 to-gray-500/10 backdrop-blur-lg border border-slate-300/30 rounded-2xl p-4 md:p-6 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-3">👔</div>
+                    <h4 class="text-lg font-bold text-white">HRM System</h4>
+                    <p class="text-white/60 text-xs mt-1">จัดการพนักงาน</p>
+                </div>
+
+                <!-- Accounting -->
+                <div class="bg-gradient-to-br from-emerald-500/20 to-green-500/10 backdrop-blur-lg border border-emerald-300/30 rounded-2xl p-4 md:p-6 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-3">📊</div>
+                    <h4 class="text-lg font-bold text-white">Accounting</h4>
+                    <p class="text-white/60 text-xs mt-1">ระบบบัญชี</p>
+                </div>
+
+                <!-- Food Passport -->
+                <div class="bg-gradient-to-br from-lime-500/20 to-green-500/10 backdrop-blur-lg border border-lime-300/30 rounded-2xl p-4 md:p-6 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-3">🌱</div>
+                    <h4 class="text-lg font-bold text-white">Food Passport</h4>
+                    <p class="text-white/60 text-xs mt-1">ย้อนรอยอาหาร</p>
+                </div>
+
+                <!-- Games -->
+                <div class="bg-gradient-to-br from-fuchsia-500/20 to-pink-500/10 backdrop-blur-lg border border-fuchsia-300/30 rounded-2xl p-4 md:p-6 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-3">🎮</div>
+                    <h4 class="text-lg font-bold text-white">Mini Games</h4>
+                    <p class="text-white/60 text-xs mt-1">เกมสะสมแต้ม</p>
+                </div>
+
+                <!-- Tarot -->
+                <div class="bg-gradient-to-br from-violet-500/20 to-purple-500/10 backdrop-blur-lg border border-violet-300/30 rounded-2xl p-4 md:p-6 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-3">🔮</div>
+                    <h4 class="text-lg font-bold text-white">AI Tarot</h4>
+                    <p class="text-white/60 text-xs mt-1">ดูดวง AI</p>
+                </div>
+
+                <!-- QR/Barcode -->
+                <div class="bg-gradient-to-br from-gray-500/20 to-slate-500/10 backdrop-blur-lg border border-gray-300/30 rounded-2xl p-4 md:p-6 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-3">📱</div>
+                    <h4 class="text-lg font-bold text-white">QR & Barcode</h4>
+                    <p class="text-white/60 text-xs mt-1">สแกนและสร้าง</p>
+                </div>
+
+                <!-- Software Sales -->
+                <div class="bg-gradient-to-br from-cyan-500/20 to-blue-500/10 backdrop-blur-lg border border-cyan-300/30 rounded-2xl p-4 md:p-6 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-3">💻</div>
+                    <h4 class="text-lg font-bold text-white">Software Sales</h4>
+                    <p class="text-white/60 text-xs mt-1">ขายซอฟต์แวร์</p>
+                </div>
+
+                <!-- Forum -->
+                <div class="bg-gradient-to-br from-orange-500/20 to-amber-500/10 backdrop-blur-lg border border-orange-300/30 rounded-2xl p-4 md:p-6 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-3">💬</div>
+                    <h4 class="text-lg font-bold text-white">Forum</h4>
+                    <p class="text-white/60 text-xs mt-1">ชุมชนออนไลน์</p>
+                </div>
+
+                <!-- NFC Cards -->
+                <div class="bg-gradient-to-br from-blue-500/20 to-indigo-500/10 backdrop-blur-lg border border-blue-300/30 rounded-2xl p-4 md:p-6 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-3">💳</div>
+                    <h4 class="text-lg font-bold text-white">NFC Cards</h4>
+                    <p class="text-white/60 text-xs mt-1">บัตรสมาชิก</p>
+                </div>
+            </div>
+
+            <div class="mt-8 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-md border border-purple-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-xl md:text-2xl text-white font-bold">
+                    ✨ ทุกระบบทำงานร่วมกันอย่างลงตัว ไม่ต้องซื้อแยก
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 9: ความปลอดภัย & ความน่าเชื่อถือ -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-emerald-900/90 via-teal-900/80 to-cyan-900/90 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 md:mb-12 text-center">
+                🛡️ ความปลอดภัยระดับ Enterprise
+            </h2>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- Security Features -->
+                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                        <span class="text-3xl">🔐</span>
+                        <span>มาตรการรักษาความปลอดภัย</span>
+                    </h3>
+                    <ul class="space-y-3 text-white text-lg">
                         <li class="flex items-start gap-3">
-                            <span class="text-emerald-400 text-2xl">✅</span>
-                            <div>
-                                <strong>Rate Limiting</strong>
-                                <p class="text-white/70 text-sm">จำกัดจำนวนคำขอเพื่อป้องกัน DDoS</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-emerald-400 text-2xl">✅</span>
+                            <span class="text-emerald-400 text-xl">✅</span>
                             <div>
                                 <strong>Two-Factor Authentication (2FA)</strong>
                                 <p class="text-white/70 text-sm">ยืนยันตัวตนสองขั้นตอน</p>
                             </div>
                         </li>
                         <li class="flex items-start gap-3">
-                            <span class="text-emerald-400 text-2xl">✅</span>
+                            <span class="text-emerald-400 text-xl">✅</span>
+                            <div>
+                                <strong>SSL/TLS Encryption</strong>
+                                <p class="text-white/70 text-sm">เข้ารหัสข้อมูลทุกการเชื่อมต่อ</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-emerald-400 text-xl">✅</span>
+                            <div>
+                                <strong>CSRF & XSS Protection</strong>
+                                <p class="text-white/70 text-sm">ป้องกันการโจมตีทั่วไป</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-emerald-400 text-xl">✅</span>
+                            <div>
+                                <strong>IP Whitelist & Rate Limiting</strong>
+                                <p class="text-white/70 text-sm">ควบคุมการเข้าถึง</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Trust Indicators -->
+                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                        <span class="text-3xl">⭐</span>
+                        <span>ความน่าเชื่อถือ</span>
+                    </h3>
+                    <ul class="space-y-3 text-white text-lg">
+                        <li class="flex items-start gap-3">
+                            <span class="text-yellow-400 text-xl">🏆</span>
+                            <div>
+                                <strong>99.9% Uptime SLA</strong>
+                                <p class="text-white/70 text-sm">พร้อมใช้งานตลอดเวลา</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-yellow-400 text-xl">📊</span>
                             <div>
                                 <strong>Activity Logging</strong>
-                                <p class="text-white/70 text-sm">บันทึกการใช้งานทั้งหมด</p>
+                                <p class="text-white/70 text-sm">บันทึกทุกการกระทำ</p>
                             </div>
                         </li>
                         <li class="flex items-start gap-3">
-                            <span class="text-emerald-400 text-2xl">✅</span>
+                            <span class="text-yellow-400 text-xl">💾</span>
                             <div>
-                                <strong>IP Whitelist/Blacklist</strong>
-                                <p class="text-white/70 text-sm">จัดการ IP ที่อนุญาต/บล็อก</p>
+                                <strong>Auto Backup Daily</strong>
+                                <p class="text-white/70 text-sm">สำรองข้อมูลอัตโนมัติ</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-yellow-400 text-xl">🎧</span>
+                            <div>
+                                <strong>24/7 Technical Support</strong>
+                                <p class="text-white/70 text-sm">ทีมซัพพอร์ตพร้อมช่วยเหลือ</p>
                             </div>
                         </li>
                     </ul>
                 </div>
             </div>
 
-            <div class="mt-8 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-md border border-emerald-300/30 rounded-2xl p-6 text-center shadow-xl">
-                <p class="text-2xl text-white font-bold">
-                    🛡️ มั่นใจในความปลอดภัยระดับสูงสุด
+            <div class="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 backdrop-blur-md border border-emerald-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-xl md:text-2xl text-white font-bold">
+                    🔒 ข้อมูลของคุณปลอดภัยในมือเรา
                 </p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Slide 6: Multi-Language Support -->
+<!-- Slide 10: ทำไมต้องเลือก TP-Affiliate Pro -->
 <div class="slide">
-    <div class="h-full flex items-center justify-center bg-gradient-to-br from-orange-900/90 via-red-900/80 to-pink-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
-        <div class="max-w-6xl w-full relative z-10">
-            <h2 class="text-5xl md:text-6xl font-black text-white mb-12 text-center">
-                🌍 ระบบหลายภาษา
-            </h2>
-
-            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-3xl p-8 mb-8 shadow-2xl">
-                <div class="text-center">
-                    <div class="flex items-center justify-center gap-8 mb-8 flex-wrap">
-                        <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-4 flex items-center gap-3">
-                            <span class="text-4xl">🇹🇭</span>
-                            <div class="text-left">
-                                <p class="text-white font-bold text-xl">ภาษาไทย</p>
-                                <p class="text-white/70">Built-in</p>
-                            </div>
-                        </div>
-                        <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-4 flex items-center gap-3">
-                            <span class="text-4xl">🇬🇧</span>
-                            <div class="text-left">
-                                <p class="text-white font-bold text-xl">English</p>
-                                <p class="text-white/70">Built-in</p>
-                            </div>
-                        </div>
-                        <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-8 py-4 flex items-center gap-3">
-                            <span class="text-4xl">➕</span>
-                            <div class="text-left">
-                                <p class="text-white font-bold text-xl">เพิ่มได้ไม่จำกัด</p>
-                                <p class="text-white/70">Unlimited</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-6">
-                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-2xl p-8 shadow-xl">
-                    <h3 class="text-3xl font-bold text-white mb-6 flex items-center gap-3">
-                        <span class="text-4xl">✨</span>
-                        <span>คุณสมบัติ</span>
-                    </h3>
-                    <ul class="space-y-4 text-white text-lg">
-                        <li class="flex items-start gap-3">
-                            <span class="text-yellow-400">🔄</span>
-                            <span>สลับภาษาได้ทันที</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-yellow-400">📝</span>
-                            <span>แปลผ่าน Google Translate API</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-yellow-400">🎯</span>
-                            <span>ตรวจจับภาษาอัตโนมัติ</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-yellow-400">💾</span>
-                            <span>จัดการคำแปลผ่าน Admin</span>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-2xl p-8 shadow-xl">
-                    <h3 class="text-3xl font-bold text-white mb-6 flex items-center gap-3">
-                        <span class="text-4xl">🚀</span>
-                        <span>ประโยชน์</span>
-                    </h3>
-                    <ul class="space-y-4 text-white text-lg">
-                        <li class="flex items-start gap-3">
-                            <span class="text-green-400">📈</span>
-                            <span>เข้าถึงตลาดต่างประเทศ</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-green-400">👥</span>
-                            <span>รองรับผู้ใช้หลากหลาย</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-green-400">💼</span>
-                            <span>เพิ่มโอกาสทางธุรกิจ</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-green-400">🌟</span>
-                            <span>มาตรฐาน International</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="mt-8 bg-gradient-to-r from-orange-500/20 to-pink-500/20 backdrop-blur-md border border-orange-300/30 rounded-2xl p-6 text-center shadow-xl">
-                <p class="text-2xl text-white font-bold">
-                    🌐 ทำธุรกิจได้ทั่วโลก ไร้ขีดจำกัด
-                </p>
-            </div>
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-blue-900/90 via-purple-900/80 to-pink-900/90 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-20">
+            <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000"></div>
         </div>
-    </div>
-</div>
 
-<!-- Slide 7: Installation & Update System -->
-<div class="slide">
-    <div class="h-full flex items-center justify-center bg-gradient-to-br from-violet-900/90 via-purple-900/80 to-fuchsia-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
         <div class="max-w-6xl w-full relative z-10">
-            <h2 class="text-5xl md:text-6xl font-black text-white mb-12 text-center">
-                🔄 ระบบติดตั้งและอัปเดต
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 md:mb-12 text-center">
+                🚀 ทำไมต้องเลือกเรา?
             </h2>
 
-            <div class="grid grid-cols-2 gap-8 mb-8">
-                <!-- Installation -->
-                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-3xl p-8 shadow-2xl">
-                    <div class="text-center mb-6">
-                        <div class="text-6xl mb-4">📦</div>
-                        <h3 class="text-3xl font-bold text-white">การติดตั้ง</h3>
-                    </div>
-
-                    <ul class="space-y-4 text-white text-lg">
-                        <li class="flex items-start gap-3">
-                            <span class="text-green-400 text-2xl">✓</span>
-                            <div>
-                                <strong>Script อัตโนมัติ</strong>
-                                <p class="text-white/70 text-sm">ติดตั้งได้ใน 5 นาที</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-green-400 text-2xl">✓</span>
-                            <div>
-                                <strong>Setup Wizard</strong>
-                                <p class="text-white/70 text-sm">ตั้งค่าผ่าน UI สวยงาม</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-green-400 text-2xl">✓</span>
-                            <div>
-                                <strong>ตรวจสอบระบบ</strong>
-                                <p class="text-white/70 text-sm">เช็ค PHP, Database อัตโนมัติ</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-green-400 text-2xl">✓</span>
-                            <div>
-                                <strong>Demo Data</strong>
-                                <p class="text-white/70 text-sm">ติดตั้งข้อมูลตัวอย่างได้</p>
-                            </div>
-                        </li>
-                    </ul>
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <!-- All-in-One -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 text-center hover:bg-white/15 transition-all shadow-xl">
+                    <div class="text-5xl mb-4">🎯</div>
+                    <h3 class="text-2xl font-bold text-white mb-3">All-in-One</h3>
+                    <p class="text-white/80">
+                        รวมทุกระบบไว้ในที่เดียว<br>
+                        ไม่ต้องซื้อหลายระบบ<br>
+                        <strong class="text-emerald-300">ประหยัดกว่า 70%</strong>
+                    </p>
                 </div>
 
-                <!-- Update System -->
-                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-3xl p-8 shadow-2xl">
-                    <div class="text-center mb-6">
-                        <div class="text-6xl mb-4">🔄</div>
-                        <h3 class="text-3xl font-bold text-white">การอัปเดต</h3>
-                    </div>
-
-                    <ul class="space-y-4 text-white text-lg">
-                        <li class="flex items-start gap-3">
-                            <span class="text-blue-400 text-2xl">✓</span>
-                            <div>
-                                <strong>ตรวจสอบเวอร์ชั่นอัตโนมัติ</strong>
-                                <p class="text-white/70 text-sm">แจ้งเตือนเมื่อมีเวอร์ชั่นใหม่</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-blue-400 text-2xl">✓</span>
-                            <div>
-                                <strong>One-Click Update</strong>
-                                <p class="text-white/70 text-sm">อัปเดตด้วยคลิกเดียว</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-blue-400 text-2xl">✓</span>
-                            <div>
-                                <strong>Auto Backup</strong>
-                                <p class="text-white/70 text-sm">สำรองข้อมูลก่อนอัปเดต</p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <span class="text-blue-400 text-2xl">✓</span>
-                            <div>
-                                <strong>Rollback Support</strong>
-                                <p class="text-white/70 text-sm">ย้อนกลับได้ถ้ามีปัญหา</p>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-8 shadow-xl">
-                <h3 class="text-2xl font-bold text-white mb-4 text-center">📋 ความต้องการของระบบ</h3>
-                <div class="grid grid-cols-4 gap-4 text-center">
-                    <div class="bg-white/5 rounded-xl p-4">
-                        <p class="text-white/70 text-sm mb-1">PHP</p>
-                        <p class="text-white font-bold text-lg">8.1+</p>
-                    </div>
-                    <div class="bg-white/5 rounded-xl p-4">
-                        <p class="text-white/70 text-sm mb-1">MySQL</p>
-                        <p class="text-white font-bold text-lg">5.7+</p>
-                    </div>
-                    <div class="bg-white/5 rounded-xl p-4">
-                        <p class="text-white/70 text-sm mb-1">RAM</p>
-                        <p class="text-white font-bold text-lg">1 GB+</p>
-                    </div>
-                    <div class="bg-white/5 rounded-xl p-4">
-                        <p class="text-white/70 text-sm mb-1">Disk</p>
-                        <p class="text-white font-bold text-lg">500 MB+</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Slide 8: Technology Stack -->
-<div class="slide">
-    <div class="h-full flex items-center justify-center bg-gradient-to-br from-gray-900/90 via-slate-900/80 to-zinc-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
-        <div class="max-w-6xl w-full relative z-10">
-            <h2 class="text-5xl md:text-6xl font-black text-white mb-12 text-center">
-                🚀 เทคโนโลยีที่ใช้
-            </h2>
-
-            <div class="grid grid-cols-2 gap-8 mb-8">
-                <!-- Backend -->
-                <div class="bg-gradient-to-br from-red-500/10 to-orange-500/10 backdrop-blur-lg border border-red-300/30 rounded-3xl p-8 shadow-2xl">
-                    <h3 class="text-3xl font-bold text-white mb-6 flex items-center gap-3">
-                        <span class="text-4xl">⚙️</span>
-                        <span>Backend</span>
-                    </h3>
-                    <ul class="space-y-4 text-white text-lg">
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-3xl">🔴</span>
-                            <div>
-                                <strong>Laravel 11</strong>
-                                <p class="text-white/70 text-sm">PHP Framework ที่ทันสมัยที่สุด</p>
-                            </div>
-                        </li>
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-3xl">🐬</span>
-                            <div>
-                                <strong>MySQL / SQLite</strong>
-                                <p class="text-white/70 text-sm">Database ที่เสถียรและรวดเร็ว</p>
-                            </div>
-                        </li>
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-3xl">🔐</span>
-                            <div>
-                                <strong>Laravel Sanctum</strong>
-                                <p class="text-white/70 text-sm">API Authentication</p>
-                            </div>
-                        </li>
-                    </ul>
+                <!-- Ready to Use -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 text-center hover:bg-white/15 transition-all shadow-xl">
+                    <div class="text-5xl mb-4">⚡</div>
+                    <h3 class="text-2xl font-bold text-white mb-3">พร้อมใช้งาน</h3>
+                    <p class="text-white/80">
+                        ติดตั้งเสร็จ ใช้ได้เลย<br>
+                        ไม่ต้องพัฒนาเพิ่ม<br>
+                        <strong class="text-amber-300">ประหยัดเวลาหลายเดือน</strong>
+                    </p>
                 </div>
 
-                <!-- Frontend -->
-                <div class="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-lg border border-blue-300/30 rounded-3xl p-8 shadow-2xl">
-                    <h3 class="text-3xl font-bold text-white mb-6 flex items-center gap-3">
-                        <span class="text-4xl">🎨</span>
-                        <span>Frontend</span>
-                    </h3>
-                    <ul class="space-y-4 text-white text-lg">
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-3xl">💨</span>
-                            <div>
-                                <strong>Tailwind CSS</strong>
-                                <p class="text-white/70 text-sm">Utility-first CSS Framework</p>
-                            </div>
-                        </li>
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-3xl">⛰️</span>
-                            <div>
-                                <strong>Alpine.js</strong>
-                                <p class="text-white/70 text-sm">Lightweight JavaScript Framework</p>
-                            </div>
-                        </li>
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-3xl">📊</span>
-                            <div>
-                                <strong>Chart.js</strong>
-                                <p class="text-white/70 text-sm">Data Visualization</p>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- DevOps -->
-            <div class="bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-lg border border-purple-300/30 rounded-3xl p-8 shadow-2xl">
-                <h3 class="text-3xl font-bold text-white mb-6 text-center flex items-center justify-center gap-3">
-                    <span class="text-4xl">🐳</span>
-                    <span>DevOps & Deployment</span>
-                </h3>
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="bg-white/5 rounded-lg p-4 text-center">
-                        <span class="text-4xl">🐳</span>
-                        <p class="text-white font-bold mt-2">Docker</p>
-                        <p class="text-white/70 text-sm">Containerization</p>
-                    </div>
-                    <div class="bg-white/5 rounded-lg p-4 text-center">
-                        <span class="text-4xl">🔧</span>
-                        <p class="text-white font-bold mt-2">Nginx</p>
-                        <p class="text-white/70 text-sm">Web Server</p>
-                    </div>
-                    <div class="bg-white/5 rounded-lg p-4 text-center">
-                        <span class="text-4xl">⚡</span>
-                        <p class="text-white font-bold mt-2">Redis</p>
-                        <p class="text-white/70 text-sm">Caching</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Slide 9: License & Pricing -->
-<div class="slide">
-    <div class="h-full flex items-center justify-center bg-gradient-to-br from-yellow-900/90 via-amber-900/80 to-orange-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
-        <div class="max-w-6xl w-full relative z-10">
-            <h2 class="text-5xl md:text-6xl font-black text-white mb-12 text-center">
-                🔑 License และการเปิดใช้งาน
-            </h2>
-
-            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-3xl p-8 mb-8 shadow-2xl">
-                <h3 class="text-3xl font-bold text-white mb-6 text-center">📋 ประเภท License</h3>
-
-                <div class="grid grid-cols-3 gap-6">
-                    <!-- Single Site -->
-                    <div class="bg-gradient-to-br from-gray-500/20 to-gray-600/20 backdrop-blur-sm border border-gray-300/30 rounded-2xl p-6 hover:scale-105 transition-all">
-                        <div class="text-center">
-                            <div class="text-4xl mb-3">🥉</div>
-                            <h4 class="text-2xl font-bold text-white mb-4">Single Site</h4>
-                            <div class="text-4xl font-black text-yellow-300 mb-4">฿9,900</div>
-                            <ul class="space-y-2 text-white/90 text-sm text-left">
-                                <li>• 1 โดเมน</li>
-                                <li>• Support 6 เดือน</li>
-                                <li>• Updates 1 ปี</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- Multi Site -->
-                    <div class="bg-gradient-to-br from-blue-500/20 to-indigo-600/20 backdrop-blur-sm border border-blue-300/30 rounded-2xl p-6 hover:scale-105 transition-all shadow-xl">
-                        <div class="text-center">
-                            <div class="text-4xl mb-3">🥈</div>
-                            <h4 class="text-2xl font-bold text-white mb-4">Multi Site</h4>
-                            <div class="text-4xl font-black text-blue-300 mb-4">฿19,900</div>
-                            <ul class="space-y-2 text-white/90 text-sm text-left">
-                                <li>• 5 โดเมน</li>
-                                <li>• Support 1 ปี</li>
-                                <li>• Updates 1 ปี</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- Unlimited -->
-                    <div class="bg-gradient-to-br from-yellow-500/20 to-orange-600/20 backdrop-blur-sm border border-yellow-300/30 rounded-2xl p-6 hover:scale-105 transition-all shadow-xl">
-                        <div class="text-center">
-                            <div class="text-4xl mb-3">🥇</div>
-                            <h4 class="text-2xl font-bold text-white mb-4">Unlimited</h4>
-                            <div class="text-4xl font-black text-orange-300 mb-4">฿39,900</div>
-                            <ul class="space-y-2 text-white/90 text-sm text-left">
-                                <li>• ไม่จำกัดโดเมน</li>
-                                <li>• Support ตลอดชีพ</li>
-                                <li>• Updates ตลอดชีพ</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- License Features -->
-            <div class="grid grid-cols-2 gap-6">
-                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 shadow-xl">
-                    <h4 class="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                        <span>🔐</span>
-                        <span>ระบบตรวจสอบ License</span>
-                    </h4>
-                    <ul class="space-y-3 text-white/90">
-                        <li>• ✅ License Key Validation</li>
-                        <li>• ✅ Domain Binding</li>
-                        <li>• ✅ IP Address Tracking</li>
-                        <li>• ✅ Remote Verification</li>
-                    </ul>
-                </div>
-
-                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 shadow-xl">
-                    <h4 class="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                        <span>✨</span>
-                        <span>การเปิดใช้งาน</span>
-                    </h4>
-                    <ul class="space-y-3 text-white/90">
-                        <li>• 💻 ผ่าน Command Line</li>
-                        <li>• 🎨 ผ่าน Admin Dashboard</li>
-                        <li>• ⚙️ ผ่านไฟล์ .env</li>
-                        <li>• 🚀 ง่าย รวดเร็ว ปลอดภัย</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Slide 10: Getting Started -->
-<div class="slide">
-    <div class="h-full flex items-center justify-center bg-gradient-to-br from-green-900/90 via-emerald-900/80 to-teal-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
-        <div class="max-w-6xl w-full relative z-10">
-            <h2 class="text-5xl md:text-6xl font-black text-white mb-12 text-center">
-                🎯 การเริ่มต้นใช้งาน
-            </h2>
-
-            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-3xl p-8 mb-8 shadow-2xl">
-                <h3 class="text-3xl font-bold text-white mb-6 text-center">🚀 ติดตั้งด้วย Script อัตโนมัติ</h3>
-
-                <div class="bg-black/30 backdrop-blur-sm rounded-2xl p-6 mb-6 font-mono text-green-300 overflow-x-auto">
-                    <pre class="text-sm">
-# 1. Clone repository
-git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
-cd Thaiprompt-Affiliate
-
-# 2. รัน script ติดตั้งอัตโนมัติ
-chmod +x install.sh
-./install.sh
-
-# 3. ตั้งค่า License Key
-php artisan license:activate YOUR-LICENSE-KEY
-
-# 4. เริ่มใช้งาน
-php artisan serve
-                    </pre>
-                </div>
-
-                <div class="text-center">
-                    <p class="text-2xl text-white/90">
-                        ✨ <strong class="text-green-300">ใช้เวลาไม่เกิน 5 นาที</strong> ✨
+                <!-- Support -->
+                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 text-center hover:bg-white/15 transition-all shadow-xl">
+                    <div class="text-5xl mb-4">🤝</div>
+                    <h3 class="text-2xl font-bold text-white mb-3">Support ดีเยี่ยม</h3>
+                    <p class="text-white/80">
+                        ทีมงานคนไทย<br>
+                        พร้อมช่วยเหลือ 24/7<br>
+                        <strong class="text-blue-300">ไม่ทิ้งให้เผชิญปัญหาคนเดียว</strong>
                     </p>
                 </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-6">
-                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-2xl p-6 text-center shadow-xl">
-                    <div class="text-5xl mb-4">1️⃣</div>
-                    <h4 class="text-xl font-bold text-white mb-2">Setup Wizard</h4>
-                    <p class="text-white/80 text-sm">ตั้งค่าผ่าน UI สวยงาม</p>
-                </div>
-
-                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-2xl p-6 text-center shadow-xl">
-                    <div class="text-5xl mb-4">2️⃣</div>
-                    <h4 class="text-xl font-bold text-white mb-2">Configure</h4>
-                    <p class="text-white/80 text-sm">ปรับแต่งตามต้องการ</p>
-                </div>
-
-                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-2xl p-6 text-center shadow-xl">
-                    <div class="text-5xl mb-4">3️⃣</div>
-                    <h4 class="text-xl font-bold text-white mb-2">Launch</h4>
-                    <p class="text-white/80 text-sm">เริ่มใช้งานทันที!</p>
+            <!-- Comparison -->
+            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 md:p-8 shadow-xl">
+                <h3 class="text-2xl font-bold text-white mb-6 text-center">เปรียบเทียบกับการพัฒนาเอง</h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-red-500/10 border border-red-300/30 rounded-xl p-4">
+                        <h4 class="text-lg font-bold text-red-300 mb-3">❌ พัฒนาเอง</h4>
+                        <ul class="space-y-2 text-white/80 text-sm">
+                            <li>• ใช้เวลา 6-12 เดือน</li>
+                            <li>• ค่าใช้จ่าย 500,000+ บาท</li>
+                            <li>• ต้องจ้างทีมพัฒนา</li>
+                            <li>• ความเสี่ยงสูง</li>
+                        </ul>
+                    </div>
+                    <div class="bg-emerald-500/10 border border-emerald-300/30 rounded-xl p-4">
+                        <h4 class="text-lg font-bold text-emerald-300 mb-3">✅ {{ $appName }}</h4>
+                        <ul class="space-y-2 text-white/80 text-sm">
+                            <li>• ใช้งานได้ทันที</li>
+                            <li>• ราคาย่อมเยา</li>
+                            <li>• ทีม Support พร้อม</li>
+                            <li>• อัพเดทต่อเนื่อง</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Slide 11: Documentation & Support -->
+<!-- Slide 11: แพ็คเกจและราคา -->
 <div class="slide">
-    <div class="h-full flex items-center justify-center bg-gradient-to-br from-blue-900/90 via-cyan-900/80 to-teal-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-yellow-900/90 via-amber-900/80 to-orange-900/90 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
         <div class="max-w-6xl w-full relative z-10">
-            <h2 class="text-5xl md:text-6xl font-black text-white mb-12 text-center">
-                📚 เอกสารและการสนับสนุน
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 md:mb-12 text-center">
+                💎 แพ็คเกจและบริการ
             </h2>
 
-            <div class="grid grid-cols-2 gap-8 mb-8">
-                <!-- Documentation -->
-                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-3xl p-8 shadow-2xl">
-                    <h3 class="text-3xl font-bold text-white mb-6 flex items-center gap-3">
-                        <span class="text-4xl">📖</span>
-                        <span>เอกสารประกอบ</span>
-                    </h3>
-                    <ul class="space-y-3 text-white text-lg">
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-2xl">📘</span>
-                            <span>GETTING-STARTED.md</span>
-                        </li>
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-2xl">📦</span>
-                            <span>INSTALLATION-GUIDE.md</span>
-                        </li>
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-2xl">🏭</span>
-                            <span>PRODUCTION-INSTALL.md</span>
-                        </li>
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-2xl">💻</span>
-                            <span>DEVELOPMENT.md</span>
-                        </li>
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-2xl">📋</span>
-                            <span>CHANGELOG.md</span>
-                        </li>
-                    </ul>
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <!-- Starter -->
+                <div class="bg-gradient-to-br from-gray-500/20 to-gray-600/20 backdrop-blur-sm border border-gray-300/30 rounded-2xl p-6 hover:scale-105 transition-all">
+                    <div class="text-center">
+                        <div class="text-4xl mb-3">🥉</div>
+                        <h4 class="text-2xl font-bold text-white mb-2">Starter</h4>
+                        <p class="text-white/70 text-sm mb-4">เหมาะสำหรับเริ่มต้น</p>
+                        <ul class="space-y-2 text-white/90 text-sm text-left mb-6">
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> 1 โดเมน</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> ระบบพื้นฐานครบ</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Support 6 เดือน</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Updates 1 ปี</li>
+                        </ul>
+                        <div class="bg-white/10 rounded-xl p-3">
+                            <p class="text-white/60 text-xs">ติดต่อสอบถามราคา</p>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Support -->
-                <div class="bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg border border-white/30 rounded-3xl p-8 shadow-2xl">
-                    <h3 class="text-3xl font-bold text-white mb-6 flex items-center gap-3">
-                        <span class="text-4xl">💬</span>
-                        <span>การสนับสนุน</span>
-                    </h3>
-                    <ul class="space-y-3 text-white text-lg">
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-2xl">📧</span>
-                            <span>Email Support</span>
-                        </li>
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-2xl">💬</span>
-                            <span>Live Chat</span>
-                        </li>
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-2xl">🐛</span>
-                            <span>GitHub Issues</span>
-                        </li>
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-2xl">📚</span>
-                            <span>Knowledge Base</span>
-                        </li>
-                        <li class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                            <span class="text-2xl">🎥</span>
-                            <span>Video Tutorials</span>
-                        </li>
-                    </ul>
+                <!-- Professional -->
+                <div class="bg-gradient-to-br from-blue-500/20 to-indigo-600/20 backdrop-blur-sm border-2 border-blue-400/50 rounded-2xl p-6 hover:scale-105 transition-all shadow-xl relative">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-500 to-indigo-500 px-4 py-1 rounded-full text-white text-xs font-bold">
+                        แนะนำ
+                    </div>
+                    <div class="text-center">
+                        <div class="text-4xl mb-3">🥈</div>
+                        <h4 class="text-2xl font-bold text-white mb-2">Professional</h4>
+                        <p class="text-white/70 text-sm mb-4">เหมาะสำหรับธุรกิจ</p>
+                        <ul class="space-y-2 text-white/90 text-sm text-left mb-6">
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> 5 โดเมน</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> ระบบครบทุกฟีเจอร์</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Support 1 ปี</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Updates ตลอดชีพ</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Priority Support</li>
+                        </ul>
+                        <div class="bg-white/10 rounded-xl p-3">
+                            <p class="text-white/60 text-xs">ติดต่อสอบถามราคา</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enterprise -->
+                <div class="bg-gradient-to-br from-yellow-500/20 to-orange-600/20 backdrop-blur-sm border border-yellow-300/30 rounded-2xl p-6 hover:scale-105 transition-all shadow-xl">
+                    <div class="text-center">
+                        <div class="text-4xl mb-3">🥇</div>
+                        <h4 class="text-2xl font-bold text-white mb-2">Enterprise</h4>
+                        <p class="text-white/70 text-sm mb-4">เหมาะสำหรับองค์กร</p>
+                        <ul class="space-y-2 text-white/90 text-sm text-left mb-6">
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> ไม่จำกัดโดเมน</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Custom Features</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Support ตลอดชีพ</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Dedicated Support</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> White Label</li>
+                        </ul>
+                        <div class="bg-white/10 rounded-xl p-3">
+                            <p class="text-white/60 text-xs">ติดต่อสอบถามราคา</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 backdrop-blur-md border border-cyan-300/30 rounded-3xl p-8 text-center shadow-2xl">
-                <h3 class="text-3xl font-bold text-white mb-4">📞 ติดต่อเรา</h3>
-                <div class="grid grid-cols-3 gap-6 text-white">
-                    <div>
-                        <p class="text-sm text-white/70 mb-1">Website</p>
-                        <p class="font-bold">thaiprompt.com</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-white/70 mb-1">Email</p>
-                        <p class="font-bold">support@thaiprompt.com</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-white/70 mb-1">GitHub</p>
-                        <p class="font-bold">@xjanova</p>
-                    </div>
-                </div>
+            <div class="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-md border border-amber-300/30 rounded-2xl p-6 text-center shadow-xl">
+                <p class="text-xl md:text-2xl text-white font-bold">
+                    📞 ติดต่อทีมขายเพื่อรับข้อเสนอพิเศษ
+                </p>
             </div>
         </div>
     </div>
@@ -944,7 +870,7 @@ php artisan serve
 
 <!-- Slide 12: Thank You -->
 <div class="slide">
-    <div class="h-full flex items-center justify-center bg-gradient-to-br from-indigo-900/90 via-purple-900/80 to-pink-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-indigo-900/90 via-purple-900/80 to-pink-900/90 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
         <div class="absolute inset-0 opacity-20">
             <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>
             <div class="absolute top-1/3 right-1/4 w-96 h-96 bg-purple-400 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000"></div>
@@ -953,43 +879,51 @@ php artisan serve
 
         <div class="text-center text-white max-w-5xl relative z-10">
             <div class="mb-8 animate-float">
-                <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}" width="200" height="200" class="w-48 h-48 mx-auto filter drop-shadow-2xl object-contain">
+                @if($systemLogo)
+                    <img src="{{ asset('storage/' . $systemLogo) }}" alt="{{ $appName }}" class="w-40 h-40 mx-auto filter drop-shadow-2xl object-contain">
+                @else
+                    <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}" width="160" height="160" class="w-40 h-40 mx-auto filter drop-shadow-2xl object-contain">
+                @endif
             </div>
 
-            <h1 class="text-7xl md:text-8xl font-black mb-8 leading-tight">
+            <h1 class="text-5xl md:text-6xl lg:text-7xl font-black mb-8 leading-tight">
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300">
-                    Thank You!
+                    ขอบคุณที่รับชม
                 </span>
             </h1>
 
-            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-3xl p-10 mb-8 shadow-2xl">
-                <h2 class="text-4xl md:text-5xl font-bold mb-6">
-                    พร้อมเริ่มต้นแล้วหรือยัง?
+            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-3xl p-8 md:p-10 mb-8 shadow-2xl">
+                <h2 class="text-3xl md:text-4xl font-bold mb-6">
+                    พร้อมเริ่มต้นธุรกิจใหม่แล้วหรือยัง?
                 </h2>
-                <p class="text-2xl text-white/90 mb-8 leading-relaxed">
-                    เริ่มต้นสร้างระบบแอฟฟิลิเอตมืออาชีพของคุณวันนี้
+                <p class="text-xl md:text-2xl text-white/90 mb-8 leading-relaxed">
+                    เริ่มต้นสร้างธุรกิจออนไลน์ของคุณวันนี้
                     <br>
-                    ด้วย <strong class="text-pink-300">TP-Affiliate Pro</strong>
+                    ด้วย <strong class="text-pink-300">{{ $appName }}</strong> แพลตฟอร์ม All-in-One ที่ครบครันที่สุด
                 </p>
 
-                <div class="flex items-center justify-center gap-6">
-                    <a href="https://thaiprompt.com" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xl px-10 py-5 rounded-2xl shadow-2xl transform hover:scale-105 transition-all">
-                        🌐 เยี่ยมชมเว็บไซต์
+                <div class="flex flex-wrap items-center justify-center gap-4 md:gap-6">
+                    <a href="{{ route('register') }}" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg md:text-xl px-8 md:px-10 py-4 md:py-5 rounded-2xl shadow-2xl transform hover:scale-105 transition-all">
+                        🚀 เริ่มต้นใช้งานฟรี
                     </a>
-                    <a href="mailto:support@thaiprompt.com" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-xl px-10 py-5 rounded-2xl shadow-2xl transform hover:scale-105 transition-all">
-                        📧 ติดต่อเรา
+                    <a href="{{ route('contact') }}" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-lg md:text-xl px-8 md:px-10 py-4 md:py-5 rounded-2xl shadow-2xl transform hover:scale-105 transition-all">
+                        📞 ติดต่อทีมขาย
                     </a>
                 </div>
             </div>
 
-            <div class="flex items-center justify-center gap-8 text-lg">
-                <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-6 py-3 rounded-full border border-white/20">
-                    <span class="text-2xl">❤️</span>
+            <div class="flex flex-wrap items-center justify-center gap-4 md:gap-8 text-base md:text-lg">
+                <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 md:px-6 py-2 md:py-3 rounded-full border border-white/20">
+                    <span class="text-xl md:text-2xl">❤️</span>
                     <span>Made in Thailand</span>
                 </div>
-                <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-6 py-3 rounded-full border border-white/20">
-                    <span class="text-2xl">🚀</span>
-                    <span>Version {{ config('app.version', '1.0.0') }}</span>
+                <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 md:px-6 py-2 md:py-3 rounded-full border border-white/20">
+                    <span class="text-xl md:text-2xl">🚀</span>
+                    <span>20+ ระบบครบวงจร</span>
+                </div>
+                <div class="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 md:px-6 py-2 md:py-3 rounded-full border border-white/20">
+                    <span class="text-xl md:text-2xl">🎧</span>
+                    <span>Support 24/7</span>
                 </div>
             </div>
         </div>
