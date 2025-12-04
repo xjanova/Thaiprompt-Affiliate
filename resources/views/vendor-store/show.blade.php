@@ -136,7 +136,7 @@
 
             <!-- Filters Sidebar -->
             <aside class="lg:w-80 flex-shrink-0">
-                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden sticky top-4">
+                <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden sticky top-4">
                     <!-- Filters Header -->
                     <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4">
                         <h2 class="text-lg font-bold flex items-center gap-2">
@@ -246,7 +246,7 @@
             <!-- Products Grid -->
             <main class="flex-1 min-w-0">
                 <!-- Results Header -->
-                <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-100">
+                <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg p-6 mb-6 border border-gray-100 dark:border-gray-700">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div class="flex items-center gap-3">
                             <div class="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center">
@@ -274,14 +274,14 @@
                     <!-- Pagination -->
                     @if($products->hasPages())
                         <div class="flex justify-center">
-                            <div class="bg-white rounded-2xl shadow-lg p-4 border border-gray-100">
+                            <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg p-4 border border-gray-100 dark:border-gray-700">
                                 {{ $products->links() }}
                             </div>
                         </div>
                     @endif
                 @else
                     <!-- Empty State -->
-                    <div class="bg-white rounded-2xl shadow-lg p-12 text-center border border-gray-100">
+                    <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg p-12 text-center border border-gray-100 dark:border-gray-700">
                         <div class="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full mb-6">
                             <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
@@ -310,7 +310,7 @@
 
     <!-- Store Contact Info -->
     @if($store->store_address || $store->store_phone || $store->store_email)
-        <div class="bg-white border-t-2 border-gray-100 mt-12">
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-t-2 border-gray-100 dark:border-gray-700 mt-12">
             <div class="container mx-auto px-4 py-12">
                 <div class="max-w-5xl mx-auto">
                     <h3 class="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">

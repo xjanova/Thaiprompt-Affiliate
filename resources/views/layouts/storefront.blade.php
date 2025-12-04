@@ -101,7 +101,7 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 0;
+            z-index: -10;
             overflow: hidden;
         }
 
@@ -380,7 +380,7 @@
 
     @stack('styles')
 </head>
-<body class="min-h-full font-sans bg-white/80 dark:bg-gray-900/80"
+<body class="min-h-full font-sans"
       x-data="{}"
       x-init="
           // Initialize theme store ถ้ามี
@@ -389,8 +389,11 @@
           }
       ">
 
+    {{-- Base Background Layer - สำหรับ light/dark mode --}}
+    <div class="fixed inset-0 bg-gray-50 dark:bg-gray-900 -z-20"></div>
+
     {{-- Liquid Lava Lamp Background - RGB Glow ลอยขึ้นลงเหมือนลาวา --}}
-    <div class="lava-background" aria-hidden="true">
+    <div class="lava-background -z-10" aria-hidden="true">
         <div class="lava-blob"></div>
         <div class="lava-blob"></div>
         <div class="lava-blob"></div>
@@ -402,7 +405,7 @@
     </div>
 
     {{-- Main Content Area - Full Width --}}
-    <div class="min-h-screen relative z-10">
+    <div class="min-h-screen relative z-0">
         @yield('content')
     </div>
 
