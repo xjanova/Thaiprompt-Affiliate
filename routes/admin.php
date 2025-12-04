@@ -1144,6 +1144,7 @@ Route::prefix('instructor')->name('instructor.')->group(function () {
         Route::get('/{article}/stats', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'courseStats'])->name('stats');
         Route::get('/{article}/quiz', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'manageQuiz'])->name('quiz');
         Route::post('/{article}/submit-approval', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'submitForApproval'])->name('submit-approval');
+        Route::post('/{article}/issue-certificate/{user}', [\App\Http\Controllers\Instructor\InstructorDashboardController::class, 'issueCertificate'])->name('issue-certificate');
     });
 
     // รายได้และสถิติ

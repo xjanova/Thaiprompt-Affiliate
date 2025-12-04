@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Instructor;
 
 use App\Http\Controllers\Controller;
+use App\Models\Certificate;
 use App\Models\LearningArticle;
 use App\Models\LearningCategory;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
+use App\Models\User;
 use App\Models\UserArticleProgress;
+use App\Services\CertificateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -459,5 +462,47 @@ class InstructorDashboardController extends Controller
                 : 0,
             'avg_score' => QuizAttempt::whereIn('quiz_id', $quizzes)->avg('percentage') ?? 0,
         ];
+    }
+
+    /**
+     * ออกใบประกาศนียบัตรให้นักเรียน
+     *
+     * @param LearningArticle $article
+     * @param User $user
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function issueCertificate(LearningArticle $article, User $user)
+    {
+        $this->authorizeInstructor($article);
+
+        // ตรวจสอบว่านักเรียนจบคอร์สแล้วหรือยัง
+        $progress = UserArticleProgress::where('user_id', $user->id)
+            ->where('article_id', $article->id)
+            ->where('status', 'completed')
+            ->first();
+
+        if (!$progress) {
+            return back()->with('error', 'นักเรียนยังเรียนไม่จบคอร์สนี้');
+        }
+
+        // ตรวจสอบว่ามีใบประกาศอยู่แล้วหรือไม่
+        $existing = Certificate::where('user_id', $user->id)
+            ->where('article_id', $article->id)
+            ->where('is_revoked', false)
+            ->first();
+
+        if ($existing) {
+            return back()->with('warning', 'นักเรียนมีใบประกาศนียบัตรอยู่แล้ว');
+        }
+
+        try {
+            // ใช้ CertificateService สร้างใบประกาศ
+            $certificateService = app(CertificateService::class);
+            $certificate = $certificateService->generateCertificate($user, $article);
+
+            return back()->with('success', 'ออกใบประกาศนียบัตรให้ ' . $user->name . ' เรียบร้อยแล้ว');
+        } catch (\Exception $e) {
+            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
     }
 }
