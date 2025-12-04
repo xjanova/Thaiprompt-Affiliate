@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.346.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #2003 from xjanova/claude/admin-menu-permissions-019wRrvFro5Fuo4yHZuW9s8D (9206931b)
+- feat: add 19 missing admin menu items (83b122e6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.345.4] - 2025-12-04
 
 ### ✨ Features
