@@ -370,6 +370,12 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     Route::get('/referral', [\App\Http\Controllers\User\MlmDashboardController::class, 'referral'])->name('referral');
     Route::get('/team', [\App\Http\Controllers\User\MlmDashboardController::class, 'team'])->name('team');
 
+    // API สำหรับดึงข้อมูลผังสายงาน (Binary/Unilevel Tree Data)
+    Route::get('/genealogy-data', [\App\Http\Controllers\User\MlmDashboardController::class, 'genealogyData'])->name('genealogy-data');
+
+    // หน้าแสดงตำแหน่ง Binary Tree
+    Route::get('/binary-position', [\App\Http\Controllers\User\MlmDashboardController::class, 'binaryPositionPage'])->name('binary-position');
+
     // API สำหรับ MLM Settings (Read-only)
     Route::get('/settings', [\App\Http\Controllers\User\MlmDashboardController::class, 'getSettings'])->name('settings');
 

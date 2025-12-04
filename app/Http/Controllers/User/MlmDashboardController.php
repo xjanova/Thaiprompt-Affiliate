@@ -219,6 +219,84 @@ class MlmDashboardController extends Controller
     }
 
     /**
+     * API สำหรับดึงข้อมูลผังสายงาน MLM (Binary/Unilevel Tree Data)
+     * ใช้สำหรับ mlm-genealogy-premium.js
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function genealogyData(Request $request)
+    {
+        $user = Auth::user();
+        $member = $user->mlmMembers()->with('plan')->first();
+
+        if (!$member) {
+            return response()->json([
+                'success' => false,
+                'message' => 'คุณยังไม่ได้เป็นสมาชิก MLM',
+                'data' => null,
+            ], 404);
+        }
+
+        $treeType = $request->get('type', $member->plan->type === 'binary' || $member->plan->type === 'hybrid' ? 'binary' : 'unilevel');
+        $maxDepth = min((int) $request->get('depth', 5), 10); // จำกัดสูงสุด 10 ชั้น
+
+        try {
+            $treeData = $this->genealogyService->getTreeData($member, $treeType, $maxDepth);
+
+            return response()->json([
+                'success' => true,
+                'data' => $treeData,
+                'member' => [
+                    'id' => $member->id,
+                    'member_code' => $member->member_code,
+                    'name' => $user->name,
+                    'plan_type' => $member->plan->type ?? 'unilevel',
+                ],
+                'tree_type' => $treeType,
+                'max_depth' => $maxDepth,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching genealogy data', [
+                'user_id' => $user->id,
+                'member_id' => $member->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการโหลดข้อมูลผังสายงาน',
+                'data' => null,
+            ], 500);
+        }
+    }
+
+    /**
+     * แสดงหน้าตำแหน่งใน Binary Tree (ไม่ต้องระบุ memberCode)
+     *
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     */
+    public function binaryPositionPage()
+    {
+        $user = Auth::user();
+        $member = $user->mlmMembers()->with('plan')->first();
+
+        if (!$member) {
+            return redirect()->route('user.mlm.dashboard')
+                ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
+        }
+
+        if ($member->plan->type !== 'binary' && $member->plan->type !== 'hybrid') {
+            return redirect()->route('user.mlm.dashboard')
+                ->with('error', 'แผนของคุณไม่รองรับโครงสร้าง Binary');
+        }
+
+        $position = $this->genealogyService->getMemberPosition($member, 'binary');
+
+        return view('user.mlm.binary-position', compact('member', 'position'));
+    }
+
+    /**
      * ดึงการตั้งค่า MLM สำหรับ income simulator
      * Read-only endpoint สำหรับ user
      *
