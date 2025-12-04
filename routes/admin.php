@@ -1338,6 +1338,17 @@ Route::prefix('storefront')->name('storefront.')->group(function () {
         Route::post('/reorder', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'reorderBanners'])->name('reorder');
         Route::post('/{banner}/toggle', [\App\Http\Controllers\Admin\StorefrontSettingsController::class, 'toggleBannerStatus'])->name('toggle');
     });
+
+    // Vendor Stores Management (Admin จัดการร้านค้าทั้งหมด)
+    Route::prefix('vendor-stores')->name('vendor-stores.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\VendorStoreController::class, 'index'])->name('index');
+        Route::get('/{store}', [\App\Http\Controllers\Admin\VendorStoreController::class, 'show'])->name('show');
+        Route::get('/{store}/edit', [\App\Http\Controllers\Admin\VendorStoreController::class, 'edit'])->name('edit');
+        Route::put('/{store}', [\App\Http\Controllers\Admin\VendorStoreController::class, 'update'])->name('update');
+        Route::post('/{store}/toggle-status', [\App\Http\Controllers\Admin\VendorStoreController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{store}/toggle-featured', [\App\Http\Controllers\Admin\VendorStoreController::class, 'toggleFeatured'])->name('toggle-featured');
+        Route::delete('/{store}', [\App\Http\Controllers\Admin\VendorStoreController::class, 'destroy'])->name('destroy');
+    });
 });
 
 // Featured Stores Management (Homepage)

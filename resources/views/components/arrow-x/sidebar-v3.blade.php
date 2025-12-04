@@ -1383,6 +1383,66 @@
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">รายงาน</span>
         </a>
 
+        {{-- ========================================
+             🏪 Storefront Management (Collapsible Menu)
+             จัดการหน้าร้านค้าหลัก, แบนเนอร์, ธีม
+             ======================================== --}}
+        <div class="space-y-1"
+             x-data="{ storefrontOpen: {{ request()->routeIs('admin.storefront.*') || request()->routeIs('admin.featured-stores.*') ? 'true' : 'false' }} }">
+            {{-- Storefront Header Button --}}
+            <button @click="storefrontOpen = !storefrontOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.storefront.*') || request()->routeIs('admin.featured-stores.*') ? 'bg-gradient-to-r from-orange-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-store w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">จัดการหน้าร้าน</span>
+                <i x-show="$store.sidebar.shouldExpand && storefrontOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !storefrontOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Storefront Submenu --}}
+            <div x-show="storefrontOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Storefront Settings (Theme & Layout) --}}
+                <a href="{{ route('admin.storefront.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.storefront.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-palette w-4 text-center"></i>
+                    <span>ตั้งค่าธีม & เลย์เอาต์</span>
+                </a>
+
+                {{-- Banners Management --}}
+                <a href="{{ route('admin.storefront.banners.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.storefront.banners.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-images w-4 text-center"></i>
+                    <span>แบนเนอร์/สไลด์</span>
+                </a>
+
+                {{-- Featured Stores --}}
+                <a href="{{ route('admin.featured-stores.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.featured-stores.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-star w-4 text-center"></i>
+                    <span>ร้านค้าแนะนำ</span>
+                </a>
+
+                {{-- Categories --}}
+                <a href="{{ route('admin.ecommerce.categories.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ecommerce.categories.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tags w-4 text-center"></i>
+                    <span>หมวดหมู่สินค้า</span>
+                </a>
+
+                {{-- Vendor Stores List --}}
+                <a href="{{ route('admin.storefront.vendor-stores.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.storefront.vendor-stores.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-store-alt w-4 text-center"></i>
+                    <span>ร้านค้าทั้งหมด</span>
+                </a>
+            </div>
+        </div>
+
         {{-- Anti-Abuse Protection System (Collapsible Menu) 🛡️ --}}
         <div class="space-y-1"
              x-data="{ antiAbuseOpen: {{ request()->routeIs('admin.anti-abuse.*') ? 'true' : 'false' }} }">
