@@ -404,6 +404,39 @@ class Product extends Model
     }
 
     /**
+     * ดึง tags ในรูปแบบ array เสมอ
+     *
+     * แก้ไขปัญหากรณีที่ข้อมูลใน database เป็น string แทน JSON array
+     *
+     * @return array
+     */
+    public function getTagsAttribute($value): array
+    {
+        // ถ้าเป็น null หรือ empty ให้คืนค่า array ว่าง
+        if (empty($value)) {
+            return [];
+        }
+
+        // ถ้าเป็น array แล้ว ให้คืนค่าเลย
+        if (is_array($value)) {
+            return $value;
+        }
+
+        // ถ้าเป็น string ลอง decode เป็น JSON
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+
+            // ถ้าไม่ใช่ JSON ให้แยกด้วย comma
+            return array_filter(array_map('trim', explode(',', $value)));
+        }
+
+        return [];
+    }
+
+    /**
      * Get primary image URL (main_image_url or first image)
      */
     public function getPrimaryImageAttribute(): ?string
