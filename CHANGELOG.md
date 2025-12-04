@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.337.1] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1985 from xjanova/claude/fix-guest-shopping-role-01WaHLh37CzemK2rCJyJojPx (2ffec7e0)
+- fix: allow guest access to shopping page by wrapping user dropdown in @auth (bb0557b9)
+### 🔧 Other Changes
+
+
 ## [v3.337.0] - 2025-12-04
 
 ### ✨ Features
