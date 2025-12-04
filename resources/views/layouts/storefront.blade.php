@@ -108,134 +108,125 @@
         .lava-blob {
             position: absolute;
             border-radius: 45% 55% 60% 40% / 55% 45% 55% 45%;
-            filter: blur(40px);
-            opacity: 0.6;
+            filter: blur(30px);
+            opacity: 0.7;
             will-change: transform, border-radius;
         }
 
         /* RGB Gradient สีสันสดใส - Light Mode */
         .lava-blob:nth-child(1) {
-            width: 180px;
-            height: 200px;
+            width: 250px;
+            height: 280px;
             background: linear-gradient(180deg, #ff0844 0%, #ffb199 50%, #ff0844 100%);
             left: 5%;
-            bottom: -100px;
-            animation: lavaRise1 18s ease-in-out infinite, morphBlob1 8s ease-in-out infinite;
+            top: 10%;
+            animation: lavaFloat1 12s ease-in-out infinite, morphBlob1 8s ease-in-out infinite;
         }
 
         .lava-blob:nth-child(2) {
-            width: 150px;
-            height: 170px;
-            background: linear-gradient(180deg, #00d4ff 0%, #00ffab 50%, #00d4ff 100%);
-            left: 20%;
-            bottom: -80px;
-            animation: lavaRise2 22s ease-in-out infinite, morphBlob2 10s ease-in-out infinite;
-            animation-delay: -5s;
-        }
-
-        .lava-blob:nth-child(3) {
             width: 200px;
             height: 220px;
-            background: linear-gradient(180deg, #a855f7 0%, #ec4899 50%, #a855f7 100%);
-            left: 38%;
-            bottom: -120px;
-            animation: lavaRise3 20s ease-in-out infinite, morphBlob3 12s ease-in-out infinite;
-            animation-delay: -8s;
-        }
-
-        .lava-blob:nth-child(4) {
-            width: 130px;
-            height: 150px;
-            background: linear-gradient(180deg, #facc15 0%, #fb923c 50%, #facc15 100%);
-            left: 55%;
-            bottom: -70px;
-            animation: lavaRise4 16s ease-in-out infinite, morphBlob1 9s ease-in-out infinite;
+            background: linear-gradient(180deg, #00d4ff 0%, #00ffab 50%, #00d4ff 100%);
+            left: 20%;
+            top: 40%;
+            animation: lavaFloat2 14s ease-in-out infinite, morphBlob2 10s ease-in-out infinite;
             animation-delay: -3s;
         }
 
-        .lava-blob:nth-child(5) {
-            width: 170px;
-            height: 190px;
-            background: linear-gradient(180deg, #22c55e 0%, #06b6d4 50%, #22c55e 100%);
-            left: 72%;
-            bottom: -90px;
-            animation: lavaRise5 24s ease-in-out infinite, morphBlob2 11s ease-in-out infinite;
-            animation-delay: -12s;
+        .lava-blob:nth-child(3) {
+            width: 280px;
+            height: 300px;
+            background: linear-gradient(180deg, #a855f7 0%, #ec4899 50%, #a855f7 100%);
+            left: 35%;
+            top: 60%;
+            animation: lavaFloat3 16s ease-in-out infinite, morphBlob3 12s ease-in-out infinite;
+            animation-delay: -5s;
         }
 
-        .lava-blob:nth-child(6) {
-            width: 160px;
-            height: 180px;
-            background: linear-gradient(180deg, #3b82f6 0%, #8b5cf6 50%, #3b82f6 100%);
-            left: 88%;
-            bottom: -85px;
-            animation: lavaRise1 19s ease-in-out infinite, morphBlob3 7s ease-in-out infinite;
+        .lava-blob:nth-child(4) {
+            width: 180px;
+            height: 200px;
+            background: linear-gradient(180deg, #facc15 0%, #fb923c 50%, #facc15 100%);
+            right: 30%;
+            top: 20%;
+            animation: lavaFloat1 13s ease-in-out infinite, morphBlob1 9s ease-in-out infinite;
+            animation-delay: -2s;
+        }
+
+        .lava-blob:nth-child(5) {
+            width: 220px;
+            height: 240px;
+            background: linear-gradient(180deg, #22c55e 0%, #06b6d4 50%, #22c55e 100%);
+            right: 10%;
+            top: 50%;
+            animation: lavaFloat2 15s ease-in-out infinite, morphBlob2 11s ease-in-out infinite;
             animation-delay: -7s;
         }
 
+        .lava-blob:nth-child(6) {
+            width: 200px;
+            height: 220px;
+            background: linear-gradient(180deg, #3b82f6 0%, #8b5cf6 50%, #3b82f6 100%);
+            right: 5%;
+            top: 80%;
+            animation: lavaFloat3 11s ease-in-out infinite, morphBlob3 7s ease-in-out infinite;
+            animation-delay: -4s;
+        }
+
         .lava-blob:nth-child(7) {
-            width: 140px;
-            height: 160px;
+            width: 160px;
+            height: 180px;
             background: linear-gradient(180deg, #f43f5e 0%, #fb7185 50%, #f43f5e 100%);
-            left: 12%;
-            bottom: -75px;
-            animation: lavaRise3 21s ease-in-out infinite, morphBlob1 10s ease-in-out infinite;
-            animation-delay: -15s;
+            left: 50%;
+            top: 30%;
+            animation: lavaFloat1 17s ease-in-out infinite, morphBlob1 10s ease-in-out infinite;
+            animation-delay: -8s;
         }
 
         .lava-blob:nth-child(8) {
-            width: 120px;
-            height: 140px;
+            width: 190px;
+            height: 210px;
             background: linear-gradient(180deg, #14b8a6 0%, #0ea5e9 50%, #14b8a6 100%);
-            left: 62%;
-            bottom: -65px;
-            animation: lavaRise2 17s ease-in-out infinite, morphBlob2 8s ease-in-out infinite;
-            animation-delay: -10s;
+            left: 70%;
+            top: 70%;
+            animation: lavaFloat2 13s ease-in-out infinite, morphBlob2 8s ease-in-out infinite;
+            animation-delay: -6s;
         }
 
-        /* Animation - ลอยขึ้นจากล่างขึ้นบน แล้วกลับลงมา */
-        @keyframes lavaRise1 {
+        /* Animation - ลอยขึ้นลงและซ้ายขวา */
+        @keyframes lavaFloat1 {
             0%, 100% {
-                transform: translateY(0) scale(1);
+                transform: translate(0, 0) scale(1);
+            }
+            25% {
+                transform: translate(30px, -50px) scale(1.05);
             }
             50% {
-                transform: translateY(calc(-100vh - 100px)) scale(1.1);
+                transform: translate(-20px, -100px) scale(0.95);
             }
-        }
-
-        @keyframes lavaRise2 {
-            0%, 100% {
-                transform: translateY(0) scale(0.9);
-            }
-            50% {
-                transform: translateY(calc(-100vh - 150px)) scale(1);
+            75% {
+                transform: translate(40px, -50px) scale(1.02);
             }
         }
 
-        @keyframes lavaRise3 {
+        @keyframes lavaFloat2 {
             0%, 100% {
-                transform: translateY(0) scale(1.05);
+                transform: translate(0, 0) scale(1);
             }
-            50% {
-                transform: translateY(calc(-100vh - 80px)) scale(0.95);
+            33% {
+                transform: translate(-40px, -80px) scale(1.08);
+            }
+            66% {
+                transform: translate(30px, -40px) scale(0.92);
             }
         }
 
-        @keyframes lavaRise4 {
+        @keyframes lavaFloat3 {
             0%, 100% {
-                transform: translateY(0) scale(0.95);
+                transform: translate(0, 0) scale(1);
             }
             50% {
-                transform: translateY(calc(-100vh - 120px)) scale(1.08);
-            }
-        }
-
-        @keyframes lavaRise5 {
-            0%, 100% {
-                transform: translateY(0) scale(1);
-            }
-            50% {
-                transform: translateY(calc(-100vh - 180px)) scale(1.05);
+                transform: translate(50px, -120px) scale(1.1);
             }
         }
 
