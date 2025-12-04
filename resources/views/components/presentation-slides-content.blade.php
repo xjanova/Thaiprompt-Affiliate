@@ -122,7 +122,7 @@
     </div>
 </div>
 
-<!-- Slide 3: ระบบ Affiliate & MLM -->
+<!-- Slide 3: ระบบ MLM - ภาพรวมแผนการจ่าย -->
 <div class="slide">
     <div class="h-full flex items-center justify-center bg-gradient-to-br from-purple-900/90 via-pink-900/80 to-red-900/90 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
         <div class="absolute inset-0 opacity-20">
@@ -131,80 +131,518 @@
         </div>
 
         <div class="max-w-6xl w-full relative z-10">
-            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 md:mb-12 text-center">
-                🎯 ระบบ Affiliate & MLM
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 md:mb-8 text-center">
+                🎯 ระบบ MLM & แผนการจ่าย
             </h2>
 
-            <div class="grid md:grid-cols-2 gap-6 mb-8">
-                <!-- Affiliate Features -->
-                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
-                    <div class="flex items-start gap-4">
-                        <div class="text-5xl">👥</div>
-                        <div class="flex-1 text-white">
-                            <h3 class="text-2xl font-bold mb-3">ระบบเครือข่าย Affiliate</h3>
-                            <ul class="space-y-2 text-white/90">
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> ไม่จำกัดจำนวนชั้น (Unlimited Levels)</li>
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> คำนวณคอมมิชชั่นอัตโนมัติ</li>
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> แผนการตลาด Unilevel & Binary</li>
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> ระบบ Rank และ Bonus</li>
-                            </ul>
-                        </div>
+            <p class="text-xl text-white/80 text-center mb-8">
+                ระบบ MLM ที่ยืดหยุ่นที่สุด รองรับทั้ง <strong class="text-pink-300">Unilevel</strong> และ <strong class="text-purple-300">Binary</strong>
+            </p>
+
+            <!-- Commission Types Overview -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <!-- Unilevel -->
+                <div class="bg-gradient-to-br from-blue-500/30 to-blue-600/10 backdrop-blur-lg border border-blue-300/40 rounded-2xl p-4 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-2">📊</div>
+                    <h3 class="text-lg font-bold text-white">Unilevel</h3>
+                    <p class="text-2xl font-black text-blue-300">10 ชั้น</p>
+                    <p class="text-white/60 text-xs mt-1">10% → 1%</p>
+                </div>
+
+                <!-- Binary -->
+                <div class="bg-gradient-to-br from-purple-500/30 to-purple-600/10 backdrop-blur-lg border border-purple-300/40 rounded-2xl p-4 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-2">⚖️</div>
+                    <h3 class="text-lg font-bold text-white">Binary</h3>
+                    <p class="text-2xl font-black text-purple-300">฿100/คู่</p>
+                    <p class="text-white/60 text-xs mt-1">50% matching</p>
+                </div>
+
+                <!-- Direct Referral -->
+                <div class="bg-gradient-to-br from-emerald-500/30 to-emerald-600/10 backdrop-blur-lg border border-emerald-300/40 rounded-2xl p-4 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-2">🤝</div>
+                    <h3 class="text-lg font-bold text-white">แนะนำตรง</h3>
+                    <p class="text-2xl font-black text-emerald-300">฿100</p>
+                    <p class="text-white/60 text-xs mt-1">หรือ 5% ต่อออเดอร์</p>
+                </div>
+
+                <!-- Pool Bonus -->
+                <div class="bg-gradient-to-br from-amber-500/30 to-amber-600/10 backdrop-blur-lg border border-amber-300/40 rounded-2xl p-4 text-center hover:scale-105 transition-all">
+                    <div class="text-4xl mb-2">🏆</div>
+                    <h3 class="text-lg font-bold text-white">Pool Bonus</h3>
+                    <p class="text-2xl font-black text-amber-300">5%</p>
+                    <p class="text-white/60 text-xs mt-1">แบ่งตาม Rank</p>
+                </div>
+            </div>
+
+            <!-- Unilevel Commission Detail -->
+            <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 mb-6 shadow-xl">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <span class="text-2xl">📊</span>
+                    <span>Unilevel Commission - 10 ชั้น</span>
+                </h3>
+                <div class="grid grid-cols-5 md:grid-cols-10 gap-2 text-center">
+                    <div class="bg-blue-500/30 rounded-lg p-2">
+                        <div class="text-xs text-white/60">ชั้น 1</div>
+                        <div class="text-lg font-bold text-blue-300">10%</div>
+                    </div>
+                    <div class="bg-blue-500/25 rounded-lg p-2">
+                        <div class="text-xs text-white/60">ชั้น 2</div>
+                        <div class="text-lg font-bold text-blue-300">5%</div>
+                    </div>
+                    <div class="bg-blue-500/20 rounded-lg p-2">
+                        <div class="text-xs text-white/60">ชั้น 3</div>
+                        <div class="text-lg font-bold text-blue-300">3%</div>
+                    </div>
+                    <div class="bg-blue-500/18 rounded-lg p-2">
+                        <div class="text-xs text-white/60">ชั้น 4</div>
+                        <div class="text-lg font-bold text-blue-300">2%</div>
+                    </div>
+                    <div class="bg-blue-500/15 rounded-lg p-2">
+                        <div class="text-xs text-white/60">ชั้น 5</div>
+                        <div class="text-lg font-bold text-blue-300">1%</div>
+                    </div>
+                    <div class="bg-blue-500/13 rounded-lg p-2">
+                        <div class="text-xs text-white/60">ชั้น 6</div>
+                        <div class="text-lg font-bold text-blue-300">1%</div>
+                    </div>
+                    <div class="bg-blue-500/11 rounded-lg p-2">
+                        <div class="text-xs text-white/60">ชั้น 7</div>
+                        <div class="text-lg font-bold text-blue-300">1%</div>
+                    </div>
+                    <div class="bg-blue-500/10 rounded-lg p-2">
+                        <div class="text-xs text-white/60">ชั้น 8</div>
+                        <div class="text-lg font-bold text-blue-300">1%</div>
+                    </div>
+                    <div class="bg-blue-500/8 rounded-lg p-2">
+                        <div class="text-xs text-white/60">ชั้น 9</div>
+                        <div class="text-lg font-bold text-blue-300">1%</div>
+                    </div>
+                    <div class="bg-blue-500/5 rounded-lg p-2">
+                        <div class="text-xs text-white/60">ชั้น 10</div>
+                        <div class="text-lg font-bold text-blue-300">1%</div>
+                    </div>
+                </div>
+                <p class="text-white/60 text-sm mt-3 text-center">
+                    💡 รวมค่าคอมมิชชั่น <strong class="text-white">26%</strong> ต่อ PV • รองรับ Roll-up และ Compression
+                </p>
+            </div>
+
+            <div class="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-md border border-yellow-300/30 rounded-2xl p-4 text-center shadow-xl">
+                <p class="text-lg md:text-xl text-white font-bold">
+                    ⚙️ ปรับแต่งทุกค่าได้จาก Admin Panel • คำนวณอัตโนมัติ Real-time
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 3.1: ระบบ Rank 8 ระดับ -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-indigo-900/90 via-violet-900/80 to-purple-900/90 p-6 md:p-10 backdrop-blur-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-20">
+            <div class="absolute top-20 right-20 w-80 h-80 bg-violet-400 rounded-full mix-blend-screen filter blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-20 left-20 w-80 h-80 bg-indigo-400 rounded-full mix-blend-screen filter blur-3xl animate-pulse animation-delay-2000"></div>
+        </div>
+
+        <div class="max-w-7xl w-full relative z-10">
+            <h2 class="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-6 text-center">
+                👑 ระบบ Rank 8 ระดับ
+            </h2>
+            <p class="text-lg text-white/70 text-center mb-6">
+                ไต่ระดับจาก <span class="text-amber-400">สำริด</span> สู่ <span class="text-pink-400">ตำนาน</span> พร้อมโบนัสสูงสุด <strong class="text-yellow-300">1,000,000 บาท!</strong>
+            </p>
+
+            <!-- Rank Cards - 8 ระดับ -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+                <!-- Bronze -->
+                <div class="bg-gradient-to-br from-amber-700/40 to-amber-800/20 backdrop-blur-lg border border-amber-500/40 rounded-xl p-3 md:p-4 text-center hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-1">🥉</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">Bronze</h4>
+                    <p class="text-amber-300 text-xs">สำริด</p>
+                    <div class="mt-2 space-y-1 text-xs">
+                        <div class="text-white/80">Commission <span class="text-amber-300 font-bold">5%</span></div>
+                        <div class="text-white/60">3 ชั้น</div>
+                        <div class="text-emerald-300">ระดับเริ่มต้น</div>
                     </div>
                 </div>
 
-                <!-- Commission System -->
-                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
-                    <div class="flex items-start gap-4">
-                        <div class="text-5xl">💰</div>
-                        <div class="flex-1 text-white">
-                            <h3 class="text-2xl font-bold mb-3">ระบบคอมมิชชั่นอัจฉริยะ</h3>
-                            <ul class="space-y-2 text-white/90">
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Direct Commission</li>
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Override Commission</li>
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Pool Bonus & Matching Bonus</li>
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> รายงานรายได้แบบ Real-time</li>
-                            </ul>
-                        </div>
+                <!-- Silver -->
+                <div class="bg-gradient-to-br from-gray-400/40 to-gray-500/20 backdrop-blur-lg border border-gray-300/40 rounded-xl p-3 md:p-4 text-center hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-1">🥈</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">Silver</h4>
+                    <p class="text-gray-300 text-xs">เงิน</p>
+                    <div class="mt-2 space-y-1 text-xs">
+                        <div class="text-white/80">Commission <span class="text-gray-200 font-bold">7.5%</span></div>
+                        <div class="text-white/60">4 ชั้น</div>
+                        <div class="text-yellow-300">โบนัส ฿500</div>
                     </div>
                 </div>
 
-                <!-- Referral Links -->
-                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
-                    <div class="flex items-start gap-4">
-                        <div class="text-5xl">🔗</div>
-                        <div class="flex-1 text-white">
-                            <h3 class="text-2xl font-bold mb-3">ระบบลิงก์แนะนำ</h3>
-                            <ul class="space-y-2 text-white/90">
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> สร้างลิงก์อัตโนมัติ</li>
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> QR Code Generator</li>
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> ติดตามการคลิกและ Conversion</li>
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Short URL & Custom Link</li>
-                            </ul>
-                        </div>
+                <!-- Gold -->
+                <div class="bg-gradient-to-br from-yellow-500/40 to-yellow-600/20 backdrop-blur-lg border border-yellow-400/40 rounded-xl p-3 md:p-4 text-center hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-1">🥇</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">Gold</h4>
+                    <p class="text-yellow-300 text-xs">ทอง</p>
+                    <div class="mt-2 space-y-1 text-xs">
+                        <div class="text-white/80">Commission <span class="text-yellow-300 font-bold">10%</span></div>
+                        <div class="text-white/60">5 ชั้น</div>
+                        <div class="text-yellow-300">โบนัส ฿2,000</div>
                     </div>
                 </div>
 
-                <!-- Team Management -->
-                <div class="bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl p-6 hover:bg-white/15 transition-all shadow-xl">
-                    <div class="flex items-start gap-4">
-                        <div class="text-5xl">📊</div>
-                        <div class="flex-1 text-white">
-                            <h3 class="text-2xl font-bold mb-3">ระบบจัดการทีม</h3>
-                            <ul class="space-y-2 text-white/90">
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Genealogy Tree แบบ Interactive</li>
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> รายงานยอดทีมแบบละเอียด</li>
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> ระบบแจ้งเตือนสมาชิกใหม่</li>
-                                <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Leader Dashboard</li>
-                            </ul>
-                        </div>
+                <!-- Platinum -->
+                <div class="bg-gradient-to-br from-slate-400/40 to-slate-500/20 backdrop-blur-lg border border-slate-300/40 rounded-xl p-3 md:p-4 text-center hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-1">💎</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">Platinum</h4>
+                    <p class="text-slate-200 text-xs">แพลตินัม</p>
+                    <div class="mt-2 space-y-1 text-xs">
+                        <div class="text-white/80">Commission <span class="text-slate-200 font-bold">15%</span></div>
+                        <div class="text-white/60">6 ชั้น</div>
+                        <div class="text-yellow-300">โบนัส ฿10,000</div>
+                    </div>
+                </div>
+
+                <!-- Diamond -->
+                <div class="bg-gradient-to-br from-cyan-400/40 to-cyan-500/20 backdrop-blur-lg border border-cyan-300/40 rounded-xl p-3 md:p-4 text-center hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-1">💠</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">Diamond</h4>
+                    <p class="text-cyan-300 text-xs">เพชร</p>
+                    <div class="mt-2 space-y-1 text-xs">
+                        <div class="text-white/80">Commission <span class="text-cyan-300 font-bold">20%</span></div>
+                        <div class="text-white/60">7 ชั้น</div>
+                        <div class="text-yellow-300">โบนัส ฿50,000</div>
+                    </div>
+                </div>
+
+                <!-- Crown -->
+                <div class="bg-gradient-to-br from-amber-500/40 to-orange-500/20 backdrop-blur-lg border border-amber-400/40 rounded-xl p-3 md:p-4 text-center hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-1">👑</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">Crown</h4>
+                    <p class="text-amber-300 text-xs">มงกุฎ</p>
+                    <div class="mt-2 space-y-1 text-xs">
+                        <div class="text-white/80">Commission <span class="text-amber-300 font-bold">25%</span></div>
+                        <div class="text-white/60">8 ชั้น</div>
+                        <div class="text-yellow-300">โบนัส ฿100,000</div>
+                    </div>
+                </div>
+
+                <!-- Royal -->
+                <div class="bg-gradient-to-br from-violet-500/40 to-purple-500/20 backdrop-blur-lg border border-violet-400/40 rounded-xl p-3 md:p-4 text-center hover:scale-105 transition-all">
+                    <div class="text-3xl md:text-4xl mb-1">🏆</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">Royal</h4>
+                    <p class="text-violet-300 text-xs">รอยัล</p>
+                    <div class="mt-2 space-y-1 text-xs">
+                        <div class="text-white/80">Commission <span class="text-violet-300 font-bold">30%</span></div>
+                        <div class="text-white/60">9 ชั้น</div>
+                        <div class="text-yellow-300">โบนัส ฿300,000</div>
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div class="bg-gradient-to-br from-pink-500/50 to-rose-500/30 backdrop-blur-lg border-2 border-pink-400/60 rounded-xl p-3 md:p-4 text-center hover:scale-105 transition-all relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-yellow-400 text-black text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">TOP</div>
+                    <div class="text-3xl md:text-4xl mb-1">🌟</div>
+                    <h4 class="text-base md:text-lg font-bold text-white">Legend</h4>
+                    <p class="text-pink-300 text-xs">ตำนาน</p>
+                    <div class="mt-2 space-y-1 text-xs">
+                        <div class="text-white/80">Commission <span class="text-pink-300 font-bold">35%</span></div>
+                        <div class="text-white/60">10 ชั้น</div>
+                        <div class="text-yellow-300 font-bold animate-pulse">โบนัส ฿1,000,000!</div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-md border border-yellow-300/30 rounded-2xl p-6 text-center shadow-xl">
-                <p class="text-xl md:text-2xl text-white font-bold">
-                    💡 ระบบ MLM ที่ยืดหยุ่นที่สุด ปรับแต่งได้ตามต้องการ
-                </p>
+            <!-- Rank Benefits Summary -->
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+                    <h4 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                        <span>💵</span> โบนัสเลื่อนระดับ
+                    </h4>
+                    <p class="text-white/70 text-sm">รับโบนัสอัตโนมัติทันทีเมื่อเลื่อนระดับ ตั้งแต่ ฿500 ถึง ฿1,000,000</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+                    <h4 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                        <span>📈</span> โบนัสรายเดือน
+                    </h4>
+                    <p class="text-white/70 text-sm">รับโบนัสรายเดือนตาม Rank สูงสุด ฿100,000/เดือน (Legend)</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4">
+                    <h4 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                        <span>🎁</span> สิทธิพิเศษ
+                    </h4>
+                    <p class="text-white/70 text-sm">รถยนต์, บ้าน, ท่องเที่ยว, ผู้ช่วยส่วนตัว และอื่นๆ</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 3.2: แพ็คเกจสมาชิก MLM -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-emerald-900/90 via-teal-900/80 to-cyan-900/90 p-6 md:p-10 backdrop-blur-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-20">
+            <div class="absolute top-20 left-20 w-80 h-80 bg-emerald-400 rounded-full mix-blend-screen filter blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-20 right-20 w-80 h-80 bg-teal-400 rounded-full mix-blend-screen filter blur-3xl animate-pulse animation-delay-2000"></div>
+        </div>
+
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-6 text-center">
+                📦 แพ็คเกจสมาชิก MLM
+            </h2>
+            <p class="text-lg text-white/70 text-center mb-6">
+                เลือกแพ็คเกจที่เหมาะกับคุณ • ยิ่งแพ็คเกจสูง ยิ่งได้สิทธิประโยชน์มาก
+            </p>
+
+            <!-- Package Cards - 5 แพ็คเกจ -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6">
+                <!-- Bronze Package -->
+                <div class="bg-gradient-to-br from-amber-700/30 to-amber-800/10 backdrop-blur-lg border border-amber-500/30 rounded-xl p-4 text-center hover:scale-105 transition-all">
+                    <div class="text-3xl mb-2">🛡️</div>
+                    <h4 class="text-lg font-bold text-white">Bronze</h4>
+                    <p class="text-3xl font-black text-amber-300 my-2">฿990</p>
+                    <p class="text-amber-200/70 text-xs mb-3">990 PV</p>
+                    <ul class="text-left text-xs text-white/80 space-y-1">
+                        <li>✓ เริ่มต้นธุรกิจ MLM</li>
+                        <li>✓ ระบบ Back Office</li>
+                        <li>✓ ถอนขั้นต่ำ ฿500</li>
+                        <li>✓ ถอน 2 ครั้ง/เดือน</li>
+                    </ul>
+                </div>
+
+                <!-- Silver Package -->
+                <div class="bg-gradient-to-br from-gray-400/30 to-gray-500/10 backdrop-blur-lg border-2 border-blue-400/50 rounded-xl p-4 text-center hover:scale-105 transition-all relative">
+                    <div class="absolute -top-2 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Popular</div>
+                    <div class="text-3xl mb-2">🏅</div>
+                    <h4 class="text-lg font-bold text-white">Silver</h4>
+                    <p class="text-3xl font-black text-gray-200 my-2">฿2,990</p>
+                    <p class="text-gray-300/70 text-xs mb-3">2,990 PV</p>
+                    <ul class="text-left text-xs text-white/80 space-y-1">
+                        <li>✓ ทุกสิทธิ์ Bronze</li>
+                        <li>✓ สินค้าพรีเมี่ยม</li>
+                        <li>✓ โบนัสพิเศษ 5%</li>
+                        <li>✓ ถอน 4 ครั้ง/เดือน</li>
+                    </ul>
+                </div>
+
+                <!-- Gold Package -->
+                <div class="bg-gradient-to-br from-yellow-500/30 to-yellow-600/10 backdrop-blur-lg border border-yellow-400/30 rounded-xl p-4 text-center hover:scale-105 transition-all relative">
+                    <div class="absolute -top-2 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full">Best Value</div>
+                    <div class="text-3xl mb-2">⭐</div>
+                    <h4 class="text-lg font-bold text-white">Gold</h4>
+                    <p class="text-3xl font-black text-yellow-300 my-2">฿5,990</p>
+                    <p class="text-yellow-200/70 text-xs mb-3">5,990 PV</p>
+                    <ul class="text-left text-xs text-white/80 space-y-1">
+                        <li>✓ ทุกสิทธิ์ Silver</li>
+                        <li>✓ เข้าร่วมสัมมนา</li>
+                        <li>✓ โบนัสพิเศษ 10%</li>
+                        <li>✓ ถอน 8 ครั้ง/เดือน</li>
+                    </ul>
+                </div>
+
+                <!-- Diamond Package -->
+                <div class="bg-gradient-to-br from-cyan-400/30 to-cyan-500/10 backdrop-blur-lg border border-cyan-300/30 rounded-xl p-4 text-center hover:scale-105 transition-all relative">
+                    <div class="absolute -top-2 left-1/2 -translate-x-1/2 bg-cyan-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Elite</div>
+                    <div class="text-3xl mb-2">💎</div>
+                    <h4 class="text-lg font-bold text-white">Diamond</h4>
+                    <p class="text-3xl font-black text-cyan-300 my-2">฿9,990</p>
+                    <p class="text-cyan-200/70 text-xs mb-3">9,990 PV</p>
+                    <ul class="text-left text-xs text-white/80 space-y-1">
+                        <li>✓ ทุกสิทธิ์ Gold</li>
+                        <li>✓ ทีมซัพพอร์ต VIP</li>
+                        <li>✓ โบนัสพิเศษ 15%</li>
+                        <li>✓ ถอนไม่จำกัด</li>
+                    </ul>
+                </div>
+
+                <!-- Premier Package -->
+                <div class="bg-gradient-to-br from-purple-500/40 to-violet-600/20 backdrop-blur-lg border-2 border-purple-400/50 rounded-xl p-4 text-center hover:scale-105 transition-all relative col-span-2 md:col-span-1">
+                    <div class="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold px-3 py-0.5 rounded-full">VIP</div>
+                    <div class="text-3xl mb-2">👑</div>
+                    <h4 class="text-lg font-bold text-white">Premier</h4>
+                    <p class="text-3xl font-black text-purple-300 my-2">฿19,990</p>
+                    <p class="text-purple-200/70 text-xs mb-3">19,990 PV</p>
+                    <ul class="text-left text-xs text-white/80 space-y-1">
+                        <li>✓ ทุกสิทธิ์ Diamond</li>
+                        <li>✓ ระบบ AI อัตโนมัติ</li>
+                        <li>✓ โบนัสพิเศษ 20%</li>
+                        <li>✓ ไม่มีขั้นต่ำถอน</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Feature Comparison -->
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 md:p-6">
+                <h4 class="text-xl font-bold text-white mb-4 text-center">🔄 เปรียบเทียบสิทธิประโยชน์</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs md:text-sm text-white/90">
+                        <thead>
+                            <tr class="border-b border-white/20">
+                                <th class="text-left py-2 px-2">สิทธิประโยชน์</th>
+                                <th class="text-center py-2 px-1">Bronze</th>
+                                <th class="text-center py-2 px-1">Silver</th>
+                                <th class="text-center py-2 px-1">Gold</th>
+                                <th class="text-center py-2 px-1">Diamond</th>
+                                <th class="text-center py-2 px-1">Premier</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-white/10">
+                                <td class="py-2 px-2">โบนัสพิเศษ</td>
+                                <td class="text-center">-</td>
+                                <td class="text-center text-emerald-300">5%</td>
+                                <td class="text-center text-emerald-300">10%</td>
+                                <td class="text-center text-emerald-300">15%</td>
+                                <td class="text-center text-emerald-300">20%</td>
+                            </tr>
+                            <tr class="border-b border-white/10">
+                                <td class="py-2 px-2">ถอนต่อเดือน</td>
+                                <td class="text-center">2 ครั้ง</td>
+                                <td class="text-center">4 ครั้ง</td>
+                                <td class="text-center">8 ครั้ง</td>
+                                <td class="text-center text-emerald-300">ไม่จำกัด</td>
+                                <td class="text-center text-emerald-300">ไม่จำกัด</td>
+                            </tr>
+                            <tr class="border-b border-white/10">
+                                <td class="py-2 px-2">ขั้นต่ำถอน</td>
+                                <td class="text-center">฿500</td>
+                                <td class="text-center">฿300</td>
+                                <td class="text-center">฿200</td>
+                                <td class="text-center">฿100</td>
+                                <td class="text-center text-emerald-300">ไม่มี</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 px-2">VIP Support</td>
+                                <td class="text-center">-</td>
+                                <td class="text-center">-</td>
+                                <td class="text-center text-emerald-300">✓</td>
+                                <td class="text-center text-emerald-300">✓</td>
+                                <td class="text-center text-emerald-300">✓</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 3.3: เงื่อนไขการเลื่อนระดับ -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-rose-900/90 via-pink-900/80 to-fuchsia-900/90 p-6 md:p-10 backdrop-blur-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-20">
+            <div class="absolute top-20 right-20 w-80 h-80 bg-rose-400 rounded-full mix-blend-screen filter blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-20 left-20 w-80 h-80 bg-pink-400 rounded-full mix-blend-screen filter blur-3xl animate-pulse animation-delay-2000"></div>
+        </div>
+
+        <div class="max-w-6xl w-full relative z-10">
+            <h2 class="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 md:mb-6 text-center">
+                📈 เงื่อนไขการเลื่อนระดับ
+            </h2>
+            <p class="text-lg text-white/70 text-center mb-6">
+                เงื่อนไขชัดเจน • ตรวจสอบได้ Real-time • เลื่อนระดับอัตโนมัติ
+            </p>
+
+            <!-- Rank Requirements Table -->
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden mb-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs md:text-sm text-white">
+                        <thead class="bg-white/10">
+                            <tr>
+                                <th class="text-left py-3 px-3 font-bold">Rank</th>
+                                <th class="text-center py-3 px-2 font-bold">คะแนน (PV)</th>
+                                <th class="text-center py-3 px-2 font-bold">แนะนำ</th>
+                                <th class="text-center py-3 px-2 font-bold">ยอดขายส่วนตัว</th>
+                                <th class="text-center py-3 px-2 font-bold">ยอดขายทีม</th>
+                                <th class="text-center py-3 px-2 font-bold hidden md:table-cell">เงื่อนไขพิเศษ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-white/10 bg-amber-700/10">
+                                <td class="py-2 px-3"><span class="text-lg mr-1">🥉</span> Bronze</td>
+                                <td class="text-center py-2 px-2 text-emerald-300">ไม่มี</td>
+                                <td class="text-center py-2 px-2 text-emerald-300">ไม่มี</td>
+                                <td class="text-center py-2 px-2 text-emerald-300">ไม่มี</td>
+                                <td class="text-center py-2 px-2 text-emerald-300">ไม่มี</td>
+                                <td class="text-center py-2 px-2 hidden md:table-cell text-white/60">ระดับเริ่มต้น</td>
+                            </tr>
+                            <tr class="border-b border-white/10 bg-gray-500/10">
+                                <td class="py-2 px-3"><span class="text-lg mr-1">🥈</span> Silver</td>
+                                <td class="text-center py-2 px-2">100</td>
+                                <td class="text-center py-2 px-2">5 คน</td>
+                                <td class="text-center py-2 px-2">฿10,000</td>
+                                <td class="text-center py-2 px-2">-</td>
+                                <td class="text-center py-2 px-2 hidden md:table-cell text-white/60">-</td>
+                            </tr>
+                            <tr class="border-b border-white/10 bg-yellow-500/10">
+                                <td class="py-2 px-3"><span class="text-lg mr-1">🥇</span> Gold</td>
+                                <td class="text-center py-2 px-2">500</td>
+                                <td class="text-center py-2 px-2">20 คน</td>
+                                <td class="text-center py-2 px-2">฿50,000</td>
+                                <td class="text-center py-2 px-2">-</td>
+                                <td class="text-center py-2 px-2 hidden md:table-cell text-white/60">Active 10 คน</td>
+                            </tr>
+                            <tr class="border-b border-white/10 bg-slate-500/10">
+                                <td class="py-2 px-3"><span class="text-lg mr-1">💎</span> Platinum</td>
+                                <td class="text-center py-2 px-2">2,000</td>
+                                <td class="text-center py-2 px-2">50 คน</td>
+                                <td class="text-center py-2 px-2">฿200,000</td>
+                                <td class="text-center py-2 px-2">฿500,000</td>
+                                <td class="text-center py-2 px-2 hidden md:table-cell text-white/60">Active 25 คน</td>
+                            </tr>
+                            <tr class="border-b border-white/10 bg-cyan-500/10">
+                                <td class="py-2 px-3"><span class="text-lg mr-1">💠</span> Diamond</td>
+                                <td class="text-center py-2 px-2">10,000</td>
+                                <td class="text-center py-2 px-2">100 คน</td>
+                                <td class="text-center py-2 px-2">฿1,000,000</td>
+                                <td class="text-center py-2 px-2">฿2,000,000</td>
+                                <td class="text-center py-2 px-2 hidden md:table-cell text-white/60">Active 50 คน</td>
+                            </tr>
+                            <tr class="border-b border-white/10 bg-amber-500/10">
+                                <td class="py-2 px-3"><span class="text-lg mr-1">👑</span> Crown</td>
+                                <td class="text-center py-2 px-2">25,000</td>
+                                <td class="text-center py-2 px-2">200 คน</td>
+                                <td class="text-center py-2 px-2">฿2,500,000</td>
+                                <td class="text-center py-2 px-2">฿5,000,000</td>
+                                <td class="text-center py-2 px-2 hidden md:table-cell text-yellow-300">Diamond 2 คน</td>
+                            </tr>
+                            <tr class="border-b border-white/10 bg-violet-500/10">
+                                <td class="py-2 px-3"><span class="text-lg mr-1">🏆</span> Royal</td>
+                                <td class="text-center py-2 px-2">50,000</td>
+                                <td class="text-center py-2 px-2">350 คน</td>
+                                <td class="text-center py-2 px-2">฿5,000,000</td>
+                                <td class="text-center py-2 px-2">฿10,000,000</td>
+                                <td class="text-center py-2 px-2 hidden md:table-cell text-yellow-300">Crown 3 คน</td>
+                            </tr>
+                            <tr class="bg-pink-500/20">
+                                <td class="py-2 px-3"><span class="text-lg mr-1">🌟</span> <strong>Legend</strong></td>
+                                <td class="text-center py-2 px-2 font-bold">100,000</td>
+                                <td class="text-center py-2 px-2 font-bold">500 คน</td>
+                                <td class="text-center py-2 px-2 font-bold">฿10,000,000</td>
+                                <td class="text-center py-2 px-2 font-bold">฿25,000,000</td>
+                                <td class="text-center py-2 px-2 hidden md:table-cell text-yellow-300 font-bold">Royal 3 คน</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Key Features -->
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 text-center">
+                    <div class="text-3xl mb-2">⚡</div>
+                    <h4 class="text-lg font-bold text-white mb-2">เลื่อนระดับอัตโนมัติ</h4>
+                    <p class="text-white/70 text-sm">ระบบตรวจสอบและเลื่อนระดับอัตโนมัติเมื่อครบเงื่อนไข</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 text-center">
+                    <div class="text-3xl mb-2">📊</div>
+                    <h4 class="text-lg font-bold text-white mb-2">Dashboard Real-time</h4>
+                    <p class="text-white/70 text-sm">ติดตามความคืบหน้าการเลื่อนระดับได้ตลอด 24 ชม.</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 text-center">
+                    <div class="text-3xl mb-2">💰</div>
+                    <h4 class="text-lg font-bold text-white mb-2">โบนัสทันที</h4>
+                    <p class="text-white/70 text-sm">รับโบนัสเลื่อนระดับเข้า Wallet ทันทีเมื่อเลื่อนสำเร็จ</p>
+                </div>
             </div>
         </div>
     </div>
