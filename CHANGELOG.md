@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.345.4] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2002 from xjanova/claude/fix-mlm-binary-tree-018J9z7WSPqQRJEsf8rinLBr (2924249f)
+- fix: remove withTrashed() as User model doesn't use SoftDeletes (e4948c6f)
+### 🔧 Other Changes
+
+
 ## [v3.345.3] - 2025-12-04
 
 ### ✨ Features
