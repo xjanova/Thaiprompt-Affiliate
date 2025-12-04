@@ -54,3 +54,26 @@ google-credentials.json
 .seeders.checksum
 /backups
 *.backup
+
+# .NET MAUI / .NET Core
+**/bin/
+**/obj/
+**/.vs/
+*.user
+*.suo
+*.cache
+*.userprefs
+
+# MAUI build outputs
+*.ipa
+*.apk
+*.aab
+*.msix
+*.msixbundle
+*.appxbundle
+*.appx
+
+# SQLite local database
+*.db
+*.db-shm
+*.db-wal

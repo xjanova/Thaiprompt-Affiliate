@@ -25,10 +25,11 @@ public static class MauiProgram
             .UseBarcodeReader()
             .ConfigureFonts(fonts =>
             {
-                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-                fonts.AddFont("Sarabun-Regular.ttf", "SarabunRegular");
-                fonts.AddFont("Sarabun-Bold.ttf", "SarabunBold");
+                // ใช้ default fonts ก่อน - จะเพิ่ม custom fonts ในภายหลัง
+                // fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                // fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                // fonts.AddFont("Sarabun-Regular.ttf", "SarabunRegular");
+                // fonts.AddFont("Sarabun-Bold.ttf", "SarabunBold");
             });
 
         // ลงทะเบียน Services
@@ -65,6 +66,7 @@ public static class MauiProgram
         // ViewModels
         services.AddTransient<MainViewModel>();
         services.AddTransient<PosViewModel>();
+        services.AddTransient<CheckoutViewModel>();
         services.AddTransient<InventoryViewModel>();
         services.AddTransient<ReportsViewModel>();
         services.AddTransient<SettingsViewModel>();
@@ -73,9 +75,15 @@ public static class MauiProgram
         // Pages
         services.AddTransient<MainPage>();
         services.AddTransient<PosPage>();
+        services.AddTransient<CheckoutPage>();
         services.AddTransient<InventoryPage>();
         services.AddTransient<ReportsPage>();
         services.AddTransient<SettingsPage>();
         services.AddTransient<LoginPage>();
+        services.AddTransient<TransactionsPage>();
+        services.AddTransient<ReceiptPage>();
+        services.AddTransient<ProductDetailPage>();
+        services.AddTransient<CustomerSelectPage>();
+        services.AddTransient<StockAdjustmentPage>();
     }
 }

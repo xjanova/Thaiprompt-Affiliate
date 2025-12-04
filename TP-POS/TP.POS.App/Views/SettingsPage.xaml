@@ -1,11 +1,578 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:TP.POS.App.ViewModels"
              x:Class="TP.POS.App.Views.SettingsPage"
-             Title="ตั้งค่า">
-    <VerticalStackLayout Padding="20" VerticalOptions="Center" HorizontalOptions="Center">
-        <Label Text="⚙️" FontSize="60" HorizontalOptions="Center"/>
-        <Label Text="หน้าตั้งค่า" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center" Margin="0,20,0,0"/>
-        <Label Text="จะพัฒนาในรุ่นถัดไป" FontSize="16" TextColor="Gray" HorizontalOptions="Center"/>
-    </VerticalStackLayout>
+             x:DataType="vm:SettingsViewModel"
+             Title="ตั้งค่า"
+             BackgroundColor="#F3F4F6">
+
+    <Grid>
+        <!-- Main Content -->
+        <ScrollView>
+            <VerticalStackLayout Padding="20" Spacing="20">
+
+                <!-- Header -->
+                <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,10">
+                    <Label Text="⚙️" FontSize="32" VerticalOptions="Center"/>
+                    <VerticalStackLayout Grid.Column="1" Margin="15,0,0,0" VerticalOptions="Center">
+                        <Label Text="ตั้งค่าระบบ" FontSize="24" FontAttributes="Bold" TextColor="#111827"/>
+                        <Label Text="{Binding CurrentUserName, StringFormat='ผู้ใช้: {0}'}" FontSize="14" TextColor="#6B7280"/>
+                    </VerticalStackLayout>
+                    <Label Grid.Column="2" Text="{Binding AppVersion, StringFormat='v{0}'}"
+                           FontSize="12" TextColor="#9CA3AF" VerticalOptions="Center"/>
+                </Grid>
+
+                <!-- Shop Information Card -->
+                <Border BackgroundColor="White" StrokeThickness="0" Padding="20">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#20000000" Offset="0,2" Radius="8"/>
+                    </Border.Shadow>
+
+                    <VerticalStackLayout Spacing="15">
+                        <Label Text="🏪 ข้อมูลร้านค้า" FontSize="18" FontAttributes="Bold" TextColor="#111827"/>
+
+                        <!-- Shop Name -->
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="ชื่อร้าน" FontSize="14" TextColor="#6B7280"/>
+                            <Border BackgroundColor="#F9FAFB" Stroke="#E5E7EB" StrokeThickness="1" Padding="12,10">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8"/>
+                                </Border.StrokeShape>
+                                <Entry Text="{Binding ShopName}" Placeholder="ระบุชื่อร้าน"
+                                       FontSize="16" TextColor="#111827" BackgroundColor="Transparent"/>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Shop Address -->
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="ที่อยู่" FontSize="14" TextColor="#6B7280"/>
+                            <Border BackgroundColor="#F9FAFB" Stroke="#E5E7EB" StrokeThickness="1" Padding="12,10">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8"/>
+                                </Border.StrokeShape>
+                                <Editor Text="{Binding ShopAddress}" Placeholder="ระบุที่อยู่ร้าน"
+                                        FontSize="14" TextColor="#111827" HeightRequest="60"
+                                        BackgroundColor="Transparent" AutoSize="TextChanges"/>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Shop Phone & Tax ID -->
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
+                            <VerticalStackLayout Spacing="5">
+                                <Label Text="เบอร์โทร" FontSize="14" TextColor="#6B7280"/>
+                                <Border BackgroundColor="#F9FAFB" Stroke="#E5E7EB" StrokeThickness="1" Padding="12,10">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="8"/>
+                                    </Border.StrokeShape>
+                                    <Entry Text="{Binding ShopPhone}" Placeholder="0xx-xxx-xxxx"
+                                           Keyboard="Telephone" FontSize="14" TextColor="#111827" BackgroundColor="Transparent"/>
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="5">
+                                <Label Text="เลขผู้เสียภาษี" FontSize="14" TextColor="#6B7280"/>
+                                <Border BackgroundColor="#F9FAFB" Stroke="#E5E7EB" StrokeThickness="1" Padding="12,10">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="8"/>
+                                    </Border.StrokeShape>
+                                    <Entry Text="{Binding TaxId}" Placeholder="13 หลัก"
+                                           Keyboard="Numeric" FontSize="14" TextColor="#111827" BackgroundColor="Transparent"/>
+                                </Border>
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <!-- Save Button -->
+                        <Button Text="💾 บันทึกข้อมูลร้าน"
+                                BackgroundColor="#22C55E" TextColor="White"
+                                FontSize="16" FontAttributes="Bold"
+                                HeightRequest="48" CornerRadius="12"
+                                Command="{Binding SaveShopSettingsCommand}"/>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Server Connection Card -->
+                <Border BackgroundColor="White" StrokeThickness="0" Padding="20">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#20000000" Offset="0,2" Radius="8"/>
+                    </Border.Shadow>
+
+                    <VerticalStackLayout Spacing="15">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="🌐 การเชื่อมต่อ Server" FontSize="18" FontAttributes="Bold" TextColor="#111827"/>
+                            <Button Grid.Column="1" Text="ตั้งค่า"
+                                    BackgroundColor="#3B82F6" TextColor="White"
+                                    FontSize="14" HeightRequest="36" Padding="20,0"
+                                    CornerRadius="8" Command="{Binding OpenServerSettingsCommand}"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" Color="#E5E7EB"/>
+
+                        <!-- Connection Info -->
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <Label Text="📡" FontSize="24"/>
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label Text="{Binding ServerUrl}" FontSize="14" TextColor="#111827" LineBreakMode="TailTruncation"/>
+                                <Label Text="{Binding BranchName, StringFormat='สาขา: {0}'}" FontSize="12" TextColor="#6B7280"/>
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <!-- Sync Stats -->
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                            <!-- Products -->
+                            <Border BackgroundColor="#EFF6FF" StrokeThickness="0" Padding="12">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8"/>
+                                </Border.StrokeShape>
+                                <VerticalStackLayout HorizontalOptions="Center">
+                                    <Label Text="{Binding ProductCount}" FontSize="20" FontAttributes="Bold" TextColor="#3B82F6" HorizontalOptions="Center"/>
+                                    <Label Text="สินค้า" FontSize="12" TextColor="#6B7280" HorizontalOptions="Center"/>
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <!-- Pending Sync -->
+                            <Border BackgroundColor="#FEF3C7" StrokeThickness="0" Padding="12">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8"/>
+                                </Border.StrokeShape>
+                                <VerticalStackLayout HorizontalOptions="Center">
+                                    <Label Text="{Binding PendingSyncCount}" FontSize="20" FontAttributes="Bold" TextColor="#F59E0B" HorizontalOptions="Center"/>
+                                    <Label Text="รอ Sync" FontSize="12" TextColor="#6B7280" HorizontalOptions="Center"/>
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <!-- Last Sync -->
+                            <Border BackgroundColor="#DCFCE7" StrokeThickness="0" Padding="12">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8"/>
+                                </Border.StrokeShape>
+                                <VerticalStackLayout HorizontalOptions="Center">
+                                    <Label Text="✓" FontSize="20" FontAttributes="Bold" TextColor="#22C55E" HorizontalOptions="Center"/>
+                                    <Label Text="{Binding LastSyncText}" FontSize="11" TextColor="#6B7280" HorizontalOptions="Center" LineBreakMode="TailTruncation"/>
+                                </VerticalStackLayout>
+                            </Border>
+                        </Grid>
+
+                        <!-- Sync Buttons -->
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Button Text="🔄 Sync ทันที"
+                                    BackgroundColor="#3B82F6" TextColor="White"
+                                    FontSize="14" HeightRequest="44" CornerRadius="10"
+                                    Command="{Binding SyncNowCommand}"
+                                    IsEnabled="{Binding IsSyncing, Converter={StaticResource InverseBoolConverter}}"/>
+                            <Button Grid.Column="1" Text="📥 นำเข้าสินค้า"
+                                    BackgroundColor="#8B5CF6" TextColor="White"
+                                    FontSize="14" HeightRequest="44" CornerRadius="10"
+                                    Command="{Binding ImportProductsCommand}"
+                                    IsEnabled="{Binding IsSyncing, Converter={StaticResource InverseBoolConverter}}"/>
+                        </Grid>
+
+                        <!-- Sync Progress -->
+                        <HorizontalStackLayout Spacing="10" IsVisible="{Binding IsSyncing}" HorizontalOptions="Center">
+                            <ActivityIndicator IsRunning="True" Color="#3B82F6" HeightRequest="20" WidthRequest="20"/>
+                            <Label Text="{Binding SyncMessage}" FontSize="14" TextColor="#3B82F6"/>
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Printer Settings Card -->
+                <Border BackgroundColor="White" StrokeThickness="0" Padding="20">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#20000000" Offset="0,2" Radius="8"/>
+                    </Border.Shadow>
+
+                    <VerticalStackLayout Spacing="15">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="🖨️ เครื่องพิมพ์" FontSize="18" FontAttributes="Bold" TextColor="#111827"/>
+                            <Button Grid.Column="1" Text="ตั้งค่า"
+                                    BackgroundColor="#10B981" TextColor="White"
+                                    FontSize="14" HeightRequest="36" Padding="20,0"
+                                    CornerRadius="8" Command="{Binding OpenPrinterSettingsCommand}"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" Color="#E5E7EB"/>
+
+                        <!-- Printer Info -->
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                            <Label Text="🖨️" FontSize="24"/>
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label Text="{Binding PrinterName, TargetNullValue='ยังไม่ได้เลือกเครื่องพิมพ์'}"
+                                       FontSize="14" TextColor="#111827"/>
+                                <Label Text="{Binding PaperWidth, StringFormat='กระดาษ {0}mm'}" FontSize="12" TextColor="#6B7280"/>
+                            </VerticalStackLayout>
+                            <Border Grid.Column="2"
+                                    BackgroundColor="{Binding EnablePrinter, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#DCFCE7|#FEE2E2'}"
+                                    StrokeThickness="0" Padding="8,4">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="4"/>
+                                </Border.StrokeShape>
+                                <Label Text="{Binding EnablePrinter, Converter={StaticResource BoolToStringConverter}, ConverterParameter='เปิด|ปิด'}"
+                                       FontSize="12"
+                                       TextColor="{Binding EnablePrinter, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#22C55E|#EF4444'}"/>
+                            </Border>
+                        </Grid>
+
+                        <!-- Auto Print -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="พิมพ์ใบเสร็จอัตโนมัติ" FontSize="14" TextColor="#374151" VerticalOptions="Center"/>
+                            <Switch Grid.Column="1" IsToggled="{Binding AutoPrintReceipt}" OnColor="#22C55E"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- General Settings Card -->
+                <Border BackgroundColor="White" StrokeThickness="0" Padding="20">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#20000000" Offset="0,2" Radius="8"/>
+                    </Border.Shadow>
+
+                    <VerticalStackLayout Spacing="15">
+                        <Label Text="🎛️ การตั้งค่าทั่วไป" FontSize="18" FontAttributes="Bold" TextColor="#111827"/>
+
+                        <BoxView HeightRequest="1" Color="#E5E7EB"/>
+
+                        <!-- Sound -->
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
+                            <Label Text="🔔" FontSize="24" VerticalOptions="Center"/>
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label Text="เสียงแจ้งเตือน" FontSize="14" TextColor="#111827"/>
+                                <Label Text="เปิด/ปิดเสียงเมื่อมีการทำรายการ" FontSize="12" TextColor="#6B7280"/>
+                            </VerticalStackLayout>
+                            <Switch Grid.Column="2" IsToggled="{Binding EnableSound}" OnColor="#22C55E"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" Color="#F3F4F6"/>
+
+                        <!-- Haptic -->
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
+                            <Label Text="📳" FontSize="24" VerticalOptions="Center"/>
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label Text="การสั่น (Haptic)" FontSize="14" TextColor="#111827"/>
+                                <Label Text="สั่นเมื่อกดปุ่มหรือทำรายการ" FontSize="12" TextColor="#6B7280"/>
+                            </VerticalStackLayout>
+                            <Switch Grid.Column="2" IsToggled="{Binding EnableHaptic}" OnColor="#22C55E"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" Color="#F3F4F6"/>
+
+                        <!-- Dark Mode -->
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
+                            <Label Text="🌙" FontSize="24" VerticalOptions="Center"/>
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label Text="โหมดมืด" FontSize="14" TextColor="#111827"/>
+                                <Label Text="เปลี่ยนธีมเป็นโทนสีเข้ม" FontSize="12" TextColor="#6B7280"/>
+                            </VerticalStackLayout>
+                            <Switch Grid.Column="2" IsToggled="{Binding IsDarkMode}" OnColor="#22C55E"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" Color="#F3F4F6"/>
+
+                        <!-- Auto Sync -->
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
+                            <Label Text="🔄" FontSize="24" VerticalOptions="Center"/>
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label Text="Sync อัตโนมัติ" FontSize="14" TextColor="#111827"/>
+                                <Label Text="{Binding SyncInterval, StringFormat='ทุก {0} นาที'}" FontSize="12" TextColor="#6B7280"/>
+                            </VerticalStackLayout>
+                            <Switch Grid.Column="2" IsToggled="{Binding AutoSync}" OnColor="#22C55E"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Danger Zone Card -->
+                <Border BackgroundColor="White" StrokeThickness="0" Padding="20">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#20000000" Offset="0,2" Radius="8"/>
+                    </Border.Shadow>
+
+                    <VerticalStackLayout Spacing="15">
+                        <Label Text="⚠️ โซนอันตราย" FontSize="18" FontAttributes="Bold" TextColor="#EF4444"/>
+
+                        <BoxView HeightRequest="1" Color="#FEE2E2"/>
+
+                        <!-- Clear Data -->
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
+                            <Label Text="🗑️" FontSize="24" VerticalOptions="Center"/>
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label Text="ล้างข้อมูลทั้งหมด" FontSize="14" TextColor="#111827"/>
+                                <Label Text="ลบสินค้า, Transaction และการตั้งค่า" FontSize="12" TextColor="#6B7280"/>
+                            </VerticalStackLayout>
+                            <Button Grid.Column="2" Text="ล้าง"
+                                    BackgroundColor="#FEE2E2" TextColor="#EF4444"
+                                    FontSize="14" HeightRequest="36" Padding="20,0"
+                                    CornerRadius="8" Command="{Binding ClearAllDataCommand}"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" Color="#F3F4F6"/>
+
+                        <!-- Logout -->
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
+                            <Label Text="🚪" FontSize="24" VerticalOptions="Center"/>
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label Text="ออกจากระบบ" FontSize="14" TextColor="#111827"/>
+                                <Label Text="กลับไปหน้า Login" FontSize="12" TextColor="#6B7280"/>
+                            </VerticalStackLayout>
+                            <Button Grid.Column="2" Text="ออก"
+                                    BackgroundColor="#EF4444" TextColor="White"
+                                    FontSize="14" HeightRequest="36" Padding="20,0"
+                                    CornerRadius="8" Command="{Binding LogoutCommand}"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- App Info -->
+                <Border BackgroundColor="White" StrokeThickness="0" Padding="20">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+
+                    <VerticalStackLayout>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
+                            <Label Text="ℹ️" FontSize="24" VerticalOptions="Center"/>
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label Text="เกี่ยวกับแอป" FontSize="14" TextColor="#111827"/>
+                                <Label Text="{Binding AppVersion, StringFormat='TP-POS v{0}'}" FontSize="12" TextColor="#6B7280"/>
+                            </VerticalStackLayout>
+                            <Button Grid.Column="2" Text="ดูข้อมูล"
+                                    BackgroundColor="#F3F4F6" TextColor="#374151"
+                                    FontSize="14" HeightRequest="36" Padding="20,0"
+                                    CornerRadius="8" Command="{Binding ViewAppInfoCommand}"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Footer Space -->
+                <BoxView HeightRequest="20"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Server Settings Modal -->
+        <Grid IsVisible="{Binding ShowServerModal}" BackgroundColor="#80000000">
+            <Border BackgroundColor="White" StrokeThickness="0"
+                    WidthRequest="400" MaximumHeightRequest="500"
+                    HorizontalOptions="Center" VerticalOptions="Center"
+                    Padding="25">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="20"/>
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="#40000000" Offset="0,4" Radius="20"/>
+                </Border.Shadow>
+
+                <VerticalStackLayout Spacing="20">
+                    <!-- Modal Header -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="🌐 ตั้งค่า Server" FontSize="20" FontAttributes="Bold" TextColor="#111827"/>
+                        <Button Grid.Column="1" Text="✕" BackgroundColor="Transparent" TextColor="#6B7280"
+                                FontSize="20" HeightRequest="40" WidthRequest="40"
+                                Command="{Binding CloseServerSettingsCommand}"/>
+                    </Grid>
+
+                    <BoxView HeightRequest="1" Color="#E5E7EB"/>
+
+                    <!-- Server URL -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Server URL" FontSize="14" TextColor="#6B7280"/>
+                        <Border BackgroundColor="#F9FAFB" Stroke="#E5E7EB" StrokeThickness="1" Padding="12,10">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="8"/>
+                            </Border.StrokeShape>
+                            <Entry Text="{Binding ServerUrl}" Placeholder="https://your-server.com"
+                                   Keyboard="Url" FontSize="14" TextColor="#111827" BackgroundColor="Transparent"/>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- API Key -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="API Key" FontSize="14" TextColor="#6B7280"/>
+                        <Border BackgroundColor="#F9FAFB" Stroke="#E5E7EB" StrokeThickness="1" Padding="12,10">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="8"/>
+                            </Border.StrokeShape>
+                            <Entry Text="{Binding ApiKey}" Placeholder="ระบุ API Key"
+                                   IsPassword="True" FontSize="14" TextColor="#111827" BackgroundColor="Transparent"/>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Branch Code & Name -->
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="รหัสสาขา" FontSize="14" TextColor="#6B7280"/>
+                            <Border BackgroundColor="#F9FAFB" Stroke="#E5E7EB" StrokeThickness="1" Padding="12,10">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8"/>
+                                </Border.StrokeShape>
+                                <Entry Text="{Binding BranchCode}" Placeholder="HQ"
+                                       FontSize="14" TextColor="#111827" BackgroundColor="Transparent"/>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Grid.Column="1" Spacing="5">
+                            <Label Text="ชื่อสาขา" FontSize="14" TextColor="#6B7280"/>
+                            <Border BackgroundColor="#F9FAFB" Stroke="#E5E7EB" StrokeThickness="1" Padding="12,10">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8"/>
+                                </Border.StrokeShape>
+                                <Entry Text="{Binding BranchName}" Placeholder="สำนักงานใหญ่"
+                                       FontSize="14" TextColor="#111827" BackgroundColor="Transparent"/>
+                            </Border>
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <!-- Buttons -->
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                        <Button Text="ทดสอบ" BackgroundColor="#F3F4F6" TextColor="#374151"
+                                FontSize="14" HeightRequest="44" CornerRadius="10"
+                                Command="{Binding TestConnectionCommand}"/>
+                        <Button Grid.Column="1" Text="ยกเลิก" BackgroundColor="#F3F4F6" TextColor="#374151"
+                                FontSize="14" HeightRequest="44" CornerRadius="10"
+                                Command="{Binding CloseServerSettingsCommand}"/>
+                        <Button Grid.Column="2" Text="บันทึก" BackgroundColor="#3B82F6" TextColor="White"
+                                FontSize="14" HeightRequest="44" CornerRadius="10"
+                                Command="{Binding SaveServerSettingsCommand}"/>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <!-- Printer Settings Modal -->
+        <Grid IsVisible="{Binding ShowPrinterModal}" BackgroundColor="#80000000">
+            <Border BackgroundColor="White" StrokeThickness="0"
+                    WidthRequest="400" MaximumHeightRequest="550"
+                    HorizontalOptions="Center" VerticalOptions="Center"
+                    Padding="25">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="20"/>
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="#40000000" Offset="0,4" Radius="20"/>
+                </Border.Shadow>
+
+                <VerticalStackLayout Spacing="20">
+                    <!-- Modal Header -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="🖨️ ตั้งค่าเครื่องพิมพ์" FontSize="20" FontAttributes="Bold" TextColor="#111827"/>
+                        <Button Grid.Column="1" Text="✕" BackgroundColor="Transparent" TextColor="#6B7280"
+                                FontSize="20" HeightRequest="40" WidthRequest="40"
+                                Command="{Binding ClosePrinterSettingsCommand}"/>
+                    </Grid>
+
+                    <BoxView HeightRequest="1" Color="#E5E7EB"/>
+
+                    <!-- Enable Printer -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="เปิดใช้งานเครื่องพิมพ์" FontSize="14" TextColor="#374151" VerticalOptions="Center"/>
+                        <Switch Grid.Column="1" IsToggled="{Binding EnablePrinter}" OnColor="#22C55E"/>
+                    </Grid>
+
+                    <!-- Available Printers -->
+                    <VerticalStackLayout Spacing="10" IsVisible="{Binding EnablePrinter}">
+                        <Label Text="เครื่องพิมพ์ที่พบ" FontSize="14" TextColor="#6B7280"/>
+
+                        <CollectionView ItemsSource="{Binding AvailablePrinters}"
+                                        HeightRequest="120"
+                                        SelectionMode="None">
+                            <CollectionView.ItemsLayout>
+                                <LinearItemsLayout Orientation="Vertical" ItemSpacing="8"/>
+                            </CollectionView.ItemsLayout>
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="vm:PrinterInfo">
+                                    <Border BackgroundColor="{Binding BackgroundColor}"
+                                            Stroke="{Binding BorderColor}" StrokeThickness="1"
+                                            Padding="12,10">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="8"/>
+                                        </Border.StrokeShape>
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SettingsViewModel}}, Path=SelectPrinterCommand}"
+                                                CommandParameter="{Binding .}"/>
+                                        </Border.GestureRecognizers>
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                            <Label Text="🖨️" FontSize="20" VerticalOptions="Center"/>
+                                            <Label Grid.Column="1" Text="{Binding Name}" FontSize="14" TextColor="#111827" VerticalOptions="Center"/>
+                                            <Label Grid.Column="2" Text="✓" FontSize="16" TextColor="#22C55E"
+                                                   IsVisible="{Binding IsConnected}" VerticalOptions="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                            <CollectionView.EmptyView>
+                                <Label Text="ไม่พบเครื่องพิมพ์" FontSize="14" TextColor="#9CA3AF" HorizontalOptions="Center"/>
+                            </CollectionView.EmptyView>
+                        </CollectionView>
+
+                        <!-- Paper Width -->
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="ความกว้างกระดาษ (mm)" FontSize="14" TextColor="#6B7280"/>
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                                <Button Text="58mm"
+                                        BackgroundColor="{Binding PaperWidth, Converter={StaticResource IntToColorConverter}, ConverterParameter='58|#DCFCE7|#F3F4F6'}"
+                                        TextColor="{Binding PaperWidth, Converter={StaticResource IntToColorConverter}, ConverterParameter='58|#22C55E|#374151'}"
+                                        FontSize="14" HeightRequest="40" CornerRadius="8"
+                                        Clicked="OnPaperWidth58Clicked"/>
+                                <Button Grid.Column="1" Text="76mm"
+                                        BackgroundColor="{Binding PaperWidth, Converter={StaticResource IntToColorConverter}, ConverterParameter='76|#DCFCE7|#F3F4F6'}"
+                                        TextColor="{Binding PaperWidth, Converter={StaticResource IntToColorConverter}, ConverterParameter='76|#22C55E|#374151'}"
+                                        FontSize="14" HeightRequest="40" CornerRadius="8"
+                                        Clicked="OnPaperWidth76Clicked"/>
+                                <Button Grid.Column="2" Text="80mm"
+                                        BackgroundColor="{Binding PaperWidth, Converter={StaticResource IntToColorConverter}, ConverterParameter='80|#DCFCE7|#F3F4F6'}"
+                                        TextColor="{Binding PaperWidth, Converter={StaticResource IntToColorConverter}, ConverterParameter='80|#22C55E|#374151'}"
+                                        FontSize="14" HeightRequest="40" CornerRadius="8"
+                                        Clicked="OnPaperWidth80Clicked"/>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+
+                    <!-- Buttons -->
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                        <Button Text="ทดสอบพิมพ์" BackgroundColor="#F3F4F6" TextColor="#374151"
+                                FontSize="14" HeightRequest="44" CornerRadius="10"
+                                Command="{Binding TestPrintCommand}"
+                                IsEnabled="{Binding EnablePrinter}"/>
+                        <Button Grid.Column="1" Text="ยกเลิก" BackgroundColor="#F3F4F6" TextColor="#374151"
+                                FontSize="14" HeightRequest="44" CornerRadius="10"
+                                Command="{Binding ClosePrinterSettingsCommand}"/>
+                        <Button Grid.Column="2" Text="บันทึก" BackgroundColor="#10B981" TextColor="White"
+                                FontSize="14" HeightRequest="44" CornerRadius="10"
+                                Command="{Binding SavePrinterSettingsCommand}"/>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <!-- Busy Overlay -->
+        <Grid IsVisible="{Binding IsBusy}" BackgroundColor="#80000000">
+            <Border BackgroundColor="White" StrokeThickness="0"
+                    HeightRequest="120" WidthRequest="200"
+                    HorizontalOptions="Center" VerticalOptions="Center"
+                    Padding="20">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="16"/>
+                </Border.StrokeShape>
+                <VerticalStackLayout VerticalOptions="Center" Spacing="15">
+                    <ActivityIndicator IsRunning="True" Color="#3B82F6" HeightRequest="40" WidthRequest="40" HorizontalOptions="Center"/>
+                    <Label Text="{Binding BusyMessage}" FontSize="14" TextColor="#374151" HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </Grid>
+
 </ContentPage>

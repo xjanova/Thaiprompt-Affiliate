@@ -1,10 +1,557 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:TP.POS.App.ViewModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="TP.POS.App.Views.CheckoutPage"
-             Title="ชำระเงิน">
-    <VerticalStackLayout Padding="20" VerticalOptions="Center" HorizontalOptions="Center">
-        <Label Text="💳" FontSize="60" HorizontalOptions="Center"/>
-        <Label Text="ชำระเงิน" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center" Margin="0,20,0,0"/>
-    </VerticalStackLayout>
+             Title="ชำระเงิน"
+             x:DataType="vm:CheckoutViewModel"
+             Shell.NavBarIsVisible="False">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <!-- สีหลัก -->
+            <Color x:Key="PrimaryGreen">#22C55E</Color>
+            <Color x:Key="PrimaryBlue">#3B82F6</Color>
+            <Color x:Key="DangerRed">#EF4444</Color>
+            <Color x:Key="WarningAmber">#F59E0B</Color>
+            <Color x:Key="LightGray">#F3F4F6</Color>
+            <Color x:Key="DarkGray">#374151</Color>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid>
+        <!-- หน้าหลัก Checkout -->
+        <Grid IsVisible="{Binding ShowSuccess, Converter={toolkit:InvertedBoolConverter}}">
+            <Grid.ColumnDefinitions>
+                <!-- ซ้าย: สรุปรายการ -->
+                <ColumnDefinition Width="400" />
+                <!-- ขวา: ชำระเงิน -->
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ==================== ซ้าย: สรุปรายการ ==================== -->
+            <Border Grid.Column="0"
+                    StrokeThickness="0"
+                    BackgroundColor="White">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <!-- Header -->
+                    <Border Grid.Row="0"
+                            StrokeThickness="0"
+                            BackgroundColor="{StaticResource PrimaryGreen}"
+                            Padding="20">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Button Grid.Column="0"
+                                    Text="← กลับ"
+                                    BackgroundColor="Transparent"
+                                    TextColor="White"
+                                    FontSize="14"
+                                    Command="{Binding GoBackCommand}"/>
+                            <Label Grid.Column="1"
+                                   Text="สรุปรายการ"
+                                   FontSize="20"
+                                   FontAttributes="Bold"
+                                   TextColor="White"
+                                   HorizontalTextAlignment="Center"
+                                   VerticalOptions="Center"/>
+                            <Label Grid.Column="2"
+                                   Text="{Binding CartItems.Count, StringFormat='{0} รายการ'}"
+                                   FontSize="14"
+                                   TextColor="White"
+                                   Opacity="0.9"
+                                   VerticalOptions="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- รายการสินค้า -->
+                    <CollectionView Grid.Row="1"
+                                    ItemsSource="{Binding CartItems}"
+                                    SelectionMode="None"
+                                    Margin="15">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border StrokeThickness="0"
+                                        BackgroundColor="{StaticResource LightGray}"
+                                        Padding="12"
+                                        Margin="0,0,0,8">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="10"/>
+                                    </Border.StrokeShape>
+
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <VerticalStackLayout Grid.Column="0">
+                                            <Label Text="{Binding ProductName}"
+                                                   FontSize="14"
+                                                   FontAttributes="Bold"
+                                                   LineBreakMode="TailTruncation"/>
+                                            <Label FontSize="12" TextColor="#6B7280">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="{Binding UnitPrice, StringFormat='฿{0:N0}'}" />
+                                                        <Span Text=" × " />
+                                                        <Span Text="{Binding Quantity}" />
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="1"
+                                               Text="{Binding LineTotal, StringFormat='฿{0:N2}'}"
+                                               FontSize="16"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource PrimaryGreen}"
+                                               VerticalOptions="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <!-- สรุปยอด -->
+                    <Border Grid.Row="2"
+                            StrokeThickness="0"
+                            BackgroundColor="{StaticResource LightGray}"
+                            Padding="20">
+                        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                            <!-- ยอดรวม -->
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0" Text="ยอดรวม" FontSize="14" TextColor="#6B7280"/>
+                                <Label Grid.Column="1"
+                                       Text="{Binding CartSummary.Subtotal, StringFormat='฿{0:N2}'}"
+                                       FontSize="14"/>
+                            </Grid>
+                            <!-- ส่วนลด -->
+                            <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0" Text="ส่วนลด" FontSize="14" TextColor="#6B7280"/>
+                                <Label Grid.Column="1"
+                                       Text="{Binding CartSummary.DiscountAmount, StringFormat='-฿{0:N2}'}"
+                                       FontSize="14"
+                                       TextColor="{StaticResource DangerRed}"/>
+                            </Grid>
+                            <!-- ภาษี -->
+                            <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0" Text="ภาษี 7%" FontSize="14" TextColor="#6B7280"/>
+                                <Label Grid.Column="1"
+                                       Text="{Binding CartSummary.TaxAmount, StringFormat='฿{0:N2}'}"
+                                       FontSize="14"/>
+                            </Grid>
+                            <!-- เส้นคั่น -->
+                            <BoxView Grid.Row="3" HeightRequest="1" Color="#E5E7EB"/>
+                            <!-- ยอดสุทธิ -->
+                            <Grid Grid.Row="4" ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0"
+                                       Text="ยอดสุทธิ"
+                                       FontSize="20"
+                                       FontAttributes="Bold"/>
+                                <Label Grid.Column="1"
+                                       Text="{Binding TotalAmount, StringFormat='฿{0:N2}'}"
+                                       FontSize="28"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource PrimaryGreen}"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- ==================== ขวา: ชำระเงิน ==================== -->
+            <Grid Grid.Column="1" BackgroundColor="{StaticResource LightGray}" Padding="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- วิธีชำระเงิน -->
+                <Border Grid.Row="0"
+                        StrokeThickness="0"
+                        BackgroundColor="White"
+                        Padding="20"
+                        Margin="0,0,0,15">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#000" Offset="0,2" Radius="8" Opacity="0.08"/>
+                    </Border.Shadow>
+
+                    <VerticalStackLayout Spacing="15">
+                        <Label Text="วิธีชำระเงิน" FontSize="18" FontAttributes="Bold"/>
+
+                        <FlexLayout Wrap="Wrap" JustifyContent="Start" AlignItems="Start">
+                            <BindableLayout.ItemsSource>
+                                <Binding Path="PaymentMethods"/>
+                            </BindableLayout.ItemsSource>
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate>
+                                    <Border StrokeThickness="2"
+                                            Stroke="{Binding BorderColor}"
+                                            BackgroundColor="{Binding BackgroundColor}"
+                                            Padding="15,10"
+                                            Margin="0,0,10,10"
+                                            MinimumWidthRequest="120">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="10"/>
+                                        </Border.StrokeShape>
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CheckoutViewModel}}, Path=SelectPaymentMethodCommand}"
+                                                CommandParameter="{Binding}"/>
+                                        </Border.GestureRecognizers>
+
+                                        <HorizontalStackLayout Spacing="8">
+                                            <Label Text="{Binding Icon}" FontSize="24"/>
+                                            <Label Text="{Binding Name}"
+                                                   FontSize="14"
+                                                   TextColor="{Binding TextColor}"
+                                                   VerticalOptions="Center"/>
+                                        </HorizontalStackLayout>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </FlexLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- เลขอ้างอิง (สำหรับ QR/บัตร) -->
+                <Border Grid.Row="1"
+                        StrokeThickness="0"
+                        BackgroundColor="White"
+                        Padding="20"
+                        Margin="0,0,0,15"
+                        IsVisible="{Binding ShowReferenceInput}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#000" Offset="0,2" Radius="8" Opacity="0.08"/>
+                    </Border.Shadow>
+
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="เลขอ้างอิง / หมายเลขรายการ" FontSize="14" TextColor="#6B7280"/>
+                        <Border StrokeThickness="1" Stroke="#E5E7EB" Padding="12,10">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="8"/>
+                            </Border.StrokeShape>
+                            <Entry Placeholder="กรอกเลขอ้างอิง (ถ้ามี)"
+                                   Text="{Binding PaymentReference}"
+                                   FontSize="16"/>
+                        </Border>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Numpad และ Quick Cash -->
+                <Border Grid.Row="2"
+                        StrokeThickness="0"
+                        BackgroundColor="White"
+                        Padding="20"
+                        IsVisible="{Binding ShowQuickCash}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#000" Offset="0,2" Radius="8" Opacity="0.08"/>
+                    </Border.Shadow>
+
+                    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="20">
+                        <!-- รับเงิน -->
+                        <VerticalStackLayout Grid.Row="0" Spacing="10">
+                            <Label Text="รับเงิน" FontSize="14" TextColor="#6B7280"/>
+                            <Border StrokeThickness="2"
+                                    Stroke="{StaticResource PrimaryGreen}"
+                                    BackgroundColor="#F0FDF4"
+                                    Padding="15">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="12"/>
+                                </Border.StrokeShape>
+                                <Label Text="{Binding ReceivedAmount, StringFormat='฿{0:N2}'}"
+                                       FontSize="36"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource PrimaryGreen}"
+                                       HorizontalTextAlignment="End"/>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Quick Cash -->
+                        <VerticalStackLayout Grid.Row="1" Spacing="10">
+                            <Label Text="เงินด่วน" FontSize="14" TextColor="#6B7280"/>
+                            <FlexLayout Wrap="Wrap" JustifyContent="SpaceBetween">
+                                <Button Text="฿20"
+                                        BackgroundColor="{StaticResource LightGray}"
+                                        TextColor="{StaticResource DarkGray}"
+                                        FontSize="16"
+                                        WidthRequest="80"
+                                        Margin="0,0,5,5"
+                                        Command="{Binding QuickCashCommand}"
+                                        CommandParameter="20"/>
+                                <Button Text="฿50"
+                                        BackgroundColor="{StaticResource LightGray}"
+                                        TextColor="{StaticResource DarkGray}"
+                                        FontSize="16"
+                                        WidthRequest="80"
+                                        Margin="0,0,5,5"
+                                        Command="{Binding QuickCashCommand}"
+                                        CommandParameter="50"/>
+                                <Button Text="฿100"
+                                        BackgroundColor="{StaticResource LightGray}"
+                                        TextColor="{StaticResource DarkGray}"
+                                        FontSize="16"
+                                        WidthRequest="80"
+                                        Margin="0,0,5,5"
+                                        Command="{Binding QuickCashCommand}"
+                                        CommandParameter="100"/>
+                                <Button Text="฿500"
+                                        BackgroundColor="{StaticResource LightGray}"
+                                        TextColor="{StaticResource DarkGray}"
+                                        FontSize="16"
+                                        WidthRequest="80"
+                                        Margin="0,0,5,5"
+                                        Command="{Binding QuickCashCommand}"
+                                        CommandParameter="500"/>
+                                <Button Text="฿1000"
+                                        BackgroundColor="{StaticResource LightGray}"
+                                        TextColor="{StaticResource DarkGray}"
+                                        FontSize="16"
+                                        WidthRequest="80"
+                                        Margin="0,0,5,5"
+                                        Command="{Binding QuickCashCommand}"
+                                        CommandParameter="1000"/>
+                                <Button Text="พอดี"
+                                        BackgroundColor="{StaticResource PrimaryBlue}"
+                                        TextColor="White"
+                                        FontSize="16"
+                                        WidthRequest="80"
+                                        Margin="0,0,5,5"
+                                        Command="{Binding ExactAmountCommand}"/>
+                            </FlexLayout>
+                        </VerticalStackLayout>
+
+                        <!-- Numpad -->
+                        <Grid Grid.Row="2"
+                              RowDefinitions="*,*,*,*"
+                              ColumnDefinitions="*,*,*"
+                              RowSpacing="8"
+                              ColumnSpacing="8">
+                            <!-- Row 0 -->
+                            <Button Grid.Row="0" Grid.Column="0" Text="7" FontSize="24" BackgroundColor="{StaticResource LightGray}" TextColor="{StaticResource DarkGray}" Command="{Binding NumpadInputCommand}" CommandParameter="7"/>
+                            <Button Grid.Row="0" Grid.Column="1" Text="8" FontSize="24" BackgroundColor="{StaticResource LightGray}" TextColor="{StaticResource DarkGray}" Command="{Binding NumpadInputCommand}" CommandParameter="8"/>
+                            <Button Grid.Row="0" Grid.Column="2" Text="9" FontSize="24" BackgroundColor="{StaticResource LightGray}" TextColor="{StaticResource DarkGray}" Command="{Binding NumpadInputCommand}" CommandParameter="9"/>
+                            <!-- Row 1 -->
+                            <Button Grid.Row="1" Grid.Column="0" Text="4" FontSize="24" BackgroundColor="{StaticResource LightGray}" TextColor="{StaticResource DarkGray}" Command="{Binding NumpadInputCommand}" CommandParameter="4"/>
+                            <Button Grid.Row="1" Grid.Column="1" Text="5" FontSize="24" BackgroundColor="{StaticResource LightGray}" TextColor="{StaticResource DarkGray}" Command="{Binding NumpadInputCommand}" CommandParameter="5"/>
+                            <Button Grid.Row="1" Grid.Column="2" Text="6" FontSize="24" BackgroundColor="{StaticResource LightGray}" TextColor="{StaticResource DarkGray}" Command="{Binding NumpadInputCommand}" CommandParameter="6"/>
+                            <!-- Row 2 -->
+                            <Button Grid.Row="2" Grid.Column="0" Text="1" FontSize="24" BackgroundColor="{StaticResource LightGray}" TextColor="{StaticResource DarkGray}" Command="{Binding NumpadInputCommand}" CommandParameter="1"/>
+                            <Button Grid.Row="2" Grid.Column="1" Text="2" FontSize="24" BackgroundColor="{StaticResource LightGray}" TextColor="{StaticResource DarkGray}" Command="{Binding NumpadInputCommand}" CommandParameter="2"/>
+                            <Button Grid.Row="2" Grid.Column="2" Text="3" FontSize="24" BackgroundColor="{StaticResource LightGray}" TextColor="{StaticResource DarkGray}" Command="{Binding NumpadInputCommand}" CommandParameter="3"/>
+                            <!-- Row 3 -->
+                            <Button Grid.Row="3" Grid.Column="0" Text="C" FontSize="24" BackgroundColor="{StaticResource DangerRed}" TextColor="White" Command="{Binding NumpadInputCommand}" CommandParameter="C"/>
+                            <Button Grid.Row="3" Grid.Column="1" Text="0" FontSize="24" BackgroundColor="{StaticResource LightGray}" TextColor="{StaticResource DarkGray}" Command="{Binding NumpadInputCommand}" CommandParameter="0"/>
+                            <Button Grid.Row="3" Grid.Column="2" Text="⌫" FontSize="24" BackgroundColor="{StaticResource WarningAmber}" TextColor="White" Command="{Binding NumpadInputCommand}" CommandParameter="⌫"/>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- ปุ่มชำระเงิน -->
+                <Border Grid.Row="3"
+                        StrokeThickness="0"
+                        BackgroundColor="White"
+                        Padding="20"
+                        Margin="0,15,0,0">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#000" Offset="0,2" Radius="8" Opacity="0.08"/>
+                    </Border.Shadow>
+
+                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="15">
+                        <!-- เงินทอน -->
+                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" IsVisible="{Binding ShowQuickCash}">
+                            <Label Grid.Column="0"
+                                   Text="เงินทอน"
+                                   FontSize="18"
+                                   TextColor="#6B7280"
+                                   VerticalOptions="Center"/>
+                            <Label Grid.Column="1"
+                                   Text="{Binding ChangeAmount, StringFormat='฿{0:N2}'}"
+                                   FontSize="32"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource PrimaryBlue}"/>
+                        </Grid>
+
+                        <!-- เตือนเงินไม่พอ -->
+                        <Border Grid.Row="1"
+                                StrokeThickness="0"
+                                BackgroundColor="#FEF2F2"
+                                Padding="12"
+                                IsVisible="{Binding IsReceivedEnough, Converter={toolkit:InvertedBoolConverter}}">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="8"/>
+                            </Border.StrokeShape>
+                            <HorizontalStackLayout Spacing="10">
+                                <Label Text="⚠️" FontSize="20"/>
+                                <Label Text="กรุณารับเงินให้ครบถ้วน"
+                                       FontSize="14"
+                                       TextColor="{StaticResource DangerRed}"
+                                       VerticalOptions="Center"/>
+                            </HorizontalStackLayout>
+                        </Border>
+
+                        <!-- ปุ่มชำระเงิน -->
+                        <Grid Grid.Row="2" ColumnDefinitions="*,2*" ColumnSpacing="10">
+                            <Button Grid.Column="0"
+                                    Text="ยกเลิก"
+                                    BackgroundColor="#E5E7EB"
+                                    TextColor="{StaticResource DarkGray}"
+                                    FontSize="18"
+                                    HeightRequest="60"
+                                    Command="{Binding CancelCommand}"/>
+                            <Button Grid.Column="1"
+                                    Text="✓ ยืนยันชำระเงิน"
+                                    BackgroundColor="{StaticResource PrimaryGreen}"
+                                    TextColor="White"
+                                    FontSize="20"
+                                    FontAttributes="Bold"
+                                    HeightRequest="60"
+                                    IsEnabled="{Binding CanComplete}"
+                                    Command="{Binding CompleteCheckoutCommand}">
+                                <Button.Shadow>
+                                    <Shadow Brush="{StaticResource PrimaryGreen}" Offset="0,4" Radius="8" Opacity="0.4"/>
+                                </Button.Shadow>
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ==================== หน้าสำเร็จ ==================== -->
+        <Border IsVisible="{Binding ShowSuccess}"
+                StrokeThickness="0"
+                BackgroundColor="#F0FDF4">
+            <Grid RowDefinitions="*,Auto" Padding="40">
+                <!-- เนื้อหา -->
+                <VerticalStackLayout Grid.Row="0"
+                                     Spacing="20"
+                                     VerticalOptions="Center"
+                                     HorizontalOptions="Center">
+                    <!-- ไอคอนสำเร็จ -->
+                    <Border StrokeThickness="0"
+                            BackgroundColor="{StaticResource PrimaryGreen}"
+                            WidthRequest="120"
+                            HeightRequest="120"
+                            HorizontalOptions="Center">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="60"/>
+                        </Border.StrokeShape>
+                        <Label Text="✓"
+                               FontSize="60"
+                               TextColor="White"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"/>
+                    </Border>
+
+                    <Label Text="ชำระเงินสำเร็จ!"
+                           FontSize="32"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource PrimaryGreen}"
+                           HorizontalOptions="Center"/>
+
+                    <!-- รายละเอียด -->
+                    <Border StrokeThickness="0"
+                            BackgroundColor="White"
+                            Padding="30"
+                            WidthRequest="400">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16"/>
+                        </Border.StrokeShape>
+                        <Border.Shadow>
+                            <Shadow Brush="#000" Offset="0,4" Radius="12" Opacity="0.1"/>
+                        </Border.Shadow>
+
+                        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="15">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0" Text="เลขที่ใบเสร็จ" FontSize="14" TextColor="#6B7280"/>
+                                <Label Grid.Column="1"
+                                       Text="{Binding CompletedTransaction.ReceiptNumber}"
+                                       FontSize="14"
+                                       FontAttributes="Bold"/>
+                            </Grid>
+                            <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0" Text="วันที่" FontSize="14" TextColor="#6B7280"/>
+                                <Label Grid.Column="1"
+                                       Text="{Binding CompletedTransaction.TransactionDate, StringFormat='{0:dd/MM/yyyy HH:mm}'}"
+                                       FontSize="14"/>
+                            </Grid>
+                            <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0" Text="วิธีชำระ" FontSize="14" TextColor="#6B7280"/>
+                                <Label Grid.Column="1"
+                                       Text="{Binding SelectedPaymentMethod}"
+                                       FontSize="14"/>
+                            </Grid>
+                            <BoxView Grid.Row="3" HeightRequest="1" Color="#E5E7EB"/>
+                            <Grid Grid.Row="4" ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0" Text="ยอดชำระ" FontSize="18" FontAttributes="Bold"/>
+                                <Label Grid.Column="1"
+                                       Text="{Binding CompletedTransaction.TotalAmount, StringFormat='฿{0:N2}'}"
+                                       FontSize="24"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource PrimaryGreen}"/>
+                            </Grid>
+                            <Grid Grid.Row="5" ColumnDefinitions="*,Auto" IsVisible="{Binding ShowQuickCash}">
+                                <Label Grid.Column="0" Text="เงินทอน" FontSize="16" TextColor="#6B7280"/>
+                                <Label Grid.Column="1"
+                                       Text="{Binding CompletedTransaction.ChangeAmount, StringFormat='฿{0:N2}'}"
+                                       FontSize="20"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource PrimaryBlue}"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- ปุ่ม -->
+                <Grid Grid.Row="1"
+                      ColumnDefinitions="*,*"
+                      ColumnSpacing="20"
+                      HorizontalOptions="Center"
+                      WidthRequest="400">
+                    <Button Grid.Column="0"
+                            Text="🖨️ พิมพ์ซ้ำ"
+                            BackgroundColor="White"
+                            TextColor="{StaticResource DarkGray}"
+                            FontSize="16"
+                            HeightRequest="55"
+                            Command="{Binding ReprintReceiptCommand}">
+                        <Button.Shadow>
+                            <Shadow Brush="#000" Offset="0,2" Radius="4" Opacity="0.1"/>
+                        </Button.Shadow>
+                    </Button>
+                    <Button Grid.Column="1"
+                            Text="🛒 ขายต่อ"
+                            BackgroundColor="{StaticResource PrimaryGreen}"
+                            TextColor="White"
+                            FontSize="18"
+                            FontAttributes="Bold"
+                            HeightRequest="55"
+                            Command="{Binding NewSaleCommand}">
+                        <Button.Shadow>
+                            <Shadow Brush="{StaticResource PrimaryGreen}" Offset="0,4" Radius="8" Opacity="0.4"/>
+                        </Button.Shadow>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Loading Overlay -->
+        <Border StrokeThickness="0"
+                BackgroundColor="#80000000"
+                IsVisible="{Binding IsBusy}">
+            <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
+                <ActivityIndicator IsRunning="True" Color="White" HeightRequest="50" WidthRequest="50"/>
+                <Label Text="{Binding BusyMessage}" TextColor="White" FontSize="16" Margin="0,15,0,0"/>
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
 </ContentPage>
