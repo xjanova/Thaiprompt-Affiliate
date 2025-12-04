@@ -7,7 +7,7 @@ use App\Models\LearningArticle;
 use App\Models\LearningCategory;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
-use App\Models\QuizAnswer;
+use App\Models\QuestionOption;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -150,12 +150,12 @@ class ThaipromptCourseSeeder extends Seeder
                 'order' => $index + 1,
             ]);
 
-            // สร้างคำตอบ
+            // สร้างตัวเลือกคำตอบ
             if (!empty($questionData['answers'])) {
                 foreach ($questionData['answers'] as $answerIndex => $answer) {
-                    QuizAnswer::create([
+                    QuestionOption::create([
                         'question_id' => $question->id,
-                        'answer' => $answer['text'],
+                        'option_text' => $answer['text'],
                         'is_correct' => $answer['is_correct'] ?? false,
                         'order' => $answerIndex + 1,
                     ]);
