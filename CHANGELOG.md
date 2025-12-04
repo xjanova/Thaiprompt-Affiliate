@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.8] - 2025-12-04
+
+### ✨ Features
+- feat(storefront): เพิ่ม Cart Drawer แบบ slide จากขวา (dfa1fea5)
+### 🐛 Bug Fixes
+- fix(storefront): ย้าย lava ไปหลัง content และเพิ่ม floating cart (1f5e8223)
+### 🔧 Other Changes
+- Merge pull request #2029 from xjanova/claude/fix-product-effects-018VczxiTSU15X7XE5i2Mtuw (3e0e7f22)
+
 ## [v3.358.7] - 2025-12-04
 
 ### ✨ Features
