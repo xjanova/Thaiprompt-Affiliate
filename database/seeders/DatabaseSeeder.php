@@ -34,7 +34,8 @@ class DatabaseSeeder extends Seeder
             ApiEndpointSeeder::class,           // API Endpoints Configuration (Users, Products, Orders, Analytics, etc.)
 
             // 2. User & Demo Data
-            DemoUsersSeeder::class,             // สร้างผู้ใช้ทดสอบ
+            AdminUsersSeeder::class,            // 👑 สร้าง Super Admin, Admin, Manager
+            // DemoUsersSeeder::class,             // ❌ ลบ - ใช้ ThaipromptMlmSeeder แทน
             TestUsersSeeder::class,             // สร้างผู้ใช้ทดสอบเพิ่มเติม (backward compatibility)
             KycVerificationSeeder::class,       // 🆕 KYC Demo Verification (pending, approved, rejected)
             LineSignupSessionSeeder::class,     // 🆕 LINE Demo Signup Sessions (new, in_progress, completed)
@@ -83,8 +84,9 @@ class DatabaseSeeder extends Seeder
             RankSeeder::class,                  // ระบบยศ/ระดับ (Bronze, Silver, Gold, Platinum, Diamond)
             RankSettingSeeder::class,           // 🆕 ตั้งค่าระบบ Rank (Auto Promotion, Points, Display)
             IdCardSettingSeeder::class,         // 🆕 การตั้งค่า Virtual ID Card ตาม Rank (8 ระดับ)
-            SuperAdminMlmSeeder::class,         // 👑 SuperAdmin เป็น Root Leader (แม่ทีมใหญ่) - ต้องรันก่อน MlmHierarchySeeder
-            MlmHierarchySeeder::class,          // 🆕 ระบบสายงาน MLM 5 ชั้น (31 สมาชิก, 3 ผัง: Binary, Unilevel, Genealogy)
+            SuperAdminMlmSeeder::class,         // 👑 SuperAdmin เป็น Root Leader (แม่ทีมใหญ่) - ต้องรันก่อน ThaipromptMlmSeeder
+            // MlmHierarchySeeder::class,          // ❌ ลบ - ใช้ ThaipromptMlmSeeder แทน
+            ThaipromptMlmSeeder::class,         // 🆕 ระบบสายงาน MLM 5 ชั้น (31 สมาชิก Thaiprompt 00-30)
             RecruitTemplateSeeder::class,       // 🆕 เทมเพลตหน้า Recruit สำหรับแม่ทีม
             PlatformRevenueSeeder::class,       // 🆕 ระบบรายได้ Platform (Wallets, Payout Settings)
 
