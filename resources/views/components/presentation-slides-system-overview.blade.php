@@ -410,3 +410,457 @@
         </div>
     </div>
 </div>
+
+{{-- Slide 5: System Architecture --}}
+<div class="slide" data-topic="system-overview">
+    <div class="absolute inset-0 flex items-center justify-center p-8">
+        <div class="w-full max-w-6xl">
+            <div class="text-center mb-8">
+                <h2 class="text-4xl md:text-5xl font-black text-white mb-4">
+                    🏗️ สถาปัตยกรรมระบบ
+                </h2>
+                <p class="text-xl text-white/70">Modular Architecture - ยืดหยุ่น ขยายได้ง่าย</p>
+            </div>
+
+            {{-- Architecture Diagram --}}
+            <div class="bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+                <div class="grid grid-cols-3 gap-6">
+                    {{-- Frontend Layer --}}
+                    <div class="col-span-3 bg-gradient-to-r from-blue-600/30 to-cyan-600/30 rounded-2xl p-6 border border-blue-400/30">
+                        <h3 class="text-xl font-bold text-blue-300 mb-4 text-center">🖥️ Frontend Layer</h3>
+                        <div class="grid grid-cols-4 gap-3">
+                            <div class="bg-white/10 rounded-lg p-3 text-center">
+                                <div class="text-2xl mb-1">🌐</div>
+                                <div class="text-white text-sm font-bold">Web App</div>
+                                <div class="text-white/50 text-xs">Blade + Alpine.js</div>
+                            </div>
+                            <div class="bg-white/10 rounded-lg p-3 text-center">
+                                <div class="text-2xl mb-1">📱</div>
+                                <div class="text-white text-sm font-bold">Mobile</div>
+                                <div class="text-white/50 text-xs">.NET MAUI</div>
+                            </div>
+                            <div class="bg-white/10 rounded-lg p-3 text-center">
+                                <div class="text-2xl mb-1">💬</div>
+                                <div class="text-white text-sm font-bold">LINE LIFF</div>
+                                <div class="text-white/50 text-xs">Mini App</div>
+                            </div>
+                            <div class="bg-white/10 rounded-lg p-3 text-center">
+                                <div class="text-2xl mb-1">🤖</div>
+                                <div class="text-white text-sm font-bold">LINE Bot</div>
+                                <div class="text-white/50 text-xs">Messaging API</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Arrow --}}
+                    <div class="col-span-3 flex justify-center">
+                        <div class="text-4xl text-white/50 animate-bounce">⬇️</div>
+                    </div>
+
+                    {{-- API Layer --}}
+                    <div class="col-span-3 bg-gradient-to-r from-purple-600/30 to-pink-600/30 rounded-2xl p-6 border border-purple-400/30">
+                        <h3 class="text-xl font-bold text-purple-300 mb-4 text-center">⚡ API Gateway & Services</h3>
+                        <div class="grid grid-cols-5 gap-3">
+                            <div class="bg-white/10 rounded-lg p-3 text-center">
+                                <div class="text-xl mb-1">🔐</div>
+                                <div class="text-white text-xs font-bold">Auth API</div>
+                            </div>
+                            <div class="bg-white/10 rounded-lg p-3 text-center">
+                                <div class="text-xl mb-1">👤</div>
+                                <div class="text-white text-xs font-bold">User API</div>
+                            </div>
+                            <div class="bg-white/10 rounded-lg p-3 text-center">
+                                <div class="text-xl mb-1">🛒</div>
+                                <div class="text-white text-xs font-bold">Order API</div>
+                            </div>
+                            <div class="bg-white/10 rounded-lg p-3 text-center">
+                                <div class="text-xl mb-1">💰</div>
+                                <div class="text-white text-xs font-bold">Wallet API</div>
+                            </div>
+                            <div class="bg-white/10 rounded-lg p-3 text-center">
+                                <div class="text-xl mb-1">📊</div>
+                                <div class="text-white text-xs font-bold">MLM API</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Arrow --}}
+                    <div class="col-span-3 flex justify-center">
+                        <div class="text-4xl text-white/50 animate-bounce">⬇️</div>
+                    </div>
+
+                    {{-- Backend & Database --}}
+                    <div class="bg-gradient-to-br from-green-600/30 to-emerald-600/30 rounded-2xl p-4 border border-green-400/30">
+                        <h3 class="text-lg font-bold text-green-300 mb-3 text-center">💾 Database</h3>
+                        <div class="space-y-2 text-center">
+                            <div class="bg-white/10 rounded-lg p-2 text-white text-sm">MySQL 8.0</div>
+                            <div class="bg-white/10 rounded-lg p-2 text-white text-sm">Redis Cache</div>
+                            <div class="bg-white/10 rounded-lg p-2 text-white text-sm">339+ Models</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-orange-600/30 to-red-600/30 rounded-2xl p-4 border border-orange-400/30">
+                        <h3 class="text-lg font-bold text-orange-300 mb-3 text-center">⚙️ Services</h3>
+                        <div class="space-y-2 text-center">
+                            <div class="bg-white/10 rounded-lg p-2 text-white text-sm">Queue Jobs</div>
+                            <div class="bg-white/10 rounded-lg p-2 text-white text-sm">Schedulers</div>
+                            <div class="bg-white/10 rounded-lg p-2 text-white text-sm">Events</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-yellow-600/30 to-amber-600/30 rounded-2xl p-4 border border-yellow-400/30">
+                        <h3 class="text-lg font-bold text-yellow-300 mb-3 text-center">🔗 External</h3>
+                        <div class="space-y-2 text-center">
+                            <div class="bg-white/10 rounded-lg p-2 text-white text-sm">OpenAI GPT</div>
+                            <div class="bg-white/10 rounded-lg p-2 text-white text-sm">Blockchain</div>
+                            <div class="bg-white/10 rounded-lg p-2 text-white text-sm">Payment</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Slide 6: User Roles & Dashboards --}}
+<div class="slide" data-topic="system-overview">
+    <div class="absolute inset-0 flex items-center justify-center p-8">
+        <div class="w-full max-w-6xl">
+            <div class="text-center mb-8">
+                <h2 class="text-4xl md:text-5xl font-black text-white mb-4">
+                    👥 ระบบผู้ใช้งาน 4 ระดับ
+                </h2>
+                <p class="text-xl text-white/70">แต่ละบทบาทมี Dashboard เฉพาะ</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {{-- Admin --}}
+                <div class="bg-gradient-to-br from-red-600/30 to-orange-600/30 backdrop-blur-lg rounded-2xl p-6 border border-red-400/30 hover:scale-105 transition-transform">
+                    <div class="text-center">
+                        <div class="text-6xl mb-4">👑</div>
+                        <h3 class="text-2xl font-bold text-red-300 mb-2">Admin</h3>
+                        <p class="text-white/70 text-sm mb-4">ผู้ดูแลระบบ</p>
+                        <div class="space-y-2 text-left">
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> จัดการสมาชิก
+                            </div>
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> ตั้งค่า MLM
+                            </div>
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> อนุมัติถอนเงิน
+                            </div>
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> รายงานทั้งหมด
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Seller --}}
+                <div class="bg-gradient-to-br from-blue-600/30 to-cyan-600/30 backdrop-blur-lg rounded-2xl p-6 border border-blue-400/30 hover:scale-105 transition-transform">
+                    <div class="text-center">
+                        <div class="text-6xl mb-4">🏪</div>
+                        <h3 class="text-2xl font-bold text-blue-300 mb-2">Seller</h3>
+                        <p class="text-white/70 text-sm mb-4">ผู้ขาย</p>
+                        <div class="space-y-2 text-left">
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> จัดการสินค้า
+                            </div>
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> จัดการออเดอร์
+                            </div>
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> วิเคราะห์ยอดขาย
+                            </div>
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> โปรโมชั่น
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- User/Affiliate --}}
+                <div class="bg-gradient-to-br from-green-600/30 to-emerald-600/30 backdrop-blur-lg rounded-2xl p-6 border border-green-400/30 hover:scale-105 transition-transform">
+                    <div class="text-center">
+                        <div class="text-6xl mb-4">💼</div>
+                        <h3 class="text-2xl font-bold text-green-300 mb-2">Affiliate</h3>
+                        <p class="text-white/70 text-sm mb-4">สมาชิก</p>
+                        <div class="space-y-2 text-left">
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> ดูคอมมิชชัน
+                            </div>
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> สร้างทีม
+                            </div>
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> ถอนเงิน
+                            </div>
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> ดูผังทีม
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Hotel Admin --}}
+                <div class="bg-gradient-to-br from-purple-600/30 to-pink-600/30 backdrop-blur-lg rounded-2xl p-6 border border-purple-400/30 hover:scale-105 transition-transform">
+                    <div class="text-center">
+                        <div class="text-6xl mb-4">🏨</div>
+                        <h3 class="text-2xl font-bold text-purple-300 mb-2">Hotel</h3>
+                        <p class="text-white/70 text-sm mb-4">โรงแรม</p>
+                        <div class="space-y-2 text-left">
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> จัดการห้องพัก
+                            </div>
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> การจอง
+                            </div>
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> ปฏิทินห้องว่าง
+                            </div>
+                            <div class="flex items-center gap-2 text-white/80 text-sm">
+                                <span class="text-green-400">✓</span> รายงานรายได้
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 text-center">
+                <p class="text-white text-lg">
+                    🔐 ทุก Dashboard มีระบบ <span class="text-yellow-400 font-bold">Role-Based Access Control (RBAC)</span> ปลอดภัย
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Slide 7: API & Integration --}}
+<div class="slide" data-topic="system-overview">
+    <div class="absolute inset-0 flex items-center justify-center p-8">
+        <div class="w-full max-w-6xl">
+            <div class="text-center mb-8">
+                <h2 class="text-4xl md:text-5xl font-black text-white mb-4">
+                    🔌 API & Integration
+                </h2>
+                <p class="text-xl text-white/70">เชื่อมต่อกับทุกระบบได้ง่าย</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{-- REST API --}}
+                <div class="bg-gradient-to-br from-blue-600/20 to-indigo-600/20 backdrop-blur-lg rounded-2xl p-6 border border-blue-400/30">
+                    <h3 class="text-2xl font-bold text-blue-300 mb-4 flex items-center gap-3">
+                        <span class="text-3xl">📡</span>
+                        REST API v1
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="bg-white/10 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-green-400 font-mono text-sm">GET</span>
+                                <span class="text-white/80 text-sm">/api/v1/users</span>
+                            </div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-yellow-400 font-mono text-sm">POST</span>
+                                <span class="text-white/80 text-sm">/api/v1/orders</span>
+                            </div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-blue-400 font-mono text-sm">PUT</span>
+                                <span class="text-white/80 text-sm">/api/v1/products/{id}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-red-400 font-mono text-sm">DELETE</span>
+                                <span class="text-white/80 text-sm">/api/v1/carts/{id}</span>
+                            </div>
+                        </div>
+                        <div class="text-white/60 text-sm text-center">
+                            <span class="text-yellow-400 font-bold">100+</span> Endpoints พร้อมใช้งาน
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Webhooks --}}
+                <div class="bg-gradient-to-br from-purple-600/20 to-pink-600/20 backdrop-blur-lg rounded-2xl p-6 border border-purple-400/30">
+                    <h3 class="text-2xl font-bold text-purple-300 mb-4 flex items-center gap-3">
+                        <span class="text-3xl">🔔</span>
+                        Webhooks & Events
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 bg-white/10 rounded-lg p-3">
+                            <span class="text-2xl">🛒</span>
+                            <div>
+                                <div class="text-white font-bold text-sm">Order Events</div>
+                                <div class="text-white/60 text-xs">created, paid, shipped, completed</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 bg-white/10 rounded-lg p-3">
+                            <span class="text-2xl">👤</span>
+                            <div>
+                                <div class="text-white font-bold text-sm">User Events</div>
+                                <div class="text-white/60 text-xs">registered, upgraded, rank_changed</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 bg-white/10 rounded-lg p-3">
+                            <span class="text-2xl">💰</span>
+                            <div>
+                                <div class="text-white font-bold text-sm">Commission Events</div>
+                                <div class="text-white/60 text-xs">calculated, paid, pending</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Third-Party Integration --}}
+                <div class="col-span-1 md:col-span-2 bg-gradient-to-r from-green-600/20 to-emerald-600/20 backdrop-blur-lg rounded-2xl p-6 border border-green-400/30">
+                    <h3 class="text-2xl font-bold text-green-300 mb-4 text-center">🔗 Third-Party Integrations</h3>
+                    <div class="grid grid-cols-4 md:grid-cols-8 gap-4">
+                        <div class="bg-white/10 rounded-xl p-4 text-center hover:bg-white/20 transition">
+                            <div class="text-3xl mb-2">💚</div>
+                            <div class="text-white text-xs">LINE</div>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-4 text-center hover:bg-white/20 transition">
+                            <div class="text-3xl mb-2">🤖</div>
+                            <div class="text-white text-xs">OpenAI</div>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-4 text-center hover:bg-white/20 transition">
+                            <div class="text-3xl mb-2">☁️</div>
+                            <div class="text-white text-xs">Google Cloud</div>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-4 text-center hover:bg-white/20 transition">
+                            <div class="text-3xl mb-2">💳</div>
+                            <div class="text-white text-xs">Payment</div>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-4 text-center hover:bg-white/20 transition">
+                            <div class="text-3xl mb-2">📧</div>
+                            <div class="text-white text-xs">SMTP</div>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-4 text-center hover:bg-white/20 transition">
+                            <div class="text-3xl mb-2">📱</div>
+                            <div class="text-white text-xs">SMS</div>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-4 text-center hover:bg-white/20 transition">
+                            <div class="text-3xl mb-2">⛓️</div>
+                            <div class="text-white text-xs">Blockchain</div>
+                        </div>
+                        <div class="bg-white/10 rounded-xl p-4 text-center hover:bg-white/20 transition">
+                            <div class="text-3xl mb-2">📦</div>
+                            <div class="text-white text-xs">Shipping</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Slide 8: Security & Scalability --}}
+<div class="slide" data-topic="system-overview">
+    <div class="absolute inset-0 flex items-center justify-center p-8">
+        <div class="w-full max-w-6xl">
+            <div class="text-center mb-8">
+                <h2 class="text-4xl md:text-5xl font-black text-white mb-4">
+                    🛡️ ความปลอดภัย & ความเสถียร
+                </h2>
+                <p class="text-xl text-white/70">Enterprise-grade Security & Scalability</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{-- Security --}}
+                <div class="bg-gradient-to-br from-red-600/20 to-orange-600/20 backdrop-blur-lg rounded-2xl p-6 border border-red-400/30">
+                    <h3 class="text-2xl font-bold text-red-300 mb-6 flex items-center gap-3">
+                        <span class="text-3xl">🔐</span>
+                        Security Features
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-red-500/30 rounded-xl flex items-center justify-center text-2xl">🔒</div>
+                            <div>
+                                <div class="text-white font-bold">SSL/TLS Encryption</div>
+                                <div class="text-white/60 text-sm">ข้อมูลเข้ารหัสทั้งหมด</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-red-500/30 rounded-xl flex items-center justify-center text-2xl">🎫</div>
+                            <div>
+                                <div class="text-white font-bold">Laravel Sanctum</div>
+                                <div class="text-white/60 text-sm">API Token Authentication</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-red-500/30 rounded-xl flex items-center justify-center text-2xl">🛡️</div>
+                            <div>
+                                <div class="text-white font-bold">CSRF & XSS Protection</div>
+                                <div class="text-white/60 text-sm">ป้องกันการโจมตี</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-red-500/30 rounded-xl flex items-center justify-center text-2xl">👁️</div>
+                            <div>
+                                <div class="text-white font-bold">Activity Logging</div>
+                                <div class="text-white/60 text-sm">บันทึกทุกการกระทำ</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Scalability --}}
+                <div class="bg-gradient-to-br from-green-600/20 to-teal-600/20 backdrop-blur-lg rounded-2xl p-6 border border-green-400/30">
+                    <h3 class="text-2xl font-bold text-green-300 mb-6 flex items-center gap-3">
+                        <span class="text-3xl">📈</span>
+                        Scalability
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-green-500/30 rounded-xl flex items-center justify-center text-2xl">⚡</div>
+                            <div>
+                                <div class="text-white font-bold">Redis Caching</div>
+                                <div class="text-white/60 text-sm">เร็วกว่า 10x</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-green-500/30 rounded-xl flex items-center justify-center text-2xl">📊</div>
+                            <div>
+                                <div class="text-white font-bold">Queue System</div>
+                                <div class="text-white/60 text-sm">ทำงานหนักใน Background</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-green-500/30 rounded-xl flex items-center justify-center text-2xl">🔄</div>
+                            <div>
+                                <div class="text-white font-bold">Horizontal Scaling</div>
+                                <div class="text-white/60 text-sm">รองรับผู้ใช้หลายล้านคน</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-green-500/30 rounded-xl flex items-center justify-center text-2xl">💾</div>
+                            <div>
+                                <div class="text-white font-bold">Database Optimization</div>
+                                <div class="text-white/60 text-sm">Query เร็วสุด</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Stats --}}
+            <div class="mt-8 grid grid-cols-4 gap-4">
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/20">
+                    <div class="text-3xl font-black text-green-400">99.9%</div>
+                    <div class="text-white/70 text-sm">Uptime SLA</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/20">
+                    <div class="text-3xl font-black text-blue-400">&lt;100ms</div>
+                    <div class="text-white/70 text-sm">Response Time</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/20">
+                    <div class="text-3xl font-black text-purple-400">10K+</div>
+                    <div class="text-white/70 text-sm">Requests/sec</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/20">
+                    <div class="text-3xl font-black text-yellow-400">24/7</div>
+                    <div class="text-white/70 text-sm">Monitoring</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
