@@ -9,7 +9,7 @@
 --}}
 
 <!-- Slide 1: สมัครผ่าน LINE - ภาพรวม -->
-<div class="slide active">
+<div class="slide">
     <div class="h-full flex items-center justify-center bg-gradient-to-br from-green-900/95 via-emerald-900/90 to-teal-900/95 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
         <div class="absolute inset-0 opacity-30">
             <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-green-400 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>

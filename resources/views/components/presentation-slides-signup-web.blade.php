@@ -9,7 +9,7 @@
 --}}
 
 <!-- Slide 1: สมัครผ่านเว็บ - ภาพรวม -->
-<div class="slide active">
+<div class="slide">
     <div class="h-full flex items-center justify-center bg-gradient-to-br from-blue-900/95 via-indigo-900/90 to-purple-900/95 p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
         <div class="absolute inset-0 opacity-30">
             <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>

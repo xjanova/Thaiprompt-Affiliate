@@ -1,5 +1,5 @@
 <!-- Slide 1: MLM Plans Title / Cover -->
-<div class="slide active">
+<div class="slide">
     <div class="h-full flex items-center justify-center bg-gradient-to-br from-purple-900/90 via-indigo-900/80 to-blue-900/90 p-12 backdrop-blur-xl relative overflow-hidden">
         <!-- Animated background particles -->
         <div class="absolute inset-0 opacity-20">
