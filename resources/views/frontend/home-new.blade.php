@@ -372,6 +372,14 @@
                     เข้าสู่ระบบ
                 </a>
             </div>
+            {{-- Link to detailed documentation --}}
+            <p class="mt-6 text-slate-400">
+                <a href="{{ route('documents.how-to-register') }}"
+                   class="text-green-400 hover:text-green-300 underline underline-offset-4 transition-colors">
+                    <i class="fas fa-book-open mr-1"></i>
+                    อ่านคู่มือการสมัครฉบับละเอียด
+                </a>
+            </p>
         </div>
     </div>
 </section>
