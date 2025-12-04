@@ -8,17 +8,15 @@ use App\Models\MlmPlan;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
 
 /**
  * ThaipromptMlmSeeder - สร้างข้อมูล MLM สำหรับ Thaiprompt
  *
- * ลบ demo users เก่าทั้งหมด และสร้างใหม่ด้วยชื่อ Thaiprompt 00-30
+ * โครงสร้างแบบง่าย - สายเดียวต่อเรียงลำดับ:
+ * Admin → TP-00 → TP-01 → TP-02 → ... → TP-30
  *
- * โครงสร้าง:
- * 1. Binary Tree: 5 ชั้นเต็ม (31 คน) - แบบ BFS
- * 2. Unilevel Tree: ชั้นละ 5 คน - แบบ BFS เติมเต็มชั้น
- * 3. Original Sponsor: ทุกคนแนะนำตรงโดย Admin คนเดียว
+ * ทุกคนแนะนำตรงโดย Admin (original_sponsor)
+ * แต่ผังต่อเรียงลำดับ (binary/unilevel parent = คนก่อนหน้า)
  */
 class ThaipromptMlmSeeder extends Seeder
 {
@@ -28,11 +26,6 @@ class ThaipromptMlmSeeder extends Seeder
     private const MEMBER_COUNT = 31;
 
     /**
-     * ความกว้างของ Unilevel Tree (ลูกต่อ parent)
-     */
-    private const UNILEVEL_WIDTH = 5;
-
-    /**
      * Run the database seeds.
      *
      * @return void
@@ -40,7 +33,7 @@ class ThaipromptMlmSeeder extends Seeder
     public function run(): void
     {
         $this->command->info('');
-        $this->command->info('🚀 ThaipromptMlmSeeder - สร้างระบบ MLM ใหม่');
+        $this->command->info('🚀 ThaipromptMlmSeeder - สร้างระบบ MLM แบบสายเดียว');
         $this->command->info('');
 
         // 1. ลบข้อมูล demo เก่าทั้งหมด
@@ -54,18 +47,11 @@ class ThaipromptMlmSeeder extends Seeder
         $admin = $this->getAdminUser();
         $adminMember = $this->getOrCreateAdminMember($admin, $plan, $package);
 
-        // 4. สร้าง Thaiprompt 00-30 (31 คน) - 2 ขั้นตอน
-        // ขั้นตอน 1: สร้าง Users และ MlmMembers ก่อน (ยังไม่ตั้งค่า relationships)
-        $members = $this->createThaipromptMembers($admin, $adminMember, $plan, $package);
+        // 4. สร้าง Thaiprompt 00-30 (31 คน) ต่อเรียงลำดับ
+        $this->createThaipromptMembers($adminMember, $plan, $package);
 
-        // ขั้นตอน 2: อัพเดท relationships (หลังจากที่ทุก member มี ID แล้ว)
-        $this->updateMemberRelationships($members, $adminMember);
-
-        // 5. อัพเดทสถิติ
-        $this->updateStatistics($adminMember, $members);
-
-        // 6. แสดงผลลัพธ์
-        $this->showResults($members);
+        // 5. แสดงผลลัพธ์
+        $this->showResults($adminMember);
     }
 
     /**
@@ -153,17 +139,15 @@ class ThaipromptMlmSeeder extends Seeder
     {
         $plan = MlmPlan::where('is_default', true)->first();
         if ($plan) {
-            $this->command->info("✅ MLM Plan: {$plan->name}");
             return $plan;
         }
 
         $plan = MlmPlan::first();
         if ($plan) {
-            $this->command->info("✅ MLM Plan: {$plan->name}");
             return $plan;
         }
 
-        $plan = MlmPlan::create([
+        return MlmPlan::create([
             'name' => 'Thaiprompt Plan',
             'name_th' => 'แผน Thaiprompt',
             'slug' => 'thaiprompt-plan',
@@ -178,9 +162,6 @@ class ThaipromptMlmSeeder extends Seeder
             'joining_fee' => 0,
             'requires_joining_fee' => false,
         ]);
-
-        $this->command->info("✅ สร้าง MLM Plan: {$plan->name}");
-        return $plan;
     }
 
     /**
@@ -192,17 +173,15 @@ class ThaipromptMlmSeeder extends Seeder
     {
         $package = MlmPackage::where('slug', 'bronze-package')->first();
         if ($package) {
-            $this->command->info("✅ MLM Package: {$package->name}");
             return $package;
         }
 
         $package = MlmPackage::first();
         if ($package) {
-            $this->command->info("✅ MLM Package: {$package->name}");
             return $package;
         }
 
-        $package = MlmPackage::create([
+        return MlmPackage::create([
             'name' => 'Starter Package',
             'name_th' => 'แพ็คเกจเริ่มต้น',
             'slug' => 'starter-package',
@@ -212,9 +191,6 @@ class ThaipromptMlmSeeder extends Seeder
             'is_active' => true,
             'sort_order' => 1,
         ]);
-
-        $this->command->info("✅ สร้าง MLM Package: {$package->name}");
-        return $package;
     }
 
     /**
@@ -254,11 +230,10 @@ class ThaipromptMlmSeeder extends Seeder
         $member = MlmMember::where('user_id', $admin->id)->first();
 
         if ($member) {
-            $this->command->info("✅ Admin MLM Member: {$member->member_code}");
             return $member;
         }
 
-        $member = MlmMember::create([
+        return MlmMember::create([
             'user_id' => $admin->id,
             'mlm_plan_id' => $plan->id,
             'package_id' => $package->id,
@@ -270,26 +245,31 @@ class ThaipromptMlmSeeder extends Seeder
             'total_direct_referrals' => 0,
             'total_team_members' => 0,
         ]);
-
-        $this->command->info("✅ สร้าง Admin MLM Member: {$member->member_code}");
-        return $member;
     }
 
     /**
-     * สร้าง Thaiprompt Members (00-30) - ขั้นตอน 1: สร้าง records ก่อน
+     * สร้าง Thaiprompt Members (00-30) ต่อเรียงลำดับ
      *
-     * @param User $admin
+     * โครงสร้าง:
+     * Admin → TP-00 → TP-01 → TP-02 → ... → TP-30
+     *
+     * - original_sponsor_id = Admin (ทุกคนแนะนำตรงโดย Admin)
+     * - binary_parent_id = คนก่อนหน้า (ต่อเรียงลำดับ)
+     * - unilevel_sponsor_id = คนก่อนหน้า (ต่อเรียงลำดับ)
+     *
      * @param MlmMember $adminMember
      * @param MlmPlan $plan
      * @param MlmPackage $package
-     * @return array
+     * @return void
      */
-    private function createThaipromptMembers(User $admin, MlmMember $adminMember, MlmPlan $plan, MlmPackage $package): array
+    private function createThaipromptMembers(MlmMember $adminMember, MlmPlan $plan, MlmPackage $package): void
     {
         $this->command->info('');
-        $this->command->info('👥 กำลังสร้าง Thaiprompt 00-30 (31 คน)...');
+        $this->command->info('👥 กำลังสร้าง Thaiprompt 00-30 (31 คน) ต่อเรียงลำดับ...');
 
-        $members = [];
+        // คนก่อนหน้า (เริ่มจาก Admin)
+        $previousMember = $adminMember;
+        $previousPath = (string) $adminMember->id;
 
         for ($i = 0; $i < self::MEMBER_COUNT; $i++) {
             $memberNum = str_pad($i, 2, '0', STR_PAD_LEFT); // 00, 01, 02, ...
@@ -306,7 +286,11 @@ class ThaipromptMlmSeeder extends Seeder
                 'preferred_language' => 'th',
             ]);
 
-            // สร้าง MLM Member (ยังไม่ตั้งค่า relationships - จะอัพเดททีหลัง)
+            // คำนวณ level และ path
+            $level = $i + 1; // TP-00 = level 1, TP-01 = level 2, ...
+            $currentPath = $previousPath . '/' . $previousMember->id;
+
+            // สร้าง MLM Member ต่อจากคนก่อนหน้า
             $member = MlmMember::create([
                 'user_id' => $user->id,
                 'mlm_plan_id' => $plan->id,
@@ -319,18 +303,18 @@ class ThaipromptMlmSeeder extends Seeder
                 // Original Sponsor = Admin (ทุกคนแนะนำตรงโดย Admin)
                 'original_sponsor_id' => $adminMember->id,
 
-                // Binary Tree (จะอัพเดททีหลัง)
-                'binary_sponsor_id' => null,
-                'binary_parent_id' => null,
-                'binary_position' => null,
-                'binary_path' => null,
+                // Binary Tree - ต่อจากคนก่อนหน้า (ซ้ายเสมอ)
+                'binary_sponsor_id' => $previousMember->id,
+                'binary_parent_id' => $previousMember->id,
+                'binary_position' => 'left',
+                'binary_path' => $currentPath,
 
-                // Unilevel Tree (จะอัพเดททีหลัง)
-                'unilevel_sponsor_id' => null,
-                'unilevel_level' => 0,
-                'unilevel_path' => null,
+                // Unilevel Tree - ต่อจากคนก่อนหน้า
+                'unilevel_sponsor_id' => $previousMember->id,
+                'unilevel_level' => $level,
+                'unilevel_path' => $currentPath,
 
-                // Stats (จะอัพเดทภายหลัง)
+                // Stats
                 'total_pv' => $package->pv_value ?? 100,
                 'total_direct_referrals' => 0,
                 'total_team_members' => 0,
@@ -340,317 +324,51 @@ class ThaipromptMlmSeeder extends Seeder
                 'right_leg_pv' => 0,
             ]);
 
-            $members[$i] = $member;
-        }
+            // อัพเดทคนก่อนหน้า
+            $previousMember->increment('left_leg_members');
+            $previousMember->increment('total_team_members');
 
-        $this->command->info("   ✅ สร้าง Users และ MlmMembers เสร็จ ({$i} คน)");
+            // เตรียมสำหรับคนถัดไป
+            $previousMember = $member;
+            $previousPath = $currentPath;
 
-        return $members;
-    }
-
-    /**
-     * อัพเดท relationships ของ members ทั้งหมด
-     *
-     * @param array $members
-     * @param MlmMember $adminMember
-     * @return void
-     */
-    private function updateMemberRelationships(array $members, MlmMember $adminMember): void
-    {
-        $this->command->info('');
-        $this->command->info('🔗 กำลังอัพเดท relationships...');
-
-        foreach ($members as $index => $member) {
-            // คำนวณและอัพเดท Binary Tree
-            $binaryInfo = $this->calculateBinaryPosition($index, $members);
-
-            // คำนวณและอัพเดท Unilevel Tree
-            $unilevelInfo = $this->calculateUnilevelPosition($index, $members, $adminMember);
-
-            // อัพเดท member
-            $member->update([
-                // Binary Tree
-                'binary_sponsor_id' => $binaryInfo['parent_id'],
-                'binary_parent_id' => $binaryInfo['parent_id'],
-                'binary_position' => $binaryInfo['position'],
-                'binary_path' => $binaryInfo['path'],
-
-                // Unilevel Tree
-                'unilevel_sponsor_id' => $unilevelInfo['sponsor_id'],
-                'unilevel_level' => $unilevelInfo['level'],
-                'unilevel_path' => $unilevelInfo['path'],
-            ]);
-        }
-
-        $this->command->info('   ✅ อัพเดท relationships เสร็จ');
-    }
-
-    /**
-     * คำนวณตำแหน่งใน Binary Tree (Full Binary Tree, BFS)
-     *
-     * โครงสร้าง:
-     * - Level 0: TP-00 (Root, index 0)
-     * - Level 1: TP-01 (L), TP-02 (R)
-     * - Level 2: TP-03 (LL), TP-04 (LR), TP-05 (RL), TP-06 (RR)
-     * - ...
-     *
-     * Index Formula:
-     * - Parent of index N = floor((N - 1) / 2)
-     * - Left child of N = 2N + 1
-     * - Right child of N = 2N + 2
-     * - Position: odd index = left, even index = right
-     *
-     * @param int $index ตำแหน่ง (0-30)
-     * @param array $members สมาชิกทั้งหมด (มี ID แล้ว)
-     * @return array ['parent_id', 'position', 'path']
-     */
-    private function calculateBinaryPosition(int $index, array $members): array
-    {
-        // Index 0 = Root (ไม่มี parent ใน binary)
-        if ($index === 0) {
-            return [
-                'parent_id' => null,
-                'position' => null,
-                'path' => null,
-            ];
-        }
-
-        // คำนวณ parent index
-        $parentIndex = (int) floor(($index - 1) / 2);
-        $parent = $members[$parentIndex] ?? null;
-
-        // คำนวณตำแหน่ง (odd = left, even = right)
-        $position = ($index % 2 === 1) ? 'left' : 'right';
-
-        // คำนวณ path
-        $path = $this->buildBinaryPath($index, $members);
-
-        return [
-            'parent_id' => $parent?->id,
-            'position' => $position,
-            'path' => $path,
-        ];
-    }
-
-    /**
-     * สร้าง binary path
-     *
-     * @param int $index
-     * @param array $members
-     * @return string|null
-     */
-    private function buildBinaryPath(int $index, array $members): ?string
-    {
-        if ($index === 0) {
-            return null;
-        }
-
-        $path = [];
-        $currentIndex = $index;
-
-        while ($currentIndex > 0) {
-            $parentIndex = (int) floor(($currentIndex - 1) / 2);
-            if (isset($members[$parentIndex])) {
-                array_unshift($path, $members[$parentIndex]->id);
+            // แสดง progress
+            if ($i % 10 === 0 || $i === self::MEMBER_COUNT - 1) {
+                $this->command->info("   สร้าง {$memberCode} ต่อจาก " . ($i === 0 ? 'Admin' : 'TP-' . str_pad($i - 1, 2, '0', STR_PAD_LEFT)));
             }
-            $currentIndex = $parentIndex;
         }
 
-        return count($path) > 0 ? implode('/', $path) : null;
-    }
-
-    /**
-     * คำนวณตำแหน่งใน Unilevel Tree (BFS, width = 5)
-     *
-     * โครงสร้าง:
-     * - Level 1: TP-00 ถึง TP-04 (5 คน ภายใต้ Admin)
-     * - Level 2: TP-05 ถึง TP-29 (25 คน, 5 คนต่อ parent ใน Level 1)
-     * - Level 3: TP-30 (1 คน ภายใต้ TP-05)
-     *
-     * @param int $index ตำแหน่ง (0-30)
-     * @param array $members สมาชิกทั้งหมด (มี ID แล้ว)
-     * @param MlmMember $adminMember
-     * @return array ['sponsor_id', 'level', 'path']
-     */
-    private function calculateUnilevelPosition(int $index, array $members, MlmMember $adminMember): array
-    {
-        $width = self::UNILEVEL_WIDTH;
-
-        // Level 1: index 0-4 (5 คนแรก ภายใต้ Admin)
-        if ($index < $width) {
-            return [
-                'sponsor_id' => $adminMember->id,
-                'level' => 1,
-                'path' => (string) $adminMember->id,
-            ];
-        }
-
-        // Level 2+: คำนวณ parent จาก index
-        // Parent index = floor((index - width) / width)
-        $parentIndex = (int) floor(($index - $width) / $width);
-        $parent = $members[$parentIndex] ?? null;
-
-        if (!$parent) {
-            // Fallback ถ้าไม่มี parent
-            return [
-                'sponsor_id' => $adminMember->id,
-                'level' => 1,
-                'path' => (string) $adminMember->id,
-            ];
-        }
-
-        // คำนวณ level
-        $level = ($parent->unilevel_level ?? 0) + 1;
-
-        // ถ้า parent เป็น Level 1 (sponsor_id = admin), level ของลูกคือ 2
-        if ($parentIndex < $width) {
-            $level = 2;
-        }
-
-        // คำนวณ path
-        $parentPath = $parent->unilevel_path;
-        $path = $parentPath
-            ? $parentPath . '/' . $parent->id
-            : (string) $parent->id;
-
-        return [
-            'sponsor_id' => $parent->id,
-            'level' => $level,
-            'path' => $path,
-        ];
-    }
-
-    /**
-     * อัพเดทสถิติของทุก members
-     *
-     * @param MlmMember $adminMember
-     * @param array $members
-     * @return void
-     */
-    private function updateStatistics(MlmMember $adminMember, array $members): void
-    {
-        $this->command->info('');
-        $this->command->info('📊 กำลังอัพเดทสถิติ...');
-
-        // อัพเดท Admin Member
-        $directReferrals = count($members); // ทุกคนเป็น direct referral ของ Admin
-
-        // นับ unilevel children ของ Admin (Level 1)
-        $unilevelChildren = MlmMember::where('unilevel_sponsor_id', $adminMember->id)->count();
-
+        // อัพเดท Admin's direct referrals
         $adminMember->update([
-            'total_direct_referrals' => $directReferrals,
-            'total_team_members' => count($members),
+            'total_direct_referrals' => self::MEMBER_COUNT,
+            'total_team_members' => self::MEMBER_COUNT,
         ]);
 
-        $this->command->info("   Admin: {$directReferrals} direct referrals, {$unilevelChildren} unilevel children");
-
-        // อัพเดทสถิติของแต่ละ member
-        foreach ($members as $member) {
-            // นับ left/right leg members
-            $leftLegMembers = $this->countBinarySubtree($member->id, 'left');
-            $rightLegMembers = $this->countBinarySubtree($member->id, 'right');
-
-            // นับ total team (unilevel downline)
-            $teamCount = $this->countUnilevelDownline($member->id);
-
-            $member->update([
-                'total_direct_referrals' => 0, // ไม่มีใครแนะนำตรง (ทุกคนถูกแนะนำโดย Admin)
-                'total_team_members' => $teamCount,
-                'left_leg_members' => $leftLegMembers,
-                'right_leg_members' => $rightLegMembers,
-            ]);
-        }
-
-        $this->command->info('   ✅ อัพเดทสถิติเสร็จ');
-    }
-
-    /**
-     * นับสมาชิกใน Binary subtree
-     *
-     * @param int $memberId
-     * @param string $position 'left' หรือ 'right'
-     * @return int
-     */
-    private function countBinarySubtree(int $memberId, string $position): int
-    {
-        $child = MlmMember::where('binary_parent_id', $memberId)
-            ->where('binary_position', $position)
-            ->first();
-
-        if (!$child) {
-            return 0;
-        }
-
-        return 1 + $this->countAllBinaryChildren($child->id);
-    }
-
-    /**
-     * นับ binary children ทั้งหมด (recursive)
-     *
-     * @param int $memberId
-     * @return int
-     */
-    private function countAllBinaryChildren(int $memberId): int
-    {
-        $count = 0;
-        $children = MlmMember::where('binary_parent_id', $memberId)->get();
-
-        foreach ($children as $child) {
-            $count++;
-            $count += $this->countAllBinaryChildren($child->id);
-        }
-
-        return $count;
-    }
-
-    /**
-     * นับ unilevel downline ทั้งหมด (recursive)
-     *
-     * @param int $memberId
-     * @return int
-     */
-    private function countUnilevelDownline(int $memberId): int
-    {
-        $count = 0;
-        $children = MlmMember::where('unilevel_sponsor_id', $memberId)->get();
-
-        foreach ($children as $child) {
-            $count++;
-            $count += $this->countUnilevelDownline($child->id);
-        }
-
-        return $count;
+        $this->command->info('   ✅ สร้างสมาชิกเสร็จ!');
     }
 
     /**
      * แสดงผลลัพธ์
      *
-     * @param array $members
+     * @param MlmMember $adminMember
      * @return void
      */
-    private function showResults(array $members): void
+    private function showResults(MlmMember $adminMember): void
     {
         $this->command->info('');
         $this->command->info('✨ สร้าง Thaiprompt MLM สำเร็จ!');
         $this->command->info('');
         $this->command->info('📊 สรุป:');
-        $this->command->info("   • จำนวนสมาชิก: " . count($members) . " คน (Thaiprompt 00-30)");
+        $this->command->info('   • จำนวนสมาชิก: ' . self::MEMBER_COUNT . ' คน (Thaiprompt 00-30)');
         $this->command->info('');
-        $this->command->info('🌳 โครงสร้าง Binary Tree (5 ชั้น):');
-        $this->command->info('   Level 0: TP-00 (Root)');
-        $this->command->info('   Level 1: TP-01 (L), TP-02 (R)');
-        $this->command->info('   Level 2: TP-03 - TP-06 (4 คน)');
-        $this->command->info('   Level 3: TP-07 - TP-14 (8 คน)');
-        $this->command->info('   Level 4: TP-15 - TP-30 (16 คน)');
+        $this->command->info('🔗 โครงสร้างสายงาน (ต่อเรียงลำดับ):');
+        $this->command->info('   Admin → TP-00 → TP-01 → TP-02 → ... → TP-30');
         $this->command->info('');
-        $this->command->info('👥 โครงสร้าง Unilevel Tree (width=5):');
-        $this->command->info('   Level 1: TP-00 - TP-04 (5 คน ภายใต้ Admin)');
-        $this->command->info('   Level 2: TP-05 - TP-29 (25 คน)');
-        $this->command->info('   Level 3: TP-30 (1 คน)');
+        $this->command->info('👤 Original Sponsor:');
+        $this->command->info('   ทุกคน (31 คน) แนะนำตรงโดย Admin');
         $this->command->info('');
-        $this->command->info('🔗 Original Sponsor:');
-        $this->command->info('   ทุกคน (31 คน) แนะนำตรงโดย Admin (ADMIN-0001)');
+        $this->command->info('🌳 Binary/Unilevel Tree:');
+        $this->command->info('   ต่อเรียงลำดับจากคนก่อนหน้า (สายเดียว)');
         $this->command->info('');
         $this->command->info('🔐 ข้อมูลเข้าสู่ระบบ:');
         $this->command->info('   Email: thaipromptXX@thaiprompt.com (XX = 00-30)');
