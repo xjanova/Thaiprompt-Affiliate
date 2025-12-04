@@ -34,6 +34,20 @@
     <div class="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-md">
         <div class="container mx-auto px-4">
             <div class="flex items-center gap-4 py-3">
+                {{-- Logo --}}
+                @php
+                    $themeSetting = \App\Models\ThemeSetting::active();
+                    $logoPath = $themeSetting && $themeSetting->logo_path
+                        ? asset('storage/' . $themeSetting->logo_path)
+                        : asset('images/logo.png');
+                @endphp
+                <a href="{{ route('storefront.index') }}" class="flex-shrink-0">
+                    <img src="{{ $logoPath }}"
+                         alt="{{ config('app.name') }}"
+                         class="h-10 w-auto object-contain"
+                         onerror="this.onerror=null; this.src='{{ asset('images/logo.png') }}';">
+                </a>
+
                 {{-- Mega Menu --}}
                 <x-storefront.mega-menu :categories="$categories" />
 
