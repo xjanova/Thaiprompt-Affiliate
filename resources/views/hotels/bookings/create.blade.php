@@ -3,7 +3,7 @@
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-6xl mx-auto">
-        <h1 class="text-3xl font-bold text-gray-900 mb-8">ยืนยันการจอง</h1>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">ยืนยันการจอง</h1>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Booking Form -->
@@ -19,17 +19,17 @@
                     <input type="hidden" name="number_of_children" value="{{ $bookingData['children'] ?? 0 }}">
 
                     <!-- Guest Information -->
-                    <div class="bg-white rounded-lg shadow-md p-6">
-                        <h2 class="text-xl font-bold text-gray-900 mb-4">ข้อมูลผู้เข้าพัก</h2>
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">ข้อมูลผู้เข้าพัก</h2>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     ชื่อ-นามสกุล <span class="text-red-500">*</span>
                                 </label>
                                 <input type="text" name="guest_name"
                                        value="{{ old('guest_name', auth()->user()->name) }}"
-                                       class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                                        required>
                                 @error('guest_name')
                                     <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
@@ -37,12 +37,12 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     อีเมล <span class="text-red-500">*</span>
                                 </label>
                                 <input type="email" name="guest_email"
                                        value="{{ old('guest_email', auth()->user()->email) }}"
-                                       class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                                        required>
                                 @error('guest_email')
                                     <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
@@ -50,12 +50,12 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     เบอร์โทรศัพท์ <span class="text-red-500">*</span>
                                 </label>
                                 <input type="tel" name="guest_phone"
                                        value="{{ old('guest_phone', auth()->user()->phone) }}"
-                                       class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                                        required>
                                 @error('guest_phone')
                                     <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
@@ -63,32 +63,32 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     เลขบัตรประชาชน (ถ้ามี)
                                 </label>
                                 <input type="text" name="guest_id_card"
                                        value="{{ old('guest_id_card') }}"
-                                       class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                                        maxlength="13">
                             </div>
                         </div>
                     </div>
 
                     <!-- Special Requests -->
-                    <div class="bg-white rounded-lg shadow-md p-6">
-                        <h2 class="text-xl font-bold text-gray-900 mb-4">คำขอพิเศษ</h2>
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">คำขอพิเศษ</h2>
                         <textarea name="special_requests" rows="4"
-                                  class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                  class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                                   placeholder="เช่น ต้องการห้องชั้นสูง, ต้องการเตียงเสริม, แพ้อาหาร...">{{ old('special_requests') }}</textarea>
-                        <p class="text-sm text-gray-500 mt-2">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
                             * คำขอพิเศษจะได้รับการพิจารณาตามความเหมาะสมและห้องพักที่มีอยู่
                         </p>
                     </div>
 
                     <!-- Promo Code -->
-                    <div class="bg-white rounded-lg shadow-md p-6" x-data="{ showPromo: false }">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6" x-data="{ showPromo: false }">
                         <button type="button" @click="showPromo = !showPromo"
-                                class="text-blue-600 hover:text-blue-800 font-medium">
+                                class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium">
                             <span x-text="showPromo ? '- ซ่อนโค้ดส่วนลด' : '+ มีโค้ดส่วนลด?'"></span>
                         </button>
 
@@ -96,24 +96,24 @@
                             <div class="flex gap-2">
                                 <input type="text" name="promo_code" value="{{ old('promo_code') }}"
                                        placeholder="กรอกโค้ดส่วนลด"
-                                       class="flex-1 rounded-lg border-gray-300">
+                                       class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                                 <button type="button" onclick="applyPromo()"
-                                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                                        class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-6 py-2 rounded-lg">
                                     ใช้โค้ด
                                 </button>
                             </div>
 
                             @if($offers && $offers->count() > 0)
                                 <div class="mt-4">
-                                    <p class="text-sm font-medium text-gray-700 mb-2">โปรโมชั่นที่ใช้ได้:</p>
+                                    <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">โปรโมชั่นที่ใช้ได้:</p>
                                     @foreach($offers as $offer)
-                                        <div class="bg-green-50 border border-green-200 rounded p-3 mb-2">
+                                        <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded p-3 mb-2">
                                             <div class="flex justify-between items-start">
                                                 <div>
-                                                    <p class="font-bold text-green-800">{{ $offer['name'] }}</p>
-                                                    <p class="text-sm text-gray-600">{{ $offer['description'] }}</p>
+                                                    <p class="font-bold text-green-800 dark:text-green-300">{{ $offer['name'] }}</p>
+                                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $offer['description'] }}</p>
                                                     @if($offer['code'])
-                                                        <p class="text-sm text-green-600 mt-1">
+                                                        <p class="text-sm text-green-600 dark:text-green-400 mt-1">
                                                             โค้ด: <span class="font-mono font-bold">{{ $offer['code'] }}</span>
                                                         </p>
                                                     @endif
@@ -130,34 +130,34 @@
                     </div>
 
                     <!-- Payment Method -->
-                    <div class="bg-white rounded-lg shadow-md p-6">
-                        <h2 class="text-xl font-bold text-gray-900 mb-4">วิธีการชำระเงิน</h2>
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">วิธีการชำระเงิน</h2>
 
                         <div class="space-y-3">
-                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50">
+                            <label class="flex items-center p-4 border-2 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <input type="radio" name="payment_method" value="wallet"
                                        class="w-4 h-4 text-blue-600" required>
                                 <div class="ml-3">
-                                    <p class="font-medium">กระเป๋าเงิน (Wallet)</p>
-                                    <p class="text-sm text-gray-500">ชำระผ่านกระเป๋าเงินในระบบ</p>
+                                    <p class="font-medium dark:text-white">กระเป๋าเงิน (Wallet)</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">ชำระผ่านกระเป๋าเงินในระบบ</p>
                                 </div>
                             </label>
 
-                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50">
+                            <label class="flex items-center p-4 border-2 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <input type="radio" name="payment_method" value="promptpay"
                                        class="w-4 h-4 text-blue-600">
                                 <div class="ml-3">
-                                    <p class="font-medium">PromptPay</p>
-                                    <p class="text-sm text-gray-500">สแกน QR Code ชำระเงิน</p>
+                                    <p class="font-medium dark:text-white">PromptPay</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">สแกน QR Code ชำระเงิน</p>
                                 </div>
                             </label>
 
-                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50">
+                            <label class="flex items-center p-4 border-2 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <input type="radio" name="payment_method" value="credit_card"
                                        class="w-4 h-4 text-blue-600">
                                 <div class="ml-3">
-                                    <p class="font-medium">บัตรเครดิต/เดบิต</p>
-                                    <p class="text-sm text-gray-500">Visa, MasterCard, JCB</p>
+                                    <p class="font-medium dark:text-white">บัตรเครดิต/เดบิต</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Visa, MasterCard, JCB</p>
                                 </div>
                             </label>
                         </div>
@@ -167,15 +167,15 @@
                     </div>
 
                     <!-- Terms -->
-                    <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                         <label class="flex items-start">
                             <input type="checkbox" name="accept_terms" value="1"
                                    class="mt-1 w-4 h-4 text-blue-600 rounded" required>
-                            <span class="ml-2 text-sm text-gray-700">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
                                 ข้าพเจ้ายอมรับ
-                                <a href="#" class="text-blue-600 hover:underline">ข้อกำหนดและเงื่อนไข</a>
+                                <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">ข้อกำหนดและเงื่อนไข</a>
                                 และ
-                                <a href="#" class="text-blue-600 hover:underline">นโยบายการยกเลิก</a>
+                                <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">นโยบายการยกเลิก</a>
                                 ของที่พัก
                             </span>
                         </label>
@@ -183,7 +183,7 @@
 
                     <!-- Submit Button -->
                     <button type="submit"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold py-4 rounded-lg transition">
+                            class="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-lg font-bold py-4 rounded-lg transition">
                         ยืนยันการจองและชำระเงิน
                     </button>
                 </form>
@@ -191,40 +191,40 @@
 
             <!-- Booking Summary -->
             <div class="lg:col-span-1">
-                <div class="bg-white rounded-lg shadow-md p-6 sticky top-4">
-                    <h2 class="text-xl font-bold text-gray-900 mb-4">สรุปการจอง</h2>
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sticky top-4">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">สรุปการจอง</h2>
 
                     <!-- Hotel Info -->
-                    <div class="mb-4 pb-4 border-b">
+                    <div class="mb-4 pb-4 border-b dark:border-gray-700">
                         <img src="{{ $roomType->hotel->main_image_url }}" alt="{{ $roomType->hotel->name }}"
                              class="w-full h-32 object-cover rounded-lg mb-3">
-                        <h3 class="font-bold text-gray-900">{{ $roomType->hotel->name }}</h3>
-                        <p class="text-sm text-gray-600">{{ $roomType->hotel->city }}</p>
+                        <h3 class="font-bold text-gray-900 dark:text-white">{{ $roomType->hotel->name }}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ $roomType->hotel->city }}</p>
                     </div>
 
                     <!-- Room Info -->
-                    <div class="mb-4 pb-4 border-b space-y-2 text-sm">
+                    <div class="mb-4 pb-4 border-b dark:border-gray-700 space-y-2 text-sm">
                         <div>
-                            <span class="text-gray-600">ห้องพัก:</span>
-                            <span class="font-medium">{{ $roomType->name }}</span>
+                            <span class="text-gray-600 dark:text-gray-400">ห้องพัก:</span>
+                            <span class="font-medium dark:text-white">{{ $roomType->name }}</span>
                         </div>
                         <div>
-                            <span class="text-gray-600">เช็คอิน:</span>
-                            <span class="font-medium">{{ \Carbon\Carbon::parse($bookingData['check_in'])->format('d/m/Y') }}</span>
+                            <span class="text-gray-600 dark:text-gray-400">เช็คอิน:</span>
+                            <span class="font-medium dark:text-white">{{ \Carbon\Carbon::parse($bookingData['check_in'])->format('d/m/Y') }}</span>
                         </div>
                         <div>
-                            <span class="text-gray-600">เช็คเอาท์:</span>
-                            <span class="font-medium">{{ \Carbon\Carbon::parse($bookingData['check_out'])->format('d/m/Y') }}</span>
+                            <span class="text-gray-600 dark:text-gray-400">เช็คเอาท์:</span>
+                            <span class="font-medium dark:text-white">{{ \Carbon\Carbon::parse($bookingData['check_out'])->format('d/m/Y') }}</span>
                         </div>
                         <div>
-                            <span class="text-gray-600">จำนวนคืน:</span>
-                            <span class="font-medium">
+                            <span class="text-gray-600 dark:text-gray-400">จำนวนคืน:</span>
+                            <span class="font-medium dark:text-white">
                                 {{ \Carbon\Carbon::parse($bookingData['check_in'])->diffInDays($bookingData['check_out']) }} คืน
                             </span>
                         </div>
                         <div>
-                            <span class="text-gray-600">ผู้เข้าพัก:</span>
-                            <span class="font-medium">
+                            <span class="text-gray-600 dark:text-gray-400">ผู้เข้าพัก:</span>
+                            <span class="font-medium dark:text-white">
                                 {{ $bookingData['adults'] ?? 2 }} ผู้ใหญ่
                                 @if(isset($bookingData['children']) && $bookingData['children'] > 0)
                                     , {{ $bookingData['children'] }} เด็ก
@@ -232,27 +232,27 @@
                             </span>
                         </div>
                         <div>
-                            <span class="text-gray-600">จำนวนห้อง:</span>
-                            <span class="font-medium">{{ $bookingData['rooms'] ?? 1 }} ห้อง</span>
+                            <span class="text-gray-600 dark:text-gray-400">จำนวนห้อง:</span>
+                            <span class="font-medium dark:text-white">{{ $bookingData['rooms'] ?? 1 }} ห้อง</span>
                         </div>
                     </div>
 
                     <!-- Price Breakdown -->
                     <div class="space-y-2 mb-4 text-sm">
                         <div class="flex justify-between">
-                            <span class="text-gray-600">ค่าห้องพัก</span>
-                            <span class="font-medium">฿{{ number_format($pricing['subtotal']) }}</span>
+                            <span class="text-gray-600 dark:text-gray-400">ค่าห้องพัก</span>
+                            <span class="font-medium dark:text-white">฿{{ number_format($pricing['subtotal']) }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">ภาษี (7%)</span>
-                            <span class="font-medium">฿{{ number_format($pricing['tax_amount']) }}</span>
+                            <span class="text-gray-600 dark:text-gray-400">ภาษี (7%)</span>
+                            <span class="font-medium dark:text-white">฿{{ number_format($pricing['tax_amount']) }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">ค่าบริการ (10%)</span>
-                            <span class="font-medium">฿{{ number_format($pricing['service_charge']) }}</span>
+                            <span class="text-gray-600 dark:text-gray-400">ค่าบริการ (10%)</span>
+                            <span class="font-medium dark:text-white">฿{{ number_format($pricing['service_charge']) }}</span>
                         </div>
                         @if($pricing['discount_amount'] > 0)
-                            <div class="flex justify-between text-green-600">
+                            <div class="flex justify-between text-green-600 dark:text-green-400">
                                 <span>ส่วนลด</span>
                                 <span class="font-medium">-฿{{ number_format($pricing['discount_amount']) }}</span>
                             </div>
@@ -260,18 +260,18 @@
                     </div>
 
                     <!-- Total -->
-                    <div class="pt-4 border-t">
+                    <div class="pt-4 border-t dark:border-gray-700">
                         <div class="flex justify-between items-center">
-                            <span class="text-lg font-bold text-gray-900">ยอดรวมทั้งหมด</span>
-                            <span class="text-2xl font-bold text-blue-600">
+                            <span class="text-lg font-bold text-gray-900 dark:text-white">ยอดรวมทั้งหมด</span>
+                            <span class="text-2xl font-bold text-blue-600 dark:text-blue-400">
                                 ฿{{ number_format($pricing['total_amount']) }}
                             </span>
                         </div>
                     </div>
 
                     <!-- Cancellation Policy -->
-                    <div class="mt-4 pt-4 border-t">
-                        <p class="text-xs text-gray-600">
+                    <div class="mt-4 pt-4 border-t dark:border-gray-700">
+                        <p class="text-xs text-gray-600 dark:text-gray-400">
                             <strong>นโยบายการยกเลิก:</strong><br>
                             • ยกเลิกฟรีก่อน 7 วัน: คืนเงิน 100%<br>
                             • ยกเลิก 3-7 วัน: คืนเงิน 50%<br>
