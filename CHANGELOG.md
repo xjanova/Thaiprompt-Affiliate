@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.352.1] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2011 from xjanova/claude/fix-super-admin-access-0173SAr8JQ7h6KGH47B4Lkvy (da06101e)
+- fix: improve admin password change functionality (c194c04c)
+### 🔧 Other Changes
+
+
 ## [v3.352.0] - 2025-12-04
 
 ### ✨ Features
