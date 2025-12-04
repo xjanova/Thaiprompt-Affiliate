@@ -301,7 +301,7 @@
         </div>
 
         {{-- Demo Cards Grid --}}
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-12">
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12">
             {{-- Card 1: System Overview --}}
             <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
                  onclick="if(typeof openPresentationFullscreen === 'function') openPresentationFullscreen()">
@@ -330,7 +330,21 @@
                 </div>
             </div>
 
-            {{-- Card 3: AI & Automation --}}
+            {{-- Card 3: TPIX Token --}}
+            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
+                 onclick="if(typeof openPresentationFullscreen === 'function') openPresentationFullscreen()">
+                <div class="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform overflow-hidden">
+                    <img src="{{ asset('images/tpix-logo.svg') }}" alt="TPIX" class="w-12 h-12 object-contain">
+                </div>
+                <h3 class="text-xl font-bold text-white mb-3">TPIX Token</h3>
+                <p class="text-slate-400 mb-4">เรียนรู้ TPIX Token ที่มี Blockchain ของตัวเอง Staking, DEX และ Tokenomics</p>
+                <div class="flex items-center text-amber-400 font-medium group-hover:text-amber-300">
+                    <span>ดูสไลด์</span>
+                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+
+            {{-- Card 4: AI & Automation --}}
             <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
                  onclick="if(typeof openPresentationFullscreen === 'function') openPresentationFullscreen()">
                 <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
