@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.344.1] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1996 from xjanova/claude/fix-learning-center-slug-01B4XHap49oVAFHGJBGoLXCa (6fa226ac)
+- fix: แก้ไข featured_articles ให้คืนค่าเป็น model objects แทน arrays (f8592333)
+### 🔧 Other Changes
+
+
 ## [v3.344.0] - 2025-12-04
 
 ### ✨ Features
