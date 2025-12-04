@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.350.0] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #2007 from xjanova/claude/fix-guest-shopping-role-01WaHLh37CzemK2rCJyJojPx (4391e476)
+- feat: add StoreBanner seeder with 3 default homepage slides (df6e8d1c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.349.0] - 2025-12-04
 
 ### ✨ Features
