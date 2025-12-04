@@ -365,18 +365,15 @@
     }
 
     .slides-topic-container {
+        display: none;
         position: absolute;
         inset: 0;
         width: 100%;
         height: 100%;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.5s ease;
     }
 
     .slides-topic-container.active {
-        opacity: 1;
-        pointer-events: auto;
+        display: block;
         position: relative;
     }
 
@@ -444,11 +441,20 @@ let toolbarHideTimeout = null;
 let autoHideToolbar = true;  // เปิดใช้งาน auto-hide เมื่อ autoplay
 const TOOLBAR_HIDE_DELAY = 3000;  // ซ่อน toolbar หลังจาก 3 วินาที
 
-let slides = document.querySelectorAll('#slides-system-overview .slide');
-let totalSlides = slides.length;
+let slides = [];
+let totalSlides = 0;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
+    // ดึง slides จาก container เริ่มต้น (system-overview)
+    slides = document.querySelectorAll('#slides-system-overview .slide');
+    totalSlides = slides.length;
+
+    // แสดง slide แรก
+    if (totalSlides > 0) {
+        showSlide(0);
+    }
+
     initializeProgressDots();
     updateSlideCounter();
     updateTopicDisplay();
