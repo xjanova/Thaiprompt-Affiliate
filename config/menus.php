@@ -694,6 +694,7 @@ return [
             'permissions' => [],
             'submenu' => [
                 ['label' => 'ตั้งค่าทั่วไป', 'route' => 'admin.settings.index'],
+                ['label' => '🍔 จัดการสิทธิ์เมนู', 'route' => 'admin.menu-management.index', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500', 'description' => 'เปิด/ปิด จัดเรียงเมนูตาม Role'],
                 ['label' => 'ตั้งค่า Mobile App', 'route' => 'admin.app-management.settings.index'],
                 ['label' => 'คุณสมบัติแอป', 'route' => 'admin.app-management.features.index'],
                 ['label' => 'แบนเนอร์แอป', 'route' => 'admin.app-management.banners.index'],

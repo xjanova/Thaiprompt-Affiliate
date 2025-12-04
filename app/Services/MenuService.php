@@ -2,19 +2,23 @@
 
 namespace App\Services;
 
+use App\Models\MenuItem;
+use App\Models\MenuRoleSetting;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Menu Service
  *
  * จัดการเมนูทั้งหมดในระบบ
- * - ดึงเมนูจาก config
+ * - ดึงเมนูจาก Database (primary) หรือ config (fallback)
  * - รวมเมนูจาก Feature Providers
- * - กรองตาม permissions
+ * - กรองตาม permissions และ role settings
  * - แปลง route names เป็น URLs
  *
- * @version 3.0.0
+ * @version 3.1.0
  * @since 2025-11-15
+ * @updated 2025-12-04 - เพิ่มการดึงเมนูจาก Database และ Role Settings
  */
 class MenuService
 {
@@ -22,6 +26,13 @@ class MenuService
      * MenuRegistrar instance สำหรับรวบรวมเมนูจาก providers
      */
     protected $registrar;
+
+    /**
+     * Cache สำหรับเมนูที่ดึงมาแล้ว
+     *
+     * @var array
+     */
+    protected static array $menuCache = [];
 
     /**
      * Constructor
@@ -43,30 +54,186 @@ class MenuService
      */
     public function getMenuForRole(string $role, $user = null): array
     {
-        // 1. ดึงเมนูจาก config
-        $configMenus = config("menus.{$role}", []);
+        // 1. ลองดึงเมนูจาก Database ก่อน
+        $dbMenus = $this->getMenusFromDatabase($role, $user);
 
-        // 2. ดึงเมนูจาก Feature Providers (ถ้ามี)
+        // 2. ถ้าไม่มีใน Database ให้ใช้จาก config
+        if (empty($dbMenus)) {
+            $configMenus = config("menus.{$role}", []);
+        } else {
+            $configMenus = $dbMenus;
+        }
+
+        // 3. ดึงเมนูจาก Feature Providers (ถ้ามี)
         $providerMenus = [];
         if ($this->registrar) {
             $providerMenus = $this->registrar->getMenusForRole($role);
         }
 
-        // 3. รวมเมนูทั้งหมด
+        // 4. รวมเมนูทั้งหมด
         $allMenus = $this->mergeMenus($configMenus, $providerMenus);
 
-        // 4. กรองตาม permissions
+        // 5. กรองตาม permissions
         if ($user) {
             $allMenus = $this->filterByPermissions($allMenus, $user);
         }
 
-        // 5. แปลง routes เป็น URLs
+        // 6. แปลง routes เป็น URLs
         $allMenus = $this->resolveRoutes($allMenus);
 
-        // 6. เรียงลำดับตาม order
+        // 7. เรียงลำดับตาม order
         $allMenus = $this->sortMenus($allMenus);
 
         return $allMenus;
+    }
+
+    /**
+     * ดึงเมนูจาก Database
+     *
+     * @param string $dashboardType ประเภท dashboard (admin, seller, user)
+     * @param mixed $user User instance (optional)
+     * @return array เมนูจาก database
+     */
+    protected function getMenusFromDatabase(string $dashboardType, $user = null): array
+    {
+        // ตรวจสอบว่าตาราง menu_items มีอยู่หรือไม่
+        if (!Schema::hasTable('menu_items')) {
+            return [];
+        }
+
+        // ตรวจสอบว่ามีข้อมูลในตารางหรือไม่
+        if (MenuItem::count() === 0) {
+            return [];
+        }
+
+        // Cache key
+        $roleId = $user && isset($user->role_id) ? $user->role_id : null;
+        $cacheKey = "{$dashboardType}_{$roleId}";
+
+        // ใช้ cache ถ้ามี
+        if (isset(self::$menuCache[$cacheKey])) {
+            return self::$menuCache[$cacheKey];
+        }
+
+        // ดึงเมนู top-level พร้อม children
+        $query = MenuItem::forDashboard($dashboardType)
+            ->active()
+            ->visible()
+            ->topLevel()
+            ->with(['children' => function ($q) {
+                $q->active()->visible()->orderBy('order');
+            }])
+            ->orderBy('order');
+
+        $menuItems = $query->get();
+
+        // แปลงเป็น array format เดิม
+        $menus = $menuItems->map(function ($item) use ($roleId) {
+            return $this->convertMenuItemToArray($item, $roleId);
+        })->toArray();
+
+        // กรองตาม Role Settings (ถ้ามี roleId)
+        if ($roleId) {
+            $menus = $this->filterByRoleSettings($menus, $roleId);
+        }
+
+        // Cache ผลลัพธ์
+        self::$menuCache[$cacheKey] = $menus;
+
+        return $menus;
+    }
+
+    /**
+     * แปลง MenuItem model เป็น array format
+     *
+     * @param MenuItem $item
+     * @param int|null $roleId
+     * @return array
+     */
+    protected function convertMenuItemToArray(MenuItem $item, ?int $roleId = null): array
+    {
+        $menu = [
+            'id' => $item->menu_key,
+            'label' => $item->label,
+            'icon' => $item->icon,
+            'route' => $item->route,
+            'url' => $item->url,
+            'order' => $item->order,
+            'permissions' => $item->permissions ?? [],
+            'condition' => $item->condition,
+            'hide_if_kyc_verified' => $item->hide_if_kyc_verified,
+            'badge' => $item->badge,
+            'badge_color' => $item->badge_color,
+            'description' => $item->description,
+            '_db_id' => $item->id, // เก็บ ID จาก database ไว้ใช้ภายใน
+        ];
+
+        // เพิ่ม role setting ถ้ามี
+        if ($roleId) {
+            $roleSetting = $item->getSettingForRole($roleId);
+            if ($roleSetting) {
+                $menu['_role_visible'] = $roleSetting->is_visible;
+                $menu['_role_enabled'] = $roleSetting->is_enabled;
+                // ใช้ custom_order ถ้ามี
+                if ($roleSetting->custom_order !== null) {
+                    $menu['order'] = $roleSetting->custom_order;
+                }
+            }
+        }
+
+        // เพิ่ม submenu
+        if ($item->children && $item->children->count() > 0) {
+            $menu['submenu'] = $item->children->map(function ($child) use ($roleId) {
+                // ข้าม divider
+                if ($child->is_divider) {
+                    return [
+                        'id' => $child->menu_key,
+                        'label' => '---',
+                        'route' => null,
+                    ];
+                }
+                return $this->convertMenuItemToArray($child, $roleId);
+            })->toArray();
+        }
+
+        return $menu;
+    }
+
+    /**
+     * กรองเมนูตาม Role Settings
+     *
+     * @param array $menus
+     * @param int $roleId
+     * @return array
+     */
+    protected function filterByRoleSettings(array $menus, int $roleId): array
+    {
+        return array_filter($menus, function ($menu) use ($roleId) {
+            // ตรวจสอบ role visibility
+            if (isset($menu['_role_visible']) && !$menu['_role_visible']) {
+                return false;
+            }
+            if (isset($menu['_role_enabled']) && !$menu['_role_enabled']) {
+                return false;
+            }
+
+            // กรอง submenu ด้วย
+            if (!empty($menu['submenu'])) {
+                $menu['submenu'] = $this->filterByRoleSettings($menu['submenu'], $roleId);
+            }
+
+            return true;
+        });
+    }
+
+    /**
+     * Clear menu cache
+     *
+     * @return void
+     */
+    public static function clearCache(): void
+    {
+        self::$menuCache = [];
     }
 
     /**

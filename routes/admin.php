@@ -3405,3 +3405,52 @@ Route::prefix('documentation')->name('documentation.')->group(function () {
         return view('admin.documentation.registration-flow');
     })->name('registration-flow');
 });
+
+// ============================================
+// Menu Management Routes (จัดการสิทธิ์เมนู)
+// ============================================
+Route::prefix('menu-management')->name('menu-management.')->group(function () {
+    // หน้าหลัก - แสดงรายการเมนูและการตั้งค่า
+    Route::get('/', [\App\Http\Controllers\Admin\MenuManagementController::class, 'index'])
+        ->name('index');
+
+    // API: ดึงเมนูตาม Dashboard Type และ Role
+    Route::get('/menus', [\App\Http\Controllers\Admin\MenuManagementController::class, 'getMenus'])
+        ->name('menus');
+
+    // API: อัพเดทการตั้งค่าเมนูสำหรับ Role
+    Route::post('/role-setting', [\App\Http\Controllers\Admin\MenuManagementController::class, 'updateRoleSetting'])
+        ->name('role-setting.update');
+
+    // API: อัพเดทลำดับเมนู (Drag & Drop)
+    Route::post('/order', [\App\Http\Controllers\Admin\MenuManagementController::class, 'updateOrder'])
+        ->name('order.update');
+
+    // API: อัพเดทลำดับเมนูสำหรับ Role
+    Route::post('/role-order', [\App\Http\Controllers\Admin\MenuManagementController::class, 'updateRoleOrder'])
+        ->name('role-order.update');
+
+    // API: Toggle เปิด/ปิดเมนู
+    Route::post('/{menuItem}/toggle-active', [\App\Http\Controllers\Admin\MenuManagementController::class, 'toggleActive'])
+        ->name('toggle-active');
+
+    // API: Toggle แสดง/ซ่อนเมนู
+    Route::post('/{menuItem}/toggle-visible', [\App\Http\Controllers\Admin\MenuManagementController::class, 'toggleVisible'])
+        ->name('toggle-visible');
+
+    // API: Bulk toggle สำหรับ Role
+    Route::post('/bulk-toggle-role', [\App\Http\Controllers\Admin\MenuManagementController::class, 'bulkToggleRole'])
+        ->name('bulk-toggle-role');
+
+    // API: แก้ไขข้อมูลเมนู
+    Route::put('/{menuItem}', [\App\Http\Controllers\Admin\MenuManagementController::class, 'update'])
+        ->name('update');
+
+    // API: ซิงค์เมนูจาก config
+    Route::post('/sync-from-config', [\App\Http\Controllers\Admin\MenuManagementController::class, 'syncFromConfig'])
+        ->name('sync-from-config');
+
+    // API: รีเซ็ตการตั้งค่า Role
+    Route::post('/reset-role-settings', [\App\Http\Controllers\Admin\MenuManagementController::class, 'resetRoleSettings'])
+        ->name('reset-role-settings');
+});
