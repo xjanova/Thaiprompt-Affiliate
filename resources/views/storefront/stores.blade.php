@@ -23,7 +23,7 @@
 <div x-data="storesPage()" class="min-h-screen">
 
     {{-- Header Navigation Bar --}}
-    <div class="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-md">
+    <div class="sticky top-0 z-50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-md border-b border-white/20 dark:border-gray-700/50">
         <div class="container mx-auto px-4">
             <div class="flex items-center gap-4 py-4">
                 {{-- Back to Storefront --}}
