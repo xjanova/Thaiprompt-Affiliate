@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.352.2] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2012 from xjanova/claude/fix-kyc-seeder-error-014GHSQLC2ABb3vELFqWnLMW (86fdacee)
+- fix: change extracted_data column type to LONGTEXT for KYC verifications (fc92db6b)
+### 🔧 Other Changes
+
+
 ## [v3.352.1] - 2025-12-04
 
 ### ✨ Features
