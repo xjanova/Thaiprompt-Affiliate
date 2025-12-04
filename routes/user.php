@@ -591,3 +591,26 @@ Route::prefix('star-upgrade')->name('star-upgrade.')->group(function () {
     // API: ตรวจสอบการอัพเกรด
     Route::post('/check', [\App\Http\Controllers\User\StarUpgradeController::class, 'checkUpgrade'])->name('check');
 });
+
+// ============================================
+// Academy / Learning Center Routes (ศูนย์การเรียนรู้)
+// ============================================
+Route::prefix('academy')->name('academy.')->group(function () {
+    // หน้าหลักศูนย์การเรียนรู้
+    Route::get('/', [\App\Http\Controllers\User\AcademyController::class, 'index'])->name('index');
+
+    // ความก้าวหน้าของฉัน
+    Route::get('/my-progress', [\App\Http\Controllers\User\AcademyController::class, 'myProgress'])->name('my-progress');
+
+    // หมวดหมู่
+    Route::get('/category/{slug}', [\App\Http\Controllers\User\AcademyController::class, 'category'])->name('category');
+
+    // บทเรียน
+    Route::get('/article/{slug}', [\App\Http\Controllers\User\AcademyController::class, 'article'])->name('article');
+
+    // จบบทเรียน
+    Route::post('/article/{slug}/complete', [\App\Http\Controllers\User\AcademyController::class, 'complete'])->name('article.complete');
+
+    // อัพเดท progress
+    Route::post('/article/{slug}/progress', [\App\Http\Controllers\User\AcademyController::class, 'updateProgress'])->name('article.progress');
+});

@@ -1033,6 +1033,21 @@ return [
         ],
 
         [
+            'id' => 'academy',
+            'label' => 'ศูนย์การเรียนรู้',
+            'icon' => '🎓',
+            'route' => null,
+            'order' => 6.1,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-indigo-500 to-purple-500',
+            'submenu' => [
+                ['label' => '🏠 หน้าหลัก', 'route' => 'user.academy.index', 'description' => 'ศูนย์การเรียนรู้'],
+                ['label' => '📊 ความก้าวหน้าของฉัน', 'route' => 'user.academy.my-progress', 'description' => 'ติดตามผลการเรียน'],
+            ],
+        ],
+
+        [
             'id' => 'forum',
             'label' => 'ฟอรั่มชุมชน',
             'icon' => '💬',
