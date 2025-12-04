@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.342.0] - 2025-12-04
+
+### ✨ Features
+- feat: เพิ่มระบบออกใบประกาศนียบัตรใน Instructor Dashboard (5c441dc8)
+### 🐛 Bug Fixes
+- fix: ให้ admin/super_admin เข้าถึง Instructor Dashboard ได้ทันที (11070b3c)
+### 🔧 Other Changes
+- Merge pull request #1993 from xjanova/claude/improve-academy-system-01AmLLXGwCkSoF73mBY8v8d7 (abe3e8fd)
+
 ## [v3.341.0] - 2025-12-04
 
 ### ✨ Features
