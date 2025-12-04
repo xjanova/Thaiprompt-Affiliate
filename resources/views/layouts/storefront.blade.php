@@ -101,15 +101,15 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: -5;
+            z-index: 1;
             overflow: hidden;
         }
 
         .lava-blob {
             position: absolute;
             border-radius: 45% 55% 60% 40% / 55% 45% 55% 45%;
-            filter: blur(30px);
-            opacity: 0.7;
+            filter: blur(60px);
+            opacity: 0.4;
             will-change: transform, border-radius;
         }
 
@@ -383,17 +383,8 @@
     {{-- Base Background Layer - สำหรับ light/dark mode --}}
     <div class="fixed inset-0 bg-gray-50 dark:bg-gray-900 -z-20"></div>
 
-    {{-- Liquid Lava Lamp Background - RGB Glow ลอยขึ้นลงเหมือนลาวา (อยู่บน content แต่ pointer-events: none) --}}
-    <div class="lava-background" aria-hidden="true">
-        <div class="lava-blob"></div>
-        <div class="lava-blob"></div>
-        <div class="lava-blob"></div>
-        <div class="lava-blob"></div>
-        <div class="lava-blob"></div>
-        <div class="lava-blob"></div>
-        <div class="lava-blob"></div>
-        <div class="lava-blob"></div>
-    </div>
+    {{-- Lava Background Slot - สำหรับหน้าที่ต้องการ lava effect --}}
+    @yield('lava-background')
 
     {{-- Main Content Area - Full Width --}}
     <div class="min-h-screen relative z-0">
