@@ -208,411 +208,94 @@ class ThaipromptCourseSeeder extends Seeder
                 'quiz' => $this->getCourse3Quiz(),
             ],
 
-            // ========== ระดับ 2: พื้นฐาน ==========
+            // ========== ระดับ 2: พื้นฐาน (เนื้อหาละเอียดพร้อมแบบฝึกหัด) ==========
             [
                 'title' => 'ระบบ Affiliate Marketing เบื้องต้น',
                 'slug' => 'thaiprompt-affiliate-basic',
-                'excerpt' => 'เรียนรู้พื้นฐานระบบ Affiliate การแชร์ลิงก์ และการคำนวณค่าคอมมิชชั่น',
-                'duration' => 25,
+                'excerpt' => 'เรียนรู้พื้นฐานระบบ Affiliate การแชร์ลิงก์ โครงสร้างค่าคอมมิชชั่น การติดตามผล และกลยุทธ์เบื้องต้น พร้อมแบบฝึกหัด',
+                'duration' => 45,
                 'difficulty' => 'beginner',
                 'course_level' => 2,
                 'is_featured' => true,
-                'tags' => ['Affiliate', 'ค่าคอมมิชชั่น', 'แชร์ลิงก์'],
-                'content' => $this->generateContent('ระบบ Affiliate Marketing เบื้องต้น', [
-                    [
-                        'title' => 'Affiliate Marketing คืออะไร?',
-                        'content' => "Affiliate Marketing คือการตลาดแบบพันธมิตร โดยคุณจะได้รับค่าคอมมิชชั่นเมื่อแนะนำลูกค้าให้กับร้านค้า\n\n**หลักการทำงาน:**\n1. คุณได้รับลิงก์แนะนำพิเศษ (Referral Link)\n2. แชร์ลิงก์ไปยังช่องทางต่างๆ\n3. เมื่อมีคนสมัครหรือซื้อสินค้าผ่านลิงก์คุณ\n4. คุณได้รับค่าคอมมิชชั่น",
-                    ],
-                    [
-                        'title' => 'วิธีดึง Referral Link',
-                        'content' => "ขั้นตอนการดึงลิงก์:\n\n1. Login เข้าสู่ระบบ\n2. ไปที่เมนู \"Affiliate\" > \"ลิงก์แนะนำ\"\n3. คัดลอกลิงก์ที่แสดง\n4. แชร์ไปยังช่องทางที่ต้องการ\n\n**รูปแบบลิงก์:** `https://thaiprompt.com/ref/USERNAME`\n\n**Tips:** สามารถสร้างลิงก์แยกตามแคมเปญเพื่อติดตามผลได้",
-                    ],
-                    [
-                        'title' => 'อัตราค่าคอมมิชชั่น',
-                        'content' => "**ค่าคอมมิชชั่นแบ่งเป็น:**\n\n• **Direct Commission** - ได้จากการขายตรงของลูกค้าที่แนะนำ\n• **Indirect Commission** - ได้จากสมาชิกในสายงาน\n• **Rank Bonus** - โบนัสพิเศษตามยศ\n\n**ตัวอย่าง:**\nสินค้าราคา 1,000 บาท อัตราค่าคอมมิชชั่น 10%\nคุณจะได้รับ = 1,000 x 10% = 100 บาท",
-                    ],
-                ]),
-                'quiz' => [
-                    'time_limit' => 12,
-                    'questions' => [
-                        [
-                            'question' => 'Affiliate Marketing คืออะไร?',
-                            'answers' => [
-                                ['text' => 'การขายสินค้าเอง', 'is_correct' => false],
-                                ['text' => 'การตลาดแบบพันธมิตรที่ได้ค่าคอมมิชชั่นจากการแนะนำ', 'is_correct' => true],
-                                ['text' => 'การโฆษณาแบบเสียเงิน', 'is_correct' => false],
-                                ['text' => 'การทำ SEO', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'Referral Link หาได้จากเมนูไหน?',
-                            'answers' => [
-                                ['text' => 'กระเป๋าเงิน', 'is_correct' => false],
-                                ['text' => 'Affiliate > ลิงก์แนะนำ', 'is_correct' => true],
-                                ['text' => 'ร้านค้า', 'is_correct' => false],
-                                ['text' => 'ตั้งค่า', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'ถ้าสินค้าราคา 2,000 บาท อัตราค่าคอมมิชชั่น 15% จะได้รับเท่าไร?',
-                            'answers' => [
-                                ['text' => '200 บาท', 'is_correct' => false],
-                                ['text' => '250 บาท', 'is_correct' => false],
-                                ['text' => '300 บาท', 'is_correct' => true],
-                                ['text' => '350 บาท', 'is_correct' => false],
-                            ],
-                            'explanation' => '2,000 x 15% = 300 บาท',
-                        ],
-                    ],
-                ],
+                'tags' => ['Affiliate', 'ค่าคอมมิชชั่น', 'แชร์ลิงก์', 'Referral'],
+                'content' => $this->generateContent('ระบบ Affiliate Marketing เบื้องต้น', $this->getCourse4Content()),
+                'quiz' => $this->getCourse4Quiz(),
             ],
             [
                 'title' => 'ระบบกระเป๋าเงิน (Wallet)',
                 'slug' => 'thaiprompt-wallet-system',
-                'excerpt' => 'เรียนรู้วิธีใช้งานกระเป๋าเงิน การเติมเงิน การถอนเงิน และการโอน',
-                'duration' => 20,
+                'excerpt' => 'เรียนรู้ระบบกระเป๋าเงินครบถ้วน ประเภทกระเป๋า การเติมเงิน การถอนเงิน ความปลอดภัย และการวิเคราะห์ธุรกรรม พร้อมแบบฝึกหัด',
+                'duration' => 50,
                 'difficulty' => 'beginner',
                 'course_level' => 2,
                 'is_featured' => false,
-                'tags' => ['Wallet', 'เติมเงิน', 'ถอนเงิน'],
-                'content' => $this->generateContent('ระบบกระเป๋าเงิน (Wallet)', [
-                    [
-                        'title' => 'ประเภทกระเป๋าเงิน',
-                        'content' => "ระบบมีกระเป๋าเงินหลายประเภท:\n\n💰 **Main Wallet** - กระเป๋าหลักสำหรับรับค่าคอมมิชชั่นและถอนเงิน\n🎮 **Video Coins** - เหรียญที่ได้จากการดูวิดีโอและทำภารกิจ\n⭐ **Points** - แต้มสะสมสำหรับแลกรางวัล\n₿ **TPIX Token** - สกุลเงินดิจิทัลของระบบ",
-                    ],
-                    [
-                        'title' => 'การเติมเงิน',
-                        'content' => "**ช่องทางเติมเงิน:**\n\n• **PromptPay** - โอนผ่าน QR Code ทันที\n• **บัตรเครดิต/เดบิต** - Visa, MasterCard\n• **Internet Banking** - โอนผ่านธนาคารออนไลน์\n• **TrueMoney Wallet** - เติมผ่าน TrueMoney\n• **Counter Service** - เติมที่ 7-Eleven\n\n**ขั้นตอน:**\n1. ไปที่ \"กระเป๋าเงิน\" > \"เติมเงิน\"\n2. ระบุจำนวนเงิน\n3. เลือกช่องทาง\n4. ทำตามขั้นตอน\n5. รอเงินเข้า (ส่วนใหญ่ทันที)",
-                    ],
-                    [
-                        'title' => 'การถอนเงิน',
-                        'content' => "**เงื่อนไขการถอน:**\n\n• ยอดขั้นต่ำ: 100 บาท\n• ต้องยืนยันตัวตน (KYC) ก่อน\n• ต้องเพิ่มบัญชีธนาคาร\n• ค่าธรรมเนียม: ขึ้นอยู่กับจำนวนและช่องทาง\n\n**เวลาดำเนินการ:**\n• ธนาคารเดียวกัน: ทันที - 1 ชั่วโมง\n• ต่างธนาคาร: 1-3 วันทำการ",
-                    ],
-                ]),
-                'quiz' => [
-                    'time_limit' => 12,
-                    'questions' => [
-                        [
-                            'question' => 'Video Coins คือกระเป๋าประเภทใด?',
-                            'answers' => [
-                                ['text' => 'กระเป๋าหลักสำหรับถอนเงิน', 'is_correct' => false],
-                                ['text' => 'เหรียญที่ได้จากการดูวิดีโอและทำภารกิจ', 'is_correct' => true],
-                                ['text' => 'แต้มสะสมสำหรับแลกรางวัล', 'is_correct' => false],
-                                ['text' => 'สกุลเงินดิจิทัล', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'ยอดถอนขั้นต่ำคือเท่าไร?',
-                            'answers' => [
-                                ['text' => '50 บาท', 'is_correct' => false],
-                                ['text' => '100 บาท', 'is_correct' => true],
-                                ['text' => '200 บาท', 'is_correct' => false],
-                                ['text' => '500 บาท', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'ก่อนถอนเงินต้องทำอะไรก่อน?',
-                            'answers' => [
-                                ['text' => 'เปลี่ยนรหัสผ่าน', 'is_correct' => false],
-                                ['text' => 'ยืนยันตัวตน (KYC)', 'is_correct' => true],
-                                ['text' => 'ซื้อสินค้า', 'is_correct' => false],
-                                ['text' => 'เปลี่ยนรูปโปรไฟล์', 'is_correct' => false],
-                            ],
-                        ],
-                    ],
-                ],
+                'tags' => ['Wallet', 'เติมเงิน', 'ถอนเงิน', 'TPIX', 'การเงิน'],
+                'content' => $this->generateContent('ระบบกระเป๋าเงิน (Wallet)', $this->getCourse5Content()),
+                'quiz' => $this->getCourse5Quiz(),
             ],
             [
                 'title' => 'ระบบสั่งซื้อสินค้าและชำระเงิน',
                 'slug' => 'thaiprompt-order-payment',
-                'excerpt' => 'วิธีเลือกสินค้า สั่งซื้อ และชำระเงินผ่านช่องทางต่างๆ',
-                'duration' => 20,
+                'excerpt' => 'เรียนรู้กระบวนการสั่งซื้อครบถ้วน การเลือกสินค้า ตะกร้า ชำระเงิน ติดตามพัสดุ และการจัดการปัญหา พร้อมแบบฝึกหัด',
+                'duration' => 45,
                 'difficulty' => 'beginner',
                 'course_level' => 2,
                 'is_featured' => false,
-                'tags' => ['สั่งซื้อ', 'ชำระเงิน', 'ตะกร้า'],
-                'content' => $this->generateContent('ระบบสั่งซื้อสินค้าและชำระเงิน', [
-                    [
-                        'title' => 'วิธีเลือกสินค้าและเพิ่มตะกร้า',
-                        'content' => "**ขั้นตอนการสั่งซื้อ:**\n\n1. เข้าเมนู \"ร้านค้า\" หรือ \"Marketplace\"\n2. เลือกหมวดหมู่หรือค้นหาสินค้า\n3. คลิกสินค้าเพื่อดูรายละเอียด\n4. เลือกตัวเลือก (ขนาด, สี, จำนวน)\n5. คลิก \"เพิ่มลงตะกร้า\"\n6. ไปที่ตะกร้าเพื่อตรวจสอบ",
-                    ],
-                    [
-                        'title' => 'การชำระเงิน',
-                        'content' => "**ช่องทางชำระเงิน:**\n\n• **Wallet** - ตัดจากยอดในกระเป๋า (แนะนำ)\n• **PromptPay** - สแกน QR Code\n• **บัตรเครดิต/เดบิต** - กรอกข้อมูลบัตร\n• **โอนเงิน** - โอนแล้วอัปโหลดสลิป\n\n**Tips:** ชำระผ่าน Wallet จะได้รับ Cashback เพิ่มเติม!",
-                    ],
-                    [
-                        'title' => 'การติดตามและยกเลิกคำสั่งซื้อ',
-                        'content' => "**ติดตามสถานะ:**\n\n• ไปที่ \"คำสั่งซื้อของฉัน\"\n• ดูสถานะ: รอชำระ, กำลังจัดส่ง, จัดส่งแล้ว\n• ดูเลขพัสดุและติดตามการจัดส่ง\n\n**การยกเลิก:**\n• ยกเลิกได้ก่อนชำระเงินหรือก่อนจัดส่ง\n• หลังจัดส่งแล้วต้องติดต่อ Support",
-                    ],
-                ]),
-                'quiz' => [
-                    'time_limit' => 12,
-                    'questions' => [
-                        [
-                            'question' => 'ช่องทางชำระเงินที่แนะนำคือ?',
-                            'answers' => [
-                                ['text' => 'โอนเงิน', 'is_correct' => false],
-                                ['text' => 'Wallet (ได้ Cashback เพิ่มเติม)', 'is_correct' => true],
-                                ['text' => 'บัตรเครดิต', 'is_correct' => false],
-                                ['text' => 'Counter Service', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'สามารถยกเลิกคำสั่งซื้อได้เมื่อไร?',
-                            'answers' => [
-                                ['text' => 'ยกเลิกได้ตลอดเวลา', 'is_correct' => false],
-                                ['text' => 'ก่อนชำระเงินหรือก่อนจัดส่ง', 'is_correct' => true],
-                                ['text' => 'หลังได้รับสินค้าเท่านั้น', 'is_correct' => false],
-                                ['text' => 'ไม่สามารถยกเลิกได้', 'is_correct' => false],
-                            ],
-                        ],
-                    ],
-                ],
+                'tags' => ['สั่งซื้อ', 'ชำระเงิน', 'ตะกร้า', 'Tracking', 'คืนสินค้า'],
+                'content' => $this->generateContent('ระบบสั่งซื้อสินค้าและชำระเงิน', $this->getCourse6Content()),
+                'quiz' => $this->getCourse6Quiz(),
             ],
 
-            // ========== ระดับ 3: ปานกลาง ==========
+            // ========== ระดับ 3: ปานกลาง (เนื้อหาละเอียดพร้อมแบบฝึกหัด) ==========
             [
                 'title' => 'ระบบ MLM และโครงสร้างสายงาน',
                 'slug' => 'thaiprompt-mlm-structure',
-                'excerpt' => 'เข้าใจระบบ MLM แผน Binary และ Unilevel การสร้างทีมและการคำนวณโบนัส',
-                'duration' => 35,
+                'excerpt' => 'เข้าใจระบบ MLM อย่างลึกซึ้ง แผน Binary และ Unilevel การคำนวณโบนัส การสร้างทีม และกลยุทธ์ขยายสายงาน พร้อมแบบฝึกหัด',
+                'duration' => 60,
                 'difficulty' => 'intermediate',
                 'course_level' => 3,
                 'is_featured' => true,
-                'tags' => ['MLM', 'Binary', 'Unilevel', 'ทีม'],
-                'content' => $this->generateContent('ระบบ MLM และโครงสร้างสายงาน', [
-                    [
-                        'title' => 'MLM คืออะไร?',
-                        'content' => "**Multi-Level Marketing (MLM)** คือระบบการตลาดหลายชั้นที่:\n\n• คุณได้รับค่าตอบแทนจากการขายสินค้าของตัวเอง\n• คุณได้รับค่าตอบแทนจากยอดขายของทีมที่คุณสร้าง\n• ยิ่งทีมใหญ่และขยายได้หลายชั้น ยิ่งได้รับรายได้มากขึ้น\n\n**Thaiprompt รองรับ 2 แผน:**\n1. Binary Plan - สายงาน 2 ขา\n2. Unilevel Plan - สายงานไม่จำกัดขา",
-                    ],
-                    [
-                        'title' => 'Binary Plan (แผน 2 ขา)',
-                        'content' => "**หลักการ:**\n• สมาชิกแต่ละคนมี 2 ตำแหน่ง: ซ้ายและขวา\n• ยอดขายจะสะสมแยกตามขา\n• คำนวณโบนัสจากขาที่ยอดน้อยกว่า (Weak Leg)\n\n**ตัวอย่าง:**\n```\n        คุณ\n       /    \\\n     ซ้าย   ขวา\n    100PV   200PV\n```\nคำนวณโบนัสจากขาซ้าย 100PV เพราะน้อยกว่า",
-                    ],
-                    [
-                        'title' => 'Unilevel Plan',
-                        'content' => "**หลักการ:**\n• ไม่จำกัดจำนวนสมาชิกในชั้นแรก\n• ได้รับค่าคอมมิชชั่นลึกหลายชั้น (Level)\n• แต่ละ Level มีอัตราค่าคอมมิชชั่นต่างกัน\n\n**ตัวอย่าง:**\n```\nLevel 1: 10% - สมาชิกที่แนะนำโดยตรง\nLevel 2: 5%  - สมาชิกที่แนะนำโดย Level 1\nLevel 3: 3%  - สมาชิกที่แนะนำโดย Level 2\n```",
-                    ],
-                    [
-                        'title' => 'การดู Genealogy',
-                        'content' => "**วิธีดูโครงสร้างทีม:**\n\n1. ไปที่เมนู \"ทีมงาน\" > \"Genealogy\"\n2. เลือกมุมมอง:\n   • Tree View - แสดงเป็นแผนผัง\n   • Table View - แสดงเป็นตาราง\n   • Matrix View - แสดงเป็น Matrix\n\n**ข้อมูลที่แสดง:**\n• ชื่อสมาชิก\n• ระดับ/ยศ\n• ยอด PV\n• จำนวนสมาชิกในทีม",
-                    ],
-                ]),
-                'quiz' => [
-                    'time_limit' => 15,
-                    'questions' => [
-                        [
-                            'question' => 'Binary Plan มีกี่ขา?',
-                            'answers' => [
-                                ['text' => '1 ขา', 'is_correct' => false],
-                                ['text' => '2 ขา', 'is_correct' => true],
-                                ['text' => '3 ขา', 'is_correct' => false],
-                                ['text' => 'ไม่จำกัด', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'Binary Plan คำนวณโบนัสจากขาไหน?',
-                            'answers' => [
-                                ['text' => 'ขาที่ยอดมากกว่า', 'is_correct' => false],
-                                ['text' => 'ขาที่ยอดน้อยกว่า (Weak Leg)', 'is_correct' => true],
-                                ['text' => 'ทั้งสองขา', 'is_correct' => false],
-                                ['text' => 'ขาที่เลือก', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'Unilevel Plan มีลักษณะอย่างไร?',
-                            'answers' => [
-                                ['text' => 'จำกัด 2 คนในชั้นแรก', 'is_correct' => false],
-                                ['text' => 'ไม่จำกัดจำนวนสมาชิกในชั้นแรก', 'is_correct' => true],
-                                ['text' => 'ไม่มีค่าคอมมิชชั่น', 'is_correct' => false],
-                                ['text' => 'ได้แค่ 1 Level', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'Genealogy คือ?',
-                            'answers' => [
-                                ['text' => 'ระบบชำระเงิน', 'is_correct' => false],
-                                ['text' => 'หน้าแสดงโครงสร้างทีม', 'is_correct' => true],
-                                ['text' => 'ระบบถอนเงิน', 'is_correct' => false],
-                                ['text' => 'รายงานยอดขาย', 'is_correct' => false],
-                            ],
-                        ],
-                    ],
-                ],
+                'tags' => ['MLM', 'Binary', 'Unilevel', 'ทีม', 'Genealogy', 'PV'],
+                'content' => $this->generateContent('ระบบ MLM และโครงสร้างสายงาน', $this->getCourse7Content()),
+                'quiz' => $this->getCourse7Quiz(),
             ],
             [
                 'title' => 'ระบบ Rank และโบนัสตำแหน่ง',
                 'slug' => 'thaiprompt-rank-bonus',
-                'excerpt' => 'เรียนรู้ระบบยศ เงื่อนไขการเลื่อนขั้น และโบนัสที่ได้รับจากแต่ละตำแหน่ง',
-                'duration' => 30,
+                'excerpt' => 'เรียนรู้ระบบ Rank ทั้งหมด เงื่อนไขการเลื่อน ประเภทโบนัส การรักษา Rank และกลยุทธ์การเลื่อนขั้น พร้อมแบบฝึกหัด',
+                'duration' => 55,
                 'difficulty' => 'intermediate',
                 'course_level' => 3,
                 'is_featured' => false,
-                'tags' => ['Rank', 'ยศ', 'โบนัส', 'เลื่อนขั้น'],
-                'content' => $this->generateContent('ระบบ Rank และโบนัสตำแหน่ง', [
-                    [
-                        'title' => 'ระดับ Rank ทั้งหมด',
-                        'content' => "**ระบบมี Rank หลายระดับ:**\n\n⭐ **Member** - สมาชิกเริ่มต้น\n🥉 **Bronze** - ระดับทองแดง\n🥈 **Silver** - ระดับเงิน\n🥇 **Gold** - ระดับทอง\n💎 **Platinum** - ระดับแพลทินัม\n👑 **Diamond** - ระดับเพชร\n🏆 **Crown Diamond** - ระดับสูงสุด\n\nแต่ละ Rank มีสิทธิประโยชน์และโบนัสที่แตกต่างกัน",
-                    ],
-                    [
-                        'title' => 'เงื่อนไขการเลื่อน Rank',
-                        'content' => "**ปัจจัยที่ใช้คำนวณ:**\n\n• **Personal PV** - ยอด PV ส่วนตัว\n• **Group PV** - ยอด PV รวมทั้งทีม\n• **Direct Referrals** - จำนวนผู้แนะนำโดยตรง\n• **Team Size** - จำนวนสมาชิกในทีม\n• **Qualified Legs** - จำนวนขาที่มียอดถึงเกณฑ์\n\n**ตัวอย่าง Silver:**\n• Personal PV: 500+\n• Group PV: 5,000+\n• Direct Referrals: 5+",
-                    ],
-                    [
-                        'title' => 'โบนัสตำแหน่ง',
-                        'content' => "**ประเภทโบนัส:**\n\n💰 **Rank Bonus** - โบนัสรายเดือนตามตำแหน่ง\n🎁 **Leadership Bonus** - โบนัสผู้นำทีม\n🏆 **Achievement Bonus** - โบนัสเมื่อถึงเป้า\n✈️ **Travel Incentive** - รางวัลท่องเที่ยว\n🚗 **Car Bonus** - โบนัสรถยนต์\n\n**ตัวอย่างโบนัส:**\n```\nSilver:    5,000 บาท/เดือน\nGold:     15,000 บาท/เดือน\nPlatinum: 35,000 บาท/เดือน\n```",
-                    ],
-                ]),
-                'quiz' => [
-                    'time_limit' => 15,
-                    'questions' => [
-                        [
-                            'question' => 'Rank สูงสุดในระบบคือ?',
-                            'answers' => [
-                                ['text' => 'Diamond', 'is_correct' => false],
-                                ['text' => 'Platinum', 'is_correct' => false],
-                                ['text' => 'Crown Diamond', 'is_correct' => true],
-                                ['text' => 'Gold', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'Personal PV คืออะไร?',
-                            'answers' => [
-                                ['text' => 'ยอด PV รวมทั้งทีม', 'is_correct' => false],
-                                ['text' => 'ยอด PV ส่วนตัว', 'is_correct' => true],
-                                ['text' => 'จำนวนผู้แนะนำ', 'is_correct' => false],
-                                ['text' => 'โบนัสตำแหน่ง', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'โบนัสประเภทใดเป็นโบนัสรายเดือน?',
-                            'answers' => [
-                                ['text' => 'Achievement Bonus', 'is_correct' => false],
-                                ['text' => 'Travel Incentive', 'is_correct' => false],
-                                ['text' => 'Rank Bonus', 'is_correct' => true],
-                                ['text' => 'Car Bonus', 'is_correct' => false],
-                            ],
-                        ],
-                    ],
-                ],
+                'tags' => ['Rank', 'ยศ', 'โบนัส', 'เลื่อนขั้น', 'Maintenance', 'Achievement'],
+                'content' => $this->generateContent('ระบบ Rank และโบนัสตำแหน่ง', $this->getCourse8Content()),
+                'quiz' => $this->getCourse8Quiz(),
             ],
             [
                 'title' => 'ระบบ AI Bot และ Chatbot',
                 'slug' => 'thaiprompt-ai-bot',
-                'excerpt' => 'เรียนรู้การใช้งาน AI Chatbot, LINE Bot และเครื่องมือ AI อื่นๆ',
-                'duration' => 30,
+                'excerpt' => 'เรียนรู้การใช้งาน AI Bot ครบถ้วน LINE Bot Conversation Flow NLU Training และ Automation พร้อมแบบฝึกหัด',
+                'duration' => 60,
                 'difficulty' => 'intermediate',
                 'course_level' => 3,
                 'is_featured' => true,
-                'tags' => ['AI', 'Chatbot', 'LINE Bot', 'Automation'],
-                'content' => $this->generateContent('ระบบ AI Bot และ Chatbot', [
-                    [
-                        'title' => 'AI Features ใน Thaiprompt',
-                        'content' => "**เครื่องมือ AI ที่มีให้ใช้:**\n\n🤖 **AI Chatbot** - Chatbot อัจฉริยะตอบลูกค้า 24/7\n🎨 **AI Image Generator** - สร้างรูปภาพจากข้อความ\n📝 **AI Content Writer** - เขียนเนื้อหาอัตโนมัติ\n💬 **LINE AI Bot** - Bot สำหรับ LINE Official Account\n🔊 **AI Voice** - แปลงข้อความเป็นเสียง\n🌐 **AI Translator** - แปลภาษาอัตโนมัติ",
-                    ],
-                    [
-                        'title' => 'การสร้าง AI Chatbot',
-                        'content' => "**ขั้นตอนสร้าง Chatbot:**\n\n1. ไปที่ \"AI Bot\" > \"สร้าง Bot ใหม่\"\n2. ตั้งชื่อและ Personality ให้ Bot\n3. เพิ่ม Knowledge Base (ข้อมูลสินค้า, FAQ)\n4. ตั้งค่าการตอบกลับอัตโนมัติ\n5. ทดสอบและปรับปรุง\n6. เปิดใช้งาน\n\n**Tips:** ยิ่งเพิ่ม Knowledge Base มาก Bot จะตอบได้แม่นยำขึ้น",
-                    ],
-                    [
-                        'title' => 'LINE AI Bot',
-                        'content' => "**การเชื่อมต่อ LINE:**\n\n1. มี LINE Official Account\n2. เข้าเมนู \"LINE Bot\" > \"เชื่อมต่อ\"\n3. กรอก Channel ID และ Secret\n4. ตั้งค่า Webhook\n5. เปิดใช้งาน AI\n\n**ฟีเจอร์ LINE Bot:**\n• รับสมัครสมาชิกอัตโนมัติ\n• ตอบคำถามสินค้า\n• ส่ง Broadcast ข่าวสาร\n• Rich Menu ปรับแต่งได้",
-                    ],
-                ]),
-                'quiz' => [
-                    'time_limit' => 15,
-                    'questions' => [
-                        [
-                            'question' => 'AI Image Generator ใช้ทำอะไร?',
-                            'answers' => [
-                                ['text' => 'แปลภาษา', 'is_correct' => false],
-                                ['text' => 'สร้างรูปภาพจากข้อความ', 'is_correct' => true],
-                                ['text' => 'เขียนเนื้อหา', 'is_correct' => false],
-                                ['text' => 'ตอบลูกค้า', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'Knowledge Base ใน AI Chatbot คือ?',
-                            'answers' => [
-                                ['text' => 'รูปแบบการตอบกลับ', 'is_correct' => false],
-                                ['text' => 'ข้อมูลที่ Bot ใช้ตอบคำถาม', 'is_correct' => true],
-                                ['text' => 'ชื่อของ Bot', 'is_correct' => false],
-                                ['text' => 'รหัสเชื่อมต่อ', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'การเชื่อมต่อ LINE Bot ต้องมีอะไร?',
-                            'answers' => [
-                                ['text' => 'LINE Official Account', 'is_correct' => true],
-                                ['text' => 'LINE Premium', 'is_correct' => false],
-                                ['text' => 'LINE@ เก่า', 'is_correct' => false],
-                                ['text' => 'LINE TV', 'is_correct' => false],
-                            ],
-                        ],
-                    ],
-                ],
+                'tags' => ['AI', 'Chatbot', 'LINE Bot', 'Automation', 'NLU', 'Intent'],
+                'content' => $this->generateContent('ระบบ AI Bot และ Chatbot', $this->getCourse9Content()),
+                'quiz' => $this->getCourse9Quiz(),
             ],
 
-            // ========== ระดับ 4: ก้าวหน้า ==========
+            // ========== ระดับ 4: ก้าวหน้า (เนื้อหาละเอียดพร้อมแบบฝึกหัด) ==========
             [
                 'title' => 'การจัดการร้านค้า E-Commerce',
                 'slug' => 'thaiprompt-ecommerce-management',
-                'excerpt' => 'บริหารร้านค้าออนไลน์ครบวงจร จัดการสินค้า คำสั่งซื้อ และการตลาด',
-                'duration' => 40,
+                'excerpt' => 'บริหารร้านค้าออนไลน์ครบวงจร จัดการสินค้า คำสั่งซื้อ การจัดส่ง การตลาด และวิเคราะห์รายงาน พร้อมแบบฝึกหัด',
+                'duration' => 65,
                 'difficulty' => 'intermediate',
                 'course_level' => 4,
                 'is_featured' => true,
-                'tags' => ['E-Commerce', 'ร้านค้า', 'สินค้า', 'การตลาด'],
-                'content' => $this->generateContent('การจัดการร้านค้า E-Commerce', [
-                    [
-                        'title' => 'การตั้งค่าร้านค้า',
-                        'content' => "**ขั้นตอนสร้างร้านค้า:**\n\n1. สมัครเป็น Seller/Vendor\n2. กรอกข้อมูลร้านค้า:\n   • ชื่อร้าน\n   • โลโก้และแบนเนอร์\n   • คำอธิบายร้าน\n   • ที่อยู่และเบอร์ติดต่อ\n3. เพิ่มบัญชีรับเงิน\n4. ตั้งค่าการจัดส่ง\n5. เปิดร้าน",
-                    ],
-                    [
-                        'title' => 'การจัดการสินค้า',
-                        'content' => "**เพิ่มสินค้าใหม่:**\n\n1. ไปที่ \"สินค้า\" > \"เพิ่มสินค้า\"\n2. กรอกข้อมูล:\n   • ชื่อและคำอธิบาย\n   • รูปภาพ (หลายรูป)\n   • ราคาและส่วนลด\n   • ตัวเลือก (สี, ไซส์)\n   • สต๊อก\n   • น้ำหนักและขนาด\n3. ตั้งค่า PV (Point Value)\n4. เผยแพร่\n\n**จัดการสต๊อก:**\n• ดู Stock Alert\n• อัปเดตสต๊อกแบบ Batch\n• Import/Export Excel",
-                    ],
-                    [
-                        'title' => 'การจัดการคำสั่งซื้อ',
-                        'content' => "**Workflow คำสั่งซื้อ:**\n\n1. **รอยืนยัน** - ตรวจสอบข้อมูล\n2. **กำลังจัดเตรียม** - จัดของและแพ็ค\n3. **จัดส่งแล้ว** - ส่งพัสดุและอัปเดตเลขพัสดุ\n4. **สำเร็จ** - ลูกค้าได้รับสินค้า\n\n**การยกเลิก/คืนเงิน:**\n• ยกเลิกได้ก่อนจัดส่ง\n• คืนเงินผ่านระบบ Refund\n• บันทึกเหตุผลทุกครั้ง",
-                    ],
-                    [
-                        'title' => 'การทำการตลาดร้านค้า',
-                        'content' => "**เครื่องมือการตลาด:**\n\n🎫 **คูปอง** - สร้างส่วนลดดึงดูดลูกค้า\n⚡ **Flash Sale** - ลดราคาช่วงเวลาจำกัด\n🎁 **Bundle** - ขายเป็นชุดราคาพิเศษ\n📣 **โฆษณา** - ซื้อพื้นที่โฆษณาในระบบ\n📧 **Email Marketing** - ส่งข่าวสารถึงลูกค้า\n\n**Tips:** ใช้หลายเครื่องมือร่วมกันเพื่อผลลัพธ์ที่ดีที่สุด",
-                    ],
-                ]),
-                'quiz' => [
-                    'time_limit' => 18,
-                    'questions' => [
-                        [
-                            'question' => 'PV ในสินค้าใช้สำหรับอะไร?',
-                            'answers' => [
-                                ['text' => 'ราคาสินค้า', 'is_correct' => false],
-                                ['text' => 'คะแนนสำหรับคำนวณค่าคอมมิชชั่น MLM', 'is_correct' => true],
-                                ['text' => 'น้ำหนักสินค้า', 'is_correct' => false],
-                                ['text' => 'จำนวนสต๊อก', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'Flash Sale คือ?',
-                            'answers' => [
-                                ['text' => 'ขายเป็นชุด', 'is_correct' => false],
-                                ['text' => 'ลดราคาช่วงเวลาจำกัด', 'is_correct' => true],
-                                ['text' => 'คูปองส่วนลด', 'is_correct' => false],
-                                ['text' => 'โฆษณา', 'is_correct' => false],
-                            ],
-                        ],
-                        [
-                            'question' => 'สถานะคำสั่งซื้อหลัง "กำลังจัดเตรียม" คือ?',
-                            'answers' => [
-                                ['text' => 'รอยืนยัน', 'is_correct' => false],
-                                ['text' => 'จัดส่งแล้ว', 'is_correct' => true],
-                                ['text' => 'สำเร็จ', 'is_correct' => false],
-                                ['text' => 'ยกเลิก', 'is_correct' => false],
-                            ],
-                        ],
-                    ],
-                ],
+                'tags' => ['E-Commerce', 'ร้านค้า', 'สินค้า', 'การตลาด', 'Analytics', 'Shipping'],
+                'content' => $this->generateContent('การจัดการร้านค้า E-Commerce', $this->getCourse10Content()),
+                'quiz' => $this->getCourse10Quiz(),
             ],
             [
                 'title' => 'ระบบ Crypto และ TPIX Token',
@@ -2999,6 +2682,1564 @@ C = Check (ตรวจสอบ)
 ☐ ใช้งาน Genealogy ได้
 ☐ รู้กลยุทธ์สร้างทีมเบื้องต้น
 ☐ มี List คนที่จะแนะนำ",
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 8: ระบบ Rank และโบนัสตำแหน่ง - เนื้อหา
+     */
+    private function getCourse8Content(): array
+    {
+        return [
+            [
+                'title' => '🏆 ภาพรวมระบบ Rank',
+                'content' => "**ระบบ Rank (ยศ/ตำแหน่ง)** คือระบบที่กำหนดระดับความสำเร็จและสิทธิประโยชน์ของสมาชิก
+
+**ทำไมต้องมี Rank?**
+
+• กระตุ้นให้สมาชิกพัฒนาตัวเอง
+• กำหนดอัตราค่าคอมมิชชั่นที่สูงขึ้น
+• ให้โบนัสและรางวัลพิเศษ
+• สร้างเป้าหมายที่ชัดเจน
+
+**ระดับ Rank ทั้งหมดใน Thaiprompt:**
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  RANK HIERARCHY                     │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  👑 Crown Diamond    ← สูงสุด (Top 0.1%)           │
+│      ▲                                              │
+│  💎 Diamond          ← ผู้นำระดับสูง                │
+│      ▲                                              │
+│  💜 Platinum         ← ผู้นำทีม                     │
+│      ▲                                              │
+│  🥇 Gold             ← นักธุรกิจมืออาชีพ            │
+│      ▲                                              │
+│  🥈 Silver           ← กำลังเติบโต                  │
+│      ▲                                              │
+│  🥉 Bronze           ← เริ่มสร้างทีม                │
+│      ▲                                              │
+│  ⭐ Member           ← สมาชิกเริ่มต้น               │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+**สิทธิประโยชน์ตาม Rank:**
+
+| Rank | Commission Rate | Depth | โบนัส/เดือน |
+|------|----------------|-------|-------------|
+| Member | 10% | 3 Levels | - |
+| Bronze | 12% | 4 Levels | 1,000 ฿ |
+| Silver | 15% | 5 Levels | 5,000 ฿ |
+| Gold | 18% | 6 Levels | 15,000 ฿ |
+| Platinum | 22% | 8 Levels | 35,000 ฿ |
+| Diamond | 25% | 10 Levels | 80,000 ฿ |
+| Crown Diamond | 30% | Unlimited | 200,000 ฿ |",
+            ],
+            [
+                'title' => '📊 เงื่อนไขการเลื่อน Rank',
+                'content' => "**ปัจจัยที่ใช้คำนวณ Rank:**
+
+**1. Personal PV (PPV)**
+• ยอด PV จากการซื้อสินค้าของตัวเอง
+• ต้องรักษายอดขั้นต่ำทุกเดือน
+
+**2. Group PV (GPV)**
+• ยอด PV รวมของทั้งทีม
+• รวมทุก Level ในสายงาน
+
+**3. Direct Referrals**
+• จำนวนสมาชิกที่แนะนำโดยตรง
+• ต้อง Active (มียอด PV)
+
+**4. Qualified Legs**
+• จำนวนขาที่มียอดถึงเกณฑ์
+• สำหรับ Binary Plan
+
+**ตารางเงื่อนไขแต่ละ Rank:**
+
+```
+┌──────────────┬────────┬─────────┬─────────┬────────────┐
+│    Rank      │  PPV   │   GPV   │ Direct  │ Qual.Legs  │
+├──────────────┼────────┼─────────┼─────────┼────────────┤
+│ Member       │    0   │      0  │    0    │     0      │
+│ Bronze       │  100   │  1,000  │    3    │     1      │
+│ Silver       │  200   │  5,000  │    5    │     2      │
+│ Gold         │  300   │ 15,000  │   10    │     2      │
+│ Platinum     │  500   │ 50,000  │   20    │     3      │
+│ Diamond      │  800   │150,000  │   50    │     4      │
+│ Crown Diamond│ 1,000  │500,000  │  100    │     5      │
+└──────────────┴────────┴─────────┴─────────┴────────────┘
+```
+
+**หมายเหตุ:**
+• ต้องผ่านเงื่อนไข **ทุกข้อ** จึงจะเลื่อน Rank
+• Rank จะอัพเดททุกวันที่ 1 ของเดือน
+• มีระบบ Maintain - ถ้าไม่ถึงเกณฑ์อาจถูกลด Rank",
+            ],
+            [
+                'title' => '💰 ประเภทโบนัสและรางวัล',
+                'content' => "**โบนัสที่ได้รับตาม Rank:**
+
+**1. 💵 Rank Bonus (โบนัสตำแหน่ง)**
+• ได้รับทุกเดือนตาม Rank
+• จ่ายอัตโนมัติวันที่ 15
+
+```
+Bronze:        1,000 ฿/เดือน
+Silver:        5,000 ฿/เดือน
+Gold:         15,000 ฿/เดือน
+Platinum:     35,000 ฿/เดือน
+Diamond:      80,000 ฿/เดือน
+Crown Diamond: 200,000 ฿/เดือน
+```
+
+**2. 🎯 Leadership Bonus (โบนัสผู้นำ)**
+• ได้จากยอด GPV ของทีม
+• คำนวณ: GPV × Leadership Rate
+
+```
+Gold+:      1% ของ GPV
+Platinum+:  2% ของ GPV
+Diamond+:   3% ของ GPV
+```
+
+**3. 🏆 Achievement Bonus (โบนัสความสำเร็จ)**
+• ได้ครั้งเดียวเมื่อเลื่อน Rank
+
+```
+Bronze → Silver:    2,000 ฿
+Silver → Gold:     10,000 ฿
+Gold → Platinum:   30,000 ฿
+Platinum → Diamond: 100,000 ฿
+Diamond → Crown:   500,000 ฿
+```
+
+**4. 🎁 รางวัลพิเศษ**
+• ✈️ **Travel Incentive** - ทริปท่องเที่ยว (Platinum+)
+• 🚗 **Car Bonus** - โบนัสรถยนต์ (Diamond+)
+• 🏠 **House Bonus** - โบนัสบ้าน (Crown Diamond)
+• 💍 **Luxury Rewards** - ของรางวัลหรูหรา",
+            ],
+            [
+                'title' => '📈 การรักษา Rank (Maintenance)',
+                'content' => "**ระบบ Rank Maintenance:**
+
+เมื่อได้ Rank แล้ว ต้องรักษายอดทุกเดือนเพื่อคง Rank ไว้
+
+**เงื่อนไข Maintenance:**
+
+| Rank | PPV ขั้นต่ำ | GPV ขั้นต่ำ |
+|------|------------|------------|
+| Bronze | 50 | 500 |
+| Silver | 100 | 2,500 |
+| Gold | 150 | 7,500 |
+| Platinum | 250 | 25,000 |
+| Diamond | 400 | 75,000 |
+| Crown Diamond | 500 | 250,000 |
+
+**กรณีไม่ถึงเกณฑ์:**
+
+```
+เดือนที่ 1: ⚠️ Warning - ยังคง Rank แต่ได้รับแจ้งเตือน
+เดือนที่ 2: ⏸️ Suspended - หยุดรับโบนัส Rank ชั่วคราว
+เดือนที่ 3: ⬇️ Demoted - ลด Rank ลง 1 ระดับ
+```
+
+**วิธีป้องกันการถูกลด Rank:**
+
+✅ ตั้ง Auto-ship สินค้ารายเดือน
+✅ ติดตามยอด GPV ของทีมอย่างใกล้ชิด
+✅ กระตุ้นทีมให้ Active ก่อนสิ้นเดือน
+✅ ใช้ Dashboard ดู Progress
+✅ ตั้ง Goal และแจ้งเตือน
+
+**Grace Period:**
+• มี Grace Period 7 วัน หลังสิ้นเดือน
+• สามารถทำยอดเพิ่มได้ในช่วงนี้",
+            ],
+            [
+                'title' => '🎯 กลยุทธ์การเลื่อน Rank',
+                'content' => "**5 กลยุทธ์เลื่อน Rank อย่างมั่นคง:**
+
+**1. 📊 วางแผนล่วงหน้า**
+
+```
+ตัวอย่าง: จาก Silver → Gold
+
+ต้องการ:
+• PPV: 300 (ปัจจุบัน 200) → ต้องเพิ่ม 100
+• GPV: 15,000 (ปัจจุบัน 8,000) → ต้องเพิ่ม 7,000
+• Direct: 10 (ปัจจุบัน 6) → ต้องเพิ่ม 4
+
+แผน:
+• เพิ่ม Auto-ship ตัวเอง +100 PV
+• หา Direct ใหม่ 4 คน × 500 PV = 2,000 PV
+• กระตุ้นทีมเดิมเพิ่ม 5,000 PV
+```
+
+**2. 🎯 Focus ที่ Qualified Legs**
+
+• สร้าง 2-3 ขาที่แข็งแกร่ง
+• ช่วย Downline ใน Leg เหล่านั้นให้เติบโต
+• อย่ากระจายมากเกินไป
+
+**3. 👥 Duplicate ตัวเอง**
+
+• สอนทีมให้ทำเหมือนที่คุณทำ
+• สร้าง Leader ในแต่ละสาย
+• เมื่อทีมเก่ง GPV จะเพิ่มเอง
+
+**4. 📅 Timing ที่เหมาะสม**
+
+• Push ยอดช่วงปลายเดือน
+• ใช้ Promotion ช่วยกระตุ้น
+• จัด Event ให้ทีม
+
+**5. 🔄 สม่ำเสมอ**
+
+• อย่ารอจนนาทีสุดท้าย
+• ทำทุกวัน ไม่ใช่ทุกเดือน
+• Track Progress ทุกสัปดาห์",
+            ],
+            [
+                'title' => '📝 แบบฝึกหัดท้ายบท',
+                'content' => "**แบบฝึกหัดที่ 1: ตรวจสอบ Rank ปัจจุบัน**
+
+1. ไปที่ \"โปรไฟล์\" หรือ \"Dashboard\"
+2. ดู Rank ปัจจุบันของคุณ
+3. บันทึกข้อมูล:
+   - Rank ปัจจุบัน: ______
+   - PPV เดือนนี้: ______
+   - GPV เดือนนี้: ______
+   - Direct Referrals: ______
+
+**แบบฝึกหัดที่ 2: คำนวณเป้าหมาย**
+
+สมมติคุณเป็น Bronze และต้องการเป็น Silver:
+
+เงื่อนไข Silver:
+• PPV: 200
+• GPV: 5,000
+• Direct: 5
+• Qualified Legs: 2
+
+ถ้าปัจจุบัน PPV=120, GPV=3,000, Direct=4
+
+คำนวณสิ่งที่ต้องทำ:
+• PPV ต้องเพิ่ม: ______
+• GPV ต้องเพิ่ม: ______
+• Direct ต้องเพิ่ม: ______
+
+**แบบฝึกหัดที่ 3: วางแผน 3 เดือน**
+
+เขียนแผนเลื่อน Rank:
+
+เดือนที่ 1:
+- เป้า PPV: ______
+- เป้า GPV: ______
+- กิจกรรม: ______
+
+เดือนที่ 2:
+- เป้า PPV: ______
+- เป้า GPV: ______
+- กิจกรรม: ______
+
+เดือนที่ 3:
+- เป้า PPV: ______
+- เป้า GPV: ______
+- กิจกรรม: ______
+
+**Checklist ความเข้าใจ:**
+
+☐ รู้จัก Rank ทั้งหมดในระบบ
+☐ เข้าใจเงื่อนไขการเลื่อน Rank
+☐ รู้ประเภทโบนัสที่ได้รับ
+☐ เข้าใจระบบ Maintenance
+☐ วางแผนเลื่อน Rank ได้",
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 8: ระบบ Rank และโบนัสตำแหน่ง - Quiz
+     */
+    private function getCourse8Quiz(): array
+    {
+        return [
+            'time_limit' => 15,
+            'description' => 'ทดสอบความเข้าใจเกี่ยวกับระบบ Rank และโบนัส',
+            'questions' => [
+                [
+                    'question' => 'Rank สูงสุดในระบบ Thaiprompt คือ?',
+                    'answers' => [
+                        ['text' => 'Diamond', 'is_correct' => false],
+                        ['text' => 'Platinum', 'is_correct' => false],
+                        ['text' => 'Crown Diamond', 'is_correct' => true],
+                        ['text' => 'Gold', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Crown Diamond คือ Rank สูงสุดในระบบ มีสิทธิประโยชน์สูงสุดและโบนัส 200,000 บาท/เดือน',
+                ],
+                [
+                    'question' => 'PPV ย่อมาจากอะไร?',
+                    'answers' => [
+                        ['text' => 'Group PV', 'is_correct' => false],
+                        ['text' => 'Personal PV (ยอด PV ส่วนตัว)', 'is_correct' => true],
+                        ['text' => 'Pending PV', 'is_correct' => false],
+                        ['text' => 'Premium PV', 'is_correct' => false],
+                    ],
+                    'explanation' => 'PPV = Personal PV คือยอด PV จากการซื้อสินค้าของตัวเอง',
+                ],
+                [
+                    'question' => 'Rank Bonus จ่ายเมื่อไร?',
+                    'answers' => [
+                        ['text' => 'ทุกวัน', 'is_correct' => false],
+                        ['text' => 'วันที่ 15 ของทุกเดือน', 'is_correct' => true],
+                        ['text' => 'วันที่ 1 ของทุกเดือน', 'is_correct' => false],
+                        ['text' => 'สิ้นเดือน', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Rank Bonus จ่ายอัตโนมัติทุกวันที่ 15 ของเดือน',
+                ],
+                [
+                    'question' => 'ถ้าไม่ถึงเกณฑ์ Maintenance ติดต่อกัน 3 เดือน จะเกิดอะไรขึ้น?',
+                    'answers' => [
+                        ['text' => 'ไม่มีอะไรเกิดขึ้น', 'is_correct' => false],
+                        ['text' => 'ถูกลด Rank ลง 1 ระดับ', 'is_correct' => true],
+                        ['text' => 'ถูกยกเลิกบัญชี', 'is_correct' => false],
+                        ['text' => 'ต้องจ่ายค่าปรับ', 'is_correct' => false],
+                    ],
+                    'explanation' => 'เดือน 1 = Warning, เดือน 2 = Suspended, เดือน 3 = Demoted (ลด Rank)',
+                ],
+                [
+                    'question' => 'Achievement Bonus จาก Silver → Gold ได้เท่าไร?',
+                    'answers' => [
+                        ['text' => '2,000 บาท', 'is_correct' => false],
+                        ['text' => '10,000 บาท', 'is_correct' => true],
+                        ['text' => '30,000 บาท', 'is_correct' => false],
+                        ['text' => '5,000 บาท', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Achievement Bonus จาก Silver → Gold คือ 10,000 บาท (ได้ครั้งเดียวเมื่อเลื่อน Rank)',
+                ],
+                [
+                    'question' => 'Qualified Legs คืออะไร?',
+                    'answers' => [
+                        ['text' => 'จำนวนสมาชิกทั้งหมด', 'is_correct' => false],
+                        ['text' => 'จำนวนขาที่มียอดถึงเกณฑ์', 'is_correct' => true],
+                        ['text' => 'จำนวน Direct Referrals', 'is_correct' => false],
+                        ['text' => 'ยอด GPV', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Qualified Legs คือจำนวนขา (สาย) ที่มียอด PV ถึงเกณฑ์ที่กำหนด',
+                ],
+                [
+                    'question' => 'Grace Period หลังสิ้นเดือนมีกี่วัน?',
+                    'answers' => [
+                        ['text' => '3 วัน', 'is_correct' => false],
+                        ['text' => '7 วัน', 'is_correct' => true],
+                        ['text' => '14 วัน', 'is_correct' => false],
+                        ['text' => 'ไม่มี Grace Period', 'is_correct' => false],
+                    ],
+                    'explanation' => 'มี Grace Period 7 วันหลังสิ้นเดือน สามารถทำยอดเพิ่มได้ในช่วงนี้',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 9: AI Bot และระบบ Chatbot - เนื้อหา
+     */
+    private function getCourse9Content(): array
+    {
+        return [
+            [
+                'title' => '🤖 ภาพรวม AI Bot ใน Thaiprompt',
+                'content' => "
+## AI Bot คืออะไร?
+
+AI Bot ใน Thaiprompt คือระบบ **Chatbot อัจฉริยะ** ที่ขับเคลื่อนด้วย AI สามารถโต้ตอบกับลูกค้าได้อัตโนมัติ ช่วยเพิ่มยอดขายและบริการลูกค้าได้ 24/7
+
+### 🎯 ประเภท AI Bot ในระบบ
+
+| ประเภท | แพลตฟอร์ม | ความสามารถ |
+|--------|-----------|------------|
+| **LINE Bot** | LINE Official Account | ตอบแชท, ส่งโปรโมชั่น, รับออเดอร์ |
+| **Facebook Bot** | Messenger | ตอบ Inbox, Product Catalog |
+| **Web Chatbot** | เว็บไซต์ | Live Chat, FAQ อัตโนมัติ |
+| **Instagram Bot** | Instagram DM | ตอบ DM, Story Reply |
+| **WhatsApp Bot** | WhatsApp Business | ข้อความ, สถานะออเดอร์ |
+
+### 🧠 เทคโนโลยี AI ที่ใช้
+
+```
+┌─────────────────────────────────────────────────┐
+│           AI Engine Architecture                │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│   ┌─────────────┐    ┌─────────────────────┐   │
+│   │   NLU/NLP   │───▶│  Intent Detection   │   │
+│   │   Engine    │    │  (ตรวจจับเจตนา)      │   │
+│   └─────────────┘    └─────────────────────┘   │
+│         │                      │                │
+│         ▼                      ▼                │
+│   ┌─────────────┐    ┌─────────────────────┐   │
+│   │   Entity    │    │  Response Generator │   │
+│   │  Extraction │    │  (สร้างคำตอบ)        │   │
+│   └─────────────┘    └─────────────────────┘   │
+│                              │                  │
+│                              ▼                  │
+│                    ┌─────────────────────┐     │
+│                    │   Product/Order     │     │
+│                    │   Database          │     │
+│                    └─────────────────────┘     │
+└─────────────────────────────────────────────────┘
+```
+
+### ⭐ ความสามารถหลัก
+
+1. **ตอบคำถามอัตโนมัติ** - FAQ, ข้อมูลสินค้า, ราคา
+2. **รับออเดอร์** - สั่งซื้อผ่าน Chat ได้เลย
+3. **ติดตามพัสดุ** - เช็คสถานะจัดส่งอัตโนมัติ
+4. **แนะนำสินค้า** - AI วิเคราะห์และแนะนำตามพฤติกรรม
+5. **โอนให้พนักงาน** - Handoff เมื่อต้องการคนจริง
+                ",
+            ],
+            [
+                'title' => '⚙️ การตั้งค่า LINE Bot',
+                'content' => "
+## การสร้างและเชื่อมต่อ LINE Bot
+
+### 📋 ขั้นตอนการสร้าง LINE Bot
+
+**Step 1: สร้าง LINE Official Account**
+
+1. ไปที่ [LINE Official Account Manager](https://manager.line.biz/)
+2. คลิก \"สร้างบัญชี\" → เลือกประเภทธุรกิจ
+3. กรอกข้อมูลธุรกิจ → ยืนยันอีเมล
+4. เข้า Dashboard → ไปที่ Settings
+
+**Step 2: เปิดใช้งาน Messaging API**
+
+```
+LINE Official Account Manager
+    │
+    ├── Settings (ตั้งค่า)
+    │       │
+    │       └── Messaging API
+    │               │
+    │               ├── Enable Messaging API ✓
+    │               │
+    │               └── สร้าง Channel ใน LINE Developers
+    │
+    └── LINE Developers Console
+            │
+            ├── Channel ID
+            ├── Channel Secret
+            └── Channel Access Token (Long-lived)
+```
+
+**Step 3: เชื่อมต่อกับ Thaiprompt**
+
+| ฟิลด์ | คำอธิบาย | ตัวอย่าง |
+|------|---------|---------|
+| Channel ID | รหัส Channel | 1657XXXXXX |
+| Channel Secret | รหัสลับ | 8d4a5b6c7d... |
+| Access Token | Token สำหรับส่งข้อความ | eyJhbGciOi... |
+| Webhook URL | URL รับ Events | https://yourdomain.com/webhook/line |
+
+### 🔧 การตั้งค่า Webhook
+
+```php
+// Webhook URL ที่ต้องตั้งใน LINE Developers
+https://your-thaiprompt-domain.com/api/line/webhook
+
+// Events ที่รองรับ:
+// - message (ข้อความ)
+// - follow (มีคนเพิ่มเพื่อน)
+// - unfollow (ยกเลิกติดตาม)
+// - postback (กดปุ่ม)
+// - beacon (LINE Beacon)
+```
+
+### 📱 Rich Menu
+
+```
+┌──────────────────────────────────────┐
+│          Rich Menu (6 ปุ่ม)          │
+├────────────┬────────────┬────────────┤
+│   🛒 สั่งซื้อ  │  📦 ติดตาม   │  💬 สอบถาม  │
+├────────────┼────────────┼────────────┤
+│   🎁 โปรโมชั่น │  👤 บัญชี    │  📞 ติดต่อ   │
+└────────────┴────────────┴────────────┘
+
+การตั้งค่า: Admin → AI Bot → LINE → Rich Menu
+```
+
+### ⚡ Quick Reply Buttons
+
+```json
+{
+  \"type\": \"text\",
+  \"text\": \"ต้องการสอบถามเรื่องอะไรคะ?\",
+  \"quickReply\": {
+    \"items\": [
+      { \"type\": \"action\", \"action\": { \"type\": \"message\", \"label\": \"สินค้า\", \"text\": \"สินค้า\" }},
+      { \"type\": \"action\", \"action\": { \"type\": \"message\", \"label\": \"ราคา\", \"text\": \"ราคา\" }},
+      { \"type\": \"action\", \"action\": { \"type\": \"message\", \"label\": \"โปรโมชั่น\", \"text\": \"โปรโมชั่น\" }}
+    ]
+  }
+}
+```
+                ",
+            ],
+            [
+                'title' => '💬 การสร้าง Conversation Flow',
+                'content' => "
+## ออกแบบ Flow การสนทนา
+
+### 🎯 Intent (เจตนาของผู้ใช้)
+
+**Intent คืออะไร?**
+Intent คือ \"สิ่งที่ผู้ใช้ต้องการ\" เมื่อพิมพ์ข้อความมา
+
+| Intent | ตัวอย่างข้อความ | Action |
+|--------|---------------|--------|
+| `greeting` | สวัสดี, หวัดดี, Hi | ทักทายกลับ |
+| `product_inquiry` | มีสินค้าอะไรบ้าง, ขายอะไร | แสดง Catalog |
+| `price_check` | ราคาเท่าไร, แพงไหม | แสดงราคา |
+| `order_status` | พัสดุถึงไหน, เช็คสถานะ | ค้นหา Tracking |
+| `order_create` | สั่งซื้อ, ซื้อสินค้า | เริ่ม Flow สั่งซื้อ |
+| `human_agent` | ขอคุยกับคน, ติดต่อแอดมิน | Handoff |
+
+### 🔀 Conversation Flow Diagram
+
+```
+[User Message]
+      │
+      ▼
+┌─────────────────┐
+│  NLU: Detect    │
+│  Intent         │
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    │ Intent? │
+    └────┬────┘
+         │
+    ┌────┼────────┬───────────┬────────────┐
+    ▼    ▼        ▼           ▼            ▼
+greeting product  order     tracking    human
+    │       │        │           │            │
+    ▼       ▼        ▼           ▼            ▼
+ \"สวัสดี\"  Catalog  Order     Status    Handoff
+           List    Flow      API       to Admin
+```
+
+### 📝 การสร้าง Conversation Node
+
+**ใน Admin Panel: AI Bot → Conversation Builder**
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Conversation Builder                               │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  [Start] ──▶ [ทักทาย] ──▶ [ถามความต้องการ]          │
+│                              │                      │
+│              ┌───────────────┼───────────────┐      │
+│              ▼               ▼               ▼      │
+│         [สินค้า]        [สั่งซื้อ]       [ติดต่อ]    │
+│              │               │               │      │
+│              ▼               ▼               ▼      │
+│         [Catalog]      [Order Flow]    [Handoff]   │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+### 🎨 Node Types
+
+| Type | Icon | Description | Use Case |
+|------|------|-------------|----------|
+| **Text** | 💬 | ข้อความธรรมดา | ทักทาย, อธิบาย |
+| **Image** | 🖼️ | ส่งรูปภาพ | สินค้า, โปรโมชั่น |
+| **Carousel** | 🎠 | สไลด์หลายรูป | Product Catalog |
+| **Quick Reply** | ⚡ | ปุ่มตอบด่วน | เลือกตัวเลือก |
+| **Condition** | ❓ | เงื่อนไข | แยกเส้นทาง |
+| **API Call** | 🔌 | เรียก API | ดึงข้อมูลสด |
+| **Handoff** | 👤 | โอนให้คน | ปัญหาซับซ้อน |
+
+### 💡 Tips การออกแบบ Flow
+
+1. **Keep it Simple** - อย่าซับซ้อนเกินไป (ไม่เกิน 5 levels)
+2. **Always have Fallback** - มีทางออกเสมอเมื่อไม่เข้าใจ
+3. **Confirm before Action** - ยืนยันก่อนทำ Action สำคัญ
+4. **Provide Escape** - มีทางให้พูดกับคนจริงเสมอ
+                ",
+            ],
+            [
+                'title' => '📊 AI Training และ NLU',
+                'content' => "
+## การ Train AI ให้เข้าใจภาษา
+
+### 🧠 Natural Language Understanding (NLU)
+
+**NLU ทำหน้าที่อะไร?**
+
+```
+User Input: \"อยากซื้อสินค้า\"
+      │
+      ▼
+┌─────────────────────────────────────────┐
+│              NLU Engine                  │
+├─────────────────────────────────────────┤
+│                                          │
+│  1. Tokenization (แยกคำ)                 │
+│     [\"อยาก\", \"ซื้อ\", \"สินค้า\"]          │
+│                                          │
+│  2. Intent Classification               │
+│     → order_create (confidence: 92%)    │
+│                                          │
+│  3. Entity Extraction                   │
+│     → product_type: null                │
+│     → quantity: null                    │
+│                                          │
+└─────────────────────────────────────────┘
+      │
+      ▼
+Action: Start Order Flow
+```
+
+### 📚 Training Data
+
+**การเพิ่ม Training Phrases (ประโยคตัวอย่าง)**
+
+| Intent | Training Phrases |
+|--------|-----------------|
+| `order_create` | \"สั่งซื้อ\", \"อยากซื้อ\", \"ซื้อหน่อย\", \"สั่งของ\", \"order\" |
+| `product_inquiry` | \"มีอะไรขาย\", \"สินค้ามีอะไร\", \"ขายอะไรบ้าง\", \"catalog\" |
+| `price_check` | \"ราคาเท่าไร\", \"กี่บาท\", \"แพงไหม\", \"ลดราคาไหม\" |
+
+**Best Practices:**
+- ✅ เพิ่มอย่างน้อย 10-20 ประโยคต่อ Intent
+- ✅ รวมคำพูดแบบต่างๆ (ทางการ, ไม่ทางการ, ภาษาวัยรุ่น)
+- ✅ รวม Typo ที่พบบ่อย
+- ✅ อัพเดทจาก Unhandled Messages
+
+### 🎯 Entity Extraction
+
+**Entity คืออะไร?**
+Entity คือ \"ข้อมูลสำคัญ\" ที่แยกออกมาจากประโยค
+
+```
+Input: \"สั่ง iPhone 15 Pro 3 เครื่อง ส่งไปเชียงใหม่\"
+
+Extracted Entities:
+┌─────────────────────────────────────────┐
+│  product_name: \"iPhone 15 Pro\"         │
+│  quantity: 3                            │
+│  unit: \"เครื่อง\"                        │
+│  shipping_location: \"เชียงใหม่\"         │
+└─────────────────────────────────────────┘
+```
+
+### 📈 Model Improvement
+
+**Continuous Learning Loop:**
+
+```
+┌──────────────────────────────────────────────────┐
+│                                                  │
+│   ┌─────────┐   ┌─────────┐   ┌─────────┐       │
+│   │ Deploy  │──▶│ Collect │──▶│ Review  │       │
+│   │  Bot    │   │  Logs   │   │  Errors │       │
+│   └─────────┘   └─────────┘   └────┬────┘       │
+│        ▲                           │            │
+│        │                           ▼            │
+│   ┌─────────┐              ┌─────────────┐      │
+│   │ Re-train│◀─────────────│ Add Training│      │
+│   │  Model  │              │    Data     │      │
+│   └─────────┘              └─────────────┘      │
+│                                                  │
+└──────────────────────────────────────────────────┘
+```
+
+### 📊 Performance Metrics
+
+| Metric | Target | Description |
+|--------|--------|-------------|
+| **Intent Accuracy** | ≥ 85% | ตรวจจับ Intent ถูกต้อง |
+| **Entity Accuracy** | ≥ 80% | แยก Entity ถูกต้อง |
+| **Fallback Rate** | ≤ 15% | อัตราตอบไม่ได้ |
+| **Resolution Rate** | ≥ 70% | แก้ปัญหาได้โดยไม่ต้องใช้คน |
+                ",
+            ],
+            [
+                'title' => '🔌 การเชื่อมต่อ API และ Automation',
+                'content' => "
+## เชื่อมต่อกับระบบอื่น
+
+### 🔗 API Integration
+
+**ใน Admin: AI Bot → Integrations**
+
+| Integration | Use Case | Example |
+|-------------|----------|---------|
+| **Product API** | ดึงข้อมูลสินค้า | ราคา, สต็อก, รายละเอียด |
+| **Order API** | สร้าง/เช็คออเดอร์ | สถานะ, Tracking |
+| **User API** | ข้อมูลลูกค้า | ประวัติซื้อ, แต้ม |
+| **Payment API** | ชำระเงิน | QR Code, Link จ่ายเงิน |
+| **Shipping API** | ติดตามพัสดุ | Flash, Kerry, ไปรษณีย์ |
+
+### 📡 Webhook Events
+
+**Events ที่ส่งออกจาก Bot:**
+
+```json
+// เมื่อมีข้อความใหม่
+{
+  \"event\": \"message.received\",
+  \"platform\": \"line\",
+  \"user_id\": \"U1234567890\",
+  \"message\": {
+    \"type\": \"text\",
+    \"text\": \"สวัสดีครับ\"
+  },
+  \"timestamp\": \"2024-01-15T10:30:00Z\"
+}
+
+// เมื่อสร้างออเดอร์สำเร็จ
+{
+  \"event\": \"order.created\",
+  \"order_id\": \"ORD-20240115-001\",
+  \"user_id\": \"U1234567890\",
+  \"total\": 1500,
+  \"items\": [...]
+}
+```
+
+### ⚡ Automation Rules
+
+**การตั้ง Auto-Response:**
+
+| Trigger | Condition | Action |
+|---------|-----------|--------|
+| **Time-based** | นอกเวลาทำการ | ส่งข้อความ \"ติดต่อกลับในวันถัดไป\" |
+| **Keyword** | มีคำว่า \"urgent\" | แจ้ง Admin ทันที |
+| **User Segment** | VIP Customer | ใช้ Flow พิเศษ |
+| **Cart Abandon** | ทิ้ง Cart 30 นาที | ส่ง Reminder |
+
+### 🔄 Workflow Automation
+
+```
+┌─────────────────────────────────────────────────────┐
+│              Order Automation Flow                   │
+├─────────────────────────────────────────────────────┤
+│                                                      │
+│  [ลูกค้าสั่งซื้อ] ──▶ [Bot ยืนยัน]                     │
+│         │                  │                         │
+│         ▼                  ▼                         │
+│  [สร้าง Order]      [ส่ง QR Payment]                 │
+│         │                  │                         │
+│         └────────┬─────────┘                         │
+│                  ▼                                   │
+│         [รอชำระเงิน 24 ชม.]                          │
+│                  │                                   │
+│         ┌───────┴───────┐                           │
+│         ▼               ▼                           │
+│    [ชำระแล้ว]      [ไม่ชำระ]                         │
+│         │               │                           │
+│         ▼               ▼                           │
+│   [แจ้ง Shipping]  [ยกเลิก Order]                    │
+│         │               │                           │
+│         ▼               ▼                           │
+│   [ส่ง Tracking]   [Reminder ครั้งที่ 2]             │
+│                                                      │
+└─────────────────────────────────────────────────────┘
+```
+
+### 📊 Analytics Dashboard
+
+| Metric | Description |
+|--------|-------------|
+| **Messages/Day** | ข้อความต่อวัน |
+| **Response Time** | เวลาตอบเฉลี่ย |
+| **Bot vs Human** | อัตราส่วน Bot ตอบ vs คนตอบ |
+| **Conversion Rate** | อัตราการซื้อผ่าน Bot |
+| **CSAT Score** | ความพึงพอใจลูกค้า |
+                ",
+            ],
+            [
+                'title' => '📝 แบบฝึกหัดท้ายบท',
+                'content' => "
+## แบบฝึกหัด: AI Bot และ Chatbot
+
+### 📋 แบบฝึกหัดที่ 1: วางแผน Bot Strategy
+
+**โจทย์:** คุณเปิดร้านขายเสื้อผ้าออนไลน์ ต้องการใช้ LINE Bot
+
+**ให้ออกแบบ:**
+1. Rich Menu 6 ปุ่ม - กำหนดว่าแต่ละปุ่มทำอะไร
+2. Intent อย่างน้อย 5 Intent พร้อม Training Phrases
+3. Conversation Flow สำหรับการสั่งซื้อเสื้อผ้า
+
+```
+คำตอบตัวอย่าง Rich Menu:
+┌──────────┬──────────┬──────────┐
+│  👗 สินค้า │  💰 โปรโม  │  📦 สถานะ  │
+├──────────┼──────────┼──────────┤
+│  📐 ไซส์   │  🛒 ตะกร้า │  📞 ติดต่อ  │
+└──────────┴──────────┴──────────┘
+```
+
+---
+
+### 📋 แบบฝึกหัดที่ 2: เขียน Intent & Entities
+
+**โจทย์:** สำหรับ Intent \"check_order_status\"
+
+**ให้เขียน:**
+1. Training Phrases 10 ประโยค
+2. Entity ที่ต้อง Extract
+3. Response Template
+
+```
+Training Phrases ตัวอย่าง:
+1. \"เช็คสถานะพัสดุ\"
+2. \"ของถึงไหนแล้ว\"
+3. \"tracking ORD12345\"
+4. \"ออเดอร์ของฉันไปถึงไหน\"
+5. ...
+
+Entity:
+- order_id: ORD12345
+- tracking_number: TH1234567890
+
+Response:
+\"ออเดอร์ {order_id} สถานะ: {status}
+📦 Tracking: {tracking_number}
+🚚 คาดว่าจะได้รับภายใน {estimated_date}\"
+```
+
+---
+
+### 📋 แบบฝึกหัดที่ 3: Debug Conversation
+
+**โจทย์:** Bot ตอบผิดในกรณีนี้:
+
+```
+User: \"ไม่อยากซื้อแล้ว ยกเลิกออเดอร์\"
+Bot: \"ยินดีต้อนรับสู่การสั่งซื้อ กรุณาเลือกสินค้า\"
+```
+
+**วิเคราะห์:**
+1. ปัญหาเกิดจากอะไร?
+2. จะแก้ไขอย่างไร?
+3. ต้องเพิ่ม Training Data อะไร?
+
+---
+
+### 📋 แบบฝึกหัดที่ 4: ออกแบบ Automation
+
+**โจทย์:** ลูกค้าสั่งซื้อแล้วไม่ชำระเงินภายใน 24 ชม.
+
+**ให้ออกแบบ Automation Flow:**
+1. เวลาไหนส่ง Reminder?
+2. ข้อความ Reminder พูดอะไร?
+3. ถ้ายังไม่จ่าย ทำอย่างไรต่อ?
+
+---
+
+### ✅ Checklist ก่อนสอบ
+
+- [ ] เข้าใจการสร้างและเชื่อมต่อ LINE Bot
+- [ ] สามารถอธิบาย Intent และ Entity ได้
+- [ ] ออกแบบ Conversation Flow ได้
+- [ ] เข้าใจ NLU และการ Train Model
+- [ ] ตั้งค่า Automation Rules ได้
+- [ ] อ่าน Analytics Dashboard เป็น
+                ",
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 9: AI Bot และระบบ Chatbot - Quiz
+     */
+    private function getCourse9Quiz(): array
+    {
+        return [
+            'time_limit' => 15,
+            'description' => 'ทดสอบความเข้าใจเกี่ยวกับ AI Bot และระบบ Chatbot',
+            'questions' => [
+                [
+                    'question' => 'NLU ย่อมาจากอะไร?',
+                    'answers' => [
+                        ['text' => 'Natural Language Understanding', 'is_correct' => true],
+                        ['text' => 'Network Language Unit', 'is_correct' => false],
+                        ['text' => 'New Language Update', 'is_correct' => false],
+                        ['text' => 'Natural Learning Unit', 'is_correct' => false],
+                    ],
+                    'explanation' => 'NLU = Natural Language Understanding คือเทคโนโลยีที่ช่วยให้ AI เข้าใจภาษามนุษย์',
+                ],
+                [
+                    'question' => 'Intent ในระบบ Chatbot หมายถึง?',
+                    'answers' => [
+                        ['text' => 'ชื่อของ Bot', 'is_correct' => false],
+                        ['text' => 'สิ่งที่ผู้ใช้ต้องการ/เจตนา', 'is_correct' => true],
+                        ['text' => 'รูปภาพที่ส่ง', 'is_correct' => false],
+                        ['text' => 'ราคาสินค้า', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Intent คือ \"เจตนา\" หรือ \"สิ่งที่ผู้ใช้ต้องการ\" เมื่อพิมพ์ข้อความมา',
+                ],
+                [
+                    'question' => 'Rich Menu ใน LINE Bot มีได้สูงสุดกี่ปุ่ม?',
+                    'answers' => [
+                        ['text' => '3 ปุ่ม', 'is_correct' => false],
+                        ['text' => '6 ปุ่ม', 'is_correct' => true],
+                        ['text' => '9 ปุ่ม', 'is_correct' => false],
+                        ['text' => '12 ปุ่ม', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Rich Menu รองรับได้สูงสุด 6 ปุ่ม แบ่งเป็น 2 แถว แถวละ 3 ปุ่ม',
+                ],
+                [
+                    'question' => 'Entity Extraction ทำหน้าที่อะไร?',
+                    'answers' => [
+                        ['text' => 'ส่งข้อความหาลูกค้า', 'is_correct' => false],
+                        ['text' => 'แยกข้อมูลสำคัญจากประโยค', 'is_correct' => true],
+                        ['text' => 'ลบข้อความเก่า', 'is_correct' => false],
+                        ['text' => 'สร้าง Rich Menu', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Entity Extraction แยกข้อมูลสำคัญจากประโยค เช่น ชื่อสินค้า, จำนวน, ที่อยู่',
+                ],
+                [
+                    'question' => 'Handoff ในระบบ Chatbot คืออะไร?',
+                    'answers' => [
+                        ['text' => 'ปิด Bot', 'is_correct' => false],
+                        ['text' => 'โอนการสนทนาให้พนักงานจริง', 'is_correct' => true],
+                        ['text' => 'ส่งอีเมล', 'is_correct' => false],
+                        ['text' => 'ยกเลิกออเดอร์', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Handoff คือการโอนการสนทนาจาก Bot ไปให้พนักงานจริงเมื่อต้องการ',
+                ],
+                [
+                    'question' => 'Fallback Rate ที่ดีควรเป็นเท่าไร?',
+                    'answers' => [
+                        ['text' => '≤ 15%', 'is_correct' => true],
+                        ['text' => '≤ 50%', 'is_correct' => false],
+                        ['text' => '≤ 80%', 'is_correct' => false],
+                        ['text' => '100%', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Fallback Rate ที่ดีควร ≤ 15% หมายความว่า Bot ตอบได้มากกว่า 85%',
+                ],
+                [
+                    'question' => 'Training Phrases ควรมีอย่างน้อยกี่ประโยคต่อ Intent?',
+                    'answers' => [
+                        ['text' => '1-2 ประโยค', 'is_correct' => false],
+                        ['text' => '5 ประโยค', 'is_correct' => false],
+                        ['text' => '10-20 ประโยค', 'is_correct' => true],
+                        ['text' => '100 ประโยค', 'is_correct' => false],
+                    ],
+                    'explanation' => 'ควรมี 10-20 ประโยคต่อ Intent เพื่อให้ AI เรียนรู้รูปแบบต่างๆ ได้ดี',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 10: การจัดการ E-Commerce และร้านค้า - เนื้อหา
+     */
+    private function getCourse10Content(): array
+    {
+        return [
+            [
+                'title' => '🛍️ ภาพรวมระบบ E-Commerce',
+                'content' => "
+## E-Commerce ใน Thaiprompt คืออะไร?
+
+ระบบ E-Commerce ใน Thaiprompt เป็น **Multi-Vendor Marketplace** ที่รองรับผู้ขายหลายราย พร้อมระบบ Affiliate ครบวงจร
+
+### 🏪 ประเภทร้านค้าในระบบ
+
+| ประเภท | คำอธิบาย | สิทธิประโยชน์ |
+|--------|---------|--------------|
+| **Individual Seller** | ผู้ขายรายบุคคล | ขายสินค้าเบื้องต้น |
+| **Business Seller** | ผู้ขายแบบธุรกิจ | ร้านค้าหลายสาขา |
+| **Brand Store** | แบรนด์อย่างเป็นทางการ | Badge + Priority |
+| **Affiliate Seller** | ขายพร้อมแนะนำ | Commission + Bonus |
+
+### 🔗 โครงสร้างระบบ
+
+```
+┌───────────────────────────────────────────────────────┐
+│                  E-Commerce Platform                   │
+├───────────────────────────────────────────────────────┤
+│                                                        │
+│   ┌─────────────┐   ┌─────────────┐   ┌────────────┐  │
+│   │   Product   │   │   Order     │   │  Payment   │  │
+│   │  Management │   │  Management │   │   Gateway  │  │
+│   └──────┬──────┘   └──────┬──────┘   └─────┬──────┘  │
+│          │                 │                 │         │
+│          └─────────────────┼─────────────────┘         │
+│                            │                           │
+│                     ┌──────┴──────┐                    │
+│                     │   Shipping  │                    │
+│                     │   & Fulfillment │                │
+│                     └─────────────┘                    │
+│                            │                           │
+│   ┌─────────────┐   ┌──────┴──────┐   ┌────────────┐  │
+│   │  Affiliate  │   │   Report    │   │  Customer  │  │
+│   │   System    │   │  Analytics  │   │   Service  │  │
+│   └─────────────┘   └─────────────┘   └────────────┘  │
+│                                                        │
+└───────────────────────────────────────────────────────┘
+```
+
+### ⭐ ฟีเจอร์หลัก
+
+1. **Multi-Vendor** - รองรับผู้ขายหลายราย
+2. **Inventory Management** - จัดการสต็อกสินค้า
+3. **Multiple Payment** - หลายช่องทางชำระเงิน
+4. **Shipping Integration** - เชื่อมต่อขนส่งหลายบริษัท
+5. **Analytics Dashboard** - รายงานการขายแบบเรียลไทม์
+6. **Affiliate Commission** - ระบบค่าคอมมิชชั่นอัตโนมัติ
+                ",
+            ],
+            [
+                'title' => '📦 การจัดการสินค้า (Product Management)',
+                'content' => "
+## การเพิ่มและจัดการสินค้า
+
+### 📋 ขั้นตอนการเพิ่มสินค้าใหม่
+
+**Seller Dashboard → Products → Add New Product**
+
+```
+┌────────────────────────────────────────────────────────┐
+│                  Add New Product                       │
+├────────────────────────────────────────────────────────┤
+│                                                        │
+│  1. Basic Information (ข้อมูลพื้นฐาน)                   │
+│     ├── Product Name (ชื่อสินค้า)                      │
+│     ├── SKU (รหัสสินค้า)                               │
+│     ├── Category (หมวดหมู่)                            │
+│     └── Brand (แบรนด์)                                 │
+│                                                        │
+│  2. Description (รายละเอียด)                           │
+│     ├── Short Description                              │
+│     └── Full Description (HTML Editor)                │
+│                                                        │
+│  3. Media (รูปภาพ/วิดีโอ)                              │
+│     ├── Main Image (1200x1200px)                      │
+│     ├── Gallery (สูงสุด 10 รูป)                        │
+│     └── Video URL (Optional)                          │
+│                                                        │
+│  4. Pricing (ราคา)                                     │
+│     ├── Regular Price                                  │
+│     ├── Sale Price                                     │
+│     └── PV Value                                       │
+│                                                        │
+│  5. Inventory (สต็อก)                                  │
+│     ├── Stock Quantity                                 │
+│     ├── Low Stock Threshold                            │
+│     └── Allow Backorders                               │
+│                                                        │
+└────────────────────────────────────────────────────────┘
+```
+
+### 🏷️ Product Types
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| **Simple** | สินค้าเดี่ยว | สินค้าไม่มี Variant |
+| **Variable** | มีหลายตัวเลือก | เสื้อผ้าหลายสี/ไซส์ |
+| **Digital** | สินค้าดิจิทัล | E-book, Software |
+| **Bundle** | ชุดรวม | Package Deal |
+| **Subscription** | สมาชิกรายเดือน | Membership |
+
+### 📊 Product Attributes
+
+```php
+// ตัวอย่าง Attributes
+[
+    'color' => ['Red', 'Blue', 'Black'],
+    'size'  => ['S', 'M', 'L', 'XL'],
+    'material' => ['Cotton', 'Polyester']
+]
+
+// Variations ที่เกิดขึ้น
+Red-S, Red-M, Red-L, Red-XL,
+Blue-S, Blue-M, Blue-L, Blue-XL,
+...
+```
+
+### 💰 Pricing Strategies
+
+| Strategy | Description |
+|----------|-------------|
+| **Regular Price** | ราคาปกติ |
+| **Sale Price** | ราคาลด (กำหนดช่วงเวลาได้) |
+| **Member Price** | ราคาสมาชิก Affiliate |
+| **Bulk Pricing** | ซื้อมาก ลดมาก |
+| **Flash Sale** | ลดแบบจำกัดเวลา |
+                ",
+            ],
+            [
+                'title' => '🛒 ระบบตะกร้าและ Checkout',
+                'content' => "
+## Cart & Checkout Flow
+
+### 🛒 Shopping Cart Features
+
+```
+┌────────────────────────────────────────────────────────┐
+│                   Shopping Cart                        │
+├────────────────────────────────────────────────────────┤
+│                                                        │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ [รูป] iPhone 15 Pro 256GB      Qty: [1] ×฿42,900 │  │
+│  │       Color: Black                      Remove   │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                        │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ [รูป] เคส iPhone 15             Qty: [2] ×฿590   │  │
+│  │       Color: Clear                      Remove   │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                        │
+│  ───────────────────────────────────────────────────── │
+│  Subtotal:                                   ฿44,080   │
+│  Shipping:                                      ฿50   │
+│  Discount (Coupon: SAVE10):                   -฿4,408  │
+│  ───────────────────────────────────────────────────── │
+│  Total:                                     ฿39,722   │
+│  PV Earned:                                    440 PV  │
+│                                                        │
+│              [🔖 Apply Coupon]  [🛒 Checkout]          │
+│                                                        │
+└────────────────────────────────────────────────────────┘
+```
+
+### 📝 Checkout Process
+
+```
+Step 1          Step 2          Step 3          Step 4
+[Cart] ────────▶ [Address] ─────▶ [Payment] ────▶ [Confirm]
+                                                    │
+                                                    ▼
+                                              [Order Created]
+                                                    │
+                                           ┌────────┴────────┐
+                                           ▼                 ▼
+                                    [Seller Notified]  [Buyer Receipt]
+```
+
+### 🏠 Shipping Address
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| Full Name | ✓ | ชื่อผู้รับ |
+| Phone | ✓ | เบอร์โทร |
+| Address Line 1 | ✓ | ที่อยู่ |
+| Address Line 2 | - | ที่อยู่เพิ่มเติม |
+| Province | ✓ | จังหวัด |
+| District | ✓ | อำเภอ/เขต |
+| Subdistrict | ✓ | ตำบล/แขวง |
+| Postal Code | ✓ | รหัสไปรษณีย์ |
+
+### 💳 Payment Methods
+
+```
+┌────────────────────────────────────────────────────────┐
+│              Select Payment Method                     │
+├────────────────────────────────────────────────────────┤
+│                                                        │
+│  ○ Credit/Debit Card                                   │
+│    [VISA] [MasterCard] [JCB]                          │
+│                                                        │
+│  ○ Bank Transfer                                       │
+│    [กสิกร] [กรุงเทพ] [ไทยพาณิชย์]                        │
+│                                                        │
+│  ○ PromptPay QR                                        │
+│    [Scan to Pay]                                       │
+│                                                        │
+│  ○ Wallet Balance                                      │
+│    Available: ฿5,000                                   │
+│                                                        │
+│  ○ Installment (0%)                                    │
+│    6 เดือน ×฿6,620/เดือน                               │
+│                                                        │
+└────────────────────────────────────────────────────────┘
+```
+
+### 🎫 Coupon/Promotion
+
+| Type | Example | Description |
+|------|---------|-------------|
+| **Percentage** | SAVE10 | ลด 10% |
+| **Fixed Amount** | MINUS500 | ลด 500 บาท |
+| **Free Shipping** | FREESHIP | ส่งฟรี |
+| **Bundle Deal** | BUY2GET1 | ซื้อ 2 แถม 1 |
+| **First Order** | NEWUSER | ลดพิเศษออเดอร์แรก |
+                ",
+            ],
+            [
+                'title' => '🚚 การจัดการคำสั่งซื้อและจัดส่ง',
+                'content' => "
+## Order Management
+
+### 📋 Order Status Flow
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    Order Lifecycle                            │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│  [Pending] ─────▶ [Confirmed] ─────▶ [Processing]            │
+│      │                                     │                  │
+│      │ (ถ้าไม่ชำระ)                          ▼                  │
+│      ▼                              [Ready to Ship]          │
+│  [Cancelled]                               │                  │
+│                                            ▼                  │
+│                                       [Shipped]              │
+│                                            │                  │
+│                              ┌─────────────┼─────────────┐    │
+│                              ▼             ▼             ▼    │
+│                        [Delivered]   [Returned]   [Refunded] │
+│                              │                               │
+│                              ▼                               │
+│                        [Completed]                           │
+│                                                               │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 📦 Order Status Description
+
+| Status | Thai | Description |
+|--------|------|-------------|
+| `pending` | รอชำระเงิน | รอยืนยันการชำระ |
+| `confirmed` | ยืนยันแล้ว | ได้รับเงินแล้ว |
+| `processing` | กำลังจัดเตรียม | ผู้ขายเตรียมสินค้า |
+| `ready_to_ship` | พร้อมส่ง | รอขนส่งมารับ |
+| `shipped` | จัดส่งแล้ว | อยู่ระหว่างขนส่ง |
+| `delivered` | ส่งถึงแล้ว | ลูกค้าได้รับสินค้า |
+| `completed` | เสร็จสิ้น | ยืนยันรับสินค้า |
+| `cancelled` | ยกเลิก | ยกเลิกออเดอร์ |
+| `returned` | คืนสินค้า | ลูกค้าส่งคืน |
+| `refunded` | คืนเงิน | คืนเงินแล้ว |
+
+### 🚚 Shipping Integration
+
+**ขนส่งที่รองรับ:**
+
+| Carrier | API | Tracking | COD |
+|---------|-----|----------|-----|
+| **Flash Express** | ✓ | ✓ | ✓ |
+| **Kerry Express** | ✓ | ✓ | ✓ |
+| **Thailand Post** | ✓ | ✓ | ✓ |
+| **J&T Express** | ✓ | ✓ | ✓ |
+| **Shopee Xpress** | ✓ | ✓ | - |
+| **Lazada Express** | ✓ | ✓ | - |
+
+### 📊 Seller Dashboard - Orders
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│  Seller Dashboard → Orders                                     │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Filter: [All ▼] [Today ▼] [Search: ___________] [🔍]          │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ #ORD-2024-001  │ 15 Jan 2024  │ ฿4,500  │ [Processing]  │   │
+│  │ John Doe       │ 3 items      │ Flash   │ [View] [Ship] │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ #ORD-2024-002  │ 15 Jan 2024  │ ฿1,200  │ [Pending]     │   │
+│  │ Jane Smith     │ 1 item       │ Kerry   │ [View] [Cancel]│  │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  Today: 15 orders │ ฿45,600 │ Pending: 3 │ Ready to Ship: 8   │
+│                                                                 │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### 📄 Packing Slip / Invoice
+
+เอกสารที่พิมพ์ได้:
+- **Packing Slip** - ใบนำส่งสินค้า
+- **Invoice** - ใบแจ้งหนี้/ใบเสร็จ
+- **Shipping Label** - ใบปิดหน้ากล่อง
+- **Return Form** - ใบคืนสินค้า
+                ",
+            ],
+            [
+                'title' => '📊 รายงานและวิเคราะห์ยอดขาย',
+                'content' => "
+## Analytics & Reports
+
+### 📈 Dashboard Overview
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                    Sales Dashboard                              │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Today's Performance                                            │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌───────────┐ │
+│  │    ฿45,600  │ │     23      │ │    ฿1,983   │ │   ฿2,280  │ │
+│  │   Revenue   │ │   Orders    │ │  Avg. Order │ │ Commission│ │
+│  │   ↑ 15%    │ │   ↑ 8%     │ │   ↑ 3%     │ │   ↑ 15%   │ │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └───────────┘ │
+│                                                                 │
+│  Revenue Chart (Last 30 Days)                                  │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │     📊 [Bar Chart showing daily revenue]                  │ │
+│  │  ฿60k ┤                                                   │ │
+│  │  ฿40k ┤      ▄▄    ▄▄▄▄                    ▄▄▄▄           │ │
+│  │  ฿20k ┤  ▄▄▄▄████▄▄██████▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄██████▄▄         │ │
+│  │     0 ┼──────────────────────────────────────────────▶    │ │
+│  │        1    5    10   15   20   25   30                   │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│                                                                 │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### 📊 Key Metrics
+
+| Metric | Description | Formula |
+|--------|-------------|---------|
+| **GMV** | Gross Merchandise Value | Total Sales Value |
+| **Revenue** | รายได้สุทธิ | GMV - Returns - Discounts |
+| **AOV** | Average Order Value | Revenue ÷ Orders |
+| **Conversion** | อัตราการซื้อ | Orders ÷ Visitors × 100 |
+| **CAC** | Customer Acquisition Cost | Marketing ÷ New Customers |
+| **LTV** | Customer Lifetime Value | Avg. Revenue per Customer |
+
+### 📑 Available Reports
+
+| Report | Content | Export |
+|--------|---------|--------|
+| **Sales Report** | ยอดขายรายวัน/เดือน | CSV, PDF |
+| **Product Report** | สินค้าขายดี | CSV, PDF |
+| **Customer Report** | ลูกค้าใหม่/เก่า | CSV, PDF |
+| **Affiliate Report** | ค่าคอมมิชชั่น | CSV, PDF |
+| **Inventory Report** | สต็อกคงเหลือ | CSV, PDF |
+| **Returns Report** | สินค้าคืน | CSV, PDF |
+
+### 🏆 Top Products
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│  Top Selling Products (This Month)                             │
+├────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  #1  iPhone 15 Pro             │ 156 sold  │ ฿6.7M  │ ⭐ 4.9   │
+│  #2  AirPods Pro 2             │ 89 sold   │ ฿890K  │ ⭐ 4.8   │
+│  #3  iPad Air                  │ 67 sold   │ ฿2.1M  │ ⭐ 4.7   │
+│  #4  Apple Watch Series 9      │ 45 sold   │ ฿720K  │ ⭐ 4.9   │
+│  #5  MacBook Air M3            │ 34 sold   │ ฿1.4M  │ ⭐ 4.8   │
+│                                                                 │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### 📧 Automated Reports
+
+ตั้งค่าส่งรายงานอัตโนมัติ:
+
+| Report | Frequency | Recipients |
+|--------|-----------|------------|
+| Daily Sales | ทุกวัน 8:00 AM | Owner, Manager |
+| Weekly Summary | ทุกวันจันทร์ | All Team |
+| Monthly Report | วันที่ 1 ของเดือน | Owner, Accountant |
+| Low Stock Alert | Real-time | Inventory Team |
+                ",
+            ],
+            [
+                'title' => '📝 แบบฝึกหัดท้ายบท',
+                'content' => "
+## แบบฝึกหัด: E-Commerce และร้านค้า
+
+### 📋 แบบฝึกหัดที่ 1: เพิ่มสินค้าใหม่
+
+**โจทย์:** คุณต้องการขายเสื้อยืด 3 สี (ขาว, ดำ, น้ำเงิน) 4 ไซส์ (S, M, L, XL)
+
+**ให้ทำ:**
+1. เลือก Product Type ที่เหมาะสม
+2. สร้าง Attributes และ Variations
+3. คำนวณจำนวน SKU ที่ต้องสร้าง
+
+```
+คำตอบ:
+- Product Type: Variable
+- Attributes: Color (3), Size (4)
+- Total SKU: 3 × 4 = 12 variations
+
+SKU Examples:
+TSHIRT-WHT-S, TSHIRT-WHT-M, ...
+TSHIRT-BLK-S, TSHIRT-BLK-M, ...
+TSHIRT-BLU-S, TSHIRT-BLU-M, ...
+```
+
+---
+
+### 📋 แบบฝึกหัดที่ 2: คำนวณ Pricing
+
+**โจทย์:** สินค้าราคาทุน 500 บาท ต้องการกำไร 40% และให้ PV 5%
+
+**คำนวณ:**
+1. Regular Price
+2. PV Value
+3. Member Price (ลด 10% จาก Regular)
+
+```
+คำตอบ:
+1. Regular Price = 500 × 1.4 = 700 บาท
+2. PV Value = 700 × 0.05 = 35 PV
+3. Member Price = 700 × 0.9 = 630 บาท
+```
+
+---
+
+### 📋 แบบฝึกหัดที่ 3: Order Fulfillment
+
+**โจทย์:** มี 10 orders ที่ต้อง ship วันนี้
+
+**ให้เรียงลำดับขั้นตอน:**
+- [ ] พิมพ์ Packing Slip
+- [ ] เปลี่ยนสถานะเป็น Shipped
+- [ ] แพ็คสินค้าตาม Order
+- [ ] พิมพ์ Shipping Label
+- [ ] ส่งมอบขนส่ง
+- [ ] เลือก Orders ที่ Ready to Ship
+
+```
+คำตอบ (ลำดับที่ถูกต้อง):
+1. เลือก Orders ที่ Ready to Ship
+2. พิมพ์ Packing Slip
+3. แพ็คสินค้าตาม Order
+4. พิมพ์ Shipping Label
+5. เปลี่ยนสถานะเป็น Shipped
+6. ส่งมอบขนส่ง
+```
+
+---
+
+### 📋 แบบฝึกหัดที่ 4: วิเคราะห์รายงาน
+
+**โจทย์:** จากข้อมูล:
+- Revenue: ฿100,000
+- Orders: 50
+- Visitors: 1,000
+- New Customers: 30
+- Marketing Cost: ฿9,000
+
+**คำนวณ:**
+1. AOV (Average Order Value)
+2. Conversion Rate
+3. CAC (Customer Acquisition Cost)
+
+```
+คำตอบ:
+1. AOV = 100,000 ÷ 50 = ฿2,000
+2. Conversion = (50 ÷ 1,000) × 100 = 5%
+3. CAC = 9,000 ÷ 30 = ฿300
+```
+
+---
+
+### ✅ Checklist ก่อนสอบ
+
+- [ ] เข้าใจประเภทสินค้า (Simple, Variable, Digital)
+- [ ] สร้าง Product Variations ได้
+- [ ] เข้าใจ Order Status Flow
+- [ ] ใช้งาน Shipping Integration ได้
+- [ ] อ่านและวิเคราะห์ Dashboard ได้
+- [ ] คำนวณ Key Metrics ได้ (AOV, Conversion, CAC)
+                ",
+            ],
+        ];
+    }
+
+    /**
+     * คอร์ส 10: การจัดการ E-Commerce และร้านค้า - Quiz
+     */
+    private function getCourse10Quiz(): array
+    {
+        return [
+            'time_limit' => 15,
+            'description' => 'ทดสอบความเข้าใจเกี่ยวกับระบบ E-Commerce และการจัดการร้านค้า',
+            'questions' => [
+                [
+                    'question' => 'Product Type ใดเหมาะกับเสื้อผ้าที่มีหลายสี หลายไซส์?',
+                    'answers' => [
+                        ['text' => 'Simple', 'is_correct' => false],
+                        ['text' => 'Variable', 'is_correct' => true],
+                        ['text' => 'Digital', 'is_correct' => false],
+                        ['text' => 'Bundle', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Variable Product ใช้สำหรับสินค้าที่มีหลาย Variations เช่น สี, ไซส์',
+                ],
+                [
+                    'question' => 'Order Status \"Processing\" หมายถึง?',
+                    'answers' => [
+                        ['text' => 'รอชำระเงิน', 'is_correct' => false],
+                        ['text' => 'ผู้ขายกำลังจัดเตรียมสินค้า', 'is_correct' => true],
+                        ['text' => 'จัดส่งแล้ว', 'is_correct' => false],
+                        ['text' => 'ยกเลิก', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Processing หมายถึงผู้ขายได้รับเงินแล้วและกำลังจัดเตรียมสินค้า',
+                ],
+                [
+                    'question' => 'AOV (Average Order Value) คำนวณอย่างไร?',
+                    'answers' => [
+                        ['text' => 'Orders ÷ Revenue', 'is_correct' => false],
+                        ['text' => 'Revenue ÷ Orders', 'is_correct' => true],
+                        ['text' => 'Revenue × Orders', 'is_correct' => false],
+                        ['text' => 'Revenue + Orders', 'is_correct' => false],
+                    ],
+                    'explanation' => 'AOV = Revenue ÷ Orders คือมูลค่าเฉลี่ยต่อออเดอร์',
+                ],
+                [
+                    'question' => 'ถ้ามี 1,000 Visitors และ 50 Orders, Conversion Rate เท่าไร?',
+                    'answers' => [
+                        ['text' => '0.5%', 'is_correct' => false],
+                        ['text' => '5%', 'is_correct' => true],
+                        ['text' => '50%', 'is_correct' => false],
+                        ['text' => '20%', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Conversion = (50 ÷ 1,000) × 100 = 5%',
+                ],
+                [
+                    'question' => 'SKU ย่อมาจากอะไร?',
+                    'answers' => [
+                        ['text' => 'Stock Keeping Unit', 'is_correct' => true],
+                        ['text' => 'Sales Key Unit', 'is_correct' => false],
+                        ['text' => 'Standard Known Unit', 'is_correct' => false],
+                        ['text' => 'Shop Keeping Unit', 'is_correct' => false],
+                    ],
+                    'explanation' => 'SKU = Stock Keeping Unit คือรหัสสินค้าที่ใช้จัดการสต็อก',
+                ],
+                [
+                    'question' => 'CAC คืออะไร?',
+                    'answers' => [
+                        ['text' => 'ต้นทุนสินค้า', 'is_correct' => false],
+                        ['text' => 'ต้นทุนการได้ลูกค้าใหม่', 'is_correct' => true],
+                        ['text' => 'ค่าขนส่ง', 'is_correct' => false],
+                        ['text' => 'กำไรสุทธิ', 'is_correct' => false],
+                    ],
+                    'explanation' => 'CAC = Customer Acquisition Cost คือต้นทุนในการหาลูกค้าใหม่ 1 คน',
+                ],
+                [
+                    'question' => 'เอกสารใดใช้ติดหน้ากล่องสำหรับจัดส่ง?',
+                    'answers' => [
+                        ['text' => 'Invoice', 'is_correct' => false],
+                        ['text' => 'Packing Slip', 'is_correct' => false],
+                        ['text' => 'Shipping Label', 'is_correct' => true],
+                        ['text' => 'Return Form', 'is_correct' => false],
+                    ],
+                    'explanation' => 'Shipping Label คือใบปิดหน้ากล่อง มีข้อมูลผู้รับและ Barcode สำหรับขนส่ง',
+                ],
             ],
         ];
     }
