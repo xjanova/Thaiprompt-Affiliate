@@ -1120,6 +1120,9 @@ return [
             'permissions' => [],
             'submenu' => [
                 ['label' => 'กระเป๋าคริปโต', 'route' => 'user.crypto-wallet.index'],
+                ['label' => '💎 TPIX Wallet', 'route' => 'user.tpix.wallet', 'description' => 'กระเป๋า TPIX'],
+                ['label' => '📊 Staking', 'route' => 'user.staking.index', 'badge' => 'NEW', 'description' => 'Stake เหรียญรับผลตอบแทน'],
+                ['label' => '🔄 DEX Trading', 'route' => 'user.dex.index', 'description' => 'เทรดคริปโต'],
             ],
         ],
 
@@ -1174,7 +1177,20 @@ return [
             'permissions' => [],
             'submenu' => [
                 ['label' => 'ตลาดบอท', 'route' => 'marketplace.index'],
+                ['label' => '🎨 AI Generation', 'route' => 'user.ai-gen.index', 'badge' => 'NEW', 'description' => 'สร้างภาพด้วย AI'],
+                ['label' => '🛒 Marketplace', 'route' => 'user.marketplace.index', 'description' => 'ซื้อขายบอท'],
             ],
+        ],
+
+        [
+            'id' => 'coin-shop',
+            'label' => 'ร้านค้าเหรียญ',
+            'icon' => '🪙',
+            'route' => 'user.coin-shop.index',
+            'order' => 10.5,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-yellow-500 to-amber-500',
         ],
 
         [
@@ -1188,6 +1204,10 @@ return [
                 ['label' => 'ผู้มุ่งหวัง', 'route' => 'user.prospects.index', 'icon' => '🎯'],
                 ['label' => 'ทีมของฉัน', 'route' => 'user.mlm.team', 'icon' => '👥'],
                 ['label' => 'ลีดเดอร์บอร์ด', 'route' => 'user.ranks.leaderboard', 'icon' => '🏆'],
+                ['label' => '---', 'route' => null],
+                ['label' => '📝 รับสมัครสมาชิก', 'route' => 'user.recruit.index', 'description' => 'ชวนเพื่อนสมัคร'],
+                ['label' => '🔄 โอนย้ายทีม', 'route' => 'user.team-transfer.index', 'description' => 'จัดการสายงาน'],
+                ['label' => '⭐ อัพเกรดดาว', 'route' => 'user.star-upgrade.index', 'description' => 'เลื่อนระดับ Star'],
             ],
         ],
 
@@ -1211,6 +1231,7 @@ return [
             'order' => 13,
             'permissions' => [],
             'submenu' => [
+                ['label' => '📊 แดชบอร์ดการตลาด', 'route' => 'user.marketing.index', 'description' => 'ภาพรวมการตลาด'],
                 ['label' => 'สร้าง QR Code & Barcode', 'route' => 'qr-barcode.index'],
                 ['label' => 'จำลองรายได้', 'route' => 'user.mlm.income-simulator'],
                 ['label' => 'จำลองเงินปันผล', 'route' => 'user.mlm.dividend-simulator'],
@@ -1252,6 +1273,114 @@ return [
                 ['label' => '📚 เส้นทางเศรษฐี (คู่มือเริ่มต้น)', 'route' => 'user.wealth-guide', 'description' => 'เรียนรู้พื้นฐานสู่ความสำเร็จ'],
                 ['label' => '💎 เส้นทางเศรษฐี PRO', 'route' => 'user.wealth-guide-pro', 'description' => 'เทคนิคขั้นสูงสำหรับมืออาชีพ', 'badge' => 'PRO', 'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500'],
             ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Instructor Menu Items
+    |--------------------------------------------------------------------------
+    |
+    | เมนูสำหรับ Instructor Dashboard (ผู้สอน)
+    | แสดงเมื่อ user มี role = 'instructor' หรือเป็นเจ้าของคอร์ส
+    |
+    */
+
+    'instructor' => [
+        [
+            'id' => 'dashboard',
+            'label' => 'แดชบอร์ด',
+            'icon' => '📊',
+            'route' => 'admin.instructor.dashboard',
+            'order' => 0,
+            'permissions' => [],
+        ],
+
+        [
+            'id' => 'courses',
+            'label' => 'คอร์สของฉัน',
+            'icon' => '📚',
+            'route' => null,
+            'order' => 1,
+            'permissions' => [],
+            'submenu' => [
+                ['label' => '📋 รายการคอร์ส', 'route' => 'admin.instructor.courses.index', 'description' => 'คอร์สทั้งหมดของฉัน'],
+                ['label' => '➕ สร้างคอร์สใหม่', 'route' => 'admin.instructor.courses.create', 'description' => 'เพิ่มคอร์สเรียนใหม่'],
+            ],
+        ],
+
+        [
+            'id' => 'earnings',
+            'label' => 'รายได้',
+            'icon' => '💰',
+            'route' => 'admin.instructor.earnings',
+            'order' => 2,
+            'permissions' => [],
+        ],
+
+        [
+            'id' => 'profile',
+            'label' => 'โปรไฟล์',
+            'icon' => '👤',
+            'route' => 'user.profile',
+            'order' => 3,
+            'permissions' => [],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Provider Menu Items
+    |--------------------------------------------------------------------------
+    |
+    | เมนูสำหรับ Provider Dashboard (ผู้ให้บริการ)
+    | แสดงเมื่อ user มี role = 'provider' หรือเป็นผู้ให้บริการ
+    |
+    */
+
+    'provider' => [
+        [
+            'id' => 'dashboard',
+            'label' => 'แดชบอร์ด',
+            'icon' => '📊',
+            'route' => 'provider.dashboard',
+            'order' => 0,
+            'permissions' => [],
+        ],
+
+        [
+            'id' => 'bookings',
+            'label' => 'รายการจอง',
+            'icon' => '📅',
+            'route' => null,
+            'order' => 1,
+            'permissions' => [],
+            'submenu' => [
+                ['label' => '📋 งานทั้งหมด', 'route' => 'provider.bookings.index', 'description' => 'รายการงานทั้งหมด'],
+                ['label' => '⏳ งานรอรับ', 'route' => 'provider.bookings.pending', 'description' => 'งานที่รอการตอบรับ'],
+            ],
+        ],
+
+        [
+            'id' => 'profile',
+            'label' => 'โปรไฟล์',
+            'icon' => '👤',
+            'route' => null,
+            'order' => 2,
+            'permissions' => [],
+            'submenu' => [
+                ['label' => '✏️ แก้ไขโปรไฟล์', 'route' => 'provider.profile.edit', 'description' => 'อัพเดทข้อมูล'],
+                ['label' => '🏦 ข้อมูลธนาคาร', 'route' => 'provider.bank-info.update', 'description' => 'บัญชีรับเงิน'],
+            ],
+        ],
+
+        [
+            'id' => 'register',
+            'label' => 'สมัครเป็นผู้ให้บริการ',
+            'icon' => '📝',
+            'route' => 'provider.register',
+            'order' => 3,
+            'permissions' => [],
         ],
     ],
 
