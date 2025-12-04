@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.10] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2031 from xjanova/claude/fix-product-effects-018VczxiTSU15X7XE5i2Mtuw (7dbc3596)
+- fix(storefront): เปลี่ยน navbar เป็น glassmorphism เพื่อให้เห็น lava (cecf7ff4)
+### 🔧 Other Changes
+
+
 ## [v3.358.9] - 2025-12-04
 
 ### ✨ Features
