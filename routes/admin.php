@@ -1124,6 +1124,8 @@ Route::prefix('learning-center')->name('learning-center.')->group(function () {
     Route::get('/article/{slug}', [\App\Http\Controllers\Admin\LearningCenterController::class, 'article'])->name('article');
     Route::post('/article/{slug}/complete', [\App\Http\Controllers\Admin\LearningCenterController::class, 'complete'])->name('article.complete');
     Route::post('/article/{slug}/progress', [\App\Http\Controllers\Admin\LearningCenterController::class, 'updateProgress'])->name('article.progress');
+    Route::get('/article/{slug}/check-access', [\App\Http\Controllers\Admin\LearningCenterController::class, 'checkAccess'])->name('article.check-access');
+    Route::get('/my-stats', [\App\Http\Controllers\Admin\LearningCenterController::class, 'getMyStats'])->name('my-stats');
 });
 
 // Instructor Dashboard - For Course Instructors
