@@ -28,7 +28,7 @@
             <div class="glass-fusion dark:bg-gray-800/50 rounded-2xl shadow-lg p-6 backdrop-blur-sm border border-white/20 dark:border-gray-700/50">
                 <div class="flex items-center gap-4 mb-6">
                     <div class="w-12 h-12 bg-gradient-to-br from-{{ $rank->color ?? 'pink' }}-500 to-{{ $rank->color ?? 'purple' }}-500 rounded-xl flex items-center justify-center text-2xl text-white">
-                        {{ $rank->icon ?? '🏅' }}
+                        {{ $rank->badge_icon ?? '🏅' }}
                     </div>
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $rank->name }}</h2>
