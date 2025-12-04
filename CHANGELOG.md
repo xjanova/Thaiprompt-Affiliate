@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.9] - 2025-12-04
+
+### ✨ Features
+- Merge pull request #2030 from xjanova/claude/fix-hotel-booking-system-01YQzDeveGyv8V4qf3q8xd2D (7e3cabf3)
+- feat(slogans): เพิ่มระบบจัดการคำขวัญพร้อม Animation Effects (13ca0517)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.358.8] - 2025-12-04
 
 ### ✨ Features
