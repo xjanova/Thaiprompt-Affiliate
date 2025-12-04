@@ -18,6 +18,11 @@ public interface IPrinterService
     Task<List<PrinterInfo>> DiscoverPrintersAsync();
 
     /// <summary>
+    /// ดึงรายชื่อเครื่องพิมพ์
+    /// </summary>
+    Task<List<string>> GetAvailablePrintersAsync();
+
+    /// <summary>
     /// เชื่อมต่อเครื่องพิมพ์
     /// </summary>
     Task<bool> ConnectAsync(string printerAddress);

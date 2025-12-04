@@ -331,6 +331,20 @@ public class PosDatabase
             .ToListAsync();
     }
 
+    /// <summary>
+    /// ดึงรายการขายตามช่วงวันที่
+    /// </summary>
+    public async Task<List<Transaction>> GetTransactionsByDateRangeAsync(DateTime startDate, DateTime endDate)
+    {
+        // เพิ่มเวลาสิ้นสุดของวันสุดท้าย
+        var endOfDay = endDate.Date.AddDays(1).AddTicks(-1);
+
+        return await Database.Table<Transaction>()
+            .Where(t => t.TransactionDate >= startDate && t.TransactionDate <= endOfDay)
+            .OrderByDescending(t => t.TransactionDate)
+            .ToListAsync();
+    }
+
     #endregion
 
     #region Cart

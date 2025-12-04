@@ -1,11 +1,598 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:TP.POS.App.ViewModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="TP.POS.App.Views.InventoryPage"
-             Title="จัดการสต็อก">
-    <VerticalStackLayout Padding="20" VerticalOptions="Center" HorizontalOptions="Center">
-        <Label Text="📦" FontSize="60" HorizontalOptions="Center"/>
-        <Label Text="หน้าจัดการสต็อก" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center" Margin="0,20,0,0"/>
-        <Label Text="จะพัฒนาในรุ่นถัดไป" FontSize="16" TextColor="Gray" HorizontalOptions="Center"/>
-    </VerticalStackLayout>
+             Title="จัดการสต็อก"
+             x:DataType="vm:InventoryViewModel"
+             Shell.NavBarIsVisible="True">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <Color x:Key="PrimaryGreen">#22C55E</Color>
+            <Color x:Key="PrimaryBlue">#3B82F6</Color>
+            <Color x:Key="DangerRed">#EF4444</Color>
+            <Color x:Key="WarningAmber">#F59E0B</Color>
+            <Color x:Key="LightGray">#F3F4F6</Color>
+            <Color x:Key="DarkGray">#374151</Color>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid>
+        <!-- หน้าหลัก -->
+        <Grid BackgroundColor="{StaticResource LightGray}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- ==================== สรุปสต็อก ==================== -->
+            <Border Grid.Row="0"
+                    StrokeThickness="0"
+                    BackgroundColor="White"
+                    Padding="20"
+                    Margin="15,15,15,0">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="16"/>
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="#000" Offset="0,2" Radius="8" Opacity="0.08"/>
+                </Border.Shadow>
+
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="15">
+                    <!-- จำนวนสินค้า -->
+                    <VerticalStackLayout Grid.Column="0" Spacing="5">
+                        <Border StrokeThickness="0"
+                                BackgroundColor="#EFF6FF"
+                                WidthRequest="50"
+                                HeightRequest="50"
+                                HorizontalOptions="Start">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12"/>
+                            </Border.StrokeShape>
+                            <Label Text="📦"
+                                   FontSize="24"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center"/>
+                        </Border>
+                        <Label Text="{Binding TotalProductCount}"
+                               FontSize="24"
+                               FontAttributes="Bold"/>
+                        <Label Text="สินค้าทั้งหมด"
+                               FontSize="12"
+                               TextColor="#6B7280"/>
+                    </VerticalStackLayout>
+
+                    <!-- สต็อกต่ำ -->
+                    <VerticalStackLayout Grid.Column="1" Spacing="5">
+                        <Border StrokeThickness="0"
+                                BackgroundColor="#FEF3C7"
+                                WidthRequest="50"
+                                HeightRequest="50"
+                                HorizontalOptions="Start">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12"/>
+                            </Border.StrokeShape>
+                            <Label Text="⚠️"
+                                   FontSize="24"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center"/>
+                        </Border>
+                        <Label Text="{Binding LowStockCount}"
+                               FontSize="24"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource WarningAmber}"/>
+                        <Label Text="สต็อกต่ำ"
+                               FontSize="12"
+                               TextColor="#6B7280"/>
+                    </VerticalStackLayout>
+
+                    <!-- หมดสต็อก -->
+                    <VerticalStackLayout Grid.Column="2" Spacing="5">
+                        <Border StrokeThickness="0"
+                                BackgroundColor="#FEE2E2"
+                                WidthRequest="50"
+                                HeightRequest="50"
+                                HorizontalOptions="Start">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12"/>
+                            </Border.StrokeShape>
+                            <Label Text="❌"
+                                   FontSize="24"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center"/>
+                        </Border>
+                        <Label Text="{Binding OutOfStockCount}"
+                               FontSize="24"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource DangerRed}"/>
+                        <Label Text="หมดสต็อก"
+                               FontSize="12"
+                               TextColor="#6B7280"/>
+                    </VerticalStackLayout>
+
+                    <!-- มูลค่าสต็อก -->
+                    <VerticalStackLayout Grid.Column="3" Spacing="5">
+                        <Border StrokeThickness="0"
+                                BackgroundColor="#F0FDF4"
+                                WidthRequest="50"
+                                HeightRequest="50"
+                                HorizontalOptions="Start">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12"/>
+                            </Border.StrokeShape>
+                            <Label Text="💰"
+                                   FontSize="24"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center"/>
+                        </Border>
+                        <Label Text="{Binding TotalStockValue, StringFormat='฿{0:N0}'}"
+                               FontSize="20"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource PrimaryGreen}"/>
+                        <Label Text="มูลค่าสต็อก"
+                               FontSize="12"
+                               TextColor="#6B7280"/>
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+
+            <!-- ==================== แถบค้นหาและปุ่ม ==================== -->
+            <Border Grid.Row="1"
+                    StrokeThickness="0"
+                    BackgroundColor="White"
+                    Padding="15"
+                    Margin="15,15,15,0">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+
+                <Grid ColumnDefinitions="*,Auto,Auto">
+                    <!-- ช่องค้นหา -->
+                    <Border Grid.Column="0"
+                            StrokeThickness="1"
+                            Stroke="#E5E7EB"
+                            BackgroundColor="{StaticResource LightGray}"
+                            Padding="12,8">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="8"/>
+                        </Border.StrokeShape>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Label Grid.Column="0"
+                                   Text="🔍"
+                                   FontSize="18"
+                                   VerticalOptions="Center"
+                                   Margin="0,0,10,0"/>
+                            <Entry Grid.Column="1"
+                                   Placeholder="ค้นหาสินค้า, SKU, บาร์โค้ด..."
+                                   Text="{Binding SearchText}"
+                                   FontSize="15"
+                                   VerticalOptions="Center">
+                                <Entry.Behaviors>
+                                    <toolkit:EventToCommandBehavior
+                                        EventName="TextChanged"
+                                        Command="{Binding SearchCommand}"/>
+                                </Entry.Behaviors>
+                            </Entry>
+                        </Grid>
+                    </Border>
+
+                    <!-- ปุ่ม Sync -->
+                    <Button Grid.Column="1"
+                            Text="🔄 Sync"
+                            BackgroundColor="{StaticResource PrimaryBlue}"
+                            TextColor="White"
+                            FontSize="14"
+                            Padding="15,10"
+                            Margin="10,0,0,0"
+                            Command="{Binding SyncFromServerCommand}"/>
+
+                    <!-- ปุ่มรีเฟรช -->
+                    <Button Grid.Column="2"
+                            Text="↻"
+                            BackgroundColor="{StaticResource LightGray}"
+                            TextColor="{StaticResource DarkGray}"
+                            FontSize="20"
+                            WidthRequest="45"
+                            Margin="10,0,0,0"
+                            Command="{Binding RefreshCommand}"/>
+                </Grid>
+            </Border>
+
+            <!-- ==================== Tab Bar ==================== -->
+            <Grid Grid.Row="2" Margin="15,15,15,0" ColumnDefinitions="*,*">
+                <Button Grid.Column="0"
+                        Text="📦 สินค้าทั้งหมด"
+                        BackgroundColor="{Binding SelectedTabIndex, Converter={StaticResource TabColorConverter}, ConverterParameter=0}"
+                        TextColor="{Binding SelectedTabIndex, Converter={StaticResource TabTextColorConverter}, ConverterParameter=0}"
+                        FontSize="14"
+                        CornerRadius="10"
+                        Margin="0,0,5,0"
+                        Command="{Binding SelectTabCommand}"
+                        CommandParameter="0"/>
+                <Button Grid.Column="1"
+                        Text="⚠️ สต็อกต่ำ"
+                        BackgroundColor="{Binding SelectedTabIndex, Converter={StaticResource TabColorConverter}, ConverterParameter=1}"
+                        TextColor="{Binding SelectedTabIndex, Converter={StaticResource TabTextColorConverter}, ConverterParameter=1}"
+                        FontSize="14"
+                        CornerRadius="10"
+                        Margin="5,0,0,0"
+                        Command="{Binding SelectTabCommand}"
+                        CommandParameter="1"/>
+            </Grid>
+
+            <!-- ==================== รายการสินค้า ==================== -->
+            <CollectionView Grid.Row="3"
+                            ItemsSource="{Binding Products}"
+                            SelectionMode="None"
+                            Margin="15"
+                            IsVisible="{Binding SelectedTabIndex, Converter={toolkit:EqualConverter}, ConverterParameter=0}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:InventoryItemModel">
+                        <Border StrokeThickness="0"
+                                BackgroundColor="White"
+                                Padding="15"
+                                Margin="0,0,0,10">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12"/>
+                            </Border.StrokeShape>
+                            <Border.Shadow>
+                                <Shadow Brush="#000" Offset="0,1" Radius="4" Opacity="0.05"/>
+                            </Border.Shadow>
+
+                            <Grid ColumnDefinitions="60,*,Auto,Auto" ColumnSpacing="15">
+                                <!-- รูปสินค้า -->
+                                <Border Grid.Column="0"
+                                        StrokeThickness="0"
+                                        BackgroundColor="{StaticResource LightGray}"
+                                        WidthRequest="60"
+                                        HeightRequest="60">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="10"/>
+                                    </Border.StrokeShape>
+                                    <Image Source="{Binding ImageUrl}"
+                                           Aspect="AspectFit"
+                                           WidthRequest="50"
+                                           HeightRequest="50"/>
+                                </Border>
+
+                                <!-- ข้อมูลสินค้า -->
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="3">
+                                    <Label Text="{Binding Name}"
+                                           FontSize="15"
+                                           FontAttributes="Bold"
+                                           LineBreakMode="TailTruncation"/>
+                                    <Label Text="{Binding Sku, StringFormat='SKU: {0}'}"
+                                           FontSize="12"
+                                           TextColor="#6B7280"/>
+                                    <Label Text="{Binding CategoryName}"
+                                           FontSize="11"
+                                           TextColor="#9CA3AF"/>
+                                </VerticalStackLayout>
+
+                                <!-- สต็อก -->
+                                <VerticalStackLayout Grid.Column="2" VerticalOptions="Center" HorizontalOptions="End" Spacing="3">
+                                    <HorizontalStackLayout Spacing="5">
+                                        <Label Text="{Binding StockQuantity}"
+                                               FontSize="20"
+                                               FontAttributes="Bold"/>
+                                        <Label Text="{Binding Unit}"
+                                               FontSize="12"
+                                               TextColor="#6B7280"
+                                               VerticalOptions="End"
+                                               Margin="0,0,0,3"/>
+                                    </HorizontalStackLayout>
+                                    <Border StrokeThickness="0"
+                                            BackgroundColor="{Binding StockStatusColor}"
+                                            Padding="8,3"
+                                            HorizontalOptions="End">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="4"/>
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding StockStatusText}"
+                                               FontSize="10"
+                                               TextColor="White"/>
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <!-- ปุ่มปรับสต็อก -->
+                                <Button Grid.Column="3"
+                                        Text="±"
+                                        BackgroundColor="{StaticResource PrimaryBlue}"
+                                        TextColor="White"
+                                        FontSize="20"
+                                        FontAttributes="Bold"
+                                        WidthRequest="45"
+                                        HeightRequest="45"
+                                        CornerRadius="10"
+                                        VerticalOptions="Center"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:InventoryViewModel}}, Path=OpenAdjustmentModalCommand}"
+                                        CommandParameter="{Binding}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <CollectionView.EmptyView>
+                    <ContentView>
+                        <VerticalStackLayout HorizontalOptions="Center"
+                                             VerticalOptions="Center"
+                                             Spacing="10">
+                            <Label Text="📦" FontSize="60"/>
+                            <Label Text="ไม่พบสินค้า"
+                                   FontSize="18"
+                                   TextColor="#6B7280"/>
+                        </VerticalStackLayout>
+                    </ContentView>
+                </CollectionView.EmptyView>
+            </CollectionView>
+
+            <!-- รายการสต็อกต่ำ -->
+            <CollectionView Grid.Row="3"
+                            ItemsSource="{Binding LowStockProducts}"
+                            SelectionMode="None"
+                            Margin="15"
+                            IsVisible="{Binding SelectedTabIndex, Converter={toolkit:EqualConverter}, ConverterParameter=1}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:InventoryItemModel">
+                        <Border StrokeThickness="2"
+                                Stroke="{Binding StockStatusColor}"
+                                BackgroundColor="White"
+                                Padding="15"
+                                Margin="0,0,0,10">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12"/>
+                            </Border.StrokeShape>
+
+                            <Grid ColumnDefinitions="60,*,Auto,Auto" ColumnSpacing="15">
+                                <!-- รูปสินค้า -->
+                                <Border Grid.Column="0"
+                                        StrokeThickness="0"
+                                        BackgroundColor="{StaticResource LightGray}"
+                                        WidthRequest="60"
+                                        HeightRequest="60">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="10"/>
+                                    </Border.StrokeShape>
+                                    <Image Source="{Binding ImageUrl}"
+                                           Aspect="AspectFit"
+                                           WidthRequest="50"
+                                           HeightRequest="50"/>
+                                </Border>
+
+                                <!-- ข้อมูลสินค้า -->
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="3">
+                                    <Label Text="{Binding Name}"
+                                           FontSize="15"
+                                           FontAttributes="Bold"
+                                           LineBreakMode="TailTruncation"/>
+                                    <Label FontSize="12" TextColor="#6B7280">
+                                        <Label.FormattedText>
+                                            <FormattedString>
+                                                <Span Text="เหลือ " />
+                                                <Span Text="{Binding StockQuantity}" FontAttributes="Bold" TextColor="{Binding StockStatusColor}" />
+                                                <Span Text=" / จุดสั่งซื้อ " />
+                                                <Span Text="{Binding ReorderLevel}" />
+                                            </FormattedString>
+                                        </Label.FormattedText>
+                                    </Label>
+                                </VerticalStackLayout>
+
+                                <!-- สต็อก -->
+                                <VerticalStackLayout Grid.Column="2" VerticalOptions="Center" HorizontalOptions="End">
+                                    <Border StrokeThickness="0"
+                                            BackgroundColor="{Binding StockStatusColor}"
+                                            Padding="10,5">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="6"/>
+                                        </Border.StrokeShape>
+                                        <HorizontalStackLayout Spacing="5">
+                                            <Label Text="{Binding StockQuantity}"
+                                                   FontSize="18"
+                                                   FontAttributes="Bold"
+                                                   TextColor="White"/>
+                                            <Label Text="{Binding Unit}"
+                                                   FontSize="12"
+                                                   TextColor="White"
+                                                   VerticalOptions="End"
+                                                   Margin="0,0,0,2"/>
+                                        </HorizontalStackLayout>
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <!-- ปุ่มเพิ่มสต็อก -->
+                                <Button Grid.Column="3"
+                                        Text="+ เติม"
+                                        BackgroundColor="{StaticResource PrimaryGreen}"
+                                        TextColor="White"
+                                        FontSize="13"
+                                        Padding="12,8"
+                                        VerticalOptions="Center"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:InventoryViewModel}}, Path=OpenAdjustmentModalCommand}"
+                                        CommandParameter="{Binding}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <CollectionView.EmptyView>
+                    <ContentView>
+                        <VerticalStackLayout HorizontalOptions="Center"
+                                             VerticalOptions="Center"
+                                             Spacing="10">
+                            <Label Text="✅" FontSize="60"/>
+                            <Label Text="ไม่มีสินค้าสต็อกต่ำ"
+                                   FontSize="18"
+                                   TextColor="{StaticResource PrimaryGreen}"/>
+                            <Label Text="สต็อกทุกรายการอยู่ในระดับปกติ"
+                                   FontSize="14"
+                                   TextColor="#9CA3AF"/>
+                        </VerticalStackLayout>
+                    </ContentView>
+                </CollectionView.EmptyView>
+            </CollectionView>
+        </Grid>
+
+        <!-- ==================== Modal ปรับสต็อก ==================== -->
+        <Border IsVisible="{Binding ShowAdjustmentModal}"
+                StrokeThickness="0"
+                BackgroundColor="#80000000">
+            <Border StrokeThickness="0"
+                    BackgroundColor="White"
+                    WidthRequest="400"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    Padding="25">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="20"/>
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="#000" Offset="0,8" Radius="24" Opacity="0.2"/>
+                </Border.Shadow>
+
+                <VerticalStackLayout Spacing="20">
+                    <!-- Header -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0"
+                               Text="ปรับปรุงสต็อก"
+                               FontSize="20"
+                               FontAttributes="Bold"/>
+                        <Button Grid.Column="1"
+                                Text="✕"
+                                BackgroundColor="Transparent"
+                                TextColor="{StaticResource DarkGray}"
+                                FontSize="20"
+                                WidthRequest="40"
+                                HeightRequest="40"
+                                Command="{Binding CloseAdjustmentModalCommand}"/>
+                    </Grid>
+
+                    <!-- ข้อมูลสินค้า -->
+                    <Border StrokeThickness="0"
+                            BackgroundColor="{StaticResource LightGray}"
+                            Padding="15">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="10"/>
+                        </Border.StrokeShape>
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="{Binding SelectedProduct.Name}"
+                                   FontSize="16"
+                                   FontAttributes="Bold"/>
+                            <Label Text="{Binding SelectedProduct.Sku, StringFormat='SKU: {0}'}"
+                                   FontSize="13"
+                                   TextColor="#6B7280"/>
+                            <Label FontSize="14" Margin="0,5,0,0">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="สต็อกปัจจุบัน: " />
+                                        <Span Text="{Binding SelectedProduct.StockQuantity}"
+                                              FontAttributes="Bold"
+                                              TextColor="{StaticResource PrimaryBlue}" />
+                                        <Span Text=" " />
+                                        <Span Text="{Binding SelectedProduct.Unit}" />
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- ประเภทการปรับ -->
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="ประเภทการปรับ" FontSize="14" TextColor="#6B7280"/>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Button Grid.Column="0"
+                                    Text="➕ เพิ่มสต็อก"
+                                    BackgroundColor="{StaticResource PrimaryGreen}"
+                                    TextColor="White"
+                                    FontSize="14"
+                                    HeightRequest="45"/>
+                            <Button Grid.Column="1"
+                                    Text="➖ ลดสต็อก"
+                                    BackgroundColor="{StaticResource LightGray}"
+                                    TextColor="{StaticResource DarkGray}"
+                                    FontSize="14"
+                                    HeightRequest="45"/>
+                        </Grid>
+                    </VerticalStackLayout>
+
+                    <!-- จำนวน -->
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="จำนวน" FontSize="14" TextColor="#6B7280"/>
+                        <Border StrokeThickness="2"
+                                Stroke="{StaticResource PrimaryGreen}"
+                                Padding="15">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="10"/>
+                            </Border.StrokeShape>
+                            <Entry Text="{Binding AdjustmentQuantity}"
+                                   Keyboard="Numeric"
+                                   FontSize="24"
+                                   FontAttributes="Bold"
+                                   HorizontalTextAlignment="Center"
+                                   Placeholder="0"/>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- เหตุผล -->
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="เหตุผล (ไม่บังคับ)" FontSize="14" TextColor="#6B7280"/>
+                        <Border StrokeThickness="1"
+                                Stroke="#E5E7EB"
+                                Padding="12">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="8"/>
+                            </Border.StrokeShape>
+                            <Entry Text="{Binding AdjustmentReason}"
+                                   Placeholder="เช่น รับของใหม่, นับสต็อก..."
+                                   FontSize="14"/>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- ปุ่ม -->
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
+                        <Button Grid.Column="0"
+                                Text="ยกเลิก"
+                                BackgroundColor="{StaticResource LightGray}"
+                                TextColor="{StaticResource DarkGray}"
+                                FontSize="16"
+                                HeightRequest="50"
+                                Command="{Binding CloseAdjustmentModalCommand}"/>
+                        <Button Grid.Column="1"
+                                Text="✓ ยืนยัน"
+                                BackgroundColor="{StaticResource PrimaryGreen}"
+                                TextColor="White"
+                                FontSize="16"
+                                FontAttributes="Bold"
+                                HeightRequest="50"
+                                Command="{Binding ConfirmAdjustmentCommand}"/>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+        </Border>
+
+        <!-- Loading Overlay -->
+        <Border StrokeThickness="0"
+                BackgroundColor="#80000000"
+                IsVisible="{Binding IsBusy}">
+            <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
+                <ActivityIndicator IsRunning="True" Color="White" HeightRequest="50" WidthRequest="50"/>
+                <Label Text="{Binding BusyMessage}" TextColor="White" FontSize="16" Margin="0,15,0,0"/>
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- Sync Overlay -->
+        <Border StrokeThickness="0"
+                BackgroundColor="#E0FFFFFF"
+                IsVisible="{Binding IsSyncing}">
+            <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="15">
+                <ActivityIndicator IsRunning="True" Color="{StaticResource PrimaryBlue}" HeightRequest="50" WidthRequest="50"/>
+                <Label Text="{Binding SyncMessage}"
+                       FontSize="16"
+                       TextColor="{StaticResource DarkGray}"/>
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
 </ContentPage>

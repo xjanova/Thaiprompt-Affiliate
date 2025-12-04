@@ -204,6 +204,42 @@ public class SyncService : ISyncService
         };
     }
 
+    public async Task<int> GetPendingSyncCountAsync()
+    {
+        var pending = await GetPendingCountAsync();
+        return pending.Total;
+    }
+
+    public async Task<int> GetLocalProductCountAsync()
+    {
+        var products = await _productService.GetAllAsync();
+        return products.Count;
+    }
+
+    public async Task<bool> TestConnectionAsync(string serverUrl, string apiKey)
+    {
+        try
+        {
+            // สร้าง client ใหม่เพื่อทดสอบ
+            var testClient = new TpAffiliateApiClient(serverUrl);
+            return await testClient.TestConnectionAsync(apiKey);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<int> ImportAllProductsAsync()
+    {
+        return await _productService.ImportFromServerAsync();
+    }
+
+    public async Task ClearAllDataAsync()
+    {
+        await _database.ClearAllDataAsync();
+    }
+
     public async Task<SyncResult> FullDownloadAsync(IProgress<SyncProgress>? progress = null)
     {
         var result = new SyncResult { Success = true };

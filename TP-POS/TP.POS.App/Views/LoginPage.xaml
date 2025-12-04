@@ -1,10 +1,184 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:TP.POS.App.ViewModels"
              x:Class="TP.POS.App.Views.LoginPage"
-             Title="เข้าสู่ระบบ">
-    <VerticalStackLayout Padding="20" VerticalOptions="Center" HorizontalOptions="Center">
-        <Label Text="🔐" FontSize="60" HorizontalOptions="Center"/>
-        <Label Text="เข้าสู่ระบบ" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center" Margin="0,20,0,0"/>
-    </VerticalStackLayout>
+             x:DataType="vm:LoginViewModel"
+             Title="เข้าสู่ระบบ"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#F3F4F6">
+
+    <Grid>
+        <!-- Background Gradient Effect -->
+        <BoxView BackgroundColor="#22C55E" HeightRequest="300" VerticalOptions="Start"/>
+
+        <ScrollView>
+            <VerticalStackLayout Padding="30" Spacing="25">
+
+                <!-- Logo & Header -->
+                <VerticalStackLayout Spacing="15" Margin="0,40,0,30">
+                    <!-- Logo -->
+                    <Border StrokeThickness="0" HeightRequest="100" WidthRequest="100"
+                            BackgroundColor="White" HorizontalOptions="Center">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="25"/>
+                        </Border.StrokeShape>
+                        <Border.Shadow>
+                            <Shadow Brush="#40000000" Offset="0,4" Radius="15"/>
+                        </Border.Shadow>
+                        <Label Text="TP" FontSize="48" FontAttributes="Bold"
+                               TextColor="#22C55E" HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
+
+                    <Label Text="TP-POS" FontSize="32" FontAttributes="Bold"
+                           TextColor="White" HorizontalOptions="Center"/>
+                    <Label Text="ระบบขายหน้าร้าน" FontSize="16"
+                           TextColor="White" Opacity="0.9" HorizontalOptions="Center"/>
+
+                    <!-- Shop Name (if configured) -->
+                    <Label Text="{Binding ShopName}" FontSize="14"
+                           TextColor="White" Opacity="0.8" HorizontalOptions="Center"
+                           IsVisible="{Binding ShopName, Converter={StaticResource StringNotNullOrEmptyConverter}}"/>
+                </VerticalStackLayout>
+
+                <!-- Login Card -->
+                <Border BackgroundColor="White" StrokeThickness="0" Padding="25">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="20"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#20000000" Offset="0,4" Radius="15"/>
+                    </Border.Shadow>
+
+                    <VerticalStackLayout Spacing="20">
+                        <Label Text="เข้าสู่ระบบ" FontSize="22" FontAttributes="Bold"
+                               TextColor="#111827" HorizontalOptions="Center"/>
+
+                        <!-- Error Message -->
+                        <Border BackgroundColor="#FEE2E2" StrokeThickness="0" Padding="12"
+                                IsVisible="{Binding ShowError}">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="8"/>
+                            </Border.StrokeShape>
+                            <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
+                                <Label Text="⚠️" FontSize="16"/>
+                                <Label Text="{Binding ErrorMessage}" FontSize="14" TextColor="#EF4444"/>
+                            </HorizontalStackLayout>
+                        </Border>
+
+                        <!-- Username -->
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="ชื่อผู้ใช้" FontSize="14" TextColor="#6B7280"/>
+                            <Border BackgroundColor="#F9FAFB" Stroke="#E5E7EB" StrokeThickness="1" Padding="15,12">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="12"/>
+                                </Border.StrokeShape>
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                    <Label Text="👤" FontSize="20" VerticalOptions="Center"/>
+                                    <Entry Grid.Column="1" Text="{Binding Username}"
+                                           Placeholder="ระบุชื่อผู้ใช้"
+                                           FontSize="16" TextColor="#111827"
+                                           BackgroundColor="Transparent"
+                                           ReturnType="Next"/>
+                                </Grid>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Password -->
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="รหัสผ่าน" FontSize="14" TextColor="#6B7280"/>
+                            <Border BackgroundColor="#F9FAFB" Stroke="#E5E7EB" StrokeThickness="1" Padding="15,12">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="12"/>
+                                </Border.StrokeShape>
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                    <Label Text="🔒" FontSize="20" VerticalOptions="Center"/>
+                                    <Entry Grid.Column="1" Text="{Binding Password}"
+                                           Placeholder="ระบุรหัสผ่าน"
+                                           IsPassword="True"
+                                           FontSize="16" TextColor="#111827"
+                                           BackgroundColor="Transparent"
+                                           ReturnType="Done"
+                                           ReturnCommand="{Binding LoginCommand}"/>
+                                </Grid>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Remember Me & Forgot Password -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                                <CheckBox IsChecked="{Binding RememberMe}" Color="#22C55E"/>
+                                <Label Text="จำรหัสผ่าน" FontSize="14" TextColor="#6B7280" VerticalOptions="Center"/>
+                            </HorizontalStackLayout>
+                            <Label Grid.Column="1" Text="ลืมรหัสผ่าน?" FontSize="14" TextColor="#3B82F6"
+                                   VerticalOptions="Center">
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ForgotPasswordCommand}"/>
+                                </Label.GestureRecognizers>
+                            </Label>
+                        </Grid>
+
+                        <!-- Login Button -->
+                        <Button Text="🔐  เข้าสู่ระบบ"
+                                BackgroundColor="#22C55E" TextColor="White"
+                                FontSize="18" FontAttributes="Bold"
+                                HeightRequest="55" CornerRadius="14"
+                                Command="{Binding LoginCommand}"
+                                IsEnabled="{Binding CanLogin}"/>
+
+                        <!-- Divider -->
+                        <Grid ColumnDefinitions="*,Auto,*" Margin="0,5">
+                            <BoxView Grid.Column="0" HeightRequest="1" Color="#E5E7EB" VerticalOptions="Center"/>
+                            <Label Grid.Column="1" Text="หรือ" FontSize="14" TextColor="#9CA3AF" Margin="15,0"/>
+                            <BoxView Grid.Column="2" HeightRequest="1" Color="#E5E7EB" VerticalOptions="Center"/>
+                        </Grid>
+
+                        <!-- Alternative Login Options -->
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
+                            <Button Text="🔢 PIN"
+                                    BackgroundColor="#F3F4F6" TextColor="#374151"
+                                    FontSize="16" HeightRequest="48" CornerRadius="12"
+                                    Command="{Binding LoginWithPinCommand}"/>
+                            <Button Grid.Column="1" Text="📴 Offline"
+                                    BackgroundColor="#F3F4F6" TextColor="#374151"
+                                    FontSize="16" HeightRequest="48" CornerRadius="12"
+                                    Command="{Binding OfflineModeCommand}"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Setup Link -->
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="5">
+                    <Label Text="ครั้งแรก?" FontSize="14" TextColor="#6B7280"/>
+                    <Label Text="ตั้งค่า Server" FontSize="14" TextColor="#3B82F6" TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToSetupCommand}"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+                </HorizontalStackLayout>
+
+                <!-- Version -->
+                <Label Text="{Binding AppVersion, StringFormat='v{0}'}"
+                       FontSize="12" TextColor="#9CA3AF" HorizontalOptions="Center" Margin="0,20,0,0"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Busy Overlay -->
+        <Grid IsVisible="{Binding IsBusy}" BackgroundColor="#80000000">
+            <Border BackgroundColor="White" StrokeThickness="0"
+                    HeightRequest="120" WidthRequest="200"
+                    HorizontalOptions="Center" VerticalOptions="Center"
+                    Padding="20">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="16"/>
+                </Border.StrokeShape>
+                <VerticalStackLayout VerticalOptions="Center" Spacing="15">
+                    <ActivityIndicator IsRunning="True" Color="#22C55E" HeightRequest="40" WidthRequest="40" HorizontalOptions="Center"/>
+                    <Label Text="{Binding BusyMessage}" FontSize="14" TextColor="#374151" HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </Grid>
+
 </ContentPage>

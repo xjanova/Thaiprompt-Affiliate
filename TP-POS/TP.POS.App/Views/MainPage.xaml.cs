@@ -1,18 +1,26 @@
+using TP.POS.App.ViewModels;
+
 namespace TP.POS.App.Views;
 
+/// <summary>
+/// หน้าหลัก (Dashboard)
+/// </summary>
 public partial class MainPage : ContentPage
 {
-    public MainPage()
+    private readonly MainViewModel _viewModel;
+
+    public MainPage(MainViewModel viewModel)
     {
         InitializeComponent();
+        BindingContext = _viewModel = viewModel;
     }
 
+    /// <summary>
+    /// เมื่อหน้าแสดงผล
+    /// </summary>
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-
-        // รอสักครู่แล้วไปหน้า POS
-        await Task.Delay(1500);
-        await Shell.Current.GoToAsync("//pos");
+        await _viewModel.InitializeAsync();
     }
 }
