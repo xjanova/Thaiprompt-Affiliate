@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.storefront')
 
 @section('title', 'ตะกร้าสินค้า')
 

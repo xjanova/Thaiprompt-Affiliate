@@ -1,6 +1,6 @@
 {{-- resources/views/shop/official/show.blade.php --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.storefront')
 
 @section('title', $product->name . ' - ร้านของระบบ')
 

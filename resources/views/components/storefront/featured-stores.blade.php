@@ -34,7 +34,7 @@
             </div>
         </div>
 
-        <a href="{{ route('storefront.index') }}"
+        <a href="{{ route('storefront.stores') }}"
            class="hidden md:flex items-center gap-2 px-6 py-3
                  bg-gradient-to-r from-orange-500 to-red-500
                  hover:from-orange-600 hover:to-red-600
