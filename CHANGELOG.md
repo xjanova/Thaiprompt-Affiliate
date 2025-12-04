@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.339.2] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: add full binary tree structure to MLM seeder (71828a17)
+- fix: simplify MLM tree to linear chain structure (30c7194c)
+- fix: use QuestionOption instead of QuizAnswer in ThaipromptCourseSeeder (ae3e2eec)
+### 🔧 Other Changes
+- Merge pull request #1989 from xjanova/claude/fix-mlm-binary-tree-018J9z7WSPqQRJEsf8rinLBr (1bb1cbc5)
+
 ## [v3.339.1] - 2025-12-04
 
 ### ✨ Features
