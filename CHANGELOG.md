@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.340.0] - 2025-12-04
+
+### ✨ Features
+- feat: add admin storefront settings page with theme/layout options (40c4b38c)
+- feat: update all e-commerce pages to use storefront full-width layout (4051cc9b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1991 from xjanova/claude/fix-guest-shopping-role-01WaHLh37CzemK2rCJyJojPx (750ae615)
+
 ## [v3.339.3] - 2025-12-04
 
 ### ✨ Features
