@@ -7,6 +7,9 @@ use App\Models\LearningCategory;
 use App\Models\QuizAttempt;
 use App\Models\User;
 use App\Models\UserArticleProgress;
+use App\Models\VideoCoin;
+use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -474,25 +477,76 @@ class CourseProgressionService
             $progress->markAsCompleted();
 
             $rewards = [];
+            $totalRewardValue = 0;
 
             // ให้รางวัลเฉพาะเมื่อจบครั้งแรก
             if (!$wasCompleted) {
-                // ให้คะแนน
+                // ตรวจสอบงบประมาณ
+                $canGiveCoinMoney = !$article->isBudgetExhausted();
+
+                // 1. ให้คะแนน Points
                 if ($article->points_reward > 0) {
-                    // TODO: เชื่อมกับระบบ points ถ้ามี
                     $rewards[] = [
                         'type' => 'points',
                         'value' => $article->points_reward,
+                        'label' => "{$article->points_reward} แต้ม",
                     ];
                 }
 
-                // ให้ Badge
+                // 2. ให้ Video Coins (ถ้างบประมาณยังไม่หมด)
+                if ($canGiveCoinMoney && $article->coin_reward > 0) {
+                    $this->giveCoinReward($user, $article, $article->coin_reward);
+                    $rewards[] = [
+                        'type' => 'coins',
+                        'value' => $article->coin_reward,
+                        'label' => number_format($article->coin_reward, 2) . ' Coins',
+                    ];
+                    $totalRewardValue += $article->coin_reward;
+                }
+
+                // 3. ให้เงินสด (THB) เข้า Wallet (ถ้างบประมาณยังไม่หมด)
+                if ($canGiveCoinMoney && $article->money_reward > 0) {
+                    $this->giveMoneyReward($user, $article, $article->money_reward);
+                    $rewards[] = [
+                        'type' => 'money',
+                        'value' => $article->money_reward,
+                        'label' => '฿' . number_format($article->money_reward, 2),
+                    ];
+                    $totalRewardValue += $article->money_reward;
+                }
+
+                // 4. ให้ EXP
+                if ($article->exp_reward > 0) {
+                    $this->giveExpReward($user, $article->exp_reward);
+                    $rewards[] = [
+                        'type' => 'exp',
+                        'value' => $article->exp_reward,
+                        'label' => "{$article->exp_reward} EXP",
+                    ];
+                }
+
+                // 5. ให้ PV
+                if ($article->pv_value > 0) {
+                    $this->givePvReward($user, $article, $article->pv_value);
+                    $rewards[] = [
+                        'type' => 'pv',
+                        'value' => $article->pv_value,
+                        'label' => number_format($article->pv_value, 2) . ' PV',
+                    ];
+                }
+
+                // 6. ให้ Badge
                 if ($article->badge_reward_id) {
-                    // TODO: เชื่อมกับระบบ badge ถ้ามี
                     $rewards[] = [
                         'type' => 'badge',
                         'badge_id' => $article->badge_reward_id,
+                        'label' => 'Badge พิเศษ',
                     ];
+                }
+
+                // บันทึกยอดรางวัลที่จ่าย
+                if ($totalRewardValue > 0) {
+                    $article->recordRewardGiven($totalRewardValue);
                 }
 
                 // Log การจบคอร์ส
@@ -501,6 +555,7 @@ class CourseProgressionService
                     'article_id' => $article->id,
                     'article_title' => $article->title,
                     'rewards' => $rewards,
+                    'total_reward_value' => $totalRewardValue,
                 ]);
             }
 
@@ -529,6 +584,110 @@ class CourseProgressionService
                 'next_article' => null,
                 'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
             ];
+        }
+    }
+
+    /**
+     * ให้รางวัล Video Coins
+     *
+     * @param User $user
+     * @param LearningArticle $article
+     * @param float $amount
+     * @return void
+     */
+    protected function giveCoinReward(User $user, LearningArticle $article, float $amount): void
+    {
+        $videoCoin = VideoCoin::firstOrCreate(
+            ['user_id' => $user->id],
+            ['balance' => 0, 'lifetime_earned' => 0, 'lifetime_spent' => 0, 'lifetime_exchanged' => 0]
+        );
+
+        $videoCoin->addCoins(
+            $amount,
+            'earned_course',
+            LearningArticle::class,
+            $article->id,
+            "รางวัลจบคอร์ส: {$article->title}"
+        );
+    }
+
+    /**
+     * ให้รางวัลเงินสด (THB) เข้า Wallet
+     *
+     * @param User $user
+     * @param LearningArticle $article
+     * @param float $amount
+     * @return void
+     */
+    protected function giveMoneyReward(User $user, LearningArticle $article, float $amount): void
+    {
+        $wallet = Wallet::firstOrCreate(
+            ['user_id' => $user->id],
+            ['balance' => 0, 'currency' => 'THB', 'status' => 'active']
+        );
+
+        $balanceBefore = $wallet->balance;
+        $wallet->increment('balance', $amount);
+        $wallet->increment('total_income', $amount);
+
+        // บันทึก transaction
+        WalletTransaction::create([
+            'wallet_id' => $wallet->id,
+            'user_id' => $user->id,
+            'type' => 'course_reward',
+            'amount' => $amount,
+            'balance_before' => $balanceBefore,
+            'balance_after' => $wallet->balance,
+            'status' => 'completed',
+            'description' => "รางวัลจบคอร์ส: {$article->title}",
+            'reference_type' => LearningArticle::class,
+            'reference_id' => $article->id,
+        ]);
+    }
+
+    /**
+     * ให้รางวัล EXP
+     *
+     * @param User $user
+     * @param int $exp
+     * @return void
+     */
+    protected function giveExpReward(User $user, int $exp): void
+    {
+        // ถ้ามีระบบ Level/EXP ให้เพิ่มที่นี่
+        // สำหรับตอนนี้เก็บใน metadata หรือ column exp ของ user
+        if (method_exists($user, 'addExp')) {
+            $user->addExp($exp);
+        } elseif (isset($user->exp)) {
+            $user->increment('exp', $exp);
+        }
+    }
+
+    /**
+     * ให้รางวัล PV (Point Value)
+     *
+     * @param User $user
+     * @param LearningArticle $article
+     * @param float $pv
+     * @return void
+     */
+    protected function givePvReward(User $user, LearningArticle $article, float $pv): void
+    {
+        // เชื่อมกับระบบ MLM PV Transaction
+        if (class_exists('App\Models\MlmPvTransaction')) {
+            $mlmPvTransaction = new \App\Models\MlmPvTransaction();
+            $mlmPvTransaction->user_id = $user->id;
+            $mlmPvTransaction->pv_amount = $pv;
+            $mlmPvTransaction->transaction_type = 'course_reward';
+            $mlmPvTransaction->reference_type = LearningArticle::class;
+            $mlmPvTransaction->reference_id = $article->id;
+            $mlmPvTransaction->description = "PV จบคอร์ส: {$article->title}";
+            $mlmPvTransaction->save();
+        }
+
+        // ถ้า user มี field personal_pv ให้เพิ่ม
+        if (isset($user->personal_pv)) {
+            $user->increment('personal_pv', $pv);
         }
     }
 

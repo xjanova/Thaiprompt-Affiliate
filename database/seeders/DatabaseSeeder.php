@@ -103,6 +103,7 @@ class DatabaseSeeder extends Seeder
             AcademySeeder::class,               // ตั้งค่าระบบ Academy
             LearningCategorySeeder::class,      // หมวดหมู่คอร์ส
             LearningArticleSeeder::class,       // คอร์สและบทความ
+            ThaipromptCourseSeeder::class,      // 🎓 คอร์ส Thaiprompt Academy (เนื้อหาครบ + Quiz + Rewards)
             QuizSeeder::class,                  // Quiz และคำถาม
 
             // 10. Accounting System
