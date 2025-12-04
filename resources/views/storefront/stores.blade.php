@@ -20,7 +20,7 @@
 @endsection
 
 @section('content')
-<div x-data="storesPage()" class="min-h-screen bg-gray-50 dark:bg-gray-900">
+<div x-data="storesPage()" class="min-h-screen">
 
     {{-- Header Navigation Bar --}}
     <div class="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-md">

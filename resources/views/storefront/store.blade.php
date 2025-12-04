@@ -53,7 +53,7 @@
 @section('content')
 <div x-data="storePageManager()"
      x-init="init()"
-     class="min-h-screen bg-gray-50 dark:bg-gray-900">
+     class="min-h-screen">
 
     {{-- ========================================
          STORE HEADER / BANNER SECTION
