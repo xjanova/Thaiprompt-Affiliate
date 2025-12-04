@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.355.0] - 2025-12-04
+
+### ✨ Features
+- feat: เพิ่มฟีเจอร์ปักหมุดเมนูที่ใช้บ่อยไว้ด้านบนสุด (839138a1)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2015 from xjanova/claude/pin-favorite-menu-items-01SiGzJUiABbos3TmfKWAFtD (dd479306)
+- chore: rebuild assets (8a5be999)
+
 ## [v3.354.0] - 2025-12-04
 
 ### ✨ Features
