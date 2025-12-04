@@ -407,6 +407,7 @@ class Product extends Model
      * ดึง tags ในรูปแบบ array เสมอ
      *
      * แก้ไขปัญหากรณีที่ข้อมูลใน database เป็น string แทน JSON array
+     * รวมถึง double-encoded JSON และ unicode escape sequences
      *
      * @return array
      */
@@ -417,16 +418,32 @@ class Product extends Model
             return [];
         }
 
-        // ถ้าเป็น array แล้ว ให้คืนค่าเลย
+        // ถ้าเป็น array แล้ว ให้ตรวจสอบว่า elements เป็น string ปกติหรือไม่
         if (is_array($value)) {
-            return $value;
+            return $this->cleanTagsArray($value);
         }
 
         // ถ้าเป็น string ลอง decode เป็น JSON
         if (is_string($value)) {
-            $decoded = json_decode($value, true);
+            // ลอง decode หลายรอบเพื่อแก้ double-encoded JSON
+            $decoded = $value;
+            $maxAttempts = 3;
+
+            for ($i = 0; $i < $maxAttempts; $i++) {
+                $temp = json_decode($decoded, true);
+                if ($temp === null || !is_array($temp)) {
+                    break;
+                }
+                $decoded = $temp;
+
+                // ถ้า decode แล้วได้ array ของ strings ที่ถูกต้อง ให้หยุด
+                if (is_array($decoded) && isset($decoded[0]) && is_string($decoded[0]) && !str_starts_with($decoded[0], '[')) {
+                    break;
+                }
+            }
+
             if (is_array($decoded)) {
-                return $decoded;
+                return $this->cleanTagsArray($decoded);
             }
 
             // ถ้าไม่ใช่ JSON ให้แยกด้วย comma
@@ -434,6 +451,46 @@ class Product extends Model
         }
 
         return [];
+    }
+
+    /**
+     * ทำความสะอาด tags array
+     * แก้ปัญหา unicode escape sequences และ double-quoted strings
+     *
+     * @param array $tags
+     * @return array
+     */
+    protected function cleanTagsArray(array $tags): array
+    {
+        $cleaned = [];
+        foreach ($tags as $tag) {
+            if (is_string($tag)) {
+                // ถ้ายังเป็น JSON string อยู่ ให้ decode อีกครั้ง
+                if (str_starts_with($tag, '"') || str_starts_with($tag, '[')) {
+                    $decoded = json_decode($tag, true);
+                    if (is_string($decoded)) {
+                        $tag = $decoded;
+                    } elseif (is_array($decoded)) {
+                        // recursive clean ถ้าเป็น array
+                        $cleaned = array_merge($cleaned, $this->cleanTagsArray($decoded));
+                        continue;
+                    }
+                }
+
+                // Decode unicode escape sequences เช่น \u0e1a เป็น ภาษาไทย
+                $tag = preg_replace_callback('/\\\\u([0-9a-fA-F]{4})/', function ($match) {
+                    return mb_convert_encoding(pack('H*', $match[1]), 'UTF-8', 'UCS-2BE');
+                }, $tag);
+
+                $tag = trim($tag);
+                if (!empty($tag)) {
+                    $cleaned[] = $tag;
+                }
+            } elseif (is_array($tag)) {
+                $cleaned = array_merge($cleaned, $this->cleanTagsArray($tag));
+            }
+        }
+        return array_unique($cleaned);
     }
 
     /**
