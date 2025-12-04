@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.336.0] - 2025-12-04
+
+### ✨ Features
+- feat: expand all presentation topic slides with rich content (73c8625b)
+- feat: update MLM slides with accurate data from codebase (55d7ecb6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1982 from xjanova/claude/improve-home-overview-01FmhxU8bkxq3hYCF1ApZUP7 (faefecee)
+
 ## [v3.335.1] - 2025-12-04
 
 ### ✨ Features
