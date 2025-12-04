@@ -419,16 +419,16 @@ function toggleTopicMenu() {
     arrow.classList.toggle('rotated');
 }
 
-// Mapping topics ไปยัง slide index ใน system-overview
+// Mapping topics ไปยัง slide index ใน system-overview (Total: 38 slides, index 0-37)
 const topicSlideMapping = {
-    'system-overview': 0,
-    'ai-automation': 7,       // Slide 5: AI & Automation
-    'tpix-token': 11,         // Slide 6: TPIX Token
-    'academy-freedom': 15,    // Slide 7: Academy & ปลดแอกธุรกิจ
-    'ecosystem-vision': 19,   // Slide 8: Ecosystem & Vision
-    'game-changer': 20,       // Slide 9: พลิกเกมส์ธุรกิจ
-    'ecommerce-empire': 21,   // Slide 10: E-Commerce Empire
-    'community': 22           // Slide 11: Community & Partnership
+    'system-overview': 0,     // Slide 1: Title
+    'ai-automation': 7,       // Slide 5: AI & Automation (index 7)
+    'tpix-token': 11,         // Slide 6: TPIX Token (index 11)
+    'academy-freedom': 15,    // Slide 7: Academy & ปลดแอกธุรกิจ (index 15)
+    'ecosystem-vision': 19,   // Slide 8: Ecosystem & Vision (index 19)
+    'game-changer': 23,       // Slide 9: พลิกเกมส์ธุรกิจ (index 23)
+    'ecommerce-empire': 27,   // Slide 10: E-Commerce Empire (index 27)
+    'community': 31           // Slide 11: Community & Partnership (index 31)
 };
 
 function switchTopic(topicId) {
