@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.325.0] - 2025-12-04
+
+### ✨ Features
+- feat: add TPIX Token card to home learning section (f4cfb7d5)
+- feat: add comprehensive TPIX Token slides to home presentation (5ee65589)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1966 from xjanova/claude/improve-home-overview-01FmhxU8bkxq3hYCF1ApZUP7 (21d75701)
+
 ## [v3.324.0] - 2025-12-04
 
 ### ✨ Features
