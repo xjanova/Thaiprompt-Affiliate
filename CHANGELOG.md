@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.329.0] - 2025-12-04
+
+### ✨ Features
+- feat: add Academy & Business Freedom slides with topic card (1c887042)
+- feat: add AI slides, topic selector, and auto-hide toolbar (c1237d2d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1970 from xjanova/claude/improve-home-overview-01FmhxU8bkxq3hYCF1ApZUP7 (02afec94)
+
 ## [v3.328.0] - 2025-12-04
 
 ### ✨ Features
