@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.335.1] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1981 from xjanova/claude/improve-home-overview-01FmhxU8bkxq3hYCF1ApZUP7 (bf4460fc)
+- fix: remove hardcoded 'active' class from slide files (9470d928)
+### 🔧 Other Changes
+
+
 ## [v3.335.0] - 2025-12-04
 
 ### ✨ Features
