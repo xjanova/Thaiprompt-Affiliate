@@ -1,424 +1,66 @@
+{{--
+    หน้าจัดการใบประกาศนียบัตร
+    ใช้ Tailwind CSS + Alpine.js ตาม V3 standards
+--}}
 @extends('layouts.admin-v3')
 
 @section('title', 'จัดการใบประกาศนียบัตร - Admin')
 
-@push('styles')
-<style>
-:root {
-    --primary: #6366f1;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --gray-50: #f9fafb;
-    --gray-100: #f3f4f6;
-    --gray-200: #e5e7eb;
-    --gray-600: #4b5563;
-    --gray-700: #374151;
-    --gray-900: #111827;
-}
-
-.certificates-container {
-    max-width: 1600px;
-    margin: 0 auto;
-    padding: 32px 20px;
-}
-
-.page-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 16px;
-    padding: 32px;
-    color: white;
-    margin-bottom: 32px;
-}
-
-.header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-}
-
-.page-title {
-    font-size: 32px;
-    font-weight: 800;
-    margin: 0;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-}
-
-.stat-card {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
-}
-
-.stat-value {
-    font-size: 36px;
-    font-weight: 700;
-    margin-bottom: 4px;
-}
-
-.stat-label {
-    font-size: 14px;
-    opacity: 0.95;
-}
-
-/* Filters */
-.filters-card {
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
-    margin-bottom: 24px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.filters-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 16px;
-}
-
-.form-group {
-    margin-bottom: 0;
-}
-
-.form-label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--gray-700);
-    margin-bottom: 6px;
-}
-
-.form-input, .form-select {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid var(--gray-200);
-    border-radius: 8px;
-    font-size: 14px;
-}
-
-.form-input:focus, .form-select:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-/* Table */
-.table-card {
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.table-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--gray-200);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.table-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--gray-900);
-}
-
-.table-wrapper {
-    overflow-x: auto;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-thead {
-    background: var(--gray-50);
-}
-
-th {
-    padding: 12px 16px;
-    text-align: left;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--gray-700);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-td {
-    padding: 16px;
-    border-top: 1px solid var(--gray-100);
-    font-size: 14px;
-}
-
-tr:hover {
-    background: var(--gray-50);
-}
-
-/* Badges */
-.badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.badge-active {
-    background: #d1fae5;
-    color: #065f46;
-}
-
-.badge-revoked {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-/* Buttons */
-.btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-}
-
-.btn-primary {
-    background: var(--primary);
-    color: white;
-}
-
-.btn-primary:hover {
-    background: #4f46e5;
-    transform: translateY(-1px);
-}
-
-.btn-success {
-    background: var(--success);
-    color: white;
-}
-
-.btn-danger {
-    background: var(--danger);
-    color: white;
-}
-
-.btn-secondary {
-    background: var(--gray-200);
-    color: var(--gray-700);
-}
-
-.btn-sm {
-    padding: 6px 12px;
-    font-size: 13px;
-}
-
-/* Actions dropdown */
-.actions-dropdown {
-    position: relative;
-}
-
-.actions-btn {
-    padding: 6px 12px;
-    background: var(--gray-100);
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.actions-menu {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 100%;
-    background: white;
-    border: 1px solid var(--gray-200);
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    min-width: 160px;
-    z-index: 10;
-    margin-top: 4px;
-}
-
-.actions-dropdown:hover .actions-menu {
-    display: block;
-}
-
-.actions-menu a, .actions-menu button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    border: none;
-    background: none;
-    width: 100%;
-    text-align: left;
-    font-size: 14px;
-    color: var(--gray-700);
-    cursor: pointer;
-    text-decoration: none;
-}
-
-.actions-menu a:hover, .actions-menu button:hover {
-    background: var(--gray-50);
-}
-
-/* Pagination */
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    padding: 20px;
-}
-
-.pagination a, .pagination span {
-    padding: 8px 12px;
-    border: 1px solid var(--gray-200);
-    border-radius: 6px;
-    font-size: 14px;
-    text-decoration: none;
-    color: var(--gray-700);
-}
-
-.pagination a:hover {
-    background: var(--gray-50);
-}
-
-.pagination .active {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-}
-
-/* Empty state */
-.empty-state {
-    text-align: center;
-    padding: 80px 20px;
-}
-
-.empty-icon {
-    font-size: 64px;
-    margin-bottom: 16px;
-}
-
-.empty-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--gray-900);
-    margin-bottom: 8px;
-}
-
-.empty-text {
-    color: var(--gray-600);
-    margin-bottom: 24px;
-}
-
-@media (max-width: 768px) {
-    .certificates-container {
-        padding: 20px 16px;
-    }
-
-    .page-header {
-        padding: 24px 20px;
-    }
-
-    .page-title {
-        font-size: 24px;
-    }
-
-    .header-top {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-    }
-
-    .filters-grid {
-        grid-template-columns: 1fr;
-    }
-
-    table {
-        font-size: 13px;
-    }
-
-    th, td {
-        padding: 10px;
-    }
-}
-</style>
-@endpush
-
 @section('content')
-<div class="certificates-container">
+<div x-data="certificatesManager()" class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header -->
-    <div class="page-header">
-        <div class="header-top">
-            <h1 class="page-title">📜 จัดการใบประกาศนียบัตร</h1>
-            <div style="display: flex; gap: 12px;">
-                <a href="{{ route('admin.academy.certificates.create') }}" class="btn btn-success">
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 sm:p-8 text-white mb-8 shadow-xl">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+            <h1 class="text-2xl sm:text-3xl font-extrabold">📜 จัดการใบประกาศนียบัตร</h1>
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ route('admin.academy.certificates.create') }}"
+                   class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition shadow-lg">
                     ➕ สร้างใบประกาศใหม่
                 </a>
                 <a href="{{ route('admin.academy.certificates.export') }}{{ request()->getQueryString() ? '?' . request()->getQueryString() : '' }}"
-                   class="btn btn-secondary">
+                   class="inline-flex items-center gap-2 px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition">
                     📥 Export CSV
                 </a>
             </div>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value">{{ number_format($stats['total']) }}</div>
-                <div class="stat-label">ทั้งหมด</div>
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white/15 backdrop-blur-sm rounded-xl p-5 text-center">
+                <div class="text-3xl sm:text-4xl font-bold mb-1">{{ number_format($stats['total']) }}</div>
+                <div class="text-sm text-indigo-100">ทั้งหมด</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value">{{ number_format($stats['active']) }}</div>
-                <div class="stat-label">ใช้งานได้</div>
+            <div class="bg-white/15 backdrop-blur-sm rounded-xl p-5 text-center">
+                <div class="text-3xl sm:text-4xl font-bold mb-1">{{ number_format($stats['active']) }}</div>
+                <div class="text-sm text-indigo-100">ใช้งานได้</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value">{{ number_format($stats['revoked']) }}</div>
-                <div class="stat-label">ถูกเพิกถอน</div>
+            <div class="bg-white/15 backdrop-blur-sm rounded-xl p-5 text-center">
+                <div class="text-3xl sm:text-4xl font-bold mb-1">{{ number_format($stats['revoked']) }}</div>
+                <div class="text-sm text-indigo-100">ถูกเพิกถอน</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value">{{ number_format($stats['this_month']) }}</div>
-                <div class="stat-label">เดือนนี้</div>
+            <div class="bg-white/15 backdrop-blur-sm rounded-xl p-5 text-center">
+                <div class="text-3xl sm:text-4xl font-bold mb-1">{{ number_format($stats['this_month']) }}</div>
+                <div class="text-sm text-indigo-100">เดือนนี้</div>
             </div>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="filters-card">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
         <form method="GET" action="{{ route('admin.academy.certificates.index') }}">
-            <div class="filters-grid">
-                <div class="form-group">
-                    <label class="form-label">ค้นหา</label>
-                    <input type="text" name="search" class="form-input"
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">ค้นหา</label>
+                    <input type="text" name="search"
                            placeholder="เลขที่, ชื่อ, อีเมล..."
-                           value="{{ request('search') }}">
+                           value="{{ request('search') }}"
+                           class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">คอร์ส</label>
-                    <select name="course_id" class="form-select">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">คอร์ส</label>
+                    <select name="course_id"
+                            class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                         <option value="">ทั้งหมด</option>
                         @foreach($courses as $course)
                             <option value="{{ $course->id }}" {{ request('course_id') == $course->id ? 'selected' : '' }}>
@@ -428,31 +70,36 @@ tr:hover {
                     </select>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">สถานะ</label>
-                    <select name="status" class="form-select">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">สถานะ</label>
+                    <select name="status"
+                            class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                         <option value="">ทั้งหมด</option>
                         <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>ใช้งานได้</option>
                         <option value="revoked" {{ request('status') === 'revoked' ? 'selected' : '' }}>ถูกเพิกถอน</option>
                     </select>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">วันที่ออก (จาก)</label>
-                    <input type="date" name="date_from" class="form-input" value="{{ request('date_from') }}">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">วันที่ออก (จาก)</label>
+                    <input type="date" name="date_from" value="{{ request('date_from') }}"
+                           class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">วันที่ออก (ถึง)</label>
-                    <input type="date" name="date_to" class="form-input" value="{{ request('date_to') }}">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">วันที่ออก (ถึง)</label>
+                    <input type="date" name="date_to" value="{{ request('date_to') }}"
+                           class="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                 </div>
             </div>
 
-            <div style="display: flex; gap: 12px;">
-                <button type="submit" class="btn btn-primary">
+            <div class="flex flex-wrap gap-3">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition">
                     🔍 ค้นหา
                 </button>
-                <a href="{{ route('admin.academy.certificates.index') }}" class="btn btn-secondary">
+                <a href="{{ route('admin.academy.certificates.index') }}"
+                   class="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 font-semibold rounded-lg transition">
                     ล้างตัวกรอง
                 </a>
             </div>
@@ -460,103 +107,110 @@ tr:hover {
     </div>
 
     <!-- Table -->
-    <div class="table-card">
-        <div class="table-header">
-            <h2 class="table-title">ใบประกาศนียบัตรทั้งหมด ({{ $certificates->total() }})</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white">
+                ใบประกาศนียบัตรทั้งหมด ({{ $certificates->total() }})
+            </h2>
         </div>
 
         @if($certificates->isEmpty())
-            <div class="empty-state">
-                <div class="empty-icon">📜</div>
-                <h3 class="empty-title">ไม่พบใบประกาศนียบัตร</h3>
-                <p class="empty-text">ยังไม่มีใบประกาศนียบัตรในระบบ หรือลองปรับตัวกรองใหม่</p>
-                <a href="{{ route('admin.academy.certificates.create') }}" class="btn btn-primary">
+            <div class="text-center py-20 px-6">
+                <div class="text-6xl mb-4">📜</div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ไม่พบใบประกาศนียบัตร</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">ยังไม่มีใบประกาศนียบัตรในระบบ หรือลองปรับตัวกรองใหม่</p>
+                <a href="{{ route('admin.academy.certificates.create') }}"
+                   class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition">
                     ➕ สร้างใบประกาศใหม่
                 </a>
             </div>
         @else
-            <div class="table-wrapper">
-                <table>
-                    <thead>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
                         <tr>
-                            <th>เลขที่</th>
-                            <th>นักเรียน</th>
-                            <th>คอร์ส</th>
-                            <th>คะแนน</th>
-                            <th>วันที่ออก</th>
-                            <th>สถานะ</th>
-                            <th>การกระทำ</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">เลขที่</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">นักเรียน</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">คอร์ส</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">คะแนน</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">วันที่ออก</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">สถานะ</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">การกระทำ</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
                         @foreach($certificates as $cert)
-                            <tr>
-                                <td>
-                                    <strong style="font-family: monospace; color: var(--primary);">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                                <td class="px-4 py-4">
+                                    <span class="font-mono font-semibold text-indigo-600 dark:text-indigo-400">
                                         {{ $cert->certificate_number }}
-                                    </strong>
+                                    </span>
                                 </td>
-                                <td>
-                                    <div style="font-weight: 600;">{{ $cert->student_name }}</div>
-                                    <div style="font-size: 13px; color: var(--gray-600);">
-                                        {{ $cert->student_email }}
-                                    </div>
+                                <td class="px-4 py-4">
+                                    <div class="font-semibold text-gray-900 dark:text-white">{{ $cert->student_name }}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ $cert->student_email }}</div>
                                 </td>
-                                <td>
-                                    <div style="max-width: 250px;">{{ $cert->course_title }}</div>
-                                    <div style="font-size: 13px; color: var(--gray-600);">
-                                        ครู: {{ $cert->instructor_name }}
-                                    </div>
+                                <td class="px-4 py-4">
+                                    <div class="max-w-[250px] truncate text-gray-900 dark:text-white">{{ $cert->course_title }}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">ครู: {{ $cert->instructor_name }}</div>
                                 </td>
-                                <td>
+                                <td class="px-4 py-4">
                                     @if($cert->quiz_score)
-                                        <span style="font-weight: 700; color: var(--success);">
+                                        <span class="font-bold text-green-600 dark:text-green-400">
                                             {{ number_format($cert->quiz_score, 0) }}%
                                         </span>
                                     @else
-                                        <span style="color: var(--gray-600);">-</span>
+                                        <span class="text-gray-400 dark:text-gray-500">-</span>
                                     @endif
                                 </td>
-                                <td>
-                                    <div>{{ $cert->issued_at->format('d/m/Y') }}</div>
-                                    <div style="font-size: 12px; color: var(--gray-600);">
-                                        {{ $cert->issued_at->format('H:i') }}
-                                    </div>
+                                <td class="px-4 py-4">
+                                    <div class="text-gray-900 dark:text-white">{{ $cert->issued_at->format('d/m/Y') }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $cert->issued_at->format('H:i') }}</div>
                                 </td>
-                                <td>
+                                <td class="px-4 py-4">
                                     @if($cert->is_revoked)
-                                        <span class="badge badge-revoked">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
                                             ❌ เพิกถอนแล้ว
                                         </span>
                                     @else
-                                        <span class="badge badge-active">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
                                             ✅ ใช้งานได้
                                         </span>
                                     @endif
                                 </td>
-                                <td>
-                                    <div class="actions-dropdown">
-                                        <button class="actions-btn">⋮</button>
-                                        <div class="actions-menu">
-                                            <a href="{{ route('admin.academy.certificates.show', $cert->id) }}">
+                                <td class="px-4 py-4 text-right">
+                                    <div class="relative" x-data="{ open: false }">
+                                        <button @click="open = !open" @click.outside="open = false"
+                                                class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium transition">
+                                            ⋮
+                                        </button>
+                                        <div x-show="open" x-transition
+                                             class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-10 overflow-hidden">
+                                            <a href="{{ route('admin.academy.certificates.show', $cert->id) }}"
+                                               class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                                                 👁️ ดูรายละเอียด
                                             </a>
-                                            <a href="{{ route('admin.academy.certificates.edit', $cert->id) }}">
+                                            <a href="{{ route('admin.academy.certificates.edit', $cert->id) }}"
+                                               class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                                                 ✏️ แก้ไข
                                             </a>
-                                            <a href="{{ route('admin.certificates.download', $cert->id) }}" target="_blank">
+                                            <a href="{{ route('admin.certificates.download', $cert->id) }}" target="_blank"
+                                               class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                                                 📥 ดาวน์โหลด
                                             </a>
                                             @if(!$cert->is_revoked)
-                                                <button onclick="revokeCertificate({{ $cert->id }})">
+                                                <button @click="revokeCertificate({{ $cert->id }})"
+                                                        class="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                                                     🚫 เพิกถอน
                                                 </button>
                                             @else
-                                                <button onclick="restoreCertificate({{ $cert->id }})">
+                                                <button @click="restoreCertificate({{ $cert->id }})"
+                                                        class="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                                                     ♻️ กู้คืน
                                                 </button>
                                             @endif
-                                            <button onclick="deleteCertificate({{ $cert->id }})" style="color: var(--danger);">
+                                            <button @click="deleteCertificate({{ $cert->id }})"
+                                                    class="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition">
                                                 🗑️ ลบ
                                             </button>
                                         </div>
@@ -569,7 +223,7 @@ tr:hover {
             </div>
 
             <!-- Pagination -->
-            <div class="pagination">
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
                 {{ $certificates->links() }}
             </div>
         @endif
@@ -578,69 +232,98 @@ tr:hover {
 
 @push('scripts')
 <script>
-function revokeCertificate(id) {
-    const reason = prompt('กรุณาระบุเหตุผลในการเพิกถอน (ถ้ามี):');
-    if (reason === null) return;
+/**
+ * Alpine.js component สำหรับจัดการ Certificates
+ * ใช้ Tailwind CSS + Alpine.js ตาม V3 standards
+ */
+function certificatesManager() {
+    return {
+        /**
+         * เพิกถอนใบประกาศ
+         */
+        async revokeCertificate(id) {
+            const reason = prompt('กรุณาระบุเหตุผลในการเพิกถอน (ถ้ามี):');
+            if (reason === null) return;
 
-    fetch(`{{ url('admin/academy/certificates') }}/${id}/revoke`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json'
+            try {
+                const response = await fetch(`{{ url('admin/academy/certificates') }}/${id}/revoke`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ revoked_reason: reason })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ เพิกถอนใบประกาศเรียบร้อยแล้ว');
+                    location.reload();
+                } else {
+                    alert('❌ เกิดข้อผิดพลาด');
+                }
+            } catch (error) {
+                alert('❌ เกิดข้อผิดพลาด');
+                console.error(error);
+            }
         },
-        body: JSON.stringify({ revoked_reason: reason })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('✅ เพิกถอนใบประกาศเรียบร้อยแล้ว');
-            location.reload();
-        } else {
-            alert('❌ เกิดข้อผิดพลาด');
-        }
-    });
-}
 
-function restoreCertificate(id) {
-    if (!confirm('ต้องการกู้คืนใบประกาศนี้?')) return;
+        /**
+         * กู้คืนใบประกาศ
+         */
+        async restoreCertificate(id) {
+            if (!confirm('ต้องการกู้คืนใบประกาศนี้?')) return;
 
-    fetch(`{{ url('admin/academy/certificates') }}/${id}/restore`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('✅ กู้คืนใบประกาศเรียบร้อยแล้ว');
-            location.reload();
-        } else {
-            alert('❌ เกิดข้อผิดพลาด');
-        }
-    });
-}
+            try {
+                const response = await fetch(`{{ url('admin/academy/certificates') }}/${id}/restore`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
 
-function deleteCertificate(id) {
-    if (!confirm('ต้องการลบใบประกาศนี้? การกระทำนี้ไม่สามารถย้อนกลับได้!')) return;
+                if (data.success) {
+                    alert('✅ กู้คืนใบประกาศเรียบร้อยแล้ว');
+                    location.reload();
+                } else {
+                    alert('❌ เกิดข้อผิดพลาด');
+                }
+            } catch (error) {
+                alert('❌ เกิดข้อผิดพลาด');
+                console.error(error);
+            }
+        },
 
-    fetch(`{{ url('admin/academy/certificates') }}/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json'
+        /**
+         * ลบใบประกาศ
+         */
+        async deleteCertificate(id) {
+            if (!confirm('ต้องการลบใบประกาศนี้? การกระทำนี้ไม่สามารถย้อนกลับได้!')) return;
+
+            try {
+                const response = await fetch(`{{ url('admin/academy/certificates') }}/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ ลบใบประกาศเรียบร้อยแล้ว');
+                    location.reload();
+                } else {
+                    alert('❌ เกิดข้อผิดพลาด');
+                }
+            } catch (error) {
+                alert('❌ เกิดข้อผิดพลาด');
+                console.error(error);
+            }
         }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('✅ ลบใบประกาศเรียบร้อยแล้ว');
-            location.reload();
-        } else {
-            alert('❌ เกิดข้อผิดพลาด');
-        }
-    });
+    }
 }
 </script>
 @endpush
