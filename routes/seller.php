@@ -5,6 +5,7 @@ use App\Http\Controllers\Seller\ProductController;
 use App\Http\Controllers\Seller\OrderManagementController;
 use App\Http\Controllers\Seller\PackageController;
 use App\Http\Controllers\Seller\StoreController;
+use App\Http\Controllers\Seller\StoreLayoutController;
 use App\Http\Controllers\Seller\SellerPosController;
 use App\Http\Controllers\Seller\AnalyticsController;
 use App\Http\Controllers\Seller\SystemMonitoringController;
@@ -98,6 +99,40 @@ Route::prefix('packages')->name('packages.')->group(function () {
 Route::prefix('store')->name('store.')->group(function () {
     Route::get('/settings', [StoreController::class, 'settings'])->name('settings');
     Route::put('/settings', [StoreController::class, 'update'])->name('update');
+
+    // ========================================
+    // STORE LAYOUT CUSTOMIZATION
+    // ปรับแต่ง Layout หน้าร้านค้า
+    // ========================================
+    Route::prefix('layout')->name('layout.')->group(function () {
+        // หน้า Editor หลัก
+        Route::get('/', [StoreLayoutController::class, 'index'])->name('index');
+
+        // บันทึกการตั้งค่าแต่ละส่วน (AJAX)
+        Route::post('/save-general', [StoreLayoutController::class, 'saveGeneral'])->name('save-general');
+        Route::post('/save-slider', [StoreLayoutController::class, 'saveSlider'])->name('save-slider');
+        Route::post('/save-featured', [StoreLayoutController::class, 'saveFeatured'])->name('save-featured');
+        Route::post('/save-categories', [StoreLayoutController::class, 'saveCategories'])->name('save-categories');
+        Route::post('/save-promotion', [StoreLayoutController::class, 'savePromotion'])->name('save-promotion');
+        Route::post('/save-social-links', [StoreLayoutController::class, 'saveSocialLinks'])->name('save-social-links');
+        Route::post('/save-seo', [StoreLayoutController::class, 'saveSeo'])->name('save-seo');
+        Route::post('/save-custom-code', [StoreLayoutController::class, 'saveCustomCode'])->name('save-custom-code');
+        Route::post('/save-sections-order', [StoreLayoutController::class, 'saveSectionsOrder'])->name('save-sections-order');
+
+        // อัพโหลดรูปภาพ
+        Route::post('/upload-slider-image', [StoreLayoutController::class, 'uploadSliderImage'])->name('upload-slider-image');
+        Route::delete('/delete-slider-image', [StoreLayoutController::class, 'deleteSliderImage'])->name('delete-slider-image');
+        Route::post('/upload-header-image', [StoreLayoutController::class, 'uploadHeaderImage'])->name('upload-header-image');
+        Route::post('/upload-promotion-image', [StoreLayoutController::class, 'uploadPromotionImage'])->name('upload-promotion-image');
+
+        // เผยแพร่/ยกเลิก/รีเซ็ต
+        Route::post('/publish', [StoreLayoutController::class, 'publish'])->name('publish');
+        Route::post('/unpublish', [StoreLayoutController::class, 'unpublish'])->name('unpublish');
+        Route::post('/reset', [StoreLayoutController::class, 'reset'])->name('reset');
+
+        // Preview
+        Route::get('/preview', [StoreLayoutController::class, 'preview'])->name('preview');
+    });
 });
 
 // ========================================

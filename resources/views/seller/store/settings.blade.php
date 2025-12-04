@@ -27,6 +27,30 @@
         </div>
     @endif
 
+    {{-- Layout Editor Banner --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-xl p-6">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-16 -mb-16"></div>
+        <div class="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-3xl">
+                    🎨
+                </div>
+                <div class="text-white">
+                    <h3 class="text-xl font-bold">ปรับแต่ง Layout หน้าร้าน</h3>
+                    <p class="text-purple-100 text-sm">ออกแบบสี, Banner Slider, สินค้าแนะนำ และอื่นๆ ตามสไตล์ของคุณ!</p>
+                </div>
+            </div>
+            <a href="{{ route('seller.store.layout.index') }}"
+               class="inline-flex items-center gap-2 px-6 py-3 bg-white text-purple-600 font-bold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition transform">
+                <span>เปิด Layout Editor</span>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+            </a>
+        </div>
+    </div>
+
     {{-- Settings Form --}}
     <form method="POST" action="{{ route('seller.store.update') }}" enctype="multipart/form-data" class="space-y-6">
         @csrf

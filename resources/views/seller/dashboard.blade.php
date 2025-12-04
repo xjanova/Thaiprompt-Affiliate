@@ -62,6 +62,38 @@
         </div>
     </div>
 
+    {{-- คำขวัญ TP-Affiliate - เตือนใจพาร์ทเนอร์ --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 dark:from-amber-500/20 dark:via-orange-500/20 dark:to-red-500/20 border border-amber-300/50 dark:border-amber-500/30 rounded-2xl p-4 md:p-6">
+        <div class="absolute inset-0 bg-gradient-to-r from-amber-400/5 via-orange-400/5 to-red-400/5"></div>
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/20 to-orange-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
+        <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-red-400/20 to-pink-500/20 rounded-full blur-2xl -ml-12 -mb-12"></div>
+
+        <div class="relative flex items-start gap-4">
+            <div class="flex-shrink-0 w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center text-2xl md:text-3xl shadow-lg transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                🇹🇭
+            </div>
+            <div class="flex-1 min-w-0">
+                <h3 class="text-lg md:text-xl font-bold text-amber-800 dark:text-amber-300 mb-2 flex items-center gap-2">
+                    <span class="text-xl">💝</span>
+                    พันธสัญญาจากเรา
+                </h3>
+                <blockquote class="text-sm md:text-base text-amber-900/80 dark:text-amber-100/90 leading-relaxed">
+                    <span class="font-semibold text-amber-700 dark:text-amber-400">"เราช่วยคุณ คุณช่วยเรา ไทยช่วยไทย"</span>
+                    <br class="hidden md:block">
+                    <span class="text-amber-800/70 dark:text-amber-200/80">
+                        เราจะพัฒนาสิ่งที่คุณต้องการ อยู่ด้วยกันอย่าลากลูกค้าไปไหนเลย
+                        <br>
+                        <span class="font-medium text-orange-600 dark:text-orange-400">เราจะให้ในสิ่งที่อื่นไม่ให้คุณ เพียงบอกเรา</span>
+                    </span>
+                </blockquote>
+            </div>
+            <div class="hidden md:flex flex-shrink-0 items-center gap-1 text-3xl">
+                <span class="animate-pulse">🤝</span>
+                <span class="animate-bounce delay-100">❤️</span>
+            </div>
+        </div>
+    </div>
+
     {{-- Quick Stats Cards --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {{-- Today's Revenue --}}
