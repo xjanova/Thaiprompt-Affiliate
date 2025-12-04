@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.357.2] - 2025-12-04
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2020 from xjanova/claude/update-academy-theme-01PTm2ZrMzXNMbMrk9LHdnhG (bd68758f)
+- refactor: ปรับปรุง Quiz Management views ให้สอดคล้อง V3 standards (b1192285)
+
 ## [v3.357.1] - 2025-12-04
 
 ### ✨ Features
