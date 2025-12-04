@@ -43,6 +43,7 @@ class DatabaseSeeder extends Seeder
             // 3. Content & Pages
             DemoPagesSeeder::class,             // สร้างหน้าเพจต่างๆ
             SeoMetaSeeder::class,               // สร้าง SEO meta data
+            SloganSeeder::class,                // 🆕 คำขวัญ/คำคม 200+ คำ สำหรับ Dashboard
             HomepageManagerSeeder::class,       // 🏠 Homepage Manager - Sections, Elements, Templates
             StoreBannerSeeder::class,           // 🎨 Store Banners - Slides สำหรับ Storefront Homepage
             // PageBuilderSeeder::class,           // Page Builder Templates (Homepage, Wiki, About builder) - SKIP: Already exists

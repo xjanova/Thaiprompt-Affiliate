@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Slogan;
 use App\Models\VendorStore;
 use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
@@ -133,6 +134,9 @@ class DashboardController extends Controller
         $totalVisitors = rand(500, 5000);
         $conversionRate = $totalSales > 0 ? ($completedSales / $totalSales) * 100 : 0;
 
+        // ดึงคำขวัญสำหรับ Seller Dashboard (สุ่ม 5 คำ)
+        $slogans = Slogan::getForSellerDashboard(5);
+
         return view('seller.dashboard', compact(
             'user',
             'store',
@@ -151,7 +155,8 @@ class DashboardController extends Controller
             'recentOrders',
             'topProducts',
             'totalVisitors',
-            'conversionRate'
+            'conversionRate',
+            'slogans'
         ));
     }
 
