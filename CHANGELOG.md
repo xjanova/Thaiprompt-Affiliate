@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.5] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2080 from xjanova/claude/test-payment-gateways-01WeW9g8rDkmauXwEYzfCL72 (7d7c1aff)
+- fix(payment): improve payment gateway providers integration (54d5dcb2)
+### 🔧 Other Changes
+
+
 ## [v3.361.4] - 2025-12-05
 
 ### ✨ Features
