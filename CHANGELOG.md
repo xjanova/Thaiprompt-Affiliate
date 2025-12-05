@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.4] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2079 from xjanova/claude/fix-missing-admin-route-01L43K6d5ZnQQRfmv1raHL3j (a03b740a)
+- fix: update admin sidebar to use correct mobile-app routes (5577605a)
+### 🔧 Other Changes
+
+
 ## [v3.361.3] - 2025-12-05
 
 ### ✨ Features
