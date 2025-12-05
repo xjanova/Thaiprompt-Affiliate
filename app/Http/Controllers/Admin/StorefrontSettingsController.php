@@ -275,9 +275,9 @@ class StorefrontSettingsController extends Controller
         ]);
 
         // บันทึกการตั้งค่าสี
-        setting(['storefront_primary_color' => $validated['primary_color']]);
-        setting(['storefront_secondary_color' => $validated['secondary_color']]);
-        setting(['storefront_accent_color' => $validated['accent_color']]);
+        set_setting('storefront_primary_color', $validated['primary_color'], 'string', 'storefront');
+        set_setting('storefront_secondary_color', $validated['secondary_color'], 'string', 'storefront');
+        set_setting('storefront_accent_color', $validated['accent_color'], 'string', 'storefront');
 
         // ล้าง cache
         Cache::forget('storefront_settings');
@@ -305,12 +305,12 @@ class StorefrontSettingsController extends Controller
         ]);
 
         // บันทึกการตั้งค่าเลย์เอาต์
-        setting(['storefront_products_per_row' => $validated['products_per_row']]);
-        setting(['storefront_show_flash_deals' => $request->has('show_flash_deals') ? '1' : '0']);
-        setting(['storefront_show_featured_stores' => $request->has('show_featured_stores') ? '1' : '0']);
-        setting(['storefront_show_categories' => $request->has('show_categories') ? '1' : '0']);
-        setting(['storefront_show_pv' => $request->has('show_pv_on_products') ? '1' : '0']);
-        setting(['storefront_show_commission' => $request->has('show_commission_on_products') ? '1' : '0']);
+        set_setting('storefront_products_per_row', $validated['products_per_row'], 'string', 'storefront');
+        set_setting('storefront_show_flash_deals', $request->has('show_flash_deals') ? '1' : '0', 'boolean', 'storefront');
+        set_setting('storefront_show_featured_stores', $request->has('show_featured_stores') ? '1' : '0', 'boolean', 'storefront');
+        set_setting('storefront_show_categories', $request->has('show_categories') ? '1' : '0', 'boolean', 'storefront');
+        set_setting('storefront_show_pv', $request->has('show_pv_on_products') ? '1' : '0', 'boolean', 'storefront');
+        set_setting('storefront_show_commission', $request->has('show_commission_on_products') ? '1' : '0', 'boolean', 'storefront');
 
         // ล้าง cache
         Cache::forget('storefront_settings');
