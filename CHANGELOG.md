@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.362.11] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2116 from xjanova/claude/fix-admin-tokens-null-01DM4DDfAGWB3jCcr45jD9FL (2472086d)
+- fix: use correct route name 'line.signup.invitation' instead of 'start' (5f208be4)
+### 🔧 Other Changes
+
+
 ## [v3.362.10] - 2025-12-05
 
 ### ✨ Features
