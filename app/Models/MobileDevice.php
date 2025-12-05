@@ -124,7 +124,7 @@ class MobileDevice extends Model
     /**
      * อัปเดท last_active_at
      */
-    public function touch(): bool
+    public function touchLastActive(): bool
     {
         $this->last_active_at = now();
         return $this->save();
