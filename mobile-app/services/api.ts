@@ -1107,5 +1107,376 @@ export const updateJobStatus = async (
   }
 };
 
+// =====================================================
+// Support Tickets
+// =====================================================
+
+export interface Ticket {
+  id: number;
+  ticketNumber: string;
+  subject: string;
+  category: string;
+  categoryText: string;
+  priority: string;
+  priorityText: string;
+  status: string;
+  statusText: string;
+  hasUnreadAdminMessage: boolean;
+  messageCount: number;
+  createdAt: string;
+  lastMessageAt?: string;
+}
+
+export interface TicketMessage {
+  id: number;
+  message: string;
+  isFromAdmin: boolean;
+  userName: string;
+  attachments?: string[];
+  isRead: boolean;
+  createdAt: string;
+}
+
+/**
+ * ดึงรายการ tickets ของผู้ใช้
+ */
+export const getTickets = async (): Promise<{
+  success: boolean;
+  data?: {
+    tickets: Ticket[];
+    pagination: {
+      total: number;
+      currentPage: number;
+      lastPage: number;
+    };
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.TICKETS);
+    return response.data;
+  } catch (error) {
+    console.error('Get tickets error:', error);
+    return null;
+  }
+};
+
+/**
+ * สร้าง ticket ใหม่
+ */
+export const createTicket = async (data: {
+  subject: string;
+  category?: string;
+  priority?: string;
+  message: string;
+}): Promise<{
+  success: boolean;
+  data?: {
+    ticketId: number;
+    ticketNumber: string;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.TICKETS, data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'สร้าง Ticket ไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * ดูรายละเอียด ticket
+ */
+export const getTicket = async (ticketId: number): Promise<{
+  success: boolean;
+  data?: {
+    ticket: {
+      id: number;
+      ticketNumber: string;
+      subject: string;
+      category: string;
+      categoryText: string;
+      priority: string;
+      priorityText: string;
+      status: string;
+      statusText: string;
+      satisfactionRating?: number;
+      createdAt: string;
+      resolvedAt?: string;
+      closedAt?: string;
+    };
+    messages: TicketMessage[];
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(`${API_ENDPOINTS.TICKET_DETAIL}/${ticketId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Get ticket error:', error);
+    return null;
+  }
+};
+
+/**
+ * ส่งข้อความใน ticket
+ */
+export const replyTicket = async (ticketId: number, message: string): Promise<{
+  success: boolean;
+  data?: {
+    messageId: number;
+    createdAt: string;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(`${API_ENDPOINTS.TICKET_REPLY}/${ticketId}/reply`, { message });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'ส่งข้อความไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * ให้คะแนนความพึงพอใจ
+ */
+export const rateTicket = async (ticketId: number, rating: number, comment?: string): Promise<{
+  success: boolean;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(`${API_ENDPOINTS.TICKET_RATE}/${ticketId}/rate`, { rating, comment });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'ให้คะแนนไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+// =====================================================
+// Notifications
+// =====================================================
+
+export interface Notification {
+  id: number;
+  title: string;
+  body: string;
+  type: string;
+  typeText: string;
+  icon?: string;
+  image?: string;
+  actionUrl?: string;
+  isRead: boolean;
+  data?: Record<string, unknown>;
+  createdAt: string;
+  timeAgo: string;
+}
+
+/**
+ * ดึงรายการการแจ้งเตือน
+ */
+export const getNotifications = async (): Promise<{
+  success: boolean;
+  data?: {
+    unreadCount: number;
+    notifications: Notification[];
+    pagination: {
+      total: number;
+      currentPage: number;
+      lastPage: number;
+    };
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.NOTIFICATIONS);
+    return response.data;
+  } catch (error) {
+    console.error('Get notifications error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงจำนวนการแจ้งเตือนที่ยังไม่อ่าน
+ */
+export const getUnreadNotificationCount = async (): Promise<{
+  success: boolean;
+  data?: {
+    unreadCount: number;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.NOTIFICATIONS_UNREAD_COUNT);
+    return response.data;
+  } catch (error) {
+    console.error('Get unread notification count error:', error);
+    return null;
+  }
+};
+
+/**
+ * ทำเครื่องหมายการแจ้งเตือนว่าอ่านแล้ว
+ */
+export const markNotificationRead = async (notificationId: number): Promise<{
+  success: boolean;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(`${API_ENDPOINTS.NOTIFICATION_READ}/${notificationId}/read`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'ทำเครื่องหมายไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว
+ */
+export const markAllNotificationsRead = async (): Promise<{
+  success: boolean;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.NOTIFICATIONS_MARK_ALL_READ);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'ทำเครื่องหมายไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * ลบการแจ้งเตือน
+ */
+export const deleteNotification = async (notificationId: number): Promise<{
+  success: boolean;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.delete(`${API_ENDPOINTS.NOTIFICATION_DELETE}/${notificationId}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'ลบการแจ้งเตือนไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+// =====================================================
+// Push Notification Token
+// =====================================================
+
+/**
+ * บันทึก Push Token
+ */
+export const registerPushToken = async (data: {
+  token: string;
+  platform?: 'android' | 'ios' | 'web';
+  device_id?: string;
+  device_name?: string;
+  app_version?: string;
+}): Promise<{
+  success: boolean;
+  data?: {
+    tokenId: number;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.PUSH_TOKEN, data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'บันทึก Push Token ไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * ลบ Push Token
+ */
+export const removePushToken = async (token: string): Promise<{
+  success: boolean;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.delete(API_ENDPOINTS.PUSH_TOKEN, {
+      data: { token },
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'ลบ Push Token ไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
 // Export axios instance สำหรับใช้งานตรงๆ ถ้าต้องการ
 export { apiClient };

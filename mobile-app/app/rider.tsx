@@ -35,8 +35,15 @@ import {
   uploadRiderDocument,
   updateRiderPermissions,
   setRiderAvailability,
+  updateRiderLocation,
 } from '@/services/api';
 import { formatCurrency } from '@/constants';
+import {
+  startTracking,
+  stopTracking,
+  isTrackingLocation,
+  getCurrentLocation,
+} from '@/services/location';
 
 // =====================================================
 // Permission Request Modal Component
@@ -207,6 +214,10 @@ export default function RiderScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGrantingPermission, setIsGrantingPermission] = useState(false);
   const [isTogglingAvailability, setIsTogglingAvailability] = useState(false);
+
+  // Location sharing state
+  const [isLocationSharing, setIsLocationSharing] = useState(false);
+  const [isTogglingLocationShare, setIsTogglingLocationShare] = useState(false);
 
   // =====================================================
   // Load Rider Status
@@ -439,6 +450,74 @@ export default function RiderScreen() {
       Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาด กรุณาลองใหม่');
     } finally {
       setIsTogglingAvailability(false);
+    }
+  };
+
+  // =====================================================
+  // Location Sharing Toggle
+  // =====================================================
+
+  // Check tracking status on mount
+  useEffect(() => {
+    setIsLocationSharing(isTrackingLocation());
+  }, []);
+
+  const toggleLocationSharing = async () => {
+    // ตรวจสอบสิทธิ์ GPS ก่อน
+    if (!riderData?.permissions?.gps) {
+      Alert.alert(
+        'ต้องอนุญาตตำแหน่งก่อน',
+        'คุณต้องอนุญาตการเข้าถึงตำแหน่งก่อนแชร์ตำแหน่ง',
+        [
+          { text: 'ยกเลิก', style: 'cancel' },
+          {
+            text: 'อนุญาต',
+            onPress: () =>
+              setPermissionModal({ visible: true, type: 'location' }),
+          },
+        ]
+      );
+      return;
+    }
+
+    setIsTogglingLocationShare(true);
+    try {
+      if (isLocationSharing) {
+        // หยุดแชร์ตำแหน่ง
+        await stopTracking();
+        setIsLocationSharing(false);
+        Alert.alert('หยุดแชร์ตำแหน่งแล้ว', 'ตำแหน่งของคุณจะไม่ถูกส่งไปยังระบบ');
+      } else {
+        // เริ่มแชร์ตำแหน่ง
+        const jobId = 0; // ใช้ 0 สำหรับการแชร์ตำแหน่งแบบ manual
+        const success = await startTracking(jobId);
+
+        if (success) {
+          setIsLocationSharing(true);
+
+          // ส่งตำแหน่งปัจจุบันไป server ทันที
+          const location = await getCurrentLocation();
+          if (location) {
+            await updateRiderLocation({
+              latitude: location.latitude,
+              longitude: location.longitude,
+              accuracy: location.accuracy,
+            });
+          }
+
+          Alert.alert(
+            '🟢 เริ่มแชร์ตำแหน่งแล้ว',
+            'ตำแหน่งของคุณกำลังถูกส่งไปยังระบบ\n\nแอดมินสามารถเห็นตำแหน่งของคุณในหน้า GPS Monitor'
+          );
+        } else {
+          Alert.alert('ไม่สามารถเริ่มแชร์ตำแหน่งได้', 'กรุณาตรวจสอบการอนุญาตตำแหน่ง');
+        }
+      }
+    } catch (error) {
+      console.error('Toggle location sharing error:', error);
+      Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+    } finally {
+      setIsTogglingLocationShare(false);
     }
   };
 
@@ -963,6 +1042,85 @@ export default function RiderScreen() {
                 <View className="mt-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl p-4">
                   <Text className="text-blue-800 dark:text-blue-200 text-center text-sm">
                     📍 ตำแหน่งจะถูกแชร์เมื่อคุณรับงานเท่านั้น
+                  </Text>
+                </View>
+              )}
+            </Animated.View>
+          )}
+
+          {/* Location Sharing Toggle Button */}
+          {isApproved && (
+            <Animated.View entering={FadeInDown.delay(400).springify()} className="mt-6">
+              <Pressable
+                onPress={toggleLocationSharing}
+                disabled={isTogglingLocationShare}
+                className={`rounded-2xl py-5 flex-row items-center justify-center ${
+                  isLocationSharing
+                    ? 'bg-green-500 border-2 border-green-300'
+                    : 'bg-gray-200 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600'
+                } ${isTogglingLocationShare ? 'opacity-60' : ''}`}
+              >
+                {isTogglingLocationShare ? (
+                  <ActivityIndicator color={isLocationSharing ? 'white' : '#3B82F6'} />
+                ) : (
+                  <>
+                    {/* Location Sharing Indicator */}
+                    <View
+                      className={`w-6 h-6 rounded-full mr-3 items-center justify-center ${
+                        isLocationSharing ? 'bg-white/30' : 'bg-gray-400 dark:bg-gray-500'
+                      }`}
+                    >
+                      {isLocationSharing && (
+                        <Animated.View
+                          className="w-3 h-3 rounded-full bg-white"
+                          style={{
+                            shadowColor: '#fff',
+                            shadowOffset: { width: 0, height: 0 },
+                            shadowOpacity: 0.8,
+                            shadowRadius: 4,
+                          }}
+                        />
+                      )}
+                    </View>
+
+                    <View className="items-center">
+                      <Text
+                        className={`font-bold text-lg ${
+                          isLocationSharing ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        {isLocationSharing ? '📍 กำลังแชร์ตำแหน่ง' : '📍 แชร์ตำแหน่ง'}
+                      </Text>
+                      <Text
+                        className={`text-xs mt-1 ${
+                          isLocationSharing ? 'text-white/80' : 'text-gray-500'
+                        }`}
+                      >
+                        {isLocationSharing ? 'กดเพื่อหยุดแชร์' : 'กดเพื่อแชร์ตำแหน่งกับแอดมิน'}
+                      </Text>
+                    </View>
+
+                    {/* Pulsing indicator when sharing */}
+                    {isLocationSharing && (
+                      <View className="absolute right-4">
+                        <View className="w-4 h-4 rounded-full bg-white animate-pulse" />
+                      </View>
+                    )}
+                  </>
+                )}
+              </Pressable>
+
+              {/* Info text */}
+              {isLocationSharing && (
+                <View className="mt-3 bg-green-50 dark:bg-green-900/30 rounded-xl p-4">
+                  <View className="flex-row items-center">
+                    <View className="w-3 h-3 rounded-full bg-green-500 mr-2" />
+                    <Text className="text-green-800 dark:text-green-200 text-sm font-medium flex-1">
+                      ตำแหน่งของคุณกำลังถูกส่งไปยังระบบ
+                    </Text>
+                  </View>
+                  <Text className="text-green-700 dark:text-green-300 text-xs mt-2">
+                    แอดมินสามารถเห็นตำแหน่งของคุณใน GPS Monitor
                   </Text>
                 </View>
               )}
