@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Chatbot;
 use App\Http\Controllers\Controller;
 use App\Models\AiBotProfile;
 use App\Models\AiBotRental;
+use App\Models\OwnerEarning;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -127,9 +128,10 @@ class MarketplaceController extends Controller
             ], 422);
         }
 
+        // ตรวจสอบข้อมูลการเช่า (ใช้ rental_type แทน rental_plan)
         $validator = Validator::make($request->all(), [
-            'rental_plan' => 'required|in:monthly,per_message',
-            'months' => 'required_if:rental_plan,monthly|integer|min:1|max:12',
+            'rental_type' => 'required|in:monthly,per_message',
+            'months' => 'required_if:rental_type,monthly|integer|min:1|max:12',
         ]);
 
         if ($validator->fails()) {
@@ -139,53 +141,57 @@ class MarketplaceController extends Controller
             ], 422);
         }
 
-        $rentalPlan = $request->rental_plan;
+        $rentalType = $request->rental_type;
         $months = $request->months ?? 1;
 
-        if ($rentalPlan === 'monthly') {
+        // กำหนดราคาและวันที่ตาม rental type
+        if ($rentalType === 'monthly') {
             $price = $bot->rental_price_per_month;
-            $totalPrice = $price * $months;
+            $totalAmount = $price * $months;
             $startDate = now();
             $endDate = now()->addMonths($months);
         } else {
             $price = $bot->rental_price_per_message;
-            $totalPrice = 0; // Will be calculated based on usage
+            $totalAmount = 0; // จะคำนวณตามการใช้งานจริง
             $startDate = now();
-            $endDate = null; // No end date for per-message plan
+            $endDate = null; // ไม่มีวันหมดอายุสำหรับ per-message
         }
 
-        // Create rental
+        // สร้างการเช่าใหม่ (ใช้ field names ที่ถูกต้องตาม schema)
         $rental = AiBotRental::create([
             'bot_profile_id' => $bot->id,
             'renter_id' => $user->id,
-            'owner_id' => $bot->owner_id,
-            'rental_plan' => $rentalPlan,
+            'rental_type' => $rentalType,
+            'price' => $price,
             'start_date' => $startDate,
             'end_date' => $endDate,
-            'is_active' => true,
-            'monthly_price' => $rentalPlan === 'monthly' ? $price : null,
-            'price_per_message' => $rentalPlan === 'per_message' ? $price : null,
+            'status' => 'active',
+            'total_amount' => $totalAmount,
             'commission_rate' => $bot->commission_rate ?? 20,
+            'auto_renew' => $request->auto_renew ?? false,
         ]);
 
-        // Process payment (implement payment logic here)
+        // TODO: Process payment (implement payment logic here)
 
         return response()->json([
             'success' => true,
             'message' => 'เช่าบอทสำเร็จ',
-            'data' => $rental->load(['botProfile', 'owner']),
+            'data' => $rental->load(['botProfile.owner']),
         ], 201);
     }
 
     /**
      * Get my rentals (as renter)
+     *
+     * ดึงรายการเช่าของผู้ใช้ (ในฐานะผู้เช่า)
      */
     public function myRentals()
     {
         $user = Auth::user();
 
+        // ดึงการเช่าพร้อม botProfile และ owner ผ่าน botProfile
         $rentals = AiBotRental::where('renter_id', $user->id)
-            ->with(['botProfile', 'owner'])
+            ->with(['botProfile.owner'])
             ->latest()
             ->paginate(20);
 
@@ -197,23 +203,31 @@ class MarketplaceController extends Controller
 
     /**
      * Get my earnings (as owner)
+     *
+     * ดึงรายได้จากการให้เช่าบอท (ในฐานะเจ้าของบอท)
+     * ค้นหาผ่าน botProfile ที่ผู้ใช้เป็นเจ้าของ
      */
     public function myEarnings()
     {
         $user = Auth::user();
 
-        $rentals = AiBotRental::where('owner_id', $user->id)
+        // ดึง bot_profile_ids ที่ผู้ใช้เป็นเจ้าของ
+        $ownedBotIds = AiBotProfile::where('owner_id', $user->id)->pluck('id');
+
+        // ดึงการเช่าที่เป็นบอทของผู้ใช้
+        $rentals = AiBotRental::whereIn('bot_profile_id', $ownedBotIds)
             ->with(['botProfile', 'renter'])
             ->latest()
             ->paginate(20);
 
+        // คำนวณสถิติรายได้จาก OwnerEarning model
         $stats = [
-            'total_rentals' => AiBotRental::where('owner_id', $user->id)->count(),
-            'active_rentals' => AiBotRental::where('owner_id', $user->id)->active()->count(),
-            'total_earnings' => AiBotRental::where('owner_id', $user->id)->sum('owner_earning'),
-            'this_month_earnings' => AiBotRental::where('owner_id', $user->id)
-                ->whereMonth('created_at', now()->month)
-                ->sum('owner_earning'),
+            'total_rentals' => AiBotRental::whereIn('bot_profile_id', $ownedBotIds)->count(),
+            'active_rentals' => AiBotRental::whereIn('bot_profile_id', $ownedBotIds)->active()->count(),
+            'total_earnings' => OwnerEarning::where('owner_id', $user->id)->sum('net_amount'),
+            'this_month_earnings' => OwnerEarning::where('owner_id', $user->id)
+                ->where('earning_month', now()->format('Y-m'))
+                ->sum('net_amount'),
         ];
 
         return response()->json([
@@ -245,6 +259,8 @@ class MarketplaceController extends Controller
 
     /**
      * Renew rental
+     *
+     * ต่ออายุการเช่าบอท (เฉพาะแบบรายเดือนเท่านั้น)
      */
     public function renewRental(Request $request, $rentalId)
     {
@@ -253,7 +269,8 @@ class MarketplaceController extends Controller
         $rental = AiBotRental::where('renter_id', $user->id)
             ->findOrFail($rentalId);
 
-        if ($rental->rental_plan !== 'monthly') {
+        // ตรวจสอบว่าเป็นแผนรายเดือนหรือไม่ (ใช้ rental_type แทน rental_plan)
+        if ($rental->rental_type !== 'monthly') {
             return response()->json([
                 'success' => false,
                 'message' => 'สามารถต่ออายุได้เฉพาะแผนรายเดือนเท่านั้น',
