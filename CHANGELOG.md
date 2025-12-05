@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.18] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2039 from xjanova/claude/fix-mlm-menu-visibility-01XobUp2hkbHATNgS6KgqHap (cf8984b9)
+- fix(menu): แก้ไข route names ให้เมนู MLM แสดงบน User Dashboard (70fe8bcc)
+### 🔧 Other Changes
+
+
 ## [v3.358.17] - 2025-12-05
 
 ### ✨ Features
