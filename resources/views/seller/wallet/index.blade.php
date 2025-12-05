@@ -25,12 +25,34 @@
         </div>
     </div>
 
+    <!-- Pending Withdrawals Notice -->
+    @if(isset($pendingWithdrawals) && $pendingWithdrawals > 0)
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div class="flex gap-3">
+            <span class="text-xl">⏳</span>
+            <div>
+                <h3 class="font-bold text-yellow-900 mb-1">มีคำขอถอนเงินรอดำเนินการ</h3>
+                <p class="text-yellow-800 text-sm">
+                    จำนวน ฿{{ number_format($pendingWithdrawals, 2) }} กำลังรอการอนุมัติ
+                    <a href="{{ route('seller.wallet.withdrawals') }}" class="underline font-medium">ดูรายละเอียด</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Quick Actions -->
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <a href="{{ route('seller.wallet.withdraw') }}" class="bg-white rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
             <div class="text-4xl mb-3">💸</div>
             <p class="text-gray-800 font-semibold">ถอนเงิน</p>
             <p class="text-xs text-gray-500 mt-1">Withdraw</p>
+        </a>
+
+        <a href="{{ route('seller.wallet.withdrawals') }}" class="bg-white rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+            <div class="text-4xl mb-3">📋</div>
+            <p class="text-gray-800 font-semibold">ประวัติถอนเงิน</p>
+            <p class="text-xs text-gray-500 mt-1">History</p>
         </a>
 
         <a href="{{ route('seller.reports.sales') }}" class="bg-white rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
