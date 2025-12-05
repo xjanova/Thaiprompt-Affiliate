@@ -24,6 +24,8 @@ class Product extends Model
         'description',
         'short_description',
         'price',
+        'price_coins',
+        'allow_coin_purchase',
         'compare_at_price',
         'cost_price',
         'stock_quantity',
@@ -72,6 +74,8 @@ class Product extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
+        'price_coins' => 'decimal:2',
+        'allow_coin_purchase' => 'boolean',
         'compare_at_price' => 'decimal:2',
         'cost_price' => 'decimal:2',
         'stock_quantity' => 'integer',

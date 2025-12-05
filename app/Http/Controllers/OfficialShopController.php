@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\VideoCoin;
 use App\Services\CashbackService;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Official Shop Controller
@@ -172,11 +177,19 @@ class OfficialShopController extends Controller
         $cashbackService = new CashbackService(new WalletService());
         $cashbackInfo = $cashbackService->calculateProductCashback($product, $product->price, 1);
 
+        // Get user's coin balance
+        $coinBalance = 0;
+        if (auth()->check()) {
+            $videoCoin = auth()->user()->videoCoin;
+            $coinBalance = $videoCoin ? $videoCoin->balance : 0;
+        }
+
         return view('shop.official.show', compact(
             'product',
             'relatedProducts',
             'hasPurchased',
-            'cashbackInfo'
+            'cashbackInfo',
+            'coinBalance'
         ));
     }
 
@@ -288,5 +301,171 @@ class OfficialShopController extends Controller
         ];
 
         return view('shop.official.featured', compact('products', 'stats'));
+    }
+
+    /**
+     * ซื้อสินค้าด้วย Coins
+     *
+     * @param Request $request
+     * @param string $slug
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     */
+    public function purchaseWithCoin(Request $request, $slug)
+    {
+        // ต้อง login ก่อน
+        if (!auth()->check()) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'กรุณาเข้าสู่ระบบก่อนซื้อสินค้า',
+                ], 401);
+            }
+            return redirect()->route('login')->with('error', 'กรุณาเข้าสู่ระบบก่อนซื้อสินค้า');
+        }
+
+        $user = auth()->user();
+
+        // ดึงข้อมูลสินค้า
+        $product = Product::whereNull('seller_id')
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        // ตรวจสอบว่าสินค้ารองรับการซื้อด้วย Coins หรือไม่
+        if (!$product->allow_coin_purchase || $product->price_coins <= 0) {
+            $message = 'สินค้านี้ไม่รองรับการซื้อด้วย Coins';
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 400);
+            }
+            return back()->with('error', $message);
+        }
+
+        // ตรวจสอบจำนวน
+        $quantity = max(1, intval($request->input('quantity', 1)));
+
+        // ตรวจสอบสต็อก
+        if ($product->track_inventory && $product->stock_quantity < $quantity) {
+            $message = 'สินค้าในสต็อกไม่เพียงพอ';
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 400);
+            }
+            return back()->with('error', $message);
+        }
+
+        // คำนวณราคารวม
+        $totalCoins = $product->price_coins * $quantity;
+
+        // ดึง VideoCoin ของผู้ใช้
+        $videoCoin = $user->videoCoin;
+
+        // ตรวจสอบ Coins เพียงพอหรือไม่
+        if (!$videoCoin || $videoCoin->balance < $totalCoins) {
+            $currentBalance = $videoCoin ? $videoCoin->balance : 0;
+            $message = "Coins ไม่เพียงพอ (ต้องการ {$totalCoins} Coins, มี {$currentBalance} Coins)";
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                    'required' => $totalCoins,
+                    'balance' => $currentBalance,
+                ], 400);
+            }
+            return back()->with('error', $message);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // หัก Coins
+            $videoCoin->deductCoins(
+                $totalCoins,
+                'spent_purchase',
+                'Product',
+                $product->id,
+                "ซื้อสินค้า Official Shop: {$product->name} x {$quantity}"
+            );
+
+            // สร้าง Order
+            $order = Order::create([
+                'user_id' => $user->id,
+                'order_number' => 'OFF-' . strtoupper(Str::random(8)) . '-' . time(),
+                'status' => 'completed', // สินค้า Official Shop ถือว่าสำเร็จทันที
+                'payment_status' => 'paid',
+                'payment_method' => 'coins',
+                'subtotal' => 0, // ไม่ใช้เงิน
+                'shipping_fee' => 0,
+                'discount' => 0,
+                'total' => 0,
+                'coins_used' => $totalCoins,
+                'notes' => 'ซื้อด้วย Coins จาก Official Shop',
+                'shipping_name' => $user->name,
+                'shipping_phone' => $user->phone,
+                'shipping_address' => $user->address,
+            ]);
+
+            // สร้าง OrderItem
+            OrderItem::create([
+                'order_id' => $order->id,
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'product_sku' => $product->sku,
+                'price' => 0,
+                'price_coins' => $product->price_coins,
+                'quantity' => $quantity,
+                'subtotal' => 0,
+                'subtotal_coins' => $totalCoins,
+            ]);
+
+            // ลดสต็อก (ถ้าติดตามสต็อก)
+            if ($product->track_inventory) {
+                $product->decrement('stock_quantity', $quantity);
+            }
+
+            // เพิ่มยอดขาย
+            $product->increment('sales_count', $quantity);
+
+            DB::commit();
+
+            $message = "ซื้อสินค้าสำเร็จ! ใช้ไป {$totalCoins} Coins";
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'coins_used' => $totalCoins,
+                    'new_balance' => $videoCoin->fresh()->balance,
+                ]);
+            }
+
+            return redirect()->route('official-shop.purchase-success', $order->order_number)
+                ->with('success', $message);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            $message = 'เกิดข้อผิดพลาด: ' . $e->getMessage();
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 500);
+            }
+            return back()->with('error', $message);
+        }
+    }
+
+    /**
+     * หน้าซื้อสำเร็จ
+     *
+     * @param string $orderNumber
+     * @return \Illuminate\View\View
+     */
+    public function purchaseSuccess($orderNumber)
+    {
+        $order = Order::with(['items.product'])
+            ->where('order_number', $orderNumber)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        return view('shop.official.purchase-success', compact('order'));
     }
 }

@@ -38,6 +38,46 @@
         </div>
     </div>
 
+    {{-- Official Shop Banner --}}
+    <div class="mb-8">
+        <a href="{{ route('official-shop.index') }}" class="block group">
+            <div class="relative overflow-hidden bg-gradient-to-r from-amber-500 via-purple-600 to-pink-600 rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02]">
+                {{-- Background Pattern --}}
+                <div class="absolute inset-0 bg-black/10" style="background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0); background-size: 30px 30px;"></div>
+
+                {{-- Crown Decoration --}}
+                <div class="absolute top-2 right-4 opacity-20">
+                    <svg class="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z"/>
+                    </svg>
+                </div>
+
+                <div class="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30">
+                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z"/>
+                            </svg>
+                        </div>
+                        <div class="text-white">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold">ใช้ Coins ซื้อได้</span>
+                            </div>
+                            <h3 class="text-2xl font-bold">Official Shop Premium</h3>
+                            <p class="text-white/80 text-sm">สินค้าคุณภาพจากร้านทางการ - รองรับการซื้อด้วย Coins</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 text-white font-semibold group-hover:gap-4 transition-all">
+                        <span>เยี่ยมชม Official Shop</span>
+                        <svg class="w-5 h-5 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
     {{-- Featured Products --}}
     @if($featuredProducts->count() > 0)
     <div class="mb-8">

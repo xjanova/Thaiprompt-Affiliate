@@ -403,6 +403,14 @@ Route::prefix('official-shop')->name('official-shop.')->group(function () {
     Route::match(['GET', 'HEAD'], '/featured', [\App\Http\Controllers\OfficialShopController::class, 'featured'])->name('featured');
     Route::match(['GET', 'HEAD'], '/category/{slug}', [\App\Http\Controllers\OfficialShopController::class, 'category'])->name('category');
     Route::match(['GET', 'HEAD'], '/search', [\App\Http\Controllers\OfficialShopController::class, 'quickSearch'])->name('search');
+
+    // Coin Purchase Routes (ต้อง login)
+    Route::middleware('auth')->group(function () {
+        Route::post('/{slug}/purchase-with-coin', [\App\Http\Controllers\OfficialShopController::class, 'purchaseWithCoin'])->name('purchase-with-coin');
+        Route::match(['GET', 'HEAD'], '/order/{orderNumber}/success', [\App\Http\Controllers\OfficialShopController::class, 'purchaseSuccess'])->name('purchase-success');
+    });
+
+    // Product Detail (ต้องอยู่หลัง routes อื่น)
     Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\OfficialShopController::class, 'show'])->name('show');
 });
 
