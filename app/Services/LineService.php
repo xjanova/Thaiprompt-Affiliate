@@ -135,6 +135,47 @@ class LineService
     }
 
     /**
+     * Get user profile by LINE User ID (Bot API)
+     *
+     * ใช้ Channel Access Token เพื่อดึงข้อมูล profile ของ user
+     * ใช้สำหรับกรณีที่ได้รับ userId จาก webhook event
+     *
+     * @param string $lineUserId LINE User ID
+     * @return array Profile data (userId, displayName, pictureUrl, statusMessage)
+     * @throws Exception หากดึงข้อมูลล้มเหลว
+     */
+    public function getProfile(string $lineUserId): array
+    {
+        if (!$this->settings || empty($this->settings->channel_access_token)) {
+            throw new Exception('LINE channel access token not configured');
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
+            ])->get(self::LINE_API_BASE . '/v2/bot/profile/' . $lineUserId);
+
+            if (!$response->successful()) {
+                Log::error('LINE profile fetch failed (Bot API)', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'line_user_id' => $lineUserId,
+                ]);
+                throw new Exception('Failed to fetch LINE user profile: ' . $response->status());
+            }
+
+            return $response->json();
+
+        } catch (Exception $e) {
+            Log::error('LINE getProfile exception', [
+                'error' => $e->getMessage(),
+                'line_user_id' => $lineUserId,
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Send push message to a user
      *
      * ส่งข้อความไปยัง LINE user

@@ -118,7 +118,7 @@ class LineSignupFlowSeeder extends Seeder
             ],
             'conditional_next_steps' => [
                 [
-                    'field' => 'consent',
+                    'field' => 'confirmed',  // ใช้ 'confirmed' เพราะ input_type='confirm' บันทึกค่าด้วย key 'confirmed'
                     'operator' => '==',
                     'value' => 'ไม่ยินยอม',
                     'next_step_key' => 'cancel',
