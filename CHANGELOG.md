@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.362.7] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: handle route model binding in TrackVendorStoreVisit middleware (c7ecf323)
+- fix: add table prefix to ambiguous columns in PlatformTransaction scopes (ca4e44a9)
+### 🔧 Other Changes
+- Merge pull request #2112 from xjanova/claude/fix-ambiguous-column-query-01DxX6Qf72CrqS7LsGzV4fzU (5673674f)
+- Merge branch 'claude/Main' into claude/fix-ambiguous-column-query-01DxX6Qf72CrqS7LsGzV4fzU (d1ef5ac1)
+
 ## [v3.362.6] - 2025-12-05
 
 ### ✨ Features
