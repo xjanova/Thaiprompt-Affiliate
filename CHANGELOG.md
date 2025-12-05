@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.362.0] - 2025-12-05
+
+### ✨ Features
+- feat: implement seller withdrawal system (4def38cc)
+### 🐛 Bug Fixes
+- fix: use correct route names for learning-center article (41e591e2)
+### 🔧 Other Changes
+- Merge pull request #2105 from xjanova/claude/fix-missing-route-error-01T4MxWv6K9RFvhvuAGuua7S (0f784c6b)
+
 ## [v3.361.29] - 2025-12-05
 
 ### ✨ Features
