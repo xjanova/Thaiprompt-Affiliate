@@ -3,16 +3,41 @@
 namespace App\Services\Payment;
 
 use App\Models\PaymentTransaction;
+use App\Models\PaymentGateway;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Exception;
 
+/**
+ * Payment Service
+ *
+ * บริการจัดการการชำระเงินแบบรวมศูนย์
+ * รองรับหลาย payment providers
+ */
 class PaymentService
 {
     protected $providers = [];
+
+    /**
+     * Provider class mapping
+     *
+     * @var array
+     */
+    protected static $providerClasses = [
+        'wallet' => WalletPaymentProvider::class,
+        'promptpay' => PromptPayProvider::class,
+        'credit_card' => CreditCardProvider::class,
+        'bank_transfer' => BankTransferProvider::class,
+        'cash_on_delivery' => CashOnDeliveryProvider::class,
+        'paysolutions' => PaySolutionsProvider::class,
+        'stripe' => StripeProvider::class,
+        'omise' => OmiseProvider::class,
+        'nfc_card' => NFCCardProvider::class,
+    ];
 
     public function __construct()
     {
@@ -21,22 +46,58 @@ class PaymentService
 
     /**
      * Register payment providers
+     *
+     * ลงทะเบียน payment providers ทั้งหมดที่พร้อมใช้งาน
      */
-    protected function registerProviders()
+    protected function registerProviders(): void
     {
-        $this->providers['wallet'] = new WalletPaymentProvider();
-        $this->providers['promptpay'] = new PromptPayProvider();
-        $this->providers['credit_card'] = new CreditCardProvider();
-        $this->providers['bank_transfer'] = new BankTransferProvider();
-        $this->providers['cash_on_delivery'] = new CashOnDeliveryProvider();
-        $this->providers['paysolutions'] = new PaySolutionsProvider();
-        $this->providers['nfc_card'] = app(NFCCardProvider::class);
+        // ลงทะเบียน built-in providers
+        foreach (self::$providerClasses as $code => $class) {
+            try {
+                // NFCCardProvider ต้องใช้ dependency injection
+                if ($code === 'nfc_card') {
+                    $this->providers[$code] = app($class);
+                } else {
+                    $this->providers[$code] = new $class();
+                }
+            } catch (\Exception $e) {
+                // ถ้าสร้าง provider ไม่สำเร็จ ให้ข้ามไป
+                Log::debug("Failed to register payment provider: {$code}", [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Check if a provider is available
+     *
+     * @param string $method
+     * @return bool
+     */
+    public function hasProvider(string $method): bool
+    {
+        return isset($this->providers[$method]);
+    }
+
+    /**
+     * Get all registered providers
+     *
+     * @return array
+     */
+    public function getRegisteredProviders(): array
+    {
+        return array_keys($this->providers);
     }
 
     /**
      * Get payment provider by method
+     *
+     * @param string $method
+     * @return PaymentProviderInterface
+     * @throws Exception
      */
-    public function getProvider(string $method)
+    public function getProvider(string $method): PaymentProviderInterface
     {
         if (!isset($this->providers[$method])) {
             throw new Exception("Payment provider '{$method}' not found");
@@ -324,9 +385,15 @@ class PaymentService
 
     /**
      * Get available payment methods
+     *
+     * ดึงรายการ payment methods ที่พร้อมใช้งาน
+     * โดยรวมทั้ง built-in methods และ gateways ที่ active
+     *
+     * @return array
      */
     public function getAvailablePaymentMethods(): array
     {
+        // Built-in payment methods (ใช้งานได้เสมอ)
         $methods = [
             [
                 'id' => 'wallet',
@@ -334,27 +401,7 @@ class PaymentService
                 'description' => 'จ่ายด้วยยอดเงินในกระเป๋า',
                 'icon' => '👛',
                 'enabled' => true,
-            ],
-            [
-                'id' => 'promptpay',
-                'name' => 'PromptPay',
-                'description' => 'สแกน QR Code เพื่อชำระเงิน',
-                'icon' => '📱',
-                'enabled' => true,
-            ],
-            [
-                'id' => 'credit_card',
-                'name' => 'Credit/Debit Card',
-                'description' => 'บัตรเครดิต/เดบิต',
-                'icon' => '💳',
-                'enabled' => true,
-            ],
-            [
-                'id' => 'bank_transfer',
-                'name' => 'Bank Transfer',
-                'description' => 'โอนเงินผ่านธนาคาร',
-                'icon' => '🏦',
-                'enabled' => true,
+                'category' => 'internal',
             ],
             [
                 'id' => 'cash_on_delivery',
@@ -362,35 +409,98 @@ class PaymentService
                 'description' => 'เก็บเงินปลายทาง',
                 'icon' => '💵',
                 'enabled' => true,
+                'category' => 'offline',
             ],
         ];
 
-        // Add PaySolutions if configured and active
+        // ดึง payment gateways ที่ active จาก database
         try {
-            if (class_exists(\App\Models\PaymentGateway::class)) {
-                $paymentGateway = \App\Models\PaymentGateway::findByCode('paysolutions');
-                if ($paymentGateway && $paymentGateway->is_active && $paymentGateway->isConfigured()) {
+            if (class_exists(PaymentGateway::class)) {
+                $gateways = PaymentGateway::where('is_active', true)
+                    ->where('is_available', true)
+                    ->where('is_coming_soon', false)
+                    ->orderBy('sort_order')
+                    ->get();
+
+                foreach ($gateways as $gateway) {
+                    // ตรวจสอบว่ามี provider สำหรับ gateway นี้หรือไม่
+                    if (!$this->hasProvider($gateway->code)) {
+                        continue;
+                    }
+
                     $methods[] = [
-                        'id' => 'paysolutions',
-                        'name' => 'PaySolutions',
-                        'description' => 'ชำระเงินผ่าน PaySolutions (QR, Card, E-Wallet)',
-                        'icon' => '💳',
-                        'enabled' => true,
-                        'submethods' => [
-                            'qr' => 'QR Code Payment',
-                            'card' => 'Credit/Debit Card',
-                            'bank_transfer' => 'Bank Transfer',
-                            'ewallet' => 'E-Wallet',
-                            'installment' => 'Installment',
-                        ],
+                        'id' => $gateway->code,
+                        'name' => $gateway->name,
+                        'description' => $gateway->description,
+                        'icon' => $gateway->icon,
+                        'enabled' => $gateway->isConfigured(),
+                        'category' => $gateway->category,
+                        'color' => $gateway->color,
+                        'test_mode' => $gateway->test_mode,
+                        'supports_deposit' => $gateway->supports_deposit,
+                        'supports_withdrawal' => $gateway->supports_withdrawal,
+                        'fees' => $gateway->fees,
+                        'limits' => $gateway->limits,
                     ];
                 }
             }
         } catch (\Exception $e) {
             // PaymentGateway model not available or database not ready
-            \Log::warning('Could not load PaySolutions gateway: ' . $e->getMessage());
+            Log::warning('Could not load payment gateways: ' . $e->getMessage());
+
+            // Fallback to basic methods
+            $methods = array_merge($methods, [
+                [
+                    'id' => 'promptpay',
+                    'name' => 'PromptPay',
+                    'description' => 'สแกน QR Code เพื่อชำระเงิน',
+                    'icon' => '📱',
+                    'enabled' => true,
+                    'category' => 'thai',
+                ],
+                [
+                    'id' => 'credit_card',
+                    'name' => 'Credit/Debit Card',
+                    'description' => 'บัตรเครดิต/เดบิต',
+                    'icon' => '💳',
+                    'enabled' => true,
+                    'category' => 'card',
+                ],
+                [
+                    'id' => 'bank_transfer',
+                    'name' => 'Bank Transfer',
+                    'description' => 'โอนเงินผ่านธนาคาร',
+                    'icon' => '🏦',
+                    'enabled' => true,
+                    'category' => 'bank',
+                ],
+            ]);
         }
 
         return $methods;
+    }
+
+    /**
+     * Get payment methods for deposit
+     *
+     * @return array
+     */
+    public function getDepositMethods(): array
+    {
+        return array_filter($this->getAvailablePaymentMethods(), function ($method) {
+            return ($method['supports_deposit'] ?? true) && ($method['enabled'] ?? false);
+        });
+    }
+
+    /**
+     * Get payment methods for withdrawal
+     *
+     * @return array
+     */
+    public function getWithdrawalMethods(): array
+    {
+        return array_filter($this->getAvailablePaymentMethods(), function ($method) {
+            return ($method['supports_withdrawal'] ?? false) && ($method['enabled'] ?? false);
+        });
     }
 }

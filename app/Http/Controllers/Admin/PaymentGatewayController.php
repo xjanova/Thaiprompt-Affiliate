@@ -292,6 +292,11 @@ class PaymentGatewayController extends Controller
                 'public_key' => $request->input('credentials.public_key'),
                 'secret_key' => $request->input('credentials.secret_key'),
             ],
+            'paysolutions' => [
+                'merchant_id' => $request->input('credentials.merchant_id'),
+                'api_key' => $request->input('credentials.api_key'),
+                'secret_key' => $request->input('credentials.secret_key'),
+            ],
             default => [],
         };
     }
