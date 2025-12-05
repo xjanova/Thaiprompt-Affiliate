@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.362.13] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2118 from xjanova/claude/fix-ambiguous-column-query-01DxX6Qf72CrqS7LsGzV4fzU (d3241b58)
+- fix: correct column name wallet_id to platform_wallet_id in joins (5b591546)
+### 🔧 Other Changes
+
+
 ## [v3.362.12] - 2025-12-05
 
 ### ✨ Features
