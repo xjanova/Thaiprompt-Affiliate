@@ -127,7 +127,7 @@
             ['icon' => '🎨', 'label' => 'Smart Sliders', 'url' => route('admin.smart-sliders.index'), 'color' => 'from-rose-600 to-pink-600'],
             ['icon' => '🤖', 'label' => 'AI Management', 'url' => route('admin.ai-providers.index'), 'color' => 'from-purple-500 to-violet-500', 'highlight' => true],
             ['icon' => '🔌', 'label' => 'API Management', 'url' => route('admin.api-endpoints.index'), 'color' => 'from-slate-600 to-gray-600'],
-            ['icon' => '📱', 'label' => 'App Management', 'url' => route('admin.app-management.settings.index'), 'color' => 'from-sky-600 to-blue-600'],
+            ['icon' => '📱', 'label' => 'Mobile App', 'url' => route('admin.mobile-app.index'), 'color' => 'from-sky-600 to-blue-600'],
             ['icon' => '📧', 'label' => 'จัดการอีเมล', 'url' => route('admin.email.templates.index'), 'color' => 'from-blue-600 to-indigo-600'],
             ['icon' => '📱', 'label' => 'LINE OA & AI', 'url' => route('admin.line-oa.index'), 'color' => 'from-green-500 to-emerald-500'],
             ['icon' => '🎓', 'label' => 'Academy System', 'url' => route('admin.academy.courses.index'), 'color' => 'from-purple-600 to-pink-600'],
