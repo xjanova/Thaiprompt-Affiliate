@@ -183,12 +183,18 @@
                             </div>
                         </td>
                         <td class="px-6 py-4">
-                            <div class="text-sm text-gray-900 dark:text-white">
-                                {{ $token->creator->name }}
-                            </div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                                {{ $token->creator->email }}
-                            </div>
+                            @if($token->creator)
+                                <div class="text-sm text-gray-900 dark:text-white">
+                                    {{ $token->creator->name }}
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ $token->creator->email }}
+                                </div>
+                            @else
+                                <div class="text-sm text-gray-400 dark:text-gray-500 italic">
+                                    ไม่ระบุผู้สร้าง
+                                </div>
+                            @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold
