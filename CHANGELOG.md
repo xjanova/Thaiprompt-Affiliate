@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.6] - 2025-12-05
+
+### ✨ Features
+- Merge pull request #2081 from xjanova/claude/test-payment-gateways-01WeW9g8rDkmauXwEYzfCL72 (80fa42f8)
+- feat(payment): add PayPal, Razorpay, and TrueMoney payment providers (d4f9724d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.361.5] - 2025-12-05
 
 ### ✨ Features
