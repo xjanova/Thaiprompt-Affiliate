@@ -41,7 +41,7 @@
             <div class="text-sm text-gray-600 dark:text-gray-400">
                 การเข้าชมทั้งหมด
             </div>
-        </div>
+        </x-arrow-x.card-v3>
 
         <!-- Total Leads -->
         <x-arrow-x.card-v3 class="p-6">
@@ -59,7 +59,7 @@
             <div class="text-sm text-gray-600 dark:text-gray-400">
                 ผู้มุ่งหวัง (Leads)
             </div>
-        </div>
+        </x-arrow-x.card-v3>
 
         <!-- Total Conversions -->
         <x-arrow-x.card-v3 class="p-6">
@@ -77,7 +77,7 @@
             <div class="text-sm text-gray-600 dark:text-gray-400">
                 คนสมัครสำเร็จ
             </div>
-        </div>
+        </x-arrow-x.card-v3>
 
         <!-- Conversion Rate -->
         <x-arrow-x.card-v3 class="p-6">
@@ -95,7 +95,7 @@
             <div class="text-sm text-gray-600 dark:text-gray-400">
                 Conversion Rate
             </div>
-        </div>
+        </x-arrow-x.card-v3>
     </div>
 
     <!-- Edit Form -->
