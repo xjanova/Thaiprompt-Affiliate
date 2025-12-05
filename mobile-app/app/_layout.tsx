@@ -148,26 +148,12 @@ export default function RootLayout() {
             }}
           />
 
-          {/* Modal Screens */}
-          <Stack.Screen
-            name="hub/[id]"
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
-            }}
-          />
+          {/* Product Detail Screen */}
           <Stack.Screen
             name="product/[id]"
             options={{
               presentation: 'card',
               animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen
-            name="cart"
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
             }}
           />
         </Stack>
