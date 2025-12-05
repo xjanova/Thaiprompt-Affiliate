@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.362.9] - 2025-12-05
+
+### ✨ Features
+- Merge pull request #2114 from xjanova/claude/design-ecommerce-layout-01G712YmD3j8hk4wFzTHs9sA (d888f768)
+- feat(official-shop): add coin purchase feature for Official Shop products (84fc2491)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.362.8] - 2025-12-05
 
 ### ✨ Features
