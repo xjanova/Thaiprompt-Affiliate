@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.24] - 2025-12-05
+
+### ✨ Features
+- Merge pull request #2099 from xjanova/claude/design-ecommerce-layout-01G712YmD3j8hk4wFzTHs9sA (ce9ab325)
+- feat(routes): update Official Shop links to use new premium V3 pages (99c220bf)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.361.23] - 2025-12-05
 
 ### ✨ Features
