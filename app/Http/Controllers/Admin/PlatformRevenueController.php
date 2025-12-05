@@ -294,9 +294,9 @@ class PlatformRevenueController extends Controller
             $data['vat'][] = $dailyStats['by_wallet']['vat'] ?? 0;
             $data['mlm_pool'][] = $dailyStats['by_wallet']['mlm_pool'] ?? 0;
 
-            // Payouts
-            $payout = PayoutRequest::where('status', PayoutRequest::STATUS_COMPLETED)
-                ->whereDate('processed_at', $date)
+            // Payouts - ดึงยอดจ่ายที่จ่ายแล้ว
+            $payout = PayoutRequest::where('status', PayoutRequest::STATUS_PAID)
+                ->whereDate('paid_at', $date)
                 ->sum('net_amount');
             $data['payout'][] = $payout;
         }
