@@ -200,6 +200,98 @@ export default function RootLayout() {
               animation: 'slide_from_right',
             }}
           />
+
+          {/* Coming Soon Screen */}
+          <Stack.Screen
+            name="coming-soon"
+            options={{
+              headerShown: true,
+              title: 'เร็วๆ นี้',
+              headerStyle: {
+                backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+              },
+              headerTintColor: isDark ? '#FFFFFF' : '#1F2937',
+              animation: 'fade',
+            }}
+          />
+
+          {/* Notifications Screen */}
+          <Stack.Screen
+            name="notifications"
+            options={{
+              headerShown: true,
+              title: 'การแจ้งเตือน',
+              headerStyle: {
+                backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+              },
+              headerTintColor: isDark ? '#FFFFFF' : '#1F2937',
+            }}
+          />
+
+          {/* Support Screen */}
+          <Stack.Screen
+            name="support"
+            options={{
+              headerShown: true,
+              title: 'ช่วยเหลือ',
+              headerStyle: {
+                backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+              },
+              headerTintColor: isDark ? '#FFFFFF' : '#1F2937',
+            }}
+          />
+
+          {/* KYC Screen */}
+          <Stack.Screen
+            name="kyc"
+            options={{
+              headerShown: true,
+              title: 'ยืนยันตัวตน',
+              headerStyle: {
+                backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+              },
+              headerTintColor: isDark ? '#FFFFFF' : '#1F2937',
+            }}
+          />
+
+          {/* Leaderboard Screen */}
+          <Stack.Screen
+            name="leaderboard"
+            options={{
+              headerShown: true,
+              title: 'อันดับ',
+              headerStyle: {
+                backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+              },
+              headerTintColor: isDark ? '#FFFFFF' : '#1F2937',
+            }}
+          />
+
+          {/* Rank Screen */}
+          <Stack.Screen
+            name="rank"
+            options={{
+              headerShown: true,
+              title: 'ระดับ',
+              headerStyle: {
+                backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+              },
+              headerTintColor: isDark ? '#FFFFFF' : '#1F2937',
+            }}
+          />
+
+          {/* Rider Screen */}
+          <Stack.Screen
+            name="rider"
+            options={{
+              headerShown: true,
+              title: 'ไรเดอร์',
+              headerStyle: {
+                backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+              },
+              headerTintColor: isDark ? '#FFFFFF' : '#1F2937',
+            }}
+          />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

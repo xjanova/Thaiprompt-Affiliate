@@ -30,7 +30,7 @@ import Animated, {
   FadeInUp,
   FadeInDown,
 } from 'react-native-reanimated';
-import { LavaBackground, GlassCard } from '@/components';
+import { LavaBackground } from '@/components';
 import { useAuthStore } from '@/stores/authStore';
 
 const { width } = Dimensions.get('window');
