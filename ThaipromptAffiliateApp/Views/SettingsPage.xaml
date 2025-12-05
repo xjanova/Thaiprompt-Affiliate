@@ -1,0 +1,675 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ThaipromptAffiliateApp.Views.SettingsPage"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#0A0A0A">
+
+    <ScrollView>
+        <Grid RowDefinitions="Auto,*" Padding="0">
+
+            <!-- ============================================ -->
+            <!-- PREMIUM HEADER BAR -->
+            <!-- ============================================ -->
+            <Frame Grid.Row="0"
+                   Padding="0"
+                   CornerRadius="0"
+                   BorderColor="Transparent"
+                   HasShadow="True">
+                <Frame.Shadow>
+                    <Shadow Brush="#000000"
+                            Offset="0,4"
+                            Radius="10"
+                            Opacity="0.5"/>
+                </Frame.Shadow>
+                <Frame.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#1A1A1A" Offset="0.0"/>
+                        <GradientStop Color="#2A2A2A" Offset="0.5"/>
+                        <GradientStop Color="#1A1A1A" Offset="1.0"/>
+                    </LinearGradientBrush>
+                </Frame.Background>
+
+                <Grid Padding="15,50,15,15" ColumnDefinitions="Auto,*,Auto">
+
+                    <!-- Back Button -->
+                    <Frame x:Name="BtnBack"
+                           Grid.Column="0"
+                           WidthRequest="44"
+                           HeightRequest="44"
+                           CornerRadius="22"
+                           Padding="0"
+                           BorderColor="#3A3A3A"
+                           BackgroundColor="#2A2A2A">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnBackTapped"/>
+                        </Frame.GestureRecognizers>
+                        <Label Text="←"
+                               FontSize="20"
+                               TextColor="#D4AF37"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"/>
+                    </Frame>
+
+                    <!-- Title Section -->
+                    <VerticalStackLayout Grid.Column="1"
+                                        HorizontalOptions="Center"
+                                        VerticalOptions="Center"
+                                        Spacing="2">
+                        <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
+                            <Label Text="⚙️"
+                                   FontSize="18"
+                                   VerticalOptions="Center"/>
+                            <Label Text="ตั้งค่า"
+                                   FontSize="18"
+                                   FontAttributes="Bold"
+                                   TextColor="White"
+                                   VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+                        <Label Text="Settings"
+                               FontSize="10"
+                               TextColor="#999999"
+                               HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+
+                    <!-- Reset Button -->
+                    <Frame x:Name="BtnReset"
+                           Grid.Column="2"
+                           WidthRequest="44"
+                           HeightRequest="44"
+                           CornerRadius="22"
+                           Padding="0"
+                           BorderColor="#3A3A3A"
+                           BackgroundColor="#2A2A2A">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnResetTapped"/>
+                        </Frame.GestureRecognizers>
+                        <Label Text="↺"
+                               FontSize="18"
+                               TextColor="#999999"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"/>
+                    </Frame>
+                </Grid>
+            </Frame>
+
+            <!-- Gold Accent Line -->
+            <BoxView Grid.Row="0"
+                     HeightRequest="2"
+                     VerticalOptions="End">
+                <BoxView.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#00D4AF37" Offset="0.0"/>
+                        <GradientStop Color="#D4AF37" Offset="0.3"/>
+                        <GradientStop Color="#DC143C" Offset="0.7"/>
+                        <GradientStop Color="#00DC143C" Offset="1.0"/>
+                    </LinearGradientBrush>
+                </BoxView.Background>
+            </BoxView>
+
+            <!-- ============================================ -->
+            <!-- SETTINGS CONTENT -->
+            <!-- ============================================ -->
+            <VerticalStackLayout Grid.Row="1" Spacing="20" Padding="20">
+
+                <!-- ============================================ -->
+                <!-- SECTION: การแจ้งเตือน (Notifications) -->
+                <!-- ============================================ -->
+                <Frame BackgroundColor="#1A1A1A"
+                       CornerRadius="16"
+                       BorderColor="#2A2A2A"
+                       Padding="0"
+                       HasShadow="True">
+                    <Frame.Shadow>
+                        <Shadow Brush="#000000"
+                                Offset="0,4"
+                                Radius="8"
+                                Opacity="0.3"/>
+                    </Frame.Shadow>
+                    <VerticalStackLayout>
+                        <!-- Section Header -->
+                        <Grid Padding="20,15" BackgroundColor="#252525">
+                            <HorizontalStackLayout Spacing="10">
+                                <Label Text="🔔" FontSize="18" VerticalOptions="Center"/>
+                                <Label Text="การแจ้งเตือน"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="White"
+                                       VerticalOptions="Center"/>
+                            </HorizontalStackLayout>
+                        </Grid>
+
+                        <!-- Push Notification Toggle -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="การแจ้งเตือนแบบ Push"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label Text="รับการแจ้งเตือนเมื่อมีข่าวสารใหม่"
+                                       FontSize="11"
+                                       TextColor="#777777"/>
+                            </VerticalStackLayout>
+                            <Switch x:Name="SwitchPushNotification"
+                                    Grid.Column="1"
+                                    OnColor="#D4AF37"
+                                    ThumbColor="#FFFFFF"
+                                    IsToggled="True"
+                                    Toggled="OnPushNotificationToggled"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" BackgroundColor="#2A2A2A" Margin="20,0"/>
+
+                        <!-- Notification Sound Toggle -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="เสียงแจ้งเตือน"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label Text="เปิดเสียงเมื่อมีการแจ้งเตือน"
+                                       FontSize="11"
+                                       TextColor="#777777"/>
+                            </VerticalStackLayout>
+                            <Switch x:Name="SwitchNotificationSound"
+                                    Grid.Column="1"
+                                    OnColor="#D4AF37"
+                                    ThumbColor="#FFFFFF"
+                                    IsToggled="True"
+                                    Toggled="OnNotificationSoundToggled"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" BackgroundColor="#2A2A2A" Margin="20,0"/>
+
+                        <!-- Vibration Toggle -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="การสั่น"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label Text="สั่นเมื่อมีการแจ้งเตือน"
+                                       FontSize="11"
+                                       TextColor="#777777"/>
+                            </VerticalStackLayout>
+                            <Switch x:Name="SwitchVibration"
+                                    Grid.Column="1"
+                                    OnColor="#D4AF37"
+                                    ThumbColor="#FFFFFF"
+                                    IsToggled="True"
+                                    Toggled="OnVibrationToggled"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" BackgroundColor="#2A2A2A" Margin="20,0"/>
+
+                        <!-- Order Updates -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="อัพเดทคำสั่งซื้อ"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label Text="แจ้งเตือนสถานะคำสั่งซื้อ"
+                                       FontSize="11"
+                                       TextColor="#777777"/>
+                            </VerticalStackLayout>
+                            <Switch x:Name="SwitchOrderUpdates"
+                                    Grid.Column="1"
+                                    OnColor="#D4AF37"
+                                    ThumbColor="#FFFFFF"
+                                    IsToggled="True"
+                                    Toggled="OnOrderUpdatesToggled"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" BackgroundColor="#2A2A2A" Margin="20,0"/>
+
+                        <!-- Commission Alerts -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="แจ้งเตือนค่าคอมมิชชั่น"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label Text="แจ้งเตือนเมื่อได้รับค่าคอมมิชชั่น"
+                                       FontSize="11"
+                                       TextColor="#777777"/>
+                            </VerticalStackLayout>
+                            <Switch x:Name="SwitchCommissionAlerts"
+                                    Grid.Column="1"
+                                    OnColor="#D4AF37"
+                                    ThumbColor="#FFFFFF"
+                                    IsToggled="True"
+                                    Toggled="OnCommissionAlertsToggled"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- ============================================ -->
+                <!-- SECTION: ธีมและการแสดงผล (Theme & Display) -->
+                <!-- ============================================ -->
+                <Frame BackgroundColor="#1A1A1A"
+                       CornerRadius="16"
+                       BorderColor="#2A2A2A"
+                       Padding="0"
+                       HasShadow="True">
+                    <Frame.Shadow>
+                        <Shadow Brush="#000000"
+                                Offset="0,4"
+                                Radius="8"
+                                Opacity="0.3"/>
+                    </Frame.Shadow>
+                    <VerticalStackLayout>
+                        <!-- Section Header -->
+                        <Grid Padding="20,15" BackgroundColor="#252525">
+                            <HorizontalStackLayout Spacing="10">
+                                <Label Text="🎨" FontSize="18" VerticalOptions="Center"/>
+                                <Label Text="ธีมและการแสดงผล"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="White"
+                                       VerticalOptions="Center"/>
+                            </HorizontalStackLayout>
+                        </Grid>
+
+                        <!-- Dark Mode Toggle -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="โหมดมืด"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label Text="ใช้ธีมสีมืด (แนะนำ)"
+                                       FontSize="11"
+                                       TextColor="#777777"/>
+                            </VerticalStackLayout>
+                            <Switch x:Name="SwitchDarkMode"
+                                    Grid.Column="1"
+                                    OnColor="#D4AF37"
+                                    ThumbColor="#FFFFFF"
+                                    IsToggled="True"
+                                    Toggled="OnDarkModeToggled"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" BackgroundColor="#2A2A2A" Margin="20,0"/>
+
+                        <!-- Animation Toggle -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="อนิเมชั่น"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label Text="เปิดใช้งานเอฟเฟกต์เคลื่อนไหว"
+                                       FontSize="11"
+                                       TextColor="#777777"/>
+                            </VerticalStackLayout>
+                            <Switch x:Name="SwitchAnimations"
+                                    Grid.Column="1"
+                                    OnColor="#D4AF37"
+                                    ThumbColor="#FFFFFF"
+                                    IsToggled="True"
+                                    Toggled="OnAnimationsToggled"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" BackgroundColor="#2A2A2A" Margin="20,0"/>
+
+                        <!-- Language Selection -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnLanguageTapped"/>
+                            </Frame.GestureRecognizers>
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="ภาษา"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label x:Name="LblCurrentLanguage"
+                                       Text="ไทย"
+                                       FontSize="11"
+                                       TextColor="#D4AF37"/>
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1"
+                                   Text="›"
+                                   FontSize="24"
+                                   TextColor="#777777"
+                                   VerticalOptions="Center"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- ============================================ -->
+                <!-- SECTION: ความเป็นส่วนตัว (Privacy) -->
+                <!-- ============================================ -->
+                <Frame BackgroundColor="#1A1A1A"
+                       CornerRadius="16"
+                       BorderColor="#2A2A2A"
+                       Padding="0"
+                       HasShadow="True">
+                    <Frame.Shadow>
+                        <Shadow Brush="#000000"
+                                Offset="0,4"
+                                Radius="8"
+                                Opacity="0.3"/>
+                    </Frame.Shadow>
+                    <VerticalStackLayout>
+                        <!-- Section Header -->
+                        <Grid Padding="20,15" BackgroundColor="#252525">
+                            <HorizontalStackLayout Spacing="10">
+                                <Label Text="🔒" FontSize="18" VerticalOptions="Center"/>
+                                <Label Text="ความเป็นส่วนตัวและความปลอดภัย"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="White"
+                                       VerticalOptions="Center"/>
+                            </HorizontalStackLayout>
+                        </Grid>
+
+                        <!-- Biometric Login -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="ล็อกอินด้วยลายนิ้วมือ/Face ID"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label Text="ใช้ไบโอเมตริกสำหรับเข้าสู่ระบบ"
+                                       FontSize="11"
+                                       TextColor="#777777"/>
+                            </VerticalStackLayout>
+                            <Switch x:Name="SwitchBiometric"
+                                    Grid.Column="1"
+                                    OnColor="#D4AF37"
+                                    ThumbColor="#FFFFFF"
+                                    IsToggled="False"
+                                    Toggled="OnBiometricToggled"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" BackgroundColor="#2A2A2A" Margin="20,0"/>
+
+                        <!-- Auto Login -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="จดจำการเข้าสู่ระบบ"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label Text="ไม่ต้องเข้าสู่ระบบซ้ำทุกครั้ง"
+                                       FontSize="11"
+                                       TextColor="#777777"/>
+                            </VerticalStackLayout>
+                            <Switch x:Name="SwitchAutoLogin"
+                                    Grid.Column="1"
+                                    OnColor="#D4AF37"
+                                    ThumbColor="#FFFFFF"
+                                    IsToggled="True"
+                                    Toggled="OnAutoLoginToggled"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" BackgroundColor="#2A2A2A" Margin="20,0"/>
+
+                        <!-- Analytics -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="ส่งข้อมูลการใช้งาน"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label Text="ช่วยเราพัฒนาแอปให้ดีขึ้น"
+                                       FontSize="11"
+                                       TextColor="#777777"/>
+                            </VerticalStackLayout>
+                            <Switch x:Name="SwitchAnalytics"
+                                    Grid.Column="1"
+                                    OnColor="#D4AF37"
+                                    ThumbColor="#FFFFFF"
+                                    IsToggled="True"
+                                    Toggled="OnAnalyticsToggled"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- ============================================ -->
+                <!-- SECTION: ข้อมูลและแคช (Data & Cache) -->
+                <!-- ============================================ -->
+                <Frame BackgroundColor="#1A1A1A"
+                       CornerRadius="16"
+                       BorderColor="#2A2A2A"
+                       Padding="0"
+                       HasShadow="True">
+                    <Frame.Shadow>
+                        <Shadow Brush="#000000"
+                                Offset="0,4"
+                                Radius="8"
+                                Opacity="0.3"/>
+                    </Frame.Shadow>
+                    <VerticalStackLayout>
+                        <!-- Section Header -->
+                        <Grid Padding="20,15" BackgroundColor="#252525">
+                            <HorizontalStackLayout Spacing="10">
+                                <Label Text="💾" FontSize="18" VerticalOptions="Center"/>
+                                <Label Text="ข้อมูลและแคช"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="White"
+                                       VerticalOptions="Center"/>
+                            </HorizontalStackLayout>
+                        </Grid>
+
+                        <!-- Clear Cache -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnClearCacheTapped"/>
+                            </Frame.GestureRecognizers>
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="ล้างแคช"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label x:Name="LblCacheSize"
+                                       Text="ขนาด: กำลังคำนวณ..."
+                                       FontSize="11"
+                                       TextColor="#777777"/>
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1"
+                                   Text="›"
+                                   FontSize="24"
+                                   TextColor="#777777"
+                                   VerticalOptions="Center"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" BackgroundColor="#2A2A2A" Margin="20,0"/>
+
+                        <!-- Clear Search History -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnClearSearchHistoryTapped"/>
+                            </Frame.GestureRecognizers>
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="ล้างประวัติการค้นหา"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label Text="ลบคำค้นหาที่เคยใช้"
+                                       FontSize="11"
+                                       TextColor="#777777"/>
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1"
+                                   Text="›"
+                                   FontSize="24"
+                                   TextColor="#777777"
+                                   VerticalOptions="Center"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" BackgroundColor="#2A2A2A" Margin="20,0"/>
+
+                        <!-- Download on WiFi Only -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="ดาวน์โหลดเฉพาะ WiFi"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label Text="ประหยัดเน็ตมือถือ"
+                                       FontSize="11"
+                                       TextColor="#777777"/>
+                            </VerticalStackLayout>
+                            <Switch x:Name="SwitchWifiOnly"
+                                    Grid.Column="1"
+                                    OnColor="#D4AF37"
+                                    ThumbColor="#FFFFFF"
+                                    IsToggled="False"
+                                    Toggled="OnWifiOnlyToggled"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- ============================================ -->
+                <!-- SECTION: เกี่ยวกับ (About) -->
+                <!-- ============================================ -->
+                <Frame BackgroundColor="#1A1A1A"
+                       CornerRadius="16"
+                       BorderColor="#2A2A2A"
+                       Padding="0"
+                       HasShadow="True">
+                    <Frame.Shadow>
+                        <Shadow Brush="#000000"
+                                Offset="0,4"
+                                Radius="8"
+                                Opacity="0.3"/>
+                    </Frame.Shadow>
+                    <VerticalStackLayout>
+                        <!-- Section Header -->
+                        <Grid Padding="20,15" BackgroundColor="#252525">
+                            <HorizontalStackLayout Spacing="10">
+                                <Label Text="ℹ️" FontSize="18" VerticalOptions="Center"/>
+                                <Label Text="เกี่ยวกับ"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="White"
+                                       VerticalOptions="Center"/>
+                            </HorizontalStackLayout>
+                        </Grid>
+
+                        <!-- App Version -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="เวอร์ชันแอป"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <Label x:Name="LblAppVersion"
+                                       Text="1.0.0"
+                                       FontSize="11"
+                                       TextColor="#777777"/>
+                            </VerticalStackLayout>
+                            <Frame x:Name="BadgeUpdate"
+                                   Grid.Column="1"
+                                   Padding="8,4"
+                                   CornerRadius="10"
+                                   BackgroundColor="#DC143C"
+                                   IsVisible="False">
+                                <Label Text="อัพเดท"
+                                       FontSize="10"
+                                       TextColor="White"/>
+                            </Frame>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" BackgroundColor="#2A2A2A" Margin="20,0"/>
+
+                        <!-- Terms of Service -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnTermsTapped"/>
+                            </Frame.GestureRecognizers>
+                            <Label Grid.Column="0"
+                                   Text="ข้อกำหนดการใช้งาน"
+                                   FontSize="14"
+                                   TextColor="White"
+                                   VerticalOptions="Center"/>
+                            <Label Grid.Column="1"
+                                   Text="›"
+                                   FontSize="24"
+                                   TextColor="#777777"
+                                   VerticalOptions="Center"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" BackgroundColor="#2A2A2A" Margin="20,0"/>
+
+                        <!-- Privacy Policy -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnPrivacyTapped"/>
+                            </Frame.GestureRecognizers>
+                            <Label Grid.Column="0"
+                                   Text="นโยบายความเป็นส่วนตัว"
+                                   FontSize="14"
+                                   TextColor="White"
+                                   VerticalOptions="Center"/>
+                            <Label Grid.Column="1"
+                                   Text="›"
+                                   FontSize="24"
+                                   TextColor="#777777"
+                                   VerticalOptions="Center"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" BackgroundColor="#2A2A2A" Margin="20,0"/>
+
+                        <!-- Contact Us -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnContactTapped"/>
+                            </Frame.GestureRecognizers>
+                            <Label Grid.Column="0"
+                                   Text="ติดต่อเรา"
+                                   FontSize="14"
+                                   TextColor="White"
+                                   VerticalOptions="Center"/>
+                            <Label Grid.Column="1"
+                                   Text="›"
+                                   FontSize="24"
+                                   TextColor="#777777"
+                                   VerticalOptions="Center"/>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" BackgroundColor="#2A2A2A" Margin="20,0"/>
+
+                        <!-- Rate App -->
+                        <Grid Padding="20,15" ColumnDefinitions="*,Auto">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnRateAppTapped"/>
+                            </Frame.GestureRecognizers>
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="ให้คะแนนแอป"
+                                       FontSize="14"
+                                       TextColor="White"/>
+                                <HorizontalStackLayout Spacing="2">
+                                    <Label Text="⭐⭐⭐⭐⭐" FontSize="11" TextColor="#D4AF37"/>
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1"
+                                   Text="›"
+                                   FontSize="24"
+                                   TextColor="#777777"
+                                   VerticalOptions="Center"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- ============================================ -->
+                <!-- LOGOUT BUTTON -->
+                <!-- ============================================ -->
+                <Frame x:Name="BtnLogout"
+                       BackgroundColor="#2A2A2A"
+                       CornerRadius="16"
+                       BorderColor="#DC143C"
+                       Padding="20"
+                       HasShadow="True"
+                       Margin="0,10,0,30">
+                    <Frame.Shadow>
+                        <Shadow Brush="#DC143C"
+                                Offset="0,4"
+                                Radius="10"
+                                Opacity="0.3"/>
+                    </Frame.Shadow>
+                    <Frame.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnLogoutTapped"/>
+                    </Frame.GestureRecognizers>
+                    <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
+                        <Label Text="🚪" FontSize="18" VerticalOptions="Center"/>
+                        <Label Text="ออกจากระบบ"
+                               FontSize="16"
+                               FontAttributes="Bold"
+                               TextColor="#DC143C"
+                               VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
+                </Frame>
+
+            </VerticalStackLayout>
+        </Grid>
+    </ScrollView>
+
+</ContentPage>

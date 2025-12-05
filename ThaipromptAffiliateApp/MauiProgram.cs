@@ -26,6 +26,10 @@ public static class MauiProgram
         builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
         builder.Services.AddSingleton<ThemeService>();
 
+        // Settings & Notification Services
+        builder.Services.AddSingleton<ISettingsService, SettingsService>();
+        builder.Services.AddSingleton<INotificationService, NotificationService>();
+
         // Register ViewModels
         builder.Services.AddTransient<HomeViewModel>();
         builder.Services.AddTransient<LoginViewModel>();
@@ -38,6 +42,7 @@ public static class MauiProgram
         builder.Services.AddTransient<MainMenuPage>();
         builder.Services.AddTransient<ShoppingPage>();
         builder.Services.AddTransient<WebViewPage>();
+        builder.Services.AddTransient<SettingsPage>();
         builder.Services.AddTransient<HomePage>();
         builder.Services.AddTransient<LoginPage>();
         builder.Services.AddTransient<DashboardPage>();
