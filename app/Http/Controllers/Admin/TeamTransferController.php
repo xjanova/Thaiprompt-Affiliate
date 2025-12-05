@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\MlmMember;
 use App\Models\MlmTeamTransferRequest;
 use App\Services\MlmTeamTransferService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -302,6 +304,189 @@ class TeamTransferController extends Controller
             'startDate' => $startDate,
             'endDate' => $endDate,
             'pageTitle' => 'สถิติการย้ายทีม',
+        ]);
+    }
+
+    // ============================================
+    // Admin Direct Transfer Methods
+    // ย้ายทีมโดยตรง - รองรับทั้ง Unilevel และ Binary
+    // ============================================
+
+    /**
+     * แสดงฟอร์มย้ายทีมโดยตรง (Admin Direct Transfer)
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function directTransferForm(Request $request)
+    {
+        // ถ้ามี member_id ส่งมา ให้ดึงข้อมูลสมาชิก
+        $selectedMember = null;
+        if ($request->filled('member_id')) {
+            $selectedMember = MlmMember::with([
+                'user',
+                'unilevelSponsor.user',
+                'binaryParent.user',
+            ])->find($request->member_id);
+        }
+
+        return view('admin.team-transfer.direct', [
+            'selectedMember' => $selectedMember,
+            'pageTitle' => 'ย้ายทีม MLM โดยตรง',
+        ]);
+    }
+
+    /**
+     * ดำเนินการย้ายทีมโดยตรง (Admin Direct Transfer)
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function directTransferProcess(Request $request)
+    {
+        // Validate request
+        $validated = $request->validate([
+            'member_id' => 'required|exists:mlm_members,id',
+            'transfer_unilevel' => 'nullable|boolean',
+            'new_unilevel_sponsor_id' => 'nullable|required_if:transfer_unilevel,1|exists:mlm_members,id',
+            'transfer_binary' => 'nullable|boolean',
+            'new_binary_parent_id' => 'nullable|required_if:transfer_binary,1|exists:mlm_members,id',
+            'new_binary_position' => 'nullable|required_if:transfer_binary,1|in:left,right',
+            'admin_notes' => 'nullable|string|max:1000',
+        ], [
+            'member_id.required' => 'กรุณาเลือกสมาชิกที่ต้องการย้าย',
+            'member_id.exists' => 'ไม่พบสมาชิกที่เลือก',
+            'new_unilevel_sponsor_id.required_if' => 'กรุณาเลือก Sponsor ใหม่สำหรับ Unilevel',
+            'new_unilevel_sponsor_id.exists' => 'ไม่พบ Sponsor ที่เลือก',
+            'new_binary_parent_id.required_if' => 'กรุณาเลือก Parent ใหม่สำหรับ Binary',
+            'new_binary_parent_id.exists' => 'ไม่พบ Binary Parent ที่เลือก',
+            'new_binary_position.required_if' => 'กรุณาเลือกตำแหน่ง Binary',
+            'new_binary_position.in' => 'ตำแหน่ง Binary ไม่ถูกต้อง',
+        ]);
+
+        // ตรวจสอบว่าเลือกย้ายอย่างน้อย 1 แผน
+        $transferUnilevel = $request->boolean('transfer_unilevel');
+        $transferBinary = $request->boolean('transfer_binary');
+
+        if (!$transferUnilevel && !$transferBinary) {
+            return back()
+                ->withInput()
+                ->with('error', 'กรุณาเลือกอย่างน้อย 1 แผน (Unilevel หรือ Binary) ที่ต้องการย้าย');
+        }
+
+        try {
+            $member = MlmMember::findOrFail($validated['member_id']);
+            $admin = Auth::user();
+
+            // เตรียมข้อมูลการย้าย
+            $transferData = [
+                'admin_notes' => $validated['admin_notes'] ?? null,
+            ];
+
+            if ($transferUnilevel && !empty($validated['new_unilevel_sponsor_id'])) {
+                $transferData['new_unilevel_sponsor_id'] = $validated['new_unilevel_sponsor_id'];
+            }
+
+            if ($transferBinary && !empty($validated['new_binary_parent_id'])) {
+                $transferData['new_binary_parent_id'] = $validated['new_binary_parent_id'];
+                $transferData['new_binary_position'] = $validated['new_binary_position'];
+            }
+
+            // เรียกใช้ service
+            $results = $this->transferService->adminDirectTransfer($member, $transferData, $admin);
+
+            // สร้างข้อความสรุป
+            $messages = [];
+            if ($results['unilevel_transferred']) {
+                $newSponsor = MlmMember::with('user')->find($results['new_data']['unilevel_sponsor_id']);
+                $messages[] = "Unilevel: ย้ายไป {$newSponsor->user->name} สำเร็จ";
+            }
+            if ($results['binary_transferred']) {
+                $newParent = MlmMember::with('user')->find($results['new_data']['binary_parent_id']);
+                $positionLabel = $results['new_data']['binary_position'] === 'left' ? 'ซ้าย' : 'ขวา';
+                $messages[] = "Binary: ย้ายไป {$newParent->user->name} (ตำแหน่ง{$positionLabel}) สำเร็จ";
+            }
+
+            return redirect()
+                ->route('admin.team-transfer.direct')
+                ->with('success', 'ย้ายทีมสำเร็จ! ' . implode(' | ', $messages));
+
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * API: ค้นหาสมาชิกสำหรับ autocomplete
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function searchMembersApi(Request $request): JsonResponse
+    {
+        $search = $request->get('q', '');
+        $excludeId = $request->get('exclude_id');
+
+        if (strlen($search) < 2) {
+            return response()->json([]);
+        }
+
+        $members = $this->transferService->searchMembersForTransfer(
+            $search,
+            $excludeId ? (int) $excludeId : null
+        );
+
+        return response()->json($members->map(function ($member) {
+            return [
+                'id' => $member->id,
+                'member_code' => $member->member_code,
+                'user_name' => $member->user?->name ?? 'N/A',
+                'user_email' => $member->user?->email ?? 'N/A',
+                'display' => "{$member->member_code} - {$member->user?->name}",
+            ];
+        }));
+    }
+
+    /**
+     * API: ดึงตำแหน่ง Binary ที่ว่างของสมาชิก
+     *
+     * @param MlmMember $member
+     * @return JsonResponse
+     */
+    public function getBinaryPositionsApi(MlmMember $member): JsonResponse
+    {
+        $positions = $this->transferService->getAvailableBinaryPositions($member);
+
+        // ดึงข้อมูลลูกทีม Binary
+        $leftChild = MlmMember::with('user')
+            ->where('binary_parent_id', $member->id)
+            ->where('binary_position', 'left')
+            ->first();
+
+        $rightChild = MlmMember::with('user')
+            ->where('binary_parent_id', $member->id)
+            ->where('binary_position', 'right')
+            ->first();
+
+        return response()->json([
+            'left' => [
+                'available' => $positions['left'],
+                'occupied_by' => $leftChild ? [
+                    'id' => $leftChild->id,
+                    'member_code' => $leftChild->member_code,
+                    'user_name' => $leftChild->user?->name,
+                ] : null,
+            ],
+            'right' => [
+                'available' => $positions['right'],
+                'occupied_by' => $rightChild ? [
+                    'id' => $rightChild->id,
+                    'member_code' => $rightChild->member_code,
+                    'user_name' => $rightChild->user?->name,
+                ] : null,
+            ],
         ]);
     }
 }

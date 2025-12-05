@@ -813,4 +813,381 @@ class MlmTeamTransferService
 
         return $successCount;
     }
+
+    /**
+     * ย้ายทีมโดยตรงจาก Admin (ไม่ต้องผ่าน workflow)
+     *
+     * ฟีเจอร์นี้ให้ Admin สามารถย้ายสมาชิก MLM ไปยังทีมใหม่ได้โดยตรง
+     * รองรับทั้ง Unilevel และ Binary plan
+     *
+     * @param MlmMember $member สมาชิกที่จะย้าย
+     * @param array $transferData ข้อมูลการย้าย
+     *   - new_unilevel_sponsor_id (int|null): ID ของ sponsor ใหม่ใน Unilevel
+     *   - new_binary_parent_id (int|null): ID ของ parent ใหม่ใน Binary
+     *   - new_binary_position (string|null): ตำแหน่งใหม่ใน Binary ('left' หรือ 'right')
+     *   - admin_notes (string|null): หมายเหตุจาก Admin
+     * @param User $admin Admin ที่ดำเนินการ
+     * @return array ผลลัพธ์การย้าย
+     *
+     * @throws \Exception
+     */
+    public function adminDirectTransfer(
+        MlmMember $member,
+        array $transferData,
+        User $admin
+    ): array {
+        // ตรวจสอบข้อมูล
+        $this->validateAdminDirectTransfer($member, $transferData);
+
+        return DB::transaction(function () use ($member, $transferData, $admin) {
+            $results = [
+                'unilevel_transferred' => false,
+                'binary_transferred' => false,
+                'old_data' => [],
+                'new_data' => [],
+            ];
+
+            // บันทึกข้อมูลเก่า
+            $results['old_data'] = [
+                'unilevel_sponsor_id' => $member->unilevel_sponsor_id,
+                'unilevel_level' => $member->unilevel_level,
+                'unilevel_path' => $member->unilevel_path,
+                'binary_parent_id' => $member->binary_parent_id,
+                'binary_position' => $member->binary_position,
+                'binary_path' => $member->binary_path,
+            ];
+
+            // ย้าย Unilevel (ถ้ามีการระบุ)
+            if (!empty($transferData['new_unilevel_sponsor_id'])) {
+                $newSponsor = MlmMember::findOrFail($transferData['new_unilevel_sponsor_id']);
+
+                $member->update([
+                    'unilevel_sponsor_id' => $newSponsor->id,
+                    'unilevel_level' => $newSponsor->unilevel_level + 1,
+                    'unilevel_path' => $newSponsor->unilevel_path
+                        ? $newSponsor->unilevel_path . '/' . $newSponsor->id
+                        : (string) $newSponsor->id,
+                ]);
+
+                // อัพเดทลูกทีมของสมาชิกที่ย้าย (recursive update paths)
+                $this->updateUnilevelDescendantPaths($member);
+
+                $results['unilevel_transferred'] = true;
+            }
+
+            // ย้าย Binary (ถ้ามีการระบุ)
+            if (!empty($transferData['new_binary_parent_id']) && !empty($transferData['new_binary_position'])) {
+                $newBinaryParent = MlmMember::findOrFail($transferData['new_binary_parent_id']);
+
+                $member->update([
+                    'binary_parent_id' => $newBinaryParent->id,
+                    'binary_position' => $transferData['new_binary_position'],
+                ]);
+
+                // อัพเดท binary path
+                $this->updateBinaryPath($member);
+
+                // อัพเดทลูกทีม Binary ของสมาชิกที่ย้าย
+                $this->updateBinaryDescendantPaths($member);
+
+                $results['binary_transferred'] = true;
+            }
+
+            // บันทึกข้อมูลใหม่
+            $member->refresh();
+            $results['new_data'] = [
+                'unilevel_sponsor_id' => $member->unilevel_sponsor_id,
+                'unilevel_level' => $member->unilevel_level,
+                'unilevel_path' => $member->unilevel_path,
+                'binary_parent_id' => $member->binary_parent_id,
+                'binary_position' => $member->binary_position,
+                'binary_path' => $member->binary_path,
+            ];
+
+            // Log การย้าย
+            Log::info('Admin direct team transfer completed', [
+                'member_id' => $member->id,
+                'member_code' => $member->member_code,
+                'admin_id' => $admin->id,
+                'admin_name' => $admin->name,
+                'old_data' => $results['old_data'],
+                'new_data' => $results['new_data'],
+                'admin_notes' => $transferData['admin_notes'] ?? null,
+            ]);
+
+            // ส่งการแจ้งเตือน
+            $this->sendAdminDirectTransferNotifications($member, $results, $admin);
+
+            return $results;
+        });
+    }
+
+    /**
+     * ตรวจสอบความถูกต้องสำหรับ Admin Direct Transfer
+     *
+     * @param MlmMember $member
+     * @param array $transferData
+     * @return void
+     *
+     * @throws \Exception
+     */
+    protected function validateAdminDirectTransfer(MlmMember $member, array $transferData): void
+    {
+        // ตรวจสอบว่ามีการระบุอย่างน้อย 1 อย่าง (Unilevel หรือ Binary)
+        $hasUnilevel = !empty($transferData['new_unilevel_sponsor_id']);
+        $hasBinary = !empty($transferData['new_binary_parent_id']) && !empty($transferData['new_binary_position']);
+
+        if (!$hasUnilevel && !$hasBinary) {
+            throw new \Exception('กรุณาระบุ Sponsor ใหม่ (Unilevel) หรือ Parent ใหม่ (Binary) อย่างน้อย 1 อย่าง');
+        }
+
+        // ตรวจสอบ Unilevel Transfer
+        if ($hasUnilevel) {
+            $newSponsorId = $transferData['new_unilevel_sponsor_id'];
+
+            // ตรวจสอบว่าไม่ใช่ตัวเอง
+            if ($member->id == $newSponsorId) {
+                throw new \Exception('ไม่สามารถย้ายไปหาตัวเองได้ (Unilevel)');
+            }
+
+            // ตรวจสอบว่า sponsor ใหม่มีอยู่จริง
+            $newSponsor = MlmMember::find($newSponsorId);
+            if (!$newSponsor) {
+                throw new \Exception('ไม่พบ Sponsor ใหม่ที่ระบุ (Unilevel)');
+            }
+
+            // ตรวจสอบว่า sponsor ใหม่ไม่ใช่ลูกทีมของตัวเอง
+            if ($this->isDownline($member, $newSponsor)) {
+                throw new \Exception('ไม่สามารถย้ายไปหาลูกทีมของตัวเองได้ (Unilevel)');
+            }
+
+            // ตรวจสอบว่าไม่ใช่ sponsor เดิม
+            if ($member->unilevel_sponsor_id == $newSponsorId) {
+                throw new \Exception('Sponsor ใหม่เหมือนกับ Sponsor เดิม (Unilevel)');
+            }
+        }
+
+        // ตรวจสอบ Binary Transfer
+        if ($hasBinary) {
+            $newBinaryParentId = $transferData['new_binary_parent_id'];
+            $newBinaryPosition = $transferData['new_binary_position'];
+
+            // ตรวจสอบว่าไม่ใช่ตัวเอง
+            if ($member->id == $newBinaryParentId) {
+                throw new \Exception('ไม่สามารถย้ายไปหาตัวเองได้ (Binary)');
+            }
+
+            // ตรวจสอบว่า parent ใหม่มีอยู่จริง
+            $newBinaryParent = MlmMember::find($newBinaryParentId);
+            if (!$newBinaryParent) {
+                throw new \Exception('ไม่พบ Binary Parent ใหม่ที่ระบุ');
+            }
+
+            // ตรวจสอบ position
+            if (!in_array($newBinaryPosition, ['left', 'right'])) {
+                throw new \Exception('ตำแหน่ง Binary ต้องเป็น left หรือ right เท่านั้น');
+            }
+
+            // ตรวจสอบว่า parent ใหม่ไม่ใช่ลูกทีม Binary ของตัวเอง
+            if ($this->isBinaryDownline($member, $newBinaryParent)) {
+                throw new \Exception('ไม่สามารถย้ายไปหาลูกทีม Binary ของตัวเองได้');
+            }
+
+            // ตรวจสอบว่าตำแหน่งว่างหรือไม่
+            $existingChild = MlmMember::where('binary_parent_id', $newBinaryParentId)
+                ->where('binary_position', $newBinaryPosition)
+                ->where('id', '!=', $member->id)
+                ->first();
+
+            if ($existingChild) {
+                throw new \Exception("ตำแหน่ง {$newBinaryPosition} ของ Binary Parent นี้ไม่ว่าง (มีสมาชิก: {$existingChild->member_code})");
+            }
+
+            // ตรวจสอบว่าไม่ใช่ parent เดิม + ตำแหน่งเดิม
+            if ($member->binary_parent_id == $newBinaryParentId && $member->binary_position == $newBinaryPosition) {
+                throw new \Exception('Binary Parent และตำแหน่งใหม่เหมือนกับเดิม');
+            }
+        }
+    }
+
+    /**
+     * ตรวจสอบว่า $potential_downline เป็นลูกทีม Binary ของ $member หรือไม่
+     *
+     * @param MlmMember $member
+     * @param MlmMember $potentialDownline
+     * @return bool
+     */
+    protected function isBinaryDownline(MlmMember $member, MlmMember $potentialDownline): bool
+    {
+        // ตรวจสอบจาก binary_path
+        if ($potentialDownline->binary_path) {
+            $path = explode('/', $potentialDownline->binary_path);
+            return in_array($member->id, $path);
+        }
+
+        // ถ้าไม่มี path ให้ตรวจสอบแบบ recursive
+        $current = $potentialDownline;
+        while ($current->binary_parent_id) {
+            if ($current->binary_parent_id == $member->id) {
+                return true;
+            }
+            $current = $current->binaryParent;
+            if (!$current) break;
+        }
+
+        return false;
+    }
+
+    /**
+     * อัพเดท unilevel path ของลูกทีมทั้งหมด (recursive)
+     *
+     * @param MlmMember $member
+     * @return void
+     */
+    protected function updateUnilevelDescendantPaths(MlmMember $member): void
+    {
+        // ดึงลูกทีมตรงของสมาชิก
+        $children = MlmMember::where('unilevel_sponsor_id', $member->id)->get();
+
+        foreach ($children as $child) {
+            // สร้าง path ใหม่
+            $newPath = $member->unilevel_path
+                ? $member->unilevel_path . '/' . $member->id
+                : (string) $member->id;
+
+            $child->update([
+                'unilevel_level' => $member->unilevel_level + 1,
+                'unilevel_path' => $newPath,
+            ]);
+
+            // Recursive update
+            $this->updateUnilevelDescendantPaths($child);
+        }
+    }
+
+    /**
+     * อัพเดท binary path ของลูกทีม Binary ทั้งหมด (recursive)
+     *
+     * @param MlmMember $member
+     * @return void
+     */
+    protected function updateBinaryDescendantPaths(MlmMember $member): void
+    {
+        // ดึงลูกทีม Binary ของสมาชิก
+        $children = MlmMember::where('binary_parent_id', $member->id)->get();
+
+        foreach ($children as $child) {
+            // อัพเดท path
+            $this->updateBinaryPath($child);
+
+            // Recursive update
+            $this->updateBinaryDescendantPaths($child);
+        }
+    }
+
+    /**
+     * ส่งการแจ้งเตือนสำหรับ Admin Direct Transfer
+     *
+     * @param MlmMember $member
+     * @param array $results
+     * @param User $admin
+     * @return void
+     */
+    protected function sendAdminDirectTransferNotifications(
+        MlmMember $member,
+        array $results,
+        User $admin
+    ): void {
+        try {
+            $memberUser = $member->user;
+            if (!$memberUser) {
+                return;
+            }
+
+            // สร้างข้อความ
+            $transferTypes = [];
+            if ($results['unilevel_transferred']) {
+                $newSponsor = MlmMember::find($results['new_data']['unilevel_sponsor_id']);
+                $transferTypes[] = "Unilevel → {$newSponsor?->user?->name}";
+            }
+            if ($results['binary_transferred']) {
+                $newParent = MlmMember::find($results['new_data']['binary_parent_id']);
+                $transferTypes[] = "Binary → {$newParent?->user?->name} ({$results['new_data']['binary_position']})";
+            }
+
+            // ส่ง LINE notification
+            $lineMessage = sprintf(
+                "📢 แจ้งเตือนการย้ายทีมโดย Admin\n\n" .
+                "สมาชิก: %s (รหัส: %s)\n" .
+                "การย้าย: %s\n" .
+                "ดำเนินการโดย: %s\n\n" .
+                "หากมีข้อสงสัย กรุณาติดต่อทีมงาน",
+                $memberUser->name,
+                $member->member_code,
+                implode("\n", $transferTypes),
+                $admin->name
+            );
+
+            $this->sendLineMessage($memberUser, $lineMessage);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to send admin direct transfer notification', [
+                'member_id' => $member->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * ดึงข้อมูล Binary Children ที่ว่างของ member
+     *
+     * @param MlmMember $member
+     * @return array ตำแหน่งที่ว่าง ['left' => bool, 'right' => bool]
+     */
+    public function getAvailableBinaryPositions(MlmMember $member): array
+    {
+        $leftOccupied = MlmMember::where('binary_parent_id', $member->id)
+            ->where('binary_position', 'left')
+            ->exists();
+
+        $rightOccupied = MlmMember::where('binary_parent_id', $member->id)
+            ->where('binary_position', 'right')
+            ->exists();
+
+        return [
+            'left' => !$leftOccupied,
+            'right' => !$rightOccupied,
+        ];
+    }
+
+    /**
+     * ค้นหาสมาชิกสำหรับ autocomplete
+     *
+     * @param string $search คำค้นหา (ชื่อ, อีเมล, member_code)
+     * @param int|null $excludeId ID ที่ต้องการยกเว้น
+     * @param int $limit จำนวนผลลัพธ์สูงสุด
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function searchMembersForTransfer(
+        string $search,
+        ?int $excludeId = null,
+        int $limit = 20
+    ) {
+        $query = MlmMember::with('user')
+            ->where('status', 'active');
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        $query->where(function ($q) use ($search) {
+            $q->where('member_code', 'like', "%{$search}%")
+                ->orWhereHas('user', function ($userQuery) use ($search) {
+                    $userQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
+        });
+
+        return $query->limit($limit)->get();
+    }
 }

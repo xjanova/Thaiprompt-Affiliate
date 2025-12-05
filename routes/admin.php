@@ -2588,6 +2588,13 @@ Route::prefix('team-transfer')->name('team-transfer.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\TeamTransferController::class, 'index'])->name('index');
     Route::get('/statistics', [\App\Http\Controllers\Admin\TeamTransferController::class, 'statistics'])->name('statistics');
     Route::get('/export', [\App\Http\Controllers\Admin\TeamTransferController::class, 'export'])->name('export');
+
+    // ย้ายทีมโดยตรง (Admin Direct Transfer) - รองรับทั้ง Unilevel และ Binary
+    Route::get('/direct', [\App\Http\Controllers\Admin\TeamTransferController::class, 'directTransferForm'])->name('direct');
+    Route::post('/direct', [\App\Http\Controllers\Admin\TeamTransferController::class, 'directTransferProcess'])->name('direct.process');
+    Route::get('/direct/search-members', [\App\Http\Controllers\Admin\TeamTransferController::class, 'searchMembersApi'])->name('direct.search-members');
+    Route::get('/direct/binary-positions/{member}', [\App\Http\Controllers\Admin\TeamTransferController::class, 'getBinaryPositionsApi'])->name('direct.binary-positions');
+
     Route::get('/{teamTransfer}', [\App\Http\Controllers\Admin\TeamTransferController::class, 'show'])->name('show');
     Route::get('/{teamTransfer}/edit', [\App\Http\Controllers\Admin\TeamTransferController::class, 'edit'])->name('edit');
     Route::post('/{teamTransfer}/process', [\App\Http\Controllers\Admin\TeamTransferController::class, 'process'])->name('process');

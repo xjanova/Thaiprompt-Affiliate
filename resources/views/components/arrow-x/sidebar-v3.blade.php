@@ -297,6 +297,7 @@
                 ['label' => 'เครื่องคิดเลข', 'url' => route('admin.mlm.calculator'), 'icon' => 'fas fa-calculator'],
                 ['label' => 'ตัวอย่าง Placement', 'url' => route('admin.mlm.placement-examples'), 'icon' => 'fas fa-lightbulb'],
                 ['label' => 'การย้ายทีม', 'url' => route('admin.team-transfer.index'), 'icon' => 'fas fa-exchange-alt'],
+                ['label' => 'ย้ายทีมโดยตรง', 'url' => route('admin.team-transfer.direct'), 'icon' => 'fas fa-random'],
                 ['label' => 'ตั้งค่า', 'url' => route('admin.mlm.settings.index'), 'icon' => 'fas fa-cogs'],
             ]"
             :defaultUrl="route('admin.mlm.reports.dashboard')"
