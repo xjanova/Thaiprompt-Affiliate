@@ -346,9 +346,10 @@ class PlatformRevenueService
             ->sum('amount');
 
         // รายได้แยกตาม wallet
+        // ใช้ชื่อตารางเต็มเพื่อป้องกันปัญหา ambiguous column เมื่อ join
         $byWallet = PlatformTransaction::income()
             ->completed()
-            ->whereBetween('created_at', [$startOfDay, $endOfDay])
+            ->whereBetween('platform_transactions.created_at', [$startOfDay, $endOfDay])
             ->join('platform_wallets', 'platform_transactions.wallet_id', '=', 'platform_wallets.id')
             ->selectRaw('platform_wallets.slug, SUM(platform_transactions.amount) as total')
             ->groupBy('platform_wallets.slug')
@@ -387,9 +388,10 @@ class PlatformRevenueService
             ->sum('amount');
 
         // รายได้แยกตาม wallet
+        // ใช้ชื่อตารางเต็มเพื่อป้องกันปัญหา ambiguous column เมื่อ join
         $byWallet = PlatformTransaction::income()
             ->completed()
-            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->whereBetween('platform_transactions.created_at', [$startOfMonth, $endOfMonth])
             ->join('platform_wallets', 'platform_transactions.wallet_id', '=', 'platform_wallets.id')
             ->selectRaw('platform_wallets.slug, SUM(platform_transactions.amount) as total')
             ->groupBy('platform_wallets.slug')
@@ -427,9 +429,10 @@ class PlatformRevenueService
             ->sum('amount');
 
         // รายได้แยกตาม wallet
+        // ใช้ชื่อตารางเต็มเพื่อป้องกันปัญหา ambiguous column เมื่อ join
         $byWallet = PlatformTransaction::income()
             ->completed()
-            ->whereBetween('created_at', [$startOfYear, $endOfYear])
+            ->whereBetween('platform_transactions.created_at', [$startOfYear, $endOfYear])
             ->join('platform_wallets', 'platform_transactions.wallet_id', '=', 'platform_wallets.id')
             ->selectRaw('platform_wallets.slug, SUM(platform_transactions.amount) as total')
             ->groupBy('platform_wallets.slug')
