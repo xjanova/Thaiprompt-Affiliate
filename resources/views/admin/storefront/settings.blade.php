@@ -271,8 +271,9 @@
                                 </p>
                             </div>
 
-                            <a href="{{ route('admin.product-categories.edit', $category) }}"
-                               class="p-2 text-gray-400 hover:text-orange-500 transition-colors">
+                            <a href="{{ route('admin.ecommerce.categories.index') }}?highlight={{ $category->id }}"
+                               class="p-2 text-gray-400 hover:text-orange-500 transition-colors"
+                               title="แก้ไขหมวดหมู่">
                                 <i class="fas fa-edit"></i>
                             </a>
                         </div>
