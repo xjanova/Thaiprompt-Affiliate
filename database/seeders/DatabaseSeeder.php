@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
             TwoFactorSettingsSeeder::class,     // ตั้งค่า 2FA และ OTP
             ArrowXThemeSeeder::class,           // ✅ Arrow X Theme System (V3) - Default theme data
             ThemePresetSeeder::class,           // ✅ Theme Presets (Classic, Modern Blue, Dark Professional, etc.)
-            AppManagementSeeder::class,         // ตั้งค่าแอพ, ธีม, ฟีเจอร์, แบนเนอร์, และ maintenance
+            // AppManagementSeeder::class,         // ❌ REMOVED - ใช้ MobileAppController แทน
             CookieSettingsSeeder::class,        // ตั้งค่า Cookie Consent & PDPA
             WindowsUiSeeder::class,             // Windows UI Settings (Colors, Themes, RGB - NO menu items)
             AppControlSectionSeeder::class,     // UI Control Sections (Navigation Bar, Tab Bar, Header, FAB)
