@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.19] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2140 from xjanova/claude/fix-payout-status-constant-01FScC7yDSSmBtr6yqauYEba (cefdcab1)
+- fix: add missing 'total' key in PlatformRevenueService stats and fix STATUS_COMPLETED reference (25532558)
+### 🔧 Other Changes
+
+
 ## [v3.364.18] - 2025-12-05
 
 ### ✨ Features
