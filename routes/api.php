@@ -199,6 +199,27 @@ Route::prefix('v1')->group(function () {
             Route::delete('/token', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'removePushToken']);
         });
 
+        // Rank System (Mobile App)
+        Route::prefix('mobile/ranks')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getRanks']);
+            Route::get('/progress', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getUserRankProgress']);
+            Route::get('/leaderboard', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getLeaderboard']);
+            Route::get('/{rankId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getRankDetail']);
+        });
+
+        // MLM / Affiliate Network (Mobile App)
+        Route::prefix('mobile/affiliate')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getMyAffiliate']);
+            Route::get('/referrals', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getDirectReferrals']);
+            Route::get('/team-tree', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getTeamTree']);
+        });
+
+        // Commission System (Mobile App)
+        Route::prefix('mobile/commissions')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCommissions']);
+            Route::get('/earnings', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getEarningsSummary']);
+        });
+
         // Translation (Google Translate API)
         Route::prefix('translate')->group(function () {
             Route::post('/', [TranslateController::class, 'translate']);
