@@ -572,8 +572,8 @@ class PayoutService
 
         return [
             'total_requests' => (clone $query)->count(),
-            'total_gross_amount' => (clone $query)->sum('gross_amount'),
-            'total_fee_amount' => (clone $query)->sum('fee_amount'),
+            'total_gross_amount' => (clone $query)->sum('amount'),
+            'total_fee_amount' => (clone $query)->sum('fee'),
             'total_net_amount' => (clone $query)->sum('net_amount'),
             'by_status' => (clone $query)->selectRaw('status, COUNT(*) as count, SUM(net_amount) as total')
                 ->groupBy('status')
