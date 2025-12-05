@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -53,18 +54,31 @@ class RecruitPageController extends Controller
 
         // สถิติ 7 วันล่าสุด
         $sevenDaysAgo = now()->subDays(7);
+
+        // คำนวณ views_last_7_days (เช็คว่าตารางมีอยู่หรือไม่)
+        $viewsLast7Days = 0;
+        if (Schema::hasTable('recruit_page_visits')) {
+            $viewsLast7Days = RecruitPageVisit::where('team_leader_id', $user->id)
+                ->where('visited_at', '>=', $sevenDaysAgo)
+                ->distinct()
+                ->count();
+        }
+
+        // คำนวณ leads_last_7_days (เช็คว่าตารางมีอยู่หรือไม่)
+        $leadsLast7Days = 0;
+        if (Schema::hasTable('lead_locks')) {
+            $leadsLast7Days = LeadLock::where('team_leader_id', $user->id)
+                ->where('locked_at', '>=', $sevenDaysAgo)
+                ->count();
+        }
+
         $stats = [
             'total_views' => $customization->total_views,
             'total_leads' => $customization->total_leads,
             'total_conversions' => $customization->total_conversions,
             'conversion_rate' => $customization->conversion_rate,
-            'views_last_7_days' => RecruitPageVisit::where('team_leader_id', $user->id)
-                ->where('visited_at', '>=', $sevenDaysAgo)
-                ->unique()
-                ->count(),
-            'leads_last_7_days' => LeadLock::where('team_leader_id', $user->id)
-                ->where('locked_at', '>=', $sevenDaysAgo)
-                ->count(),
+            'views_last_7_days' => $viewsLast7Days,
+            'leads_last_7_days' => $leadsLast7Days,
         ];
 
         return view('user.recruit.index', [

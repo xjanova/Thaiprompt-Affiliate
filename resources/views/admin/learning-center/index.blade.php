@@ -425,7 +425,7 @@
                     หากมีคำถามหรือปัญหาเกี่ยวกับการใช้งาน สามารถติดต่อทีมสนับสนุนได้ตลอดเวลา
                 </p>
             </div>
-            <a href="{{ route('admin.tickets.create') }}"
+            <a href="{{ route('admin.tickets.index') }}"
                class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition flex-shrink-0">
                 ติดต่อสนับสนุน
             </a>
