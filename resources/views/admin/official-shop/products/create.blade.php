@@ -320,13 +320,45 @@
                 </div>
 
                 {{-- Images --}}
-                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden"
+                     x-data="{
+                         mainImagePreview: null,
+                         additionalImages: [],
+                         handleMainImage(event) {
+                             const file = event.target.files[0];
+                             if (file) {
+                                 const reader = new FileReader();
+                                 reader.onload = (e) => {
+                                     this.mainImagePreview = e.target.result;
+                                 };
+                                 reader.readAsDataURL(file);
+                             }
+                         },
+                         handleAdditionalImages(event) {
+                             this.additionalImages = [];
+                             const files = event.target.files;
+                             for (let i = 0; i < files.length; i++) {
+                                 const reader = new FileReader();
+                                 reader.onload = (e) => {
+                                     this.additionalImages.push(e.target.result);
+                                 };
+                                 reader.readAsDataURL(files[i]);
+                             }
+                         },
+                         removeMainImage() {
+                             this.mainImagePreview = null;
+                             document.querySelector('input[name=main_image]').value = '';
+                         }
+                     }">
                     <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                         <div class="flex items-center gap-2">
                             <svg class="w-5 h-5 text-purple-500 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">รูปภาพสินค้า</h3>
+                            <span class="ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 text-xs rounded-full font-medium">
+                                แปลงเป็น WebP อัตโนมัติ
+                            </span>
                         </div>
                     </div>
 
@@ -339,10 +371,30 @@
                                 </svg>
                                 <span>รูปภาพหลัก</span> <span class="text-red-500">*</span>
                             </label>
-                            <input type="file" name="main_image" accept="image/*" required class="w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200 dark:file:bg-amber-900/30 dark:file:text-amber-400 transition-all">
+
+                            {{-- Preview รูปหลัก --}}
+                            <div x-show="mainImagePreview" x-transition class="mb-4">
+                                <div class="relative inline-block">
+                                    <img :src="mainImagePreview" alt="Preview" class="w-48 h-48 object-cover rounded-xl shadow-lg border-4 border-amber-300 dark:border-amber-600">
+                                    <button type="button" @click="removeMainImage()"
+                                            class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition transform hover:scale-110">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                    <div class="absolute bottom-2 left-2 px-2 py-1 bg-black/70 text-white text-xs rounded-lg flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                        รูปหลัก
+                                    </div>
+                                </div>
+                            </div>
+
+                            <input type="file" name="main_image" accept="image/*" required
+                                   @change="handleMainImage($event)"
+                                   class="w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200 dark:file:bg-amber-900/30 dark:file:text-amber-400 transition-all">
                             <p class="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
                                 <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
-                                <span>รองรับ JPG, PNG, GIF, WebP (ขนาดไม่เกิน 5MB) - รูปนี้จะแสดงเป็นรูปหลัก</span>
+                                <span>รองรับ JPG, PNG, GIF, WebP (ขนาดไม่เกิน 5MB) - จะถูกแปลงเป็น WebP อัตโนมัติ</span>
                             </p>
                             @error('main_image')
                                 <p class="text-red-500 dark:text-red-400 text-sm mt-1">{{ $message }}</p>
@@ -353,11 +405,31 @@
                         <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border-2 border-dashed border-purple-200 dark:border-purple-800">
                             <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 cursor-pointer">
                                 <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
                                 <span>รูปภาพเพิ่มเติม (สูงสุด 10 ภาพ)</span>
                             </label>
-                            <input type="file" name="images[]" accept="image/*" multiple class="w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 dark:file:bg-purple-900/30 dark:file:text-purple-400 transition-all">
+
+                            {{-- Preview รูปเพิ่มเติม --}}
+                            <div x-show="additionalImages.length > 0" x-transition class="mb-4">
+                                <div class="flex flex-wrap gap-3">
+                                    <template x-for="(image, index) in additionalImages" :key="index">
+                                        <div class="relative">
+                                            <img :src="image" alt="Preview" class="w-24 h-24 object-cover rounded-lg shadow-md border-2 border-purple-300 dark:border-purple-600">
+                                            <div class="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/70 text-white text-xs rounded">
+                                                <span x-text="index + 1"></span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                                <p class="text-xs text-purple-600 dark:text-purple-400 mt-2">
+                                    เลือก <span x-text="additionalImages.length" class="font-bold"></span> รูป
+                                </p>
+                            </div>
+
+                            <input type="file" name="images[]" accept="image/*" multiple
+                                   @change="handleAdditionalImages($event)"
+                                   class="w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 dark:file:bg-purple-900/30 dark:file:text-purple-400 transition-all">
                             <p class="text-xs text-purple-600 dark:text-purple-400 mt-2 flex items-center gap-1">
                                 <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
                                 <span>สามารถเลือกหลายไฟล์พร้อมกันได้ (กด Ctrl หรือ Cmd ค้างไว้)</span>
