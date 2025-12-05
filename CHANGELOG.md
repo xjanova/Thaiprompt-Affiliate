@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.6] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2127 from xjanova/claude/fix-session-storage-error-01QwBqkUo4u3CrF8cjgNEEKw (90af75ff)
+- fix: ensure storage directories exist on boot to prevent session errors (69fa2567)
+### 🔧 Other Changes
+
+
 ## [v3.364.5] - 2025-12-05
 
 ### ✨ Features
