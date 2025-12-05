@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name'); // gmail_api, gmail_smtp, ses, mailgun, etc.
             $table->string('display_name'); // For UI
             $table->enum('type', ['smtp', 'api'])->default('smtp');
-            $table->json('configuration'); // Encrypted credentials and settings
+            $table->text('configuration'); // Encrypted credentials and settings (TEXT because encrypted data is not valid JSON)
             $table->boolean('is_active')->default(false);
             $table->boolean('is_default')->default(false);
             $table->integer('priority')->default(0); // For fallback order
