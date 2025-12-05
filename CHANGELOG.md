@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.33] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2052 from xjanova/claude/fix-setting-function-017KM3BT69k4PQeEiusiFxFz (1ffcf695)
+- fix: add missing setting() helper function (de102e3a)
+### 🔧 Other Changes
+
+
 ## [v3.358.32] - 2025-12-05
 
 ### ✨ Features
