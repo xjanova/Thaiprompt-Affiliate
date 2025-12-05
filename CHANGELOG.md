@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.15] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(menu): ให้เมนู Academy แสดงบน User Dashboard (edc52158)
+### 🔧 Other Changes
+- Merge pull request #2036 from xjanova/claude/debug-forum-views-01GByStgHFeUYigYqvrfao7o (48befb0b)
+- refactor(menu): ใช้ config เป็นหลัก database เป็น override (106b670c)
+
 ## [v3.358.14] - 2025-12-04
 
 ### ✨ Features
