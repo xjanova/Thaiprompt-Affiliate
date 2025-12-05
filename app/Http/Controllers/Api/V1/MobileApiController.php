@@ -1968,4 +1968,483 @@ class MobileApiController extends Controller
             ], 400);
         }
     }
+
+    // =====================================================
+    // Support Tickets
+    // =====================================================
+
+    /**
+     * ดึงรายการ tickets ของผู้ใช้
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getTickets(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        $tickets = \App\Models\SupportTicket::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'tickets' => $tickets->map(function ($ticket) {
+                    return [
+                        'id' => $ticket->id,
+                        'ticketNumber' => $ticket->ticket_number,
+                        'subject' => $ticket->subject,
+                        'category' => $ticket->category,
+                        'categoryText' => $ticket->category_text,
+                        'priority' => $ticket->priority,
+                        'priorityText' => $ticket->priority_text,
+                        'status' => $ticket->status,
+                        'statusText' => $ticket->status_text,
+                        'hasUnreadAdminMessage' => $ticket->has_unread_admin_message,
+                        'messageCount' => $ticket->message_count,
+                        'createdAt' => $ticket->created_at->format('Y-m-d H:i:s'),
+                        'lastMessageAt' => $ticket->last_message_at?->format('Y-m-d H:i:s'),
+                    ];
+                }),
+                'pagination' => [
+                    'total' => $tickets->total(),
+                    'currentPage' => $tickets->currentPage(),
+                    'lastPage' => $tickets->lastPage(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * สร้าง ticket ใหม่
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function createTicket(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        // Validate
+        $validator = Validator::make($request->all(), [
+            'subject' => 'required|string|max:255',
+            'category' => 'nullable|in:general,account,payment,rider,technical,complaint,suggestion,other',
+            'priority' => 'nullable|in:low,medium,high,urgent',
+            'message' => 'required|string|max:5000',
+        ], [
+            'subject.required' => 'กรุณากรอกหัวข้อ',
+            'message.required' => 'กรุณากรอกข้อความ',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // สร้าง ticket
+            $ticket = \App\Models\SupportTicket::create([
+                'user_id' => $user->id,
+                'subject' => $request->subject,
+                'category' => $request->category ?? 'general',
+                'priority' => $request->priority ?? 'medium',
+            ]);
+
+            // เพิ่มข้อความแรก
+            $ticket->addMessage($user->id, $request->message, false);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'สร้าง Ticket สำเร็จ',
+                'data' => [
+                    'ticketId' => $ticket->id,
+                    'ticketNumber' => $ticket->ticket_number,
+                ],
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถสร้าง Ticket ได้: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ดูรายละเอียด ticket
+     *
+     * @param int $ticketId
+     * @return JsonResponse
+     */
+    public function getTicket(int $ticketId): JsonResponse
+    {
+        $user = Auth::user();
+
+        $ticket = \App\Models\SupportTicket::where('id', $ticketId)
+            ->where('user_id', $user->id)
+            ->with('messages.user')
+            ->first();
+
+        if (!$ticket) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบ Ticket นี้',
+            ], 404);
+        }
+
+        // อ่านข้อความจากแอดมินทั้งหมด
+        $ticket->messages()
+            ->where('is_from_admin', true)
+            ->where('is_read', false)
+            ->update(['is_read' => true, 'read_at' => now()]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'ticket' => [
+                    'id' => $ticket->id,
+                    'ticketNumber' => $ticket->ticket_number,
+                    'subject' => $ticket->subject,
+                    'category' => $ticket->category,
+                    'categoryText' => $ticket->category_text,
+                    'priority' => $ticket->priority,
+                    'priorityText' => $ticket->priority_text,
+                    'status' => $ticket->status,
+                    'statusText' => $ticket->status_text,
+                    'satisfactionRating' => $ticket->satisfaction_rating,
+                    'createdAt' => $ticket->created_at->format('Y-m-d H:i:s'),
+                    'resolvedAt' => $ticket->resolved_at?->format('Y-m-d H:i:s'),
+                    'closedAt' => $ticket->closed_at?->format('Y-m-d H:i:s'),
+                ],
+                'messages' => $ticket->messages->map(function ($message) {
+                    return [
+                        'id' => $message->id,
+                        'message' => $message->message,
+                        'isFromAdmin' => $message->is_from_admin,
+                        'userName' => $message->user->name ?? 'Admin',
+                        'attachments' => $message->attachments,
+                        'isRead' => $message->is_read,
+                        'createdAt' => $message->created_at->format('Y-m-d H:i:s'),
+                    ];
+                }),
+            ],
+        ]);
+    }
+
+    /**
+     * ส่งข้อความใน ticket
+     *
+     * @param Request $request
+     * @param int $ticketId
+     * @return JsonResponse
+     */
+    public function replyTicket(Request $request, int $ticketId): JsonResponse
+    {
+        $user = Auth::user();
+
+        $ticket = \App\Models\SupportTicket::where('id', $ticketId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$ticket) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบ Ticket นี้',
+            ], 404);
+        }
+
+        if ($ticket->status === 'closed') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ticket นี้ปิดแล้ว ไม่สามารถตอบกลับได้',
+            ], 400);
+        }
+
+        // Validate
+        $request->validate([
+            'message' => 'required|string|max:5000',
+        ]);
+
+        // เพิ่มข้อความ
+        $message = $ticket->addMessage($user->id, $request->message, false);
+
+        // ถ้าสถานะเป็น waiting ให้เปลี่ยนเป็น open
+        if ($ticket->status === 'waiting') {
+            $ticket->update(['status' => 'open']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ส่งข้อความสำเร็จ',
+            'data' => [
+                'messageId' => $message->id,
+                'createdAt' => $message->created_at->format('Y-m-d H:i:s'),
+            ],
+        ]);
+    }
+
+    /**
+     * ให้คะแนนความพึงพอใจ
+     *
+     * @param Request $request
+     * @param int $ticketId
+     * @return JsonResponse
+     */
+    public function rateTicket(Request $request, int $ticketId): JsonResponse
+    {
+        $user = Auth::user();
+
+        $ticket = \App\Models\SupportTicket::where('id', $ticketId)
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['resolved', 'closed'])
+            ->first();
+
+        if (!$ticket) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบ Ticket นี้หรือยังไม่ได้แก้ไข',
+            ], 404);
+        }
+
+        // Validate
+        $request->validate([
+            'rating' => 'required|integer|between:1,5',
+            'comment' => 'nullable|string|max:1000',
+        ]);
+
+        $ticket->rate($request->rating, $request->comment);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ขอบคุณสำหรับการให้คะแนน',
+        ]);
+    }
+
+    // =====================================================
+    // Notifications
+    // =====================================================
+
+    /**
+     * ดึงรายการการแจ้งเตือน
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getNotifications(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        $notifications = \App\Models\UserNotification::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(50);
+
+        $unreadCount = \App\Models\UserNotification::where('user_id', $user->id)
+            ->where('is_read', false)
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'unreadCount' => $unreadCount,
+                'notifications' => $notifications->map(function ($notification) {
+                    return [
+                        'id' => $notification->id,
+                        'title' => $notification->title,
+                        'body' => $notification->body,
+                        'type' => $notification->type,
+                        'typeText' => $notification->type_text,
+                        'icon' => $notification->icon,
+                        'image' => $notification->image,
+                        'actionUrl' => $notification->action_url,
+                        'isRead' => $notification->is_read,
+                        'data' => $notification->data,
+                        'createdAt' => $notification->created_at->format('Y-m-d H:i:s'),
+                        'timeAgo' => $notification->time_ago,
+                    ];
+                }),
+                'pagination' => [
+                    'total' => $notifications->total(),
+                    'currentPage' => $notifications->currentPage(),
+                    'lastPage' => $notifications->lastPage(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * ทำเครื่องหมายว่าอ่านแล้ว
+     *
+     * @param Request $request
+     * @param int $notificationId
+     * @return JsonResponse
+     */
+    public function markNotificationRead(Request $request, int $notificationId): JsonResponse
+    {
+        $user = Auth::user();
+
+        $notification = \App\Models\UserNotification::where('id', $notificationId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$notification) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบการแจ้งเตือนนี้',
+            ], 404);
+        }
+
+        $notification->markAsRead();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ทำเครื่องหมายว่าอ่านแล้ว',
+        ]);
+    }
+
+    /**
+     * ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function markAllNotificationsRead(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        \App\Models\UserNotification::where('user_id', $user->id)
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now(),
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว',
+        ]);
+    }
+
+    /**
+     * ลบการแจ้งเตือน
+     *
+     * @param Request $request
+     * @param int $notificationId
+     * @return JsonResponse
+     */
+    public function deleteNotification(Request $request, int $notificationId): JsonResponse
+    {
+        $user = Auth::user();
+
+        $notification = \App\Models\UserNotification::where('id', $notificationId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$notification) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบการแจ้งเตือนนี้',
+            ], 404);
+        }
+
+        $notification->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ลบการแจ้งเตือนสำเร็จ',
+        ]);
+    }
+
+    // =====================================================
+    // Push Notification Token
+    // =====================================================
+
+    /**
+     * บันทึก Push Token
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function registerPushToken(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        // Validate
+        $request->validate([
+            'token' => 'required|string',
+            'platform' => 'nullable|in:android,ios,web',
+            'device_id' => 'nullable|string',
+            'device_name' => 'nullable|string',
+            'app_version' => 'nullable|string',
+        ]);
+
+        $token = \App\Models\UserNotificationToken::registerToken($user->id, $request->token, [
+            'provider' => Str::startsWith($request->token, 'ExponentPushToken') ? 'expo' : 'fcm',
+            'platform' => $request->platform ?? 'android',
+            'device_id' => $request->device_id,
+            'device_name' => $request->device_name,
+            'app_version' => $request->app_version,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'บันทึก Push Token สำเร็จ',
+            'data' => [
+                'tokenId' => $token->id,
+            ],
+        ]);
+    }
+
+    /**
+     * ลบ Push Token
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function removePushToken(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        // Validate
+        $request->validate([
+            'token' => 'required|string',
+        ]);
+
+        \App\Models\UserNotificationToken::where('user_id', $user->id)
+            ->where('token', $request->token)
+            ->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ลบ Push Token สำเร็จ',
+        ]);
+    }
+
+    /**
+     * จำนวนการแจ้งเตือนที่ยังไม่อ่าน
+     *
+     * @return JsonResponse
+     */
+    public function getUnreadNotificationCount(): JsonResponse
+    {
+        $user = Auth::user();
+
+        $count = \App\Models\UserNotification::where('user_id', $user->id)
+            ->where('is_read', false)
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'unreadCount' => $count,
+            ],
+        ]);
+    }
 }

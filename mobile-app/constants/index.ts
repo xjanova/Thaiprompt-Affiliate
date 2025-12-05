@@ -68,6 +68,22 @@ export const API_ENDPOINTS = {
   RIDER_JOB_ACCEPT: '/rider/jobs', // + /{jobId}/accept
   RIDER_JOB_STATUS: '/rider/jobs', // + /{jobId}/status
 
+  // Support Tickets (Mobile App)
+  TICKETS: '/tickets',
+  TICKET_DETAIL: '/tickets', // + /{ticketId}
+  TICKET_REPLY: '/tickets', // + /{ticketId}/reply
+  TICKET_RATE: '/tickets', // + /{ticketId}/rate
+
+  // Notifications (Mobile App)
+  NOTIFICATIONS: '/notifications',
+  NOTIFICATIONS_UNREAD_COUNT: '/notifications/unread-count',
+  NOTIFICATIONS_MARK_ALL_READ: '/notifications/mark-all-read',
+  NOTIFICATION_READ: '/notifications', // + /{notificationId}/read
+  NOTIFICATION_DELETE: '/notifications', // + /{notificationId}
+
+  // Push Notification Token (Mobile App)
+  PUSH_TOKEN: '/push/token',
+
   // Profile
   PROFILE: '/profile',
   UPDATE_PROFILE: '/profile', // ใช้ PUT method

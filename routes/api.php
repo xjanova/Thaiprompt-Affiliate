@@ -175,6 +175,30 @@ Route::prefix('v1')->group(function () {
             Route::post('/jobs/{jobId}/status', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateJobStatus']);
         });
 
+        // Support Tickets (Mobile App)
+        Route::prefix('tickets')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getTickets']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'createTicket']);
+            Route::get('/{ticketId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getTicket']);
+            Route::post('/{ticketId}/reply', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'replyTicket']);
+            Route::post('/{ticketId}/rate', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'rateTicket']);
+        });
+
+        // Notifications (Mobile App)
+        Route::prefix('notifications')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getNotifications']);
+            Route::get('/unread-count', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getUnreadNotificationCount']);
+            Route::post('/mark-all-read', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'markAllNotificationsRead']);
+            Route::post('/{notificationId}/read', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'markNotificationRead']);
+            Route::delete('/{notificationId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'deleteNotification']);
+        });
+
+        // Push Notification Token (Mobile App)
+        Route::prefix('push')->group(function () {
+            Route::post('/token', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'registerPushToken']);
+            Route::delete('/token', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'removePushToken']);
+        });
+
         // Translation (Google Translate API)
         Route::prefix('translate')->group(function () {
             Route::post('/', [TranslateController::class, 'translate']);
