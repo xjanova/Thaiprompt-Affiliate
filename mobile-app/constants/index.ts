@@ -9,7 +9,7 @@
 
 // Production API URL
 export const API_BASE_URL = __DEV__
-  ? 'http://10.0.2.2:8000/api/v1' // Android Emulator
+  ? 'https://member123.thaiprompt.online/api/v1' // Development Server
   : 'https://main.thaiprompt.online/api/v1';
 
 // API Endpoints
