@@ -111,6 +111,14 @@ class Product extends Model
     ];
 
     /**
+     * Accessors to append to model's array/JSON form
+     */
+    protected $appends = [
+        'primary_image',
+        'primary_image_url',
+    ];
+
+    /**
      * Boot the model
      */
     protected static function boot()
@@ -549,6 +557,15 @@ class Product extends Model
         }
 
         return null;
+    }
+
+    /**
+     * Alias for getPrimaryImageAttribute
+     * หลาย view ใช้ชื่อ primary_image_url
+     */
+    public function getPrimaryImageUrlAttribute(): ?string
+    {
+        return $this->primary_image;
     }
 
     /**
