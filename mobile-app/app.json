@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "thaiprompt",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -40,8 +40,7 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store",
-      "expo-font"
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
