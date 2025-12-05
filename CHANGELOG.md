@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.34] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2053 from xjanova/claude/fix-expo-error-01QLt62F4h7qf3WMt7N2CVyj (dc9a83c5)
+- fix(mobile-app): เพิ่ม react-native-worklets สำหรับ NativeWind (3bd6bf2e)
+### 🔧 Other Changes
+
+
 ## [v3.358.33] - 2025-12-05
 
 ### ✨ Features
