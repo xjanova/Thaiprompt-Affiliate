@@ -122,17 +122,14 @@ module.exports = {
         "5xl": "2.5rem",
       },
 
-      boxShadow: {
-        'lava': '0 4px 30px rgba(255, 107, 107, 0.3)',
-        'glow': '0 0 20px rgba(255, 107, 53, 0.5)',
-        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-      },
+      // boxShadow ถูกลบออกเนื่องจาก NativeWind v2 ไม่รองรับ CSS format
+      // ใช้ React Native shadow properties แทน (shadowColor, shadowOffset, shadowOpacity, shadowRadius)
 
       animation: {
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "bounce-slow": "bounce 2s infinite",
         "blob": "blob 7s infinite",
-        "glow": "glow 2s ease-in-out infinite alternate",
+        // "glow" ถูกลบออกเนื่องจากใช้ boxShadow
         "float": "float 3s ease-in-out infinite",
         "shimmer": "shimmer 2s linear infinite",
       },
@@ -152,14 +149,7 @@ module.exports = {
             transform: "translate(0px, 0px) scale(1)",
           },
         },
-        glow: {
-          "from": {
-            boxShadow: "0 0 10px #FF6B6B, 0 0 20px #FF6B6B, 0 0 30px #FF6B6B",
-          },
-          "to": {
-            boxShadow: "0 0 20px #FF8E53, 0 0 30px #FF8E53, 0 0 40px #FFE66D",
-          },
-        },
+        // glow keyframes ถูกลบออกเนื่องจากใช้ boxShadow ซึ่ง NativeWind v2 ไม่รองรับ
         float: {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-10px)" },
