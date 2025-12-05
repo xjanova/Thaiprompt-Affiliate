@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.362.4] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2109 from xjanova/claude/fix-expo-av-dependency-01DksVpxFeiTyn2E3WDoNnF7 (ed95c4be)
+- fix: rename duplicate getCommissions to getCommissionsList (85b67dfc)
+### 🔧 Other Changes
+
+
 ## [v3.362.3] - 2025-12-05
 
 ### ✨ Features
