@@ -73,6 +73,9 @@ Route::prefix('analytics')->name('analytics.')->group(function () {
 Route::prefix('wallet')->name('wallet.')->group(function () {
     Route::get('/', [DashboardController::class, 'walletIndex'])->name('index');
     Route::get('/withdraw', [DashboardController::class, 'walletWithdraw'])->name('withdraw');
+    Route::post('/withdraw', [DashboardController::class, 'submitWithdrawal'])->name('withdraw.submit');
+    Route::get('/withdrawals', [DashboardController::class, 'withdrawals'])->name('withdrawals');
+    Route::delete('/withdrawal/{id}/cancel', [DashboardController::class, 'cancelWithdrawal'])->name('withdrawal.cancel');
 });
 
 // ========================================

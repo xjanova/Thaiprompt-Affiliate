@@ -8,7 +8,9 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Slogan;
 use App\Models\VendorStore;
+use App\Models\WithdrawalRequest;
 use App\Services\ImageUploadService;
+use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -293,30 +295,203 @@ class DashboardController extends Controller
     }
 
     /**
-     * Display seller wallet
+     * แสดงหน้ากระเป๋าเงินของร้านค้า
      */
     public function walletIndex()
     {
         $user = Auth::user();
+        $walletService = app(WalletService::class);
 
-        // Get wallet data (placeholder)
-        $balance = 0;
-        $transactions = [];
+        // ดึงข้อมูลกระเป๋าเงิน
+        $wallet = $walletService->getOrCreateWallet($user);
+        $balance = $wallet->balance;
 
-        return view('seller.wallet.index', compact('user', 'balance', 'transactions'));
+        // ดึงธุรกรรมล่าสุด
+        $transactions = $wallet->transactions()
+            ->latest()
+            ->take(10)
+            ->get();
+
+        // ดึงคำขอถอนเงินที่รอดำเนินการ
+        $pendingWithdrawals = WithdrawalRequest::where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'processing'])
+            ->sum('amount');
+
+        return view('seller.wallet.index', compact('user', 'balance', 'transactions', 'pendingWithdrawals'));
     }
 
     /**
-     * Display wallet withdraw page
+     * แสดงหน้าถอนเงินของร้านค้า
      */
     public function walletWithdraw()
     {
         $user = Auth::user();
+        $walletService = app(WalletService::class);
 
-        // Get wallet balance
-        $balance = 0;
+        // ดึงข้อมูลกระเป๋าเงิน
+        $wallet = $walletService->getOrCreateWallet($user);
+        $balance = $wallet->balance;
 
-        return view('seller.wallet.withdraw', compact('user', 'balance'));
+        // ดึงช่องทางรับเงินของผู้ใช้
+        $paymentMethods = $user->paymentMethods()->active()->get();
+
+        // ดึงคำขอถอนเงินล่าสุด
+        $recentWithdrawals = WithdrawalRequest::where('user_id', $user->id)
+            ->latest()
+            ->take(5)
+            ->get();
+
+        // ค่าธรรมเนียมและขั้นต่ำในการถอน
+        $withdrawalSettings = [
+            'min_amount' => 100,
+            'max_amount' => 100000,
+            'fee_percentage' => 0,
+            'fee_fixed' => 0,
+        ];
+
+        return view('seller.wallet.withdraw', compact(
+            'user',
+            'wallet',
+            'balance',
+            'paymentMethods',
+            'recentWithdrawals',
+            'withdrawalSettings'
+        ));
+    }
+
+    /**
+     * ส่งคำขอถอนเงินของร้านค้า
+     */
+    public function submitWithdrawal(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:100|max:100000',
+            'payment_method_id' => 'required|exists:payment_methods,id',
+            'user_note' => 'nullable|string|max:500',
+        ], [
+            'amount.required' => 'กรุณาระบุจำนวนเงิน',
+            'amount.min' => 'จำนวนเงินขั้นต่ำคือ 100 บาท',
+            'amount.max' => 'จำนวนเงินสูงสุดคือ 100,000 บาท',
+            'payment_method_id.required' => 'กรุณาเลือกช่องทางรับเงิน',
+        ]);
+
+        $user = Auth::user();
+        $walletService = app(WalletService::class);
+        $wallet = $walletService->getOrCreateWallet($user);
+
+        // ตรวจสอบยอดเงินคงเหลือ
+        if ($request->amount > $wallet->balance) {
+            return back()->withErrors(['amount' => 'ยอดเงินไม่เพียงพอ'])->withInput();
+        }
+
+        // ตรวจสอบช่องทางรับเงิน
+        $paymentMethod = $user->paymentMethods()->find($request->payment_method_id);
+        if (!$paymentMethod) {
+            return back()->withErrors(['payment_method_id' => 'ไม่พบช่องทางรับเงินที่เลือก'])->withInput();
+        }
+
+        DB::beginTransaction();
+        try {
+            // สร้างคำขอถอนเงิน
+            $withdrawal = WithdrawalRequest::create([
+                'user_id' => $user->id,
+                'wallet_id' => $wallet->id,
+                'amount' => $request->amount,
+                'fee' => 0,
+                'tax' => 0,
+                'net_amount' => $request->amount,
+                'currency' => 'THB',
+                'status' => 'pending',
+                'payment_method_id' => $paymentMethod->id,
+                'payment_type' => $paymentMethod->type,
+                'payment_details' => [
+                    'bank_name' => $paymentMethod->bank_name ?? null,
+                    'account_name' => $paymentMethod->account_name ?? null,
+                    'account_number' => $paymentMethod->account_number ?? null,
+                ],
+                'user_note' => $request->user_note,
+                'metadata' => [
+                    'source' => 'seller_dashboard',
+                    'store_id' => VendorStore::where('user_id', $user->id)->value('id'),
+                ],
+            ]);
+
+            // หักเงินจากกระเป๋า (hold)
+            $walletService->debit(
+                $wallet,
+                $request->amount,
+                'withdrawal_request',
+                "คำขอถอนเงิน #{$withdrawal->request_id}",
+                ['withdrawal_request_id' => $withdrawal->id]
+            );
+
+            DB::commit();
+
+            return redirect()
+                ->route('seller.wallet.withdrawals')
+                ->with('success', 'ส่งคำขอถอนเงินสำเร็จ! กรุณารอการอนุมัติ');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()])->withInput();
+        }
+    }
+
+    /**
+     * แสดงประวัติการถอนเงิน
+     */
+    public function withdrawals()
+    {
+        $user = Auth::user();
+
+        $withdrawals = WithdrawalRequest::where('user_id', $user->id)
+            ->with('paymentMethod')
+            ->latest()
+            ->paginate(15);
+
+        return view('seller.wallet.withdrawals', compact('user', 'withdrawals'));
+    }
+
+    /**
+     * ยกเลิกคำขอถอนเงิน
+     */
+    public function cancelWithdrawal($id)
+    {
+        $user = Auth::user();
+        $walletService = app(WalletService::class);
+        $wallet = $walletService->getOrCreateWallet($user);
+
+        $withdrawal = WithdrawalRequest::where('user_id', $user->id)
+            ->where('id', $id)
+            ->where('status', 'pending')
+            ->firstOrFail();
+
+        DB::beginTransaction();
+        try {
+            // คืนเงินเข้ากระเป๋า
+            $walletService->credit(
+                $wallet,
+                $withdrawal->amount,
+                'withdrawal_cancelled',
+                "ยกเลิกคำขอถอนเงิน #{$withdrawal->request_id}",
+                ['withdrawal_request_id' => $withdrawal->id]
+            );
+
+            // อัพเดทสถานะ
+            $withdrawal->update([
+                'status' => 'cancelled',
+            ]);
+
+            DB::commit();
+
+            return redirect()
+                ->route('seller.wallet.withdrawals')
+                ->with('success', 'ยกเลิกคำขอถอนเงินสำเร็จ');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()]);
+        }
     }
 
     /**
