@@ -1272,6 +1272,33 @@ Route::prefix('ai-bots/{botId}/knowledge-bases')->name('knowledge-bases.')->grou
     Route::post('/test-search', [KnowledgeBaseController::class, 'testSearch'])->name('test-search');
 });
 
+// ═══════════════════════════════════════════════════════════════════════
+// Official Shop Management (ร้านของระบบ - Premium V3)
+// สินค้าที่สร้างจากที่นี่จะมี seller_id = null เพื่อแสดงใน Official Shop
+// ═══════════════════════════════════════════════════════════════════════
+Route::prefix('official-shop')->name('official-shop.')->group(function () {
+    // Dashboard
+    Route::get('/', [\App\Http\Controllers\Admin\OfficialShopAdminController::class, 'dashboard'])->name('dashboard');
+
+    // Products Management
+    Route::prefix('products')->name('products.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\OfficialShopAdminController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\OfficialShopAdminController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\OfficialShopAdminController::class, 'store'])->name('store');
+        Route::get('/{product}', [\App\Http\Controllers\Admin\OfficialShopAdminController::class, 'show'])->name('show');
+        Route::get('/{product}/edit', [\App\Http\Controllers\Admin\OfficialShopAdminController::class, 'edit'])->name('edit');
+        Route::put('/{product}', [\App\Http\Controllers\Admin\OfficialShopAdminController::class, 'update'])->name('update');
+        Route::delete('/{product}', [\App\Http\Controllers\Admin\OfficialShopAdminController::class, 'destroy'])->name('destroy');
+
+        // Quick Actions
+        Route::post('/{product}/toggle-active', [\App\Http\Controllers\Admin\OfficialShopAdminController::class, 'toggleActive'])->name('toggle-active');
+        Route::post('/{product}/toggle-featured', [\App\Http\Controllers\Admin\OfficialShopAdminController::class, 'toggleFeatured'])->name('toggle-featured');
+    });
+
+    // Import existing products to Official Shop
+    Route::post('/import', [\App\Http\Controllers\Admin\OfficialShopAdminController::class, 'importToOfficial'])->name('import');
+});
+
 // E-Commerce Management
 Route::prefix('ecommerce')->name('ecommerce.')->group(function () {
     // Dashboard
