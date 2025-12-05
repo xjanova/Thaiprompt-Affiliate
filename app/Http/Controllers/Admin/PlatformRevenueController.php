@@ -89,6 +89,66 @@ class PlatformRevenueController extends Controller
     }
 
     /**
+     * รายการ Platform Wallets ทั้งหมด
+     *
+     * แสดงกระเป๋าเงินพิเศษของแพลตฟอร์ม:
+     * - Platform Fee: ค่าธรรมเนียมแพลตฟอร์ม
+     * - VAT: ภาษีมูลค่าเพิ่ม
+     * - MLM Pool: กองทุน MLM Commission
+     * - Admin Shop: รายได้สินค้าของแพลตฟอร์ม
+     * - Admin Services: รายได้บริการ
+     * - Refund Pool: กองทุนสำหรับ Refund
+     *
+     * @return \Illuminate\View\View
+     */
+    public function wallets()
+    {
+        // ดึง Wallets ทั้งหมดพร้อมสถิติ
+        $wallets = PlatformWallet::all()->map(function ($wallet) {
+            // เพิ่มสถิติวันนี้
+            $wallet->today_income = $wallet->transactions()
+                ->where('type', 'income')
+                ->whereDate('created_at', now())
+                ->sum('amount');
+
+            $wallet->today_expense = $wallet->transactions()
+                ->where('type', 'expense')
+                ->whereDate('created_at', now())
+                ->sum('amount');
+
+            // เพิ่มสถิติเดือนนี้
+            $wallet->month_income = $wallet->transactions()
+                ->where('type', 'income')
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->sum('amount');
+
+            $wallet->month_expense = $wallet->transactions()
+                ->where('type', 'expense')
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->sum('amount');
+
+            return $wallet;
+        });
+
+        // คำนวณ totals
+        $totals = [
+            'total_balance' => $wallets->sum('balance'),
+            'today_income' => $wallets->sum('today_income'),
+            'today_expense' => $wallets->sum('today_expense'),
+            'month_income' => $wallets->sum('month_income'),
+            'month_expense' => $wallets->sum('month_expense'),
+        ];
+
+        return view('admin.platform-revenue.wallets', [
+            'wallets' => $wallets,
+            'totals' => $totals,
+            'pageTitle' => 'กระเป๋าเงินแพลตฟอร์ม',
+        ]);
+    }
+
+    /**
      * รายละเอียด Wallet
      *
      * @param PlatformWallet $wallet

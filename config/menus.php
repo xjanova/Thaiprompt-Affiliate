@@ -299,6 +299,30 @@ return [
             ],
         ],
 
+        // =============================================
+        // 💼 Platform Finance - กระเป๋าเงินพิเศษของแพลตฟอร์ม
+        // =============================================
+        [
+            'id' => 'platform-finance',
+            'label' => '💼 การเงินแพลตฟอร์ม',
+            'icon' => '💼',
+            'route' => null,
+            'order' => 9.3,
+            'permissions' => [],
+            'badge' => 'ADMIN',
+            'badge_color' => 'bg-gradient-to-r from-emerald-500 to-teal-500',
+            'submenu' => [
+                ['label' => '📊 รายได้แพลตฟอร์ม', 'route' => 'admin.platform-revenue.index', 'description' => 'ดูรายได้ Platform Fee, VAT, MLM Pool'],
+                ['label' => '💰 กระเป๋าเงินแพลตฟอร์ม', 'route' => 'admin.platform-revenue.wallets.index', 'description' => 'ดูยอดเงินใน Platform Wallets'],
+                ['label' => '📝 ธุรกรรมแพลตฟอร์ม', 'route' => 'admin.platform-revenue.transactions', 'description' => 'ประวัติการเงินเข้า-ออก'],
+                ['label' => '📈 รายงานการเงิน', 'route' => 'admin.platform-revenue.reports', 'description' => 'รายงานรายได้รายวัน/เดือน'],
+                ['label' => '---', 'route' => null],
+                ['label' => '💸 จ่ายเงินออก (Payouts)', 'route' => 'admin.payouts.index', 'description' => 'จัดการคำขอถอนเงิน Seller'],
+                ['label' => '📝 จัดการหนี้สิน', 'route' => 'admin.debts.index', 'description' => 'ติดตามหนี้ที่ต้องเรียกคืน'],
+                ['label' => '🔑 HD Wallets', 'route' => 'admin.hd-wallets.index', 'description' => 'Hierarchical Deterministic'],
+            ],
+        ],
+
         [
             'id' => 'staking',
             'label' => 'ระบบลงทุน Staking',
