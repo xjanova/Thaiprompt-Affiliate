@@ -1650,13 +1650,33 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
 
     // FlowAccount Integration
     Route::prefix('flowaccount')->name('flowaccount.')->group(function () {
+        // Dashboard และหน้าหลัก
         Route::get('/', [FlowAccountController::class, 'index'])->name('index');
+
+        // การเชื่อมต่อ OAuth
         Route::get('/connect', [FlowAccountController::class, 'showConnectForm'])->name('connect.form');
         Route::post('/connect', [FlowAccountController::class, 'connect'])->name('connect');
         Route::get('/callback', [FlowAccountController::class, 'callback'])->name('callback');
         Route::post('/disconnect', [FlowAccountController::class, 'disconnect'])->name('disconnect');
+        Route::get('/test', [FlowAccountController::class, 'testConnection'])->name('test');
+
+        // การตั้งค่า
+        Route::get('/settings', [FlowAccountController::class, 'settings'])->name('settings');
+        Route::post('/settings', [FlowAccountController::class, 'saveSettings'])->name('settings.save');
+
+        // การซิงค์ข้อมูล
         Route::post('/sync', [FlowAccountController::class, 'sync'])->name('sync');
         Route::post('/sync/{type}', [FlowAccountController::class, 'syncType'])->name('sync.type');
+
+        // ประวัติการซิงค์
+        Route::get('/logs', [FlowAccountController::class, 'syncLogs'])->name('logs');
+        Route::post('/logs/clear', [FlowAccountController::class, 'clearLogs'])->name('logs.clear');
+
+        // สถิติ
+        Route::get('/stats', [FlowAccountController::class, 'getStats'])->name('stats');
+
+        // ดึงข้อมูลจาก FlowAccount API
+        Route::get('/fetch/{endpoint}', [FlowAccountController::class, 'fetchFromFlowAccount'])->name('fetch');
     });
 });
 
