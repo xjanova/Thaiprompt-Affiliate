@@ -1220,7 +1220,7 @@ return [
                 ['label' => 'ทีมของฉัน', 'route' => 'user.mlm.team', 'icon' => '👥'],
                 ['label' => 'ลีดเดอร์บอร์ด', 'route' => 'user.ranks.leaderboard', 'icon' => '🏆'],
                 ['label' => '---', 'route' => null],
-                ['label' => '📝 รับสมัครสมาชิก', 'route' => 'user.recruit.index', 'description' => 'ชวนเพื่อนสมัคร'],
+                ['label' => '📝 รับสมัครสมาชิก', 'route' => 'user.marketing.recruit.index', 'description' => 'ชวนเพื่อนสมัคร'],
                 ['label' => '🔄 โอนย้ายทีม', 'route' => 'user.team-transfer.index', 'description' => 'จัดการสายงาน'],
                 ['label' => '⭐ อัพเกรดดาว', 'route' => 'user.star-upgrade.index', 'description' => 'เลื่อนระดับ Star'],
             ],
@@ -1246,7 +1246,7 @@ return [
             'order' => 13,
             'permissions' => [],
             'submenu' => [
-                ['label' => '📊 แดชบอร์ดการตลาด', 'route' => 'user.marketing.index', 'description' => 'ภาพรวมการตลาด'],
+                ['label' => '📊 แดชบอร์ดการตลาด', 'route' => 'user.marketing.recruit.index', 'description' => 'ภาพรวมการตลาด'],
                 ['label' => 'สร้าง QR Code & Barcode', 'route' => 'qr-barcode.index'],
                 ['label' => 'จำลองรายได้', 'route' => 'user.mlm.income-simulator'],
                 ['label' => 'จำลองเงินปันผล', 'route' => 'user.mlm.dividend-simulator'],
