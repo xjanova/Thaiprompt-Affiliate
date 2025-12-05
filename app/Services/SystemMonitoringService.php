@@ -309,20 +309,30 @@ class SystemMonitoringService
 
     /**
      * Parse /proc/meminfo
+     * ใช้ try-catch เพื่อรองรับกรณี open_basedir restriction
      */
     protected function parseMemInfo(): array
     {
         $memInfo = [];
 
-        if (!file_exists('/proc/meminfo')) {
-            return $memInfo;
-        }
-
-        $lines = file('/proc/meminfo');
-        foreach ($lines as $line) {
-            if (preg_match('/^(\w+):\s+(\d+)/', $line, $matches)) {
-                $memInfo[$matches[1]] = (int)$matches[2];
+        try {
+            if (!@file_exists('/proc/meminfo')) {
+                return $memInfo;
             }
+
+            $lines = @file('/proc/meminfo');
+            if ($lines === false) {
+                return $memInfo;
+            }
+
+            foreach ($lines as $line) {
+                if (preg_match('/^(\w+):\s+(\d+)/', $line, $matches)) {
+                    $memInfo[$matches[1]] = (int) $matches[2];
+                }
+            }
+        } catch (\Exception $e) {
+            // open_basedir restriction หรือ error อื่นๆ - return empty array
+            return [];
         }
 
         return $memInfo;
@@ -330,17 +340,27 @@ class SystemMonitoringService
 
     /**
      * Get CPU count
+     * ใช้ try-catch เพื่อรองรับกรณี open_basedir restriction
      */
     protected function getCpuCount(): int
     {
-        if (!file_exists('/proc/cpuinfo')) {
+        try {
+            if (!@file_exists('/proc/cpuinfo')) {
+                return 1;
+            }
+
+            $cpuinfo = @file_get_contents('/proc/cpuinfo');
+            if ($cpuinfo === false) {
+                return 1;
+            }
+
+            preg_match_all('/^processor/m', $cpuinfo, $matches);
+
+            return count($matches[0]) ?: 1;
+        } catch (\Exception $e) {
+            // open_basedir restriction หรือ error อื่นๆ - return default 1
             return 1;
         }
-
-        $cpuinfo = file_get_contents('/proc/cpuinfo');
-        preg_match_all('/^processor/m', $cpuinfo, $matches);
-
-        return count($matches[0]) ?: 1;
     }
 
     /**
