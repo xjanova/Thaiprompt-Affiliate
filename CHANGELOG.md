@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.44] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2063 from xjanova/claude/fix-expo-error-01QLt62F4h7qf3WMt7N2CVyj (77c384d3)
+- fix(mobile-app): downgrade tailwindcss เป็น 3.3.2 เพื่อแก้ PostCSS async error (bfc08246)
+### 🔧 Other Changes
+
+
 ## [v3.358.43] - 2025-12-05
 
 ### ✨ Features
