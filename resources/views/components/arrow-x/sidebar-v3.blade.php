@@ -187,11 +187,11 @@
              จัดการหน้าร้านค้าหลัก, แบนเนอร์, ธีม
              ======================================== --}}
         <div class="space-y-1"
-             x-data="{ storefrontMenuOpen: {{ request()->routeIs('admin.storefront.*') || request()->routeIs('admin.featured-stores.*') || request()->routeIs('admin.ecommerce.*') ? 'true' : 'false' }} }">
+             x-data="{ storefrontMenuOpen: {{ request()->routeIs('admin.storefront.*') || request()->routeIs('admin.featured-stores.*') || request()->routeIs('admin.ecommerce.*') || request()->routeIs('admin.official-shop.*') ? 'true' : 'false' }} }">
             {{-- Storefront Header Button --}}
             <button @click="storefrontMenuOpen = !storefrontMenuOpen"
                     type="button"
-                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.storefront.*') || request()->routeIs('admin.featured-stores.*') || request()->routeIs('admin.ecommerce.*') ? 'bg-gradient-to-r from-orange-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.storefront.*') || request()->routeIs('admin.featured-stores.*') || request()->routeIs('admin.ecommerce.*') || request()->routeIs('admin.official-shop.*') ? 'bg-gradient-to-r from-orange-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
                 <i class="fas fa-store w-5 text-center drop-shadow"></i>
                 <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">จัดการหน้าร้าน</span>
                 <i x-show="$store.sidebar.shouldExpand && storefrontMenuOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
@@ -262,6 +262,15 @@
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ecommerce.reports') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-bar w-4 text-center"></i>
                     <span>รายงาน</span>
+                </a>
+
+                {{-- Official Shop (Premium) --}}
+                <a href="{{ route('admin.official-shop.dashboard') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.official-shop.*') ? 'bg-gradient-to-r from-amber-400 to-purple-500 text-white font-bold shadow-lg' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-crown w-4 text-center text-amber-300"></i>
+                    <span>Official Shop</span>
+                    <span class="ml-auto px-1.5 py-0.5 text-xs bg-amber-400/30 text-amber-200 rounded font-bold">Premium</span>
                 </a>
             </div>
         </div>
