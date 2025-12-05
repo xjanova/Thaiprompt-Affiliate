@@ -273,6 +273,20 @@
                     </p>
                 </div>
             </div>
+        @else
+            {{-- Fallback: กรณี kyc_status เป็น null หรือค่าอื่นที่ไม่รู้จัก ให้แสดงแบบ not_submitted --}}
+            <div class="text-center py-8">
+                <div class="w-24 h-24 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                    <i class="fas fa-id-card text-4xl text-gray-400"></i>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">คุณยังไม่ได้ยืนยันตัวตน</h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">ยืนยันตัวตนเพื่อเพิ่มความปลอดภัยและความน่าเชื่อถือของบัญชีของคุณ</p>
+                <a href="{{ route('user.kyc.create') }}"
+                   class="inline-flex items-center px-6 py-3 bg-gradient-primary text-white rounded-lg hover:opacity-90 transition">
+                    <i class="fas fa-upload mr-2"></i>
+                    เริ่มยืนยันตัวตน
+                </a>
+            </div>
         @endif
     </div>
 

@@ -14,16 +14,26 @@ class KycController extends Controller
 {
     /**
      * Display KYC verification status page
+     *
+     * แสดงหน้าสถานะการยืนยันตัวตน พร้อม sync kyc_status อัตโนมัติ
      */
     public function index()
     {
         $user = auth()->user();
         $kycVerification = $user->latestKycVerification;
 
+        // กำหนด valid statuses
+        $validStatuses = ['not_submitted', 'pending', 'approved', 'rejected'];
+
         // Sync kyc_status จาก KycVerification (แก้ไขข้อมูลเก่าที่ไม่ได้ถูก sync)
         if ($kycVerification && $user->kyc_status !== $kycVerification->status) {
             $user->forceFill(['kyc_status' => $kycVerification->status])->save();
             $user->refresh(); // รีเฟรชข้อมูล user
+        }
+        // ถ้าไม่มี KycVerification และ kyc_status ไม่ใช่ค่าที่ valid ให้ตั้งเป็น not_submitted
+        elseif (!$kycVerification && !in_array($user->kyc_status, $validStatuses)) {
+            $user->forceFill(['kyc_status' => 'not_submitted'])->save();
+            $user->refresh();
         }
 
         return view('user.kyc.index', compact('kycVerification'));
