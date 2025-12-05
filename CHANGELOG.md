@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.1] - 2025-12-05
+
+### ✨ Features
+- feat(mobile-app): แสดงเวอร์ชั่นจริงในหน้า Profile (40b66b63)
+- feat(admin): เพิ่มระบบ Mobile App Admin Dashboard ครบถ้วน (6f91c59d)
+- feat(mobile-app): simplify admin control to Banner, Push, and Device Analytics (e09e16d5)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2076 from xjanova/claude/fix-expo-error-01QLt62F4h7qf3WMt7N2CVyj (d789e6c5)
+- chore: ลบไฟล์ app-management เก่า และอัพเดทเวอร์ชั่นแอพเป็น 1.1.0 (d388954a)
+
 ## [v3.361.0] - 2025-12-05
 
 ### ✨ Features
