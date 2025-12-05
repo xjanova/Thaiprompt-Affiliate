@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.8] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2129 from xjanova/claude/fix-cashback-column-01Rt6SAb3mRNe7eh3Gyu7wyu (44a35ced)
+- fix: add missing cashback_percentage column to products table (f772265e)
+### 🔧 Other Changes
+
+
 ## [v3.364.7] - 2025-12-05
 
 ### ✨ Features
