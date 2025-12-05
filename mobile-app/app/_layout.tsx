@@ -120,9 +120,18 @@ export default function RootLayout() {
             }}
           />
 
-          {/* Auth Screens */}
+          {/* Main Menu - หน้าแรกหลัง Splash (Premium) */}
           <Stack.Screen
             name="index"
+            options={{
+              headerShown: false,
+              animation: 'fade',
+            }}
+          />
+
+          {/* Hub Selection */}
+          <Stack.Screen
+            name="hub-selection"
             options={{
               headerShown: false,
             }}
