@@ -1921,7 +1921,7 @@ export const trackBannerClick = async (bannerId: number): Promise<void> => {
  * - ส่ง push notification ไปยังผู้ใช้ทั้งหมดหรือเฉพาะกลุ่ม
  * - ส่งข้อความโปรโมชั่น, ข่าวสาร, แจ้งเตือนพิเศษ
  */
-export const registerPushToken = async (
+export const registerAdminPushToken = async (
   token: string,
   platform: 'ios' | 'android'
 ): Promise<{
