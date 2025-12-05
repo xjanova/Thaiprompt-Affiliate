@@ -44,13 +44,14 @@ export const API_ENDPOINTS = {
 
   // Profile
   PROFILE: '/profile',
-  UPDATE_PROFILE: '/profile/update',
+  UPDATE_PROFILE: '/profile', // ใช้ PUT method
   CHANGE_PASSWORD: '/profile/change-password',
+  REFERRAL_CODE: '/profile/referral-code',
 
   // Settings
   SETTINGS: '/settings',
-  THEME: '/settings/theme',
-  COMPLETE_THEME: '/v1/complete-theme',
+  THEME: '/app/theme',
+  COMPLETE_THEME: '/app/complete-theme',
 } as const;
 
 // =====================================================
