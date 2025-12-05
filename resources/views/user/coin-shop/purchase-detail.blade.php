@@ -2,7 +2,7 @@
     หน้ารายละเอียดคำสั่งซื้อ
 --}}
 
-@extends('layouts.user')
+@extends('layouts.user-arrow-x')
 
 @section('title', $pageTitle ?? 'รายละเอียดคำสั่งซื้อ')
 

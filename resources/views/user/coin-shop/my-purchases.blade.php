@@ -2,7 +2,7 @@
     หน้าประวัติการซื้อ
 --}}
 
-@extends('layouts.user')
+@extends('layouts.user-arrow-x')
 
 @section('title', $pageTitle ?? 'ประวัติการซื้อ')
 
