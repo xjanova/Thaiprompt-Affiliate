@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.3] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2124 from xjanova/claude/fix-storefront-settings-type-error-01VNpK5d9Airg6YL6LuHcz5h (fee1975a)
+- fix: use set_setting() instead of setting() for storing values (43bbd5c6)
+### 🔧 Other Changes
+
+
 ## [v3.364.2] - 2025-12-05
 
 ### ✨ Features
