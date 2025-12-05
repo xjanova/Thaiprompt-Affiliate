@@ -795,12 +795,20 @@ class User extends Authenticatable
      * Get all bot rentals where user is the owner (bot creator)
      *
      * ดึงรายการเช่าบอททั้งหมดที่ user เป็นเจ้าของบอท
+     * ผ่าน AiBotProfile (User -> AiBotProfile -> AiBotRental)
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
      */
     public function ownedBotRentals()
     {
-        return $this->hasMany(\App\Models\AiBotRental::class, 'owner_id');
+        return $this->hasManyThrough(
+            \App\Models\AiBotRental::class,
+            \App\Models\AiBotProfile::class,
+            'owner_id',       // Foreign key on ai_bot_profiles (links to users.id)
+            'bot_profile_id', // Foreign key on ai_bot_rentals (links to ai_bot_profiles.id)
+            'id',             // Local key on users
+            'id'              // Local key on ai_bot_profiles
+        );
     }
 
     /**
@@ -813,6 +821,18 @@ class User extends Authenticatable
     public function rentedBots()
     {
         return $this->hasMany(\App\Models\AiBotRental::class, 'renter_id');
+    }
+
+    /**
+     * Get all bot owner earnings for this user
+     *
+     * ดึงรายการรายได้จากการให้เช่าบอททั้งหมด
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function botOwnerEarnings()
+    {
+        return $this->hasMany(\App\Models\OwnerEarning::class, 'owner_id');
     }
 
     /**
