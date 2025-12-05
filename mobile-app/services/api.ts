@@ -1809,9 +1809,9 @@ export interface EarningsSummary {
 }
 
 /**
- * ดึงรายการคอมมิชชัน
+ * ดึงรายการคอมมิชชันพร้อมตัวกรอง
  */
-export const getCommissions = async (params?: {
+export const getCommissionsList = async (params?: {
   status?: 'pending' | 'approved' | 'paid' | 'rejected';
   type?: string;
   per_page?: number;
