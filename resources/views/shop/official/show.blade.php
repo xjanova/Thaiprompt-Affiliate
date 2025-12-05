@@ -1,194 +1,339 @@
-{{-- resources/views/shop/official/show.blade.php --}}
+{{--
+    Official Shop Product Detail Page - Ultra Premium Layout V3
+
+    หน้ารายละเอียดสินค้าของร้านทางการ (Official Shop)
+    ออกแบบใหม่ทั้งหมด - หรูหรา พรีเมี่ยม ระดับ Luxury Brand
+
+    Features:
+    - Ultra Premium Product Hero
+    - Luxury Image Gallery with Zoom
+    - Premium Price & Discount Display
+    - Commission & Cashback Info
+    - Interactive Add to Cart
+    - Premium Product Tabs
+    - Luxury Related Products
+    - Dark Mode Support
+--}}
 
 @extends('layouts.storefront')
 
-@section('title', $product->name . ' - ร้านของระบบ')
+@section('title', $product->name . ' - Official Shop')
 
-{{-- Premium Lava Background สำหรับ Official Shop --}}
+@section('meta')
+<meta name="description" content="{{ Str::limit($product->description, 160) }}">
+<meta property="og:title" content="{{ $product->name }} - Official Shop">
+<meta property="og:description" content="{{ Str::limit($product->description, 160) }}">
+<meta property="og:image" content="{{ $product->main_image_url }}">
+@endsection
+
+{{-- Premium Animated Lava Background --}}
 @section('lava-background')
-<div class="lava-background premium-lava" aria-hidden="true">
-    {{-- Premium blobs ใช้สี Purple, Pink, Gold เพื่อความหรูหรา --}}
-    <div class="lava-blob premium-blob-1"></div>
-    <div class="lava-blob premium-blob-2"></div>
-    <div class="lava-blob premium-blob-3"></div>
-    <div class="lava-blob premium-blob-4"></div>
-    <div class="lava-blob premium-blob-5"></div>
-    <div class="lava-blob premium-blob-6"></div>
+<div class="lava-background luxury-lava" aria-hidden="true">
+    <div class="lava-blob luxury-blob-1"></div>
+    <div class="lava-blob luxury-blob-2"></div>
+    <div class="lava-blob luxury-blob-3"></div>
+    <div class="lava-blob luxury-blob-4"></div>
+    <div class="lava-blob luxury-blob-5"></div>
+    <div class="lava-blob luxury-blob-6"></div>
 </div>
 @endsection
 
 @section('content')
-<div x-data="officialProductManager()" x-init="init()" class="min-h-screen pb-12">
+<div x-data="luxuryProductManager()" x-init="init()" class="min-h-screen">
 
-    {{-- ========================================
-         Hero Section - Product Header
-         ======================================== --}}
-    <div class="relative overflow-hidden bg-gradient-to-br from-purple-600 via-pink-500 to-orange-500 py-8">
-        {{-- Background Pattern --}}
-        <div class="absolute inset-0 opacity-20">
-            <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),transparent_50%)]"></div>
-        </div>
+    {{-- ════════════════════════════════════════════════════
+         ✨ PREMIUM HERO HEADER
+         ════════════════════════════════════════════════════ --}}
+    <section class="relative overflow-hidden">
+        {{-- Background Gradient --}}
+        <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(251,191,36,0.3),transparent_50%)]"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(168,85,247,0.2),transparent_50%)]"></div>
 
         {{-- Breadcrumb --}}
-        <div class="container-fluid px-4 relative z-10">
-            <div class="max-w-7xl mx-auto">
-                <nav class="flex items-center gap-2 text-sm text-white/80 mb-4">
-                    <a href="{{ route('home') }}" class="hover:text-white transition-colors">
-                        <i class="fas fa-home"></i>
-                    </a>
-                    <i class="fas fa-chevron-right text-xs"></i>
-                    <a href="{{ route('official-shop.index') }}" class="hover:text-white transition-colors">
-                        ร้านของระบบ
-                    </a>
-                    @if($product->category)
-                    <i class="fas fa-chevron-right text-xs"></i>
-                    <a href="{{ route('official-shop.category', $product->category->slug) }}" class="hover:text-white transition-colors">
-                        {{ $product->category->name }}
-                    </a>
-                    @endif
-                    <i class="fas fa-chevron-right text-xs"></i>
-                    <span class="text-white font-semibold">{{ Str::limit($product->name, 50) }}</span>
-                </nav>
-            </div>
+        <div class="relative container mx-auto px-4 pt-8 pb-4 z-10">
+            <nav class="flex items-center gap-2 text-sm">
+                <a href="{{ route('home') }}" class="text-white/60 hover:text-white transition-colors">
+                    <i class="fas fa-home"></i>
+                </a>
+                <i class="fas fa-chevron-right text-white/40 text-xs"></i>
+                <a href="{{ route('official-shop.index') }}" class="text-white/60 hover:text-white transition-colors">
+                    Official Shop
+                </a>
+                @if($product->category)
+                <i class="fas fa-chevron-right text-white/40 text-xs"></i>
+                <a href="{{ route('official-shop.category', $product->category->slug) }}"
+                   class="text-white/60 hover:text-white transition-colors">
+                    {{ $product->category->name }}
+                </a>
+                @endif
+                <i class="fas fa-chevron-right text-white/40 text-xs"></i>
+                <span class="text-amber-400 font-semibold">{{ Str::limit($product->name, 40) }}</span>
+            </nav>
         </div>
-    </div>
 
-    {{-- ========================================
-         Product Detail Section
-         ======================================== --}}
-    <div class="container-fluid px-4 -mt-4 relative z-20">
-        <div class="max-w-7xl mx-auto">
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-
-                {{-- ========== Left: Product Images ========== --}}
-                <div>
-                    {{-- Main Image --}}
-                    <div class="relative bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden border-2 border-purple-200 dark:border-purple-700 mb-4">
-                        <div class="aspect-square relative">
-                            {{-- Official Badge --}}
-                            <div class="absolute top-4 left-4 z-10">
-                                <div class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-bold rounded-full shadow-lg flex items-center gap-2">
-                                    <i class="fas fa-shield-check"></i>
-                                    <span>ร้านทางการ</span>
-                                </div>
-                            </div>
-
-                            {{-- Featured Badge --}}
-                            @if($product->is_featured)
-                            <div class="absolute top-4 right-4 z-10">
-                                <div class="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-bold rounded-full shadow-lg flex items-center gap-2">
-                                    <i class="fas fa-star"></i>
-                                    <span>สินค้าแนะนำ</span>
-                                </div>
-                            </div>
-                            @endif
-
-                            <img src="{{ $product->main_image_url ?? 'https://via.placeholder.com/800' }}"
-                                 alt="{{ $product->name }}"
-                                 class="w-full h-full object-cover">
-                        </div>
+        {{-- Hero Content --}}
+        <div class="relative container mx-auto px-4 pb-12 z-10">
+            <div class="flex items-center gap-4">
+                {{-- Official Badge --}}
+                <div class="inline-flex items-center gap-2 px-5 py-2.5
+                           bg-gradient-to-r from-amber-500/30 to-orange-500/30
+                           backdrop-blur-xl border border-amber-400/30
+                           rounded-full">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500
+                               flex items-center justify-center">
+                        <i class="fas fa-crown text-white text-sm"></i>
                     </div>
-
-                    {{-- Thumbnail Images --}}
-                    @if($product->images && $product->images->count() > 0)
-                    <div class="grid grid-cols-4 gap-4">
-                        <div class="aspect-square bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border-2 border-purple-500 dark:border-purple-600 cursor-pointer">
-                            <img src="{{ $product->main_image_url }}" alt="Main" class="w-full h-full object-cover">
-                        </div>
-                        @foreach($product->images->take(3) as $image)
-                        <div class="aspect-square bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-600 cursor-pointer transition-colors">
-                            <img src="{{ $image->url }}" alt="Image {{ $loop->iteration }}" class="w-full h-full object-cover">
-                        </div>
-                        @endforeach
-                    </div>
-                    @endif
+                    <span class="text-amber-300 font-bold">OFFICIAL SHOP</span>
+                    <i class="fas fa-check-circle text-green-400"></i>
                 </div>
 
-                {{-- ========== Right: Product Info ========== --}}
-                <div>
-                    {{-- Product Name --}}
-                    <h1 class="text-4xl font-black text-gray-900 dark:text-white mb-4">
-                        {{ $product->name }}
-                    </h1>
+                {{-- Featured Badge --}}
+                @if($product->is_featured)
+                <div class="inline-flex items-center gap-2 px-4 py-2
+                           bg-gradient-to-r from-yellow-500/30 to-orange-500/30
+                           backdrop-blur-xl border border-yellow-400/30
+                           rounded-full">
+                    <i class="fas fa-star text-yellow-400"></i>
+                    <span class="text-yellow-300 font-semibold text-sm">สินค้าแนะนำ</span>
+                </div>
+                @endif
+            </div>
+        </div>
+    </section>
 
-                    {{-- Rating & Reviews --}}
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="flex items-center gap-2">
-                            @for($i = 1; $i <= 5; $i++)
-                                @if($i <= floor($product->rating_average))
-                                    <i class="fas fa-star text-yellow-400 text-xl"></i>
-                                @else
-                                    <i class="far fa-star text-gray-300 text-xl"></i>
-                                @endif
-                            @endfor
-                            <span class="text-lg font-semibold text-gray-900 dark:text-white">
-                                {{ number_format($product->rating_average, 1) }}
-                            </span>
-                        </div>
-                        <span class="text-gray-500 dark:text-gray-400">
-                            ({{ number_format($product->rating_count) }} รีวิว)
-                        </span>
-                        <span class="text-gray-500 dark:text-gray-400">|</span>
-                        <span class="text-gray-600 dark:text-gray-400">
-                            <i class="fas fa-eye mr-1"></i>
-                            {{ number_format($product->view_count) }} ครั้ง
-                        </span>
-                    </div>
+    {{-- ════════════════════════════════════════════════════
+         🖼️ PRODUCT DETAIL SECTION
+         ════════════════════════════════════════════════════ --}}
+    <section class="relative -mt-4 z-20">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
 
-                    {{-- Price --}}
-                    <div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl p-6 mb-6 border-2 border-purple-200 dark:border-purple-700">
-                        <div class="flex items-end gap-4 mb-4">
-                            <div class="text-5xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                                ฿{{ number_format($product->price, 2) }}
+                {{-- ═══════════════════════════════════════════
+                     LEFT: PREMIUM IMAGE GALLERY
+                     ═══════════════════════════════════════════ --}}
+                <div class="space-y-4">
+                    {{-- Main Image --}}
+                    <div class="group relative bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden
+                               border-2 border-amber-200 dark:border-amber-700">
+
+                        {{-- Badges --}}
+                        <div class="absolute top-4 left-4 z-20 flex flex-col gap-2">
+                            {{-- Official Badge --}}
+                            <div class="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500
+                                       text-white text-sm font-bold rounded-full
+                                       shadow-lg shadow-amber-500/30
+                                       flex items-center gap-2">
+                                <i class="fas fa-crown"></i>
+                                <span>OFFICIAL</span>
                             </div>
+
+                            {{-- Discount Badge --}}
                             @if($product->compare_at_price && $product->compare_at_price > $product->price)
-                            <div class="text-2xl text-gray-400 line-through mb-2">
-                                ฿{{ number_format($product->compare_at_price, 2) }}
+                            @php
+                                $discount = round((($product->compare_at_price - $product->price) / $product->compare_at_price) * 100);
+                            @endphp
+                            <div class="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500
+                                       text-white text-sm font-bold rounded-full
+                                       shadow-lg animate-pulse">
+                                <i class="fas fa-tag mr-1"></i>
+                                ลด {{ $discount }}%
                             </div>
                             @endif
                         </div>
 
-                        {{-- Discount Badge --}}
-                        @if($product->compare_at_price && $product->compare_at_price > $product->price)
-                        @php
-                            $discount = round((($product->compare_at_price - $product->price) / $product->compare_at_price) * 100);
-                        @endphp
-                        <div class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full font-bold">
-                            <i class="fas fa-tag"></i>
-                            <span>ประหยัด {{ $discount }}%</span>
+                        {{-- Featured Star --}}
+                        @if($product->is_featured)
+                        <div class="absolute top-4 right-4 z-20">
+                            <div class="w-14 h-14 bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500
+                                       rounded-xl flex items-center justify-center
+                                       shadow-lg shadow-amber-500/30
+                                       rotate-12 hover:rotate-0 transition-transform duration-500">
+                                <i class="fas fa-star text-white text-2xl"></i>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- Main Image Display --}}
+                        <div class="aspect-square relative overflow-hidden cursor-zoom-in"
+                             @click="openLightbox(selectedImageIndex)">
+                            <img :src="selectedImage"
+                                 alt="{{ $product->name }}"
+                                 class="w-full h-full object-cover
+                                       transform group-hover:scale-105 transition-transform duration-700">
+
+                            {{-- Hover Overlay --}}
+                            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20
+                                       flex items-center justify-center
+                                       transition-all duration-300">
+                                <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div class="px-6 py-3 bg-white/90 rounded-xl shadow-xl">
+                                        <i class="fas fa-search-plus mr-2"></i>
+                                        คลิกเพื่อขยาย
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Thumbnail Gallery --}}
+                    <div class="grid grid-cols-5 gap-3">
+                        {{-- Main Image Thumbnail --}}
+                        <button @click="selectImage(0)"
+                                :class="selectedImageIndex === 0 ? 'ring-4 ring-amber-500 ring-offset-2' : 'ring-2 ring-transparent'"
+                                class="aspect-square bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden
+                                      transition-all duration-300 hover:scale-105">
+                            <img src="{{ $product->main_image_url ?? 'https://via.placeholder.com/150' }}"
+                                 alt="Main"
+                                 class="w-full h-full object-cover">
+                        </button>
+
+                        {{-- Additional Images --}}
+                        @if($product->images && $product->images->count() > 0)
+                        @foreach($product->images->take(4) as $index => $image)
+                        <button @click="selectImage({{ $index + 1 }})"
+                                :class="selectedImageIndex === {{ $index + 1 }} ? 'ring-4 ring-amber-500 ring-offset-2' : 'ring-2 ring-transparent'"
+                                class="aspect-square bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden
+                                      transition-all duration-300 hover:scale-105">
+                            <img src="{{ $image->url }}"
+                                 alt="Image {{ $loop->iteration }}"
+                                 class="w-full h-full object-cover">
+                        </button>
+                        @endforeach
+                        @endif
+                    </div>
+                </div>
+
+                {{-- ═══════════════════════════════════════════
+                     RIGHT: PRODUCT INFORMATION
+                     ═══════════════════════════════════════════ --}}
+                <div class="space-y-6">
+                    {{-- Product Name --}}
+                    <div>
+                        @if($product->category)
+                        <div class="text-amber-600 dark:text-amber-400 text-sm font-semibold mb-2 uppercase tracking-wider">
+                            {{ $product->category->name }}
+                        </div>
+                        @endif
+
+                        <h1 class="text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 dark:text-white leading-tight">
+                            {{ $product->name }}
+                        </h1>
+                    </div>
+
+                    {{-- Rating & Stats --}}
+                    <div class="flex flex-wrap items-center gap-4 py-4 border-y border-gray-200 dark:border-gray-700">
+                        {{-- Rating Stars --}}
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center">
+                                @for($i = 1; $i <= 5; $i++)
+                                    @if($i <= floor($product->rating_average))
+                                        <i class="fas fa-star text-amber-400 text-lg"></i>
+                                    @elseif($i - 0.5 <= $product->rating_average)
+                                        <i class="fas fa-star-half-alt text-amber-400 text-lg"></i>
+                                    @else
+                                        <i class="far fa-star text-gray-300 text-lg"></i>
+                                    @endif
+                                @endfor
+                            </div>
+                            <span class="text-lg font-bold text-gray-900 dark:text-white">
+                                {{ number_format($product->rating_average, 1) }}
+                            </span>
+                            <span class="text-gray-500 dark:text-gray-400">
+                                ({{ number_format($product->rating_count) }} รีวิว)
+                            </span>
+                        </div>
+
+                        <div class="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+
+                        {{-- Views --}}
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-eye"></i>
+                            <span>{{ number_format($product->view_count) }} ครั้ง</span>
+                        </div>
+
+                        {{-- Sold --}}
+                        @if($product->sold_count > 0)
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-shopping-bag"></i>
+                            <span>ขายแล้ว {{ number_format($product->sold_count) }}</span>
                         </div>
                         @endif
                     </div>
 
-                    {{-- Commission & Cashback Info --}}
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        {{-- Commission --}}
-                        <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl p-4 border-2 border-green-200 dark:border-green-700">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                                    <i class="fas fa-percentage text-white"></i>
+                    {{-- Premium Price Box --}}
+                    <div class="relative overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50
+                               dark:from-amber-900/30 dark:via-orange-900/30 dark:to-yellow-900/30
+                               rounded-3xl p-6 border-2 border-amber-200 dark:border-amber-700">
+                        {{-- Decorative --}}
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-2xl"></div>
+
+                        <div class="relative">
+                            {{-- Price Display --}}
+                            <div class="flex items-end gap-4 mb-4">
+                                <div class="text-5xl md:text-6xl font-black bg-gradient-to-r from-amber-600 via-orange-600 to-red-600
+                                           bg-clip-text text-transparent">
+                                    ฿{{ number_format($product->price, 2) }}
+                                </div>
+                                @if($product->compare_at_price && $product->compare_at_price > $product->price)
+                                <div class="text-2xl text-gray-400 line-through mb-2">
+                                    ฿{{ number_format($product->compare_at_price, 2) }}
+                                </div>
+                                @endif
+                            </div>
+
+                            {{-- Savings --}}
+                            @if($product->compare_at_price && $product->compare_at_price > $product->price)
+                            @php
+                                $savings = $product->compare_at_price - $product->price;
+                                $discount = round(($savings / $product->compare_at_price) * 100);
+                            @endphp
+                            <div class="inline-flex items-center gap-2 px-5 py-2.5
+                                       bg-gradient-to-r from-red-500 to-pink-500
+                                       text-white font-bold rounded-full shadow-lg">
+                                <i class="fas fa-fire"></i>
+                                <span>ประหยัด ฿{{ number_format($savings, 2) }} ({{ $discount }}%)</span>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- Commission & Cashback Cards --}}
+                    <div class="grid grid-cols-2 gap-4">
+                        {{-- Commission Card --}}
+                        @if($product->commission_rate > 0)
+                        <div class="p-5 bg-gradient-to-br from-green-50 to-emerald-50
+                                   dark:from-green-900/30 dark:to-emerald-900/30
+                                   rounded-2xl border-2 border-green-200 dark:border-green-700">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600
+                                           rounded-xl flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-percentage text-white text-xl"></i>
                                 </div>
                                 <div>
-                                    <div class="text-sm text-gray-600 dark:text-gray-400">คอมมิชชั่น MLM</div>
-                                    <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+                                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">คอมมิชชั่น MLM</div>
+                                    <div class="text-3xl font-black text-green-600 dark:text-green-400">
                                         {{ number_format($product->commission_rate, 0) }}%
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        @endif
 
-                        {{-- Cashback --}}
+                        {{-- Cashback Card --}}
                         @if(isset($cashbackInfo) && $cashbackInfo['total_cashback'] > 0)
-                        <div class="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-2xl p-4 border-2 border-blue-200 dark:border-blue-700">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center">
-                                    <i class="fas fa-gift text-white"></i>
+                        <div class="p-5 bg-gradient-to-br from-blue-50 to-cyan-50
+                                   dark:from-blue-900/30 dark:to-cyan-900/30
+                                   rounded-2xl border-2 border-blue-200 dark:border-blue-700">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-600
+                                           rounded-xl flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-gift text-white text-xl"></i>
                                 </div>
                                 <div>
-                                    <div class="text-sm text-gray-600 dark:text-gray-400">Cashback</div>
-                                    <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                                        ฿{{ number_format($cashbackInfo['total_cashback'], 2) }}
+                                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">Cashback</div>
+                                    <div class="text-3xl font-black text-blue-600 dark:text-blue-400">
+                                        ฿{{ number_format($cashbackInfo['total_cashback'], 0) }}
                                     </div>
                                 </div>
                             </div>
@@ -197,178 +342,277 @@
                     </div>
 
                     {{-- Stock Status --}}
-                    <div class="mb-6">
+                    <div class="flex items-center gap-3">
                         @if($product->stock_status === 'in_stock' && $product->stock_quantity > 0)
-                            <div class="flex items-center gap-2 text-green-600 dark:text-green-400">
-                                <i class="fas fa-check-circle"></i>
-                                <span class="font-semibold">พร้อมส่ง ({{ number_format($product->stock_quantity) }} ชิ้น)</span>
+                            <div class="flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30
+                                       text-green-700 dark:text-green-400 rounded-full font-semibold">
+                                <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                                <span>พร้อมส่ง</span>
                             </div>
+                            <span class="text-gray-600 dark:text-gray-400">
+                                คงเหลือ {{ number_format($product->stock_quantity) }} ชิ้น
+                            </span>
                         @elseif($product->stock_status === 'on_backorder')
-                            <div class="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+                            <div class="flex items-center gap-2 px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30
+                                       text-yellow-700 dark:text-yellow-400 rounded-full font-semibold">
                                 <i class="fas fa-clock"></i>
-                                <span class="font-semibold">สั่งซื้อล่วงหน้า</span>
+                                <span>สั่งซื้อล่วงหน้า</span>
                             </div>
                         @else
-                            <div class="flex items-center gap-2 text-red-600 dark:text-red-400">
+                            <div class="flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30
+                                       text-red-700 dark:text-red-400 rounded-full font-semibold">
                                 <i class="fas fa-times-circle"></i>
-                                <span class="font-semibold">สินค้าหมด</span>
+                                <span>สินค้าหมด</span>
                             </div>
                         @endif
                     </div>
 
                     {{-- Quantity Selector --}}
-                    <div class="mb-6">
-                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <div class="space-y-3">
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">
                             จำนวน
                         </label>
                         <div class="flex items-center gap-4">
-                            <div class="flex items-center bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                            <div class="inline-flex items-center bg-white dark:bg-gray-800
+                                       border-2 border-gray-200 dark:border-gray-700
+                                       rounded-xl overflow-hidden shadow-lg">
                                 <button @click="decreaseQuantity()"
-                                        class="px-4 py-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                                    <i class="fas fa-minus"></i>
+                                        class="px-5 py-4 bg-gray-50 dark:bg-gray-700
+                                              hover:bg-amber-100 dark:hover:bg-amber-900/30
+                                              transition-colors">
+                                    <i class="fas fa-minus text-gray-600 dark:text-gray-400"></i>
                                 </button>
                                 <input type="number"
                                        x-model="quantity"
                                        min="1"
                                        max="{{ $product->stock_quantity }}"
-                                       class="w-20 text-center py-3 bg-transparent border-none focus:outline-none font-semibold">
+                                       class="w-20 text-center py-4 bg-transparent border-x-2 border-gray-200 dark:border-gray-700
+                                             focus:outline-none font-bold text-xl
+                                             text-gray-900 dark:text-white">
                                 <button @click="increaseQuantity()"
-                                        class="px-4 py-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                                    <i class="fas fa-plus"></i>
+                                        class="px-5 py-4 bg-gray-50 dark:bg-gray-700
+                                              hover:bg-amber-100 dark:hover:bg-amber-900/30
+                                              transition-colors">
+                                    <i class="fas fa-plus text-gray-600 dark:text-gray-400"></i>
                                 </button>
                             </div>
-                            <span class="text-gray-600 dark:text-gray-400">
+                            <span class="text-gray-500 dark:text-gray-400 text-sm">
                                 สูงสุด {{ number_format($product->stock_quantity) }} ชิ้น
                             </span>
                         </div>
                     </div>
 
                     {{-- Action Buttons --}}
-                    <div class="grid grid-cols-2 gap-4 mb-8">
+                    <div class="grid grid-cols-2 gap-4 pt-4">
+                        {{-- Add to Cart --}}
                         <button @click="addToCart()"
                                 :disabled="!canAddToCart"
-                                :class="canAddToCart ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' : 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'"
-                                class="px-8 py-4 text-white rounded-xl font-bold text-lg transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2">
-                            <i class="fas fa-cart-plus"></i>
-                            <span>ใส่ตะกร้า</span>
+                                :class="canAddToCart
+                                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:from-amber-600 hover:via-orange-600 hover:to-red-600'
+                                    : 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'"
+                                class="relative overflow-hidden px-8 py-5
+                                      text-white font-bold text-lg rounded-2xl
+                                      shadow-xl hover:shadow-2xl
+                                      transform hover:scale-105
+                                      transition-all duration-300
+                                      flex items-center justify-center gap-3
+                                      group">
+                            {{-- Shine Effect --}}
+                            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent
+                                       -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                            <i class="fas fa-cart-plus text-xl relative z-10"></i>
+                            <span class="relative z-10">ใส่ตะกร้า</span>
                         </button>
+
+                        {{-- Buy Now --}}
                         <button @click="buyNow()"
                                 :disabled="!canAddToCart"
-                                :class="canAddToCart ? 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600' : 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'"
-                                class="px-8 py-4 text-white rounded-xl font-bold text-lg transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2">
-                            <i class="fas fa-bolt"></i>
-                            <span>ซื้อเลย</span>
+                                :class="canAddToCart
+                                    ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700'
+                                    : 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'"
+                                class="relative overflow-hidden px-8 py-5
+                                      text-white font-bold text-lg rounded-2xl
+                                      shadow-xl hover:shadow-2xl
+                                      transform hover:scale-105
+                                      transition-all duration-300
+                                      flex items-center justify-center gap-3
+                                      group">
+                            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent
+                                       -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                            <i class="fas fa-bolt text-xl relative z-10"></i>
+                            <span class="relative z-10">ซื้อเลย</span>
                         </button>
                     </div>
 
-                    {{-- Product Features --}}
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border-2 border-gray-200 dark:border-gray-700">
-                        <h3 class="font-bold text-gray-900 dark:text-white mb-4">
-                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                            รับประกันคุณภาพ
-                        </h3>
-                        <ul class="space-y-2 text-gray-600 dark:text-gray-400">
-                            <li class="flex items-center gap-2">
-                                <i class="fas fa-shield-check text-purple-500"></i>
-                                <span>สินค้าจากทางระบบโดยตรง</span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                                <i class="fas fa-truck text-purple-500"></i>
-                                <span>จัดส่งฟรีทั่วประเทศ</span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                                <i class="fas fa-undo text-purple-500"></i>
-                                <span>รับประกันเปลี่ยนคืนภายใน 7 วัน</span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                                <i class="fas fa-headset text-purple-500"></i>
-                                <span>บริการลูกค้า 24/7</span>
-                            </li>
-                        </ul>
+                    {{-- Trust Features --}}
+                    <div class="grid grid-cols-2 gap-4 pt-4">
+                        <div class="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl
+                                   border border-gray-200 dark:border-gray-700">
+                            <i class="fas fa-shield-check text-amber-500 text-xl"></i>
+                            <span class="text-sm text-gray-700 dark:text-gray-300">สินค้าของแท้ 100%</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl
+                                   border border-gray-200 dark:border-gray-700">
+                            <i class="fas fa-truck-fast text-green-500 text-xl"></i>
+                            <span class="text-sm text-gray-700 dark:text-gray-300">ส่งฟรีทั่วประเทศ</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl
+                                   border border-gray-200 dark:border-gray-700">
+                            <i class="fas fa-rotate-left text-blue-500 text-xl"></i>
+                            <span class="text-sm text-gray-700 dark:text-gray-300">เปลี่ยนคืน 7 วัน</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl
+                                   border border-gray-200 dark:border-gray-700">
+                            <i class="fas fa-headset text-purple-500 text-xl"></i>
+                            <span class="text-sm text-gray-700 dark:text-gray-300">บริการ 24/7</span>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
 
-            {{-- ========================================
-                 Product Details Tabs
-                 ======================================== --}}
-            <div x-data="{ tab: 'description' }" class="mb-12">
-                {{-- Tabs Header --}}
-                <div class="flex gap-2 mb-6 border-b-2 border-gray-200 dark:border-gray-700">
+    {{-- ════════════════════════════════════════════════════
+         📋 PRODUCT DETAILS TABS
+         ════════════════════════════════════════════════════ --}}
+    <section class="py-16">
+        <div class="container mx-auto px-4">
+            <div x-data="{ tab: 'description' }">
+                {{-- Tab Headers --}}
+                <div class="flex flex-wrap gap-2 mb-8 p-2 bg-gray-100 dark:bg-gray-800 rounded-2xl">
                     <button @click="tab = 'description'"
-                            :class="tab === 'description' ? 'border-purple-500 text-purple-600 dark:text-purple-400' : 'border-transparent text-gray-600 dark:text-gray-400'"
-                            class="px-6 py-3 border-b-2 font-semibold transition-colors">
+                            :class="tab === 'description'
+                                ? 'bg-white dark:bg-gray-700 text-amber-600 dark:text-amber-400 shadow-lg'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            class="flex-1 sm:flex-none px-8 py-4 rounded-xl font-bold transition-all">
+                        <i class="fas fa-file-alt mr-2"></i>
                         รายละเอียด
                     </button>
                     <button @click="tab = 'specifications'"
-                            :class="tab === 'specifications' ? 'border-purple-500 text-purple-600 dark:text-purple-400' : 'border-transparent text-gray-600 dark:text-gray-400'"
-                            class="px-6 py-3 border-b-2 font-semibold transition-colors">
+                            :class="tab === 'specifications'
+                                ? 'bg-white dark:bg-gray-700 text-amber-600 dark:text-amber-400 shadow-lg'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            class="flex-1 sm:flex-none px-8 py-4 rounded-xl font-bold transition-all">
+                        <i class="fas fa-list-check mr-2"></i>
                         ข้อมูลจำเพาะ
                     </button>
                     <button @click="tab = 'reviews'"
-                            :class="tab === 'reviews' ? 'border-purple-500 text-purple-600 dark:text-purple-400' : 'border-transparent text-gray-600 dark:text-gray-400'"
-                            class="px-6 py-3 border-b-2 font-semibold transition-colors">
+                            :class="tab === 'reviews'
+                                ? 'bg-white dark:bg-gray-700 text-amber-600 dark:text-amber-400 shadow-lg'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+                            class="flex-1 sm:flex-none px-8 py-4 rounded-xl font-bold transition-all">
+                        <i class="fas fa-star mr-2"></i>
                         รีวิว ({{ $product->rating_count }})
                     </button>
                 </div>
 
-                {{-- Tabs Content --}}
-                <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg">
+                {{-- Tab Contents --}}
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 lg:p-12
+                           border border-gray-100 dark:border-gray-700">
+
                     {{-- Description Tab --}}
-                    <div x-show="tab === 'description'" x-transition>
-                        <div class="prose dark:prose-invert max-w-none">
+                    <div x-show="tab === 'description'" x-transition:enter="transition ease-out duration-300"
+                         x-transition:enter-start="opacity-0 transform translate-y-4"
+                         x-transition:enter-end="opacity-100 transform translate-y-0">
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                            รายละเอียดสินค้า
+                        </h3>
+                        <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed">
                             {!! nl2br(e($product->description)) !!}
                         </div>
                     </div>
 
                     {{-- Specifications Tab --}}
-                    <div x-show="tab === 'specifications'" x-transition>
-                        <table class="w-full">
-                            <tbody>
-                                <tr class="border-b border-gray-200 dark:border-gray-700">
-                                    <td class="py-3 font-semibold text-gray-700 dark:text-gray-300">SKU</td>
-                                    <td class="py-3 text-gray-600 dark:text-gray-400">{{ $product->sku }}</td>
-                                </tr>
-                                @if($product->brand)
-                                <tr class="border-b border-gray-200 dark:border-gray-700">
-                                    <td class="py-3 font-semibold text-gray-700 dark:text-gray-300">ยี่ห้อ</td>
-                                    <td class="py-3 text-gray-600 dark:text-gray-400">{{ $product->brand }}</td>
-                                </tr>
-                                @endif
-                                @if($product->weight)
-                                <tr class="border-b border-gray-200 dark:border-gray-700">
-                                    <td class="py-3 font-semibold text-gray-700 dark:text-gray-300">น้ำหนัก</td>
-                                    <td class="py-3 text-gray-600 dark:text-gray-400">{{ number_format($product->weight / 1000, 2) }} กก.</td>
-                                </tr>
-                                @endif
-                                @if($product->dimensions)
-                                <tr class="border-b border-gray-200 dark:border-gray-700">
-                                    <td class="py-3 font-semibold text-gray-700 dark:text-gray-300">ขนาด</td>
-                                    <td class="py-3 text-gray-600 dark:text-gray-400">{{ $product->dimensions }}</td>
-                                </tr>
-                                @endif
-                            </tbody>
-                        </table>
+                    <div x-show="tab === 'specifications'" x-transition:enter="transition ease-out duration-300"
+                         x-transition:enter-start="opacity-0 transform translate-y-4"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-cloak>
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                            ข้อมูลจำเพาะสินค้า
+                        </h3>
+                        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <div class="py-4 grid grid-cols-3 gap-4">
+                                <span class="font-semibold text-gray-700 dark:text-gray-300">SKU</span>
+                                <span class="col-span-2 text-gray-600 dark:text-gray-400">{{ $product->sku }}</span>
+                            </div>
+                            @if($product->brand)
+                            <div class="py-4 grid grid-cols-3 gap-4">
+                                <span class="font-semibold text-gray-700 dark:text-gray-300">ยี่ห้อ</span>
+                                <span class="col-span-2 text-gray-600 dark:text-gray-400">{{ $product->brand }}</span>
+                            </div>
+                            @endif
+                            @if($product->category)
+                            <div class="py-4 grid grid-cols-3 gap-4">
+                                <span class="font-semibold text-gray-700 dark:text-gray-300">หมวดหมู่</span>
+                                <span class="col-span-2 text-gray-600 dark:text-gray-400">{{ $product->category->name }}</span>
+                            </div>
+                            @endif
+                            @if($product->weight)
+                            <div class="py-4 grid grid-cols-3 gap-4">
+                                <span class="font-semibold text-gray-700 dark:text-gray-300">น้ำหนัก</span>
+                                <span class="col-span-2 text-gray-600 dark:text-gray-400">{{ number_format($product->weight / 1000, 2) }} กก.</span>
+                            </div>
+                            @endif
+                            @if($product->dimensions)
+                            <div class="py-4 grid grid-cols-3 gap-4">
+                                <span class="font-semibold text-gray-700 dark:text-gray-300">ขนาด</span>
+                                <span class="col-span-2 text-gray-600 dark:text-gray-400">{{ $product->dimensions }}</span>
+                            </div>
+                            @endif
+                        </div>
                     </div>
 
                     {{-- Reviews Tab --}}
-                    <div x-show="tab === 'reviews'" x-transition>
-                        @if($product->approvedReviews->count() > 0)
+                    <div x-show="tab === 'reviews'" x-transition:enter="transition ease-out duration-300"
+                         x-transition:enter-start="opacity-0 transform translate-y-4"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-cloak>
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                            รีวิวจากลูกค้า
+                        </h3>
+
+                        @if($product->approvedReviews && $product->approvedReviews->count() > 0)
+                            {{-- Review Summary --}}
+                            <div class="flex flex-col md:flex-row gap-8 mb-10 p-6 bg-gray-50 dark:bg-gray-700/50 rounded-2xl">
+                                <div class="text-center md:border-r md:border-gray-200 md:dark:border-gray-600 md:pr-8">
+                                    <div class="text-6xl font-black text-amber-500 mb-2">
+                                        {{ number_format($product->rating_average, 1) }}
+                                    </div>
+                                    <div class="flex items-center justify-center gap-1 mb-2">
+                                        @for($i = 1; $i <= 5; $i++)
+                                            @if($i <= floor($product->rating_average))
+                                                <i class="fas fa-star text-amber-400"></i>
+                                            @else
+                                                <i class="far fa-star text-gray-300"></i>
+                                            @endif
+                                        @endfor
+                                    </div>
+                                    <div class="text-gray-500 dark:text-gray-400">
+                                        จาก {{ number_format($product->rating_count) }} รีวิว
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    {{-- ในที่นี้สามารถเพิ่ม rating distribution bars ได้ --}}
+                                </div>
+                            </div>
+
+                            {{-- Review List --}}
                             <div class="space-y-6">
                                 @foreach($product->approvedReviews as $review)
-                                <div class="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0">
+                                <div class="p-6 bg-gray-50 dark:bg-gray-700/30 rounded-2xl">
                                     <div class="flex items-start gap-4">
-                                        {{-- ใช้ component เพื่อความสอดคล้องทั้งระบบ --}}
                                         <x-user-avatar :user="$review->user" size="lg" :ring="false" />
                                         <div class="flex-1">
-                                            <div class="flex items-center gap-3 mb-2">
-                                                <span class="font-semibold text-gray-900 dark:text-white">{{ $review->user->name }}</span>
+                                            <div class="flex flex-wrap items-center gap-3 mb-3">
+                                                <span class="font-bold text-gray-900 dark:text-white">
+                                                    {{ $review->user->name }}
+                                                </span>
                                                 <div class="flex items-center">
                                                     @for($i = 1; $i <= 5; $i++)
                                                         @if($i <= $review->rating)
-                                                            <i class="fas fa-star text-yellow-400 text-sm"></i>
+                                                            <i class="fas fa-star text-amber-400"></i>
                                                         @else
-                                                            <i class="far fa-star text-gray-300 text-sm"></i>
+                                                            <i class="far fa-star text-gray-300"></i>
                                                         @endif
                                                     @endfor
                                                 </div>
@@ -376,95 +620,256 @@
                                                     {{ $review->created_at->diffForHumans() }}
                                                 </span>
                                             </div>
-                                            <p class="text-gray-600 dark:text-gray-400">{{ $review->comment }}</p>
+                                            <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
+                                                {{ $review->comment }}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
                                 @endforeach
                             </div>
                         @else
-                            <div class="text-center py-12">
-                                <i class="fas fa-comments text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                                <p class="text-gray-500 dark:text-gray-400">ยังไม่มีรีวิว</p>
+                            <div class="text-center py-16">
+                                <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 dark:bg-gray-700 rounded-full
+                                           flex items-center justify-center">
+                                    <i class="fas fa-comments text-4xl text-gray-400"></i>
+                                </div>
+                                <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                    ยังไม่มีรีวิว
+                                </h4>
+                                <p class="text-gray-500 dark:text-gray-400">
+                                    เป็นคนแรกที่รีวิวสินค้านี้
+                                </p>
                             </div>
                         @endif
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
 
-            {{-- ========================================
-                 Related Products
-                 ======================================== --}}
-            @if($relatedProducts && $relatedProducts->count() > 0)
-            <div class="mb-12">
-                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+    {{-- ════════════════════════════════════════════════════
+         🔗 RELATED PRODUCTS
+         ════════════════════════════════════════════════════ --}}
+    @if($relatedProducts && $relatedProducts->count() > 0)
+    <section class="py-16 bg-gradient-to-b from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
+        <div class="container mx-auto px-4">
+            {{-- Section Header --}}
+            <div class="text-center mb-12">
+                <div class="inline-flex items-center gap-2 px-5 py-2.5
+                           bg-gradient-to-r from-purple-100 to-pink-100
+                           dark:from-purple-900/30 dark:to-pink-900/30
+                           rounded-full mb-4">
+                    <i class="fas fa-heart text-purple-600 dark:text-purple-400"></i>
+                    <span class="text-purple-700 dark:text-purple-300 font-semibold">You May Also Like</span>
+                </div>
+                <h2 class="text-4xl font-black text-gray-900 dark:text-white">
                     สินค้าที่เกี่ยวข้อง
                 </h2>
+            </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    @foreach($relatedProducts as $related)
-                    <div class="group perspective-1000">
-                        <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
-                            <div class="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity"></div>
+            {{-- Products Grid --}}
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+                @foreach($relatedProducts as $related)
+                <div class="group">
+                    <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden
+                               border border-gray-100 dark:border-gray-700
+                               hover:shadow-2xl hover:border-amber-300 dark:hover:border-amber-600
+                               hover:-translate-y-2
+                               transition-all duration-500">
 
-                            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border border-purple-100 dark:border-purple-800">
-                                <div class="aspect-square bg-gray-100 dark:bg-gray-700">
-                                    <img src="{{ $related->main_image_url ?? 'https://via.placeholder.com/300' }}"
-                                         alt="{{ $related->name }}"
-                                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                         loading="lazy">
-                                </div>
-
-                                <div class="p-4">
-                                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                                        {{ $related->name }}
-                                    </h3>
-                                    <div class="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                                        ฿{{ number_format($related->price, 2) }}
+                        <a href="{{ route('official-shop.show', $related->slug) }}" class="block">
+                            <div class="aspect-square relative overflow-hidden bg-gray-50 dark:bg-gray-700">
+                                {{-- Official Badge --}}
+                                <div class="absolute top-3 left-3 z-10">
+                                    <div class="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-orange-500
+                                               text-white text-xs font-bold rounded-full shadow-md">
+                                        Official
                                     </div>
-                                    <a href="{{ route('official-shop.show', $related->slug) }}"
-                                       class="mt-3 block w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg text-center font-semibold transition-all">
-                                        ดูรายละเอียด
-                                    </a>
                                 </div>
+
+                                <img src="{{ $related->main_image_url ?? 'https://via.placeholder.com/300' }}"
+                                     alt="{{ $related->name }}"
+                                     class="w-full h-full object-cover
+                                           group-hover:scale-110 transition-transform duration-700"
+                                     loading="lazy">
                             </div>
+                        </a>
+
+                        <div class="p-4">
+                            <a href="{{ route('official-shop.show', $related->slug) }}" class="block">
+                                <h3 class="font-semibold text-gray-900 dark:text-white text-sm mb-2
+                                          line-clamp-2 h-10
+                                          hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
+                                    {{ $related->name }}
+                                </h3>
+                            </a>
+
+                            <div class="text-xl font-bold text-amber-600 dark:text-amber-400 mb-4">
+                                ฿{{ number_format($related->price, 0) }}
+                            </div>
+
+                            <a href="{{ route('official-shop.show', $related->slug) }}"
+                               class="block w-full py-2.5 text-center text-sm font-bold
+                                     bg-gradient-to-r from-amber-500 to-orange-500
+                                     hover:from-amber-600 hover:to-orange-600
+                                     text-white rounded-xl
+                                     transition-all">
+                                ดูรายละเอียด
+                            </a>
                         </div>
                     </div>
-                    @endforeach
                 </div>
+                @endforeach
             </div>
-            @endif
         </div>
+    </section>
+    @endif
+
+    {{-- ════════════════════════════════════════════════════
+         🖼️ IMAGE LIGHTBOX MODAL
+         ════════════════════════════════════════════════════ --}}
+    <div x-show="lightboxOpen"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @keydown.escape.window="lightboxOpen = false"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90"
+         x-cloak>
+        {{-- Close Button --}}
+        <button @click="lightboxOpen = false"
+                class="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/20
+                      rounded-full flex items-center justify-center
+                      text-white text-2xl transition-colors">
+            <i class="fas fa-times"></i>
+        </button>
+
+        {{-- Image --}}
+        <img :src="lightboxImage"
+             alt="Product Image"
+             class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl">
+
+        {{-- Navigation --}}
+        <button @click="prevLightboxImage()"
+                class="absolute left-6 w-14 h-14 bg-white/10 hover:bg-white/20
+                      rounded-full flex items-center justify-center
+                      text-white text-2xl transition-colors">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button @click="nextLightboxImage()"
+                class="absolute right-6 w-14 h-14 bg-white/10 hover:bg-white/20
+                      rounded-full flex items-center justify-center
+                      text-white text-2xl transition-colors">
+            <i class="fas fa-chevron-right"></i>
+        </button>
     </div>
 </div>
 
 @push('scripts')
 <script>
-function officialProductManager() {
+/**
+ * Luxury Product Manager - Alpine.js Component
+ *
+ * จัดการหน้ารายละเอียดสินค้า Official Shop
+ */
+function luxuryProductManager() {
     return {
         quantity: 1,
         maxQuantity: {{ $product->stock_quantity }},
+        selectedImageIndex: 0,
+        lightboxOpen: false,
+        lightboxImage: '',
 
+        // รายการรูปภาพทั้งหมด
+        images: [
+            '{{ $product->main_image_url ?? "https://via.placeholder.com/800" }}',
+            @if($product->images)
+            @foreach($product->images as $image)
+            '{{ $image->url }}',
+            @endforeach
+            @endif
+        ],
+
+        /**
+         * คำนวณว่าสามารถเพิ่มลงตะกร้าได้หรือไม่
+         */
         get canAddToCart() {
-            return this.quantity > 0 && this.quantity <= this.maxQuantity && '{{ $product->stock_status }}' === 'in_stock';
+            return this.quantity > 0
+                && this.quantity <= this.maxQuantity
+                && '{{ $product->stock_status }}' === 'in_stock';
         },
 
+        /**
+         * รูปภาพที่เลือกแสดงปัจจุบัน
+         */
+        get selectedImage() {
+            return this.images[this.selectedImageIndex] || this.images[0];
+        },
+
+        /**
+         * Initialize component
+         */
         init() {
-            console.log('Official Product Manager initialized');
+            console.log('🏆 Luxury Product Manager initialized');
         },
 
+        /**
+         * เลือกรูปภาพ
+         */
+        selectImage(index) {
+            this.selectedImageIndex = index;
+        },
+
+        /**
+         * เพิ่มจำนวน
+         */
         increaseQuantity() {
             if (this.quantity < this.maxQuantity) {
                 this.quantity++;
             }
         },
 
+        /**
+         * ลดจำนวน
+         */
         decreaseQuantity() {
             if (this.quantity > 1) {
                 this.quantity--;
             }
         },
 
+        /**
+         * เปิด lightbox
+         */
+        openLightbox(index) {
+            this.lightboxImage = this.images[index];
+            this.lightboxOpen = true;
+        },
+
+        /**
+         * รูปภาพก่อนหน้าใน lightbox
+         */
+        prevLightboxImage() {
+            const currentIndex = this.images.indexOf(this.lightboxImage);
+            const newIndex = currentIndex > 0 ? currentIndex - 1 : this.images.length - 1;
+            this.lightboxImage = this.images[newIndex];
+        },
+
+        /**
+         * รูปภาพถัดไปใน lightbox
+         */
+        nextLightboxImage() {
+            const currentIndex = this.images.indexOf(this.lightboxImage);
+            const newIndex = currentIndex < this.images.length - 1 ? currentIndex + 1 : 0;
+            this.lightboxImage = this.images[newIndex];
+        },
+
+        /**
+         * เพิ่มสินค้าลงตะกร้า
+         */
         async addToCart() {
             if (!this.canAddToCart) return;
 
@@ -485,28 +890,35 @@ function officialProductManager() {
                 const data = await response.json();
 
                 if (data.success) {
-                    // 🛒 Dispatch event ไปที่ window เพื่ออัพเดท cart badge ทันที
+                    // อัพเดท cart badge
                     window.dispatchEvent(new CustomEvent('cart-updated'));
 
-                    this.$dispatch('notify', {
-                        message: 'เพิ่มสินค้าลงตะกร้าสำเร็จ',
-                        type: 'success'
-                    });
+                    // แสดง notification
+                    window.dispatchEvent(new CustomEvent('notify', {
+                        detail: {
+                            message: '✅ เพิ่มสินค้าลงตะกร้าสำเร็จ',
+                            type: 'success'
+                        }
+                    }));
                 } else {
                     throw new Error(data.message || 'เกิดข้อผิดพลาด');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                this.$dispatch('notify', {
-                    message: error.message || 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้',
-                    type: 'error'
-                });
+                window.dispatchEvent(new CustomEvent('notify', {
+                    detail: {
+                        message: error.message || '❌ ไม่สามารถเพิ่มสินค้าลงตะกร้าได้',
+                        type: 'error'
+                    }
+                }));
             }
         },
 
+        /**
+         * ซื้อเลย (เพิ่มตะกร้าแล้วไปหน้าตะกร้า)
+         */
         async buyNow() {
             await this.addToCart();
-            // Redirect to cart
             setTimeout(() => {
                 window.location.href = '/cart';
             }, 500);
@@ -514,16 +926,17 @@ function officialProductManager() {
     };
 }
 
-window.officialProductManager = officialProductManager;
+window.luxuryProductManager = luxuryProductManager;
 </script>
 @endpush
 
 @push('styles')
 <style>
-.perspective-1000 {
-    perspective: 1000px;
-}
+/* ════════════════════════════════════════════════════
+   🎨 CUSTOM CSS ANIMATIONS & EFFECTS
+   ════════════════════════════════════════════════════ */
 
+/* Line Clamp */
 .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -531,238 +944,206 @@ window.officialProductManager = officialProductManager;
     overflow: hidden;
 }
 
-/* ========================================
-   Premium Lava Effect สำหรับ Official Shop
-   สีม่วง, ชมพู, ทอง - หรูหราและพรีเมียม
-   ======================================== */
+/* ═══════════════════════════════════════════
+   LUXURY LAVA BACKGROUND
+   สีทอง, Rose Gold, Platinum - หรูหราสุดๆ
+   ═══════════════════════════════════════════ */
 
-/* Premium blob 1 - Purple/Violet (ใหญ่กว่า, ช้ากว่า) */
-.premium-blob-1 {
-    width: 350px;
-    height: 380px;
-    background: linear-gradient(180deg, #7c3aed 0%, #a855f7 40%, #c084fc 70%, #7c3aed 100%);
+/* Luxury blob 1 - Gold */
+.luxury-blob-1 {
+    width: 400px;
+    height: 420px;
+    background: linear-gradient(180deg, #f59e0b 0%, #fbbf24 40%, #fcd34d 70%, #f59e0b 100%);
     left: 5%;
-    top: 15%;
-    animation: premiumFloat1 18s ease-in-out infinite, premiumMorph1 12s ease-in-out infinite;
-    filter: blur(70px);
-    opacity: 0.35;
+    top: 10%;
+    animation: luxuryFloat1 20s ease-in-out infinite, luxuryMorph1 14s ease-in-out infinite;
+    filter: blur(80px);
+    opacity: 0.25;
 }
 
-/* Premium blob 2 - Pink/Magenta */
-.premium-blob-2 {
-    width: 280px;
-    height: 300px;
-    background: linear-gradient(180deg, #ec4899 0%, #f472b6 40%, #fb7185 70%, #ec4899 100%);
-    right: 15%;
-    top: 25%;
-    animation: premiumFloat2 20s ease-in-out infinite, premiumMorph2 14s ease-in-out infinite;
-    animation-delay: -4s;
-    filter: blur(70px);
-    opacity: 0.35;
+/* Luxury blob 2 - Rose Gold */
+.luxury-blob-2 {
+    width: 350px;
+    height: 370px;
+    background: linear-gradient(180deg, #ec4899 0%, #f472b6 40%, #fda4af 70%, #ec4899 100%);
+    right: 10%;
+    top: 20%;
+    animation: luxuryFloat2 22s ease-in-out infinite, luxuryMorph2 16s ease-in-out infinite;
+    animation-delay: -5s;
+    filter: blur(80px);
+    opacity: 0.25;
 }
 
-/* Premium blob 3 - Gold/Amber (ความหรูหรา) */
-.premium-blob-3 {
+/* Luxury blob 3 - Platinum/Silver */
+.luxury-blob-3 {
+    width: 380px;
+    height: 400px;
+    background: linear-gradient(180deg, #a855f7 0%, #c084fc 40%, #e879f9 70%, #a855f7 100%);
+    left: 35%;
+    top: 50%;
+    animation: luxuryFloat3 24s ease-in-out infinite, luxuryMorph1 18s ease-in-out infinite;
+    animation-delay: -10s;
+    filter: blur(80px);
+    opacity: 0.2;
+}
+
+/* Luxury blob 4 - Deep Gold */
+.luxury-blob-4 {
     width: 300px;
     height: 320px;
-    background: linear-gradient(180deg, #f59e0b 0%, #fbbf24 40%, #fcd34d 70%, #f59e0b 100%);
-    left: 40%;
-    top: 55%;
-    animation: premiumFloat3 22s ease-in-out infinite, premiumMorph1 16s ease-in-out infinite;
-    animation-delay: -8s;
-    filter: blur(70px);
-    opacity: 0.3;
-}
-
-/* Premium blob 4 - Deep Purple */
-.premium-blob-4 {
-    width: 250px;
-    height: 270px;
-    background: linear-gradient(180deg, #6d28d9 0%, #8b5cf6 40%, #a78bfa 70%, #6d28d9 100%);
+    background: linear-gradient(180deg, #d97706 0%, #f59e0b 40%, #fbbf24 70%, #d97706 100%);
     right: 5%;
-    top: 65%;
-    animation: premiumFloat1 16s ease-in-out infinite, premiumMorph2 10s ease-in-out infinite;
-    animation-delay: -2s;
-    filter: blur(70px);
-    opacity: 0.35;
+    top: 60%;
+    animation: luxuryFloat1 18s ease-in-out infinite, luxuryMorph2 12s ease-in-out infinite;
+    animation-delay: -3s;
+    filter: blur(80px);
+    opacity: 0.25;
 }
 
-/* Premium blob 5 - Rose Pink */
-.premium-blob-5 {
-    width: 220px;
-    height: 240px;
-    background: linear-gradient(180deg, #db2777 0%, #f472b6 50%, #db2777 100%);
-    left: 20%;
-    top: 70%;
-    animation: premiumFloat2 19s ease-in-out infinite, premiumMorph1 13s ease-in-out infinite;
-    animation-delay: -6s;
-    filter: blur(70px);
-    opacity: 0.3;
-}
-
-/* Premium blob 6 - Warm Orange (accent) */
-.premium-blob-6 {
-    width: 200px;
-    height: 220px;
-    background: linear-gradient(180deg, #ea580c 0%, #f97316 50%, #ea580c 100%);
-    left: 60%;
-    top: 20%;
-    animation: premiumFloat3 17s ease-in-out infinite, premiumMorph2 11s ease-in-out infinite;
-    animation-delay: -10s;
-    filter: blur(70px);
-    opacity: 0.3;
-}
-
-/* Premium Float Animations - ช้าและนุ่มนวลกว่า */
-@keyframes premiumFloat1 {
-    0%, 100% {
-        transform: translate(0, 0) scale(1) rotate(0deg);
-    }
-    25% {
-        transform: translate(40px, -60px) scale(1.08) rotate(3deg);
-    }
-    50% {
-        transform: translate(-30px, -120px) scale(0.95) rotate(-2deg);
-    }
-    75% {
-        transform: translate(50px, -60px) scale(1.05) rotate(1deg);
-    }
-}
-
-@keyframes premiumFloat2 {
-    0%, 100% {
-        transform: translate(0, 0) scale(1) rotate(0deg);
-    }
-    33% {
-        transform: translate(-50px, -100px) scale(1.1) rotate(-3deg);
-    }
-    66% {
-        transform: translate(40px, -50px) scale(0.92) rotate(2deg);
-    }
-}
-
-@keyframes premiumFloat3 {
-    0%, 100% {
-        transform: translate(0, 0) scale(1);
-    }
-    50% {
-        transform: translate(60px, -140px) scale(1.12);
-    }
-}
-
-/* Premium Morph Animations */
-@keyframes premiumMorph1 {
-    0%, 100% {
-        border-radius: 40% 60% 55% 45% / 55% 45% 60% 40%;
-    }
-    25% {
-        border-radius: 55% 45% 40% 60% / 45% 55% 50% 50%;
-    }
-    50% {
-        border-radius: 45% 55% 50% 50% / 50% 50% 55% 45%;
-    }
-    75% {
-        border-radius: 50% 50% 60% 40% / 60% 40% 45% 55%;
-    }
-}
-
-@keyframes premiumMorph2 {
-    0%, 100% {
-        border-radius: 50% 50% 45% 55% / 45% 55% 50% 50%;
-    }
-    33% {
-        border-radius: 45% 55% 50% 50% / 55% 45% 55% 45%;
-    }
-    66% {
-        border-radius: 55% 45% 55% 45% / 45% 55% 45% 55%;
-    }
-}
-
-/* ===== Dark Mode - Premium RGB Glow ===== */
-.dark .premium-blob-1 {
-    background: linear-gradient(180deg, #8b5cf6 0%, #a78bfa 50%, #8b5cf6 100%);
-    filter: blur(60px);
-    opacity: 0.6;
-    box-shadow:
-        0 0 60px rgba(139, 92, 246, 0.8),
-        0 0 120px rgba(139, 92, 246, 0.6),
-        0 0 180px rgba(139, 92, 246, 0.4),
-        inset 0 0 40px rgba(255, 255, 255, 0.15);
-}
-
-.dark .premium-blob-2 {
-    background: linear-gradient(180deg, #ec4899 0%, #f472b6 50%, #ec4899 100%);
-    filter: blur(60px);
-    opacity: 0.6;
-    box-shadow:
-        0 0 60px rgba(236, 72, 153, 0.8),
-        0 0 120px rgba(236, 72, 153, 0.6),
-        0 0 180px rgba(236, 72, 153, 0.4),
-        inset 0 0 40px rgba(255, 255, 255, 0.15);
-}
-
-.dark .premium-blob-3 {
-    background: linear-gradient(180deg, #fbbf24 0%, #fcd34d 50%, #fbbf24 100%);
-    filter: blur(60px);
-    opacity: 0.55;
-    box-shadow:
-        0 0 60px rgba(251, 191, 36, 0.8),
-        0 0 120px rgba(251, 191, 36, 0.6),
-        0 0 180px rgba(251, 191, 36, 0.4),
-        inset 0 0 40px rgba(255, 255, 255, 0.15);
-}
-
-.dark .premium-blob-4 {
-    background: linear-gradient(180deg, #7c3aed 0%, #8b5cf6 50%, #7c3aed 100%);
-    filter: blur(60px);
-    opacity: 0.6;
-    box-shadow:
-        0 0 60px rgba(124, 58, 237, 0.8),
-        0 0 120px rgba(124, 58, 237, 0.6),
-        0 0 180px rgba(124, 58, 237, 0.4),
-        inset 0 0 40px rgba(255, 255, 255, 0.15);
-}
-
-.dark .premium-blob-5 {
+/* Luxury blob 5 - Warm Pink */
+.luxury-blob-5 {
+    width: 280px;
+    height: 300px;
     background: linear-gradient(180deg, #db2777 0%, #ec4899 50%, #db2777 100%);
-    filter: blur(60px);
-    opacity: 0.55;
-    box-shadow:
-        0 0 60px rgba(219, 39, 119, 0.8),
-        0 0 120px rgba(219, 39, 119, 0.6),
-        0 0 180px rgba(219, 39, 119, 0.4),
-        inset 0 0 40px rgba(255, 255, 255, 0.15);
+    left: 15%;
+    top: 70%;
+    animation: luxuryFloat2 21s ease-in-out infinite, luxuryMorph1 15s ease-in-out infinite;
+    animation-delay: -7s;
+    filter: blur(80px);
+    opacity: 0.2;
 }
 
-.dark .premium-blob-6 {
+/* Luxury blob 6 - Amber Glow */
+.luxury-blob-6 {
+    width: 260px;
+    height: 280px;
+    background: linear-gradient(180deg, #ea580c 0%, #f97316 50%, #ea580c 100%);
+    left: 55%;
+    top: 15%;
+    animation: luxuryFloat3 19s ease-in-out infinite, luxuryMorph2 13s ease-in-out infinite;
+    animation-delay: -12s;
+    filter: blur(80px);
+    opacity: 0.2;
+}
+
+/* Luxury Float Animations */
+@keyframes luxuryFloat1 {
+    0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+    25% { transform: translate(50px, -70px) scale(1.1) rotate(3deg); }
+    50% { transform: translate(-40px, -140px) scale(0.95) rotate(-2deg); }
+    75% { transform: translate(60px, -70px) scale(1.05) rotate(1deg); }
+}
+
+@keyframes luxuryFloat2 {
+    0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+    33% { transform: translate(-60px, -120px) scale(1.12) rotate(-3deg); }
+    66% { transform: translate(50px, -60px) scale(0.9) rotate(2deg); }
+}
+
+@keyframes luxuryFloat3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(80px, -160px) scale(1.15); }
+}
+
+/* Luxury Morph Animations */
+@keyframes luxuryMorph1 {
+    0%, 100% { border-radius: 40% 60% 55% 45% / 55% 45% 60% 40%; }
+    25% { border-radius: 55% 45% 40% 60% / 45% 55% 50% 50%; }
+    50% { border-radius: 45% 55% 50% 50% / 50% 50% 55% 45%; }
+    75% { border-radius: 50% 50% 60% 40% / 60% 40% 45% 55%; }
+}
+
+@keyframes luxuryMorph2 {
+    0%, 100% { border-radius: 50% 50% 45% 55% / 45% 55% 50% 50%; }
+    33% { border-radius: 45% 55% 50% 50% / 55% 45% 55% 45%; }
+    66% { border-radius: 55% 45% 55% 45% / 45% 55% 45% 55%; }
+}
+
+/* ═══════════════════════════════════════════
+   DARK MODE - LUXURY RGB GLOW
+   ═══════════════════════════════════════════ */
+.dark .luxury-blob-1 {
+    background: linear-gradient(180deg, #fbbf24 0%, #fcd34d 50%, #fbbf24 100%);
+    filter: blur(70px);
+    opacity: 0.5;
+    box-shadow:
+        0 0 80px rgba(251, 191, 36, 0.8),
+        0 0 160px rgba(251, 191, 36, 0.6),
+        0 0 240px rgba(251, 191, 36, 0.4);
+}
+
+.dark .luxury-blob-2 {
+    background: linear-gradient(180deg, #ec4899 0%, #f472b6 50%, #ec4899 100%);
+    filter: blur(70px);
+    opacity: 0.5;
+    box-shadow:
+        0 0 80px rgba(236, 72, 153, 0.8),
+        0 0 160px rgba(236, 72, 153, 0.6),
+        0 0 240px rgba(236, 72, 153, 0.4);
+}
+
+.dark .luxury-blob-3 {
+    background: linear-gradient(180deg, #a855f7 0%, #c084fc 50%, #a855f7 100%);
+    filter: blur(70px);
+    opacity: 0.45;
+    box-shadow:
+        0 0 80px rgba(168, 85, 247, 0.8),
+        0 0 160px rgba(168, 85, 247, 0.6),
+        0 0 240px rgba(168, 85, 247, 0.4);
+}
+
+.dark .luxury-blob-4 {
+    background: linear-gradient(180deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
+    filter: blur(70px);
+    opacity: 0.5;
+    box-shadow:
+        0 0 80px rgba(245, 158, 11, 0.8),
+        0 0 160px rgba(245, 158, 11, 0.6),
+        0 0 240px rgba(245, 158, 11, 0.4);
+}
+
+.dark .luxury-blob-5 {
+    background: linear-gradient(180deg, #db2777 0%, #ec4899 50%, #db2777 100%);
+    filter: blur(70px);
+    opacity: 0.45;
+    box-shadow:
+        0 0 80px rgba(219, 39, 119, 0.8),
+        0 0 160px rgba(219, 39, 119, 0.6),
+        0 0 240px rgba(219, 39, 119, 0.4);
+}
+
+.dark .luxury-blob-6 {
     background: linear-gradient(180deg, #f97316 0%, #fb923c 50%, #f97316 100%);
-    filter: blur(60px);
-    opacity: 0.55;
+    filter: blur(70px);
+    opacity: 0.45;
     box-shadow:
-        0 0 60px rgba(249, 115, 22, 0.8),
-        0 0 120px rgba(249, 115, 22, 0.6),
-        0 0 180px rgba(249, 115, 22, 0.4),
-        inset 0 0 40px rgba(255, 255, 255, 0.15);
+        0 0 80px rgba(249, 115, 22, 0.8),
+        0 0 160px rgba(249, 115, 22, 0.6),
+        0 0 240px rgba(249, 115, 22, 0.4);
 }
 
-/* Mobile: ลดขนาดและจำนวน blob เพื่อประสิทธิภาพ */
+/* ═══════════════════════════════════════════
+   MOBILE OPTIMIZATION
+   ═══════════════════════════════════════════ */
 @media (max-width: 768px) {
-    .premium-lava .lava-blob {
-        transform: scale(0.6);
-        filter: blur(40px);
-    }
-    .premium-blob-5,
-    .premium-blob-6 {
-        display: none;
-    }
-    .dark .premium-lava .lava-blob {
+    .luxury-lava .lava-blob {
+        transform: scale(0.5);
         filter: blur(50px);
     }
+    .luxury-blob-5,
+    .luxury-blob-6 {
+        display: none;
+    }
+    .dark .luxury-lava .lava-blob {
+        filter: blur(60px);
+    }
 }
 
-/* Reduced motion preference */
+/* ═══════════════════════════════════════════
+   REDUCED MOTION PREFERENCE
+   ═══════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
-    .premium-lava .lava-blob {
+    .luxury-lava .lava-blob {
         animation: none;
         transform: translateY(0);
     }
