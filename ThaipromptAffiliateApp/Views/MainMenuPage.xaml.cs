@@ -251,12 +251,14 @@ public partial class MainMenuPage : ContentPage
     }
 
     /// <summary>
-    /// ปุ่ม Settings
+    /// ปุ่ม Settings - ไปหน้าตั้งค่า
     /// </summary>
     private async void OnNavSettingsTapped(object sender, EventArgs e)
     {
         await AnimateButtonPress(NavSettings);
-        await DisplayAlert("ตั้งค่า", "หน้าตั้งค่าจะเปิดให้บริการเร็วๆ นี้", "ตกลง");
+
+        // Navigate ไปหน้า Settings
+        Application.Current!.MainPage = new SettingsPage();
     }
 
     // ============================================
