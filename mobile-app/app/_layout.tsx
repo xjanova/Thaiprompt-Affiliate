@@ -6,13 +6,18 @@
 import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import { LoadingScreen } from '@/components';
+import {
+  useFonts,
+  OpenSans_400Regular,
+  OpenSans_600SemiBold,
+  OpenSans_700Bold,
+} from '@expo-google-fonts/open-sans';
 import '../global.css';
 
 // ไม่ให้ซ่อน splash screen อัตโนมัติ
@@ -22,11 +27,11 @@ export default function RootLayout() {
   const { initialize, isInitialized, isLoading } = useAuthStore();
   const { loadSettings, resolvedTheme, setAppReady } = useAppStore();
 
-  // โหลดฟอนต์
+  // โหลดฟอนต์จาก Google Fonts
   const [fontsLoaded] = useFonts({
-    OpenSans: require('../assets/fonts/OpenSans-Regular.ttf'),
-    'OpenSans-Bold': require('../assets/fonts/OpenSans-Bold.ttf'),
-    'OpenSans-SemiBold': require('../assets/fonts/OpenSans-SemiBold.ttf'),
+    OpenSans: OpenSans_400Regular,
+    'OpenSans-Bold': OpenSans_700Bold,
+    'OpenSans-SemiBold': OpenSans_600SemiBold,
   });
 
   // Initialize app
