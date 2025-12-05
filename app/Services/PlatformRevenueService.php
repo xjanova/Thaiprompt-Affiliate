@@ -360,6 +360,7 @@ class PlatformRevenueService
             'income' => $income,
             'expense' => $expense,
             'net' => $income - $expense,
+            'total' => $income,  // Alias สำหรับ income (รายได้รวม)
             'by_wallet' => $byWallet,
             'transaction_count' => PlatformTransaction::whereBetween('created_at', [$startOfDay, $endOfDay])->count(),
         ];
@@ -402,6 +403,7 @@ class PlatformRevenueService
             'income' => $income,
             'expense' => $expense,
             'net' => $income - $expense,
+            'total' => $income,  // Alias สำหรับ income (รายได้รวม)
             'by_wallet' => $byWallet,
             'transaction_count' => PlatformTransaction::whereBetween('created_at', [$startOfMonth, $endOfMonth])->count(),
         ];
