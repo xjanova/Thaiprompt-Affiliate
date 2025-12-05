@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.22] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2041 from xjanova/claude/test-line-registration-01C6ZGWj4uKgsYMxxtwBJiRL (c69a33df)
+- fix(line-signup): เพิ่ม getProfile และแก้ไข consent step (a75d5da3)
+### 🔧 Other Changes
+
+
 ## [v3.358.21] - 2025-12-05
 
 ### ✨ Features
