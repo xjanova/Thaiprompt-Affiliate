@@ -16,3 +16,6 @@ export {
   ProgressRing,
   MiniProgressRing,
 } from './charts';
+
+// Admin Control Components
+export { default as BannerCarousel } from './BannerCarousel';

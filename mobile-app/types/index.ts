@@ -282,3 +282,106 @@ export interface AppState {
   language: 'th' | 'en';
   isOnline: boolean;
 }
+
+// =====================================================
+// Admin Control Types (เฉพาะ 2 อย่างเท่านั้น)
+// =====================================================
+
+/**
+ * Banner โฆษณา - ควบคุมโดย Admin
+ */
+export interface Banner {
+  id: number;
+  title: string;
+  image: string;
+  link?: string;
+  linkType?: 'internal' | 'external' | 'product' | 'category';
+  linkTarget?: string;
+  position: 'top' | 'middle' | 'bottom';
+  isActive: boolean;
+  startDate?: string;
+  endDate?: string;
+  sortOrder: number;
+}
+
+/**
+ * Push Notification - ส่งโดย Admin
+ */
+export interface PushNotification {
+  id: number;
+  title: string;
+  body: string;
+  data?: Record<string, string>;
+  image?: string;
+  sentAt: string;
+  readAt?: string;
+}
+
+// =====================================================
+// Device Analytics Types (สำหรับ Admin Dashboard)
+// =====================================================
+
+/**
+ * ข้อมูลเครื่องที่ลงทะเบียน - เก็บไว้สำหรับ Analytics
+ */
+export interface DeviceRegistration {
+  id: string;
+  userId?: number;
+  deviceId: string;
+  platform: 'ios' | 'android';
+  deviceModel: string;
+  deviceBrand: string;
+  osVersion: string;
+  appVersion: string;
+  pushToken?: string;
+  locale: string;
+  timezone: string;
+  isActive: boolean;
+  lastActiveAt: string;
+  registeredAt: string;
+}
+
+/**
+ * Device Info สำหรับส่งตอนลงทะเบียน
+ */
+export interface DeviceInfo {
+  deviceId: string;
+  platform: 'ios' | 'android';
+  deviceModel: string;
+  deviceBrand: string;
+  osVersion: string;
+  appVersion: string;
+  pushToken?: string;
+  locale: string;
+  timezone: string;
+}
+
+/**
+ * สถิติเครื่องสำหรับ Admin Dashboard
+ */
+export interface DeviceAnalytics {
+  totalDevices: number;
+  activeDevices: number;
+  newDevicesToday: number;
+  newDevicesThisWeek: number;
+  newDevicesThisMonth: number;
+  byPlatform: {
+    ios: number;
+    android: number;
+  };
+  byAppVersion: {
+    version: string;
+    count: number;
+    percentage: number;
+  }[];
+  byOsVersion: {
+    version: string;
+    platform: 'ios' | 'android';
+    count: number;
+  }[];
+  dailyActiveUsers: {
+    date: string;
+    count: number;
+  }[];
+  retentionRate: number;
+}
