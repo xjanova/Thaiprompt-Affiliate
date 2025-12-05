@@ -186,6 +186,9 @@ class OfficialShopAdminController extends Controller
             'brand' => 'nullable|string|max:100',
             'main_image' => 'nullable|image|max:5120',
             'images.*' => 'nullable|image|max:5120',
+            // Coin purchase fields
+            'price_coins' => 'nullable|numeric|min:0',
+            'allow_coin_purchase' => 'nullable|boolean',
         ]);
 
         DB::beginTransaction();
@@ -221,6 +224,7 @@ class OfficialShopAdminController extends Controller
             $validated['is_featured'] = $request->boolean('is_featured', false);
             $validated['is_hidden'] = $request->boolean('is_hidden', false);
             $validated['track_inventory'] = $request->boolean('track_inventory', true);
+            $validated['allow_coin_purchase'] = $request->boolean('allow_coin_purchase', false);
 
             // คำนวณสถานะสต็อก
             if ($validated['track_inventory']) {
@@ -351,6 +355,9 @@ class OfficialShopAdminController extends Controller
             'main_image' => 'nullable|image|max:5120',
             'images.*' => 'nullable|image|max:5120',
             'delete_images' => 'nullable|array',
+            // Coin purchase fields
+            'price_coins' => 'nullable|numeric|min:0',
+            'allow_coin_purchase' => 'nullable|boolean',
         ]);
 
         DB::beginTransaction();
@@ -390,6 +397,7 @@ class OfficialShopAdminController extends Controller
             $validated['is_featured'] = $request->boolean('is_featured', false);
             $validated['is_hidden'] = $request->boolean('is_hidden', false);
             $validated['track_inventory'] = $request->boolean('track_inventory', true);
+            $validated['allow_coin_purchase'] = $request->boolean('allow_coin_purchase', false);
 
             // คำนวณสถานะสต็อก
             if ($validated['track_inventory']) {

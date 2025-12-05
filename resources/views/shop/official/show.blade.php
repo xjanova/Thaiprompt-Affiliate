@@ -444,6 +444,113 @@
                         </button>
                     </div>
 
+                    {{-- ════════════════════════════════════════════════════
+                         💰 BUY WITH COINS SECTION
+                         ════════════════════════════════════════════════════ --}}
+                    @if($product->allow_coin_purchase && $product->price_coins > 0)
+                    <div class="relative overflow-hidden bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50
+                               dark:from-yellow-900/30 dark:via-amber-900/30 dark:to-orange-900/30
+                               rounded-3xl p-6 border-2 border-yellow-300 dark:border-yellow-600 mt-4">
+                        {{-- Decorative Coins --}}
+                        <div class="absolute top-2 right-2 opacity-20">
+                            <svg class="w-20 h-20 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <text x="12" y="16" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor">$</text>
+                            </svg>
+                        </div>
+
+                        <div class="relative">
+                            {{-- Header --}}
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-amber-500
+                                           rounded-xl flex items-center justify-center shadow-lg
+                                           animate-pulse">
+                                    <i class="fas fa-coins text-white text-xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-yellow-800 dark:text-yellow-200">ซื้อด้วย Coins</h4>
+                                    <p class="text-sm text-yellow-700 dark:text-yellow-300">แลกเหรียญเป็นสินค้าได้เลย!</p>
+                                </div>
+                            </div>
+
+                            {{-- Coin Price Display --}}
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-3xl font-black text-yellow-600 dark:text-yellow-400">
+                                        {{ number_format($product->price_coins, 0) }}
+                                    </span>
+                                    <span class="text-lg text-yellow-700 dark:text-yellow-300 font-semibold">Coins</span>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-yellow-700 dark:text-yellow-300">Coins ของคุณ</p>
+                                    <p class="text-xl font-bold text-yellow-600 dark:text-yellow-400">
+                                        {{ number_format($coinBalance ?? 0, 0) }} <i class="fas fa-coins text-sm"></i>
+                                    </p>
+                                </div>
+                            </div>
+
+                            {{-- Total Coins Needed --}}
+                            <div class="p-3 bg-white/50 dark:bg-gray-800/50 rounded-xl mb-4">
+                                <div class="flex items-center justify-between text-sm">
+                                    <span class="text-yellow-700 dark:text-yellow-300">ราคารวม:</span>
+                                    <span class="font-bold text-yellow-800 dark:text-yellow-200"
+                                          x-text="({{ $product->price_coins }} * quantity).toLocaleString() + ' Coins'">
+                                    </span>
+                                </div>
+                            </div>
+
+                            {{-- Buy with Coins Button --}}
+                            @auth
+                                @php
+                                    $canBuyWithCoins = ($coinBalance ?? 0) >= $product->price_coins;
+                                @endphp
+                                <form action="{{ route('official-shop.purchase-with-coin', $product->slug) }}"
+                                      method="POST"
+                                      x-data="{ submitting: false }"
+                                      @submit="submitting = true">
+                                    @csrf
+                                    <input type="hidden" name="quantity" :value="quantity">
+
+                                    <button type="submit"
+                                            :disabled="submitting || {{ ($coinBalance ?? 0) }} < ({{ $product->price_coins }} * quantity)"
+                                            class="w-full relative overflow-hidden px-8 py-4
+                                                  {{ $canBuyWithCoins ? 'bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 hover:from-yellow-600 hover:via-amber-600 hover:to-orange-600' : 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed' }}
+                                                  text-white font-bold text-lg rounded-2xl
+                                                  shadow-xl hover:shadow-2xl
+                                                  transform hover:scale-105
+                                                  transition-all duration-300
+                                                  flex items-center justify-center gap-3
+                                                  group disabled:transform-none disabled:hover:scale-100">
+                                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent
+                                                   -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                                        <i class="fas fa-coins text-xl relative z-10" :class="submitting && 'animate-spin'"></i>
+                                        <span class="relative z-10" x-text="submitting ? 'กำลังดำเนินการ...' : 'ซื้อด้วย Coins'"></span>
+                                    </button>
+                                </form>
+
+                                @if(!$canBuyWithCoins)
+                                <p class="text-center text-sm text-red-600 dark:text-red-400 mt-2">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>
+                                    Coins ไม่เพียงพอ ต้องการ {{ number_format($product->price_coins, 0) }} Coins
+                                </p>
+                                @endif
+                            @else
+                                <a href="{{ route('login') }}?redirect={{ urlencode(request()->url()) }}"
+                                   class="w-full block text-center px-8 py-4
+                                         bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500
+                                         hover:from-yellow-600 hover:via-amber-600 hover:to-orange-600
+                                         text-white font-bold text-lg rounded-2xl
+                                         shadow-xl hover:shadow-2xl
+                                         transform hover:scale-105
+                                         transition-all duration-300">
+                                    <i class="fas fa-sign-in-alt mr-2"></i>
+                                    เข้าสู่ระบบเพื่อซื้อด้วย Coins
+                                </a>
+                            @endauth
+                        </div>
+                    </div>
+                    @endif
+
                     {{-- Trust Features --}}
                     <div class="grid grid-cols-2 gap-4 pt-4">
                         <div class="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl
