@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.36] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2055 from xjanova/claude/flowaccount-api-integration-016ukjLCteztYXVyg4A1xXhs (e0834eef)
+- fix(flowaccount): แก้ไข index.blade.php ให้ตรงกับ Controller (eb9427cc)
+### 🔧 Other Changes
+
+
 ## [v3.358.35] - 2025-12-05
 
 ### ✨ Features
