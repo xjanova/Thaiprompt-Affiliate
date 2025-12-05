@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.28] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2103 from xjanova/claude/fix-chatbot-errors-01UdwFoAUiYsZPPqzH2Dywe2 (cad318b9)
+- fix(chatbot): แก้ไข missing relationships และ sync model กับ database schema (d3df198b)
+### 🔧 Other Changes
+
+
 ## [v3.361.27] - 2025-12-05
 
 ### ✨ Features
