@@ -72,6 +72,18 @@ Route::prefix('webhook')->name('api.webhook.')->group(function () {
     Route::post('/omise', [\App\Http\Controllers\PaymentWebhookController::class, 'handleOmise'])
         ->middleware('webhook.verify:omise')
         ->name('omise');
+
+    Route::post('/paypal', [\App\Http\Controllers\PaymentWebhookController::class, 'handlePayPal'])
+        ->middleware('webhook.verify:paypal')
+        ->name('paypal');
+
+    Route::post('/razorpay', [\App\Http\Controllers\PaymentWebhookController::class, 'handleRazorpay'])
+        ->middleware('webhook.verify:razorpay')
+        ->name('razorpay');
+
+    Route::post('/truemoney', [\App\Http\Controllers\PaymentWebhookController::class, 'handleTrueMoney'])
+        ->middleware('webhook.verify:truemoney')
+        ->name('truemoney');
 });
 
 // API v1
@@ -151,6 +163,24 @@ Route::prefix('v1')->group(function () {
         Route::prefix('wallet')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getWallet']);
             Route::get('/transactions', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getWalletTransactions']);
+            Route::post('/topup', [\App\Http\Controllers\Api\V1\PaymentApiController::class, 'initializeWalletTopup']);
+        });
+
+        // Orders (Mobile App)
+        Route::prefix('orders')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'store']);
+            Route::get('/{id}', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'show']);
+            Route::post('/{id}/cancel', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'cancel']);
+        });
+
+        // Payment (Mobile App)
+        Route::prefix('payment')->group(function () {
+            Route::get('/methods', [\App\Http\Controllers\Api\V1\PaymentApiController::class, 'getMethods']);
+            Route::get('/deposit-methods', [\App\Http\Controllers\Api\V1\PaymentApiController::class, 'getDepositMethods']);
+            Route::post('/order', [\App\Http\Controllers\Api\V1\PaymentApiController::class, 'initializeOrderPayment']);
+            Route::get('/{transactionId}/status', [\App\Http\Controllers\Api\V1\PaymentApiController::class, 'checkStatus']);
+            Route::get('/history', [\App\Http\Controllers\Api\V1\PaymentApiController::class, 'getHistory']);
         });
 
         // KYC (Mobile App)
