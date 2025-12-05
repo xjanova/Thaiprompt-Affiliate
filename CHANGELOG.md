@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.363.0] - 2025-12-05
+
+### ✨ Features
+- Merge pull request #2120 from xjanova/claude/add-mlm-team-transfer-013FbjGBDZFigEip3zCuxEMA (d5e7adca)
+- feat: add admin direct MLM team transfer feature (96e959fc)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.362.14] - 2025-12-05
 
 ### ✨ Features
