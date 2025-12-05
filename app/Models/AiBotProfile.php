@@ -122,6 +122,26 @@ class AiBotProfile extends Model
     }
 
     /**
+     * Get keyword responses for this bot
+     *
+     * คำตอบอัตโนมัติตาม keyword ของบอท
+     */
+    public function keywordResponses(): HasMany
+    {
+        return $this->hasMany(ChatbotKeywordResponse::class, 'bot_profile_id');
+    }
+
+    /**
+     * Get platform integrations for this bot
+     *
+     * การเชื่อมต่อกับ platform ต่างๆ (LINE, Facebook, etc.)
+     */
+    public function platformIntegrations(): HasMany
+    {
+        return $this->hasMany(ChatbotPlatformIntegration::class, 'bot_profile_id');
+    }
+
+    /**
      * Scope: Only active bots
      */
     public function scopeActive($query)

@@ -792,6 +792,30 @@ class User extends Authenticatable
     }
 
     /**
+     * Get all bot rentals where user is the owner (bot creator)
+     *
+     * ดึงรายการเช่าบอททั้งหมดที่ user เป็นเจ้าของบอท
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function ownedBotRentals()
+    {
+        return $this->hasMany(\App\Models\AiBotRental::class, 'owner_id');
+    }
+
+    /**
+     * Get all bot rentals where user is the renter
+     *
+     * ดึงรายการเช่าบอททั้งหมดที่ user เป็นผู้เช่า
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function rentedBots()
+    {
+        return $this->hasMany(\App\Models\AiBotRental::class, 'renter_id');
+    }
+
+    /**
      * MLM Relationships
      */
 
