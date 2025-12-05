@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Chatbot;
 use App\Http\Controllers\Controller;
 use App\Models\AiBotProfile;
 use App\Models\AiBotRental;
+use App\Models\OwnerEarning;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -74,20 +75,24 @@ class MarketplaceWebController extends Controller
 
     /**
      * หน้าแสดงบอทที่เช่าอยู่
+     *
+     * ดึงข้อมูลการเช่าบอทของผู้ใช้พร้อมสถิติ
      */
     public function myRentals()
     {
         $user = Auth::user();
 
+        // ดึงการเช่าพร้อม botProfile และ owner ผ่าน botProfile
         $rentals = AiBotRental::where('renter_id', $user->id)
-            ->with(['botProfile', 'owner'])
+            ->with(['botProfile.owner'])
             ->latest()
             ->paginate(12);
 
+        // คำนวณสถิติการเช่า
         $stats = [
             'total_rentals' => AiBotRental::where('renter_id', $user->id)->count(),
             'active_rentals' => AiBotRental::where('renter_id', $user->id)->active()->count(),
-            'total_spent' => AiBotRental::where('renter_id', $user->id)->sum('total_cost'),
+            'total_spent' => AiBotRental::where('renter_id', $user->id)->sum('total_amount'),
         ];
 
         return view('chatbot.marketplace.my-rentals', compact('rentals', 'stats'));
@@ -95,23 +100,31 @@ class MarketplaceWebController extends Controller
 
     /**
      * หน้าแสดงรายได้จากการให้เช่าบอท
+     *
+     * ดึงข้อมูลรายได้จากการให้เช่าบอทของเจ้าของ
+     * โดยค้นหาผ่าน botProfile ที่ผู้ใช้เป็นเจ้าของ
      */
     public function myEarnings()
     {
         $user = Auth::user();
 
-        $rentals = AiBotRental::where('owner_id', $user->id)
+        // ดึง bot_profile_ids ที่ผู้ใช้เป็นเจ้าของ
+        $ownedBotIds = AiBotProfile::where('owner_id', $user->id)->pluck('id');
+
+        // ดึงการเช่าที่เป็นบอทของผู้ใช้
+        $rentals = AiBotRental::whereIn('bot_profile_id', $ownedBotIds)
             ->with(['botProfile', 'renter'])
             ->latest()
             ->paginate(12);
 
+        // คำนวณสถิติรายได้จาก OwnerEarning model
         $stats = [
-            'total_rentals' => AiBotRental::where('owner_id', $user->id)->count(),
-            'active_rentals' => AiBotRental::where('owner_id', $user->id)->active()->count(),
-            'total_earnings' => AiBotRental::where('owner_id', $user->id)->sum('owner_earning'),
-            'this_month_earnings' => AiBotRental::where('owner_id', $user->id)
-                ->whereMonth('created_at', now()->month)
-                ->sum('owner_earning'),
+            'total_rentals' => AiBotRental::whereIn('bot_profile_id', $ownedBotIds)->count(),
+            'active_rentals' => AiBotRental::whereIn('bot_profile_id', $ownedBotIds)->active()->count(),
+            'total_earnings' => OwnerEarning::where('owner_id', $user->id)->sum('net_amount'),
+            'this_month_earnings' => OwnerEarning::where('owner_id', $user->id)
+                ->where('earning_month', now()->format('Y-m'))
+                ->sum('net_amount'),
         ];
 
         return view('chatbot.marketplace.my-earnings', compact('rentals', 'stats'));

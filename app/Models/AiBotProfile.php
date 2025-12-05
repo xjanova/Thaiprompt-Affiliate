@@ -214,12 +214,14 @@ class AiBotProfile extends Model
 
     /**
      * Get total rental income
+     *
+     * คำนวณรายได้รวมจากการให้เช่าบอท
+     * ใช้ OwnerEarning model แทน field owner_earning ที่ไม่มีอยู่แล้ว
      */
     public function getTotalRentalIncome(): float
     {
-        return $this->rentals()
-            ->where('is_active', true)
-            ->sum('owner_earning');
+        return OwnerEarning::where('bot_profile_id', $this->id)
+            ->sum('net_amount');
     }
 
     /**
