@@ -22,6 +22,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import * as Sync from '@/services/sync';
 import * as Network from '@/services/network';
+import { APP_INFO } from '@/config/appConfig';
 
 // Menu Item
 const MenuItem = ({
@@ -424,8 +425,11 @@ export default function ProfileScreen() {
             <MenuItem
               icon="information-circle"
               label="เกี่ยวกับแอพ"
-              value="v1.0.0"
-              onPress={() => Alert.alert('Thaiprompt Affiliate', 'Version 1.0.0\n\n© 2024 Thaiprompt')}
+              value={`v${APP_INFO.VERSION}`}
+              onPress={() => Alert.alert(
+                APP_INFO.NAME,
+                `Version ${APP_INFO.VERSION} (Build ${APP_INFO.BUILD_NUMBER})\n\n© 2024 Thaiprompt`
+              )}
               delay={650}
             />
           </View>
