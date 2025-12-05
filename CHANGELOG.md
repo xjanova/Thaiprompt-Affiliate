@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.39] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2058 from xjanova/claude/fix-setting-function-017KM3BT69k4PQeEiusiFxFz (9c4dd3fe)
+- fix: correct Blade component closing tags in recruit view (19736e25)
+### 🔧 Other Changes
+
+
 ## [v3.358.38] - 2025-12-05
 
 ### ✨ Features
