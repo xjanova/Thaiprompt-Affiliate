@@ -1,5 +1,7 @@
 /**
  * Commissions Screen - หน้าคอมมิชชั่น
+ *
+ * แสดงข้อมูลคอมมิชชั่นพร้อมกราฟและสถิติที่สวยงาม
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -17,11 +19,16 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
-import { getCommissions, getDashboardStats } from '@/services/api';
+import { getCommissions, getDashboardStats, getEarningsSummary } from '@/services/api';
 import * as Cache from '@/services/cache';
 import * as Network from '@/services/network';
 import { formatCurrency } from '@/constants';
-import type { Commission, DashboardStats } from '@/types';
+import {
+  EarningsChart,
+  CommissionBreakdownChart,
+  StatCard as ChartStatCard,
+} from '@/components/charts';
+import type { Commission, DashboardStats, EarningsSummary } from '@/types';
 
 // Filter Tab
 const FilterTab = ({
@@ -191,10 +198,12 @@ export default function CommissionsScreen() {
   const isDark = resolvedTheme === 'dark';
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [earnings, setEarnings] = useState<EarningsSummary | null>(null);
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [filter, setFilter] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [showChart, setShowChart] = useState(true);
 
   const filters = [
     { key: 'all', label: 'ทั้งหมด' },
@@ -224,9 +233,10 @@ export default function CommissionsScreen() {
 
       // ถ้า online ให้ดึงข้อมูลใหม่
       if (online) {
-        const [freshStats, freshCommissions] = await Promise.all([
+        const [freshStats, freshCommissions, freshEarnings] = await Promise.all([
           getDashboardStats(),
           getCommissions(),
+          getEarningsSummary(),
         ]);
 
         if (freshStats) {
@@ -238,13 +248,17 @@ export default function CommissionsScreen() {
           );
         }
 
-        if (freshCommissions) {
-          setCommissions(freshCommissions);
+        if (freshCommissions?.data) {
+          setCommissions(freshCommissions.data.commissions || []);
           await Cache.setCache(
             Cache.CACHE_KEYS.COMMISSIONS_LIST,
-            freshCommissions,
+            freshCommissions.data.commissions,
             Cache.OFFLINE_CACHE_DURATION
           );
+        }
+
+        if (freshEarnings?.data) {
+          setEarnings(freshEarnings.data);
         }
       }
     } catch (error) {
@@ -398,6 +412,84 @@ export default function CommissionsScreen() {
               delay={150}
             />
           </View>
+
+          {/* Toggle Chart Button */}
+          <Pressable
+            onPress={() => setShowChart(!showChart)}
+            className="flex-row items-center justify-center py-3 mt-4"
+          >
+            <Ionicons
+              name={showChart ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={isDark ? '#9CA3AF' : '#6B7280'}
+            />
+            <Text className={`ml-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              {showChart ? 'ซ่อนกราฟ' : 'แสดงกราฟ'}
+            </Text>
+          </Pressable>
+
+          {/* Charts Section */}
+          {showChart && (
+            <Animated.View entering={FadeInDown.springify()} className="px-4">
+              {/* Earnings Line Chart */}
+              {earnings?.chart && earnings.chart.length > 0 && (
+                <View className="mb-4">
+                  <EarningsChart
+                    data={earnings.chart}
+                    title="กราฟรายได้"
+                    subtitle="7 วันที่ผ่านมา"
+                    totalAmount={earnings.thisMonthEarnings}
+                    growthPercent={earnings.growthPercent}
+                    isDark={isDark}
+                    height={220}
+                  />
+                </View>
+              )}
+
+              {/* Commission Breakdown Chart */}
+              {earnings?.earningsByType && (
+                <View className="mb-4">
+                  <CommissionBreakdownChart
+                    data={[
+                      { type: 'unilevel_direct', typeText: 'ขายตรง', amount: earnings.earningsByType.unilevelDirect || 0 },
+                      { type: 'unilevel_indirect', typeText: 'สายงาน', amount: earnings.earningsByType.unilevelIndirect || 0 },
+                      { type: 'binary_pair', typeText: 'ไบนารี่', amount: earnings.earningsByType.binaryPair || 0 },
+                      { type: 'sponsor_bonus', typeText: 'ผู้แนะนำ', amount: earnings.earningsByType.sponsorBonus || 0 },
+                      { type: 'rank_bonus', typeText: 'ตำแหน่ง', amount: earnings.earningsByType.rankBonus || 0 },
+                      { type: 'leadership_bonus', typeText: 'ผู้นำ', amount: earnings.earningsByType.leadershipBonus || 0 },
+                    ]}
+                    totalAmount={earnings.totalEarnings}
+                    isDark={isDark}
+                    chartType="both"
+                  />
+                </View>
+              )}
+
+              {/* Quick Stats Row */}
+              <View className="flex-row mb-4">
+                <View className="flex-1 mr-2">
+                  <ChartStatCard
+                    title="เดือนที่แล้ว"
+                    value={formatCurrency(earnings?.lastMonthEarnings || 0)}
+                    icon="calendar"
+                    iconColor="#F59E0B"
+                    isDark={isDark}
+                    size="small"
+                  />
+                </View>
+                <View className="flex-1 ml-2">
+                  <ChartStatCard
+                    title="รอดำเนินการ"
+                    value={formatCurrency(earnings?.pendingEarnings || 0)}
+                    icon="time"
+                    iconColor="#EF4444"
+                    isDark={isDark}
+                    size="small"
+                  />
+                </View>
+              </View>
+            </Animated.View>
+          )}
 
           {/* Filter Tabs */}
           <View className="px-4 mt-6">
