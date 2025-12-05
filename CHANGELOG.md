@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.4] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2125 from xjanova/claude/fix-vendorstore-reviews-method-0197QBEDUkosMfphdCqZiCQq (0459642b)
+- fix: add reviews() relationship method to VendorStore model (31265b78)
+### 🔧 Other Changes
+
+
 ## [v3.364.3] - 2025-12-05
 
 ### ✨ Features
