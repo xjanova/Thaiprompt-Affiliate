@@ -304,6 +304,7 @@
         {{-- Right Column (1/3) --}}
         <div class="space-y-6">
             {{-- Creator Info --}}
+            @if($token->creator)
             <div class="backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/30 rounded-2xl shadow-2xl overflow-hidden">
                 <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-6 py-4">
                     <h2 class="text-xl font-bold text-white flex items-center gap-2">
@@ -337,6 +338,23 @@
                     </a>
                 </div>
             </div>
+            @else
+            <div class="backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/30 rounded-2xl shadow-2xl overflow-hidden">
+                <div class="bg-gradient-to-r from-gray-500 via-gray-600 to-gray-700 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-user"></i>
+                        Creator
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <div class="text-center text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-user-slash text-4xl mb-2"></i>
+                        <p>ไม่พบข้อมูลผู้สร้าง</p>
+                        <p class="text-sm">ผู้ใช้อาจถูกลบไปแล้ว</p>
+                    </div>
+                </div>
+            </div>
+            @endif
 
             {{-- Admin Actions --}}
             <div class="backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/30 rounded-2xl shadow-2xl overflow-hidden">
