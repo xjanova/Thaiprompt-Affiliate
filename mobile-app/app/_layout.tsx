@@ -292,6 +292,32 @@ export default function RootLayout() {
               headerTintColor: isDark ? '#FFFFFF' : '#1F2937',
             }}
           />
+
+          {/* Wiki Screen */}
+          <Stack.Screen
+            name="wiki"
+            options={{
+              headerShown: true,
+              title: 'คู่มือการใช้งาน',
+              headerStyle: {
+                backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+              },
+              headerTintColor: isDark ? '#FFFFFF' : '#1F2937',
+            }}
+          />
+
+          {/* Settings Screen */}
+          <Stack.Screen
+            name="settings"
+            options={{
+              headerShown: true,
+              title: 'ตั้งค่า',
+              headerStyle: {
+                backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+              },
+              headerTintColor: isDark ? '#FFFFFF' : '#1F2937',
+            }}
+          />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>
