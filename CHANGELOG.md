@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.13] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: correct route name for product categories in storefront settings (dc8d2582)
+- fix: display actual rank icons in admin ranks list (c9f713f4)
+### 🔧 Other Changes
+- Merge pull request #2088 from xjanova/claude/fix-rank-icons-display-013UgbU4tmcinedBvNLdXVdT (da6dd252)
+
 ## [v3.361.12] - 2025-12-05
 
 ### ✨ Features
