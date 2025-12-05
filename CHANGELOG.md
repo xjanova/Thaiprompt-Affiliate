@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.20] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2095 from xjanova/claude/fix-email-system-01BeQ6fKRT7QvMNuWGnHk44n (60d8c81e)
+- fix(email): add PHPMailer dependency and config/mail.php (eb768af6)
+### 🔧 Other Changes
+
+
 ## [v3.361.19] - 2025-12-05
 
 ### ✨ Features
