@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.13] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2134 from xjanova/claude/fix-payout-status-constant-01FScC7yDSSmBtr6yqauYEba (d937ed49)
+- fix: use STATUS_PAID instead of undefined STATUS_COMPLETED in PayoutService (e5ff4aeb)
+### 🔧 Other Changes
+
+
 ## [v3.364.12] - 2025-12-05
 
 ### ✨ Features
