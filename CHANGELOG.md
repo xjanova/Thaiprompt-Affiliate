@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.25] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2044 from xjanova/claude/fix-expo-error-01QLt62F4h7qf3WMt7N2CVyj (3f495f1d)
+- fix(mobile-app): แก้ไข owner ให้ตรงกับ EAS project (936225d7)
+### 🔧 Other Changes
+
+
 ## [v3.358.24] - 2025-12-05
 
 ### ✨ Features
