@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Carbon\Carbon;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\URL;
@@ -39,6 +40,36 @@ class AppServiceProvider extends ServiceProvider
 
         // Use Tailwind pagination views
         Paginator::useTailwind();
+
+        // เพิ่ม Carbon macro สำหรับแสดงวันที่ภาษาไทย
+        Carbon::macro('thaidate', function (string $format = 'j M Y') {
+            /** @var Carbon $this */
+            $thaiMonths = [
+                1 => 'ม.ค.', 2 => 'ก.พ.', 3 => 'มี.ค.', 4 => 'เม.ย.',
+                5 => 'พ.ค.', 6 => 'มิ.ย.', 7 => 'ก.ค.', 8 => 'ส.ค.',
+                9 => 'ก.ย.', 10 => 'ต.ค.', 11 => 'พ.ย.', 12 => 'ธ.ค.',
+            ];
+
+            $thaiMonthsFull = [
+                1 => 'มกราคม', 2 => 'กุมภาพันธ์', 3 => 'มีนาคม', 4 => 'เมษายน',
+                5 => 'พฤษภาคม', 6 => 'มิถุนายน', 7 => 'กรกฎาคม', 8 => 'สิงหาคม',
+                9 => 'กันยายน', 10 => 'ตุลาคม', 11 => 'พฤศจิกายน', 12 => 'ธันวาคม',
+            ];
+
+            $result = $this->format($format);
+            $month = (int) $this->format('n');
+            $thaiYear = $this->format('Y') + 543;
+
+            // แทนที่ชื่อเดือนแบบเต็ม (F)
+            $result = str_replace($this->format('F'), $thaiMonthsFull[$month], $result);
+            // แทนที่ชื่อเดือนแบบย่อ (M)
+            $result = str_replace($this->format('M'), $thaiMonths[$month], $result);
+            // แทนที่ปี ค.ศ. เป็น พ.ศ. (Y หรือ y)
+            $result = str_replace($this->format('Y'), $thaiYear, $result);
+            $result = str_replace($this->format('y'), substr($thaiYear, -2), $result);
+
+            return $result;
+        });
 
         // Register KYC Verification Observer for Admin Notifications
         \App\Models\KycVerification::observe(\App\Observers\KycVerificationObserver::class);
