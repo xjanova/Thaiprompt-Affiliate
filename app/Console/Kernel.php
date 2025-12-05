@@ -257,6 +257,49 @@ class Kernel extends ConsoleKernel
             ->onFailure(function () {
                 \Log::error('[Video Automation] Source files cleanup failed');
             });
+
+        // ========================================
+        // E-Commerce Payment Distribution System
+        // ========================================
+
+        // Process Pending Order Distributions - ทุก 5 นาที
+        // สำหรับ Orders ที่ชำระเงินแล้วแต่ยังไม่ได้ distribute
+        $schedule->command('orders:process-distribution --limit=50')
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[E-Commerce] Pending order distribution processing completed');
+            })
+            ->onFailure(function () {
+                \Log::error('[E-Commerce] Pending order distribution processing failed');
+            });
+
+        // Release Pending Earnings - ทุก 10 นาที
+        // ปล่อย earnings ที่ pending และถึงเวลา available
+        $schedule->command('earnings:release-pending --limit=100')
+            ->everyTenMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[E-Commerce] Pending earnings release completed');
+            })
+            ->onFailure(function () {
+                \Log::error('[E-Commerce] Pending earnings release failed');
+            });
+
+        // Process Scheduled Payouts - ทุก 15 นาที
+        // ประมวลผล payout requests ที่ถูก schedule ไว้
+        $schedule->command('payouts:process-scheduled')
+            ->everyFifteenMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[E-Commerce] Scheduled payouts processing completed');
+            })
+            ->onFailure(function () {
+                \Log::error('[E-Commerce] Scheduled payouts processing failed');
+            });
     }
 
     /**
