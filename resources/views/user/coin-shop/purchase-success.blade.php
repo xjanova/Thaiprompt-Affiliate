@@ -2,7 +2,7 @@
     หน้าซื้อสินค้าสำเร็จ
 --}}
 
-@extends('layouts.user')
+@extends('layouts.user-arrow-x')
 
 @section('title', 'ซื้อสินค้าสำเร็จ')
 

@@ -2,7 +2,7 @@
     หน้ารายละเอียดสินค้า Coin Shop
 --}}
 
-@extends('layouts.user')
+@extends('layouts.user-arrow-x')
 
 @section('title', $pageTitle ?? $product->display_name)
 
