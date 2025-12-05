@@ -325,6 +325,146 @@ class PlatformRevenueService
     }
 
     /**
+     * ดึงสถิติรายวัน
+     *
+     * @param Carbon $date วันที่ต้องการดูสถิติ
+     * @return array
+     */
+    public function getDailyStats(Carbon $date): array
+    {
+        $startOfDay = $date->copy()->startOfDay();
+        $endOfDay = $date->copy()->endOfDay();
+
+        $income = PlatformTransaction::income()
+            ->completed()
+            ->whereBetween('created_at', [$startOfDay, $endOfDay])
+            ->sum('amount');
+
+        $expense = PlatformTransaction::expense()
+            ->completed()
+            ->whereBetween('created_at', [$startOfDay, $endOfDay])
+            ->sum('amount');
+
+        // รายได้แยกตาม wallet
+        $byWallet = PlatformTransaction::income()
+            ->completed()
+            ->whereBetween('created_at', [$startOfDay, $endOfDay])
+            ->join('platform_wallets', 'platform_transactions.wallet_id', '=', 'platform_wallets.id')
+            ->selectRaw('platform_wallets.slug, SUM(platform_transactions.amount) as total')
+            ->groupBy('platform_wallets.slug')
+            ->pluck('total', 'slug')
+            ->toArray();
+
+        return [
+            'income' => $income,
+            'expense' => $expense,
+            'net' => $income - $expense,
+            'by_wallet' => $byWallet,
+            'transaction_count' => PlatformTransaction::whereBetween('created_at', [$startOfDay, $endOfDay])->count(),
+        ];
+    }
+
+    /**
+     * ดึงสถิติรายเดือน
+     *
+     * @param int $year ปี
+     * @param int $month เดือน
+     * @return array
+     */
+    public function getMonthlyStats(int $year, int $month): array
+    {
+        $startOfMonth = Carbon::create($year, $month, 1)->startOfMonth();
+        $endOfMonth = Carbon::create($year, $month, 1)->endOfMonth();
+
+        $income = PlatformTransaction::income()
+            ->completed()
+            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->sum('amount');
+
+        $expense = PlatformTransaction::expense()
+            ->completed()
+            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->sum('amount');
+
+        // รายได้แยกตาม wallet
+        $byWallet = PlatformTransaction::income()
+            ->completed()
+            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->join('platform_wallets', 'platform_transactions.wallet_id', '=', 'platform_wallets.id')
+            ->selectRaw('platform_wallets.slug, SUM(platform_transactions.amount) as total')
+            ->groupBy('platform_wallets.slug')
+            ->pluck('total', 'slug')
+            ->toArray();
+
+        return [
+            'income' => $income,
+            'expense' => $expense,
+            'net' => $income - $expense,
+            'by_wallet' => $byWallet,
+            'transaction_count' => PlatformTransaction::whereBetween('created_at', [$startOfMonth, $endOfMonth])->count(),
+        ];
+    }
+
+    /**
+     * ดึงสถิติรายปี
+     *
+     * @param int $year ปี
+     * @return array
+     */
+    public function getYearlyStats(int $year): array
+    {
+        $startOfYear = Carbon::create($year, 1, 1)->startOfYear();
+        $endOfYear = Carbon::create($year, 12, 31)->endOfYear();
+
+        $income = PlatformTransaction::income()
+            ->completed()
+            ->whereBetween('created_at', [$startOfYear, $endOfYear])
+            ->sum('amount');
+
+        $expense = PlatformTransaction::expense()
+            ->completed()
+            ->whereBetween('created_at', [$startOfYear, $endOfYear])
+            ->sum('amount');
+
+        // รายได้แยกตาม wallet
+        $byWallet = PlatformTransaction::income()
+            ->completed()
+            ->whereBetween('created_at', [$startOfYear, $endOfYear])
+            ->join('platform_wallets', 'platform_transactions.wallet_id', '=', 'platform_wallets.id')
+            ->selectRaw('platform_wallets.slug, SUM(platform_transactions.amount) as total')
+            ->groupBy('platform_wallets.slug')
+            ->pluck('total', 'slug')
+            ->toArray();
+
+        // สถิติรายเดือน
+        $monthlyBreakdown = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $monthStart = Carbon::create($year, $m, 1)->startOfMonth();
+            $monthEnd = Carbon::create($year, $m, 1)->endOfMonth();
+
+            $monthlyBreakdown[$m] = [
+                'income' => PlatformTransaction::income()
+                    ->completed()
+                    ->whereBetween('created_at', [$monthStart, $monthEnd])
+                    ->sum('amount'),
+                'expense' => PlatformTransaction::expense()
+                    ->completed()
+                    ->whereBetween('created_at', [$monthStart, $monthEnd])
+                    ->sum('amount'),
+            ];
+        }
+
+        return [
+            'income' => $income,
+            'expense' => $expense,
+            'net' => $income - $expense,
+            'by_wallet' => $byWallet,
+            'transaction_count' => PlatformTransaction::whereBetween('created_at', [$startOfYear, $endOfYear])->count(),
+            'monthly_breakdown' => $monthlyBreakdown,
+        ];
+    }
+
+    /**
      * ดึงสถิติสำหรับ Dashboard
      *
      * @return array
