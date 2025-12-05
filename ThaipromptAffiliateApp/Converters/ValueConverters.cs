@@ -144,3 +144,20 @@ public class NameToInitialConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
+
+/// <summary>
+/// Converter สำหรับตรวจสอบว่า String ไม่ว่างเปล่า
+/// ใช้สำหรับ IsVisible binding
+/// </summary>
+public class StringNotNullOrEmptyConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        return !string.IsNullOrEmpty(value as string);
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}

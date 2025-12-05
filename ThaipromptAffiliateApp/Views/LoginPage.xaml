@@ -19,11 +19,19 @@
                    Background="{StaticResource PrimaryGradient}">
 
                 <VerticalStackLayout Padding="30,60,30,40" Spacing="15" VerticalOptions="Center">
-                    <!-- Logo/Icon -->
-                    <Image Source="logo.png"
-                           HeightRequest="80"
+                    <!-- Logo/Icon - ใช้ Emoji Placeholder แทน Image -->
+                    <Frame HeightRequest="80"
                            WidthRequest="80"
-                           HorizontalOptions="Center"/>
+                           CornerRadius="40"
+                           BackgroundColor="#FFFFFF30"
+                           BorderColor="Transparent"
+                           Padding="0"
+                           HorizontalOptions="Center">
+                        <Label Text="🚀"
+                               FontSize="40"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"/>
+                    </Frame>
 
                     <!-- Welcome Text -->
                     <Label Text="ยินดีต้อนรับ"

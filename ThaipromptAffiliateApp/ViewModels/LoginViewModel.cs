@@ -141,18 +141,28 @@ namespace ThaipromptAffiliateApp.ViewModels
 
         /// <summary>
         /// Navigate to forgot password page
+        /// (Coming Soon - แสดง Alert แทน)
         /// </summary>
         private async Task ForgotPasswordAsync()
         {
-            await NavigateToAsync("forgotpassword");
+            // TODO: สร้างหน้า ForgotPasswordPage
+            await Application.Current!.MainPage!.DisplayAlert(
+                "ลืมรหัสผ่าน",
+                "กรุณาติดต่อฝ่ายสนับสนุนที่ support@thaiprompt.com\nหรือโทร 02-xxx-xxxx",
+                "ตกลง");
         }
 
         /// <summary>
         /// Navigate to register page
+        /// (Coming Soon - แสดง Alert แทน)
         /// </summary>
         private async Task RegisterAsync()
         {
-            await NavigateToAsync("register");
+            // TODO: สร้างหน้า RegisterPage
+            await Application.Current!.MainPage!.DisplayAlert(
+                "สมัครสมาชิก",
+                "ฟีเจอร์นี้จะเปิดให้บริการเร็วๆ นี้\nกรุณาติดต่อ support@thaiprompt.com",
+                "ตกลง");
         }
     }
 }
