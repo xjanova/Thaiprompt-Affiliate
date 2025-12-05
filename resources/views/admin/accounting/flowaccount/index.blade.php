@@ -66,11 +66,18 @@
         </div>
     </div>
 
+    @php
+        $isConnected = $connection && $connection->isConnected();
+        $lastSync = $connection ? ($connection->last_sync_at ? $connection->last_sync_at->diffForHumans() : 'ไม่เคย') : 'ไม่เคย';
+        $accountEmail = $companyInfo['email'] ?? ($connection->company_name ?? '-');
+        $syncSettings = $connection ? ($connection->sync_settings ?? []) : [];
+    @endphp
+
     <!-- Connection Status Card -->
-    <div class="relative overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 border-2 {{ ($connected ?? false) ? 'border-green-500' : 'border-gray-300 dark:border-gray-600' }}">
+    <div class="relative overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 border-2 {{ $isConnected ? 'border-green-500' : 'border-gray-300 dark:border-gray-600' }}">
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div class="flex items-center gap-6">
-                @if($connected ?? false)
+                @if($isConnected)
                     <div class="relative">
                         <div class="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-xl">
                             <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,16 +100,16 @@
                 @endif
 
                 <div>
-                    <h3 class="text-2xl font-bold {{ ($connected ?? false) ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300' }}" data-translate>
-                        @if($connected ?? false)
+                    <h3 class="text-2xl font-bold {{ $isConnected ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300' }}" data-translate>
+                        @if($isConnected)
                             เชื่อมต่อแล้ว
                         @else
                             ยังไม่ได้เชื่อมต่อ
                         @endif
                     </h3>
                     <p class="text-gray-600 dark:text-gray-400 mt-1" data-translate>
-                        @if($connected ?? false)
-                            <span class="font-medium">บัญชี:</span> {{ $accountEmail ?? '-' }}
+                        @if($isConnected)
+                            <span class="font-medium">บัญชี:</span> {{ $accountEmail }}
                         @else
                             กรุณาเชื่อมต่อบัญชี FlowAccount ของคุณ
                         @endif
@@ -111,10 +118,9 @@
             </div>
 
             <div>
-                @if($connected ?? false)
+                @if($isConnected)
                     <form action="{{ route('admin.accounting.flowaccount.disconnect') }}" method="POST" onsubmit="return confirm('ยืนยันการยกเลิกการเชื่อมต่อ?');">
                         @csrf
-                        @method('DELETE')
                         <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold rounded-xl transition-all hover:shadow-lg">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
@@ -135,7 +141,7 @@
         </div>
     </div>
 
-    @if($connected ?? false)
+    @if($isConnected)
     <!-- Sync Stats Cards with Gradients -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <!-- Last Sync Card -->
@@ -148,7 +154,7 @@
                     </svg>
                 </div>
                 <p class="text-indigo-100 text-sm mb-1" data-translate>ซิงค์ล่าสุด</p>
-                <p class="text-xl font-bold">{{ $lastSync ?? 'ไม่เคย' }}</p>
+                <p class="text-xl font-bold">{{ $lastSync }}</p>
             </div>
         </div>
 
@@ -162,7 +168,7 @@
                     </svg>
                 </div>
                 <p class="text-blue-100 text-sm mb-1" data-translate>ใบแจ้งหนี้</p>
-                <p class="text-3xl font-bold">{{ number_format($syncStats['invoices'] ?? 0) }}</p>
+                <p class="text-3xl font-bold">{{ number_format($stats['invoices'] ?? 0) }}</p>
             </div>
         </div>
 
@@ -176,7 +182,7 @@
                     </svg>
                 </div>
                 <p class="text-orange-100 text-sm mb-1" data-translate>รายจ่าย</p>
-                <p class="text-3xl font-bold">{{ number_format($syncStats['expenses'] ?? 0) }}</p>
+                <p class="text-3xl font-bold">{{ number_format($stats['expenses'] ?? 0) }}</p>
             </div>
         </div>
 
@@ -190,7 +196,7 @@
                     </svg>
                 </div>
                 <p class="text-purple-100 text-sm mb-1" data-translate>ผู้ติดต่อ</p>
-                <p class="text-3xl font-bold">{{ number_format($syncStats['contacts'] ?? 0) }}</p>
+                <p class="text-3xl font-bold">{{ number_format($stats['contacts'] ?? 0) }}</p>
             </div>
         </div>
     </div>
@@ -207,7 +213,7 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <form action="{{ route('admin.accounting.flowaccount.sync', 'invoices') }}" method="POST">
+            <form action="{{ route('admin.accounting.flowaccount.sync.type', 'invoices') }}" method="POST">
                 @csrf
                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all hover:shadow-lg">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,7 +223,7 @@
                 </button>
             </form>
 
-            <form action="{{ route('admin.accounting.flowaccount.sync', 'expenses') }}" method="POST">
+            <form action="{{ route('admin.accounting.flowaccount.sync.type', 'expenses') }}" method="POST">
                 @csrf
                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold rounded-xl transition-all hover:shadow-lg">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,7 +233,7 @@
                 </button>
             </form>
 
-            <form action="{{ route('admin.accounting.flowaccount.sync', 'contacts') }}" method="POST">
+            <form action="{{ route('admin.accounting.flowaccount.sync.type', 'contacts') }}" method="POST">
                 @csrf
                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-semibold rounded-xl transition-all hover:shadow-lg">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -239,7 +245,7 @@
         </div>
 
         <div>
-            <form action="{{ route('admin.accounting.flowaccount.sync', 'all') }}" method="POST">
+            <form action="{{ route('admin.accounting.flowaccount.sync') }}" method="POST">
                 @csrf
                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl transition-all hover:shadow-lg">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,12 +269,12 @@
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white" data-translate>การตั้งค่า</h3>
         </div>
 
-        <form action="{{ route('admin.accounting.flowaccount.settings') }}" method="POST" class="space-y-6">
+        <form action="{{ route('admin.accounting.flowaccount.settings.save') }}" method="POST" class="space-y-6">
             @csrf
 
             <div class="flex items-start">
                 <div class="flex items-center h-5">
-                    <input type="checkbox" name="auto_sync" value="1" {{ ($settings['auto_sync'] ?? false) ? 'checked' : '' }}
+                    <input type="checkbox" name="auto_sync" value="1" {{ ($syncSettings['auto_sync'] ?? config('flowaccount.auto_sync', false)) ? 'checked' : '' }}
                            class="w-5 h-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700">
                 </div>
                 <div class="ml-3">
@@ -281,12 +287,13 @@
                 <label class="block text-base font-medium text-gray-900 dark:text-gray-300 mb-3" data-translate>
                     ช่วงเวลาการซิงค์อัตโนมัติ (นาที)
                 </label>
+                @php $syncInterval = $syncSettings['sync_interval'] ?? config('flowaccount.sync_interval', 3600) / 60; @endphp
                 <select name="sync_interval" class="w-full md:w-80 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition px-4 py-3">
-                    <option value="15" {{ ($settings['sync_interval'] ?? 60) == 15 ? 'selected' : '' }}>15 นาที</option>
-                    <option value="30" {{ ($settings['sync_interval'] ?? 60) == 30 ? 'selected' : '' }}>30 นาที</option>
-                    <option value="60" {{ ($settings['sync_interval'] ?? 60) == 60 ? 'selected' : '' }}>1 ชั่วโมง</option>
-                    <option value="180" {{ ($settings['sync_interval'] ?? 60) == 180 ? 'selected' : '' }}>3 ชั่วโมง</option>
-                    <option value="360" {{ ($settings['sync_interval'] ?? 60) == 360 ? 'selected' : '' }}>6 ชั่วโมง</option>
+                    <option value="15" {{ $syncInterval == 15 ? 'selected' : '' }}>15 นาที</option>
+                    <option value="30" {{ $syncInterval == 30 ? 'selected' : '' }}>30 นาที</option>
+                    <option value="60" {{ $syncInterval == 60 ? 'selected' : '' }}>1 ชั่วโมง</option>
+                    <option value="180" {{ $syncInterval == 180 ? 'selected' : '' }}>3 ชั่วโมง</option>
+                    <option value="360" {{ $syncInterval == 360 ? 'selected' : '' }}>6 ชั่วโมง</option>
                 </select>
             </div>
 
@@ -302,7 +309,7 @@
     </div>
     @endif
 
-    @if(!($connected ?? false))
+    @if(!$isConnected)
     <!-- Setup Instructions -->
     <div class="relative overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-2xl p-8 border-2 border-blue-200 dark:border-blue-800">
         <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-blue-200/30 dark:bg-blue-800/30 rounded-full blur-3xl"></div>
