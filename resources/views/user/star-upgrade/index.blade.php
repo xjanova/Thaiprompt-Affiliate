@@ -4,7 +4,7 @@
     @author Video Reward System
 --}}
 
-@extends('layouts.user')
+@extends('layouts.user-arrow-x')
 
 @section('title', $pageTitle ?? 'อัพเกรดดาว')
 
