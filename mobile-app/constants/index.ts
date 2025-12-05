@@ -56,6 +56,18 @@ export const API_ENDPOINTS = {
   KYC_UPLOAD: '/kyc/upload',
   KYC_CONFIRM: '/kyc/confirm',
 
+  // Rider (Mobile App)
+  RIDER_STATUS: '/rider/status',
+  RIDER_REGISTER: '/rider/register',
+  RIDER_DOCUMENT: '/rider/document',
+  RIDER_PERMISSIONS: '/rider/permissions',
+  RIDER_AVAILABILITY: '/rider/availability',
+  RIDER_LOCATION: '/rider/location',
+  RIDER_JOBS_AVAILABLE: '/rider/jobs/available',
+  RIDER_JOBS_CURRENT: '/rider/jobs/current',
+  RIDER_JOB_ACCEPT: '/rider/jobs', // + /{jobId}/accept
+  RIDER_JOB_STATUS: '/rider/jobs', // + /{jobId}/status
+
   // Profile
   PROFILE: '/profile',
   UPDATE_PROFILE: '/profile', // ใช้ PUT method

@@ -161,6 +161,20 @@ Route::prefix('v1')->group(function () {
             Route::post('/confirm', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'confirmKycSubmission']);
         });
 
+        // Rider (Mobile App)
+        Route::prefix('rider')->group(function () {
+            Route::get('/status', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getRiderStatus']);
+            Route::post('/register', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'registerRider']);
+            Route::post('/document', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'uploadRiderDocument']);
+            Route::post('/permissions', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateRiderPermissions']);
+            Route::post('/availability', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'setRiderAvailability']);
+            Route::post('/location', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateRiderLocation']);
+            Route::get('/jobs/available', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getAvailableJobs']);
+            Route::get('/jobs/current', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCurrentJob']);
+            Route::post('/jobs/{jobId}/accept', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'acceptJob']);
+            Route::post('/jobs/{jobId}/status', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateJobStatus']);
+        });
+
         // Translation (Google Translate API)
         Route::prefix('translate')->group(function () {
             Route::post('/', [TranslateController::class, 'translate']);
