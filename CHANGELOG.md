@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.42] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2061 from xjanova/claude/fix-expo-error-01QLt62F4h7qf3WMt7N2CVyj (d740eb09)
+- fix(mobile-app): ลบ boxShadow config ที่ NativeWind v2 ไม่รองรับ (bcb72aa3)
+### 🔧 Other Changes
+
+
 ## [v3.358.41] - 2025-12-05
 
 ### ✨ Features
