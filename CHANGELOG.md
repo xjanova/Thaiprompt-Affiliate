@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.40] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2059 from xjanova/claude/fix-setting-function-017KM3BT69k4PQeEiusiFxFz (0f2da42b)
+- fix: add Carbon thaidate macro for Thai date formatting (3666c092)
+### 🔧 Other Changes
+
+
 ## [v3.358.39] - 2025-12-05
 
 ### ✨ Features
