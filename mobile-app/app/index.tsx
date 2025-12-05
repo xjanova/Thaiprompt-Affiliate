@@ -247,12 +247,12 @@ export default function MainMenuScreen() {
 
   const handleFabCart = () => router.push('/shopping');
   const handleFabHelp = () => router.push('/support');
-  const handleFabWiki = () => router.push('/coming-soon');
+  const handleFabWiki = () => router.push('/wiki');
 
   const handleNavHome = () => {}; // Already on home
   const handleNavDashboard = () => router.push('/dashboard');
   const handleNavProfile = () => router.push('/(tabs)/profile');
-  const handleNavSettings = () => router.push('/coming-soon');
+  const handleNavSettings = () => router.push('/settings');
 
   return (
     <LavaBackground variant="crypto" intensity="high">
