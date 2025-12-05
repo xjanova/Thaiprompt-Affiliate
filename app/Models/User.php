@@ -804,6 +804,17 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the first (primary) MLM member for this user
+     *
+     * ดึง MLM Member หลักของ user (โดยปกติจะมีแค่ 1 รายการ)
+     * ใช้สำหรับ LINE signup flow และระบบต่างๆ ที่ต้องการดึง member เดียว
+     */
+    public function mlmMember()
+    {
+        return $this->hasOne(\App\Models\MlmMember::class)->latest();
+    }
+
+    /**
      * Get all MLM commissions for this user
      */
     public function mlmCommissions()

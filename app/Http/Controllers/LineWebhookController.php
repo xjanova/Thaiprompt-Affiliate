@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LineOaSetting;
+use App\Models\MlmProspect;
 use App\Models\User;
 use App\Models\AiBotProfile;
 use App\Services\LineService;
