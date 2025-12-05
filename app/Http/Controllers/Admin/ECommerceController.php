@@ -347,7 +347,8 @@ class ECommerceController extends Controller
             'track_inventory' => 'boolean',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
-            'category_id' => 'nullable|exists:product_categories,id',
+            'is_hidden' => 'boolean',
+            'category_id' => 'required|exists:product_categories,id',
             'commission_rate' => 'nullable|numeric|min:0|max:100',
             'pv_value' => 'nullable|numeric|min:0',
             'customer_cashback' => 'nullable|numeric|min:0',
@@ -383,9 +384,19 @@ class ECommerceController extends Controller
             $validated['is_hidden'] = $request->has('is_hidden');
             $validated['track_inventory'] = $request->has('track_inventory');
 
-            // Update slug if name changed
+            // Update slug if name changed (with uniqueness check)
             if ($validated['name'] !== $product->name) {
-                $validated['slug'] = \Str::slug($validated['name']);
+                $baseSlug = \Str::slug($validated['name']);
+                $slug = $baseSlug;
+                $counter = 1;
+
+                // ตรวจสอบว่า slug ซ้ำหรือไม่ (ยกเว้นสินค้าปัจจุบัน)
+                while (Product::where('slug', $slug)->where('id', '!=', $product->id)->exists()) {
+                    $slug = $baseSlug . '-' . $counter;
+                    $counter++;
+                }
+
+                $validated['slug'] = $slug;
             }
 
             // Update stock status
