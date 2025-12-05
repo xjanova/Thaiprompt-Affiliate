@@ -128,7 +128,10 @@
             <div class="lg:col-span-2">
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">การสนทนา 7 วันล่าสุด</h2>
-                    <canvas id="conversationsChart" height="300"></canvas>
+                    {{-- กำหนด height แน่นอนเพื่อป้องกันกราฟยืดไม่หยุด --}}
+                    <div class="relative" style="height: 300px;">
+                        <canvas id="conversationsChart"></canvas>
+                    </div>
                 </div>
             </div>
 
