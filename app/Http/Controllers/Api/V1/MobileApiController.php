@@ -684,4 +684,329 @@ class MobileApiController extends Controller
             ],
         ]);
     }
+
+    // =====================================================
+    // LINE Login (Mobile)
+    // =====================================================
+
+    /**
+     * ดึง LINE Login URL สำหรับ Mobile App
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getLineLoginUrl(Request $request): JsonResponse
+    {
+        $lineService = app(\App\Services\LineService::class);
+
+        if (!$lineService->isConfigured()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'LINE Login ยังไม่ได้ตั้งค่า',
+            ], 400);
+        }
+
+        // สร้าง state สำหรับ CSRF protection
+        $state = Str::random(40);
+
+        // ดึง referral code ถ้ามี
+        $referralCode = $request->get('ref');
+
+        // สร้าง callback URL สำหรับ mobile
+        // Mobile app จะใช้ deep link หรือ universal link
+        $redirectUri = config('services.line.mobile_redirect_uri')
+            ?? url('/api/v1/auth/line/mobile-callback');
+
+        $authUrl = $lineService->getAuthorizationUrl($state, $redirectUri);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'authUrl' => $authUrl,
+                'state' => $state,
+            ],
+        ]);
+    }
+
+    /**
+     * LINE Login callback สำหรับ Mobile App
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function lineLoginCallback(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'code' => 'required|string',
+            'state' => 'required|string',
+            'referral_code' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ครบถ้วน',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $lineService = app(\App\Services\LineService::class);
+        $tokenService = app(\App\Services\LineTokenService::class);
+
+        try {
+            // แลก code เป็น access token
+            $redirectUri = config('services.line.mobile_redirect_uri')
+                ?? url('/api/v1/auth/line/mobile-callback');
+
+            $tokenData = $lineService->getAccessToken($request->code, $redirectUri);
+            $accessToken = $tokenData['access_token'];
+
+            // ดึงข้อมูล profile
+            $profile = $lineService->getUserProfile($accessToken);
+            $lineUserId = $profile['userId'];
+            $displayName = $profile['displayName'] ?? 'LINE User';
+            $pictureUrl = $profile['pictureUrl'] ?? null;
+
+            // ค้นหา user ด้วย LINE User ID
+            $user = User::where('line_user_id', $lineUserId)->first();
+
+            if ($user) {
+                // User มีอยู่แล้ว - อัพเดทข้อมูล LINE
+                $user->update([
+                    'line_display_name' => $displayName,
+                    'line_picture_url' => $pictureUrl,
+                    'line_linked_at' => now(),
+                    'line_verified' => true,
+                ]);
+
+                // เก็บ access token
+                $expiresIn = $tokenData['expires_in'] ?? null;
+                $tokenService->storeAccessToken($user, $accessToken, $expiresIn);
+
+                // สร้าง API token
+                $apiToken = $user->createToken('mobile-app-line')->plainTextToken;
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'เข้าสู่ระบบด้วย LINE สำเร็จ',
+                    'data' => [
+                        'isNewUser' => false,
+                        'token' => $apiToken,
+                        'user' => [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'role' => $user->role,
+                            'referralCode' => $user->referral_code,
+                            'avatar' => $user->avatar ?? $pictureUrl,
+                            'lineDisplayName' => $displayName,
+                            'linePictureUrl' => $pictureUrl,
+                        ],
+                    ],
+                ]);
+            }
+
+            // User ใหม่ - สร้างบัญชี
+            DB::beginTransaction();
+
+            // หา sponsor จาก referral code
+            $sponsorId = null;
+            if ($request->referral_code) {
+                $sponsor = User::where('referral_code', $request->referral_code)->first();
+                if ($sponsor) {
+                    $sponsorId = $sponsor->id;
+                }
+            }
+
+            // สร้าง referral code
+            $referralCode = $this->generateReferralCode();
+
+            // สร้าง user ใหม่
+            $user = User::create([
+                'name' => $displayName,
+                'email' => $lineUserId . '@line.user', // email placeholder
+                'password' => Hash::make(Str::random(32)), // random password
+                'referral_code' => $referralCode,
+                'sponsor_id' => $sponsorId,
+                'role' => 'user',
+                'line_user_id' => $lineUserId,
+                'line_display_name' => $displayName,
+                'line_picture_url' => $pictureUrl,
+                'line_linked_at' => now(),
+                'line_verified' => true,
+            ]);
+
+            // เก็บ access token
+            $expiresIn = $tokenData['expires_in'] ?? null;
+            $tokenService->storeAccessToken($user, $accessToken, $expiresIn);
+
+            // สร้าง API token
+            $apiToken = $user->createToken('mobile-app-line')->plainTextToken;
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'สร้างบัญชีและเข้าสู่ระบบด้วย LINE สำเร็จ',
+                'data' => [
+                    'isNewUser' => true,
+                    'token' => $apiToken,
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'role' => $user->role,
+                        'referralCode' => $user->referral_code,
+                        'avatar' => $pictureUrl,
+                        'lineDisplayName' => $displayName,
+                        'linePictureUrl' => $pictureUrl,
+                    ],
+                ],
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('LINE Login Mobile Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย LINE',
+            ], 500);
+        }
+    }
+
+    // =====================================================
+    // Wallet API (Mobile)
+    // =====================================================
+
+    /**
+     * ดึงข้อมูลกระเป๋าเงิน
+     *
+     * @return JsonResponse
+     */
+    public function getWallet(): JsonResponse
+    {
+        $user = Auth::user();
+
+        try {
+            $walletService = app(\App\Services\WalletService::class);
+            $wallet = $walletService->getOrCreateWallet($user);
+            $statistics = $walletService->getWalletStatistics($wallet);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'balance' => $wallet->balance ?? 0,
+                    'availableBalance' => $wallet->available_balance ?? $wallet->balance ?? 0,
+                    'pendingBalance' => $wallet->pending_balance ?? 0,
+                    'totalIncome' => $statistics['total_income'] ?? 0,
+                    'totalExpense' => $statistics['total_expense'] ?? 0,
+                    'thisMonthIncome' => $statistics['this_month_income'] ?? 0,
+                    'thisMonthExpense' => $statistics['this_month_expense'] ?? 0,
+                    'currency' => $wallet->currency ?? 'THB',
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Wallet Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงข้อมูลกระเป๋าเงินได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงประวัติธุรกรรม
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getWalletTransactions(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $page = $request->get('page', 1);
+        $perPage = min($request->get('per_page', 15), 50);
+        $type = $request->get('type'); // in, out, all
+
+        try {
+            $walletService = app(\App\Services\WalletService::class);
+            $wallet = $walletService->getOrCreateWallet($user);
+
+            $query = $wallet->transactions()
+                ->with('relatedWallet.user:id,name')
+                ->latest();
+
+            // กรองตามประเภท
+            if ($type === 'in') {
+                $query->where('amount', '>', 0);
+            } elseif ($type === 'out') {
+                $query->where('amount', '<', 0);
+            }
+
+            $transactions = $query->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'items' => $transactions->map(function ($tx) {
+                        return [
+                            'id' => $tx->id,
+                            'type' => $tx->amount > 0 ? 'in' : 'out',
+                            'amount' => abs($tx->amount),
+                            'title' => $tx->description ?? $this->getTransactionTitle($tx),
+                            'status' => $tx->status ?? 'completed',
+                            'date' => $tx->created_at->format('d M Y H:i'),
+                            'dateRelative' => $tx->created_at->diffForHumans(),
+                            'referenceType' => $tx->reference_type,
+                            'referenceId' => $tx->reference_id,
+                        ];
+                    }),
+                    'pagination' => [
+                        'currentPage' => $transactions->currentPage(),
+                        'lastPage' => $transactions->lastPage(),
+                        'perPage' => $transactions->perPage(),
+                        'total' => $transactions->total(),
+                    ],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Wallet Transactions Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงประวัติธุรกรรมได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * แปลงประเภท transaction เป็นชื่อภาษาไทย
+     */
+    private function getTransactionTitle($transaction): string
+    {
+        $types = [
+            'commission' => 'คอมมิชชัน',
+            'bonus' => 'โบนัส',
+            'withdrawal' => 'ถอนเงิน',
+            'deposit' => 'เติมเงิน',
+            'transfer_in' => 'รับโอนเงิน',
+            'transfer_out' => 'โอนเงิน',
+            'purchase' => 'ซื้อสินค้า',
+            'refund' => 'คืนเงิน',
+            'cashback' => 'เงินคืน',
+            'admin_adjustment' => 'ปรับยอดโดยแอดมิน',
+        ];
+
+        return $types[$transaction->type] ?? ($transaction->description ?? 'ธุรกรรม');
+    }
 }

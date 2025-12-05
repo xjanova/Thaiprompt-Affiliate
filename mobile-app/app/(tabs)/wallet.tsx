@@ -18,11 +18,10 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
-import { getDashboardStats } from '@/services/api';
+import { getWallet, getWalletTransactions } from '@/services/api';
 import * as Cache from '@/services/cache';
 import * as Network from '@/services/network';
 import { formatCurrency } from '@/constants';
-import type { DashboardStats } from '@/types';
 
 // Action Button
 const ActionButton = ({
@@ -115,22 +114,38 @@ const TransactionItem = ({
   );
 };
 
+// Wallet data type
+interface WalletData {
+  balance: number;
+  availableBalance: number;
+  pendingBalance: number;
+  totalIncome: number;
+  totalExpense: number;
+  thisMonthIncome: number;
+  thisMonthExpense: number;
+  currency: string;
+}
+
+// Transaction type
+interface Transaction {
+  id: number;
+  type: 'in' | 'out';
+  amount: number;
+  title: string;
+  status: string;
+  date: string;
+  dateRelative: string;
+}
+
 export default function WalletScreen() {
   const { isAuthenticated, user } = useAuthStore();
   const { resolvedTheme } = useAppStore();
   const isDark = resolvedTheme === 'dark';
 
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
-
-  // Mock transactions - replace with real API
-  const transactions = [
-    { type: 'in' as const, title: 'คอมมิชชันจากการขาย', amount: 500, date: '20 พ.ย. 2024', status: 'completed' as const },
-    { type: 'in' as const, title: 'โบนัสทีม', amount: 1200, date: '18 พ.ย. 2024', status: 'completed' as const },
-    { type: 'out' as const, title: 'ถอนเงิน', amount: 2000, date: '15 พ.ย. 2024', status: 'completed' as const },
-    { type: 'in' as const, title: 'คอมมิชชันจากการแนะนำ', amount: 300, date: '10 พ.ย. 2024', status: 'pending' as const },
-  ];
 
   // โหลดข้อมูล
   const loadData = useCallback(async () => {
@@ -140,20 +155,35 @@ export default function WalletScreen() {
       const online = await Network.checkNetworkStatus();
       setIsOnline(online);
 
-      const cached = await Cache.getCache<DashboardStats>(
-        Cache.CACHE_KEYS.DASHBOARD_STATS
-      );
-      if (cached) setStats(cached);
+      // Try to load from cache first
+      const cachedWallet = await Cache.getCache<WalletData>('wallet_data');
+      const cachedTransactions = await Cache.getCache<Transaction[]>('wallet_transactions');
+
+      if (cachedWallet) setWallet(cachedWallet);
+      if (cachedTransactions) setTransactions(cachedTransactions);
 
       if (online) {
-        const freshData = await getDashboardStats();
-        if (freshData) {
-          setStats(freshData);
-          await Cache.setCache(
-            Cache.CACHE_KEYS.DASHBOARD_STATS,
-            freshData,
-            Cache.OFFLINE_CACHE_DURATION
-          );
+        // Load wallet data
+        const walletResponse = await getWallet();
+        if (walletResponse?.success && walletResponse.data) {
+          setWallet(walletResponse.data);
+          await Cache.setCache('wallet_data', walletResponse.data, Cache.OFFLINE_CACHE_DURATION);
+        }
+
+        // Load transactions
+        const txResponse = await getWalletTransactions(1, 'all', 10);
+        if (txResponse?.success && txResponse.data) {
+          const txItems = txResponse.data.items.map((tx) => ({
+            id: tx.id,
+            type: tx.type,
+            amount: tx.amount,
+            title: tx.title,
+            status: tx.status === 'completed' ? 'completed' : 'pending',
+            date: tx.date,
+            dateRelative: tx.dateRelative,
+          }));
+          setTransactions(txItems);
+          await Cache.setCache('wallet_transactions', txItems, Cache.OFFLINE_CACHE_DURATION);
         }
       }
     } catch (error) {
@@ -229,20 +259,20 @@ export default function WalletScreen() {
 
               <Text className="text-green-100">ยอดเงินคงเหลือ</Text>
               <Text className="text-white text-4xl font-bold mt-2">
-                {formatCurrency(stats?.totalEarnings || 0)}
+                {formatCurrency(wallet?.balance || 0)}
               </Text>
 
               <View className="flex-row mt-4">
                 <View className="flex-1">
                   <Text className="text-green-200 text-xs">พร้อมถอน</Text>
                   <Text className="text-white font-semibold text-lg">
-                    {formatCurrency(stats?.approvedEarnings || 0)}
+                    {formatCurrency(wallet?.availableBalance || 0)}
                   </Text>
                 </View>
                 <View className="flex-1">
                   <Text className="text-green-200 text-xs">รอดำเนินการ</Text>
                   <Text className="text-white font-semibold text-lg">
-                    {formatCurrency(stats?.pendingEarnings || 0)}
+                    {formatCurrency(wallet?.pendingBalance || 0)}
                   </Text>
                 </View>
               </View>
@@ -292,9 +322,24 @@ export default function WalletScreen() {
               </Pressable>
             </View>
 
-            {transactions.map((tx, index) => (
-              <TransactionItem key={index} {...tx} index={index} />
-            ))}
+            {transactions.length > 0 ? (
+              transactions.map((tx, index) => (
+                <TransactionItem
+                  key={tx.id || index}
+                  type={tx.type}
+                  title={tx.title}
+                  amount={tx.amount}
+                  date={tx.date}
+                  status={tx.status === 'completed' ? 'completed' : 'pending'}
+                  index={index}
+                />
+              ))
+            ) : (
+              <View className="bg-white dark:bg-dark-50 rounded-xl p-6 items-center border border-gray-100 dark:border-gray-700">
+                <Ionicons name="receipt-outline" size={40} color={isDark ? '#4B5563' : '#9CA3AF'} />
+                <Text className="text-gray-500 mt-2">ยังไม่มีธุรกรรม</Text>
+              </View>
+            )}
           </View>
 
           <View className="h-6" />

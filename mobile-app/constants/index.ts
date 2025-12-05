@@ -20,6 +20,10 @@ export const API_ENDPOINTS = {
   REGISTER: '/register',
   ME: '/me',
 
+  // LINE Login (Mobile App)
+  LINE_LOGIN_URL: '/auth/line/mobile-url',
+  LINE_LOGIN_CALLBACK: '/auth/line/mobile-callback',
+
   // Dashboard
   DASHBOARD_STATS: '/dashboard/statistics',
   DASHBOARD_CHARTS: '/dashboard/charts',
@@ -41,6 +45,10 @@ export const API_ENDPOINTS = {
   CART: '/cart',
   CART_ADD: '/cart/add',
   CART_REMOVE: '/cart/remove',
+
+  // Wallet (Mobile App)
+  WALLET: '/wallet',
+  WALLET_TRANSACTIONS: '/wallet/transactions',
 
   // Profile
   PROFILE: '/profile',

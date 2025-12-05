@@ -13,6 +13,8 @@ import {
   validateToken,
   loadAuthToken,
   setAuthHeader,
+  getLineLoginUrl as apiGetLineLoginUrl,
+  lineLoginCallback as apiLineLoginCallback,
 } from '@/services/api';
 import { STORAGE_KEYS } from '@/constants';
 import * as Network from '@/services/network';
@@ -27,10 +29,13 @@ interface AuthState {
   isInitialized: boolean;
   error: string | null;
   isOfflineMode: boolean;
+  lineLoginState: string | null;
 
   // Actions
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
+  loginWithLine: () => Promise<{ success: boolean; authUrl?: string; message?: string }>;
+  handleLineCallback: (code: string, state: string, referralCode?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   clearError: () => void;
@@ -73,6 +78,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isInitialized: false,
   error: null,
   isOfflineMode: false,
+  lineLoginState: null,
 
   /**
    * Initialize - เรียกตอนเปิด app
@@ -263,6 +269,97 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         error: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ',
         isLoading: false,
+      });
+      return false;
+    }
+  },
+
+  /**
+   * Login with LINE - ขอ URL สำหรับ LINE Login
+   * @returns authUrl สำหรับเปิดใน WebBrowser
+   */
+  loginWithLine: async () => {
+    try {
+      set({ isLoading: true, error: null });
+
+      const response = await apiGetLineLoginUrl();
+
+      if (response.success && response.data) {
+        set({ lineLoginState: response.data.state, isLoading: false });
+        return {
+          success: true,
+          authUrl: response.data.authUrl,
+        };
+      }
+
+      set({
+        error: response.message || 'ไม่สามารถเชื่อมต่อ LINE ได้',
+        isLoading: false,
+      });
+      return {
+        success: false,
+        message: response.message,
+      };
+    } catch (error) {
+      console.error('LINE Login error:', error);
+      set({
+        error: 'เกิดข้อผิดพลาดในการเชื่อมต่อ LINE',
+        isLoading: false,
+      });
+      return {
+        success: false,
+        message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+      };
+    }
+  },
+
+  /**
+   * Handle LINE Callback - จัดการ response จาก LINE OAuth
+   */
+  handleLineCallback: async (code: string, state: string, referralCode?: string) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      // ตรวจสอบ state เพื่อป้องกัน CSRF
+      const savedState = get().lineLoginState;
+      if (savedState && savedState !== state) {
+        set({
+          error: 'การยืนยันตัวตนไม่ถูกต้อง กรุณาลองใหม่',
+          isLoading: false,
+          lineLoginState: null,
+        });
+        return false;
+      }
+
+      const response = await apiLineLoginCallback(code, state, referralCode);
+
+      if (response.success && response.data) {
+        // บันทึก user ลง storage สำหรับใช้ offline
+        await saveUserToStorage(response.data.user);
+
+        set({
+          user: response.data.user,
+          token: response.data.token,
+          isAuthenticated: true,
+          isLoading: false,
+          isOfflineMode: false,
+          lineLoginState: null,
+        });
+        return true;
+      }
+
+      set({
+        error: response.message || 'เข้าสู่ระบบด้วย LINE ไม่สำเร็จ',
+        isLoading: false,
+        lineLoginState: null,
+      });
+      return false;
+    } catch (error) {
+      console.error('LINE Callback error:', error);
+      set({
+        error: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย LINE',
+        isLoading: false,
+        lineLoginState: null,
       });
       return false;
     }

@@ -1,9 +1,10 @@
 /**
  * Login Screen - หน้าเข้าสู่ระบบ
  * แปลงจาก .NET MAUI LoginPage
+ * รองรับ LINE Login
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,22 +13,37 @@ import {
   ScrollView,
   Pressable,
   Alert,
+  Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '@/stores/authStore';
 import { Button, Input } from '@/components';
 import { isValidEmail } from '@/constants';
 
 export default function LoginScreen() {
-  const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
+  const {
+    login,
+    loginWithLine,
+    handleLineCallback,
+    isLoading,
+    error,
+    clearError,
+    isAuthenticated
+  } = useAuthStore();
+
+  // รับ LINE callback parameters
+  const params = useLocalSearchParams<{ code?: string; state?: string; error?: string }>();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [isLineLoading, setIsLineLoading] = useState(false);
 
   // ถ้า login แล้ว ให้กลับไปหน้าหลัก
   useEffect(() => {
@@ -40,6 +56,66 @@ export default function LoginScreen() {
   useEffect(() => {
     return () => clearError();
   }, []);
+
+  // Handle LINE OAuth callback
+  useEffect(() => {
+    const handleCallback = async () => {
+      if (params.code && params.state) {
+        setIsLineLoading(true);
+        try {
+          const success = await handleLineCallback(params.code, params.state);
+          if (success) {
+            router.replace('/');
+          }
+        } catch (err) {
+          console.error('LINE callback error:', err);
+        } finally {
+          setIsLineLoading(false);
+        }
+      } else if (params.error) {
+        Alert.alert('LINE Login ล้มเหลว', 'ไม่สามารถเข้าสู่ระบบด้วย LINE ได้ กรุณาลองใหม่');
+      }
+    };
+
+    handleCallback();
+  }, [params.code, params.state, params.error]);
+
+  // Handle LINE Login
+  const handleLineLogin = useCallback(async () => {
+    setIsLineLoading(true);
+    try {
+      const result = await loginWithLine();
+
+      if (result.success && result.authUrl) {
+        // เปิด LINE Login ใน WebBrowser
+        const browserResult = await WebBrowser.openAuthSessionAsync(
+          result.authUrl,
+          'thaiprompt-affiliate://login'
+        );
+
+        if (browserResult.type === 'success' && browserResult.url) {
+          // Parse callback URL
+          const url = new URL(browserResult.url);
+          const code = url.searchParams.get('code');
+          const state = url.searchParams.get('state');
+
+          if (code && state) {
+            const success = await handleLineCallback(code, state);
+            if (success) {
+              router.replace('/');
+            }
+          }
+        }
+      } else {
+        Alert.alert('LINE Login', result.message || 'ไม่สามารถเชื่อมต่อ LINE ได้');
+      }
+    } catch (err) {
+      console.error('LINE Login error:', err);
+      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถเข้าสู่ระบบด้วย LINE ได้');
+    } finally {
+      setIsLineLoading(false);
+    }
+  }, [loginWithLine, handleLineCallback]);
 
   // Validate form
   const validateForm = (): boolean => {
@@ -191,12 +267,24 @@ export default function LoginScreen() {
 
                 {/* LINE Login */}
                 <Pressable
-                  onPress={() => Alert.alert('LINE Login', 'กำลังพัฒนา')}
-                  className="flex-row items-center justify-center bg-[#00B900] rounded-xl py-4"
+                  onPress={handleLineLogin}
+                  disabled={isLoading || isLineLoading}
+                  className={`flex-row items-center justify-center bg-[#00B900] rounded-xl py-4 ${
+                    (isLoading || isLineLoading) ? 'opacity-60' : ''
+                  }`}
                 >
-                  <Text className="text-white font-bold text-lg">
-                    เข้าสู่ระบบด้วย LINE
-                  </Text>
+                  {isLineLoading ? (
+                    <ActivityIndicator color="white" />
+                  ) : (
+                    <>
+                      <View className="w-6 h-6 mr-2 items-center justify-center">
+                        <Text className="text-white font-bold text-xl">L</Text>
+                      </View>
+                      <Text className="text-white font-bold text-lg">
+                        เข้าสู่ระบบด้วย LINE
+                      </Text>
+                    </>
+                  )}
                 </Pressable>
               </View>
             </View>

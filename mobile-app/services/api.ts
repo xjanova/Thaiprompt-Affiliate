@@ -368,5 +368,171 @@ export const getReferralStats = async (): Promise<ReferralStats | null> => {
   }
 };
 
+// =====================================================
+// LINE Login APIs
+// =====================================================
+
+/**
+ * ดึง LINE Login URL
+ */
+export const getLineLoginUrl = async (): Promise<{
+  success: boolean;
+  data?: { authUrl: string; state: string };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.get<{
+      success: boolean;
+      data: { authUrl: string; state: string };
+      message?: string;
+    }>(API_ENDPOINTS.LINE_LOGIN_URL);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'ไม่สามารถเชื่อมต่อ LINE ได้',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * เข้าสู่ระบบด้วย LINE
+ */
+export const lineLoginCallback = async (
+  code: string,
+  state: string,
+  referralCode?: string
+): Promise<LoginResponse> => {
+  try {
+    const response = await apiClient.post<LoginResponse>(
+      API_ENDPOINTS.LINE_LOGIN_CALLBACK,
+      {
+        code,
+        state,
+        referral_code: referralCode,
+      }
+    );
+
+    const result = response.data;
+
+    if (result.success && result.data?.token) {
+      await saveAuthToken(result.data.token);
+
+      // บันทึกข้อมูล user
+      if (result.data.user) {
+        await SecureStore.setItemAsync(
+          STORAGE_KEYS.USER_DATA,
+          JSON.stringify(result.data.user)
+        );
+      }
+    }
+
+    return result;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        return {
+          success: false,
+          message: ERROR_MESSAGES.NETWORK_MESSAGE,
+        };
+      }
+      return {
+        success: false,
+        message: error.response.data?.message || 'เข้าสู่ระบบด้วย LINE ไม่สำเร็จ',
+        errors: error.response.data?.errors,
+      };
+    }
+    return {
+      success: false,
+      message: ERROR_MESSAGES.SERVER_MESSAGE,
+    };
+  }
+};
+
+// =====================================================
+// Wallet APIs
+// =====================================================
+
+/**
+ * ดึงข้อมูลกระเป๋าเงิน
+ */
+export const getWallet = async (): Promise<{
+  success: boolean;
+  data?: {
+    balance: number;
+    availableBalance: number;
+    pendingBalance: number;
+    totalIncome: number;
+    totalExpense: number;
+    thisMonthIncome: number;
+    thisMonthExpense: number;
+    currency: string;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.WALLET);
+    return response.data;
+  } catch (error) {
+    console.error('Get wallet error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงประวัติธุรกรรม
+ */
+export const getWalletTransactions = async (
+  page: number = 1,
+  type?: 'in' | 'out' | 'all',
+  perPage: number = 15
+): Promise<{
+  success: boolean;
+  data?: {
+    items: Array<{
+      id: number;
+      type: 'in' | 'out';
+      amount: number;
+      title: string;
+      status: string;
+      date: string;
+      dateRelative: string;
+      referenceType?: string;
+      referenceId?: number;
+    }>;
+    pagination: {
+      currentPage: number;
+      lastPage: number;
+      perPage: number;
+      total: number;
+    };
+  };
+  message?: string;
+} | null> => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: perPage.toString(),
+    });
+    if (type && type !== 'all') {
+      params.append('type', type);
+    }
+
+    const response = await apiClient.get(
+      `${API_ENDPOINTS.WALLET_TRANSACTIONS}?${params.toString()}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Get wallet transactions error:', error);
+    return null;
+  }
+};
+
 // Export axios instance สำหรับใช้งานตรงๆ ถ้าต้องการ
 export { apiClient };
