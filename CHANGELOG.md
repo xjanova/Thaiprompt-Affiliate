@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.362.1] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2106 from xjanova/claude/fix-admin-tokens-null-01CtDhYeACx3YGMpjB9w4zGt (98bc9080)
+- fix(chatbot): แก้ไขปัญหา admin tokens null จาก field names ที่ผิดพลาด (70500cb1)
+### 🔧 Other Changes
+
+
 ## [v3.362.0] - 2025-12-05
 
 ### ✨ Features
