@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.10] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2085 from xjanova/claude/fix-schema-drift-01Xw7iWmNTKnHVquN6AFZ9Vo (ab7c244e)
+- fix(schema): แก้ไข Schema Drift สำหรับตาราง LINE (43119971)
+### 🔧 Other Changes
+
+
 ## [v3.361.9] - 2025-12-05
 
 ### ✨ Features
