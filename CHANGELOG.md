@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.362.5] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: add missing stats methods to PlatformRevenueService (832812c1)
+- fix: handle null creator in admin tokens index view (827d8656)
+### 🔧 Other Changes
+- Merge pull request #2110 from xjanova/claude/fix-admin-tokens-null-01DM4DDfAGWB3jCcr45jD9FL (de4418f8)
+
 ## [v3.362.4] - 2025-12-05
 
 ### ✨ Features
