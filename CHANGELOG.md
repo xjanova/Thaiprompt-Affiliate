@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.5] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2126 from xjanova/claude/fix-react-native-packages-01SU6sqSubugRXGhXP1XsMPd (9e95d94f)
+- fix: rename duplicate registerPushToken to registerAdminPushToken (1c93bd0e)
+### 🔧 Other Changes
+
+
 ## [v3.364.4] - 2025-12-05
 
 ### ✨ Features
