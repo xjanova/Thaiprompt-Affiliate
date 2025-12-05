@@ -113,10 +113,19 @@
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex items-center">
+                                @if($rank->icon_url)
+                                {{-- แสดงไอค่อนจริงเมื่อมีรูปภาพ --}}
+                                <div class="flex-shrink-0 h-10 w-10 rounded-xl flex items-center justify-center overflow-hidden"
+                                     style="background: linear-gradient(135deg, {{ $rank->color }}, {{ $rank->color }}99);">
+                                    <img src="{{ $rank->icon_url }}" alt="{{ $rank->name }}" class="h-8 w-8 object-contain">
+                                </div>
+                                @else
+                                {{-- แสดงตัวอักษรแรกเมื่อไม่มีรูปภาพ --}}
                                 <div class="flex-shrink-0 h-10 w-10 rounded-xl flex items-center justify-center"
                                      style="background: linear-gradient(135deg, {{ $rank->color }}, {{ $rank->color }}99);">
                                     <span class="text-white font-bold text-lg">{{ substr($rank->name, 0, 1) }}</span>
                                 </div>
+                                @endif
                                 <div class="ml-4">
                                     <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $rank->name }}</div>
                                     @if($rank->name_th)
