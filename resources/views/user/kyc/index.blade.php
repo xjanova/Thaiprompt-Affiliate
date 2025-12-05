@@ -81,7 +81,8 @@
 
     <!-- KYC Status Card -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-        @if(auth()->user()->kyc_status === 'not_submitted')
+        {{-- null หรือ 'not_submitted' = ยังไม่ได้ส่งเอกสาร --}}
+        @if(auth()->user()->kyc_status === 'not_submitted' || auth()->user()->kyc_status === null)
             <div class="text-center py-8">
                 <div class="w-24 h-24 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
                     <i class="fas fa-id-card text-4xl text-gray-400"></i>
