@@ -517,6 +517,11 @@
                             </label>
 
                             <label class="inline-flex items-center gap-2 cursor-pointer group">
+                                <input type="checkbox" name="is_hidden" value="1" {{ old('is_hidden', $product->is_hidden ?? false) ? 'checked' : '' }} class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 text-purple-600 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 transition-all">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" data-translate>👁️‍🗨️ ซ่อนจากหน้าร้าน</span>
+                            </label>
+
+                            <label class="inline-flex items-center gap-2 cursor-pointer group">
                                 <input type="checkbox" name="track_inventory" value="1" {{ old('track_inventory', $product->track_inventory) ? 'checked' : '' }} class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all">
                                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" data-translate>📊 ติดตามสต็อก</span>
                             </label>

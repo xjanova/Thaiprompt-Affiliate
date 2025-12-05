@@ -51,6 +51,7 @@ class Product extends Model
         'tags',
         'is_active',
         'is_featured',
+        'is_hidden',
         'is_virtual',
         'is_public_approved',
         'public_approved_at',
@@ -90,6 +91,7 @@ class Product extends Model
         'tags' => 'array',
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
+        'is_hidden' => 'boolean',
         'is_virtual' => 'boolean',
         'is_public_approved' => 'boolean',
         'public_approved_at' => 'datetime',
@@ -245,6 +247,38 @@ class Product extends Model
     public function scopeFeatured($query)
     {
         return $query->where('is_featured', true);
+    }
+
+    /**
+     * Scope: สินค้าที่ไม่ถูกซ่อน (แสดงในหน้าเว็บ)
+     *
+     * ใช้สำหรับ: storefront, marketplace, search results
+     */
+    public function scopeVisible($query)
+    {
+        return $query->where('is_hidden', false);
+    }
+
+    /**
+     * Scope: สินค้าที่ถูกซ่อน
+     *
+     * ใช้สำหรับ: admin panel filter
+     */
+    public function scopeHidden($query)
+    {
+        return $query->where('is_hidden', true);
+    }
+
+    /**
+     * Scope: สินค้าที่พร้อมแสดงในหน้าเว็บ (active + visible + not blocked)
+     *
+     * ใช้สำหรับ: public product listings
+     */
+    public function scopePublicVisible($query)
+    {
+        return $query->active()
+                     ->visible()
+                     ->notBlocked();
     }
 
     /**
