@@ -51,7 +51,7 @@
             this.progress = percent;
 
             try {
-                const response = await fetch('{{ route('admin.learning-center.progress', $article->slug) }}', {
+                const response = await fetch('{{ route('admin.learning-center.article.progress', $article->slug) }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -74,7 +74,7 @@
         // กดเรียนจบ
         async markComplete() {
             try {
-                const response = await fetch('{{ route('admin.learning-center.complete', $article->slug) }}', {
+                const response = await fetch('{{ route('admin.learning-center.article.complete', $article->slug) }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -115,7 +115,7 @@
                 this.stopTimer();
                 if (!this.isCompleted) {
                     navigator.sendBeacon(
-                        '{{ route('admin.learning-center.progress', $article->slug) }}',
+                        '{{ route('admin.learning-center.article.progress', $article->slug) }}',
                         JSON.stringify({
                             progress: this.progress,
                             time_spent: this.timeSpent
