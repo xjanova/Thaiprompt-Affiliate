@@ -61,7 +61,7 @@
                     <span data-translate>กลับไปรายการสินค้า</span>
                 </a>
                 <div class="flex items-center gap-4">
-                    <div class="glass-fusion dark:glass-fusion backdrop-blur-sm rounded-2xl p-4" border border-white/20 dark:border-white/10>
+                    <div class="glass-fusion dark:glass-fusion backdrop-blur-sm rounded-2xl p-4 border border-white/20 dark:border-white/10">
                         <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                         </svg>
@@ -83,7 +83,7 @@
                 </button>
 
                 <div x-show="open" @click.away="open = false" x-transition
-                     class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 dark:border-slate-700 overflow-hidden z-50" border border-white/20 dark:border-white/10>
+                     class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 dark:border-slate-700 overflow-hidden z-50">
                     <a href="#" @click.prevent="language = 'th'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
                         <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
                     </a>
@@ -102,7 +102,7 @@
     </div>
 
     {{-- Seller Information Card --}}
-    <div class="glass-fusion dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 mb-6 shadow-lg" border border-white/20 dark:border-white/10>
+    <div class="glass-fusion dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 mb-6 shadow-lg">
         <div class="flex items-start gap-4">
             <div class="flex-shrink-0">
                 <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
@@ -139,7 +139,7 @@
 
     {{-- Block Status Alert (ถ้าถูกบล็อก) --}}
     @if($product->is_blocked)
-    <div class="glass-fusion dark:bg-red-900/20 border border-red-500 dark:border-red-400 rounded-2xl p-6 mb-6 shadow-lg" border border-white/20 dark:border-white/10>
+    <div class="glass-fusion dark:bg-red-900/20 border border-red-500 dark:border-red-400 rounded-2xl p-6 mb-6 shadow-lg">
         <div class="flex items-start gap-4">
             <div class="flex-shrink-0">
                 <svg class="w-12 h-12 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,7 +169,7 @@
             {{-- Main Content --}}
             <div class="lg:col-span-2 space-y-6">
                 {{-- Basic Information --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
                         <div class="flex items-center gap-2">
                             <svg class="w-5 h-5 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,7 +236,7 @@
                 </div>
 
                 {{-- Pricing --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
                         <div class="flex items-center gap-2">
                             <svg class="w-5 h-5 text-green-500 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -297,7 +297,7 @@
                 </div>
 
                 {{-- Inventory --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
                         <div class="flex items-center gap-2">
                             <svg class="w-5 h-5 text-orange-500 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -335,8 +335,9 @@
                 </div>
 
                 {{-- Images --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden" border border-white/20 dark:border-white/10>
-                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
+                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden"
+                     x-data="imageUploadHandler()">
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                         <div class="flex items-center gap-2">
                             <svg class="w-5 h-5 text-purple-500 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -348,20 +349,47 @@
                     <div class="p-6 space-y-4">
                         {{-- รูปหลัก --}}
                         <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border-2 border-dashed border-blue-200 dark:border-blue-800">
-                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2 cursor-pointer">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 cursor-pointer">
                                 <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
                                 <span data-translate>รูปภาพหลัก</span>
                             </label>
-                            <input type="file" name="main_image" accept="image/*" class="w-full text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400 transition-all">
+                            <input type="file"
+                                   name="main_image"
+                                   id="main_image_input"
+                                   accept="image/*"
+                                   @change="previewMainImage($event)"
+                                   class="w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400 transition-all">
                             <p class="text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1">
                                 <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
                                 <span data-translate>รองรับ JPG, PNG, GIF, WebP (ขนาดไม่เกิน 5MB)</span>
                             </p>
+
+                            {{-- แสดง Preview รูปใหม่ที่เลือก --}}
+                            <div x-show="mainImagePreview" x-cloak class="mt-3">
+                                <p class="text-xs text-green-600 dark:text-green-400 mb-2 flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span data-translate>รูปภาพใหม่ที่จะอัพโหลด:</span>
+                                </p>
+                                <div class="relative inline-block">
+                                    <img :src="mainImagePreview" alt="Preview" class="w-32 h-32 object-cover rounded-xl ring-2 ring-green-400 dark:ring-green-600">
+                                    <button type="button"
+                                            @click="clearMainImage()"
+                                            class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {{-- แสดงรูปปัจจุบัน (ถ้าไม่มีรูปใหม่) --}}
                             @if($product->main_image_url ?? $product->primary_image)
-                                <div class="mt-3">
-                                    <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-2" data-translate>รูปภาพปัจจุบัน:</p>
+                                <div x-show="!mainImagePreview" class="mt-3">
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2" data-translate>รูปภาพปัจจุบัน:</p>
                                     <img src="{{ $product->primary_image ?? Storage::url($product->main_image_url) }}" alt="Current image" class="w-32 h-32 object-cover rounded-xl ring-2 ring-blue-200 dark:ring-blue-800">
                                 </div>
                             @endif
@@ -369,25 +397,76 @@
 
                         {{-- รูปเพิ่มเติม --}}
                         <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border-2 border-dashed border-purple-200 dark:border-purple-800">
-                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2 cursor-pointer">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 cursor-pointer">
                                 <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
                                 <span data-translate>รูปภาพเพิ่มเติม (สูงสุด 10 ภาพ)</span>
                             </label>
-                            <input type="file" name="images[]" accept="image/*" multiple class="w-full text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 dark:file:bg-purple-900/30 dark:file:text-purple-400 transition-all">
+                            <input type="file"
+                                   name="images[]"
+                                   id="additional_images_input"
+                                   accept="image/*"
+                                   multiple
+                                   @change="previewAdditionalImages($event)"
+                                   class="w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 dark:file:bg-purple-900/30 dark:file:text-purple-400 transition-all">
                             <p class="text-xs text-purple-600 dark:text-purple-400 mt-2 flex items-center gap-1">
                                 <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
                                 <span data-translate>สามารถเลือกหลายไฟล์พร้อมกันได้</span>
                             </p>
+
+                            {{-- แสดง Preview รูปใหม่ที่เลือก --}}
+                            <div x-show="additionalImagePreviews.length > 0" x-cloak class="mt-3">
+                                <p class="text-xs text-green-600 dark:text-green-400 mb-2 flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span data-translate>รูปภาพใหม่ที่จะอัพโหลด:</span>
+                                    <span class="font-bold" x-text="additionalImagePreviews.length"></span>
+                                    <span data-translate>รูป</span>
+                                </p>
+                                <div class="grid grid-cols-4 gap-2">
+                                    <template x-for="(preview, index) in additionalImagePreviews" :key="index">
+                                        <div class="relative group">
+                                            <img :src="preview" alt="Preview" class="w-full h-20 object-cover rounded-xl ring-2 ring-green-400 dark:ring-green-600">
+                                            <button type="button"
+                                                    @click="removeAdditionalPreview(index)"
+                                                    class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors opacity-0 group-hover:opacity-100">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            {{-- แสดงรูปเดิมที่มีอยู่ --}}
                             @if($product->images && $product->images->count() > 0)
                                 <div class="mt-3">
-                                    <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-2" data-translate>รูปภาพเพิ่มเติมปัจจุบัน:</p>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2" data-translate>รูปภาพเพิ่มเติมปัจจุบัน:</p>
                                     <div class="grid grid-cols-4 gap-2">
-                                        @foreach($product->images->take(8) as $image)
-                                            <img src="{{ Storage::url($image->image_url) }}" alt="Gallery image" class="w-full h-20 object-cover rounded-xl ring-2 ring-purple-200 dark:ring-purple-800">
+                                        @foreach($product->images as $image)
+                                            <div class="relative group" x-show="!deletedImageIds.includes({{ $image->id }})">
+                                                <img src="{{ Storage::url($image->image_url) }}" alt="Gallery image" class="w-full h-20 object-cover rounded-xl ring-2 ring-purple-200 dark:ring-purple-800">
+                                                <button type="button"
+                                                        @click="markImageForDeletion({{ $image->id }})"
+                                                        class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                        title="ลบรูปนี้">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         @endforeach
                                     </div>
+                                    {{-- Hidden input สำหรับส่ง IDs ของรูปที่จะลบ --}}
+                                    <template x-for="id in deletedImageIds" :key="id">
+                                        <input type="hidden" name="deleted_images[]" :value="id">
+                                    </template>
+                                    <p x-show="deletedImageIds.length > 0" x-cloak class="mt-2 text-xs text-red-500 dark:text-red-400">
+                                        <span x-text="deletedImageIds.length"></span> รูปจะถูกลบเมื่อบันทึก
+                                    </p>
                                 </div>
                             @endif
                         </div>
@@ -398,7 +477,7 @@
             {{-- Sidebar --}}
             <div class="space-y-6">
                 {{-- Category --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
                         <div class="flex items-center gap-2">
                             <svg class="w-5 h-5 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -427,7 +506,7 @@
                 </div>
 
                 {{-- Additional Details --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
                         <div class="flex items-center gap-2">
                             <svg class="w-5 h-5 text-pink-500 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -546,7 +625,7 @@
                 </div>
 
                 {{-- Block/Unblock Section --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white">
                             การจัดการสถานะสินค้า (Admin)
@@ -645,7 +724,7 @@
                 </div>
 
                 {{-- Actions --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden" border border-white/20 dark:border-white/10>
+                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div class="p-6 space-y-3">
                         <button type="submit" class="flex items-center justify-center gap-3 w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -669,6 +748,158 @@
 
 @push('scripts')
 <script>
+/**
+ * Alpine.js Component สำหรับจัดการ Image Upload และ Preview
+ *
+ * ฟังก์ชันนี้ใช้สำหรับ:
+ * - แสดง preview รูปภาพหลักที่เลือก
+ * - แสดง preview รูปภาพเพิ่มเติมหลายรูป
+ * - จัดการการลบรูปที่มีอยู่เดิม
+ */
+function imageUploadHandler() {
+    return {
+        // สำหรับรูปหลัก
+        mainImagePreview: null,
+        mainImageFile: null,
+
+        // สำหรับรูปเพิ่มเติม
+        additionalImagePreviews: [],
+        additionalImageFiles: [],
+
+        // สำหรับรูปที่จะลบ
+        deletedImageIds: [],
+
+        /**
+         * Preview รูปหลักที่เลือก
+         *
+         * @param {Event} event - Change event จาก input file
+         */
+        previewMainImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // ตรวจสอบขนาดไฟล์ (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('ขนาดไฟล์ต้องไม่เกิน 5MB');
+                    event.target.value = '';
+                    return;
+                }
+
+                // ตรวจสอบประเภทไฟล์
+                if (!file.type.startsWith('image/')) {
+                    alert('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+                    event.target.value = '';
+                    return;
+                }
+
+                this.mainImageFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.mainImagePreview = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        },
+
+        /**
+         * ล้าง preview รูปหลักและ input
+         */
+        clearMainImage() {
+            this.mainImagePreview = null;
+            this.mainImageFile = null;
+            const input = document.getElementById('main_image_input');
+            if (input) {
+                input.value = '';
+            }
+        },
+
+        /**
+         * Preview รูปเพิ่มเติมหลายรูป
+         *
+         * @param {Event} event - Change event จาก input file (multiple)
+         */
+        previewAdditionalImages(event) {
+            const files = Array.from(event.target.files);
+
+            // ตรวจสอบจำนวนไฟล์
+            if (files.length > 10) {
+                alert('สามารถเลือกได้สูงสุด 10 รูป');
+                event.target.value = '';
+                return;
+            }
+
+            // ล้าง previews เดิม
+            this.additionalImagePreviews = [];
+            this.additionalImageFiles = [];
+
+            files.forEach((file, index) => {
+                // ตรวจสอบขนาดไฟล์ (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert(`ไฟล์ ${file.name} มีขนาดเกิน 5MB`);
+                    return;
+                }
+
+                // ตรวจสอบประเภทไฟล์
+                if (!file.type.startsWith('image/')) {
+                    alert(`ไฟล์ ${file.name} ไม่ใช่รูปภาพ`);
+                    return;
+                }
+
+                this.additionalImageFiles.push(file);
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.additionalImagePreviews.push(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            });
+        },
+
+        /**
+         * ลบ preview รูปเพิ่มเติมตาม index
+         * หมายเหตุ: การลบ preview จะไม่สามารถลบไฟล์จาก input ได้
+         * แต่จะแสดงให้ผู้ใช้เห็นว่ารูปไหนจะถูกอัพโหลด
+         *
+         * @param {number} index - Index ของ preview ที่จะลบ
+         */
+        removeAdditionalPreview(index) {
+            this.additionalImagePreviews.splice(index, 1);
+            this.additionalImageFiles.splice(index, 1);
+
+            // หมายเหตุ: ไม่สามารถแก้ไข FileList ได้โดยตรง
+            // ดังนั้นถ้าต้องการลบไฟล์จริงๆ ต้อง clear แล้วให้เลือกใหม่
+            if (this.additionalImagePreviews.length === 0) {
+                const input = document.getElementById('additional_images_input');
+                if (input) {
+                    input.value = '';
+                }
+            }
+        },
+
+        /**
+         * Mark รูปเดิมสำหรับการลบ
+         *
+         * @param {number} imageId - ID ของรูปที่จะลบ
+         */
+        markImageForDeletion(imageId) {
+            if (!this.deletedImageIds.includes(imageId)) {
+                this.deletedImageIds.push(imageId);
+            }
+        },
+
+        /**
+         * ยกเลิก mark ลบรูป
+         *
+         * @param {number} imageId - ID ของรูปที่จะยกเลิกการลบ
+         */
+        unmarkImageForDeletion(imageId) {
+            const index = this.deletedImageIds.indexOf(imageId);
+            if (index > -1) {
+                this.deletedImageIds.splice(index, 1);
+            }
+        }
+    };
+}
+
 /**
  * ฟังก์ชันแปลภาษาด้วย Google Translate API
  *

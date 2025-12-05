@@ -32,6 +32,13 @@
     <x-arrow-x.theme-styles />
 
     @stack('styles')
+
+    {{-- Alpine.js x-cloak - ซ่อน element จนกว่า Alpine จะโหลดเสร็จ --}}
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
 </head>
 <body class="h-full font-sans overflow-hidden flex"
       x-data="{ profileOpen: false }"
