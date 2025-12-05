@@ -6,7 +6,7 @@ module.exports = function (api) {
       "nativewind/babel",
     ],
     plugins: [
-      "react-native-worklets-core/plugin",
+      // reanimated/plugin ต้องอยู่สุดท้ายเสมอ
       "react-native-reanimated/plugin",
     ],
   };
