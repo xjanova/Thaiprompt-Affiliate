@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.15] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2090 from xjanova/claude/fix-store-layout-preview-01T6oGqLB3GAyNCYTRLjCCEd (9163f4ec)
+- fix: increase store layout preview size (f0d70815)
+### 🔧 Other Changes
+
+
 ## [v3.361.14] - 2025-12-05
 
 ### ✨ Features
