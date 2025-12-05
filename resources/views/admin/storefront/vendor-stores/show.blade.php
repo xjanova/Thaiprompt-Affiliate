@@ -30,7 +30,7 @@
             </div>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('vendor.show', $store->store_slug) }}"
+            <a href="{{ route('store.show', $store->store_slug) }}"
                target="_blank"
                class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300
                       rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">
