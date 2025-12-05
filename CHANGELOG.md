@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.17] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2092 from xjanova/claude/fix-expo-av-dependency-01DksVpxFeiTyn2E3WDoNnF7 (2f4e89cf)
+- fix: add missing expo-av dependency for microphone permissions (fe9a967b)
+### 🔧 Other Changes
+
+
 ## [v3.361.16] - 2025-12-05
 
 ### ✨ Features
