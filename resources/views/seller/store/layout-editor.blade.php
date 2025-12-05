@@ -648,7 +648,7 @@
                         <span>📱</span> ตัวอย่าง (Preview)
                     </h3>
                     <div class="preview-frame rounded-xl overflow-hidden">
-                        <iframe :src="previewUrl" class="w-full h-[500px]" frameborder="0"></iframe>
+                        <iframe :src="previewUrl" class="w-full h-[700px]" frameborder="0"></iframe>
                     </div>
                     <div class="mt-4 flex gap-2">
                         <button @click="showPreviewModal = true"
@@ -683,7 +683,7 @@
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
          @click.self="showPreviewModal = false"
          x-transition>
-        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-7xl max-h-[95vh] overflow-hidden">
             <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
                 <h3 class="text-xl font-bold text-gray-800 dark:text-white">ตัวอย่างหน้าร้านค้า</h3>
                 <button @click="showPreviewModal = false"
@@ -691,7 +691,7 @@
                     ✕
                 </button>
             </div>
-            <iframe :src="previewUrl" class="w-full h-[75vh]" frameborder="0"></iframe>
+            <iframe :src="previewUrl" class="w-full h-[85vh]" frameborder="0"></iframe>
         </div>
     </div>
 
