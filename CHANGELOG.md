@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.362.10] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2115 from xjanova/claude/fix-ambiguous-column-query-01DxX6Qf72CrqS7LsGzV4fzU (6e67a8b8)
+- fix: handle open_basedir restriction in SystemMonitoringService (056743c2)
+### 🔧 Other Changes
+
+
 ## [v3.362.9] - 2025-12-05
 
 ### ✨ Features
