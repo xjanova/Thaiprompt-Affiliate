@@ -522,6 +522,56 @@
             </div>
         </div>
 
+        {{-- Platform Finance (Collapsible Menu) 💼 --}}
+        <div class="space-y-1"
+             x-data="{ platformFinanceOpen: {{ request()->routeIs('admin.platform-revenue.*') ? 'true' : 'false' }} }">
+            {{-- Platform Finance Header Button --}}
+            <button @click="platformFinanceOpen = !platformFinanceOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.platform-revenue.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-building-columns w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">การเงินแพลตฟอร์ม</span>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="px-1.5 py-0.5 text-[10px] bg-emerald-500 text-white rounded-full font-semibold">ADMIN</span>
+                <i x-show="$store.sidebar.shouldExpand && platformFinanceOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !platformFinanceOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Platform Finance Submenu --}}
+            <div x-show="platformFinanceOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- รายได้แพลตฟอร์ม Dashboard --}}
+                <a href="{{ route('admin.platform-revenue.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.platform-revenue.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">📊 รายได้แพลตฟอร์ม</span>
+                </a>
+
+                {{-- กระเป๋าเงินแพลตฟอร์ม (Platform Wallets) --}}
+                <a href="{{ route('admin.platform-revenue.wallets.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.platform-revenue.wallets.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-vault w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">💰 กระเป๋าเงินแพลตฟอร์ม</span>
+                </a>
+
+                {{-- ธุรกรรมแพลตฟอร์ม --}}
+                <a href="{{ route('admin.platform-revenue.transactions') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.platform-revenue.transactions') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-list-check w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">📝 ธุรกรรมแพลตฟอร์ม</span>
+                </a>
+
+                {{-- รายงานการเงิน --}}
+                <a href="{{ route('admin.platform-revenue.reports') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.platform-revenue.reports') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-file-invoice-dollar w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">📈 รายงานการเงิน</span>
+                </a>
+            </div>
+        </div>
+
         {{-- TPIX Blockchain --}}
         <x-menu.pinnable-menu-item
             menuKey="admin.tpix.dashboard"
