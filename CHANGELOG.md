@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.15] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2136 from xjanova/claude/fix-react-native-packages-01SU6sqSubugRXGhXP1XsMPd (85e0ade8)
+- fix: exclude expo-av from React Native Directory check (dbc6f7ef)
+### 🔧 Other Changes
+
+
 ## [v3.364.14] - 2025-12-05
 
 ### ✨ Features
