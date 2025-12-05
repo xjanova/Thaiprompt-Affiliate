@@ -13,12 +13,20 @@
         <DataTemplate>
             <Grid HeightRequest="200" Background="{StaticResource PrimaryGradient}">
                 <VerticalStackLayout Padding="20" VerticalOptions="Center">
-                    <!-- App Logo/Icon -->
-                    <Image Source="logo.png"
-                           HeightRequest="60"
+                    <!-- App Logo/Icon - ใช้ Emoji Placeholder แทน Image -->
+                    <Frame HeightRequest="60"
                            WidthRequest="60"
+                           CornerRadius="30"
+                           BackgroundColor="#FFFFFF30"
+                           BorderColor="Transparent"
+                           Padding="0"
                            Margin="0,0,0,10"
-                           HorizontalOptions="Start"/>
+                           HorizontalOptions="Start">
+                        <Label Text="🚀"
+                               FontSize="30"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"/>
+                    </Frame>
 
                     <!-- App Title -->
                     <Label Text="Thaiprompt Affiliate"
@@ -49,30 +57,48 @@
         </DataTemplate>
     </Shell.FlyoutFooterTemplate>
 
-    <!-- Flyout Items -->
-    <FlyoutItem Title="หน้าแรก" Icon="home_icon.png">
+    <!-- Flyout Items - ใช้ FlyoutIcon แบบ FontImageSource -->
+    <FlyoutItem Title="หน้าแรก">
+        <FlyoutItem.FlyoutIcon>
+            <FontImageSource Glyph="🏠" FontFamily="OpenSans-Regular" Size="24" Color="{StaticResource Primary}"/>
+        </FlyoutItem.FlyoutIcon>
         <ShellContent Route="home" ContentTemplate="{DataTemplate local:HomePage}" />
     </FlyoutItem>
 
-    <FlyoutItem Title="แดชบอร์ด" Icon="dashboard_icon.png">
+    <FlyoutItem Title="แดชบอร์ด">
+        <FlyoutItem.FlyoutIcon>
+            <FontImageSource Glyph="📊" FontFamily="OpenSans-Regular" Size="24" Color="{StaticResource Primary}"/>
+        </FlyoutItem.FlyoutIcon>
         <ShellContent Route="dashboard" ContentTemplate="{DataTemplate local:DashboardPage}" />
     </FlyoutItem>
 
-    <FlyoutItem Title="คอมมิชชั่น" Icon="commission_icon.png">
+    <FlyoutItem Title="คอมมิชชั่น">
+        <FlyoutItem.FlyoutIcon>
+            <FontImageSource Glyph="💰" FontFamily="OpenSans-Regular" Size="24" Color="{StaticResource Primary}"/>
+        </FlyoutItem.FlyoutIcon>
         <ShellContent Route="commissions" ContentTemplate="{DataTemplate local:CommissionsPage}" />
     </FlyoutItem>
 
-    <FlyoutItem Title="ผู้แนะนำ" Icon="referral_icon.png">
+    <FlyoutItem Title="ผู้แนะนำ">
+        <FlyoutItem.FlyoutIcon>
+            <FontImageSource Glyph="👥" FontFamily="OpenSans-Regular" Size="24" Color="{StaticResource Primary}"/>
+        </FlyoutItem.FlyoutIcon>
         <ShellContent Route="referrals" ContentTemplate="{DataTemplate local:ReferralsPage}" />
     </FlyoutItem>
 
-    <FlyoutItem Title="โปรไฟล์" Icon="profile_icon.png">
+    <FlyoutItem Title="โปรไฟล์">
+        <FlyoutItem.FlyoutIcon>
+            <FontImageSource Glyph="👤" FontFamily="OpenSans-Regular" Size="24" Color="{StaticResource Primary}"/>
+        </FlyoutItem.FlyoutIcon>
         <ShellContent Route="profile" ContentTemplate="{DataTemplate local:ProfilePage}" />
     </FlyoutItem>
 
     <!-- Menu Items (Logout) -->
     <MenuItem Text="ออกจากระบบ"
-              IconImageSource="logout_icon.png"
-              Clicked="OnLogoutClicked" />
+              Clicked="OnLogoutClicked">
+        <MenuItem.IconImageSource>
+            <FontImageSource Glyph="🚪" FontFamily="OpenSans-Regular" Size="24" Color="{StaticResource Error}"/>
+        </MenuItem.IconImageSource>
+    </MenuItem>
 
 </Shell>
