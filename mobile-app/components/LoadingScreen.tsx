@@ -1,9 +1,9 @@
 /**
- * Loading Screen Component - หน้า loading
+ * Loading Screen Component - หน้า loading พร้อม animation
  */
 
-import React from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, Animated, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface LoadingScreenProps {
@@ -13,39 +13,191 @@ interface LoadingScreenProps {
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   message = 'กำลังโหลด...',
 }) => {
+  // Animation values สำหรับ dots
+  const dot1Opacity = useRef(new Animated.Value(0.3)).current;
+  const dot2Opacity = useRef(new Animated.Value(0.3)).current;
+  const dot3Opacity = useRef(new Animated.Value(0.3)).current;
+
+  // Animation value สำหรับ logo pulse
+  const logoScale = useRef(new Animated.Value(1)).current;
+
+  // Animation value สำหรับ spinner rotation
+  const spinValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Dot animation - sequential fade
+    const dotAnimation = () => {
+      Animated.sequence([
+        Animated.timing(dot1Opacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dot2Opacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dot3Opacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.parallel([
+          Animated.timing(dot1Opacity, {
+            toValue: 0.3,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(dot2Opacity, {
+            toValue: 0.3,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(dot3Opacity, {
+            toValue: 0.3,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start(() => dotAnimation());
+    };
+
+    // Logo pulse animation
+    const pulseAnimation = () => {
+      Animated.sequence([
+        Animated.timing(logoScale, {
+          toValue: 1.1,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoScale, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start(() => pulseAnimation());
+    };
+
+    // Spinner rotation
+    const spinAnimation = () => {
+      spinValue.setValue(0);
+      Animated.timing(spinValue, {
+        toValue: 1,
+        duration: 1500,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }).start(() => spinAnimation());
+    };
+
+    dotAnimation();
+    pulseAnimation();
+    spinAnimation();
+  }, []);
+
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
   return (
     <LinearGradient
       colors={['#0F0F23', '#1A1A2E']}
-      className="flex-1 justify-center items-center"
+      style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
     >
-      {/* Logo */}
-      <View className="mb-8">
-        <Text className="text-6xl">🚀</Text>
-      </View>
+      {/* Logo with pulse animation */}
+      <Animated.View
+        style={{
+          marginBottom: 32,
+          transform: [{ scale: logoScale }],
+        }}
+      >
+        <Text style={{ fontSize: 64 }}>🚀</Text>
+      </Animated.View>
 
       {/* App Name */}
-      <Text className="text-white text-2xl font-bold mb-2">
+      <Text
+        style={{
+          color: '#FFFFFF',
+          fontSize: 24,
+          fontWeight: 'bold',
+          marginBottom: 8,
+        }}
+      >
         Thaiprompt Affiliate
       </Text>
 
-      {/* Loading Indicator */}
-      <ActivityIndicator size="large" color="#3B82F6" className="my-6" />
+      {/* Custom Spinner */}
+      <Animated.View
+        style={{
+          width: 40,
+          height: 40,
+          marginVertical: 24,
+          transform: [{ rotate: spin }],
+        }}
+      >
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            borderWidth: 3,
+            borderColor: '#3B82F6',
+            borderTopColor: 'transparent',
+          }}
+        />
+      </Animated.View>
 
       {/* Message */}
-      <Text className="text-gray-400 text-base">{message}</Text>
+      <Text style={{ color: '#9CA3AF', fontSize: 16 }}>{message}</Text>
 
       {/* Animated Dots */}
-      <View className="flex-row mt-4">
-        {[0, 1, 2].map((i) => (
-          <View
-            key={i}
-            className="w-2 h-2 rounded-full bg-primary-500 mx-1"
-            style={{
-              opacity: 0.3 + (i * 0.3),
-            }}
-          />
-        ))}
+      <View style={{ flexDirection: 'row', marginTop: 16 }}>
+        <Animated.View
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: '#3B82F6',
+            marginHorizontal: 4,
+            opacity: dot1Opacity,
+          }}
+        />
+        <Animated.View
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: '#3B82F6',
+            marginHorizontal: 4,
+            opacity: dot2Opacity,
+          }}
+        />
+        <Animated.View
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: '#3B82F6',
+            marginHorizontal: 4,
+            opacity: dot3Opacity,
+          }}
+        />
       </View>
+
+      {/* Version */}
+      <Text
+        style={{
+          position: 'absolute',
+          bottom: 40,
+          color: '#6B7280',
+          fontSize: 12,
+        }}
+      >
+        Version 1.0.0
+      </Text>
     </LinearGradient>
   );
 };

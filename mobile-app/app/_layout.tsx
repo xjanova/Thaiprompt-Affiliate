@@ -1,9 +1,10 @@
 /**
  * Root Layout - Layout หลักของ app
  * ใช้ Expo Router สำหรับ navigation
+ * รองรับ Offline Mode - เข้า app ได้แม้ไม่มีเน็ต
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -22,9 +23,16 @@ import {
 // ไม่ให้ซ่อน splash screen อัตโนมัติ
 SplashScreen.preventAutoHideAsync();
 
+// Maximum time to wait for initialization (15 seconds)
+const MAX_INIT_WAIT = 15000;
+
 export default function RootLayout() {
-  const { initialize, isInitialized, isLoading } = useAuthStore();
+  const { initialize, isInitialized } = useAuthStore();
   const { loadSettings, resolvedTheme, setAppReady } = useAppStore();
+
+  // State สำหรับ force proceed ถ้า timeout
+  const [forceReady, setForceReady] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('กำลังโหลด...');
 
   // โหลดฟอนต์จาก Google Fonts
   const [fontsLoaded] = useFonts({
@@ -33,32 +41,60 @@ export default function RootLayout() {
     'OpenSans-SemiBold': OpenSans_600SemiBold,
   });
 
-  // Initialize app
+  // Initialize app with timeout
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    let messageTimeoutId: NodeJS.Timeout;
+
     const initApp = async () => {
       try {
+        // Update loading message after 3 seconds
+        messageTimeoutId = setTimeout(() => {
+          setLoadingMessage('กำลังเชื่อมต่อเซิร์ฟเวอร์...');
+        }, 3000);
+
         // โหลด settings และ auth state
         await Promise.all([loadSettings(), initialize()]);
       } catch (error) {
         console.error('Init error:', error);
       } finally {
         setAppReady(true);
+        clearTimeout(messageTimeoutId);
       }
     };
 
-    initApp();
+    // Set timeout เพื่อ force proceed ถ้า init นานเกินไป
+    timeoutId = setTimeout(() => {
+      console.log('Init timeout, forcing app to proceed');
+      setLoadingMessage('กำลังเข้าสู่โหมดออฟไลน์...');
+      setTimeout(() => {
+        setForceReady(true);
+        setAppReady(true);
+      }, 1000);
+    }, MAX_INIT_WAIT);
+
+    initApp().finally(() => {
+      clearTimeout(timeoutId);
+    });
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearTimeout(messageTimeoutId);
+    };
   }, []);
 
   // ซ่อน splash screen เมื่อโหลดเสร็จ
   useEffect(() => {
-    if (fontsLoaded && isInitialized) {
+    const isReady = fontsLoaded && (isInitialized || forceReady);
+    if (isReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, isInitialized]);
+  }, [fontsLoaded, isInitialized, forceReady]);
 
   // แสดง loading ถ้ายังไม่พร้อม
-  if (!fontsLoaded || !isInitialized) {
-    return <LoadingScreen />;
+  const isReady = fontsLoaded && (isInitialized || forceReady);
+  if (!isReady) {
+    return <LoadingScreen message={loadingMessage} />;
   }
 
   const isDark = resolvedTheme === 'dark';
