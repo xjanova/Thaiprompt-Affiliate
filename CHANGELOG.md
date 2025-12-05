@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.23] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(mobile-app): แก้ไขปัญหา routing และลบไฟล์ซ้ำ (638107ed)
+### 🔧 Other Changes
+- Merge pull request #2098 from xjanova/claude/review-mobile-api-018iYAgrEzL6VTaMvUoDdgZW (b903e663)
+- config(mobile-app): เปลี่ยน dev API URL เป็น member123.thaiprompt.online (32499c2d)
+
 ## [v3.361.22] - 2025-12-05
 
 ### ✨ Features
