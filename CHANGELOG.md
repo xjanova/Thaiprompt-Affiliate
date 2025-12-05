@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.360.3] - 2025-12-05
+
+### ✨ Features
+- Merge pull request #2074 from xjanova/claude/fix-expo-error-01QLt62F4h7qf3WMt7N2CVyj (8922d4d1)
+- feat(mobile-app): เพิ่ม Charts และทำแอพให้เป็นอิสระจาก server control (d4ab3d7d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.360.2] - 2025-12-05
 
 ### ✨ Features
