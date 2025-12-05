@@ -84,6 +84,21 @@ export const API_ENDPOINTS = {
   // Push Notification Token (Mobile App)
   PUSH_TOKEN: '/push/token',
 
+  // Rank System (Mobile App)
+  RANKS: '/mobile/ranks',
+  RANK_DETAIL: '/mobile/ranks', // + /{rankId}
+  RANK_PROGRESS: '/mobile/ranks/progress',
+  RANK_LEADERBOARD: '/mobile/ranks/leaderboard',
+
+  // MLM / Affiliate Network (Mobile App)
+  AFFILIATE: '/mobile/affiliate',
+  AFFILIATE_REFERRALS: '/mobile/affiliate/referrals',
+  AFFILIATE_TEAM_TREE: '/mobile/affiliate/team-tree',
+
+  // Commission System (Mobile App)
+  COMMISSIONS_LIST: '/mobile/commissions',
+  COMMISSIONS_EARNINGS: '/mobile/commissions/earnings',
+
   // Profile
   PROFILE: '/profile',
   UPDATE_PROFILE: '/profile', // ใช้ PUT method

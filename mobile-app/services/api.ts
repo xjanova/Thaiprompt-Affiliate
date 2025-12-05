@@ -1478,5 +1478,394 @@ export const removePushToken = async (token: string): Promise<{
   }
 };
 
+// =====================================================
+// Rank System
+// =====================================================
+
+export interface Rank {
+  id: number;
+  name: string;
+  nameTh: string;
+  description?: string;
+  descriptionTh?: string;
+  level: number;
+  icon?: string;
+  color?: string;
+  badgeIcon?: string;
+  avatarFrame?: string;
+  frameAnimation?: string;
+  commissionRate?: number;
+  bonusMultiplier?: number;
+  promotionBonus?: number;
+  maxDownlineLevelBonus?: number;
+  unilevelCommissionLevels?: number[];
+  privileges?: string[];
+  minPoints?: number;
+  minReferrals?: number;
+  minSales?: number;
+  monthlyMaintenancePv?: number;
+  withdrawalFeeDiscount?: number;
+  maxWithdrawalsPerMonth?: number;
+  isDefault?: boolean;
+  isTopTier?: boolean;
+}
+
+export interface RankRequirement {
+  id: number;
+  type: string;
+  typeText: string;
+  value: number;
+  operator: string;
+  description?: string;
+}
+
+export interface RankBonus {
+  id: number;
+  type: string;
+  rewardType: string;
+  amount?: number;
+  percentage?: number;
+  description?: string;
+}
+
+export interface RankProgress {
+  type: string;
+  typeText: string;
+  currentValue: number;
+  requiredValue: number;
+  progress: number;
+  completed: boolean;
+}
+
+/**
+ * ดึงรายการ Rank ทั้งหมด
+ */
+export const getRanks = async (): Promise<{
+  success: boolean;
+  data?: {
+    ranks: Rank[];
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.RANKS);
+    return response.data;
+  } catch (error) {
+    console.error('Get ranks error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงรายละเอียด Rank
+ */
+export const getRankDetail = async (rankId: number): Promise<{
+  success: boolean;
+  data?: {
+    rank: Rank;
+    requirements: RankRequirement[];
+    bonuses: RankBonus[];
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(`${API_ENDPOINTS.RANK_DETAIL}/${rankId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Get rank detail error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงความคืบหน้า Rank ของผู้ใช้
+ */
+export const getUserRankProgress = async (): Promise<{
+  success: boolean;
+  data?: {
+    currentRank: Rank | null;
+    nextRank: Rank | null;
+    statistics: {
+      rankPoints: number;
+      totalReferrals: number;
+      activeReferrals: number;
+      totalSales: number;
+      teamSales: number;
+    };
+    progress: RankProgress[];
+    overallProgress: number;
+    isMaxRank: boolean;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.RANK_PROGRESS);
+    return response.data;
+  } catch (error) {
+    console.error('Get rank progress error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึง Leaderboard
+ */
+export const getLeaderboard = async (params?: {
+  type?: 'referrals' | 'sales' | 'earnings';
+  period?: 'all' | 'month' | 'week';
+  limit?: number;
+}): Promise<{
+  success: boolean;
+  data?: {
+    type: string;
+    period: string;
+    leaders: {
+      position: number;
+      userId: number;
+      name: string;
+      avatar?: string;
+      rank?: {
+        name: string;
+        nameTh: string;
+        icon?: string;
+        color?: string;
+      };
+      value: number;
+    }[];
+    currentUserPosition?: number;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.RANK_LEADERBOARD, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Get leaderboard error:', error);
+    return null;
+  }
+};
+
+// =====================================================
+// MLM / Affiliate Network
+// =====================================================
+
+export interface AffiliateData {
+  referralCode: string;
+  referralLink: string;
+  statistics: {
+    directReferrals: number;
+    totalTeamMembers: number;
+    activeMembers: number;
+  };
+  earnings: {
+    total: number;
+    thisMonth: number;
+    pending: number;
+  };
+  rank?: {
+    id: number;
+    name: string;
+    nameTh: string;
+    icon?: string;
+    color?: string;
+    commissionRate?: number;
+  };
+}
+
+export interface TeamMember {
+  id: number;
+  name: string;
+  email?: string;
+  avatar?: string;
+  level?: number;
+  rank?: {
+    name: string;
+    nameTh: string;
+    icon?: string;
+    color?: string;
+  };
+  totalReferrals?: number;
+  childrenCount?: number;
+  isActive: boolean;
+  joinedAt: string;
+  daysAgo?: number;
+  children?: TeamMember[];
+}
+
+/**
+ * ดึงข้อมูล Affiliate ของผู้ใช้
+ */
+export const getMyAffiliate = async (): Promise<{
+  success: boolean;
+  data?: AffiliateData;
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.AFFILIATE);
+    return response.data;
+  } catch (error) {
+    console.error('Get my affiliate error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงรายชื่อลูกทีมโดยตรง
+ */
+export const getDirectReferrals = async (params?: {
+  page?: number;
+  per_page?: number;
+}): Promise<{
+  success: boolean;
+  data?: {
+    referrals: TeamMember[];
+    pagination: {
+      total: number;
+      currentPage: number;
+      lastPage: number;
+      perPage: number;
+    };
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.AFFILIATE_REFERRALS, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Get direct referrals error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงผังทีม (Unilevel Tree)
+ */
+export const getTeamTree = async (depth: number = 3): Promise<{
+  success: boolean;
+  data?: {
+    root: {
+      id: number;
+      name: string;
+      avatar?: string;
+      rank?: {
+        name: string;
+        nameTh: string;
+        icon?: string;
+        color?: string;
+      };
+    };
+    children: TeamMember[];
+    totalMembers: number;
+    depth: number;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.AFFILIATE_TEAM_TREE, {
+      params: { depth },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Get team tree error:', error);
+    return null;
+  }
+};
+
+// =====================================================
+// Commission System
+// =====================================================
+
+export interface Commission {
+  id: number;
+  type: string;
+  typeText: string;
+  level?: number;
+  amount: number;
+  pvAmount?: number;
+  salesAmount?: number;
+  percentage?: number;
+  status: string;
+  statusText: string;
+  fromMember?: {
+    id: number;
+    name: string;
+  };
+  approvedAt?: string;
+  paidAt?: string;
+  createdAt: string;
+}
+
+export interface EarningsSummary {
+  totalEarnings: number;
+  thisMonthEarnings: number;
+  lastMonthEarnings: number;
+  pendingEarnings: number;
+  growthPercent: number;
+  earningsByType: {
+    unilevelDirect: number;
+    unilevelIndirect: number;
+    binaryPair: number;
+    sponsorBonus: number;
+    rankBonus: number;
+    leadershipBonus: number;
+  };
+  chart: {
+    date: string;
+    day: string;
+    amount: number;
+  }[];
+}
+
+/**
+ * ดึงรายการคอมมิชชัน
+ */
+export const getCommissions = async (params?: {
+  status?: 'pending' | 'approved' | 'paid' | 'rejected';
+  type?: string;
+  per_page?: number;
+  page?: number;
+}): Promise<{
+  success: boolean;
+  data?: {
+    summary: {
+      pending: number;
+      approved: number;
+      paid: number;
+    };
+    commissions: Commission[];
+    pagination: {
+      total: number;
+      currentPage: number;
+      lastPage: number;
+    };
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.COMMISSIONS_LIST, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Get commissions error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงสรุปรายได้
+ */
+export const getEarningsSummary = async (): Promise<{
+  success: boolean;
+  data?: EarningsSummary;
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.COMMISSIONS_EARNINGS);
+    return response.data;
+  } catch (error) {
+    console.error('Get earnings summary error:', error);
+    return null;
+  }
+};
+
 // Export axios instance สำหรับใช้งานตรงๆ ถ้าต้องการ
 export { apiClient };

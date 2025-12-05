@@ -2447,4 +2447,742 @@ class MobileApiController extends Controller
             ],
         ]);
     }
+
+    // =====================================================
+    // Rank System
+    // =====================================================
+
+    /**
+     * ดึงรายการ Rank ทั้งหมด
+     *
+     * @return JsonResponse
+     */
+    public function getRanks(): JsonResponse
+    {
+        $ranks = \App\Models\Rank::where('is_active', true)
+            ->orderBy('level', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'ranks' => $ranks->map(function ($rank) {
+                    return [
+                        'id' => $rank->id,
+                        'name' => $rank->name,
+                        'nameTh' => $rank->name_th ?? $rank->name,
+                        'description' => $rank->description,
+                        'descriptionTh' => $rank->description_th ?? $rank->description,
+                        'level' => $rank->level,
+                        'icon' => $rank->icon,
+                        'color' => $rank->color,
+                        'badgeIcon' => $rank->badge_icon,
+                        'avatarFrame' => $rank->avatar_frame,
+                        'commissionRate' => $rank->commission_rate,
+                        'bonusMultiplier' => $rank->bonus_multiplier,
+                        'promotionBonus' => $rank->promotion_bonus,
+                        'minPoints' => $rank->min_points,
+                        'minReferrals' => $rank->min_referrals,
+                        'minSales' => $rank->min_sales,
+                        'privileges' => $rank->privileges ?? [],
+                        'isDefault' => $rank->is_default,
+                        'isTopTier' => $rank->is_top_tier,
+                    ];
+                }),
+            ],
+        ]);
+    }
+
+    /**
+     * ดึงรายละเอียด Rank
+     *
+     * @param int $rankId
+     * @return JsonResponse
+     */
+    public function getRankDetail(int $rankId): JsonResponse
+    {
+        $rank = \App\Models\Rank::with(['requirements', 'bonuses'])
+            ->find($rankId);
+
+        if (!$rank) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบข้อมูล Rank',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'rank' => [
+                    'id' => $rank->id,
+                    'name' => $rank->name,
+                    'nameTh' => $rank->name_th ?? $rank->name,
+                    'description' => $rank->description,
+                    'descriptionTh' => $rank->description_th ?? $rank->description,
+                    'level' => $rank->level,
+                    'icon' => $rank->icon,
+                    'color' => $rank->color,
+                    'badgeIcon' => $rank->badge_icon,
+                    'avatarFrame' => $rank->avatar_frame,
+                    'frameAnimation' => $rank->frame_animation,
+                    'commissionRate' => $rank->commission_rate,
+                    'bonusMultiplier' => $rank->bonus_multiplier,
+                    'promotionBonus' => $rank->promotion_bonus,
+                    'maxDownlineLevelBonus' => $rank->max_downline_level_bonus,
+                    'unilevelCommissionLevels' => $rank->unilevel_commission_levels,
+                    'privileges' => $rank->privileges ?? [],
+                    'minPoints' => $rank->min_points,
+                    'minReferrals' => $rank->min_referrals,
+                    'minSales' => $rank->min_sales,
+                    'monthlyMaintenancePv' => $rank->monthly_maintenance_pv,
+                    'withdrawalFeeDiscount' => $rank->withdrawal_fee_discount,
+                    'maxWithdrawalsPerMonth' => $rank->max_withdrawals_per_month,
+                ],
+                'requirements' => $rank->requirements->map(function ($req) {
+                    return [
+                        'id' => $req->id,
+                        'type' => $req->type,
+                        'typeText' => $this->getRequirementTypeText($req->type),
+                        'value' => $req->value,
+                        'operator' => $req->operator,
+                        'description' => $req->description,
+                    ];
+                }),
+                'bonuses' => $rank->bonuses->map(function ($bonus) {
+                    return [
+                        'id' => $bonus->id,
+                        'type' => $bonus->type,
+                        'rewardType' => $bonus->reward_type,
+                        'amount' => $bonus->amount,
+                        'percentage' => $bonus->percentage,
+                        'description' => $bonus->description,
+                    ];
+                }),
+            ],
+        ]);
+    }
+
+    /**
+     * ดึงความคืบหน้า Rank ของผู้ใช้
+     *
+     * @return JsonResponse
+     */
+    public function getUserRankProgress(): JsonResponse
+    {
+        $user = Auth::user();
+
+        // ดึง current rank
+        $currentRank = $user->currentRank;
+        if (!$currentRank) {
+            $currentRank = \App\Models\Rank::where('is_default', true)->first()
+                ?? \App\Models\Rank::orderBy('level', 'asc')->first();
+        }
+
+        // ดึง next rank
+        $nextRank = \App\Models\Rank::where('level', '>', $currentRank->level ?? 0)
+            ->where('is_active', true)
+            ->orderBy('level', 'asc')
+            ->first();
+
+        // คำนวณสถิติของผู้ใช้
+        $totalReferrals = \App\Models\User::where('sponsor_id', $user->id)->count();
+        $activeReferrals = \App\Models\User::where('sponsor_id', $user->id)
+            ->where('created_at', '>=', now()->subDays(30))
+            ->count();
+
+        // ดึง rank points (ถ้ามี)
+        $rankPoints = $user->rank_points ?? 0;
+        $totalSales = $user->total_sales ?? 0;
+        $teamSales = $user->team_sales ?? 0;
+
+        // คำนวณ progress ไปยัง rank ถัดไป
+        $progressData = [];
+        if ($nextRank) {
+            $requirements = $nextRank->requirements ?? collect();
+            foreach ($requirements as $req) {
+                $currentValue = $this->getRequirementValue($user, $req->type, $totalReferrals, $rankPoints, $totalSales, $teamSales);
+                $progressData[] = [
+                    'type' => $req->type,
+                    'typeText' => $this->getRequirementTypeText($req->type),
+                    'currentValue' => $currentValue,
+                    'requiredValue' => $req->value,
+                    'progress' => $req->value > 0 ? min(100, round(($currentValue / $req->value) * 100)) : 100,
+                    'completed' => $this->checkRequirementMet($currentValue, $req->value, $req->operator),
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'currentRank' => $currentRank ? [
+                    'id' => $currentRank->id,
+                    'name' => $currentRank->name,
+                    'nameTh' => $currentRank->name_th ?? $currentRank->name,
+                    'level' => $currentRank->level,
+                    'icon' => $currentRank->icon,
+                    'color' => $currentRank->color,
+                    'badgeIcon' => $currentRank->badge_icon,
+                    'avatarFrame' => $currentRank->avatar_frame,
+                    'commissionRate' => $currentRank->commission_rate,
+                    'privileges' => $currentRank->privileges ?? [],
+                ] : null,
+                'nextRank' => $nextRank ? [
+                    'id' => $nextRank->id,
+                    'name' => $nextRank->name,
+                    'nameTh' => $nextRank->name_th ?? $nextRank->name,
+                    'level' => $nextRank->level,
+                    'icon' => $nextRank->icon,
+                    'color' => $nextRank->color,
+                    'promotionBonus' => $nextRank->promotion_bonus,
+                ] : null,
+                'statistics' => [
+                    'rankPoints' => $rankPoints,
+                    'totalReferrals' => $totalReferrals,
+                    'activeReferrals' => $activeReferrals,
+                    'totalSales' => $totalSales,
+                    'teamSales' => $teamSales,
+                ],
+                'progress' => $progressData,
+                'overallProgress' => count($progressData) > 0
+                    ? round(collect($progressData)->avg('progress'))
+                    : 100,
+                'isMaxRank' => is_null($nextRank),
+            ],
+        ]);
+    }
+
+    /**
+     * ดึง Leaderboard
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getLeaderboard(Request $request): JsonResponse
+    {
+        $type = $request->get('type', 'referrals'); // referrals, sales, earnings
+        $period = $request->get('period', 'all'); // all, month, week
+        $limit = min($request->get('limit', 20), 100);
+
+        $query = \App\Models\User::query()
+            ->select('users.id', 'users.name', 'users.avatar', 'users.rank_id')
+            ->with('currentRank:id,name,name_th,icon,color');
+
+        // กรองตามช่วงเวลา
+        if ($period === 'month') {
+            $startDate = now()->startOfMonth();
+        } elseif ($period === 'week') {
+            $startDate = now()->startOfWeek();
+        } else {
+            $startDate = null;
+        }
+
+        // เรียงลำดับตามประเภท
+        switch ($type) {
+            case 'sales':
+                $query->orderBy('total_sales', 'desc');
+                break;
+            case 'earnings':
+                $query->orderBy('total_earnings', 'desc');
+                break;
+            case 'referrals':
+            default:
+                $query->withCount(['referrals as referral_count' => function ($q) use ($startDate) {
+                    if ($startDate) {
+                        $q->where('created_at', '>=', $startDate);
+                    }
+                }])->orderBy('referral_count', 'desc');
+                break;
+        }
+
+        $leaders = $query->limit($limit)->get();
+
+        // หาตำแหน่งของผู้ใช้ปัจจุบัน
+        $user = Auth::user();
+        $userRank = null;
+        foreach ($leaders as $index => $leader) {
+            if ($leader->id === $user->id) {
+                $userRank = $index + 1;
+                break;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'type' => $type,
+                'period' => $period,
+                'leaders' => $leaders->map(function ($leader, $index) {
+                    return [
+                        'position' => $index + 1,
+                        'userId' => $leader->id,
+                        'name' => $leader->name,
+                        'avatar' => $leader->avatar,
+                        'rank' => $leader->currentRank ? [
+                            'name' => $leader->currentRank->name,
+                            'nameTh' => $leader->currentRank->name_th ?? $leader->currentRank->name,
+                            'icon' => $leader->currentRank->icon,
+                            'color' => $leader->currentRank->color,
+                        ] : null,
+                        'value' => $leader->referral_count ?? $leader->total_sales ?? $leader->total_earnings ?? 0,
+                    ];
+                }),
+                'currentUserPosition' => $userRank,
+            ],
+        ]);
+    }
+
+    /**
+     * แปลงประเภท requirement เป็นภาษาไทย
+     */
+    private function getRequirementTypeText(string $type): string
+    {
+        $types = [
+            'points' => 'คะแนนสะสม',
+            'referrals' => 'จำนวนคนแนะนำ',
+            'sales' => 'ยอดขายส่วนตัว',
+            'active_referrals' => 'คนแนะนำที่ active',
+            'team_sales' => 'ยอดขายทั้งทีม',
+            'consecutive_months' => 'เดือนต่อเนื่อง',
+            'diamond_legs' => 'ลูกทีมระดับ Diamond',
+            'crown_legs' => 'ลูกทีมระดับ Crown',
+            'royal_legs' => 'ลูกทีมระดับ Royal',
+        ];
+
+        return $types[$type] ?? $type;
+    }
+
+    /**
+     * ดึงค่าปัจจุบันของ requirement
+     */
+    private function getRequirementValue($user, string $type, int $totalReferrals, float $rankPoints, float $totalSales, float $teamSales)
+    {
+        switch ($type) {
+            case 'points':
+                return $rankPoints;
+            case 'referrals':
+                return $totalReferrals;
+            case 'sales':
+                return $totalSales;
+            case 'team_sales':
+                return $teamSales;
+            case 'active_referrals':
+                return \App\Models\User::where('sponsor_id', $user->id)
+                    ->where('created_at', '>=', now()->subDays(30))
+                    ->count();
+            default:
+                return 0;
+        }
+    }
+
+    /**
+     * ตรวจสอบว่าผ่านเงื่อนไขหรือไม่
+     */
+    private function checkRequirementMet($currentValue, $requiredValue, $operator = '>='): bool
+    {
+        switch ($operator) {
+            case '>=':
+                return $currentValue >= $requiredValue;
+            case '>':
+                return $currentValue > $requiredValue;
+            case '=':
+                return $currentValue == $requiredValue;
+            case '<=':
+                return $currentValue <= $requiredValue;
+            case '<':
+                return $currentValue < $requiredValue;
+            default:
+                return $currentValue >= $requiredValue;
+        }
+    }
+
+    // =====================================================
+    // MLM / Affiliate Network
+    // =====================================================
+
+    /**
+     * ดึงข้อมูล Affiliate ของผู้ใช้
+     *
+     * @return JsonResponse
+     */
+    public function getMyAffiliate(): JsonResponse
+    {
+        $user = Auth::user();
+
+        // ดึงข้อมูล affiliate
+        $affiliate = \App\Models\Affiliate::where('user_id', $user->id)->first();
+
+        // ดึงสถิติ
+        $directReferrals = \App\Models\User::where('sponsor_id', $user->id)->count();
+        $totalTeamMembers = $this->countTotalTeam($user->id);
+
+        // ดึงรายได้
+        $totalEarnings = \App\Models\MlmCommission::where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->sum('commission_amount') ?? 0;
+
+        $thisMonthEarnings = \App\Models\MlmCommission::where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->whereMonth('paid_at', now()->month)
+            ->whereYear('paid_at', now()->year)
+            ->sum('commission_amount') ?? 0;
+
+        $pendingEarnings = \App\Models\MlmCommission::where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'approved'])
+            ->sum('commission_amount') ?? 0;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'referralCode' => $user->referral_code,
+                'referralLink' => url('/register?ref=' . $user->referral_code),
+                'statistics' => [
+                    'directReferrals' => $directReferrals,
+                    'totalTeamMembers' => $totalTeamMembers,
+                    'activeMembers' => $this->countActiveMembers($user->id),
+                ],
+                'earnings' => [
+                    'total' => $totalEarnings,
+                    'thisMonth' => $thisMonthEarnings,
+                    'pending' => $pendingEarnings,
+                ],
+                'rank' => $user->currentRank ? [
+                    'id' => $user->currentRank->id,
+                    'name' => $user->currentRank->name,
+                    'nameTh' => $user->currentRank->name_th ?? $user->currentRank->name,
+                    'icon' => $user->currentRank->icon,
+                    'color' => $user->currentRank->color,
+                    'commissionRate' => $user->currentRank->commission_rate,
+                ] : null,
+            ],
+        ]);
+    }
+
+    /**
+     * ดึงรายชื่อลูกทีมโดยตรง
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getDirectReferrals(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $page = $request->get('page', 1);
+        $perPage = min($request->get('per_page', 20), 50);
+
+        $referrals = \App\Models\User::where('sponsor_id', $user->id)
+            ->with('currentRank:id,name,name_th,icon,color')
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'referrals' => $referrals->map(function ($referral) {
+                    return [
+                        'id' => $referral->id,
+                        'name' => $referral->name,
+                        'email' => $referral->email,
+                        'avatar' => $referral->avatar,
+                        'rank' => $referral->currentRank ? [
+                            'name' => $referral->currentRank->name,
+                            'nameTh' => $referral->currentRank->name_th ?? $referral->currentRank->name,
+                            'icon' => $referral->currentRank->icon,
+                            'color' => $referral->currentRank->color,
+                        ] : null,
+                        'totalReferrals' => \App\Models\User::where('sponsor_id', $referral->id)->count(),
+                        'isActive' => $referral->created_at >= now()->subDays(30),
+                        'joinedAt' => $referral->created_at->format('Y-m-d'),
+                        'daysAgo' => $referral->created_at->diffInDays(now()),
+                    ];
+                }),
+                'pagination' => [
+                    'total' => $referrals->total(),
+                    'currentPage' => $referrals->currentPage(),
+                    'lastPage' => $referrals->lastPage(),
+                    'perPage' => $referrals->perPage(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * ดึงผังทีม (Unilevel Tree)
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getTeamTree(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $depth = min($request->get('depth', 3), 5);
+
+        $tree = $this->buildTeamTree($user->id, $depth);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'root' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'avatar' => $user->avatar,
+                    'rank' => $user->currentRank ? [
+                        'name' => $user->currentRank->name,
+                        'nameTh' => $user->currentRank->name_th ?? $user->currentRank->name,
+                        'icon' => $user->currentRank->icon,
+                        'color' => $user->currentRank->color,
+                    ] : null,
+                ],
+                'children' => $tree,
+                'totalMembers' => $this->countTotalTeam($user->id),
+                'depth' => $depth,
+            ],
+        ]);
+    }
+
+    /**
+     * สร้างผังทีมแบบ recursive
+     */
+    private function buildTeamTree(int $userId, int $depth, int $currentDepth = 0): array
+    {
+        if ($currentDepth >= $depth) {
+            return [];
+        }
+
+        $children = \App\Models\User::where('sponsor_id', $userId)
+            ->with('currentRank:id,name,name_th,icon,color')
+            ->get();
+
+        return $children->map(function ($child) use ($depth, $currentDepth) {
+            $childrenCount = \App\Models\User::where('sponsor_id', $child->id)->count();
+            return [
+                'id' => $child->id,
+                'name' => $child->name,
+                'avatar' => $child->avatar,
+                'level' => $currentDepth + 1,
+                'rank' => $child->currentRank ? [
+                    'name' => $child->currentRank->name,
+                    'nameTh' => $child->currentRank->name_th ?? $child->currentRank->name,
+                    'icon' => $child->currentRank->icon,
+                    'color' => $child->currentRank->color,
+                ] : null,
+                'childrenCount' => $childrenCount,
+                'isActive' => $child->created_at >= now()->subDays(30),
+                'joinedAt' => $child->created_at->format('Y-m-d'),
+                'children' => $this->buildTeamTree($child->id, $depth, $currentDepth + 1),
+            ];
+        })->toArray();
+    }
+
+    /**
+     * นับสมาชิกทั้งหมดในทีม
+     */
+    private function countTotalTeam(int $userId, int $maxDepth = 10): int
+    {
+        $total = 0;
+        $currentLevel = [$userId];
+
+        for ($i = 0; $i < $maxDepth && !empty($currentLevel); $i++) {
+            $children = \App\Models\User::whereIn('sponsor_id', $currentLevel)->pluck('id')->toArray();
+            $total += count($children);
+            $currentLevel = $children;
+        }
+
+        return $total;
+    }
+
+    /**
+     * นับสมาชิกที่ active
+     */
+    private function countActiveMembers(int $userId): int
+    {
+        return \App\Models\User::where('sponsor_id', $userId)
+            ->where('created_at', '>=', now()->subDays(30))
+            ->count();
+    }
+
+    // =====================================================
+    // Commission System
+    // =====================================================
+
+    /**
+     * ดึงรายการคอมมิชชัน
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getCommissions(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $status = $request->get('status'); // pending, approved, paid, rejected
+        $type = $request->get('type'); // unilevel_direct, unilevel_indirect, binary_pair, etc.
+        $perPage = min($request->get('per_page', 20), 50);
+
+        $query = \App\Models\MlmCommission::where('user_id', $user->id);
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        if ($type) {
+            $query->where('type', $type);
+        }
+
+        $commissions = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
+        // สรุปตามสถานะ
+        $summary = [
+            'pending' => \App\Models\MlmCommission::where('user_id', $user->id)->where('status', 'pending')->sum('commission_amount'),
+            'approved' => \App\Models\MlmCommission::where('user_id', $user->id)->where('status', 'approved')->sum('commission_amount'),
+            'paid' => \App\Models\MlmCommission::where('user_id', $user->id)->where('status', 'paid')->sum('commission_amount'),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'summary' => $summary,
+                'commissions' => $commissions->map(function ($commission) {
+                    return [
+                        'id' => $commission->id,
+                        'type' => $commission->type,
+                        'typeText' => $this->getCommissionTypeText($commission->type),
+                        'level' => $commission->level,
+                        'amount' => $commission->commission_amount,
+                        'pvAmount' => $commission->pv_amount,
+                        'salesAmount' => $commission->sales_amount,
+                        'percentage' => $commission->percentage,
+                        'status' => $commission->status,
+                        'statusText' => $this->getCommissionStatusText($commission->status),
+                        'fromMember' => $commission->fromMember ? [
+                            'id' => $commission->fromMember->id,
+                            'name' => $commission->fromMember->user->name ?? 'N/A',
+                        ] : null,
+                        'approvedAt' => $commission->approved_at?->format('Y-m-d H:i:s'),
+                        'paidAt' => $commission->paid_at?->format('Y-m-d H:i:s'),
+                        'createdAt' => $commission->created_at->format('Y-m-d H:i:s'),
+                    ];
+                }),
+                'pagination' => [
+                    'total' => $commissions->total(),
+                    'currentPage' => $commissions->currentPage(),
+                    'lastPage' => $commissions->lastPage(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * ดึงสรุปรายได้
+     *
+     * @return JsonResponse
+     */
+    public function getEarningsSummary(): JsonResponse
+    {
+        $user = Auth::user();
+
+        // รายได้รวมทั้งหมด (จ่ายแล้ว)
+        $totalEarnings = \App\Models\MlmCommission::where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->sum('commission_amount');
+
+        // รายได้เดือนนี้
+        $thisMonthEarnings = \App\Models\MlmCommission::where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->whereMonth('paid_at', now()->month)
+            ->whereYear('paid_at', now()->year)
+            ->sum('commission_amount');
+
+        // รายได้เดือนที่แล้ว
+        $lastMonthEarnings = \App\Models\MlmCommission::where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->whereMonth('paid_at', now()->subMonth()->month)
+            ->whereYear('paid_at', now()->subMonth()->year)
+            ->sum('commission_amount');
+
+        // รายได้รอดำเนินการ
+        $pendingEarnings = \App\Models\MlmCommission::where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'approved'])
+            ->sum('commission_amount');
+
+        // รายได้ตามประเภท
+        $earningsByType = \App\Models\MlmCommission::where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->selectRaw('type, SUM(commission_amount) as total')
+            ->groupBy('type')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                return [$item->type => $item->total];
+            });
+
+        // รายได้ 7 วันล่าสุด
+        $last7Days = collect(range(6, 0))->map(function ($daysAgo) use ($user) {
+            $date = now()->subDays($daysAgo);
+            $amount = \App\Models\MlmCommission::where('user_id', $user->id)
+                ->where('status', 'paid')
+                ->whereDate('paid_at', $date->format('Y-m-d'))
+                ->sum('commission_amount');
+
+            return [
+                'date' => $date->format('Y-m-d'),
+                'day' => $date->locale('th')->dayName,
+                'amount' => $amount ?? 0,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'totalEarnings' => $totalEarnings,
+                'thisMonthEarnings' => $thisMonthEarnings,
+                'lastMonthEarnings' => $lastMonthEarnings,
+                'pendingEarnings' => $pendingEarnings,
+                'growthPercent' => $lastMonthEarnings > 0
+                    ? round((($thisMonthEarnings - $lastMonthEarnings) / $lastMonthEarnings) * 100, 2)
+                    : 0,
+                'earningsByType' => [
+                    'unilevelDirect' => $earningsByType['unilevel_direct'] ?? 0,
+                    'unilevelIndirect' => $earningsByType['unilevel_indirect'] ?? 0,
+                    'binaryPair' => $earningsByType['binary_pair'] ?? 0,
+                    'sponsorBonus' => $earningsByType['sponsor_bonus'] ?? 0,
+                    'rankBonus' => $earningsByType['rank_bonus'] ?? 0,
+                    'leadershipBonus' => $earningsByType['leadership_bonus'] ?? 0,
+                ],
+                'chart' => $last7Days,
+            ],
+        ]);
+    }
+
+    /**
+     * แปลงประเภทคอมมิชชันเป็นภาษาไทย
+     */
+    private function getCommissionTypeText(string $type): string
+    {
+        $types = [
+            'unilevel_direct' => 'คอมมิชชันลูกตรง',
+            'unilevel_indirect' => 'คอมมิชชันลูกของลูก',
+            'binary_pair' => 'คอมมิชชัน Binary',
+            'sponsor_bonus' => 'โบนัสผู้แนะนำ',
+            'rank_bonus' => 'โบนัสระดับ',
+            'leadership_bonus' => 'โบนัสผู้นำ',
+            'pool_bonus' => 'โบนัส Pool',
+        ];
+
+        return $types[$type] ?? $type;
+    }
+
+    /**
+     * แปลงสถานะคอมมิชชันเป็นภาษาไทย
+     */
+    private function getCommissionStatusText(string $status): string
+    {
+        $statuses = [
+            'pending' => 'รอดำเนินการ',
+            'approved' => 'อนุมัติแล้ว',
+            'paid' => 'จ่ายแล้ว',
+            'rejected' => 'ปฏิเสธ',
+        ];
+
+        return $statuses[$status] ?? $status;
+    }
 }
