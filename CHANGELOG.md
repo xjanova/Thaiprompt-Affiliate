@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.38] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: handle missing lead_locks and recruit_page_visits tables (e2caa9d1)
+- fix: handle undefined progress array keys in academy view (cd2324b6)
+- fix: use admin.tickets.index instead of non-existent create route (8202fe22)
+### 🔧 Other Changes
+- Merge pull request #2057 from xjanova/claude/fix-setting-function-017KM3BT69k4PQeEiusiFxFz (5ed6bd2c)
+
 ## [v3.358.37] - 2025-12-05
 
 ### ✨ Features
