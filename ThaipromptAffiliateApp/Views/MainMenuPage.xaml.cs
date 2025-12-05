@@ -168,10 +168,8 @@ public partial class MainMenuPage : ContentPage
     {
         await AnimateButtonPress(BtnShopping);
 
-        // TODO: Navigate to Shopping WebView Page
-        // await Shell.Current.GoToAsync("//shopping");
-
-        await DisplayAlert("ช๊อปปิ้ง", "กำลังเปิดหน้าร้านค้า...", "ตกลง");
+        // Navigate to Shopping WebView Page (Hybrid approach)
+        Application.Current!.MainPage = new ShoppingPage();
     }
 
     /// <summary>
