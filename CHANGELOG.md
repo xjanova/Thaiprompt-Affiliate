@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.3] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2078 from xjanova/claude/seeder-verification-tool-015UGvZ3KDP4WvwT4BmcCghJ (43afdbba)
+- fix(scripts): add exclusion list for intentionally disabled seeders (a79d6249)
+### 🔧 Other Changes
+
+
 ## [v3.361.2] - 2025-12-05
 
 ### ✨ Features
