@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.7] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2128 from xjanova/claude/fix-pv-value-column-01TJRveNS4tKkidaDEpJrSW8 (c135b995)
+- fix: add missing columns and image preview for Official Shop (4c1d037c)
+- fix: add missing pv_value column to products table (0a9e3c7a)
+### 🔧 Other Changes
+
+
 ## [v3.364.6] - 2025-12-05
 
 ### ✨ Features
