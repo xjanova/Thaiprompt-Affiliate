@@ -345,10 +345,11 @@ class PlatformRevenueService
             ->whereBetween('created_at', [$startOfDay, $endOfDay])
             ->sum('amount');
 
-        // รายได้แยกตาม wallet
-        $byWallet = PlatformTransaction::income()
-            ->completed()
-            ->whereBetween('created_at', [$startOfDay, $endOfDay])
+        // รายได้แยกตาม wallet (ใช้ qualified column names เพื่อหลีกเลี่ยง ambiguous column)
+        $byWallet = PlatformTransaction::query()
+            ->where('platform_transactions.type', 'income')
+            ->where('platform_transactions.status', 'completed')
+            ->whereBetween('platform_transactions.created_at', [$startOfDay, $endOfDay])
             ->join('platform_wallets', 'platform_transactions.wallet_id', '=', 'platform_wallets.id')
             ->selectRaw('platform_wallets.slug, SUM(platform_transactions.amount) as total')
             ->groupBy('platform_wallets.slug')
@@ -386,10 +387,11 @@ class PlatformRevenueService
             ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
             ->sum('amount');
 
-        // รายได้แยกตาม wallet
-        $byWallet = PlatformTransaction::income()
-            ->completed()
-            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+        // รายได้แยกตาม wallet (ใช้ qualified column names เพื่อหลีกเลี่ยง ambiguous column)
+        $byWallet = PlatformTransaction::query()
+            ->where('platform_transactions.type', 'income')
+            ->where('platform_transactions.status', 'completed')
+            ->whereBetween('platform_transactions.created_at', [$startOfMonth, $endOfMonth])
             ->join('platform_wallets', 'platform_transactions.wallet_id', '=', 'platform_wallets.id')
             ->selectRaw('platform_wallets.slug, SUM(platform_transactions.amount) as total')
             ->groupBy('platform_wallets.slug')
@@ -426,10 +428,11 @@ class PlatformRevenueService
             ->whereBetween('created_at', [$startOfYear, $endOfYear])
             ->sum('amount');
 
-        // รายได้แยกตาม wallet
-        $byWallet = PlatformTransaction::income()
-            ->completed()
-            ->whereBetween('created_at', [$startOfYear, $endOfYear])
+        // รายได้แยกตาม wallet (ใช้ qualified column names เพื่อหลีกเลี่ยง ambiguous column)
+        $byWallet = PlatformTransaction::query()
+            ->where('platform_transactions.type', 'income')
+            ->where('platform_transactions.status', 'completed')
+            ->whereBetween('platform_transactions.created_at', [$startOfYear, $endOfYear])
             ->join('platform_wallets', 'platform_transactions.wallet_id', '=', 'platform_wallets.id')
             ->selectRaw('platform_wallets.slug, SUM(platform_transactions.amount) as total')
             ->groupBy('platform_wallets.slug')
