@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.16] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2137 from xjanova/claude/fix-seller-id-constraint-015EWB2iMNaEzNqmhqcpe9cS (86b53599)
+- fix: make seller_id nullable in products table for official shop (ccd86283)
+### 🔧 Other Changes
+
+
 ## [v3.364.15] - 2025-12-05
 
 ### ✨ Features
