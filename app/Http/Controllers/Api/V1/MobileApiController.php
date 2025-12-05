@@ -1009,4 +1009,269 @@ class MobileApiController extends Controller
 
         return $types[$transaction->type] ?? ($transaction->description ?? 'ธุรกรรม');
     }
+
+    // =====================================================
+    // KYC API (Mobile)
+    // =====================================================
+
+    /**
+     * ดึงสถานะ KYC
+     *
+     * @return JsonResponse
+     */
+    public function getKycStatus(): JsonResponse
+    {
+        $user = Auth::user();
+
+        $kyc = \App\Models\KycVerification::where('user_id', $user->id)
+            ->latest()
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'status' => $user->kyc_status ?? 'not_submitted',
+                'verifiedAt' => $user->kyc_verified_at?->format('Y-m-d H:i:s'),
+                'submission' => $kyc ? [
+                    'id' => $kyc->id,
+                    'status' => $kyc->status,
+                    'submittedAt' => $kyc->submitted_at?->format('Y-m-d H:i:s'),
+                    'reviewedAt' => $kyc->reviewed_at?->format('Y-m-d H:i:s'),
+                    'rejectionReason' => $kyc->rejection_reason,
+                    'hasIdCard' => !empty($kyc->id_card_image),
+                    'hasSelfie' => !empty($kyc->selfie_image),
+                ] : null,
+            ],
+        ]);
+    }
+
+    /**
+     * ส่ง KYC verification
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function submitKyc(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        // ตรวจสอบว่ามี KYC ที่รออนุมัติอยู่หรือไม่
+        $existingKyc = \App\Models\KycVerification::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($existingKyc) {
+            return response()->json([
+                'success' => false,
+                'message' => 'คุณมีคำขอ KYC ที่รอการตรวจสอบอยู่แล้ว',
+            ], 400);
+        }
+
+        // ถ้าได้รับการอนุมัติแล้ว
+        if ($user->kyc_status === 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'บัญชีของคุณได้รับการยืนยันตัวตนแล้ว',
+            ], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'id_card_image' => 'required|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
+            'selfie_image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+        ], [
+            'id_card_image.required' => 'กรุณาอัพโหลดรูปบัตรประชาชน',
+            'id_card_image.image' => 'ไฟล์ต้องเป็นรูปภาพ',
+            'id_card_image.max' => 'ขนาดไฟล์ต้องไม่เกิน 5MB',
+            'selfie_image.required' => 'กรุณาอัพโหลดรูปถ่ายคู่บัตร',
+            'selfie_image.image' => 'ไฟล์ต้องเป็นรูปภาพ',
+            'selfie_image.max' => 'ขนาดไฟล์ต้องไม่เกิน 5MB',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // สร้าง directory สำหรับเก็บไฟล์ KYC
+            $kycPath = 'kyc/' . $user->id;
+
+            // อัพโหลดรูปบัตรประชาชน
+            $idCardPath = $request->file('id_card_image')->store($kycPath, 'private');
+
+            // อัพโหลดรูปถ่ายคู่บัตร
+            $selfiePath = $request->file('selfie_image')->store($kycPath, 'private');
+
+            // สร้าง KYC verification record
+            $kyc = \App\Models\KycVerification::create([
+                'user_id' => $user->id,
+                'id_card_image' => $idCardPath,
+                'selfie_image' => $selfiePath,
+                'status' => 'pending',
+                'submitted_at' => now(),
+            ]);
+
+            // อัพเดทสถานะ KYC ของ user
+            $user->update([
+                'kyc_status' => 'pending',
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ส่งเอกสารยืนยันตัวตนเรียบร้อย รอการตรวจสอบภายใน 24-48 ชั่วโมง',
+                'data' => [
+                    'kycId' => $kyc->id,
+                    'status' => 'pending',
+                    'submittedAt' => $kyc->submitted_at->format('Y-m-d H:i:s'),
+                ],
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('KYC Submit Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการส่งเอกสาร กรุณาลองใหม่',
+            ], 500);
+        }
+    }
+
+    /**
+     * อัพโหลดรูปภาพ KYC แบบแยกทีละรูป (สำหรับ mobile app)
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function uploadKycImage(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        $validator = Validator::make($request->all(), [
+            'image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'type' => 'required|in:id_card,selfie',
+        ], [
+            'image.required' => 'กรุณาอัพโหลดรูปภาพ',
+            'image.image' => 'ไฟล์ต้องเป็นรูปภาพ',
+            'image.max' => 'ขนาดไฟล์ต้องไม่เกิน 5MB',
+            'type.required' => 'กรุณาระบุประเภทเอกสาร',
+            'type.in' => 'ประเภทเอกสารไม่ถูกต้อง',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            // สร้าง directory สำหรับเก็บไฟล์ KYC
+            $kycPath = 'kyc/' . $user->id;
+            $type = $request->type;
+
+            // อัพโหลดรูป
+            $imagePath = $request->file('image')->store($kycPath, 'private');
+
+            // หา or สร้าง KYC draft
+            $kyc = \App\Models\KycVerification::where('user_id', $user->id)
+                ->whereIn('status', ['pending', 'draft'])
+                ->latest()
+                ->first();
+
+            if (!$kyc) {
+                // สร้าง draft ใหม่
+                $kyc = \App\Models\KycVerification::create([
+                    'user_id' => $user->id,
+                    'status' => 'draft',
+                    'id_card_image' => $type === 'id_card' ? $imagePath : null,
+                    'selfie_image' => $type === 'selfie' ? $imagePath : null,
+                ]);
+            } else {
+                // อัพเดท existing
+                $column = $type === 'id_card' ? 'id_card_image' : 'selfie_image';
+                $kyc->update([$column => $imagePath]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'อัพโหลดรูปภาพสำเร็จ',
+                'data' => [
+                    'kycId' => $kyc->id,
+                    'type' => $type,
+                    'hasIdCard' => !empty($kyc->id_card_image),
+                    'hasSelfie' => !empty($kyc->selfie_image),
+                    'canSubmit' => !empty($kyc->id_card_image) && !empty($kyc->selfie_image),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('KYC Image Upload Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการอัพโหลด กรุณาลองใหม่',
+            ], 500);
+        }
+    }
+
+    /**
+     * ยืนยันส่ง KYC (หลังจาก upload รูปครบแล้ว)
+     *
+     * @return JsonResponse
+     */
+    public function confirmKycSubmission(): JsonResponse
+    {
+        $user = Auth::user();
+
+        // หา KYC draft ที่มีเอกสารครบ
+        $kyc = \App\Models\KycVerification::where('user_id', $user->id)
+            ->whereIn('status', ['draft'])
+            ->whereNotNull('id_card_image')
+            ->whereNotNull('selfie_image')
+            ->latest()
+            ->first();
+
+        if (!$kyc) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาอัพโหลดเอกสารให้ครบถ้วนก่อน',
+            ], 400);
+        }
+
+        // อัพเดทสถานะเป็น pending
+        $kyc->update([
+            'status' => 'pending',
+            'submitted_at' => now(),
+        ]);
+
+        // อัพเดทสถานะ user
+        $user->update([
+            'kyc_status' => 'pending',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ส่งเอกสารยืนยันตัวตนเรียบร้อย รอการตรวจสอบภายใน 24-48 ชั่วโมง',
+            'data' => [
+                'kycId' => $kyc->id,
+                'status' => 'pending',
+                'submittedAt' => $kyc->submitted_at->format('Y-m-d H:i:s'),
+            ],
+        ]);
+    }
 }

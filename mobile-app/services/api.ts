@@ -534,5 +534,120 @@ export const getWalletTransactions = async (
   }
 };
 
+// =====================================================
+// KYC APIs
+// =====================================================
+
+/**
+ * ดึงสถานะ KYC
+ */
+export const getKycStatus = async (): Promise<{
+  success: boolean;
+  data?: {
+    status: 'not_submitted' | 'pending' | 'approved' | 'rejected';
+    verifiedAt?: string;
+    submission?: {
+      id: number;
+      status: string;
+      submittedAt?: string;
+      reviewedAt?: string;
+      rejectionReason?: string;
+      hasIdCard: boolean;
+      hasSelfie: boolean;
+    };
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.KYC_STATUS);
+    return response.data;
+  } catch (error) {
+    console.error('Get KYC status error:', error);
+    return null;
+  }
+};
+
+/**
+ * อัพโหลดรูปภาพ KYC
+ */
+export const uploadKycImage = async (
+  imageUri: string,
+  type: 'id_card' | 'selfie'
+): Promise<{
+  success: boolean;
+  data?: {
+    kycId: number;
+    type: string;
+    hasIdCard: boolean;
+    hasSelfie: boolean;
+    canSubmit: boolean;
+  };
+  message?: string;
+}> => {
+  try {
+    const formData = new FormData();
+
+    // สร้าง file object จาก uri
+    const filename = imageUri.split('/').pop() || `${type}.jpg`;
+    const match = /\.(\w+)$/.exec(filename);
+    const fileType = match ? `image/${match[1]}` : 'image/jpeg';
+
+    formData.append('image', {
+      uri: imageUri,
+      name: filename,
+      type: fileType,
+    } as unknown as Blob);
+    formData.append('type', type);
+
+    const response = await apiClient.post(API_ENDPOINTS.KYC_UPLOAD, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'อัพโหลดรูปภาพไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * ยืนยันส่ง KYC
+ */
+export const confirmKycSubmission = async (): Promise<{
+  success: boolean;
+  data?: {
+    kycId: number;
+    status: string;
+    submittedAt: string;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.KYC_CONFIRM);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'ส่งเอกสารไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
 // Export axios instance สำหรับใช้งานตรงๆ ถ้าต้องการ
 export { apiClient };

@@ -153,6 +153,14 @@ Route::prefix('v1')->group(function () {
             Route::get('/transactions', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getWalletTransactions']);
         });
 
+        // KYC (Mobile App)
+        Route::prefix('kyc')->group(function () {
+            Route::get('/status', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getKycStatus']);
+            Route::post('/submit', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'submitKyc']);
+            Route::post('/upload', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'uploadKycImage']);
+            Route::post('/confirm', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'confirmKycSubmission']);
+        });
+
         // Translation (Google Translate API)
         Route::prefix('translate')->group(function () {
             Route::post('/', [TranslateController::class, 'translate']);

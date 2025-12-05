@@ -50,6 +50,12 @@ export const API_ENDPOINTS = {
   WALLET: '/wallet',
   WALLET_TRANSACTIONS: '/wallet/transactions',
 
+  // KYC (Mobile App)
+  KYC_STATUS: '/kyc/status',
+  KYC_SUBMIT: '/kyc/submit',
+  KYC_UPLOAD: '/kyc/upload',
+  KYC_CONFIRM: '/kyc/confirm',
+
   // Profile
   PROFILE: '/profile',
   UPDATE_PROFILE: '/profile', // ใช้ PUT method
