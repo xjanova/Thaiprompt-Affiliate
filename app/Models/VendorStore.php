@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -144,6 +145,23 @@ class VendorStore extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class, 'store_id');
+    }
+
+    /**
+     * รีวิวทั้งหมดของร้านค้า (ผ่านสินค้า)
+     *
+     * ดึงรีวิวทั้งหมดจากสินค้าทุกชิ้นในร้านค้านี้
+     */
+    public function reviews(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            ProductReview::class,  // โมเดลปลายทาง
+            Product::class,        // โมเดลกลาง
+            'store_id',            // Foreign key บนตาราง products
+            'product_id',          // Foreign key บนตาราง product_reviews
+            'id',                  // Local key บนตาราง vendor_stores
+            'id'                   // Local key บนตาราง products
+        );
     }
 
     /**
