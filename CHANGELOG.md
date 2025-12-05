@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.8] - 2025-12-05
+
+### ✨ Features
+- feat(mobile-app): เพิ่มหน้า ShoppingPage แบบ Hybrid (WebView) (bf9d49eb)
+- feat(mobile-app): เพิ่มหน้า MainMenu แบบ Premium พร้อม Lava Lamp effect (b65bb482)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2083 from xjanova/claude/review-mobile-api-018iYAgrEzL6VTaMvUoDdgZW (ffbeb4f0)
+
 ## [v3.361.7] - 2025-12-05
 
 ### ✨ Features
