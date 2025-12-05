@@ -280,19 +280,11 @@ export const getReferrals = async (): Promise<ReferralsData | null> => {
 // =====================================================
 
 /**
- * ดึงการตั้งค่า app
+ * หมายเหตุ: แอพใช้ local config จาก @/config/appConfig แทน
+ * เพื่อความเป็นอิสระและไม่พึ่งพา server control
+ *
+ * ดู: mobile-app/config/appConfig.ts
  */
-export const getSettings = async (): Promise<Record<string, unknown> | null> => {
-  try {
-    const response = await apiClient.get<ApiResponse<Record<string, unknown>>>(
-      API_ENDPOINTS.SETTINGS
-    );
-    return response.data.data || null;
-  } catch (error) {
-    console.error('Get settings error:', error);
-    return null;
-  }
-};
 
 // =====================================================
 // Products APIs

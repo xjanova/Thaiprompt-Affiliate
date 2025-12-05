@@ -1,5 +1,7 @@
 /**
  * หน้า Rank - แสดงระดับและความคืบหน้า
+ *
+ * แสดงข้อมูล rank พร้อม progress ring และสถิติที่สวยงาม
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -16,9 +18,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import AnimatedRN, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 
 import { getUserRankProgress, getRanks, type Rank, type RankProgress } from '@/services/api';
 import { COLORS, formatCurrency } from '@/constants';
+import { ProgressRing, StatCard } from '@/components/charts';
 
 export default function RankScreen() {
   const [loading, setLoading] = useState(true);
@@ -182,7 +186,7 @@ export default function RankScreen() {
         }
       >
         {/* Current Rank Card */}
-        <View className="px-4 py-6">
+        <AnimatedRN.View entering={FadeInDown.springify()} className="px-4 py-6">
           <LinearGradient
             colors={getRankColor(currentRank)}
             start={{ x: 0, y: 0 }}
@@ -194,9 +198,22 @@ export default function RankScreen() {
             <View className="absolute bottom-0 left-0 w-32 h-32 rounded-full bg-black/10 -ml-16 -mb-16" />
 
             <View className="items-center relative z-10">
-              {/* Rank Icon */}
-              <View className="bg-white/20 rounded-full p-6 mb-4">
-                <Text className="text-6xl">{getRankIcon(currentRank)}</Text>
+              {/* Rank Icon with Progress Ring */}
+              <View className="relative mb-4">
+                <ProgressRing
+                  progress={overallProgress}
+                  size={140}
+                  strokeWidth={8}
+                  color="#FFFFFF"
+                  backgroundColor="rgba(255,255,255,0.2)"
+                  showPercentage={false}
+                  isDark={true}
+                />
+                <View className="absolute inset-0 items-center justify-center">
+                  <View className="bg-white/20 rounded-full p-4">
+                    <Text className="text-5xl">{getRankIcon(currentRank)}</Text>
+                  </View>
+                </View>
               </View>
 
               {/* Rank Name */}
@@ -207,9 +224,18 @@ export default function RankScreen() {
                 Level {currentRank?.level || 1}
               </Text>
 
+              {/* Progress Percentage */}
+              {!isMaxRank && (
+                <View className="bg-white/20 rounded-full px-4 py-2 mb-2">
+                  <Text className="text-white font-medium">
+                    ความคืบหน้า: {overallProgress}%
+                  </Text>
+                </View>
+              )}
+
               {/* Commission Rate */}
               {currentRank?.commissionRate && (
-                <View className="bg-white/20 rounded-full px-4 py-2">
+                <View className="bg-white/30 rounded-full px-4 py-2">
                   <Text className="text-white font-medium">
                     อัตราคอมมิชชัน: {currentRank.commissionRate}%
                   </Text>
@@ -217,7 +243,7 @@ export default function RankScreen() {
               )}
             </View>
           </LinearGradient>
-        </View>
+        </AnimatedRN.View>
 
         {/* Progress to Next Rank */}
         {!isMaxRank && nextRank && (
@@ -324,42 +350,46 @@ export default function RankScreen() {
         <View className="px-4 mb-6">
           <Text className="text-white font-semibold text-lg mb-3">สถิติของคุณ</Text>
           <View className="flex-row flex-wrap -mx-1">
-            <View className="w-1/2 p-1">
-              <View className="bg-slate-800 rounded-xl p-4">
-                <Text className="text-3xl mb-2">⭐</Text>
-                <Text className="text-2xl text-white font-bold">
-                  {statistics.rankPoints.toLocaleString()}
-                </Text>
-                <Text className="text-gray-400 text-sm">คะแนนสะสม</Text>
-              </View>
-            </View>
-            <View className="w-1/2 p-1">
-              <View className="bg-slate-800 rounded-xl p-4">
-                <Text className="text-3xl mb-2">👥</Text>
-                <Text className="text-2xl text-white font-bold">
-                  {statistics.totalReferrals.toLocaleString()}
-                </Text>
-                <Text className="text-gray-400 text-sm">คนแนะนำทั้งหมด</Text>
-              </View>
-            </View>
-            <View className="w-1/2 p-1">
-              <View className="bg-slate-800 rounded-xl p-4">
-                <Text className="text-3xl mb-2">💰</Text>
-                <Text className="text-xl text-white font-bold">
-                  {formatCurrency(statistics.totalSales)}
-                </Text>
-                <Text className="text-gray-400 text-sm">ยอดขายส่วนตัว</Text>
-              </View>
-            </View>
-            <View className="w-1/2 p-1">
-              <View className="bg-slate-800 rounded-xl p-4">
-                <Text className="text-3xl mb-2">📊</Text>
-                <Text className="text-xl text-white font-bold">
-                  {formatCurrency(statistics.teamSales)}
-                </Text>
-                <Text className="text-gray-400 text-sm">ยอดขายทีม</Text>
-              </View>
-            </View>
+            <AnimatedRN.View entering={FadeInRight.delay(100).springify()} className="w-1/2 p-1">
+              <StatCard
+                title="คะแนนสะสม"
+                value={statistics.rankPoints.toLocaleString()}
+                icon="star"
+                iconColor="#F59E0B"
+                isDark={true}
+                size="medium"
+              />
+            </AnimatedRN.View>
+            <AnimatedRN.View entering={FadeInRight.delay(150).springify()} className="w-1/2 p-1">
+              <StatCard
+                title="คนแนะนำทั้งหมด"
+                value={`${statistics.totalReferrals} คน`}
+                icon="people"
+                iconColor="#8B5CF6"
+                isDark={true}
+                size="medium"
+              />
+            </AnimatedRN.View>
+            <AnimatedRN.View entering={FadeInRight.delay(200).springify()} className="w-1/2 p-1">
+              <StatCard
+                title="ยอดขายส่วนตัว"
+                value={formatCurrency(statistics.totalSales)}
+                icon="cart"
+                iconColor="#10B981"
+                isDark={true}
+                size="medium"
+              />
+            </AnimatedRN.View>
+            <AnimatedRN.View entering={FadeInRight.delay(250).springify()} className="w-1/2 p-1">
+              <StatCard
+                title="ยอดขายทีม"
+                value={formatCurrency(statistics.teamSales)}
+                icon="trending-up"
+                iconColor="#3B82F6"
+                isDark={true}
+                size="medium"
+              />
+            </AnimatedRN.View>
           </View>
         </View>
 

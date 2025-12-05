@@ -105,10 +105,9 @@ export const API_ENDPOINTS = {
   CHANGE_PASSWORD: '/profile/change-password',
   REFERRAL_CODE: '/profile/referral-code',
 
-  // Settings
-  SETTINGS: '/settings',
-  THEME: '/app/theme',
-  COMPLETE_THEME: '/app/complete-theme',
+  // Settings (อ่านจาก local config เป็นหลัก)
+  // หมายเหตุ: แอพใช้ config จาก @/config/appConfig เป็นหลัก
+  // เพื่อความเป็นอิสระจาก server control
 } as const;
 
 // =====================================================

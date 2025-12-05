@@ -85,6 +85,31 @@ export interface PaginatedCommissions {
 }
 
 // =====================================================
+// Earnings Summary Types
+// =====================================================
+
+export interface EarningsSummary {
+  totalEarnings: number;
+  thisMonthEarnings: number;
+  lastMonthEarnings: number;
+  pendingEarnings: number;
+  growthPercent: number;
+  earningsByType: {
+    unilevelDirect: number;
+    unilevelIndirect: number;
+    binaryPair: number;
+    sponsorBonus: number;
+    rankBonus: number;
+    leadershipBonus: number;
+  };
+  chart: {
+    date: string;
+    day: string;
+    amount: number;
+  }[];
+}
+
+// =====================================================
 // Product Types
 // =====================================================
 
