@@ -33,6 +33,7 @@ export default function RootLayout() {
   // State สำหรับ force proceed ถ้า timeout
   const [forceReady, setForceReady] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('กำลังโหลด...');
+  const [splashHidden, setSplashHidden] = useState(false);
 
   // โหลดฟอนต์จาก Google Fonts
   const [fontsLoaded] = useFonts({
@@ -40,6 +41,16 @@ export default function RootLayout() {
     'OpenSans-Bold': OpenSans_700Bold,
     'OpenSans-SemiBold': OpenSans_600SemiBold,
   });
+
+  // ซ่อน native splash screen ทันทีที่ fonts โหลดเสร็จ
+  // เพื่อให้ผู้ใช้เห็น LoadingScreen พร้อม animation
+  useEffect(() => {
+    if (fontsLoaded && !splashHidden) {
+      SplashScreen.hideAsync().then(() => {
+        setSplashHidden(true);
+      });
+    }
+  }, [fontsLoaded, splashHidden]);
 
   // Initialize app with timeout
   useEffect(() => {
@@ -83,15 +94,8 @@ export default function RootLayout() {
     };
   }, []);
 
-  // ซ่อน splash screen เมื่อโหลดเสร็จ
-  useEffect(() => {
-    const isReady = fontsLoaded && (isInitialized || forceReady);
-    if (isReady) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, isInitialized, forceReady]);
-
   // แสดง loading ถ้ายังไม่พร้อม
+  // ตอนนี้ native splash หายไปแล้ว ผู้ใช้จะเห็น LoadingScreen
   const isReady = fontsLoaded && (isInitialized || forceReady);
   if (!isReady) {
     return <LoadingScreen message={loadingMessage} />;
