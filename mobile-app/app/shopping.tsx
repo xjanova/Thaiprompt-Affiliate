@@ -1,5 +1,8 @@
 /**
  * Shopping Screen - หน้าช้อปปิ้งสินค้า
+ *
+ * Admin Control:
+ * - Banner โฆษณา (ส่งจาก Admin ผ่าน API)
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -22,6 +25,7 @@ import { getProducts, getProductCategories } from '@/services/api';
 import * as Cache from '@/services/cache';
 import * as Network from '@/services/network';
 import { formatCurrency } from '@/constants';
+import { BannerCarousel } from '@/components';
 import type { Product, ProductCategory } from '@/types';
 
 // Category Chip
@@ -330,7 +334,7 @@ export default function ShoppingScreen() {
 
         {/* Products Grid */}
         <ScrollView
-          className="flex-1 px-4"
+          className="flex-1"
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -340,13 +344,36 @@ export default function ShoppingScreen() {
             />
           }
         >
+          {/* =====================================================
+              Banner โฆษณา (Admin ส่งมา)
+
+              Admin สามารถ:
+              - เพิ่ม/แก้ไข/ลบ banner
+              - กำหนดรูปภาพและหัวข้อ
+              - กำหนด link ปลายทาง (สินค้า, หมวดหมู่, URL ภายนอก)
+              - กำหนดลำดับการแสดง
+              - กำหนดระยะเวลาแสดง
+              ===================================================== */}
+          <View className="pt-2 pb-4">
+            <BannerCarousel
+              position="top"
+              height={160}
+              autoPlay={true}
+              autoPlayInterval={5000}
+              showIndicators={true}
+              isDark={isDark}
+            />
+          </View>
+
           {/* Results Count */}
-          <Text className="text-gray-500 dark:text-gray-400 text-sm mb-3">
-            พบ {filteredProducts.length} รายการ
-          </Text>
+          <View className="px-4">
+            <Text className="text-gray-500 dark:text-gray-400 text-sm mb-3">
+              พบ {filteredProducts.length} รายการ
+            </Text>
+          </View>
 
           {/* Product Grid */}
-          <View className="flex-row flex-wrap justify-between">
+          <View className="flex-row flex-wrap justify-between px-4">
             {filteredProducts.length > 0 ? (
               filteredProducts.map((product, index) => (
                 <ProductCard

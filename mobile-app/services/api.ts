@@ -1859,5 +1859,161 @@ export const getEarningsSummary = async (): Promise<{
   }
 };
 
+// =====================================================
+// Admin Control APIs (เฉพาะ 2 อย่างเท่านั้น)
+// =====================================================
+
+/**
+ * Banner Type
+ */
+export interface Banner {
+  id: number;
+  title: string;
+  image: string;
+  link?: string;
+  linkType?: 'internal' | 'external' | 'product' | 'category';
+  linkTarget?: string;
+  position: 'top' | 'middle' | 'bottom';
+  isActive: boolean;
+  sortOrder: number;
+}
+
+/**
+ * 1. ดึง Banners โฆษณา (Admin ส่งมา)
+ *
+ * Admin สามารถ:
+ * - เพิ่ม/แก้ไข/ลบ banner
+ * - กำหนดตำแหน่ง (top, middle, bottom)
+ * - กำหนด link ปลายทาง
+ * - กำหนดระยะเวลาแสดง
+ */
+export const getBanners = async (position?: 'top' | 'middle' | 'bottom'): Promise<{
+  success: boolean;
+  data?: Banner[];
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.BANNERS, {
+      params: { position },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Get banners error:', error);
+    return null;
+  }
+};
+
+/**
+ * บันทึกการคลิก banner
+ */
+export const trackBannerClick = async (bannerId: number): Promise<void> => {
+  try {
+    await apiClient.post(`${API_ENDPOINTS.BANNER_CLICK}/${bannerId}/click`);
+  } catch (error) {
+    console.error('Track banner click error:', error);
+  }
+};
+
+/**
+ * 2. ลงทะเบียน Push Token (สำหรับรับ Push จาก Admin)
+ *
+ * Admin สามารถ:
+ * - ส่ง push notification ไปยังผู้ใช้ทั้งหมดหรือเฉพาะกลุ่ม
+ * - ส่งข้อความโปรโมชั่น, ข่าวสาร, แจ้งเตือนพิเศษ
+ */
+export const registerPushToken = async (
+  token: string,
+  platform: 'ios' | 'android'
+): Promise<{
+  success: boolean;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.REGISTER_PUSH_TOKEN, {
+      token,
+      platform,
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'ลงทะเบียน push token ไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด',
+    };
+  }
+};
+
+/**
+ * 3. ลงทะเบียนเครื่อง (สำหรับ Admin Analytics Dashboard)
+ *
+ * Admin สามารถดู:
+ * - จำนวนเครื่องที่ติดตั้งแอพ
+ * - สถิติตาม Platform (iOS/Android)
+ * - สถิติตาม App Version
+ * - Daily Active Users (DAU)
+ * - Retention Rate
+ *
+ * ข้อมูลนี้ใช้สำหรับวิเคราะห์เท่านั้น ไม่มีผลต่อการทำงานของแอพ
+ */
+export const registerDevice = async (deviceInfo: {
+  deviceId: string;
+  platform: 'ios' | 'android';
+  deviceModel: string;
+  deviceBrand: string;
+  osVersion: string;
+  appVersion: string;
+  pushToken?: string;
+  locale: string;
+  timezone: string;
+}): Promise<{
+  success: boolean;
+  data?: {
+    deviceId: string;
+    isNewDevice: boolean;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.DEVICE_REGISTER, deviceInfo);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'ลงทะเบียนเครื่องไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด',
+    };
+  }
+};
+
+/**
+ * ส่ง heartbeat เพื่อบันทึกว่าเครื่องยังใช้งานอยู่
+ * ใช้สำหรับคำนวณ DAU/MAU และ Retention Rate
+ */
+export const sendDeviceHeartbeat = async (deviceId: string): Promise<{
+  success: boolean;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.DEVICE_HEARTBEAT, { deviceId });
+    return response.data;
+  } catch (error) {
+    // Silent fail - ไม่แสดง error ให้ user เห็น
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด',
+    };
+  }
+};
+
 // Export axios instance สำหรับใช้งานตรงๆ ถ้าต้องการ
 export { apiClient };

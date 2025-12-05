@@ -751,10 +751,17 @@ return [
             'submenu' => [
                 ['label' => 'ตั้งค่าทั่วไป', 'route' => 'admin.settings.index'],
                 ['label' => '🍔 จัดการสิทธิ์เมนู', 'route' => 'admin.menu-management.index', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500', 'description' => 'เปิด/ปิด จัดเรียงเมนูตาม Role'],
-                ['label' => 'ตั้งค่า Mobile App', 'route' => 'admin.app-management.settings.index'],
-                ['label' => 'คุณสมบัติแอป', 'route' => 'admin.app-management.features.index'],
-                ['label' => 'แบนเนอร์แอป', 'route' => 'admin.app-management.banners.index'],
-                ['label' => 'โหมดซ่อมบำรุง', 'route' => 'admin.app-management.app-maintenance.index'],
+                // =====================================================
+                // 📱 Mobile App Management (3 อย่างเท่านั้น)
+                // แอพเป็น Standalone - Admin ควบคุมได้เฉพาะ:
+                // 1. Push Notifications
+                // 2. Banner โฆษณา
+                // 3. Device Analytics
+                // =====================================================
+                ['label' => '📱 Mobile App', 'route' => 'admin.mobile-app.index', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-blue-500 to-cyan-500', 'description' => 'จัดการแอพมือถือ'],
+                ['label' => '📢 Push Notifications', 'route' => 'admin.mobile-app.push.index', 'description' => 'ส่งข้อความถึงผู้ใช้'],
+                ['label' => '🖼️ Banner โฆษณา', 'route' => 'admin.mobile-app.banners.index', 'description' => 'จัดการแบนเนอร์ในแอพ'],
+                ['label' => '📊 Device Analytics', 'route' => 'admin.mobile-app.analytics.index', 'description' => 'สถิติเครื่องที่ลงทะเบียน'],
                 ['label' => 'ตั้งค่า OCR', 'route' => 'admin.settings.ocr'],
                 ['label' => 'จัดการ API', 'route' => 'admin.api-management.endpoints.index'],
                 ['label' => 'API Keys', 'route' => 'admin.api-management.keys.index'],

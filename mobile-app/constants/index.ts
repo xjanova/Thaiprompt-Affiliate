@@ -84,6 +84,12 @@ export const API_ENDPOINTS = {
   // Push Notification Token (Mobile App)
   PUSH_TOKEN: '/push/token',
 
+  // Push Notification Delivery Tracking (สำหรับ retry mechanism)
+  PUSH_CONFIRM: '/mobile/push/confirm',
+  PUSH_PENDING: '/mobile/push/pending',
+  PUSH_BULK_CONFIRM: '/mobile/push/bulk-confirm',
+  PUSH_ANALYTICS: '/mobile/push/analytics',
+
   // Rank System (Mobile App)
   RANKS: '/mobile/ranks',
   RANK_DETAIL: '/mobile/ranks', // + /{rankId}
@@ -105,9 +111,21 @@ export const API_ENDPOINTS = {
   CHANGE_PASSWORD: '/profile/change-password',
   REFERRAL_CODE: '/profile/referral-code',
 
-  // Settings (อ่านจาก local config เป็นหลัก)
-  // หมายเหตุ: แอพใช้ config จาก @/config/appConfig เป็นหลัก
-  // เพื่อความเป็นอิสระจาก server control
+  // =====================================================
+  // Admin Control (3 อย่างหลัก)
+  // Admin สามารถดู/จัดการได้เฉพาะส่วนนี้เท่านั้น
+  // =====================================================
+
+  // 1. Banner โฆษณา (Admin ส่งมา)
+  BANNERS: '/mobile/banners',
+  BANNER_CLICK: '/mobile/banners', // + /{bannerId}/click
+
+  // 2. Push Notification (Admin ส่งไปยังเครื่องลูกค้า)
+  REGISTER_PUSH_TOKEN: '/mobile/push-token',
+
+  // 3. Device Analytics (Admin ดู Dashboard สถิติเครื่อง)
+  DEVICE_REGISTER: '/mobile/device/register',
+  DEVICE_HEARTBEAT: '/mobile/device/heartbeat',
 } as const;
 
 // =====================================================
