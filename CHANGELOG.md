@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.362.8] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2113 from xjanova/claude/fix-admin-tokens-null-01DM4DDfAGWB3jCcr45jD9FL (b4dde033)
+- fix: improve product update validation and slug handling (6464d0e5)
+### 🔧 Other Changes
+
+
 ## [v3.362.7] - 2025-12-05
 
 ### ✨ Features
