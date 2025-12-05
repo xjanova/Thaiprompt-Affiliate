@@ -78,8 +78,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
    * Initialize - เรียกตอนเปิด app
    * ตรวจสอบว่ามี token อยู่หรือไม่ และยังใช้ได้หรือไม่
    * ถ้า offline จะใช้ข้อมูลจาก local storage
+   * มี timeout 10 วินาที เพื่อไม่ให้ค้างนาน
    */
   initialize: async () => {
+    const INIT_TIMEOUT = 10000; // 10 seconds timeout
+
+    // Helper function สำหรับ timeout
+    const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
+      return Promise.race([
+        promise,
+        new Promise<T>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout')), ms)
+        ),
+      ]);
+    };
+
     try {
       set({ isLoading: true });
 
@@ -98,8 +111,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // ตั้งค่า header
       setAuthHeader(token);
 
-      // ตรวจสอบว่าออนไลน์หรือไม่
-      const isOnline = await Network.checkNetworkStatus();
+      // ตรวจสอบว่าออนไลน์หรือไม่ (with timeout)
+      let isOnline = false;
+      try {
+        isOnline = await withTimeout(Network.checkNetworkStatus(), 5000);
+      } catch {
+        console.log('Network check timeout, assuming offline');
+        isOnline = false;
+      }
 
       if (!isOnline) {
         // Offline Mode - โหลดข้อมูล user จาก local storage
@@ -127,8 +146,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
 
-      // Online Mode - ตรวจสอบ token
-      const isValid = await validateToken();
+      // Online Mode - ตรวจสอบ token (with timeout)
+      let isValid = false;
+      try {
+        isValid = await withTimeout(validateToken(), INIT_TIMEOUT);
+      } catch {
+        console.log('Token validation timeout');
+        isValid = false;
+      }
 
       if (!isValid) {
         // Token หมดอายุ - ลองใช้ cached user
@@ -154,8 +179,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
 
-      // ดึงข้อมูล user จาก server
-      const user = await getCurrentUser();
+      // ดึงข้อมูล user จาก server (with timeout)
+      let user = null;
+      try {
+        user = await withTimeout(getCurrentUser(), INIT_TIMEOUT);
+      } catch {
+        console.log('Get user timeout, using cached');
+        user = await loadUserFromStorage();
+      }
 
       if (user) {
         // บันทึก user ลง storage สำหรับใช้ offline
