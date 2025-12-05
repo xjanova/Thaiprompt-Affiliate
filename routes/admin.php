@@ -2897,6 +2897,8 @@ Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () 
         ->name('reports.export');
 
     // Wallets
+    Route::get('/wallets', [\App\Http\Controllers\Admin\PlatformRevenueController::class, 'wallets'])
+        ->name('wallets.index');
     Route::get('/wallets/{wallet}', [\App\Http\Controllers\Admin\PlatformRevenueController::class, 'showWallet'])
         ->name('wallets.show');
 
