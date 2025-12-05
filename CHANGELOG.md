@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.360.0] - 2025-12-05
+
+### ✨ Features
+- Merge pull request #2071 from xjanova/claude/fix-setting-function-017KM3BT69k4PQeEiusiFxFz (16efb83f)
+- feat: add is_hidden field for products (7ffde155)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.359.1] - 2025-12-05
 
 ### ✨ Features
