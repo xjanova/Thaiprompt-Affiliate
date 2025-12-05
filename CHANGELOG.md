@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.16] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2037 from xjanova/claude/fix-cart-menu-display-01WLA1fDmsRaLsh2Am6Md1ZY (77983b26)
+- fix(storefront): fix cart drawer display and remove floating cart button (bf2fb211)
+### 🔧 Other Changes
+
+
 ## [v3.358.15] - 2025-12-05
 
 ### ✨ Features
