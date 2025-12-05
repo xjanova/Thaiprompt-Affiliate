@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.362.6] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2111 from xjanova/claude/fix-admin-tokens-null-01DM4DDfAGWB3jCcr45jD9FL (7a548134)
+- fix: resolve ambiguous column error in PlatformRevenueService (964ac963)
+### 🔧 Other Changes
+
+
 ## [v3.362.5] - 2025-12-05
 
 ### ✨ Features
