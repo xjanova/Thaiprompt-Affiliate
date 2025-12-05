@@ -244,6 +244,7 @@ class ECommerceController extends Controller
             // Set defaults
             $validated['is_active'] = $request->has('is_active');
             $validated['is_featured'] = $request->has('is_featured');
+            $validated['is_hidden'] = $request->has('is_hidden');
             $validated['track_inventory'] = $request->has('track_inventory');
             $validated['stock_status'] = $validated['track_inventory'] && ($validated['stock_quantity'] ?? 0) > 0 ? 'in_stock' : 'out_of_stock';
             $validated['commission_rate'] = $validated['commission_rate'] ?? 10.00;
@@ -379,6 +380,7 @@ class ECommerceController extends Controller
             // Handle checkboxes
             $validated['is_active'] = $request->has('is_active');
             $validated['is_featured'] = $request->has('is_featured');
+            $validated['is_hidden'] = $request->has('is_hidden');
             $validated['track_inventory'] = $request->has('track_inventory');
 
             // Update slug if name changed

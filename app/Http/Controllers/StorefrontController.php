@@ -37,7 +37,7 @@ class StorefrontController extends Controller
                 $query->active()->orderBy('sort_order');
             }])
             ->withCount(['products' => function ($query) {
-                $query->active()->inStock();
+                $query->active()->visible()->inStock();
             }])
             ->orderBy('sort_order')
             ->get();
@@ -50,7 +50,7 @@ class StorefrontController extends Controller
         $featuredStores = VendorStore::where('is_active', true)
             ->where('is_featured_home', true)
             ->with(['products' => function ($query) {
-                $query->active()->inStock()->latest()->take(3);
+                $query->active()->visible()->inStock()->latest()->take(3);
             }])
             ->orderBy('rating_average', 'desc')
             ->take(7) // 1 for official + 6 vendor stores
@@ -155,6 +155,7 @@ class StorefrontController extends Controller
         return Cache::remember('storefront_flash_deals', 300, function () {
             return Product::with(['category', 'mlmProductPv'])
                 ->active()
+                ->visible()
                 ->inStock()
                 ->where(function ($query) {
                     // สินค้าลดราคา
@@ -183,6 +184,7 @@ class StorefrontController extends Controller
     {
         $query = Product::with(['category', 'seller', 'mlmProductPv'])
             ->active()
+            ->visible()
             ->inStock();
 
         // กรองตามประเภทร้าน
@@ -263,9 +265,9 @@ class StorefrontController extends Controller
     {
         return Cache::remember('storefront_stats', 600, function () {
             return [
-                'all' => Product::active()->inStock()->count(),
-                'official' => Product::active()->inStock()->whereNull('seller_id')->count(),
-                'premium' => Product::active()->inStock()
+                'all' => Product::active()->visible()->inStock()->count(),
+                'official' => Product::active()->visible()->inStock()->whereNull('seller_id')->count(),
+                'premium' => Product::active()->visible()->inStock()
                     ->whereNotNull('seller_id')
                     ->where('rating_average', '>=', 4.5)
                     ->where('rating_count', '>', 0)
@@ -294,6 +296,7 @@ class StorefrontController extends Controller
         $products = Product::with(['category', 'mlmProductPv'])
             ->where('seller_id', $store->user_id)
             ->active()
+            ->visible()
             ->inStock()
             ->latest()
             ->paginate(24);
@@ -302,11 +305,13 @@ class StorefrontController extends Controller
         $storeCategories = ProductCategory::whereHas('products', function ($query) use ($store) {
             $query->where('seller_id', $store->user_id)
                 ->active()
+                ->visible()
                 ->inStock();
         })
             ->withCount(['products' => function ($query) use ($store) {
                 $query->where('seller_id', $store->user_id)
                     ->active()
+                    ->visible()
                     ->inStock();
             }])
             ->get();
@@ -382,6 +387,7 @@ class StorefrontController extends Controller
         }
 
         $products = Product::active()
+            ->visible()
             ->inStock()
             ->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -460,10 +466,10 @@ class StorefrontController extends Controller
         // ดึงร้านค้าทั้งหมดพร้อม filter
         $query = VendorStore::where('is_active', true)
             ->with(['products' => function ($query) {
-                $query->active()->inStock()->latest()->take(4);
+                $query->active()->visible()->inStock()->latest()->take(4);
             }])
             ->withCount(['products' => function ($query) {
-                $query->active()->inStock();
+                $query->active()->visible()->inStock();
             }]);
 
         // Filter by search
@@ -509,7 +515,7 @@ class StorefrontController extends Controller
         $stats = [
             'total_stores' => VendorStore::where('is_active', true)->count(),
             'featured_stores' => VendorStore::where('is_active', true)->where('is_featured_home', true)->count(),
-            'total_products' => Product::active()->inStock()->count(),
+            'total_products' => Product::active()->visible()->inStock()->count(),
         ];
 
         return view('storefront.stores', compact(
