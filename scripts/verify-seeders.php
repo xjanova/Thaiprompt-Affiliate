@@ -64,6 +64,16 @@ $basePath = dirname(__DIR__);
 $seederDir = $basePath . '/database/seeders';
 $databaseSeederPath = $seederDir . '/DatabaseSeeder.php';
 
+// Seeders ที่ถูกปิดใช้งานโดยตั้งใจ (ไม่ต้องรายงานเป็น error)
+// เหตุผลดูได้จาก comment ใน DatabaseSeeder.php
+$intentionallyExcludedSeeders = [
+    'DemoUsersSeeder',          // ❌ ลบ - ใช้ ThaipromptMlmSeeder แทน
+    'HomepageImportSeeder',     // SKIP: Already exists - ใช้ครั้งเดียว
+    'MlmHierarchySeeder',       // ❌ ลบ - ใช้ ThaipromptMlmSeeder แทน
+    'PageBuilderSeeder',        // SKIP: Already exists - ใช้ครั้งเดียว
+    'ThaipromptMlmSeeder',      // ❌ ปิดไว้ - ทดสอบสมัครปกติ
+];
+
 // Check if directories exist
 if (!is_dir($seederDir)) {
     printError("Seeder directory not found: $seederDir");
@@ -118,20 +128,33 @@ sort($includedSeeders);
 printInfo("Found " . count($includedSeeders) . " seeders included in DatabaseSeeder.php");
 echo "\n";
 
-// Find missing seeders
+// Find missing seeders (excluding intentionally disabled ones)
 $missingSeeders = array_diff($allSeeders, $includedSeeders);
+$actuallyMissing = array_diff($missingSeeders, $intentionallyExcludedSeeders);
+$intentionallyDisabled = array_intersect($missingSeeders, $intentionallyExcludedSeeders);
 
 // Find extra seeders (referenced but file doesn't exist)
 $extraSeeders = array_diff($includedSeeders, $allSeeders);
 
-// Check results
+// Check results (only actual missing seeders count as errors)
 $hasIssues = false;
 
-if (count($missingSeeders) > 0) {
-    $hasIssues = true;
-    printError("Found " . count($missingSeeders) . " seeder(s) NOT included in DatabaseSeeder.php:");
+// Show intentionally disabled seeders (info only, not an error)
+if (count($intentionallyDisabled) > 0) {
+    printInfo("Found " . count($intentionallyDisabled) . " seeder(s) intentionally disabled (OK):");
     echo "\n";
-    foreach ($missingSeeders as $seeder) {
+    foreach ($intentionallyDisabled as $seeder) {
+        echo "  " . colorize("• $seeder", 'magenta') . " (disabled)\n";
+    }
+    echo "\n";
+}
+
+// Check for actually missing seeders (this is an error)
+if (count($actuallyMissing) > 0) {
+    $hasIssues = true;
+    printError("Found " . count($actuallyMissing) . " seeder(s) NOT included in DatabaseSeeder.php:");
+    echo "\n";
+    foreach ($actuallyMissing as $seeder) {
         echo "  " . colorize("• $seeder", 'red') . "\n";
     }
     echo "\n";
@@ -139,7 +162,7 @@ if (count($missingSeeders) > 0) {
     printWarning("Please add these seeders to DatabaseSeeder.php in the run() method:");
     echo "\n";
     echo colorize("  \$this->call([", 'yellow') . "\n";
-    foreach ($missingSeeders as $seeder) {
+    foreach ($actuallyMissing as $seeder) {
         echo colorize("      {$seeder}::class,  // TODO: Add description", 'yellow') . "\n";
     }
     echo colorize("  ]);", 'yellow') . "\n";
@@ -163,6 +186,7 @@ if (!$hasIssues) {
     printInfo("Summary:");
     echo "  • Total seeder files: " . colorize(count($allSeeders), 'green') . "\n";
     echo "  • Included in DatabaseSeeder: " . colorize(count($includedSeeders), 'green') . "\n";
+    echo "  • Intentionally disabled: " . colorize(count($intentionallyDisabled), 'magenta') . "\n";
     echo "  • Missing seeders: " . colorize("0", 'green') . "\n";
     echo "\n";
 
@@ -179,14 +203,16 @@ if (!$hasIssues) {
     printInfo("Summary:");
     echo "  • Total seeder files: " . colorize(count($allSeeders), 'blue') . "\n";
     echo "  • Included in DatabaseSeeder: " . colorize(count($includedSeeders), 'blue') . "\n";
-    echo "  • Missing seeders: " . colorize(count($missingSeeders), 'red') . "\n";
+    echo "  • Intentionally disabled: " . colorize(count($intentionallyDisabled), 'magenta') . "\n";
+    echo "  • Missing seeders: " . colorize(count($actuallyMissing), 'red') . "\n";
     echo "  • Extra references: " . colorize(count($extraSeeders), 'yellow') . "\n";
     echo "\n";
 
     printInfo("To fix this issue:");
     echo "  1. Add missing seeders to " . colorize("database/seeders/DatabaseSeeder.php", 'cyan') . "\n";
-    echo "  2. Ensure proper order (dependencies first)\n";
-    echo "  3. Run this script again to verify\n";
+    echo "  2. Or add to \$intentionallyExcludedSeeders in " . colorize("scripts/verify-seeders.php", 'cyan') . " if disabled on purpose\n";
+    echo "  3. Ensure proper order (dependencies first)\n";
+    echo "  4. Run this script again to verify\n";
     echo "\n";
 
     $executionTime = round((microtime(true) - $scriptStart) * 1000, 2);
