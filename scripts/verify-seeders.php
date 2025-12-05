@@ -101,9 +101,16 @@ printInfo("Found " . count($allSeeders) . " seeder files (excluding DatabaseSeed
 // Read DatabaseSeeder.php content
 $databaseSeederContent = file_get_contents($databaseSeederPath);
 
-// Extract seeder class names from DatabaseSeeder.php
+// Remove comments before extracting seeder names
+// This prevents commented-out seeders from being detected as "referenced but file not found"
+// 1. Remove multi-line comments (/* ... */)
+$contentWithoutComments = preg_replace('/\/\*.*?\*\//s', '', $databaseSeederContent);
+// 2. Remove single-line comments (// ...)
+$contentWithoutComments = preg_replace('/\/\/.*$/m', '', $contentWithoutComments);
+
+// Extract seeder class names from DatabaseSeeder.php (only from uncommented code)
 // Look for patterns like: SeederName::class
-preg_match_all('/(\w+Seeder)::class/', $databaseSeederContent, $matches);
+preg_match_all('/(\w+Seeder)::class/', $contentWithoutComments, $matches);
 $includedSeeders = $matches[1] ?? [];
 $includedSeeders = array_unique($includedSeeders);
 sort($includedSeeders);
