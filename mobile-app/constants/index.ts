@@ -20,6 +20,10 @@ export const API_ENDPOINTS = {
   REGISTER: '/register',
   ME: '/me',
 
+  // LINE Login (Mobile App)
+  LINE_LOGIN_URL: '/auth/line/mobile-url',
+  LINE_LOGIN_CALLBACK: '/auth/line/mobile-callback',
+
   // Dashboard
   DASHBOARD_STATS: '/dashboard/statistics',
   DASHBOARD_CHARTS: '/dashboard/charts',
@@ -41,6 +45,28 @@ export const API_ENDPOINTS = {
   CART: '/cart',
   CART_ADD: '/cart/add',
   CART_REMOVE: '/cart/remove',
+
+  // Wallet (Mobile App)
+  WALLET: '/wallet',
+  WALLET_TRANSACTIONS: '/wallet/transactions',
+
+  // KYC (Mobile App)
+  KYC_STATUS: '/kyc/status',
+  KYC_SUBMIT: '/kyc/submit',
+  KYC_UPLOAD: '/kyc/upload',
+  KYC_CONFIRM: '/kyc/confirm',
+
+  // Rider (Mobile App)
+  RIDER_STATUS: '/rider/status',
+  RIDER_REGISTER: '/rider/register',
+  RIDER_DOCUMENT: '/rider/document',
+  RIDER_PERMISSIONS: '/rider/permissions',
+  RIDER_AVAILABILITY: '/rider/availability',
+  RIDER_LOCATION: '/rider/location',
+  RIDER_JOBS_AVAILABLE: '/rider/jobs/available',
+  RIDER_JOBS_CURRENT: '/rider/jobs/current',
+  RIDER_JOB_ACCEPT: '/rider/jobs', // + /{jobId}/accept
+  RIDER_JOB_STATUS: '/rider/jobs', // + /{jobId}/status
 
   // Profile
   PROFILE: '/profile',

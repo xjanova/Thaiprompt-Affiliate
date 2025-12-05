@@ -82,6 +82,12 @@ Route::prefix('v1')->group(function () {
     // Register (public - for mobile app)
     Route::post('/register', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'register']);
 
+    // LINE Login สำหรับ Mobile App (public)
+    Route::prefix('auth/line')->group(function () {
+        Route::get('/mobile-url', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getLineLoginUrl']);
+        Route::post('/mobile-callback', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'lineLoginCallback']);
+    });
+
     // App settings (public)
     Route::get('/settings', [DashboardController::class, 'settings']);
 
@@ -139,6 +145,34 @@ Route::prefix('v1')->group(function () {
             Route::post('/add', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'addToCart']);
             Route::put('/update', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateCart']);
             Route::delete('/remove', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'removeFromCart']);
+        });
+
+        // Wallet (Mobile App)
+        Route::prefix('wallet')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getWallet']);
+            Route::get('/transactions', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getWalletTransactions']);
+        });
+
+        // KYC (Mobile App)
+        Route::prefix('kyc')->group(function () {
+            Route::get('/status', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getKycStatus']);
+            Route::post('/submit', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'submitKyc']);
+            Route::post('/upload', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'uploadKycImage']);
+            Route::post('/confirm', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'confirmKycSubmission']);
+        });
+
+        // Rider (Mobile App)
+        Route::prefix('rider')->group(function () {
+            Route::get('/status', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getRiderStatus']);
+            Route::post('/register', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'registerRider']);
+            Route::post('/document', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'uploadRiderDocument']);
+            Route::post('/permissions', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateRiderPermissions']);
+            Route::post('/availability', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'setRiderAvailability']);
+            Route::post('/location', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateRiderLocation']);
+            Route::get('/jobs/available', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getAvailableJobs']);
+            Route::get('/jobs/current', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCurrentJob']);
+            Route::post('/jobs/{jobId}/accept', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'acceptJob']);
+            Route::post('/jobs/{jobId}/status', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateJobStatus']);
         });
 
         // Translation (Google Translate API)

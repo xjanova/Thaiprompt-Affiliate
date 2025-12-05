@@ -368,5 +368,744 @@ export const getReferralStats = async (): Promise<ReferralStats | null> => {
   }
 };
 
+// =====================================================
+// LINE Login APIs
+// =====================================================
+
+/**
+ * ดึง LINE Login URL
+ */
+export const getLineLoginUrl = async (): Promise<{
+  success: boolean;
+  data?: { authUrl: string; state: string };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.get<{
+      success: boolean;
+      data: { authUrl: string; state: string };
+      message?: string;
+    }>(API_ENDPOINTS.LINE_LOGIN_URL);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'ไม่สามารถเชื่อมต่อ LINE ได้',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * เข้าสู่ระบบด้วย LINE
+ */
+export const lineLoginCallback = async (
+  code: string,
+  state: string,
+  referralCode?: string
+): Promise<LoginResponse> => {
+  try {
+    const response = await apiClient.post<LoginResponse>(
+      API_ENDPOINTS.LINE_LOGIN_CALLBACK,
+      {
+        code,
+        state,
+        referral_code: referralCode,
+      }
+    );
+
+    const result = response.data;
+
+    if (result.success && result.data?.token) {
+      await saveAuthToken(result.data.token);
+
+      // บันทึกข้อมูล user
+      if (result.data.user) {
+        await SecureStore.setItemAsync(
+          STORAGE_KEYS.USER_DATA,
+          JSON.stringify(result.data.user)
+        );
+      }
+    }
+
+    return result;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        return {
+          success: false,
+          message: ERROR_MESSAGES.NETWORK_MESSAGE,
+        };
+      }
+      return {
+        success: false,
+        message: error.response.data?.message || 'เข้าสู่ระบบด้วย LINE ไม่สำเร็จ',
+        errors: error.response.data?.errors,
+      };
+    }
+    return {
+      success: false,
+      message: ERROR_MESSAGES.SERVER_MESSAGE,
+    };
+  }
+};
+
+// =====================================================
+// Wallet APIs
+// =====================================================
+
+/**
+ * ดึงข้อมูลกระเป๋าเงิน
+ */
+export const getWallet = async (): Promise<{
+  success: boolean;
+  data?: {
+    balance: number;
+    availableBalance: number;
+    pendingBalance: number;
+    totalIncome: number;
+    totalExpense: number;
+    thisMonthIncome: number;
+    thisMonthExpense: number;
+    currency: string;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.WALLET);
+    return response.data;
+  } catch (error) {
+    console.error('Get wallet error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงประวัติธุรกรรม
+ */
+export const getWalletTransactions = async (
+  page: number = 1,
+  type?: 'in' | 'out' | 'all',
+  perPage: number = 15
+): Promise<{
+  success: boolean;
+  data?: {
+    items: Array<{
+      id: number;
+      type: 'in' | 'out';
+      amount: number;
+      title: string;
+      status: string;
+      date: string;
+      dateRelative: string;
+      referenceType?: string;
+      referenceId?: number;
+    }>;
+    pagination: {
+      currentPage: number;
+      lastPage: number;
+      perPage: number;
+      total: number;
+    };
+  };
+  message?: string;
+} | null> => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: perPage.toString(),
+    });
+    if (type && type !== 'all') {
+      params.append('type', type);
+    }
+
+    const response = await apiClient.get(
+      `${API_ENDPOINTS.WALLET_TRANSACTIONS}?${params.toString()}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Get wallet transactions error:', error);
+    return null;
+  }
+};
+
+// =====================================================
+// KYC APIs
+// =====================================================
+
+/**
+ * ดึงสถานะ KYC
+ */
+export const getKycStatus = async (): Promise<{
+  success: boolean;
+  data?: {
+    status: 'not_submitted' | 'pending' | 'approved' | 'rejected';
+    verifiedAt?: string;
+    submission?: {
+      id: number;
+      status: string;
+      submittedAt?: string;
+      reviewedAt?: string;
+      rejectionReason?: string;
+      hasIdCard: boolean;
+      hasSelfie: boolean;
+    };
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.KYC_STATUS);
+    return response.data;
+  } catch (error) {
+    console.error('Get KYC status error:', error);
+    return null;
+  }
+};
+
+/**
+ * อัพโหลดรูปภาพ KYC
+ */
+export const uploadKycImage = async (
+  imageUri: string,
+  type: 'id_card' | 'selfie'
+): Promise<{
+  success: boolean;
+  data?: {
+    kycId: number;
+    type: string;
+    hasIdCard: boolean;
+    hasSelfie: boolean;
+    canSubmit: boolean;
+  };
+  message?: string;
+}> => {
+  try {
+    const formData = new FormData();
+
+    // สร้าง file object จาก uri
+    const filename = imageUri.split('/').pop() || `${type}.jpg`;
+    const match = /\.(\w+)$/.exec(filename);
+    const fileType = match ? `image/${match[1]}` : 'image/jpeg';
+
+    formData.append('image', {
+      uri: imageUri,
+      name: filename,
+      type: fileType,
+    } as unknown as Blob);
+    formData.append('type', type);
+
+    const response = await apiClient.post(API_ENDPOINTS.KYC_UPLOAD, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'อัพโหลดรูปภาพไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * ยืนยันส่ง KYC
+ */
+export const confirmKycSubmission = async (): Promise<{
+  success: boolean;
+  data?: {
+    kycId: number;
+    status: string;
+    submittedAt: string;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.KYC_CONFIRM);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'ส่งเอกสารไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+// =====================================================
+// Rider APIs
+// =====================================================
+
+/**
+ * ดึงสถานะการสมัครเป็นไรเดอร์
+ */
+export const getRiderStatus = async (): Promise<{
+  success: boolean;
+  data?: {
+    isRider: boolean;
+    riderId?: number;
+    status?: 'pending' | 'approved' | 'rejected' | 'suspended' | 'inactive';
+    statusText?: string;
+    availability?: 'online' | 'offline' | 'busy';
+    availabilityText?: string;
+    vehicleType?: string;
+    vehicleTypeText?: string;
+    rating?: number;
+    totalJobs?: number;
+    completedJobs?: number;
+    completionRate?: number;
+    totalEarnings?: number;
+    permissions?: {
+      gps: boolean;
+      camera: boolean;
+      microphone: boolean;
+      notification: boolean;
+      allGranted: boolean;
+    };
+    rejectionReason?: string;
+    approvedAt?: string;
+    message?: string;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.RIDER_STATUS);
+    return response.data;
+  } catch (error) {
+    console.error('Get rider status error:', error);
+    return null;
+  }
+};
+
+/**
+ * สมัครเป็นไรเดอร์
+ */
+export const registerRider = async (data: {
+  full_name: string;
+  phone: string;
+  id_card_number?: string;
+  birth_date?: string;
+  address?: string;
+  province?: string;
+  district?: string;
+  vehicle_type: 'motorcycle' | 'car' | 'bicycle' | 'walk';
+  vehicle_plate?: string;
+  vehicle_brand?: string;
+  vehicle_color?: string;
+}): Promise<{
+  success: boolean;
+  data?: {
+    riderId: number;
+    status: string;
+    statusText: string;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.RIDER_REGISTER, data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'สมัครไรเดอร์ไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * อัพโหลดเอกสารไรเดอร์
+ */
+export const uploadRiderDocument = async (
+  imageUri: string,
+  type: 'id_card' | 'driver_license' | 'vehicle_registration' | 'profile'
+): Promise<{
+  success: boolean;
+  data?: {
+    type: string;
+    uploaded: boolean;
+  };
+  message?: string;
+}> => {
+  try {
+    const formData = new FormData();
+
+    const filename = imageUri.split('/').pop() || `${type}.jpg`;
+    const match = /\.(\w+)$/.exec(filename);
+    const fileType = match ? `image/${match[1]}` : 'image/jpeg';
+
+    formData.append('image', {
+      uri: imageUri,
+      name: filename,
+      type: fileType,
+    } as unknown as Blob);
+    formData.append('type', type);
+
+    const response = await apiClient.post(API_ENDPOINTS.RIDER_DOCUMENT, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'อัพโหลดเอกสารไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * บันทึกสิทธิ์ที่ได้รับจากผู้ใช้
+ */
+export const updateRiderPermissions = async (permissions: {
+  gps?: boolean;
+  camera?: boolean;
+  microphone?: boolean;
+  notification?: boolean;
+}): Promise<{
+  success: boolean;
+  data?: {
+    permissions: {
+      gps: boolean;
+      camera: boolean;
+      microphone: boolean;
+      notification: boolean;
+      allGranted: boolean;
+    };
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.RIDER_PERMISSIONS, permissions);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'บันทึกสิทธิ์ไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * ตั้งค่าสถานะออนไลน์/ออฟไลน์
+ */
+export const setRiderAvailability = async (
+  availability: 'online' | 'offline'
+): Promise<{
+  success: boolean;
+  data?: {
+    availability: string;
+    availabilityText: string;
+  };
+  requirePermission?: string;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.RIDER_AVAILABILITY, { availability });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'เปลี่ยนสถานะไม่สำเร็จ',
+        requirePermission: error.response?.data?.requirePermission,
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * อัพเดทตำแหน่ง GPS
+ */
+export const updateRiderLocation = async (location: {
+  latitude: number;
+  longitude: number;
+  altitude?: number;
+  accuracy?: number;
+  speed?: number;
+  heading?: number;
+  battery_level?: number;
+  is_charging?: boolean;
+  activity_type?: 'still' | 'walking' | 'running' | 'cycling' | 'driving' | 'unknown';
+  device_model?: string;
+  os_version?: string;
+}): Promise<{
+  success: boolean;
+  data?: {
+    hasActiveJob: boolean;
+    jobId?: number;
+    isTracking: boolean;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.RIDER_LOCATION, location);
+    return response.data;
+  } catch (error) {
+    console.error('Update rider location error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงงานที่รอไรเดอร์
+ */
+export const getAvailableJobs = async (): Promise<{
+  success: boolean;
+  data?: {
+    jobs: Array<{
+      id: number;
+      jobNumber: string;
+      jobType: string;
+      jobTypeText: string;
+      title: string;
+      pickup: {
+        address: string;
+        latitude: number;
+        longitude: number;
+      };
+      delivery: {
+        address: string;
+        latitude: number;
+        longitude: number;
+      };
+      distanceKm?: number;
+      totalFee: number;
+      riderEarnings: number;
+      createdAt: string;
+    }>;
+    riderLocation: {
+      latitude?: number;
+      longitude?: number;
+    };
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.RIDER_JOBS_AVAILABLE);
+    return response.data;
+  } catch (error) {
+    console.error('Get available jobs error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงงานปัจจุบันของไรเดอร์
+ */
+export const getCurrentJob = async (): Promise<{
+  success: boolean;
+  data?: {
+    hasJob: boolean;
+    job?: {
+      id: number;
+      jobNumber: string;
+      jobType: string;
+      jobTypeText: string;
+      title: string;
+      description?: string;
+      status: string;
+      statusText: string;
+      pickup: {
+        address: string;
+        latitude: number;
+        longitude: number;
+        contactName?: string;
+        contactPhone?: string;
+        notes?: string;
+      };
+      delivery: {
+        address: string;
+        latitude: number;
+        longitude: number;
+        contactName?: string;
+        contactPhone?: string;
+        notes?: string;
+      };
+      distanceKm?: number;
+      totalFee: number;
+      riderEarnings: number;
+      acceptedAt?: string;
+      pickedUpAt?: string;
+    };
+    isTracking: boolean;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.RIDER_JOBS_CURRENT);
+    return response.data;
+  } catch (error) {
+    console.error('Get current job error:', error);
+    return null;
+  }
+};
+
+/**
+ * รับงาน
+ */
+export const acceptJob = async (jobId: number): Promise<{
+  success: boolean;
+  data?: {
+    job: {
+      id: number;
+      jobNumber: string;
+      status: string;
+      statusText: string;
+      pickup: {
+        address: string;
+        latitude: number;
+        longitude: number;
+        contactName?: string;
+        contactPhone?: string;
+        notes?: string;
+      };
+      delivery: {
+        address: string;
+        latitude: number;
+        longitude: number;
+        contactName?: string;
+        contactPhone?: string;
+        notes?: string;
+      };
+    };
+    trackingEnabled: boolean;
+    message: string;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(`${API_ENDPOINTS.RIDER_JOB_ACCEPT}/${jobId}/accept`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'รับงานไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * อัพเดทสถานะงาน
+ */
+export const updateJobStatus = async (
+  jobId: number,
+  status: 'picking_up' | 'picked_up' | 'delivering' | 'delivered' | 'completed' | 'cancelled',
+  options?: {
+    proofImage?: string;
+    signatureImage?: string;
+    cancellationReason?: string;
+  }
+): Promise<{
+  success: boolean;
+  data?: {
+    jobId: number;
+    status: string;
+    statusText: string;
+    isTracking: boolean;
+  };
+  message?: string;
+}> => {
+  try {
+    const formData = new FormData();
+    formData.append('status', status);
+
+    if (options?.proofImage) {
+      const filename = options.proofImage.split('/').pop() || 'proof.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const fileType = match ? `image/${match[1]}` : 'image/jpeg';
+      formData.append('proof_image', {
+        uri: options.proofImage,
+        name: filename,
+        type: fileType,
+      } as unknown as Blob);
+    }
+
+    if (options?.signatureImage) {
+      const filename = options.signatureImage.split('/').pop() || 'signature.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const fileType = match ? `image/${match[1]}` : 'image/jpeg';
+      formData.append('signature_image', {
+        uri: options.signatureImage,
+        name: filename,
+        type: fileType,
+      } as unknown as Blob);
+    }
+
+    if (options?.cancellationReason) {
+      formData.append('cancellation_reason', options.cancellationReason);
+    }
+
+    const response = await apiClient.post(
+      `${API_ENDPOINTS.RIDER_JOB_STATUS}/${jobId}/status`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'อัพเดทสถานะไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
 // Export axios instance สำหรับใช้งานตรงๆ ถ้าต้องการ
 export { apiClient };
