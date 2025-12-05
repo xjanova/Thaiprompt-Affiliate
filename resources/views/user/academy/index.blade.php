@@ -125,13 +125,18 @@
                                 <span class="text-sm text-gray-500 dark:text-gray-400">
                                     <i class="fas fa-book mr-1"></i>{{ $category['articles_count'] }} บทเรียน
                                 </span>
-                                @if(isset($category['progress']) && $category['progress']['total'] > 0)
+                                @if(($category['progress']['total'] ?? 0) > 0)
+                                @php
+                                    $progressTotal = $category['progress']['total'];
+                                    $progressCompleted = $category['progress']['completed'] ?? 0;
+                                    $progressPercent = round(($progressCompleted / $progressTotal) * 100);
+                                @endphp
                                 <div class="flex items-center gap-2">
                                     <div class="w-20 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                                         <div class="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full"
-                                             style="width: {{ round(($category['progress']['completed'] / $category['progress']['total']) * 100) }}%"></div>
+                                             style="width: {{ $progressPercent }}%"></div>
                                     </div>
-                                    <span class="text-xs text-gray-500">{{ round(($category['progress']['completed'] / $category['progress']['total']) * 100) }}%</span>
+                                    <span class="text-xs text-gray-500">{{ $progressPercent }}%</span>
                                 </div>
                                 @endif
                             </div>
