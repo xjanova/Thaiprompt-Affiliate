@@ -121,9 +121,9 @@
                         <i class="fas fa-fire-alt mr-1"></i>
                         ยอดนิยม
                     </a>
-                    <a href="{{ route('storefront.index', ['shop_type' => 'official']) }}"
+                    <a href="{{ route('official-shop.index') }}"
                        class="text-sm font-semibold transition-colors
-                             {{ request('shop_type') === 'official' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400' }}">
+                             text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400">
                         <i class="fas fa-check-circle mr-1"></i>
                         ร้านทางการ
                     </a>

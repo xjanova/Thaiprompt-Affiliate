@@ -165,25 +165,35 @@
 
         {{-- Official Store Card --}}
         <div class="mb-8">
-            <a href="{{ route('storefront.index', ['filter' => 'official']) }}"
-               class="block bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 rounded-3xl p-6 text-white
-                      transform hover:scale-[1.02] transition-all shadow-xl hover:shadow-2xl">
+            <a href="{{ route('official-shop.index') }}"
+               class="block bg-gradient-to-r from-amber-500 via-purple-600 to-pink-500 rounded-3xl p-6 text-white
+                      transform hover:scale-[1.02] transition-all shadow-xl hover:shadow-2xl
+                      ring-4 ring-amber-400/30">
                 <div class="flex items-center gap-6">
-                    <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                        <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
+                    <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center
+                               ring-4 ring-amber-400/30">
+                        <i class="fas fa-crown text-4xl text-amber-300"></i>
                     </div>
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="px-3 py-1 bg-white/20 rounded-full text-sm font-bold">Official Store</span>
+                            <span class="px-3 py-1 bg-gradient-to-r from-amber-400 to-amber-500 rounded-full text-sm font-bold text-white shadow-lg">
+                                ✨ Official Store
+                            </span>
+                            <span class="px-3 py-1 bg-green-500/30 rounded-full text-sm font-bold text-green-100">
+                                Premium V3
+                            </span>
                         </div>
-                        <h3 class="text-2xl font-black">TP Official Store</h3>
-                        <p class="text-white/80">สินค้าคุณภาพจากร้านทางการ รับประกันของแท้ 100%</p>
+                        <h3 class="text-2xl font-black">TP Official Shop</h3>
+                        <p class="text-white/80">สินค้าพรีเมี่ยมคุณภาพจากร้านทางการ รับประกันของแท้ 100% ✓</p>
                     </div>
-                    <svg class="w-8 h-8 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
+                    <div class="flex flex-col items-center gap-2">
+                        <span class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl text-sm font-bold">
+                            ดูร้าน
+                        </span>
+                        <svg class="w-6 h-6 text-white/60 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </div>
                 </div>
             </a>
         </div>
