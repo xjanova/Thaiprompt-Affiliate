@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.362.3] - 2025-12-05
+
+### ✨ Features
+- Merge pull request #2108 from xjanova/claude/add-admin-wallet-menu-01S1fjBwSdwHre1XUHEQ71BW (2efda096)
+- feat(admin): เพิ่มเมนู 'การเงินแพลตฟอร์ม' ใน Admin Sidebar (c87bfe70)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.362.2] - 2025-12-05
 
 ### ✨ Features
