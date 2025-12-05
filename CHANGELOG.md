@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.45] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2064 from xjanova/claude/fix-kyc-upload-block-01WFeXxPjP53YyrbCW1wB1e6 (4522b7a1)
+- fix: resolve KYC upload block not showing for users with invalid kyc_status (852c1bf2)
+### 🔧 Other Changes
+
+
 ## [v3.358.44] - 2025-12-05
 
 ### ✨ Features
