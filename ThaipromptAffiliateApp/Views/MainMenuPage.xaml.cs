@@ -258,4 +258,50 @@ public partial class MainMenuPage : ContentPage
         await AnimateButtonPress(NavSettings);
         await DisplayAlert("ตั้งค่า", "หน้าตั้งค่าจะเปิดให้บริการเร็วๆ นี้", "ตกลง");
     }
+
+    // ============================================
+    // FLOATING ACTION BUTTON HANDLERS
+    // ============================================
+
+    /// <summary>
+    /// ปุ่ม FAB ตะกร้าสินค้า - ไปหน้า Cart
+    /// </summary>
+    private async void OnFabCartTapped(object sender, EventArgs e)
+    {
+        await AnimateButtonPress(FabCart);
+
+        // Navigate ไปหน้า Shopping (Cart)
+        Application.Current!.MainPage = new ShoppingPage();
+    }
+
+    /// <summary>
+    /// ปุ่ม FAB ความช่วยเหลือ - เปิดหน้า Help
+    /// </summary>
+    private async void OnFabHelpTapped(object sender, EventArgs e)
+    {
+        await AnimateButtonPress(FabHelp);
+
+        // เปิดหน้า Help ผ่าน WebViewPage
+        Application.Current!.MainPage = WebViewPage.CreateHelpPage();
+    }
+
+    /// <summary>
+    /// ปุ่ม FAB Wiki - เปิดหน้า Wiki
+    /// </summary>
+    private async void OnFabWikiTapped(object sender, EventArgs e)
+    {
+        await AnimateButtonPress(FabWiki);
+
+        // เปิดหน้า Wiki ผ่าน WebViewPage
+        Application.Current!.MainPage = WebViewPage.CreateWikiPage();
+    }
+
+    /// <summary>
+    /// อัพเดทจำนวนสินค้าในตะกร้า
+    /// </summary>
+    public void UpdateCartBadge(int count)
+    {
+        FabCartBadgeCount.Text = count > 99 ? "99+" : count.ToString();
+        FabCartBadge.IsVisible = count > 0;
+    }
 }
