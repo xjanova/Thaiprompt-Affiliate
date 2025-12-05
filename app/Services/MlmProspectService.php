@@ -176,11 +176,12 @@ class MlmProspectService
 
     /**
      * Get prospects for sponsor
+     * คืนค่าเป็น paginator เพื่อรองรับ pagination ใน view
      */
     public function getProspectsForSponsor(
         int $sponsorMemberId,
         ?string $status = null,
-        int $limit = 50
+        int $perPage = 15
     ) {
         $query = MlmProspect::where('sponsor_mlm_member_id', $sponsorMemberId)
             ->with(['registeredUser', 'sponsorUser'])
@@ -190,7 +191,7 @@ class MlmProspectService
             $query->where('status', $status);
         }
 
-        return $query->limit($limit)->get();
+        return $query->paginate($perPage);
     }
 
     /**
