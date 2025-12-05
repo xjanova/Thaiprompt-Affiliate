@@ -18,7 +18,8 @@
         "laravel/tinker": "^2.8",
         "maatwebsite/excel": "^3.1",
         "pragmarx/google2fa-laravel": "^2.3",
-        "web3p/web3.php": "^0.1.6"
+        "web3p/web3.php": "^0.1.6",
+        "phpmailer/phpmailer": "^6.9"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
