@@ -9,18 +9,19 @@
  * - ✅ รองรับ Dark Mode
  * - ✅ Smooth animations
  * - ✅ Mobile responsive
+ * - ✅ แก้ปัญหา backdrop-blur containing block
  *
  * @example
  * <x-storefront.cart-drawer />
  */
 --}}
 
-<div x-data="cartDrawer()"
+{{-- Cart Button พร้อม Badge (อยู่ใน navbar) --}}
+<div x-data="cartDrawerButton()"
      x-init="init()"
-     @cart-updated.window="loadCart()"
+     @cart-updated.window="loadCartCount()"
      class="relative">
 
-    {{-- Cart Button พร้อม Badge --}}
     <button @click="openDrawer()"
             type="button"
             class="relative p-2.5 rounded-xl bg-gray-100 dark:bg-gray-700
@@ -46,6 +47,62 @@
                      shadow-lg animate-pulse">
         </span>
     </button>
+</div>
+
+<script>
+/**
+ * Cart Drawer Button Component - ปุ่มกดเปิดตะกร้า
+ */
+function cartDrawerButton() {
+    return {
+        cartCount: 0,
+
+        /**
+         * เริ่มต้น component
+         */
+        init() {
+            this.loadCartCount();
+            // Polling ทุก 30 วินาที
+            setInterval(() => this.loadCartCount(), 30000);
+        },
+
+        /**
+         * โหลดจำนวนสินค้าในตะกร้า
+         */
+        async loadCartCount() {
+            try {
+                const response = await fetch('{{ route("cart.count") }}', {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    this.cartCount = data.count || 0;
+                }
+            } catch (error) {
+                console.debug('Error loading cart count:', error);
+            }
+        },
+
+        /**
+         * เปิด Drawer (dispatch event ไปยัง drawer panel)
+         */
+        openDrawer() {
+            window.dispatchEvent(new CustomEvent('cart-drawer-open'));
+        }
+    };
+}
+</script>
+
+{{-- Drawer Panel (push ไปที่ modals stack เพื่อหลีกเลี่ยง backdrop-blur containing block) --}}
+@push('modals')
+<div x-data="cartDrawerPanel()"
+     x-init="init()"
+     @cart-drawer-open.window="openDrawer()"
+     @cart-updated.window="loadCart()"
+     class="cart-drawer-container">
 
     {{-- Backdrop --}}
     <div x-show="isOpen"
@@ -249,9 +306,9 @@
 
 <script>
 /**
- * Cart Drawer Component - จัดการตะกร้าสินค้าแบบ Drawer
+ * Cart Drawer Panel Component - แผง drawer ที่แสดงรายการสินค้า
  */
-function cartDrawer() {
+function cartDrawerPanel() {
     return {
         isOpen: false,
         loading: false,
@@ -264,29 +321,7 @@ function cartDrawer() {
          * เริ่มต้น component
          */
         init() {
-            this.loadCartCount();
-            // Polling ทุก 30 วินาที
-            setInterval(() => this.loadCartCount(), 30000);
-        },
-
-        /**
-         * โหลดจำนวนสินค้าในตะกร้า
-         */
-        async loadCartCount() {
-            try {
-                const response = await fetch('{{ route("cart.count") }}', {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    this.cartCount = data.count || 0;
-                }
-            } catch (error) {
-                console.debug('Error loading cart count:', error);
-            }
+            // ไม่ต้อง load อะไรตอน init เพราะจะ load เมื่อเปิด drawer
         },
 
         /**
@@ -403,3 +438,4 @@ function cartDrawer() {
     };
 }
 </script>
+@endpush
