@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.0] - 2025-12-05
+
+### ✨ Features
+- feat: add missing platform-revenue reports view (2d8c3e61)
+### 🐛 Bug Fixes
+- fix: correct column names in PayoutService getPayoutStats (a75ff488)
+### 🔧 Other Changes
+- Merge pull request #2121 from xjanova/claude/fix-ambiguous-column-query-01DxX6Qf72CrqS7LsGzV4fzU (8f56c99c)
+
 ## [v3.363.0] - 2025-12-05
 
 ### ✨ Features
