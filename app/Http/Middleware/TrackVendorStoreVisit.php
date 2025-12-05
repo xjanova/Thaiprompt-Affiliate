@@ -46,19 +46,34 @@ class TrackVendorStoreVisit
 
     /**
      * Get the vendor store from the request
+     * รองรับทั้งกรณีที่ route parameter เป็น model instance (route model binding) หรือ ID
      */
     protected function getStoreFromRequest(Request $request): ?VendorStore
     {
         // Check if the route has a store parameter
-        $storeId = $request->route('store');
-        if ($storeId) {
-            return VendorStore::find($storeId);
+        $storeParam = $request->route('store');
+        if ($storeParam) {
+            // กรณี route model binding - parameter เป็น VendorStore instance แล้ว
+            if ($storeParam instanceof VendorStore) {
+                return $storeParam;
+            }
+            // กรณีเป็น ID (string หรือ int)
+            if (is_string($storeParam) || is_int($storeParam)) {
+                return VendorStore::find($storeParam);
+            }
+            // กรณีอื่นๆ ที่ไม่รองรับ ให้ข้ามไป
         }
 
         // Check if the route has a store_slug parameter
         $storeSlug = $request->route('store_slug');
         if ($storeSlug) {
-            return VendorStore::where('store_slug', $storeSlug)->first();
+            // กรณี route model binding
+            if ($storeSlug instanceof VendorStore) {
+                return $storeSlug;
+            }
+            if (is_string($storeSlug)) {
+                return VendorStore::where('store_slug', $storeSlug)->first();
+            }
         }
 
         // Check if the URL contains /stores/ or /shop/

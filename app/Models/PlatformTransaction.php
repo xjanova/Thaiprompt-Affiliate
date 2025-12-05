@@ -105,26 +105,29 @@ class PlatformTransaction extends Model
 
     /**
      * ดึงรายการเข้า
+     * ใช้ชื่อตารางเต็มเพื่อป้องกันปัญหา ambiguous column เมื่อ join กับตารางอื่น
      */
     public function scopeIncome($query)
     {
-        return $query->where('type', self::TYPE_INCOME);
+        return $query->where('platform_transactions.type', self::TYPE_INCOME);
     }
 
     /**
      * ดึงรายการออก
+     * ใช้ชื่อตารางเต็มเพื่อป้องกันปัญหา ambiguous column เมื่อ join กับตารางอื่น
      */
     public function scopeExpense($query)
     {
-        return $query->where('type', self::TYPE_EXPENSE);
+        return $query->where('platform_transactions.type', self::TYPE_EXPENSE);
     }
 
     /**
      * ดึงรายการที่เสร็จสมบูรณ์
+     * ใช้ชื่อตารางเต็มเพื่อป้องกันปัญหา ambiguous column เมื่อ join กับตารางอื่น
      */
     public function scopeCompleted($query)
     {
-        return $query->where('status', 'completed');
+        return $query->where('platform_transactions.status', 'completed');
     }
 
     /**
