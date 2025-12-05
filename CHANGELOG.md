@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.11] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2132 from xjanova/claude/fix-product-image-upload-01QiSvzEqGz5r4jDGAFGWWD9 (880552ca)
+- fix: แก้ไขปัญหาหน้าแก้ไขสินค้า รูปไม่แสดงเมื่ออัพโหลดและบันทึกไม่ได้ (78f7b572)
+### 🔧 Other Changes
+
+
 ## [v3.364.10] - 2025-12-05
 
 ### ✨ Features
