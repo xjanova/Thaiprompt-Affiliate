@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.11] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2087 from xjanova/claude/fix-touch-method-signature-016Kr8bthdZXXboT6H6mFzCq (7e250da6)
+- fix: rename touch() to touchLastActive() to fix method signature conflict (0c835643)
+### 🔧 Other Changes
+
+
 ## [v3.361.10] - 2025-12-05
 
 ### ✨ Features
