@@ -6,6 +6,24 @@ return [
     'name' => env('APP_NAME', 'TP-Affiliate'),
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Menu Database Overrides
+    |--------------------------------------------------------------------------
+    |
+    | V3.2 Menu System:
+    | - เมนูปกติ: ดึงจาก config/menus.php เสมอ (Hardcoded - ง่ายต่อการพัฒนา)
+    | - เมนู Pin: ใช้ localStorage (จัดการฝั่ง frontend)
+    | - Database: ใช้สำหรับ Override เท่านั้น (Admin ปรับแต่งผ่าน UI)
+    |
+    | MENU_USE_DB_OVERRIDES:
+    | - true: Admin สามารถซ่อน/เรียงลำดับ/ปรับแต่งเมนูผ่านตาราง menu_items
+    | - false: ใช้ config โดยตรง (Default - เหมาะสำหรับ Development)
+    |
+    */
+    'menu_use_db_overrides' => env('MENU_USE_DB_OVERRIDES', false),
+
     'url' => env('APP_URL', 'http://localhost'),
     'timezone' => 'Asia/Bangkok',
     'locale' => 'th',
