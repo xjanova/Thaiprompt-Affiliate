@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.27] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2102 from xjanova/claude/fix-missing-route-error-01T4MxWv6K9RFvhvuAGuua7S (8c0d2eb7)
+- fix: change email_providers.configuration from JSON to TEXT (d239083e)
+### 🔧 Other Changes
+
+
 ## [v3.361.26] - 2025-12-05
 
 ### ✨ Features
