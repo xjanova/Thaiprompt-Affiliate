@@ -84,6 +84,12 @@ export const API_ENDPOINTS = {
   // Push Notification Token (Mobile App)
   PUSH_TOKEN: '/push/token',
 
+  // Push Notification Delivery Tracking (สำหรับ retry mechanism)
+  PUSH_CONFIRM: '/mobile/push/confirm',
+  PUSH_PENDING: '/mobile/push/pending',
+  PUSH_BULK_CONFIRM: '/mobile/push/bulk-confirm',
+  PUSH_ANALYTICS: '/mobile/push/analytics',
+
   // Rank System (Mobile App)
   RANKS: '/mobile/ranks',
   RANK_DETAIL: '/mobile/ranks', // + /{rankId}

@@ -220,6 +220,40 @@ Route::prefix('v1')->group(function () {
             Route::get('/earnings', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getEarningsSummary']);
         });
 
+        // =====================================================
+        // Mobile App Admin Control (3 อย่างเท่านั้น)
+        // 1. Device Registration/Heartbeat
+        // 2. Banner โฆษณา
+        // 3. Push Token
+        // =====================================================
+
+        // Device Registration & Analytics
+        Route::prefix('mobile/device')->group(function () {
+            Route::post('/register', [\App\Http\Controllers\Api\V1\MobileDeviceController::class, 'register']);
+            Route::post('/heartbeat', [\App\Http\Controllers\Api\V1\MobileDeviceController::class, 'heartbeat']);
+        });
+
+        // Banner โฆษณา
+        Route::prefix('mobile/banners')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileDeviceController::class, 'banners']);
+            Route::post('/{bannerId}/click', [\App\Http\Controllers\Api\V1\MobileDeviceController::class, 'bannerClick']);
+        });
+
+        // Push Token
+        Route::post('mobile/push-token', [\App\Http\Controllers\Api\V1\MobileDeviceController::class, 'registerPushToken']);
+
+        // Push Notification Delivery Tracking (สำหรับ retry mechanism)
+        Route::prefix('mobile/push')->group(function () {
+            // ยืนยันว่าได้รับ notification แล้ว
+            Route::post('/confirm', [\App\Http\Controllers\Api\V1\MobileDeviceController::class, 'confirmPushDelivery']);
+            // ดึง pending notifications (เมื่อ device กลับมา online)
+            Route::get('/pending', [\App\Http\Controllers\Api\V1\MobileDeviceController::class, 'getPendingNotifications']);
+            // Bulk confirm หลาย notifications
+            Route::post('/bulk-confirm', [\App\Http\Controllers\Api\V1\MobileDeviceController::class, 'bulkConfirmDelivery']);
+            // สถิติการส่ง (สำหรับ admin analytics)
+            Route::get('/analytics', [\App\Http\Controllers\Api\V1\MobileDeviceController::class, 'pushAnalytics']);
+        });
+
         // Translation (Google Translate API)
         Route::prefix('translate')->group(function () {
             Route::post('/', [TranslateController::class, 'translate']);

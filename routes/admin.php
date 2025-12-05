@@ -2057,95 +2057,63 @@ Route::prefix('tokens')->name('tokens.')->group(function () {
     Route::put('/{id}', [\App\Http\Controllers\Admin\TokenManagementController::class, 'update'])->name('update');
 });
 
-// App Management (Mobile App Configuration)
-Route::prefix('app-management')->name('app-management.')->group(function () {
-    // App Settings
-    Route::prefix('settings')->name('settings.')->group(function () {
-        Route::get('/', [AppSettingController::class, 'index'])->name('index');
-        Route::put('/', [AppSettingController::class, 'update'])->name('update');
+// =====================================================
+// Mobile App Management (Standalone App - 3 อย่างเท่านั้น)
+// Admin ควบคุมได้: Push Notifications, Banner โฆษณา, Device Analytics
+// =====================================================
+Route::prefix('mobile-app')->name('mobile-app.')->group(function () {
+    // Dashboard รวม
+    Route::get('/', [\App\Http\Controllers\Admin\MobileAppController::class, 'index'])->name('index');
+
+    // 1. Push Notifications
+    Route::prefix('push')->name('push.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\MobileAppController::class, 'pushIndex'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\MobileAppController::class, 'pushCreate'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\MobileAppController::class, 'pushStore'])->name('store');
+        Route::get('/{push}', [\App\Http\Controllers\Admin\MobileAppController::class, 'pushShow'])->name('show');
     });
 
-    // App Theme Settings
-    Route::prefix('theme')->name('theme.')->group(function () {
-        Route::get('/', [AppThemeSettingController::class, 'index'])->name('index');
-        Route::put('/', [AppThemeSettingController::class, 'update'])->name('update');
-    });
-
-    // App Features
-    Route::prefix('features')->name('features.')->group(function () {
-        Route::get('/', [AppFeatureController::class, 'index'])->name('index');
-        Route::get('/create', [AppFeatureController::class, 'create'])->name('create');
-        Route::post('/', [AppFeatureController::class, 'store'])->name('store');
-        Route::get('/{appFeature}/edit', [AppFeatureController::class, 'edit'])->name('edit');
-        Route::put('/{appFeature}', [AppFeatureController::class, 'update'])->name('update');
-        Route::delete('/{appFeature}', [AppFeatureController::class, 'destroy'])->name('destroy');
-        Route::post('/{appFeature}/toggle', [AppFeatureController::class, 'toggle'])->name('toggle');
-    });
-
-    // App Banners
+    // 2. Banner โฆษณา
     Route::prefix('banners')->name('banners.')->group(function () {
-        Route::get('/', [AppBannerController::class, 'index'])->name('index');
-        Route::get('/create', [AppBannerController::class, 'create'])->name('create');
-        Route::post('/', [AppBannerController::class, 'store'])->name('store');
-        Route::get('/{appBanner}/edit', [AppBannerController::class, 'edit'])->name('edit');
-        Route::put('/{appBanner}', [AppBannerController::class, 'update'])->name('update');
-        Route::delete('/{appBanner}', [AppBannerController::class, 'destroy'])->name('destroy');
-        Route::post('/{appBanner}/toggle', [AppBannerController::class, 'toggle'])->name('toggle');
-        Route::post('/{appBanner}/track-view', [AppBannerController::class, 'trackView'])->name('track-view');
-        Route::post('/{appBanner}/track-click', [AppBannerController::class, 'trackClick'])->name('track-click');
+        Route::get('/', [\App\Http\Controllers\Admin\MobileAppController::class, 'bannersIndex'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\MobileAppController::class, 'bannersCreate'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\MobileAppController::class, 'bannersStore'])->name('store');
+        Route::get('/{banner}/edit', [\App\Http\Controllers\Admin\MobileAppController::class, 'bannersEdit'])->name('edit');
+        Route::put('/{banner}', [\App\Http\Controllers\Admin\MobileAppController::class, 'bannersUpdate'])->name('update');
+        Route::delete('/{banner}', [\App\Http\Controllers\Admin\MobileAppController::class, 'bannersDestroy'])->name('destroy');
+        Route::post('/{banner}/toggle', [\App\Http\Controllers\Admin\MobileAppController::class, 'bannersToggle'])->name('toggle');
+        Route::post('/reorder', [\App\Http\Controllers\Admin\MobileAppController::class, 'bannersReorder'])->name('reorder');
     });
 
-    // App Maintenance
-    Route::prefix('app-maintenance')->name('app-maintenance.')->group(function () {
-        Route::get('/', [AppMaintenanceController::class, 'index'])->name('index');
-        Route::put('/', [AppMaintenanceController::class, 'update'])->name('update');
-        Route::post('/toggle', [AppMaintenanceController::class, 'toggle'])->name('toggle');
-        Route::post('/enable', [AppMaintenanceController::class, 'enable'])->name('enable');
-        Route::post('/disable', [AppMaintenanceController::class, 'disable'])->name('disable');
+    // 3. Device Analytics
+    Route::prefix('analytics')->name('analytics.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\MobileAppController::class, 'analytics'])->name('index');
+        Route::get('/export', [\App\Http\Controllers\Admin\MobileAppController::class, 'exportAnalytics'])->name('export');
     });
+});
 
-    // App Control Sections
-    Route::prefix('control-sections')->name('control-sections.')->group(function () {
-        Route::get('/', [AppControlSectionController::class, 'index'])->name('index');
-        Route::get('/create', [AppControlSectionController::class, 'create'])->name('create');
-        Route::post('/', [AppControlSectionController::class, 'store'])->name('store');
-        Route::get('/{appControlSection}/edit', [AppControlSectionController::class, 'edit'])->name('edit');
-        Route::put('/{appControlSection}', [AppControlSectionController::class, 'update'])->name('update');
-        Route::delete('/{appControlSection}', [AppControlSectionController::class, 'destroy'])->name('destroy');
-        Route::post('/{appControlSection}/toggle-visibility', [AppControlSectionController::class, 'toggleVisibility'])->name('toggle-visibility');
-        Route::post('/{appControlSection}/toggle-active', [AppControlSectionController::class, 'toggleActive'])->name('toggle-active');
-        Route::post('/update-order', [AppControlSectionController::class, 'updateOrder'])->name('update-order');
-    });
+// =====================================================
+// Deprecated: App Management (เก่า - ไม่ใช้แล้ว)
+// แอพเป็น Standalone - การตั้งค่าอยู่ในแอพโดยตรง
+// =====================================================
+// Route::prefix('app-management')->name('app-management.')->group(function () { ... });
 
-    // Component Settings
-    Route::prefix('component-settings')->name('component-settings.')->group(function () {
-        Route::get('/', [ComponentSettingController::class, 'index'])->name('index');
-        Route::get('/create', [ComponentSettingController::class, 'create'])->name('create');
-        Route::post('/', [ComponentSettingController::class, 'store'])->name('store');
-        Route::get('/{componentSetting}/edit', [ComponentSettingController::class, 'edit'])->name('edit');
-        Route::put('/{componentSetting}', [ComponentSettingController::class, 'update'])->name('update');
-        Route::delete('/{componentSetting}', [ComponentSettingController::class, 'destroy'])->name('destroy');
-        Route::post('/{componentSetting}/toggle-enabled', [ComponentSettingController::class, 'toggleEnabled'])->name('toggle-enabled');
-        Route::post('/{componentSetting}/duplicate', [ComponentSettingController::class, 'duplicate'])->name('duplicate');
-    });
+// Viral Trend Detection Routes (ยังใช้อยู่)
+Route::prefix('trends')->name('trends.')->group(function () {
+    Route::get('/', [TrendManagementController::class, 'index'])->name('index');
+    Route::get('/keywords', [TrendManagementController::class, 'keywords'])->name('keywords');
+    Route::get('/{trend}', [TrendManagementController::class, 'show'])->name('show');
+    Route::post('/{trend}/generate-content', [TrendManagementController::class, 'generateContent'])->name('generate-content');
 
-    // Viral Trend Detection Routes
-    Route::prefix('trends')->name('trends.')->group(function () {
-        Route::get('/', [TrendManagementController::class, 'index'])->name('index');
-        Route::get('/keywords', [TrendManagementController::class, 'keywords'])->name('keywords');
-        Route::get('/{trend}', [TrendManagementController::class, 'show'])->name('show');
-        Route::post('/{trend}/generate-content', [TrendManagementController::class, 'generateContent'])->name('generate-content');
-
-        // Trend Sources Management
-        Route::prefix('sources')->name('sources.')->group(function () {
-            Route::get('/', [TrendManagementController::class, 'sources'])->name('index');
-            Route::get('/create', [TrendManagementController::class, 'createSource'])->name('create');
-            Route::post('/', [TrendManagementController::class, 'storeSource'])->name('store');
-            Route::get('/{source}/edit', [TrendManagementController::class, 'editSource'])->name('edit');
-            Route::put('/{source}', [TrendManagementController::class, 'updateSource'])->name('update');
-            Route::delete('/{source}', [TrendManagementController::class, 'deleteSource'])->name('delete');
-            Route::post('/{source}/test-scrape', [TrendManagementController::class, 'testScrape'])->name('test-scrape');
-        });
+    // Trend Sources Management
+    Route::prefix('sources')->name('sources.')->group(function () {
+        Route::get('/', [TrendManagementController::class, 'sources'])->name('index');
+        Route::get('/create', [TrendManagementController::class, 'createSource'])->name('create');
+        Route::post('/', [TrendManagementController::class, 'storeSource'])->name('store');
+        Route::get('/{source}/edit', [TrendManagementController::class, 'editSource'])->name('edit');
+        Route::put('/{source}', [TrendManagementController::class, 'updateSource'])->name('update');
+        Route::delete('/{source}', [TrendManagementController::class, 'deleteSource'])->name('delete');
+        Route::post('/{source}/test-scrape', [TrendManagementController::class, 'testScrape'])->name('test-scrape');
     });
 });
 
