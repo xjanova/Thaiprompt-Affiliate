@@ -21,9 +21,10 @@ class MlmProspectController extends Controller
         $mlmMember = $user->mlmMember;
 
         // ถ้าไม่ได้เป็น MLM member ให้แสดงหน้าแนะนำแทนที่จะ redirect
+        // ใช้ empty paginator เพื่อให้ view ทำงานได้ถูกต้อง
         if (!$mlmMember) {
             return view('user.prospects.index', [
-                'prospects' => collect([]),
+                'prospects' => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15),
                 'stats' => [
                     'total' => 0,
                     'pending' => 0,
