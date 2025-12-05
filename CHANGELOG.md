@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.7] - 2025-12-05
+
+### ✨ Features
+- Merge pull request #2082 from xjanova/claude/test-payment-gateways-01WeW9g8rDkmauXwEYzfCL72 (bd676266)
+- feat(api): add Mobile App payment and order API endpoints (c72b20f9)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.361.6] - 2025-12-05
 
 ### ✨ Features
