@@ -237,7 +237,7 @@
                         <i class="fas fa-th-large text-orange-500 mr-2"></i>
                         จัดการหมวดหมู่
                     </h2>
-                    <a href="{{ route('admin.product-categories.index') }}"
+                    <a href="{{ route('admin.ecommerce.categories.index') }}"
                        class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors">
                         <i class="fas fa-cog mr-2"></i>
                         จัดการหมวดหมู่ทั้งหมด
