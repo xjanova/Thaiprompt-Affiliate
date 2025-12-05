@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.49] - 2025-12-05
+
+### ✨ Features
+- feat(mobile-app): เพิ่ม loading animation และ offline mode support (94340ef9)
+### 🐛 Bug Fixes
+- fix(mobile-app): แก้ไข API endpoints ให้ตรงกับ backend (c7286e5d)
+- fix(mobile-app): แก้ไข splash screen ค้าง และเชื่อมต่อ API (2750f2ed)
+### 🔧 Other Changes
+- Merge pull request #2068 from xjanova/claude/fix-expo-error-01QLt62F4h7qf3WMt7N2CVyj (f656ddca)
+
 ## [v3.358.48] - 2025-12-05
 
 ### ✨ Features
