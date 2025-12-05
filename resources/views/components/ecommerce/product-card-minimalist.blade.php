@@ -31,7 +31,7 @@
                 transition-all duration-300 flex flex-col">
 
         {{-- Image Container --}}
-        <a href="{{ route('marketplace.product.show', $product->slug) }}"
+        <a href="{{ route('official-shop.show', $product->slug) }}"
            class="relative aspect-square overflow-hidden bg-gray-50 dark:bg-gray-700/50">
             <img src="{{ $product->primary_image_url ?? asset('images/placeholder.png') }}"
                  alt="{{ $product->name }}"
@@ -72,7 +72,7 @@
             {{-- Category & Rating --}}
             <div class="flex items-center justify-between mb-2">
                 @if($product->category)
-                <a href="{{ route('marketplace.category', $product->category->slug) }}"
+                <a href="{{ route('official-shop.category', $product->category->slug) }}"
                    class="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700
                           dark:hover:text-gray-300 transition-colors">
                     {{ $product->category->name }}
@@ -95,7 +95,7 @@
             {{-- Product Name --}}
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white
                        mb-2 line-clamp-2">
-                <a href="{{ route('marketplace.product.show', $product->slug) }}"
+                <a href="{{ route('official-shop.show', $product->slug) }}"
                    class="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                     {{ $product->name }}
                 </a>

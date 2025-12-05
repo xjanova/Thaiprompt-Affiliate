@@ -111,7 +111,7 @@
             <div class="flex-1 p-4 flex flex-col">
                 {{-- Category --}}
                 @if($product->category)
-                <a href="{{ route('marketplace.category', $product->category->slug) }}"
+                <a href="{{ route('official-shop.category', $product->category->slug) }}"
                    class="text-xs text-white/90 font-medium hover:underline mb-2 inline-block">
                     {{ $product->category->name }}
                 </a>
@@ -120,7 +120,7 @@
                 {{-- Product Name --}}
                 <h3 class="text-lg font-bold text-white mb-2 line-clamp-2
                            group-hover:text-yellow-200 transition-colors">
-                    <a href="{{ route('marketplace.product.show', $product->slug) }}">
+                    <a href="{{ route('official-shop.show', $product->slug) }}">
                         {{ $product->name }}
                     </a>
                 </h3>
