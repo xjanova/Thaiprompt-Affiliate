@@ -32,6 +32,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ✅ ตรวจสอบและสร้าง storage directories ที่จำเป็น
+        // แก้ปัญหา session storage error เมื่อ directory ไม่มีอยู่
+        $this->ensureStorageDirectoriesExist();
+
         // ⚠️ CRITICAL: Force HTTPS สำหรับ Production
         // แก้ปัญหา redirect loop เมื่อใช้ Cloudflare/Reverse Proxy
         if (config('app.env') === 'production' || env('FORCE_HTTPS', false)) {
@@ -95,5 +99,38 @@ class AppServiceProvider extends ServiceProvider
         // Register AI Rental GPU System Observers
         \App\Models\AiRentalDeployment::observe(\App\Observers\AiRentalDeploymentObserver::class);
         \App\Models\AiRentalBudgetLimit::observe(\App\Observers\AiRentalBudgetLimitObserver::class);
+    }
+
+    /**
+     * ตรวจสอบและสร้าง storage directories ที่จำเป็น
+     *
+     * แก้ปัญหา:
+     * - Session storage error เมื่อ storage/framework/sessions ไม่มีอยู่
+     * - Cache error เมื่อ storage/framework/cache ไม่มีอยู่
+     * - View error เมื่อ storage/framework/views ไม่มีอยู่
+     *
+     * @return void
+     */
+    protected function ensureStorageDirectoriesExist(): void
+    {
+        $directories = [
+            storage_path('framework/sessions'),
+            storage_path('framework/cache'),
+            storage_path('framework/cache/data'),
+            storage_path('framework/views'),
+            storage_path('logs'),
+        ];
+
+        foreach ($directories as $directory) {
+            if (!is_dir($directory)) {
+                try {
+                    mkdir($directory, 0755, true);
+                } catch (\Exception $e) {
+                    // ไม่สามารถสร้าง directory ได้ (permission denied)
+                    // ข้ามไปเพื่อให้ application ยังทำงานต่อไปได้
+                    // Error จะถูก handle โดย Laravel session/cache driver
+                }
+            }
+        }
     }
 }
