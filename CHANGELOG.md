@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.46] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2065 from xjanova/claude/fix-setting-function-017KM3BT69k4PQeEiusiFxFz (ae964fb8)
+- fix: handle undefined progress array keys in academy category view (ae629b7f)
+### 🔧 Other Changes
+
+
 ## [v3.358.45] - 2025-12-05
 
 ### ✨ Features
