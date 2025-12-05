@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.14] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2089 from xjanova/claude/fix-recruitment-graph-017vqN39mAmYNRoKZE5Bh3PV (fae02a9e)
+- fix: prevent recruitment chart from stretching infinitely (edcb55d9)
+### 🔧 Other Changes
+
+
 ## [v3.361.13] - 2025-12-05
 
 ### ✨ Features
