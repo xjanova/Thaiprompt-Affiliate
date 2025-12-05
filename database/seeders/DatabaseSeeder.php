@@ -162,6 +162,7 @@ class DatabaseSeeder extends Seeder
 
             // 19. Menu Management System
             MenuItemSeeder::class,              // 🆕 ระบบจัดการเมนู (นำเข้าจาก config/menus.php)
+            AcademyMenuSeeder::class,           // 🎓 เมนู Academy สำหรับ User Dashboard
         ]);
 
         $this->command->info('');

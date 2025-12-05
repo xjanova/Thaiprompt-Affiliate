@@ -6,6 +6,21 @@ return [
     'name' => env('APP_NAME', 'TP-Affiliate'),
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Menu Configuration Source
+    |--------------------------------------------------------------------------
+    |
+    | กำหนดว่าเมนูจะดึงจาก config/menus.php โดยตรงหรือจาก database
+    | - true: ใช้ config/menus.php เสมอ (แนะนำสำหรับ Development)
+    | - false: ใช้ database ก่อน แล้วค่อย fallback ไป config (Production)
+    |
+    | หมายเหตุ: ในโหมด local/testing จะใช้ config โดยอัตโนมัติ
+    |
+    */
+    'menu_use_config' => env('MENU_USE_CONFIG', false),
+
     'url' => env('APP_URL', 'http://localhost'),
     'timezone' => 'Asia/Bangkok',
     'locale' => 'th',

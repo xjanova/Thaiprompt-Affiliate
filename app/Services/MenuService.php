@@ -54,14 +54,24 @@ class MenuService
      */
     public function getMenuForRole(string $role, $user = null): array
     {
-        // 1. ลองดึงเมนูจาก Database ก่อน
-        $dbMenus = $this->getMenusFromDatabase($role, $user);
+        // 0. ตรวจสอบว่าใช้ Config Mode หรือไม่ (สำหรับ Development)
+        // ตั้งค่าใน .env: MENU_USE_CONFIG=true
+        $useConfig = config('app.menu_use_config', false) || app()->environment('local', 'testing');
 
-        // 2. ถ้าไม่มีใน Database ให้ใช้จาก config
-        if (empty($dbMenus)) {
+        // 1. ดึงเมนูจาก Database หรือ Config ขึ้นอยู่กับการตั้งค่า
+        if ($useConfig) {
+            // Development Mode: ใช้ config เป็นหลัก
             $configMenus = config("menus.{$role}", []);
         } else {
-            $configMenus = $dbMenus;
+            // Production Mode: ลองดึงจาก Database ก่อน
+            $dbMenus = $this->getMenusFromDatabase($role, $user);
+
+            // 2. ถ้าไม่มีใน Database ให้ใช้จาก config
+            if (empty($dbMenus)) {
+                $configMenus = config("menus.{$role}", []);
+            } else {
+                $configMenus = $dbMenus;
+            }
         }
 
         // 3. ดึงเมนูจาก Feature Providers (ถ้ามี)
