@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.362.12] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2117 from xjanova/claude/fix-ambiguous-column-query-01DxX6Qf72CrqS7LsGzV4fzU (dbea1236)
+- fix: return paginator instead of collection in MlmProspectService (d5832793)
+### 🔧 Other Changes
+
+
 ## [v3.362.11] - 2025-12-05
 
 ### ✨ Features
