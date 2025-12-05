@@ -39,15 +39,20 @@
             </div>
 
             {{-- Progress --}}
-            @if(isset($categoryProgress) && $categoryProgress['total'] > 0)
+            @if(($categoryProgress['total'] ?? 0) > 0)
+            @php
+                $progressTotal = $categoryProgress['total'];
+                $progressCompleted = $categoryProgress['completed'] ?? 0;
+                $progressPercent = round(($progressCompleted / $progressTotal) * 100);
+            @endphp
             <div class="mt-6 bg-white/10 backdrop-blur-sm rounded-xl p-4">
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-white font-medium">ความก้าวหน้าของคุณ</span>
-                    <span class="text-white">{{ $categoryProgress['completed'] }}/{{ $categoryProgress['total'] }} บทเรียน</span>
+                    <span class="text-white">{{ $progressCompleted }}/{{ $progressTotal }} บทเรียน</span>
                 </div>
                 <div class="w-full h-3 bg-white/20 rounded-full overflow-hidden">
                     <div class="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all"
-                         style="width: {{ round(($categoryProgress['completed'] / $categoryProgress['total']) * 100) }}%"></div>
+                         style="width: {{ $progressPercent }}%"></div>
                 </div>
             </div>
             @endif
