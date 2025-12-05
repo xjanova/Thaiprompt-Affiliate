@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.26] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2101 from xjanova/claude/fix-missing-route-error-01T4MxWv6K9RFvhvuAGuua7S (d673ef89)
+- fix: sync composer.lock with phpmailer/phpmailer dependency (2dbc84e5)
+### 🔧 Other Changes
+
+
 ## [v3.361.25] - 2025-12-05
 
 ### ✨ Features
