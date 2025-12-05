@@ -310,7 +310,7 @@ export const CHART_CONFIG = {
 export const API_CONFIG = {
   // Base URLs - สามารถเปลี่ยนได้เอง
   PRODUCTION_URL: 'https://main.thaiprompt.online/api/v1',
-  DEVELOPMENT_URL: 'http://10.0.2.2:8000/api/v1',
+  DEVELOPMENT_URL: 'https://member123.thaiprompt.online/api/v1',
 
   // Timeouts
   DEFAULT_TIMEOUT: 30000,
