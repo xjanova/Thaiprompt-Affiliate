@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.359.1] - 2025-12-05
+
+### ✨ Features
+- feat(mobile-app): เพิ่มปุ่มแชร์ตำแหน่งสีเขียว, Ticket, Notifications (444ab3f4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2070 from xjanova/claude/fix-expo-error-01QLt62F4h7qf3WMt7N2CVyj (c947811a)
+
 ## [v3.359.0] - 2025-12-05
 
 ### ✨ Features
