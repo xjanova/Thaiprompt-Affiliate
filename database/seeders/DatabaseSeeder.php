@@ -51,6 +51,7 @@ class DatabaseSeeder extends Seeder
 
             // 4. Communication Templates
             EmailTemplateSeeder::class,         // Email Templates สำหรับระบบส่งอีเมล
+            EmailProviderSeeder::class,         // Email Providers สำหรับระบบส่งอีเมล (SMTP, Gmail)
             LineOaSettingSeeder::class,         // LINE OA Settings Configuration
             LineSignupTemplateSeeder::class,    // LINE Signup Templates (AI-Powered Membership Signup)
             LineSignupFlowSeeder::class,        // 🆕 LINE Signup Flow Steps (Complete signup conversation flow)
