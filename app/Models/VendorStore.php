@@ -406,6 +406,20 @@ class VendorStore extends Model
     }
 
     /**
+     * เพิ่มจำนวนการเข้าชมร้านค้า
+     *
+     * บันทึกการเข้าชมลงในตาราง vendor_store_visits
+     * เพื่อใช้ในการวิเคราะห์ข้อมูลและสถิติ
+     *
+     * @return void
+     */
+    public function incrementVisitCount(): void
+    {
+        // บันทึกการเข้าชมผ่าน VendorStoreVisit model
+        VendorStoreVisit::recordVisit($this, request());
+    }
+
+    /**
      * Increment product count
      */
     public function incrementProductCount(): void
