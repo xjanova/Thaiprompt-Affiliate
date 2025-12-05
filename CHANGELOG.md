@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.9] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2130 from xjanova/claude/fix-increment-visit-count-012X6fC9jJwcCuEoasUupfVF (160385e2)
+- fix: add missing incrementVisitCount method to VendorStore model (7715075b)
+### 🔧 Other Changes
+
+
 ## [v3.364.8] - 2025-12-05
 
 ### ✨ Features
