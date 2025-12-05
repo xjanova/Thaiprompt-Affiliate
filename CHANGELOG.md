@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.17] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2138 from xjanova/claude/fix-react-native-packages-01SU6sqSubugRXGhXP1XsMPd (eaa457c8)
+- fix: hide splash screen earlier to show loading animation (8bf9b9b4)
+### 🔧 Other Changes
+
+
 ## [v3.364.16] - 2025-12-05
 
 ### ✨ Features
