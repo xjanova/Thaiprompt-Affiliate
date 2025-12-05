@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.360.2] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2073 from xjanova/claude/verify-payment-commissions-01VjCamg3mvVqbQ2zT1aDs9Z (1ad2695f)
+- fix: แก้ไขระบบ Payment Distribution และ Refund ให้สมบูรณ์ (68ebafad)
+### 🔧 Other Changes
+
+
 ## [v3.360.1] - 2025-12-05
 
 ### ✨ Features
