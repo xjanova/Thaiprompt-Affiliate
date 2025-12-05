@@ -36,6 +36,9 @@ class PaymentService
         'paysolutions' => PaySolutionsProvider::class,
         'stripe' => StripeProvider::class,
         'omise' => OmiseProvider::class,
+        'paypal' => PayPalProvider::class,
+        'razorpay' => RazorpayProvider::class,
+        'truemoney' => TrueMoneyProvider::class,
         'nfc_card' => NFCCardProvider::class,
     ];
 
