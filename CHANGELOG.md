@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.10] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2131 from xjanova/claude/fix-product-loading-01TGyjyvsY93xHigyUn6xvy2 (71dc0acf)
+- fix: update products with null published_at to fix storefront loading (d3357e6e)
+### 🔧 Other Changes
+
+
 ## [v3.364.9] - 2025-12-05
 
 ### ✨ Features
