@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.1] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2122 from xjanova/claude/fix-ambiguous-column-query-01DxX6Qf72CrqS7LsGzV4fzU (631bb670)
+- fix: use set_setting() instead of setting() for saving values (b5cb1d1b)
+### 🔧 Other Changes
+
+
 ## [v3.364.0] - 2025-12-05
 
 ### ✨ Features
