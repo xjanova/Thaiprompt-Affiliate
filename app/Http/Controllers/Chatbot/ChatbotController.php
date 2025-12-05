@@ -38,7 +38,7 @@ class ChatbotController extends Controller
             'total_bots' => AiBotProfile::where('owner_id', $user->id)->count(),
             'active_bots' => AiBotProfile::where('owner_id', $user->id)->where('is_active', true)->count(),
             'total_rentals' => $user->ownedBotRentals()->count(),
-            'total_revenue' => $user->ownedBotRentals()->sum('owner_earning'),
+            'total_revenue' => $user->botOwnerEarnings()->sum('net_amount'),
         ];
 
         return view('chatbot.index', compact('bots', 'stats'));

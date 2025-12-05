@@ -5,39 +5,48 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * AiBotRental Model
+ *
+ * จัดการข้อมูลการเช่าบอท AI
+ */
 class AiBotRental extends Model
 {
+    use SoftDeletes;
+
+    protected $table = 'ai_bot_rentals';
+
     protected $fillable = [
         'bot_profile_id',
         'renter_id',
-        'owner_id',
-        'rental_plan',
+        'rental_type',
+        'price',
+        'commission_rate',
         'start_date',
         'end_date',
-        'is_active',
-        'monthly_price',
-        'price_per_message',
+        'auto_renew',
         'total_messages',
-        'total_tokens_used',
-        'total_cost',
-        'commission_rate',
-        'platform_commission',
-        'owner_earning',
+        'total_amount',
+        'status',
+        'cancellation_reason',
         'cancelled_at',
+        'last_billing_date',
+        'next_billing_date',
     ];
 
     protected $casts = [
+        'price' => 'decimal:2',
+        'commission_rate' => 'decimal:2',
+        'total_amount' => 'decimal:4',
+        'total_messages' => 'integer',
+        'auto_renew' => 'boolean',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
-        'is_active' => 'boolean',
-        'monthly_price' => 'decimal:2',
-        'price_per_message' => 'decimal:4',
-        'total_cost' => 'decimal:2',
-        'commission_rate' => 'decimal:2',
-        'platform_commission' => 'decimal:2',
-        'owner_earning' => 'decimal:2',
         'cancelled_at' => 'datetime',
+        'last_billing_date' => 'datetime',
+        'next_billing_date' => 'datetime',
     ];
 
     /**
@@ -57,11 +66,13 @@ class AiBotRental extends Model
     }
 
     /**
-     * Get the owner (bot creator)
+     * Get the owner (bot creator) through bot profile
+     *
+     * ดึงเจ้าของบอทผ่าน botProfile
      */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'owner_id');
+        return $this->botProfile->owner();
     }
 
     /**
@@ -73,12 +84,19 @@ class AiBotRental extends Model
     }
 
     /**
+     * Get owner earnings for this rental
+     */
+    public function ownerEarnings(): HasMany
+    {
+        return $this->hasMany(OwnerEarning::class, 'rental_id');
+    }
+
+    /**
      * Scope: Only active rentals
      */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true)
-                     ->whereNull('cancelled_at');
+        return $query->where('status', 'active');
     }
 
     /**
@@ -90,24 +108,31 @@ class AiBotRental extends Model
     }
 
     /**
-     * Scope: For specific owner
-     */
-    public function scopeForOwner($query, int $ownerId)
-    {
-        return $query->where('owner_id', $ownerId);
-    }
-
-    /**
      * Scope: Expired rentals
      */
     public function scopeExpired($query)
     {
-        return $query->where('end_date', '<', now())
-                     ->where('is_active', true);
+        return $query->where('status', 'expired');
     }
 
     /**
-     * Calculate commission from total cost
+     * Scope: Monthly rentals
+     */
+    public function scopeMonthly($query)
+    {
+        return $query->where('rental_type', 'monthly');
+    }
+
+    /**
+     * Scope: Per-message rentals
+     */
+    public function scopePerMessage($query)
+    {
+        return $query->where('rental_type', 'per_message');
+    }
+
+    /**
+     * Calculate commission from amount
      */
     public function calculateCommission(float $amount): array
     {
@@ -122,31 +147,40 @@ class AiBotRental extends Model
     }
 
     /**
-     * Add usage and update commission
+     * Add usage (for per-message rentals)
      */
-    public function addUsage(int $messages, int $tokens, float $cost): void
+    public function addUsage(int $messages, float $amount): void
     {
         $this->total_messages += $messages;
-        $this->total_tokens_used += $tokens;
-        $this->total_cost += $cost;
-
-        // Recalculate commission
-        $commission = $this->calculateCommission($this->total_cost);
-        $this->platform_commission = $commission['platform_commission'];
-        $this->owner_earning = $commission['owner_earning'];
-
+        $this->total_amount += $amount;
         $this->save();
     }
 
     /**
      * Cancel rental
      */
-    public function cancel(): void
+    public function cancel(string $reason = null): void
     {
-        $this->is_active = false;
+        $this->status = 'cancelled';
+        $this->cancellation_reason = $reason;
         $this->cancelled_at = now();
-        $this->end_date = now();
         $this->save();
+    }
+
+    /**
+     * Check if rental is active
+     */
+    public function isActive(): bool
+    {
+        if ($this->status !== 'active') {
+            return false;
+        }
+
+        if ($this->rental_type === 'monthly' && $this->end_date) {
+            return now()->lte($this->end_date);
+        }
+
+        return true;
     }
 
     /**
@@ -154,31 +188,15 @@ class AiBotRental extends Model
      */
     public function isExpired(): bool
     {
-        if ($this->rental_plan === 'monthly' && $this->end_date) {
-            return $this->end_date->isPast();
+        if ($this->status === 'expired') {
+            return true;
+        }
+
+        if ($this->rental_type === 'monthly' && $this->end_date) {
+            return now()->gt($this->end_date);
         }
 
         return false;
-    }
-
-    /**
-     * Get rental status
-     */
-    public function getStatus(): string
-    {
-        if ($this->cancelled_at) {
-            return 'cancelled';
-        }
-
-        if ($this->isExpired()) {
-            return 'expired';
-        }
-
-        if ($this->is_active) {
-            return 'active';
-        }
-
-        return 'inactive';
     }
 
     /**
@@ -186,7 +204,7 @@ class AiBotRental extends Model
      */
     public function getDaysRemaining(): ?int
     {
-        if ($this->rental_plan !== 'monthly' || !$this->end_date) {
+        if ($this->rental_type !== 'monthly' || !$this->end_date) {
             return null;
         }
 
@@ -202,7 +220,7 @@ class AiBotRental extends Model
      */
     public function renew(int $months = 1): bool
     {
-        if ($this->rental_plan !== 'monthly') {
+        if ($this->rental_type !== 'monthly') {
             return false;
         }
 
@@ -210,9 +228,39 @@ class AiBotRental extends Model
             ? $this->end_date->addMonths($months)
             : now()->addMonths($months);
 
-        $this->is_active = true;
+        $this->status = 'active';
         $this->cancelled_at = null;
+        $this->next_billing_date = now()->addMonth();
+        $this->last_billing_date = now();
 
         return $this->save();
+    }
+
+    /**
+     * Get status badge color
+     */
+    public function getStatusColorAttribute(): string
+    {
+        return match ($this->status) {
+            'active' => 'success',
+            'expired' => 'secondary',
+            'cancelled' => 'danger',
+            'suspended' => 'warning',
+            default => 'secondary',
+        };
+    }
+
+    /**
+     * Get status label in Thai
+     */
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            'active' => 'ใช้งานอยู่',
+            'expired' => 'หมดอายุ',
+            'cancelled' => 'ยกเลิกแล้ว',
+            'suspended' => 'ระงับ',
+            default => 'ไม่ทราบสถานะ',
+        };
     }
 }

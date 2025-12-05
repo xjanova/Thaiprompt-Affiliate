@@ -99,10 +99,12 @@ class AiBotProfile extends Model
 
     /**
      * Get active rentals
+     *
+     * ดึงรายการเช่าที่ active อยู่
      */
     public function activeRentals(): HasMany
     {
-        return $this->rentals()->where('is_active', true);
+        return $this->rentals()->where('status', 'active');
     }
 
     /**
