@@ -9,17 +9,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Menu Configuration Source
+    | Menu Database Overrides
     |--------------------------------------------------------------------------
     |
-    | กำหนดว่าเมนูจะดึงจาก config/menus.php โดยตรงหรือจาก database
-    | - true: ใช้ config/menus.php เสมอ (แนะนำสำหรับ Development)
-    | - false: ใช้ database ก่อน แล้วค่อย fallback ไป config (Production)
+    | V3.2 Menu System:
+    | - เมนูปกติ: ดึงจาก config/menus.php เสมอ (Hardcoded - ง่ายต่อการพัฒนา)
+    | - เมนู Pin: ใช้ localStorage (จัดการฝั่ง frontend)
+    | - Database: ใช้สำหรับ Override เท่านั้น (Admin ปรับแต่งผ่าน UI)
     |
-    | หมายเหตุ: ในโหมด local/testing จะใช้ config โดยอัตโนมัติ
+    | MENU_USE_DB_OVERRIDES:
+    | - true: Admin สามารถซ่อน/เรียงลำดับ/ปรับแต่งเมนูผ่านตาราง menu_items
+    | - false: ใช้ config โดยตรง (Default - เหมาะสำหรับ Development)
     |
     */
-    'menu_use_config' => env('MENU_USE_CONFIG', false),
+    'menu_use_db_overrides' => env('MENU_USE_DB_OVERRIDES', false),
 
     'url' => env('APP_URL', 'http://localhost'),
     'timezone' => 'Asia/Bangkok',

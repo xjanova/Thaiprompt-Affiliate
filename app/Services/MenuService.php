@@ -45,6 +45,11 @@ class MenuService
     /**
      * ดึงเมนูสำหรับ role ที่กำหนด
      *
+     * แนวทางใหม่ (V3.2):
+     * - ใช้ config/menus.php เป็นหลักเสมอ (Hardcoded - ง่ายต่อการพัฒนา)
+     * - Database ใช้สำหรับ Override เท่านั้น (ซ่อน/เรียงลำดับ/ปรับแต่งผ่าน Admin UI)
+     * - Pinned menus จัดการแยกทาง localStorage (frontend)
+     *
      * @param string $role Role ของผู้ใช้ (admin, seller, user)
      * @param mixed $user User instance (optional) สำหรับกรอง permissions
      * @return array เมนูทั้งหมดที่กรองแล้ว
@@ -54,34 +59,23 @@ class MenuService
      */
     public function getMenuForRole(string $role, $user = null): array
     {
-        // 0. ตรวจสอบว่าใช้ Config Mode หรือไม่ (สำหรับ Development)
-        // ตั้งค่าใน .env: MENU_USE_CONFIG=true
-        $useConfig = config('app.menu_use_config', false) || app()->environment('local', 'testing');
+        // 1. ดึงเมนูจาก config/menus.php เป็นหลัก (Hardcoded)
+        $configMenus = config("menus.{$role}", []);
 
-        // 1. ดึงเมนูจาก Database หรือ Config ขึ้นอยู่กับการตั้งค่า
-        if ($useConfig) {
-            // Development Mode: ใช้ config เป็นหลัก
-            $configMenus = config("menus.{$role}", []);
-        } else {
-            // Production Mode: ลองดึงจาก Database ก่อน
-            $dbMenus = $this->getMenusFromDatabase($role, $user);
-
-            // 2. ถ้าไม่มีใน Database ให้ใช้จาก config
-            if (empty($dbMenus)) {
-                $configMenus = config("menus.{$role}", []);
-            } else {
-                $configMenus = $dbMenus;
-            }
-        }
-
-        // 3. ดึงเมนูจาก Feature Providers (ถ้ามี)
+        // 2. ดึงเมนูจาก Feature Providers (ถ้ามี)
         $providerMenus = [];
         if ($this->registrar) {
             $providerMenus = $this->registrar->getMenusForRole($role);
         }
 
-        // 4. รวมเมนูทั้งหมด
+        // 3. รวมเมนูทั้งหมด
         $allMenus = $this->mergeMenus($configMenus, $providerMenus);
+
+        // 4. Apply Database Overrides ถ้ามี (สำหรับ Admin customization)
+        // ตั้งค่าใน .env: MENU_USE_DB_OVERRIDES=true
+        if (config('app.menu_use_db_overrides', false)) {
+            $allMenus = $this->applyDatabaseOverrides($allMenus, $role, $user);
+        }
 
         // 5. กรองตาม permissions
         if ($user) {
@@ -95,6 +89,69 @@ class MenuService
         $allMenus = $this->sortMenus($allMenus);
 
         return $allMenus;
+    }
+
+    /**
+     * Apply Database Overrides ลงบนเมนูจาก config
+     *
+     * ใช้สำหรับ Admin ปรับแต่งเมนูผ่าน UI เช่น:
+     * - ซ่อนเมนูบางรายการ
+     * - เปลี่ยนลำดับเมนู
+     * - เปลี่ยน label/icon
+     *
+     * @param array $menus เมนูจาก config
+     * @param string $dashboardType ประเภท dashboard
+     * @param mixed $user User instance
+     * @return array เมนูที่ apply overrides แล้ว
+     */
+    protected function applyDatabaseOverrides(array $menus, string $dashboardType, $user = null): array
+    {
+        // ตรวจสอบว่าตาราง menu_items มีอยู่หรือไม่
+        if (!Schema::hasTable('menu_items')) {
+            return $menus;
+        }
+
+        // ดึง overrides จาก database
+        $overrides = MenuItem::forDashboard($dashboardType)
+            ->get()
+            ->keyBy('menu_key');
+
+        if ($overrides->isEmpty()) {
+            return $menus;
+        }
+
+        // Apply overrides
+        return array_map(function ($menu) use ($overrides) {
+            $menuKey = $menu['id'] ?? null;
+            if (!$menuKey || !$overrides->has($menuKey)) {
+                return $menu;
+            }
+
+            $override = $overrides->get($menuKey);
+
+            // ซ่อนเมนูถ้า is_visible = false
+            if (!$override->is_visible || !$override->is_active) {
+                $menu['hidden'] = true;
+            }
+
+            // Override order
+            if ($override->order !== null) {
+                $menu['order'] = $override->order;
+            }
+
+            // Override label/icon (ถ้ามีการตั้งค่า)
+            if ($override->label && $override->label !== $menu['label']) {
+                $menu['label'] = $override->label;
+            }
+            if ($override->icon && $override->icon !== $menu['icon']) {
+                $menu['icon'] = $override->icon;
+            }
+
+            return $menu;
+        }, $menus);
+
+        // กรองเมนูที่ถูกซ่อน
+        return array_filter($menus, fn($m) => empty($m['hidden']));
     }
 
     /**
