@@ -7,10 +7,10 @@
 // API Configuration
 // =====================================================
 
-// Production API URL - เปลี่ยนเป็น URL จริงของคุณ
+// Production API URL
 export const API_BASE_URL = __DEV__
   ? 'http://10.0.2.2:8000/api/v1' // Android Emulator
-  : 'https://your-domain.com/api/v1';
+  : 'https://main.thaiprompt.online/api/v1';
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -44,13 +44,14 @@ export const API_ENDPOINTS = {
 
   // Profile
   PROFILE: '/profile',
-  UPDATE_PROFILE: '/profile/update',
+  UPDATE_PROFILE: '/profile', // ใช้ PUT method
   CHANGE_PASSWORD: '/profile/change-password',
+  REFERRAL_CODE: '/profile/referral-code',
 
   // Settings
   SETTINGS: '/settings',
-  THEME: '/settings/theme',
-  COMPLETE_THEME: '/v1/complete-theme',
+  THEME: '/app/theme',
+  COMPLETE_THEME: '/app/complete-theme',
 } as const;
 
 // =====================================================
