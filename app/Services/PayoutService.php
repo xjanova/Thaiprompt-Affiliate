@@ -582,8 +582,8 @@ class PayoutService
                 ->toArray(),
             'pending_count' => (clone $query)->where('status', PayoutRequest::STATUS_PENDING)->count(),
             'pending_amount' => (clone $query)->where('status', PayoutRequest::STATUS_PENDING)->sum('net_amount'),
-            'completed_count' => (clone $query)->where('status', PayoutRequest::STATUS_COMPLETED)->count(),
-            'completed_amount' => (clone $query)->where('status', PayoutRequest::STATUS_COMPLETED)->sum('net_amount'),
+            'completed_count' => (clone $query)->where('status', PayoutRequest::STATUS_PAID)->count(),
+            'completed_amount' => (clone $query)->where('status', PayoutRequest::STATUS_PAID)->sum('net_amount'),
         ];
     }
 
