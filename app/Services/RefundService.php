@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Log;
  *
  * ครอบคลุม:
  * - คืนเงินลูกค้า
+ * - เรียกคืน Cashback ที่จ่ายไปแล้ว (ใหม่!)
  * - เรียกคืนเงินจากผู้ขาย (Seller/Admin Shop)
  * - เรียกคืน MLM Commission ทั้งสายงาน
  * - เรียกคืน Affiliate Commission
@@ -61,21 +62,25 @@ class RefundService
                 // 1. Customer Refund
                 'customer_refund' => null,
 
-                // 2. Seller/Admin Shop Clawback
+                // 2. Cashback Clawback (ใหม่!)
+                'cashback_clawback' => null,
+
+                // 3. Seller/Admin Shop Clawback
                 'seller_clawback' => [],
 
-                // 3. MLM Commission Clawback
+                // 4. MLM Commission Clawback
                 'mlm_clawback' => null,
 
-                // 4. Platform Wallet Adjustments
+                // 5. Platform Wallet Adjustments
                 'platform_adjustments' => [],
 
-                // 5. Debts Created
+                // 6. Debts Created
                 'debts_created' => [],
 
                 // Summary
                 'summary' => [
                     'total_customer_refund' => 0,
+                    'total_cashback_clawback' => 0,
                     'total_seller_clawback' => 0,
                     'total_mlm_clawback' => 0,
                     'total_debts_created' => 0,
@@ -86,20 +91,29 @@ class RefundService
             $refundReport['customer_refund'] = $this->refundToCustomer($order, $adminId, $reason);
             $refundReport['summary']['total_customer_refund'] = $refundReport['customer_refund']['amount'] ?? 0;
 
-            // ===== 2. เรียกคืนเงินจากผู้ขาย/ร้านแอดมิน =====
+            // ===== 2. เรียกคืน Cashback ที่จ่ายไปแล้ว =====
+            $refundReport['cashback_clawback'] = $this->clawbackCashback($order, $adminId, $reason);
+            $refundReport['summary']['total_cashback_clawback'] = $refundReport['cashback_clawback']['clawback_amount'] ?? 0;
+
+            // ===== 3. เรียกคืนเงินจากผู้ขาย/ร้านแอดมิน =====
             $refundReport['seller_clawback'] = $this->clawbackFromSellers($order, $adminId, $reason);
             $refundReport['summary']['total_seller_clawback'] = collect($refundReport['seller_clawback'])
                 ->sum('clawback_amount');
 
-            // ===== 3. เรียกคืน MLM Commission ทั้งสายงาน =====
+            // ===== 4. เรียกคืน MLM Commission ทั้งสายงาน =====
             $refundReport['mlm_clawback'] = $this->mlmClawbackService->clawbackOrderCommissions($order, $adminId);
             $refundReport['summary']['total_mlm_clawback'] = $refundReport['mlm_clawback']['total_clawback_amount'] ?? 0;
 
-            // ===== 4. ปรับยอด Platform Wallets =====
+            // ===== 5. ปรับยอด Platform Wallets =====
             $refundReport['platform_adjustments'] = $this->adjustPlatformWallets($order, $reason);
 
-            // ===== 5. รวบรวม Debts ที่สร้าง =====
+            // ===== 6. รวบรวม Debts ที่สร้าง =====
             $allDebts = [];
+
+            // จาก Cashback clawback
+            if (!empty($refundReport['cashback_clawback']['debt_id'])) {
+                $allDebts[] = $refundReport['cashback_clawback']['debt_id'];
+            }
 
             // จาก Seller clawback
             foreach ($refundReport['seller_clawback'] as $seller) {
@@ -240,6 +254,132 @@ class RefundService
                 ]);
             }
         }
+
+        return $result;
+    }
+
+    /**
+     * เรียกคืน Cashback ที่จ่ายไปแล้วให้ลูกค้า
+     *
+     * หัก cashback ออกจาก wallet ลูกค้า
+     * ถ้าเงินไม่พอ → สร้างเป็นหนี้
+     *
+     * @param Order $order
+     * @param int|null $adminId
+     * @param string $reason
+     * @return array
+     */
+    protected function clawbackCashback(Order $order, ?int $adminId, string $reason): array
+    {
+        $result = [
+            'customer_id' => $order->user_id,
+            'cashback_amount' => $order->cashback_amount ?? 0,
+            'clawback_amount' => 0,
+            'deducted_from_wallet' => 0,
+            'debt_id' => null,
+            'status' => 'skipped',
+            'reason' => null,
+        ];
+
+        // ตรวจสอบว่ามี cashback ที่ต้องเรียกคืนหรือไม่
+        if (!$order->cashback_processed || ($order->cashback_amount ?? 0) <= 0) {
+            $result['reason'] = 'No cashback to clawback';
+            return $result;
+        }
+
+        $cashbackAmount = $order->cashback_amount;
+        $result['clawback_amount'] = $cashbackAmount;
+
+        $customer = User::find($order->user_id);
+        if (!$customer) {
+            $result['status'] = 'failed';
+            $result['reason'] = 'Customer not found';
+            return $result;
+        }
+
+        // ตรวจสอบยอดเงินใน Wallet
+        $walletBalance = $customer->wallet?->balance ?? 0;
+
+        if ($walletBalance >= $cashbackAmount) {
+            // มีเงินพอ → หักทันที
+            $customer->wallet->decrement('balance', $cashbackAmount);
+            $this->createWalletTransaction(
+                $customer,
+                -$cashbackAmount,
+                'cashback_clawback',
+                $order,
+                "เรียกคืน Cashback - Refund Order #{$order->order_number}"
+            );
+
+            $result['deducted_from_wallet'] = $cashbackAmount;
+            $result['status'] = 'deducted';
+
+        } elseif ($walletBalance > 0) {
+            // มีบางส่วน → หักเท่าที่มี + สร้างหนี้
+            $customer->wallet->decrement('balance', $walletBalance);
+            $this->createWalletTransaction(
+                $customer,
+                -$walletBalance,
+                'cashback_clawback',
+                $order,
+                "เรียกคืน Cashback (บางส่วน) - Refund Order #{$order->order_number}"
+            );
+
+            $result['deducted_from_wallet'] = $walletBalance;
+
+            // สร้างหนี้ส่วนที่เหลือ
+            $debtAmount = $cashbackAmount - $walletBalance;
+            $debt = WalletDebt::createDebt(
+                $order->user_id,
+                $debtAmount,
+                'CashbackClawback',
+                $order->id,
+                "เรียกคืน Cashback ส่วนที่เหลือจาก Order #{$order->order_number}: {$reason}",
+                $adminId,
+                2, // Priority 2 (ต่ำกว่า Seller/MLM)
+                [
+                    'order_number' => $order->order_number,
+                    'original_cashback' => $cashbackAmount,
+                    'partial_deducted' => $walletBalance,
+                ]
+            );
+
+            $result['debt_id'] = $debt->id;
+            $result['status'] = 'partial_debt';
+
+        } else {
+            // ไม่มีเงินเลย → สร้างหนี้ทั้งหมด
+            $debt = WalletDebt::createDebt(
+                $order->user_id,
+                $cashbackAmount,
+                'CashbackClawback',
+                $order->id,
+                "เรียกคืน Cashback จาก Order #{$order->order_number}: {$reason}",
+                $adminId,
+                2,
+                [
+                    'order_number' => $order->order_number,
+                    'original_cashback' => $cashbackAmount,
+                ]
+            );
+
+            $result['debt_id'] = $debt->id;
+            $result['status'] = 'full_debt';
+        }
+
+        // อัพเดทสถานะ cashback ใน Order
+        $order->update([
+            'cashback_clawback_at' => now(),
+            'cashback_clawback_reason' => $reason,
+        ]);
+
+        Log::info('Cashback clawback processed', [
+            'order_id' => $order->id,
+            'customer_id' => $order->user_id,
+            'cashback_amount' => $cashbackAmount,
+            'deducted' => $result['deducted_from_wallet'],
+            'debt_id' => $result['debt_id'],
+        ]);
 
         return $result;
     }
