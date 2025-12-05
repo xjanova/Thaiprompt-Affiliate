@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.361.0] - 2025-12-05
+
+### ✨ Features
+- Merge pull request #2075 from xjanova/claude/verify-payment-commissions-01VjCamg3mvVqbQ2zT1aDs9Z (cb1925fb)
+- feat: เพิ่มเมนู Platform Finance สำหรับ Admin ดูกระเป๋าเงินพิเศษ (0185f480)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.360.3] - 2025-12-05
 
 ### ✨ Features
