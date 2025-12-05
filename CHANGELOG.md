@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.358.23] - 2025-12-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2042 from xjanova/claude/fix-expo-error-01QLt62F4h7qf3WMt7N2CVyj (892690cc)
+- fix(mobile-app): ลบ routes ที่ไม่มีอยู่จริง (hub/[id], cart) (0aaa45af)
+### 🔧 Other Changes
+
+
 ## [v3.358.22] - 2025-12-05
 
 ### ✨ Features
