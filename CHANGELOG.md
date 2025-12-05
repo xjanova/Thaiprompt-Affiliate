@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.359.0] - 2025-12-05
+
+### ✨ Features
+- feat: เพิ่มระบบไรเดอร์พร้อม GPS tracking ตามมาตรฐาน Google (6338ec1f)
+- feat(mobile-app): เพิ่มระบบ KYC พร้อมรองรับกล้องถ่ายรูป (fc03885b)
+- feat(mobile-app): เพิ่ม LINE Login และ Wallet API สำหรับ Mobile App (863d57f1)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2069 from xjanova/claude/fix-expo-error-01QLt62F4h7qf3WMt7N2CVyj (b6c9ac06)
+
 ## [v3.358.49] - 2025-12-05
 
 ### ✨ Features
