@@ -86,14 +86,14 @@ const StepIndicator = ({
                 {isCompleted ? (
                   <LinearGradient
                     colors={['#10B981', '#059669']}
-                    className="w-full h-full rounded-full items-center justify-center"
+                    style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }}
                   >
                     <Ionicons name="checkmark" size={28} color="white" />
                   </LinearGradient>
                 ) : isActive ? (
                   <LinearGradient
                     colors={['#3B82F6', '#2563EB']}
-                    className="w-full h-full rounded-full items-center justify-center"
+                    style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }}
                   >
                     <Ionicons name={step.icon as any} size={24} color="white" />
                   </LinearGradient>
@@ -124,7 +124,7 @@ const StepIndicator = ({
                 {isPast ? (
                   <LinearGradient
                     colors={['#10B981', '#10B981']}
-                    className="h-full"
+                    style={{ height: '100%' }}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                   />
@@ -402,8 +402,12 @@ const ApprovedView = ({ isDark }: { isDark: boolean }) => {
       >
         <LinearGradient
           colors={['#10B981', '#059669', '#047857']}
-          className="w-32 h-32 rounded-full items-center justify-center"
           style={{
+            width: 128,
+            height: 128,
+            borderRadius: 64,
+            alignItems: 'center',
+            justifyContent: 'center',
             shadowColor: '#10B981',
             shadowOffset: { width: 0, height: 8 },
             shadowOpacity: 0.4,
@@ -459,8 +463,10 @@ const ApprovedView = ({ isDark }: { isDark: boolean }) => {
         >
           <LinearGradient
             colors={['#10B981', '#059669']}
-            className="px-12 py-4 rounded-2xl"
             style={{
+              paddingHorizontal: 48,
+              paddingVertical: 16,
+              borderRadius: 16,
               shadowColor: '#10B981',
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,
@@ -671,8 +677,10 @@ const RejectedView = ({
         <Pressable onPress={onRetry} className="mt-8">
           <LinearGradient
             colors={['#3B82F6', '#2563EB']}
-            className="px-12 py-4 rounded-2xl"
             style={{
+              paddingHorizontal: 48,
+              paddingVertical: 16,
+              borderRadius: 16,
               shadowColor: '#3B82F6',
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,
@@ -870,7 +878,7 @@ export default function KycScreen() {
         <SafeAreaView className="flex-1 justify-center items-center px-6">
           <LinearGradient
             colors={['#3B82F6', '#2563EB']}
-            className="w-24 h-24 rounded-full items-center justify-center mb-6"
+            style={{ width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}
           >
             <Ionicons name="shield-checkmark" size={48} color="white" />
           </LinearGradient>
@@ -879,7 +887,7 @@ export default function KycScreen() {
           </Text>
           <Text className="text-gray-500 text-center mt-2">เข้าสู่ระบบเพื่อยืนยันตัวตน</Text>
           <Pressable onPress={() => router.push('/login')} className="mt-6">
-            <LinearGradient colors={['#3B82F6', '#2563EB']} className="px-8 py-3 rounded-xl">
+            <LinearGradient colors={['#3B82F6', '#2563EB']} style={{ paddingHorizontal: 32, paddingVertical: 12, borderRadius: 12 }}>
               <Text className="text-white font-bold">เข้าสู่ระบบ</Text>
             </LinearGradient>
           </Pressable>
@@ -906,7 +914,7 @@ export default function KycScreen() {
         {/* Header */}
         <LinearGradient
           colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
-          className="px-5 pt-4 pb-6"
+          style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 }}
         >
           <View className="flex-row items-center">
             <Pressable
@@ -1000,8 +1008,12 @@ export default function KycScreen() {
                   {hasIdCard && hasSelfie && !isLoading ? (
                     <LinearGradient
                       colors={['#10B981', '#059669']}
-                      className="py-5 rounded-2xl items-center flex-row justify-center"
                       style={{
+                        paddingVertical: 20,
+                        borderRadius: 16,
+                        alignItems: 'center',
+                        flexDirection: 'row',
+                        justifyContent: 'center',
                         shadowColor: '#10B981',
                         shadowOffset: { width: 0, height: 4 },
                         shadowOpacity: 0.3,

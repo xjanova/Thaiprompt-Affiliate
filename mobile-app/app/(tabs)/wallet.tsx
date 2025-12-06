@@ -277,7 +277,7 @@ export default function WalletScreen() {
               colors={['#10B981', '#059669']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              className="rounded-3xl p-6"
+              style={{ borderRadius: 24, padding: 24 }}
             >
               {/* Offline Badge */}
               {!isOnline && (
