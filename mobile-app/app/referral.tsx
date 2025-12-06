@@ -276,7 +276,17 @@ const ShareButton = ({
   onPress: () => void;
 }) => (
   <Pressable onPress={onPress} className="items-center flex-1" style={{ maxWidth: 80 }}>
-    <LinearGradient colors={[color, color + 'CC']} style={{ width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+    <LinearGradient
+      colors={[color, color + 'CC']}
+      style={{
+        width: 56,
+        height: 56,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8,
+      }}
+    >
       <Ionicons name={icon as any} size={24} color="white" />
     </LinearGradient>
     <Text className="text-gray-500 text-xs text-center">{label}</Text>
@@ -464,7 +474,14 @@ export default function ReferralScreen() {
             เข้าสู่ระบบเพื่อรับรหัสแนะนำและเริ่มสร้างรายได้จากเครือข่าย
           </Text>
           <Pressable onPress={() => router.push('/login')} className="mt-6">
-            <LinearGradient colors={['#EC4899', '#BE185D']} style={{ paddingHorizontal: 40, paddingVertical: 16, borderRadius: 16 }}>
+            <LinearGradient
+              colors={['#EC4899', '#BE185D']}
+              style={{
+                paddingHorizontal: 40,
+                paddingVertical: 16,
+                borderRadius: 16,
+              }}
+            >
               <Text className="text-white font-bold text-lg">เข้าสู่ระบบ</Text>
             </LinearGradient>
           </Pressable>
@@ -605,7 +622,13 @@ export default function ReferralScreen() {
 
             {/* Benefits */}
             <ReAnimated.View entering={FadeInDown.delay(800)} className="px-4 mt-6">
-              <LinearGradient colors={['#EC4899', '#BE185D']} style={{ padding: 20, borderRadius: 16 }}>
+              <LinearGradient
+                colors={['#EC4899', '#BE185D']}
+                style={{
+                  padding: 20,
+                  borderRadius: 16,
+                }}
+              >
                 <Text className="text-white font-bold text-lg mb-3">
                   🎁 สิทธิประโยชน์ที่จะได้รับ
                 </Text>
