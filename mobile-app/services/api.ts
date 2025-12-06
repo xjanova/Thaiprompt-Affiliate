@@ -291,15 +291,22 @@ export const getReferrals = async (): Promise<ReferralsData | null> => {
 // =====================================================
 
 /**
- * ดึงรายการสินค้า
+ * ดึงรายการสินค้า (รองรับ Pagination)
  */
 export const getProducts = async (
-  params?: { category?: string | null; search?: string }
+  params?: {
+    category?: string | null;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }
 ): Promise<Product[] | null> => {
   try {
     const queryParams = new URLSearchParams();
     if (params?.category) queryParams.append('category', params.category);
     if (params?.search) queryParams.append('search', params.search);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
 
     const response = await apiClient.get<ApiResponse<Product[]>>(
       `${API_ENDPOINTS.PRODUCTS}?${queryParams.toString()}`
@@ -307,6 +314,49 @@ export const getProducts = async (
     return response.data.data || null;
   } catch (error) {
     console.error('Get products error:', error);
+    return null;
+  }
+};
+
+// Store Type for API
+interface Store {
+  id: string;
+  name: string;
+  logo?: string;
+  rating: number;
+  isOfficial: boolean;
+  isFeatured: boolean;
+  productCount: number;
+}
+
+/**
+ * ดึงรายการร้านค้าทางการ
+ * (Admin จัดการจากเมนูจัดการแอพ)
+ */
+export const getOfficialStores = async (): Promise<Store[] | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<Store[]>>(
+      '/mobile/stores/official'
+    );
+    return response.data.data || null;
+  } catch (error) {
+    console.error('Get official stores error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงรายการร้านแนะนำติดดาว
+ * (Admin จัดการจากเมนูจัดการแอพ)
+ */
+export const getFeaturedStores = async (): Promise<Store[] | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<Store[]>>(
+      '/mobile/stores/featured'
+    );
+    return response.data.data || null;
+  } catch (error) {
+    console.error('Get featured stores error:', error);
     return null;
   }
 };
