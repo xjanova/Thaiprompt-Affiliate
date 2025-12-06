@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.0] - 2025-12-06
+
+### ✨ Features
+- Merge pull request #2176 from xjanova/claude/add-terms-privacy-policy-01DXYbyNEhS1DntwNP3GHmE3 (c5aadad4)
+- feat: อัพเดทนโยบายความเป็นส่วนตัวและข้อตกลงให้ครอบคลุม mobile app (a14c2493)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.371.23] - 2025-12-06
 
 ### ✨ Features
