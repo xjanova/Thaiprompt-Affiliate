@@ -7,9 +7,12 @@
     $platformFeeFromSettings = \App\Models\MarketplaceSetting::get('platform_fee_percentage', 10);
     $vatFromSettings = \App\Models\MarketplaceSetting::get('vat_percentage', 7);
 
-    // ดึง MLM settings
+    // ดึง MLM settings (ค่าปัจจุบันจาก database)
     $mlmLevels = \App\Models\MlmGlobalSetting::get('unilevel_levels', []);
-    $pvToMoneyRate = \App\Models\MlmGlobalSetting::get('pv_to_money_rate', 1.00);
+    // commission_per_pv = ค่าคอมมิชชันต่อ 1 PV (บาท) - นี่คือค่าที่ใช้แปลง PV เป็นเงิน
+    $commissionPerPv = \App\Models\MlmGlobalSetting::get('commission_per_pv', 1.00);
+    // global_pv_rate = 1 บาท = X PV (อัตราแปลงเงินเป็น PV)
+    $globalPvRate = \App\Models\MlmGlobalSetting::get('global_pv_rate', 1.00);
     $vatEnabled = \App\Models\MlmGlobalSetting::get('vat_enabled', true);
 @endphp
 
@@ -34,7 +37,8 @@
         'platformFee' => $platformFeeFromSettings,
         'vat' => $vatFromSettings,
         'mlmLevels' => $mlmLevels,
-        'pvToMoneyRate' => $pvToMoneyRate,
+        'commissionPerPv' => $commissionPerPv,
+        'globalPvRate' => $globalPvRate,
         'vatEnabled' => $vatEnabled,
     ]) }})">
         {{-- Left Column: Form (2/3 width on desktop) --}}
@@ -465,6 +469,17 @@
                                 <div><strong>4. หัก VAT:</strong> ภาษีมูลค่าเพิ่ม (คุณจ่าย)</div>
                                 <div><strong>5. หัก MLM Commission:</strong> คำนวณจาก PV</div>
                                 <div class="pt-2 border-t dark:border-gray-700"><strong>= รายได้สุทธิ</strong> (โอนเข้า wallet)</div>
+
+                                {{-- PV Calculation Explanation --}}
+                                <div class="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                                    <h5 class="font-bold text-indigo-800 dark:text-indigo-200 mb-2">📊 การคำนวณ MLM Commission จาก PV</h5>
+                                    <div class="text-indigo-700 dark:text-indigo-300 space-y-1">
+                                        <div>• <strong>อัตราแปลง PV:</strong> 1 PV = ฿<span x-text="commissionPerPv.toFixed(2)"></span></div>
+                                        <div>• <strong>สูตร:</strong> PV × % Level × ฿<span x-text="commissionPerPv.toFixed(2)"></span></div>
+                                        <div class="text-xs mt-2">ตัวอย่าง: 100 PV, Level 1 (10%) = 100 × 10% × ฿<span x-text="commissionPerPv.toFixed(2)"></span> = ฿<span x-text="(100 * 0.1 * commissionPerPv).toFixed(2)"></span></div>
+                                    </div>
+                                </div>
+
                                 <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-yellow-800 dark:text-yellow-200">
                                     <strong>💡 เคล็ดลับ:</strong> ยิ่ง Cashback & PV สูง = ลูกค้าสนใจมากขึ้น แต่กำไรคุณลด
                                 </div>
@@ -585,12 +600,24 @@
                                 </span>
                             </div>
 
+                            {{-- PV to Money Rate Info --}}
+                            <div x-show="pvValue > 0" class="mt-1 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded px-2 py-1">
+                                <span class="font-medium">อัตราแปลง:</span>
+                                1 PV = ฿<span x-text="commissionPerPv.toFixed(2)"></span>
+                                <span class="mx-1">|</span>
+                                <span x-text="pvValue"></span> PV × ฿<span x-text="commissionPerPv.toFixed(2)"></span>
+                                = ฿<span x-text="(pvValue * commissionPerPv).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span> (PV รวม)
+                            </div>
+
                             {{-- MLM Detail --}}
                             <div x-show="showMlmDetail && pvValue > 0" x-transition class="ml-4 mt-2 space-y-1 text-xs">
                                 <template x-for="(level, index) in calc.mlmLevelDetails" :key="index">
                                     <div class="flex justify-between text-gray-500 dark:text-gray-400">
                                         <span>Level <span x-text="level.level"></span> (<span x-text="level.percentage"></span>%):</span>
-                                        <span>-฿<span x-text="level.amount.toFixed(2)"></span></span>
+                                        <span class="flex items-center gap-1">
+                                            <span class="text-gray-400">(<span x-text="level.pv.toFixed(2)"></span> PV)</span>
+                                            -฿<span x-text="level.amount.toFixed(2)"></span>
+                                        </span>
                                     </div>
                                 </template>
                             </div>
@@ -695,9 +722,12 @@ function productForm(config) {
         cashback: {{ old('cashback_percentage', 0) }},
         pvValue: {{ old('pv_value', 0) }},
 
-        // ===== MLM Settings (จาก config) =====
+        // ===== MLM Settings (จาก config - ค่าปัจจุบันจาก database) =====
         mlmLevels: config.mlmLevels || [],
-        pvToMoneyRate: config.pvToMoneyRate || 1.00,
+        // commission_per_pv = ค่าคอมมิชชันต่อ 1 PV (บาท) - ใช้แปลง PV เป็นเงิน
+        commissionPerPv: config.commissionPerPv || 1.00,
+        // global_pv_rate = 1 บาท = X PV (อัตราแปลงเงินเป็น PV)
+        globalPvRate: config.globalPvRate || 1.00,
         vatEnabled: config.vatEnabled !== false,
 
         // ===== UI State =====
@@ -746,6 +776,9 @@ function productForm(config) {
 
         /**
          * คำนวณ MLM Commission ตาม PV และ levels
+         *
+         * สูตร: PV × (percentage / 100) × commissionPerPv = THB
+         * ตัวอย่าง: 100 PV × (10% / 100) × 1.00 = 10 THB (Level 1)
          */
         calculateMlmCommission() {
             if (this.pvValue <= 0 || !this.mlmLevels || this.mlmLevels.length === 0) {
@@ -758,8 +791,10 @@ function productForm(config) {
             this.mlmLevels.forEach(level => {
                 const percentage = level.percentage || 0;
                 if (percentage > 0) {
+                    // คำนวณ PV ที่แต่ละ level ได้รับ
                     const levelPv = this.pvValue * (percentage / 100);
-                    const amount = levelPv * this.pvToMoneyRate;
+                    // แปลง PV เป็นเงิน (THB) โดยใช้ commissionPerPv
+                    const amount = levelPv * this.commissionPerPv;
                     total += amount;
 
                     levels.push({
