@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.371.17] - 2025-12-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2169 from xjanova/claude/fix-backup-disk-space-013RkKhyJSuRoTPoAnrSuviR (102d5b13)
+- fix: add emergency disk cleanup before logging to handle 100% full disk (128cbc09)
+### 🔧 Other Changes
+
+
 ## [v3.371.16] - 2025-12-06
 
 ### ✨ Features
