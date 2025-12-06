@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.371.22] - 2025-12-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(mobile-app): แก้ไข LinearGradient className ใน HubCard และ referral (5ec6279a)
+- fix(mobile-app): แก้ไข HubCard LinearGradient className เป็น style (4347fdd9)
+### 🔧 Other Changes
+- Merge pull request #2174 from xjanova/claude/review-mobile-app-code-018UabmCri3oqTVB6G5GMRgd (08d17b69)
+
 ## [v3.371.21] - 2025-12-06
 
 ### ✨ Features
