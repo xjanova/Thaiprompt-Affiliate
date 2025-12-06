@@ -29,6 +29,7 @@ import {
   acceptJob,
 } from '@/services/api';
 import { formatCurrency } from '@/constants';
+import { ErrorState, NetworkErrorBanner } from '@/components/ErrorState';
 
 // =====================================================
 // Types
@@ -341,10 +342,14 @@ export default function RiderJobsScreen() {
   const [isAccepting, setIsAccepting] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   // Load Jobs
   const loadJobs = useCallback(async () => {
     try {
+      setHasError(false);
+
       // Check for current job first
       const currentJobRes = await getCurrentJob();
       if (currentJobRes?.success && currentJobRes.data) {
@@ -355,11 +360,17 @@ export default function RiderJobsScreen() {
       const response = await getAvailableJobs();
       if (response?.success && response.data) {
         setJobs(response.data.jobs || []);
+      } else if (!response?.success) {
+        // API returned but with error
+        setHasError(true);
       }
     } catch (error) {
       console.error('Load jobs error:', error);
+      // Network error or API connection failed
+      setHasError(true);
     } finally {
       setIsLoading(false);
+      setIsRetrying(false);
     }
   }, []);
 
@@ -374,6 +385,13 @@ export default function RiderJobsScreen() {
     setRefreshing(true);
     await loadJobs();
     setRefreshing(false);
+  };
+
+  // Retry on error
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    setIsLoading(true);
+    await loadJobs();
   };
 
   // Open map
@@ -522,6 +540,14 @@ export default function RiderJobsScreen() {
             <ActivityIndicator size="large" color="#3B82F6" />
             <Text className="text-gray-500 mt-4">กำลังโหลดงาน...</Text>
           </View>
+        ) : hasError ? (
+          <ErrorState
+            title="ไม่สามารถโหลดงานได้"
+            message="ขณะนี้ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้\nโปรดลองใหม่ภายหลัง"
+            onRetry={handleRetry}
+            retryText={isRetrying ? 'กำลังลอง...' : 'ลองใหม่'}
+            showRetry={!isRetrying}
+          />
         ) : (
           <ScrollView
             className="flex-1 px-5"

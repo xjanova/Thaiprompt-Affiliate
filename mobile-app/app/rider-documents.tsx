@@ -22,6 +22,7 @@ import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import { uploadRiderDocument, getRiderStatus } from '@/services/api';
+import { ErrorState } from '@/components/ErrorState';
 
 // =====================================================
 // Types
@@ -197,6 +198,8 @@ export default function RiderDocumentsScreen() {
     profile: undefined,
   });
   const [uploadedDocs, setUploadedDocs] = useState<DocumentType[]>([]);
+  const [hasError, setHasError] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   // Document items
   const documents: DocumentItem[] = [
@@ -246,16 +249,31 @@ export default function RiderDocumentsScreen() {
   // Load status
   const loadStatus = useCallback(async () => {
     try {
+      setHasError(false);
+
       // Get rider status to check what documents are uploaded
       const response = await getRiderStatus();
+
       // In real app, response would include which documents are uploaded
-      // For now, we'll just check if rider is registered
+      if (!response?.success) {
+        setHasError(true);
+      }
     } catch (error) {
       console.error('Load status error:', error);
+      // Network error or API connection failed
+      setHasError(true);
     } finally {
       setIsLoading(false);
+      setIsRetrying(false);
     }
   }, []);
+
+  // Retry on error
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    setIsLoading(true);
+    await loadStatus();
+  };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -347,7 +365,11 @@ export default function RiderDocumentsScreen() {
     } catch (error) {
       console.error('Upload error:', error);
       setImages((prev) => ({ ...prev, [type]: undefined }));
-      Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+      // Show proper error message for connection failures
+      Alert.alert(
+        'ไม่สามารถเชื่อมต่อได้',
+        'ขณะนี้ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้\nโปรดลองใหม่ภายหลัง'
+      );
     } finally {
       setUploadingType(null);
     }
@@ -427,6 +449,33 @@ export default function RiderDocumentsScreen() {
         <SafeAreaView className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#3B82F6" />
           <Text className="text-gray-500 mt-4">กำลังโหลด...</Text>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  // Error state - cannot connect to server
+  if (hasError) {
+    return (
+      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
+        <SafeAreaView className="flex-1">
+          {/* Header */}
+          <View className="flex-row items-center px-5 pt-4 pb-2">
+            <Pressable onPress={() => router.back()} className="mr-4">
+              <Ionicons name="arrow-back" size={24} color={isDark ? '#fff' : '#000'} />
+            </Pressable>
+            <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              อัพโหลดเอกสาร
+            </Text>
+          </View>
+
+          <ErrorState
+            title="ไม่สามารถโหลดข้อมูลได้"
+            message="ขณะนี้ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้\nโปรดลองใหม่ภายหลัง"
+            onRetry={handleRetry}
+            retryText={isRetrying ? 'กำลังลอง...' : 'ลองใหม่'}
+            showRetry={!isRetrying}
+          />
         </SafeAreaView>
       </View>
     );
