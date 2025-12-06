@@ -524,6 +524,82 @@ log "Branch: $BRANCH"
 log "User: $(whoami)"
 log "Host: $(hostname)"
 
+# ============================================================
+# Disk Space Check & Auto-Cleanup
+# ============================================================
+print_header "💾 Disk Space Check"
+
+# ตรวจสอบพื้นที่ดิสก์ที่เหลือ (เป็น KB)
+DISK_AVAILABLE=$(df -k "$SCRIPT_DIR" | tail -1 | awk '{print $4}')
+DISK_AVAILABLE_MB=$((DISK_AVAILABLE / 1024))
+DISK_USED_PERCENT=$(df -h "$SCRIPT_DIR" | tail -1 | awk '{print $5}' | tr -d '%')
+
+print_info "พื้นที่ดิสก์ว่าง: ${DISK_AVAILABLE_MB} MB (ใช้ไป ${DISK_USED_PERCENT}%)"
+
+# Minimum required space: 500MB
+MIN_REQUIRED_MB=500
+# Warning threshold: 1GB
+WARNING_THRESHOLD_MB=1024
+# Auto-cleanup threshold: 90% used
+AUTO_CLEANUP_THRESHOLD=90
+
+if [ "$DISK_AVAILABLE_MB" -lt "$MIN_REQUIRED_MB" ]; then
+    print_critical "พื้นที่ดิสก์ไม่เพียงพอ! (ต้องการอย่างน้อย ${MIN_REQUIRED_MB} MB)"
+    echo ""
+    print_warning "🔧 กำลังรัน Auto-Cleanup เพื่อ free พื้นที่..."
+    echo ""
+
+    # รัน cleanup script ถ้ามี
+    if [ -x "$SCRIPT_DIR/cleanup-disk.sh" ]; then
+        "$SCRIPT_DIR/cleanup-disk.sh" --force 2>&1 | tee -a "$LOG_FILE"
+
+        # ตรวจสอบพื้นที่อีกครั้ง
+        DISK_AVAILABLE=$(df -k "$SCRIPT_DIR" | tail -1 | awk '{print $4}')
+        DISK_AVAILABLE_MB=$((DISK_AVAILABLE / 1024))
+
+        if [ "$DISK_AVAILABLE_MB" -lt "$MIN_REQUIRED_MB" ]; then
+            print_critical "ยังมีพื้นที่ไม่เพียงพอหลัง cleanup!"
+            echo ""
+            print_error "พื้นที่ว่าง: ${DISK_AVAILABLE_MB} MB (ต้องการ: ${MIN_REQUIRED_MB} MB)"
+            echo ""
+            print_info "💡 วิธีแก้ไขเพิ่มเติม:"
+            echo "  1. ลบ node_modules: rm -rf node_modules && npm install"
+            echo "  2. ลบ vendor: rm -rf vendor && composer install"
+            echo "  3. ตรวจสอบไฟล์ขนาดใหญ่: du -sh * | sort -h"
+            echo "  4. ติดต่อผู้ดูแลระบบเพื่อเพิ่มพื้นที่ดิสก์"
+            echo ""
+            error_exit "พื้นที่ดิสก์ไม่เพียงพอสำหรับ deployment"
+        else
+            print_success "✓ Cleanup สำเร็จ! พื้นที่ว่างตอนนี้: ${DISK_AVAILABLE_MB} MB"
+        fi
+    else
+        print_error "ไม่พบ cleanup-disk.sh script"
+        echo ""
+        print_info "💡 วิธีแก้ไขด้วยตัวเอง:"
+        echo "  1. ลบ backups เก่า: rm -rf backups/*.sql backups/critical_*"
+        echo "  2. ลบ logs: rm -f storage/logs/*.log"
+        echo "  3. ลบ cache: rm -rf storage/framework/cache/data/*"
+        echo ""
+        error_exit "พื้นที่ดิสก์ไม่เพียงพอสำหรับ deployment"
+    fi
+elif [ "$DISK_USED_PERCENT" -ge "$AUTO_CLEANUP_THRESHOLD" ]; then
+    print_warning "พื้นที่ดิสก์ใกล้เต็ม (${DISK_USED_PERCENT}% used)"
+    print_info "กำลังรัน cleanup อัตโนมัติ..."
+
+    if [ -x "$SCRIPT_DIR/cleanup-disk.sh" ]; then
+        "$SCRIPT_DIR/cleanup-disk.sh" --force 2>&1 | tail -5
+        DISK_AVAILABLE=$(df -k "$SCRIPT_DIR" | tail -1 | awk '{print $4}')
+        DISK_AVAILABLE_MB=$((DISK_AVAILABLE / 1024))
+        print_success "✓ Cleanup เสร็จสิ้น พื้นที่ว่าง: ${DISK_AVAILABLE_MB} MB"
+    fi
+elif [ "$DISK_AVAILABLE_MB" -lt "$WARNING_THRESHOLD_MB" ]; then
+    print_warning "พื้นที่ดิสก์เหลือน้อย (${DISK_AVAILABLE_MB} MB)"
+    print_info "แนะนำให้รัน: ./cleanup-disk.sh หลัง deployment"
+else
+    print_success "✓ พื้นที่ดิสก์เพียงพอ (${DISK_AVAILABLE_MB} MB ว่าง)"
+fi
+echo ""
+
 # Verify branch exists on remote
 print_header "🔍 Pre-flight Checks"
 
