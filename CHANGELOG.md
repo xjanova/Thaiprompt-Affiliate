@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.371.18] - 2025-12-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2170 from xjanova/claude/review-wallet-dividend-01PXWoBRU92KivDtTinkRZGv (56fc4cd8)
+- fix: integrate MLM commission calculation in OrderDistributionService (1aec4ea7)
+### 🔧 Other Changes
+
+
 ## [v3.371.17] - 2025-12-06
 
 ### ✨ Features
