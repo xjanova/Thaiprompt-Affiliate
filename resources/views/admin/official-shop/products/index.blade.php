@@ -53,7 +53,7 @@
                 </div>
                 <div class="text-white">
                     <h1 class="text-3xl font-bold mb-1">สินค้า Official Shop</h1>
-                    <p class="text-white/90 text-sm">จัดการสินค้าร้านทางการของระบบ (seller_id = null)</p>
+                    <p class="text-white/90 text-sm">จัดการสินค้าร้านทางการของระบบ</p>
                 </div>
             </div>
 

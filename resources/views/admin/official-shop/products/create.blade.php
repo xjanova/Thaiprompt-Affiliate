@@ -1,7 +1,7 @@
 {{--
   * หน้าเพิ่มสินค้า Official Shop (Product Create)
   * ฟอร์มสำหรับเพิ่มสินค้าใหม่ในร้านทางการ
-  * สินค้าจะถูกสร้างโดยมี seller_id = null เพื่อระบุว่าเป็นสินค้าของร้านทางการ
+  * สินค้าจะถูกสร้างโดยใช้ Official Shop Seller ID เพื่อระบุว่าเป็นสินค้าของร้านทางการ
   --}}
 
 @extends('layouts.admin-v3')
@@ -79,7 +79,7 @@
             <div>
                 <h4 class="font-bold text-amber-800 dark:text-amber-200">สินค้า Official Shop</h4>
                 <p class="text-sm text-amber-700 dark:text-amber-300">
-                    สินค้าที่เพิ่มที่นี่จะเป็นสินค้าของร้านทางการ (seller_id = null) และจะแสดงในหน้า Official Shop พิเศษ
+                    สินค้าที่เพิ่มที่นี่จะเป็นสินค้าของร้านทางการ และจะแสดงในหน้า Official Shop พิเศษ
                 </p>
             </div>
         </div>
