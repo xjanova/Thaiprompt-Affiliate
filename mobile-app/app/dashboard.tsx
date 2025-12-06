@@ -131,7 +131,7 @@ export default function DashboardScreen() {
   };
 
   return (
-    <LinearGradient colors={['#0F0F23', '#1A1A2E']} className="flex-1">
+    <LinearGradient colors={['#0F0F23', '#1A1A2E']} style={{ flex: 1 }}>
       <SafeAreaView className="flex-1">
         <ScrollView
           className="flex-1"
@@ -169,7 +169,7 @@ export default function DashboardScreen() {
               colors={['#3B82F6', '#1D4ED8']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              className="rounded-2xl p-5"
+              style={{ borderRadius: 16, padding: 20 }}
             >
               <View className="flex-row justify-between items-start">
                 <View className="flex-1">
@@ -230,7 +230,7 @@ export default function DashboardScreen() {
             >
               <LinearGradient
                 colors={['#8B5CF6', '#6D28D9']}
-                className="rounded-xl p-4 flex-row items-center justify-center"
+                style={{ borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
               >
                 <Ionicons name="share-social" size={20} color="white" />
                 <Text className="text-white font-bold ml-2">แชร์ลิงก์แนะนำ</Text>

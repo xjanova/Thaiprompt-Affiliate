@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { Pressable, Text, ActivityIndicator, View } from 'react-native';
+import { Pressable, Text, ActivityIndicator, View, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface ButtonProps {
@@ -16,6 +16,7 @@ interface ButtonProps {
   icon?: React.ReactNode;
   fullWidth?: boolean;
   className?: string;
+  style?: ViewStyle;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -28,6 +29,7 @@ export const Button: React.FC<ButtonProps> = ({
   icon,
   fullWidth = false,
   className = '',
+  style,
 }) => {
   const isDisabled = disabled || loading;
 
@@ -103,21 +105,29 @@ export const Button: React.FC<ButtonProps> = ({
     </View>
   );
 
+  // Size styles สำหรับ LinearGradient (NativeWind ไม่รองรับ className บน LinearGradient)
+  const sizeStyles = {
+    sm: { paddingHorizontal: 12, paddingVertical: 8 },
+    md: { paddingHorizontal: 20, paddingVertical: 12 },
+    lg: { paddingHorizontal: 24, paddingVertical: 16 },
+  };
+
   if (styles.gradient) {
     return (
       <Pressable
         onPress={onPress}
         disabled={isDisabled}
         className={`${widthClass} ${className}`}
-        style={({ pressed }) => ({
-          opacity: isDisabled ? 0.5 : pressed ? 0.8 : 1,
-        })}
+        style={({ pressed }) => [
+          { opacity: isDisabled ? 0.5 : pressed ? 0.8 : 1 },
+          style,
+        ]}
       >
         <LinearGradient
           colors={styles.colors!}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          className={`rounded-xl ${sizeClasses[size]}`}
+          style={{ borderRadius: 12, ...sizeStyles[size] }}
         >
           {content}
         </LinearGradient>
@@ -130,9 +140,10 @@ export const Button: React.FC<ButtonProps> = ({
       onPress={onPress}
       disabled={isDisabled}
       className={`rounded-xl ${sizeClasses[size]} ${styles.bgClass} ${widthClass} ${className}`}
-      style={({ pressed }) => ({
-        opacity: isDisabled ? 0.5 : pressed ? 0.8 : 1,
-      })}
+      style={({ pressed }) => [
+        { opacity: isDisabled ? 0.5 : pressed ? 0.8 : 1 },
+        style,
+      ]}
     >
       {content}
     </Pressable>

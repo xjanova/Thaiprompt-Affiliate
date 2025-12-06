@@ -97,7 +97,7 @@ export default function IndexScreen() {
   };
 
   return (
-    <LinearGradient colors={['#0F0F23', '#1A1A2E']} className="flex-1">
+    <LinearGradient colors={['#0F0F23', '#1A1A2E']} style={{ flex: 1 }}>
       <SafeAreaView className="flex-1">
         <ScrollView
           className="flex-1"
@@ -146,7 +146,7 @@ export default function IndexScreen() {
                 colors={['#3B82F6', '#1D4ED8']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                className="rounded-2xl p-5 mb-2"
+                style={{ borderRadius: 16, padding: 20, marginBottom: 8 }}
               >
                 <Text className="text-white/80 text-sm mb-1">ยอดเงินคงเหลือ</Text>
                 <Text className="text-white text-3xl font-bold mb-3">
