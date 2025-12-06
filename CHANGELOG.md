@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.371.10] - 2025-12-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2162 from xjanova/claude/review-mobile-app-code-018UabmCri3oqTVB6G5GMRgd (b5cdd079)
+- fix(mobile-app): ข้าม credentials check สำหรับการพัฒนา (b7f50d83)
+### 🔧 Other Changes
+
+
 ## [v3.371.9] - 2025-12-06
 
 ### ✨ Features
