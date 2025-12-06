@@ -137,7 +137,7 @@ const QRCodeSection = ({
         {/* Gradient Header */}
         <LinearGradient
           colors={['#EC4899', '#BE185D']}
-          className="px-6 py-4"
+          style={{ paddingHorizontal: 24, paddingVertical: 16 }}
         >
           <Text className="text-white text-lg font-bold text-center">
             🎁 แชร์รหัสนี้ให้เพื่อน
@@ -158,7 +158,7 @@ const QRCodeSection = ({
           >
             <LinearGradient
               colors={['#EC4899', '#BE185D', '#9D174D']}
-              className="p-1 rounded-3xl"
+              style={{ padding: 4, borderRadius: 24 }}
             >
               <View className="bg-white p-5 rounded-3xl">
                 <QRCode
@@ -233,7 +233,7 @@ const CommissionTierCard = ({
     <View className="flex-row items-center">
       <LinearGradient
         colors={[tier.color, tier.color + 'CC']}
-        className="w-12 h-12 rounded-xl items-center justify-center mr-4"
+        style={{ width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}
       >
         <Text className="text-white text-lg font-bold">{tier.level}</Text>
       </LinearGradient>
@@ -276,7 +276,7 @@ const ShareButton = ({
   onPress: () => void;
 }) => (
   <Pressable onPress={onPress} className="items-center flex-1" style={{ maxWidth: 80 }}>
-    <LinearGradient colors={[color, color + 'CC']} className="w-14 h-14 rounded-2xl items-center justify-center mb-2">
+    <LinearGradient colors={[color, color + 'CC']} style={{ width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
       <Ionicons name={icon as any} size={24} color="white" />
     </LinearGradient>
     <Text className="text-gray-500 text-xs text-center">{label}</Text>
@@ -441,8 +441,13 @@ export default function ReferralScreen() {
         <SafeAreaView className="flex-1 justify-center items-center px-6">
           <LinearGradient
             colors={['#EC4899', '#BE185D']}
-            className="w-28 h-28 rounded-full items-center justify-center mb-6"
             style={{
+              width: 112,
+              height: 112,
+              borderRadius: 56,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 24,
               shadowColor: '#EC4899',
               shadowOffset: { width: 0, height: 8 },
               shadowOpacity: 0.4,
@@ -459,7 +464,7 @@ export default function ReferralScreen() {
             เข้าสู่ระบบเพื่อรับรหัสแนะนำและเริ่มสร้างรายได้จากเครือข่าย
           </Text>
           <Pressable onPress={() => router.push('/login')} className="mt-6">
-            <LinearGradient colors={['#EC4899', '#BE185D']} className="px-10 py-4 rounded-2xl">
+            <LinearGradient colors={['#EC4899', '#BE185D']} style={{ paddingHorizontal: 40, paddingVertical: 16, borderRadius: 16 }}>
               <Text className="text-white font-bold text-lg">เข้าสู่ระบบ</Text>
             </LinearGradient>
           </Pressable>
@@ -476,7 +481,7 @@ export default function ReferralScreen() {
         {/* Header */}
         <LinearGradient
           colors={isDark ? ['#9D174D', '#831843'] : ['#EC4899', '#BE185D']}
-          className="px-5 pt-4 pb-8"
+          style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32 }}
         >
           <View className="flex-row items-center mb-4">
             <Pressable
@@ -600,7 +605,7 @@ export default function ReferralScreen() {
 
             {/* Benefits */}
             <ReAnimated.View entering={FadeInDown.delay(800)} className="px-4 mt-6">
-              <LinearGradient colors={['#EC4899', '#BE185D']} className="p-5 rounded-2xl">
+              <LinearGradient colors={['#EC4899', '#BE185D']} style={{ padding: 20, borderRadius: 16 }}>
                 <Text className="text-white font-bold text-lg mb-3">
                   🎁 สิทธิประโยชน์ที่จะได้รับ
                 </Text>
@@ -624,8 +629,12 @@ export default function ReferralScreen() {
                 <Pressable onPress={handleShare}>
                   <LinearGradient
                     colors={['#10B981', '#059669']}
-                    className="py-5 rounded-2xl items-center flex-row justify-center"
                     style={{
+                      paddingVertical: 20,
+                      borderRadius: 16,
+                      alignItems: 'center',
+                      flexDirection: 'row',
+                      justifyContent: 'center',
                       shadowColor: '#10B981',
                       shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: 0.3,
