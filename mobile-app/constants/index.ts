@@ -107,8 +107,16 @@ export const API_ENDPOINTS = {
   // Profile
   PROFILE: '/profile',
   UPDATE_PROFILE: '/profile', // ใช้ PUT method
+  PROFILE_UPDATE: '/mobile/profile', // ใช้ PUT method
+  AVATAR_UPLOAD: '/mobile/profile/avatar',
+  AVATAR_DELETE: '/mobile/profile/avatar',
   CHANGE_PASSWORD: '/profile/change-password',
   REFERRAL_CODE: '/profile/referral-code',
+
+  // MLM Tree (Mobile App)
+  MLM_TREE: '/mobile/mlm/tree',
+  MLM_SEARCH: '/mobile/mlm/search',
+  MLM_MEMBER: '/mobile/mlm/member', // + /{memberId}
 
   // =====================================================
   // Admin Control (3 อย่างหลัก)
