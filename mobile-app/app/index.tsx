@@ -73,8 +73,8 @@ export default function IndexScreen() {
       return;
     }
 
-    // TODO: Navigate to hub page
-    Alert.alert(hub.title, `กำลังพัฒนา: ${hub.subtitle}`);
+    // นำทางไปยังหน้าที่เลือก
+    router.push(hub.route as any);
   };
 
   // ไปหน้า login

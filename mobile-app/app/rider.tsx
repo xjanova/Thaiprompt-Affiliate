@@ -104,7 +104,7 @@ const PermissionModal = ({
           {/* Header */}
           <LinearGradient
             colors={[info.color, info.color + 'CC']}
-            className="p-6 items-center"
+            style={{ padding: 24, alignItems: 'center' }}
           >
             <View className="w-20 h-20 bg-white/20 rounded-full items-center justify-center mb-4">
               <Ionicons
@@ -597,7 +597,7 @@ export default function RiderScreen() {
             <Animated.View entering={FadeInDown.delay(100).springify()}>
               <LinearGradient
                 colors={['#06B6D4', '#0891B2']}
-                className="rounded-2xl p-6 mb-6"
+                style={{ borderRadius: 16, padding: 24, marginBottom: 24 }}
               >
                 <Text className="text-white text-xl font-bold mb-4">
                   🚴 ทำไมต้องเป็นไรเดอร์กับเรา?
@@ -834,7 +834,7 @@ export default function RiderScreen() {
                     ? ['#EF4444', '#DC2626']
                     : ['#10B981', '#059669']
               }
-              className="rounded-2xl p-6 mb-6"
+              style={{ borderRadius: 16, padding: 24, marginBottom: 24 }}
             >
               <View className="flex-row items-center mb-4">
                 <Ionicons
