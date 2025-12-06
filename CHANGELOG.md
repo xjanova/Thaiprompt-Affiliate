@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.371.20] - 2025-12-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(mobile-app): แก้ไขระบบ KYC Camera และ GPS (61c059cd)
+- fix(mobile-app): แก้ไขระบบ Wallet และ Rider ให้ใช้งานได้ (a538c080)
+### 🔧 Other Changes
+- Merge pull request #2172 from xjanova/claude/review-mobile-app-code-018UabmCri3oqTVB6G5GMRgd (60eef481)
+
 ## [v3.371.19] - 2025-12-06
 
 ### ✨ Features
