@@ -655,44 +655,40 @@
                         {{-- กำไรสุทธิ (แสดงเสมอ) --}}
                         <div class="mt-4 p-4 rounded-lg bg-gradient-to-br from-green-50/90 to-emerald-100/80 dark:from-green-900/40 dark:to-emerald-800/30 border border-green-200/50 dark:border-green-700/30">
                             {{-- ถ้ามี costPrice --}}
-                            <template x-if="costPrice > 0">
-                                <div>
-                                    <div class="flex justify-between items-center mb-2">
-                                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">ต้นทุน:</span>
-                                        <span class="text-sm text-gray-600 dark:text-gray-400">
-                                            ฿<span x-text="costPrice.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
-                                        </span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="font-bold text-gray-900 dark:text-gray-100">กำไรสุทธิ:</span>
-                                        <span class="text-2xl font-bold"
-                                              :class="calc.netProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
-                                            <span x-text="calc.netProfit >= 0 ? '+' : ''"></span>฿<span x-text="Math.abs(calc.netProfit).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
-                                        </span>
-                                    </div>
-                                    <div class="text-center mt-2">
-                                        <span class="text-xs text-gray-600 dark:text-gray-400">
-                                            Profit Margin:
-                                            <span class="font-bold" x-text="calc.profitMargin.toFixed(2)"></span>%
-                                        </span>
-                                    </div>
+                            <div x-show="costPrice > 0" x-cloak>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">ต้นทุน:</span>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                                        ฿<span x-text="costPrice.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                    </span>
                                 </div>
-                            </template>
+                                <div class="flex justify-between items-center">
+                                    <span class="font-bold text-gray-900 dark:text-gray-100">กำไรสุทธิ:</span>
+                                    <span class="text-2xl font-bold"
+                                          :class="calc.netProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                                        <span x-text="calc.netProfit >= 0 ? '+' : ''"></span>฿<span x-text="Math.abs(calc.netProfit).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                    </span>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <span class="text-xs text-gray-600 dark:text-gray-400">
+                                        Profit Margin:
+                                        <span class="font-bold" x-text="calc.profitMargin.toFixed(2)"></span>%
+                                    </span>
+                                </div>
+                            </div>
 
                             {{-- ถ้ายังไม่มี costPrice --}}
-                            <template x-if="costPrice <= 0">
-                                <div class="text-center">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <span class="font-bold text-gray-900 dark:text-gray-100">กำไรสุทธิ:</span>
-                                        <span class="text-xl font-bold text-gray-400 dark:text-gray-500">
-                                            รอกรอกราคาทุน
-                                        </span>
-                                    </div>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        💡 กรอก "ราคาทุน" ด้านบนเพื่อดูกำไรสุทธิ
-                                    </p>
+                            <div x-show="!costPrice || costPrice <= 0" class="text-center">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="font-bold text-gray-900 dark:text-gray-100">กำไรสุทธิ:</span>
+                                    <span class="text-xl font-bold text-gray-400 dark:text-gray-500">
+                                        รอกรอกราคาทุน
+                                    </span>
                                 </div>
-                            </template>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    💡 กรอก "ราคาทุน" ด้านบนเพื่อดูกำไรสุทธิ
+                                </p>
+                            </div>
                         </div>
 
                         {{-- Tip --}}
