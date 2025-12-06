@@ -596,7 +596,7 @@ export default function ShoppingScreen() {
             colors={['#10B981', '#059669']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            className="rounded-2xl p-4"
+            style={{ borderRadius: 16, padding: 16 }}
           >
             <View className="flex-row items-center">
               <View className="w-12 h-12 rounded-xl bg-white/20 items-center justify-center mr-3">

@@ -1,550 +1,212 @@
 /**
- * MainMenu Screen - หน้าเมนูหลัก Premium
- * แสดงหลัง Splash Screen
- * - Lava Lamp animated background
- * - 3D Glassmorphism buttons
- * - Coming Soon badges
- * - FAB buttons (Cart, Help, Wiki)
- * - Premium bottom navigation
+ * Index Screen - Hub Selection (หน้าหลัก)
+ * แปลงจาก .NET MAUI HubSelectionPage
+ * พร้อม LavaBackground RGB Effect
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   Pressable,
-  Dimensions,
-  StyleSheet,
+  Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withSequence,
-  withDelay,
-  FadeInUp,
-  FadeInDown,
-} from 'react-native-reanimated';
-import { LavaBackground } from '@/components';
 import { useAuthStore } from '@/stores/authStore';
+import { LavaBackground, HubCard, Button } from '@/components';
+import { HUB_ITEMS, getGreetingByTime, formatCurrency } from '@/constants';
+import { getDashboardStats } from '@/services/api';
+import type { HubItem } from '@/types';
 
-const { width } = Dimensions.get('window');
-const BUTTON_SIZE = (width - 60) / 2;
+export default function IndexScreen() {
+  const { user, isAuthenticated, logout } = useAuthStore();
+  const [balance, setBalance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [greeting, setGreeting] = useState(getGreetingByTime());
 
-// Menu Items Configuration
-const MENU_ITEMS = [
-  {
-    id: 'shopping',
-    title: 'ช้อปปิ้ง',
-    subtitle: 'สินค้าและบริการ',
-    icon: '🛒',
-    route: '/shopping',
-    gradient: ['#FF6B6B', '#FF8E53'],
-    comingSoon: false,
-  },
-  {
-    id: 'dashboard',
-    title: 'แดชบอร์ด',
-    subtitle: 'ดูรายได้และสถิติ',
-    icon: '📊',
-    route: '/dashboard',
-    gradient: ['#4ECDC4', '#45B7D1'],
-    comingSoon: false,
-  },
-  {
-    id: 'wallet',
-    title: 'กระเป๋าเงิน',
-    subtitle: 'จัดการเงินของคุณ',
-    icon: '💰',
-    route: '/(tabs)/wallet',
-    gradient: ['#D4AF37', '#B8941E'],
-    comingSoon: false,
-  },
-  {
-    id: 'network',
-    title: 'เครือข่าย',
-    subtitle: 'ดูทีมของคุณ',
-    icon: '👥',
-    route: '/(tabs)/network',
-    gradient: ['#7B2CBF', '#9B4DCA'],
-    comingSoon: false,
-  },
-  {
-    id: 'ai-bot',
-    title: 'AI Bot',
-    subtitle: 'ผู้ช่วยอัจฉริยะ',
-    icon: '🤖',
-    route: '/coming-soon',
-    gradient: ['#667eea', '#764ba2'],
-    comingSoon: true,
-  },
-  {
-    id: 'game',
-    title: 'เกม',
-    subtitle: 'เล่นและรับรางวัล',
-    icon: '🎮',
-    route: '/coming-soon',
-    gradient: ['#f093fb', '#f5576c'],
-    comingSoon: true,
-  },
-];
-
-// 3D Button Component with Glassmorphism
-const MenuButton = ({
-  item,
-  index,
-  onPress,
-}: {
-  item: typeof MENU_ITEMS[0];
-  index: number;
-  onPress: () => void;
-}) => {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => {
-    scale.value = withSpring(0.95);
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1);
-  };
-
-  return (
-    <Animated.View
-      entering={FadeInUp.delay(index * 100).springify()}
-      style={[styles.buttonWrapper, animatedStyle]}
-    >
-      <Pressable
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={styles.buttonPressable}
-      >
-        {/* 3D Shadow Layer */}
-        <View style={styles.shadowLayer} />
-
-        {/* Main Button */}
-        <LinearGradient
-          colors={item.gradient as [string, string]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.buttonGradient}
-        >
-          {/* Glass Overlay */}
-          <View style={styles.glassOverlay} />
-
-          {/* Content */}
-          <View style={styles.buttonContent}>
-            <Text style={styles.buttonIcon}>{item.icon}</Text>
-            <Text style={styles.buttonTitle}>{item.title}</Text>
-            <Text style={styles.buttonSubtitle}>{item.subtitle}</Text>
-          </View>
-
-          {/* Coming Soon Badge */}
-          {item.comingSoon && (
-            <View style={styles.comingSoonBadge}>
-              <Text style={styles.comingSoonText}>Coming Soon</Text>
-            </View>
-          )}
-        </LinearGradient>
-      </Pressable>
-    </Animated.View>
-  );
-};
-
-// FAB Button Component
-const FabButton = ({
-  icon,
-  label,
-  onPress,
-  color = '#D4AF37',
-  badge,
-}: {
-  icon: string;
-  label: string;
-  onPress: () => void;
-  color?: string;
-  badge?: number;
-}) => {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  return (
-    <Animated.View style={animatedStyle}>
-      <Pressable
-        onPress={onPress}
-        onPressIn={() => {
-          scale.value = withSpring(0.9);
-        }}
-        onPressOut={() => {
-          scale.value = withSpring(1);
-        }}
-        style={[styles.fabButton, { backgroundColor: color }]}
-      >
-        <Text style={styles.fabIcon}>{icon}</Text>
-        {badge !== undefined && badge > 0 && (
-          <View style={styles.fabBadge}>
-            <Text style={styles.fabBadgeText}>{badge > 99 ? '99+' : badge}</Text>
-          </View>
-        )}
-      </Pressable>
-      <Text style={styles.fabLabel}>{label}</Text>
-    </Animated.View>
-  );
-};
-
-// Bottom Nav Button
-const NavButton = ({
-  icon,
-  label,
-  isActive,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  isActive?: boolean;
-  onPress: () => void;
-}) => (
-  <Pressable onPress={onPress} style={styles.navButton}>
-    <Ionicons
-      name={icon}
-      size={24}
-      color={isActive ? '#D4AF37' : '#999999'}
-    />
-    <Text
-      style={[
-        styles.navLabel,
-        { color: isActive ? '#D4AF37' : '#999999' },
-      ]}
-    >
-      {label}
-    </Text>
-  </Pressable>
-);
-
-export default function MainMenuScreen() {
-  const { user, isAuthenticated } = useAuthStore();
-
-  const handleMenuPress = (item: typeof MENU_ITEMS[0]) => {
-    if (item.comingSoon) {
-      router.push('/coming-soon');
-    } else {
-      router.push(item.route as any);
+  // โหลดข้อมูล balance
+  const loadBalance = async () => {
+    if (!isAuthenticated) return;
+    try {
+      const stats = await getDashboardStats();
+      if (stats) {
+        setBalance(stats.totalEarnings);
+      }
+    } catch (error) {
+      console.error('Load balance error:', error);
     }
   };
 
-  const handleFabCart = () => router.push('/shopping');
-  const handleFabHelp = () => router.push('/support');
-  const handleFabWiki = () => router.push('/wiki');
+  useEffect(() => {
+    loadBalance();
+    // อัพเดท greeting ทุก 1 นาที
+    const interval = setInterval(() => {
+      setGreeting(getGreetingByTime());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
-  const handleNavHome = () => {}; // Already on home
-  const handleNavDashboard = () => router.push('/dashboard');
-  const handleNavProfile = () => router.push('/(tabs)/profile');
-  const handleNavSettings = () => router.push('/settings');
+  // Pull to refresh
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadBalance();
+    setRefreshing(false);
+  };
+
+  // เมื่อเลือก Hub
+  const onHubPress = (hub: typeof HUB_ITEMS[number]) => {
+    // ตรวจสอบว่าต้อง login ก่อนไหม
+    if (hub.requiresLogin && !isAuthenticated) {
+      Alert.alert(
+        'ต้องเข้าสู่ระบบ',
+        `กรุณาเข้าสู่ระบบเพื่อใช้บริการ ${hub.title}`,
+        [
+          { text: 'ยกเลิก', style: 'cancel' },
+          { text: 'เข้าสู่ระบบ', onPress: () => router.push('/login') },
+        ]
+      );
+      return;
+    }
+
+    // TODO: Navigate to hub page
+    Alert.alert(hub.title, `กำลังพัฒนา: ${hub.subtitle}`);
+  };
+
+  // ไปหน้า login
+  const goToLogin = () => router.push('/login');
+
+  // ไปหน้า dashboard
+  const goToDashboard = () => router.push('/dashboard');
+
+  // Logout
+  const handleLogout = () => {
+    Alert.alert('ออกจากระบบ', 'คุณต้องการออกจากระบบใช่หรือไม่?', [
+      { text: 'ยกเลิก', style: 'cancel' },
+      {
+        text: 'ออกจากระบบ',
+        style: 'destructive',
+        onPress: async () => {
+          await logout();
+        },
+      },
+    ]);
+  };
 
   return (
-    <LavaBackground variant="crypto" intensity="high">
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <Animated.View
-          entering={FadeInDown.delay(100).springify()}
-          style={styles.header}
+    <LavaBackground variant="shopping" intensity="medium">
+      <SafeAreaView className="flex-1">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="pb-6"
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#3B82F6"
+            />
+          }
         >
-          <View>
-            <Text style={styles.welcomeText}>ยินดีต้อนรับ</Text>
-            <Text style={styles.userName}>
-              {isAuthenticated ? user?.name : 'Guest'}
+          {/* Header */}
+          <View className="px-5 pt-4 pb-6">
+            {/* Top Row - Greeting & Profile */}
+            <View className="flex-row justify-between items-center mb-4">
+              <View>
+                <Text className="text-gray-400 text-sm">{greeting}</Text>
+                <Text className="text-white text-xl font-bold">
+                  {isAuthenticated ? user?.name : 'ยินดีต้อนรับ'}
+                </Text>
+              </View>
+
+              {/* Profile / Login Button */}
+              {isAuthenticated ? (
+                <Pressable
+                  onPress={goToDashboard}
+                  className="w-12 h-12 rounded-full bg-primary-500 items-center justify-center"
+                  style={{
+                    shadowColor: '#3B82F6',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.5,
+                    shadowRadius: 10,
+                    elevation: 8,
+                  }}
+                >
+                  <Text className="text-white text-lg font-bold">
+                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Button
+                  title="เข้าสู่ระบบ"
+                  onPress={goToLogin}
+                  size="sm"
+                  icon={<Ionicons name="log-in" size={16} color="white" />}
+                />
+              )}
+            </View>
+
+            {/* Balance Card (ถ้า login แล้ว) */}
+            {isAuthenticated && (
+              <LinearGradient
+                colors={['#3B82F6', '#1D4ED8']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ borderRadius: 16, padding: 20, marginBottom: 8 }}
+              >
+                <Text className="text-white/80 text-sm mb-1">ยอดเงินคงเหลือ</Text>
+                <Text className="text-white text-3xl font-bold mb-3">
+                  {formatCurrency(balance)}
+                </Text>
+                <View className="flex-row">
+                  <Pressable
+                    onPress={goToDashboard}
+                    className="flex-row items-center bg-white/20 rounded-full px-4 py-2 mr-2"
+                  >
+                    <Ionicons name="wallet" size={16} color="white" />
+                    <Text className="text-white text-sm ml-2">ดูแดชบอร์ด</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handleLogout}
+                    className="flex-row items-center bg-white/10 rounded-full px-4 py-2"
+                  >
+                    <Ionicons name="log-out" size={16} color="white" />
+                    <Text className="text-white text-sm ml-2">ออก</Text>
+                  </Pressable>
+                </View>
+              </LinearGradient>
+            )}
+          </View>
+
+          {/* Section Title */}
+          <View className="px-5 mb-4">
+            <Text className="text-white text-lg font-bold">บริการทั้งหมด</Text>
+            <Text className="text-gray-400 text-sm">เลือกบริการที่คุณต้องการ</Text>
+          </View>
+
+          {/* Hub Grid (2 columns) */}
+          <View className="px-3">
+            <View className="flex-row flex-wrap">
+              {HUB_ITEMS.map((hub) => (
+                <View key={hub.id} className="w-1/2">
+                  <HubCard item={hub as HubItem} onPress={() => onHubPress(hub)} />
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Footer */}
+          <View className="px-5 mt-6 items-center">
+            <Ionicons name="sparkles" size={16} color="#6B7280" style={{ marginBottom: 4 }} />
+            <Text className="text-gray-500 text-xs">
+              Thaiprompt Affiliate v1.0.0
             </Text>
           </View>
-
-          {/* Notification Bell */}
-          <Pressable
-            onPress={() => router.push('/notifications')}
-            style={styles.notificationButton}
-          >
-            <Ionicons name="notifications" size={24} color="#D4AF37" />
-            <View style={styles.notificationDot} />
-          </Pressable>
-        </Animated.View>
-
-        {/* Menu Grid */}
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.menuGrid}>
-            {MENU_ITEMS.map((item, index) => (
-              <MenuButton
-                key={item.id}
-                item={item}
-                index={index}
-                onPress={() => handleMenuPress(item)}
-              />
-            ))}
-          </View>
-
-          {/* Spacer for FAB */}
-          <View style={{ height: 120 }} />
         </ScrollView>
-
-        {/* FAB Buttons */}
-        <Animated.View
-          entering={FadeInUp.delay(600).springify()}
-          style={styles.fabContainer}
-        >
-          <FabButton
-            icon="🛒"
-            label="ตะกร้า"
-            onPress={handleFabCart}
-            color="#DC143C"
-            badge={3}
-          />
-          <FabButton
-            icon="❓"
-            label="ช่วยเหลือ"
-            onPress={handleFabHelp}
-            color="#7B2CBF"
-          />
-          <FabButton
-            icon="📚"
-            label="Wiki"
-            onPress={handleFabWiki}
-            color="#4ECDC4"
-          />
-        </Animated.View>
-
-        {/* Premium Bottom Navigation */}
-        <Animated.View
-          entering={FadeInUp.delay(700).springify()}
-          style={styles.bottomNav}
-        >
-          <LinearGradient
-            colors={['rgba(26,26,26,0.95)', 'rgba(42,42,42,0.98)']}
-            style={styles.bottomNavGradient}
-          >
-            <NavButton
-              icon="home"
-              label="หน้าแรก"
-              isActive={true}
-              onPress={handleNavHome}
-            />
-            <NavButton
-              icon="stats-chart"
-              label="แดชบอร์ด"
-              onPress={handleNavDashboard}
-            />
-            <NavButton
-              icon="person"
-              label="โปรไฟล์"
-              onPress={handleNavProfile}
-            />
-            <NavButton
-              icon="settings"
-              label="ตั้งค่า"
-              onPress={handleNavSettings}
-            />
-          </LinearGradient>
-        </Animated.View>
       </SafeAreaView>
     </LavaBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
-  },
-  welcomeText: {
-    fontSize: 14,
-    color: '#999999',
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  notificationButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(212, 175, 55, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notificationDot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#DC143C',
-  },
-  scrollContent: {
-    paddingHorizontal: 15,
-    paddingTop: 10,
-  },
-  menuGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  buttonWrapper: {
-    width: BUTTON_SIZE,
-    height: BUTTON_SIZE,
-    marginBottom: 15,
-  },
-  buttonPressable: {
-    flex: 1,
-    position: 'relative',
-  },
-  shadowLayer: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    right: -6,
-    bottom: -6,
-    borderRadius: 24,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  buttonGradient: {
-    flex: 1,
-    borderRadius: 24,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  glassOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    opacity: 0.5,
-  },
-  buttonContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 15,
-  },
-  buttonIcon: {
-    fontSize: 40,
-    marginBottom: 10,
-  },
-  buttonTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  buttonSubtitle: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.8)',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  comingSoonBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  comingSoonText: {
-    fontSize: 9,
-    color: '#FFD700',
-    fontWeight: 'bold',
-  },
-  fabContainer: {
-    position: 'absolute',
-    right: 15,
-    bottom: 100,
-    alignItems: 'center',
-    gap: 12,
-  },
-  fabButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  fabIcon: {
-    fontSize: 24,
-  },
-  fabBadge: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#FFD700',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 5,
-  },
-  fabBadgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  fabLabel: {
-    fontSize: 10,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  bottomNav: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  bottomNavGradient: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingBottom: 25,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    borderTopWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.3)',
-  },
-  navButton: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  navLabel: {
-    fontSize: 10,
-    marginTop: 4,
-  },
-});
