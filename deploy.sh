@@ -12,6 +12,67 @@ BACKUP_DIR="$SCRIPT_DIR/backups"
 LOG_FILE="$SCRIPT_DIR/storage/logs/deployment.log"
 MAX_DEPLOYMENT_ATTEMPTS=3
 
+# ============================================================
+# 🚨 EMERGENCY DISK CHECK (ก่อน logging - ป้องกัน disk full)
+# ============================================================
+# ตรวจสอบพื้นที่ดิสก์ทันทีก่อนทำอะไรอื่น
+EMERGENCY_DISK_CHECK=$(df -k "$SCRIPT_DIR" 2>/dev/null | tail -1 | awk '{print $4}')
+EMERGENCY_DISK_MB=$((EMERGENCY_DISK_CHECK / 1024))
+
+# ถ้าพื้นที่น้อยกว่า 100MB - ทำ emergency cleanup ทันที!
+if [ "$EMERGENCY_DISK_MB" -lt 100 ]; then
+    echo ""
+    echo "🚨 EMERGENCY: พื้นที่ดิสก์วิกฤต! (${EMERGENCY_DISK_MB} MB)"
+    echo "🔧 กำลังทำ Emergency Cleanup..."
+    echo ""
+
+    # Emergency cleanup - ไม่ต้อง log (เพราะเขียนไม่ได้)
+    # 1. ลบ logs ทันที
+    rm -f "$SCRIPT_DIR/storage/logs/"*.log 2>/dev/null
+    rm -f "$SCRIPT_DIR/storage/logs/laravel-"*.log 2>/dev/null
+    echo "  ✓ ลบ log files แล้ว"
+
+    # 2. ลบ backups เก่าทั้งหมด (เก็บแค่ 1 ล่าสุด)
+    if [ -d "$BACKUP_DIR" ]; then
+        ls -t "$BACKUP_DIR"/*.sql 2>/dev/null | tail -n +2 | xargs rm -f 2>/dev/null
+        ls -dt "$BACKUP_DIR"/critical_* 2>/dev/null | tail -n +2 | xargs rm -rf 2>/dev/null
+        ls -t "$BACKUP_DIR"/pre_migration_*.sql 2>/dev/null | tail -n +2 | xargs rm -f 2>/dev/null
+        ls -t "$BACKUP_DIR"/pre_autofix_*.sql 2>/dev/null | tail -n +2 | xargs rm -f 2>/dev/null
+        echo "  ✓ ลบ backups เก่าแล้ว"
+    fi
+
+    # 3. ลบ Laravel cache
+    rm -rf "$SCRIPT_DIR/storage/framework/cache/data/"* 2>/dev/null
+    rm -rf "$SCRIPT_DIR/storage/framework/views/"* 2>/dev/null
+    rm -rf "$SCRIPT_DIR/storage/framework/sessions/"* 2>/dev/null
+    rm -f "$SCRIPT_DIR/bootstrap/cache/"*.php 2>/dev/null
+    echo "  ✓ ลบ Laravel cache แล้ว"
+
+    # 4. ลบ git lock files
+    rm -f "$SCRIPT_DIR/.git/index.lock" 2>/dev/null
+    echo "  ✓ ลบ git lock files แล้ว"
+
+    # ตรวจสอบอีกครั้ง
+    EMERGENCY_DISK_CHECK=$(df -k "$SCRIPT_DIR" 2>/dev/null | tail -1 | awk '{print $4}')
+    EMERGENCY_DISK_MB=$((EMERGENCY_DISK_CHECK / 1024))
+
+    echo ""
+    echo "📊 พื้นที่หลัง emergency cleanup: ${EMERGENCY_DISK_MB} MB"
+
+    if [ "$EMERGENCY_DISK_MB" -lt 50 ]; then
+        echo ""
+        echo "❌ ยังไม่พอ! ต้องทำเพิ่มเติมด้วยตัวเอง:"
+        echo "   rm -rf node_modules && npm install"
+        echo "   rm -rf vendor && composer install --no-dev"
+        echo "   du -sh * | sort -hr | head -10"
+        echo ""
+        exit 1
+    fi
+
+    echo "✓ Emergency cleanup สำเร็จ! กำลังดำเนินการต่อ..."
+    echo ""
+fi
+
 # Track deployment attempts via environment variable
 if [ -z "$DEPLOY_ATTEMPT_COUNT" ]; then
     export DEPLOY_ATTEMPT_COUNT=1
