@@ -35,6 +35,16 @@ use Illuminate\Support\Facades\Storage;
  * @property string|null $maintenance_message ข้อความแจ้งเตือนปิดปรับปรุง
  * @property string|null $header_scripts Scripts สำหรับ head
  * @property string|null $footer_scripts Scripts สำหรับ footer
+ * @property bool $app_download_enabled เปิด/ปิด section ดาวน์โหลดแอป
+ * @property string $app_name ชื่อแอป (เช่น TP Ultra)
+ * @property string|null $app_description คำอธิบายแอป
+ * @property string|null $app_icon ไอคอนแอป (path)
+ * @property string|null $app_apk_url ลิงก์ดาวน์โหลด APK โดยตรง
+ * @property bool $app_apk_enabled เปิด/ปิด ดาวน์โหลด APK
+ * @property string|null $app_playstore_url ลิงก์ Play Store
+ * @property bool $app_playstore_enabled เปิด/ปิด Play Store
+ * @property string|null $app_appstore_url ลิงก์ App Store
+ * @property bool $app_appstore_enabled เปิด/ปิด App Store
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -80,6 +90,17 @@ class SiteSetting extends Model
         'maintenance_message',
         'header_scripts',
         'footer_scripts',
+        // App Download Settings
+        'app_download_enabled',
+        'app_name',
+        'app_description',
+        'app_icon',
+        'app_apk_url',
+        'app_apk_enabled',
+        'app_playstore_url',
+        'app_playstore_enabled',
+        'app_appstore_url',
+        'app_appstore_enabled',
     ];
 
     /**
@@ -90,6 +111,10 @@ class SiteSetting extends Model
     protected $casts = [
         'logo_spin' => 'boolean',
         'maintenance_mode' => 'boolean',
+        'app_download_enabled' => 'boolean',
+        'app_apk_enabled' => 'boolean',
+        'app_playstore_enabled' => 'boolean',
+        'app_appstore_enabled' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -113,6 +138,13 @@ class SiteSetting extends Model
                     'logo_spin' => false,
                     // สีถูกจัดการโดย ThemeSetting model (Custom Theme)
                     'maintenance_mode' => false,
+                    // App Download Settings
+                    'app_download_enabled' => true,
+                    'app_name' => 'TP Ultra',
+                    'app_description' => 'แอปพลิเคชั่น TP Ultra สำหรับจัดการธุรกิจ Affiliate ทุกที่ทุกเวลา',
+                    'app_apk_enabled' => true,
+                    'app_playstore_enabled' => false,
+                    'app_appstore_enabled' => false,
                 ]);
             }
 
@@ -189,5 +221,19 @@ class SiteSetting extends Model
         }
 
         return Storage::disk('public')->url($this->favicon);
+    }
+
+    /**
+     * ดึง URL ของไอคอนแอป
+     *
+     * @return string
+     */
+    public function getAppIconUrlAttribute(): string
+    {
+        if (!$this->app_icon) {
+            return asset('images/tp-ultra-icon.png'); // Default app icon
+        }
+
+        return Storage::disk('public')->url($this->app_icon);
     }
 }

@@ -89,11 +89,29 @@ class SiteSettingsController extends Controller
             // Custom Scripts
             'header_scripts' => 'nullable|string',
             'footer_scripts' => 'nullable|string',
+
+            // App Download Settings
+            'app_download_enabled' => 'nullable|boolean',
+            'app_name' => 'nullable|string|max:100',
+            'app_description' => 'nullable|string|max:500',
+            'app_icon' => 'nullable|image|mimes:jpeg,png,gif,webp|max:2048',
+            'app_apk_url' => 'nullable|url|max:500',
+            'app_apk_enabled' => 'nullable|boolean',
+            'app_playstore_url' => 'nullable|url|max:500',
+            'app_playstore_enabled' => 'nullable|boolean',
+            'app_appstore_url' => 'nullable|url|max:500',
+            'app_appstore_enabled' => 'nullable|boolean',
         ]);
 
         // แปลง boolean fields
         $validated['logo_spin'] = $request->has('logo_spin');
         $validated['maintenance_mode'] = $request->has('maintenance_mode');
+
+        // App Download boolean fields
+        $validated['app_download_enabled'] = $request->has('app_download_enabled');
+        $validated['app_apk_enabled'] = $request->has('app_apk_enabled');
+        $validated['app_playstore_enabled'] = $request->has('app_playstore_enabled');
+        $validated['app_appstore_enabled'] = $request->has('app_appstore_enabled');
 
         // ดึงการตั้งค่าปัจจุบัน
         $settings = SiteSetting::getSetting();
@@ -149,6 +167,23 @@ class SiteSettingsController extends Controller
             );
         }
 
+        // Handle App Icon Upload
+        if ($request->hasFile('app_icon')) {
+            // ลบไอคอนแอปเก่า (ถ้ามี)
+            if ($settings->app_icon) {
+                $imageUploadService->deleteImage($settings->app_icon);
+            }
+
+            // อัพโหลดไอคอนแอปใหม่ (max 512x512, quality 90)
+            $validated['app_icon'] = $imageUploadService->uploadImage(
+                $request->file('app_icon'),
+                'app-icons',
+                512,
+                512,
+                90
+            );
+        }
+
         // อัปเดตการตั้งค่า
         $settings->update($validated);
 
@@ -197,6 +232,9 @@ class SiteSettingsController extends Controller
         } elseif ($type === 'favicon' && $settings->favicon) {
             $imageUploadService->deleteImage($settings->favicon);
             $settings->update(['favicon' => null]);
+        } elseif ($type === 'app_icon' && $settings->app_icon) {
+            $imageUploadService->deleteImage($settings->app_icon);
+            $settings->update(['app_icon' => null]);
         }
 
         SiteSetting::clearCache();

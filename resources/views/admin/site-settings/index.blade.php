@@ -90,6 +90,11 @@
                 <i class="fas fa-cog"></i>
                 <span class="hidden sm:inline">ขั้นสูง</span>
             </button>
+
+            <button @click="activeTab = 'mobile-app'" :class="activeTab === 'mobile-app' ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-xl' : 'bg-white/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:bg-white/70 dark:hover:bg-gray-800/70'" class="px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center gap-2">
+                <i class="fas fa-mobile-alt"></i>
+                <span class="hidden sm:inline">Mobile App</span>
+            </button>
         </div>
     </div>
 
@@ -494,6 +499,171 @@
             </div>
         </div>
 
+        {{-- Tab: Mobile App --}}
+        <div x-show="activeTab === 'mobile-app'" x-transition class="glass-fusion-card rounded-2xl p-6 md:p-8 shadow-2xl border border-white/20 dark:border-gray-700/50">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-mobile-alt text-white text-xl"></i>
+                </div>
+                ดาวน์โหลด Mobile App (TP Ultra)
+            </h2>
+
+            <div class="grid grid-cols-1 gap-6">
+                {{-- Enable App Download Section --}}
+                <div class="glass-fusion-card rounded-xl p-6 border border-cyan-500/20">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-900 dark:text-white text-lg">แสดง Section ดาวน์โหลดแอป</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">แสดง section สำหรับดาวน์โหลดแอปในหน้า Home</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="app_download_enabled" value="1" {{ old('app_download_enabled', $settings->app_download_enabled ?? true) ? 'checked' : '' }} class="sr-only peer">
+                            <div class="w-14 h-8 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 dark:peer-focus:ring-cyan-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-gradient-to-r peer-checked:from-cyan-600 peer-checked:to-blue-600"></div>
+                        </label>
+                    </div>
+                </div>
+
+                {{-- App Info --}}
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {{-- App Name --}}
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                            ชื่อแอป
+                        </label>
+                        <input type="text" name="app_name" value="{{ old('app_name', $settings->app_name ?? 'TP Ultra') }}" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-cyan-500/50 focus:border-cyan-500 dark:focus:border-cyan-400 text-gray-900 dark:text-white transition-all" placeholder="TP Ultra">
+                    </div>
+
+                    {{-- App Icon --}}
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                            ไอคอนแอป
+                        </label>
+                        <div class="relative group">
+                            <div class="w-full h-32 bg-gradient-to-br from-cyan-100 to-blue-200 dark:from-cyan-900 dark:to-blue-900 rounded-xl flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-600 group-hover:border-cyan-500 dark:group-hover:border-cyan-400 transition-all">
+                                <img :src="appIconPreview || '{{ $settings->app_icon ? asset('storage/' . $settings->app_icon) : asset('images/tp-ultra-icon.png') }}'" alt="App Icon" class="max-w-full max-h-full object-contain w-24 h-24 rounded-xl">
+                            </div>
+                            <label for="app-icon-upload" class="mt-3 block w-full px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer text-center text-sm">
+                                <i class="fas fa-upload mr-2"></i>อัพโหลดไอคอน
+                            </label>
+                            <input type="file" id="app-icon-upload" name="app_icon" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden" @change="handleImageChange($event, 'appIcon')">
+
+                            @if($settings->app_icon ?? false)
+                                <button type="button" @click="deleteLogo('app_icon')" class="mt-2 w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg shadow-lg transition-all text-sm">
+                                    <i class="fas fa-trash mr-2"></i>ลบไอคอน
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- App Description --}}
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                        คำอธิบายแอป
+                    </label>
+                    <textarea name="app_description" rows="3" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-cyan-500/50 focus:border-cyan-500 dark:focus:border-cyan-400 text-gray-900 dark:text-white transition-all" placeholder="แอปพลิเคชั่น TP Ultra สำหรับจัดการธุรกิจ Affiliate ทุกที่ทุกเวลา">{{ old('app_description', $settings->app_description ?? '') }}</textarea>
+                </div>
+
+                {{-- Download Links Section --}}
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <i class="fas fa-download text-cyan-500"></i>
+                        ลิงก์ดาวน์โหลด
+                    </h3>
+
+                    <div class="space-y-6">
+                        {{-- APK Direct Download --}}
+                        <div class="glass-fusion-card rounded-xl p-6 border border-cyan-500/20">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
+                                        <i class="fab fa-android text-white text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-gray-900 dark:text-white">APK โดยตรง</h4>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">ดาวน์โหลดไฟล์ APK ติดตั้งเอง</p>
+                                    </div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="app_apk_enabled" value="1" {{ old('app_apk_enabled', $settings->app_apk_enabled ?? true) ? 'checked' : '' }} class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
+                                </label>
+                            </div>
+                            <input type="url" name="app_apk_url" value="{{ old('app_apk_url', $settings->app_apk_url ?? '') }}" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-cyan-500/50 focus:border-cyan-500 dark:focus:border-cyan-400 text-gray-900 dark:text-white transition-all" placeholder="https://example.com/app.apk">
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-info-circle mr-1"></i>ใส่ลิงก์ดาวน์โหลดไฟล์ APK โดยตรง
+                            </p>
+                        </div>
+
+                        {{-- Google Play Store --}}
+                        <div class="glass-fusion-card rounded-xl p-6 border border-green-500/20">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                                        <i class="fab fa-google-play text-white text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-gray-900 dark:text-white">Google Play Store</h4>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">ดาวน์โหลดจาก Play Store</p>
+                                    </div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="app_playstore_enabled" value="1" {{ old('app_playstore_enabled', $settings->app_playstore_enabled ?? false) ? 'checked' : '' }} class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                                </label>
+                            </div>
+                            <input type="url" name="app_playstore_url" value="{{ old('app_playstore_url', $settings->app_playstore_url ?? '') }}" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-green-500/50 focus:border-green-500 dark:focus:border-green-400 text-gray-900 dark:text-white transition-all" placeholder="https://play.google.com/store/apps/details?id=com.yourapp">
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-info-circle mr-1"></i>ลิงก์แอปบน Google Play Store (ถ้ายังไม่มี ให้ปิดสวิตช์ จะแสดงเป็น "เร็วๆ นี้")
+                            </p>
+                        </div>
+
+                        {{-- Apple App Store --}}
+                        <div class="glass-fusion-card rounded-xl p-6 border border-gray-500/20">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-800 rounded-xl flex items-center justify-center">
+                                        <i class="fab fa-apple text-white text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-gray-900 dark:text-white">App Store (iOS)</h4>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">ดาวน์โหลดจาก App Store</p>
+                                    </div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="app_appstore_enabled" value="1" {{ old('app_appstore_enabled', $settings->app_appstore_enabled ?? false) ? 'checked' : '' }} class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-600"></div>
+                                </label>
+                            </div>
+                            <input type="url" name="app_appstore_url" value="{{ old('app_appstore_url', $settings->app_appstore_url ?? '') }}" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-gray-500/50 focus:border-gray-500 dark:focus:border-gray-400 text-gray-900 dark:text-white transition-all" placeholder="https://apps.apple.com/app/your-app/id123456789">
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-info-circle mr-1"></i>ลิงก์แอปบน Apple App Store (ถ้ายังไม่มี ให้ปิดสวิตช์ จะแสดงเป็น "เร็วๆ นี้")
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Preview Section --}}
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <div class="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-xl p-6 border-2 border-cyan-200 dark:border-cyan-800">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-eye text-cyan-600 dark:text-cyan-400 text-xl mt-1"></i>
+                            <div>
+                                <h4 class="font-bold text-cyan-900 dark:text-cyan-300 mb-2">ดูตัวอย่างหน้าแรก</h4>
+                                <p class="text-sm text-cyan-800 dark:text-cyan-400 mb-3">
+                                    หลังจากบันทึกแล้ว คุณสามารถดู Section ดาวน์โหลดแอปได้ที่หน้าแรกของเว็บไซต์
+                                </p>
+                                <a href="{{ url('/') }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg transition-all">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    เปิดหน้าแรก
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- Static Save Button (Mobile) --}}
         <div class="mt-8 lg:hidden">
             <button type="submit" class="w-full px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 hover:from-purple-700 hover:via-pink-700 hover:to-orange-700 text-white font-bold text-lg rounded-xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3">
@@ -526,6 +696,7 @@ function siteSettingsManager() {
         logoPreview: null,
         logoDarkPreview: null,
         faviconPreview: null,
+        appIconPreview: null,
 
         /**
          * จัดการการเปลี่ยนรูปภาพและแสดง Preview
@@ -560,6 +731,8 @@ function siteSettingsManager() {
                     this.logoDarkPreview = e.target.result;
                 } else if (type === 'favicon') {
                     this.faviconPreview = e.target.result;
+                } else if (type === 'appIcon') {
+                    this.appIconPreview = e.target.result;
                 }
                 this.formChanged = true;
             };

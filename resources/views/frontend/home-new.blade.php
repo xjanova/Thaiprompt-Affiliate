@@ -385,6 +385,197 @@
 </section>
 
 {{-- ================================================================
+    APP DOWNLOAD SECTION - ดาวน์โหลดแอป TP Ultra
+================================================================ --}}
+@if($siteSettings->app_download_enabled ?? true)
+<section id="app-download" class="py-20 lg:py-28 bg-gradient-to-br from-slate-900 via-cyan-950 to-slate-900 relative overflow-hidden">
+    {{-- Background Effects --}}
+    <div class="absolute inset-0 opacity-10">
+        <div class="absolute inset-0" style="background-image:
+            linear-gradient(to right, rgba(6, 182, 212, 0.15) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(6, 182, 212, 0.15) 1px, transparent 1px);
+            background-size: 40px 40px;"></div>
+    </div>
+    <div class="absolute top-20 right-10 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+    <div class="absolute bottom-20 left-10 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {{-- Section Header --}}
+        <div class="text-center mb-12 lg:mb-16">
+            <div class="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500/20 backdrop-blur-sm rounded-full border border-cyan-500/30 mb-8">
+                <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+                </span>
+                <span class="text-cyan-300 font-semibold">ดาวน์โหลดแอปฟรี!</span>
+            </div>
+
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400">
+                    {{ $siteSettings->app_name ?? 'TP Ultra' }}
+                </span>
+            </h2>
+            <p class="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+                {{ $siteSettings->app_description ?? 'แอปพลิเคชั่นสำหรับจัดการธุรกิจ Affiliate ทุกที่ทุกเวลา' }}
+            </p>
+        </div>
+
+        {{-- App Showcase --}}
+        <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {{-- Left: App Icon & Visual --}}
+            <div class="flex justify-center animate-fade-in-up">
+                <div class="relative group">
+                    {{-- Glow Effect --}}
+                    <div class="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 rounded-3xl blur-2xl opacity-50 group-hover:opacity-75 transition-opacity duration-500 scale-110"></div>
+
+                    {{-- App Icon Container --}}
+                    <div class="relative bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-3xl p-8 lg:p-12 border border-white/30 shadow-2xl">
+                        <img src="{{ $siteSettings->app_icon_url ?? asset('images/tp-ultra-icon.png') }}"
+                             alt="{{ $siteSettings->app_name ?? 'TP Ultra' }}"
+                             class="w-48 h-48 lg:w-64 lg:h-64 rounded-3xl shadow-2xl transition-transform duration-500 group-hover:scale-105"
+                             style="filter: drop-shadow(0 0 30px rgba(6, 182, 212, 0.3));">
+
+                        {{-- App Name Badge --}}
+                        <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 px-6 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full shadow-lg">
+                            <span class="text-white font-bold text-lg">{{ $siteSettings->app_name ?? 'TP Ultra' }}</span>
+                        </div>
+                    </div>
+
+                    {{-- Floating Elements --}}
+                    <div class="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                        <i class="fas fa-mobile-alt text-white text-2xl"></i>
+                    </div>
+                    <div class="absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                        <i class="fas fa-star text-white text-lg"></i>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Right: Download Options --}}
+            <div class="space-y-6 animate-fade-in-up" style="animation-delay: 0.2s;">
+                {{-- Features List --}}
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <div class="flex items-center gap-3 bg-white/5 rounded-xl p-4">
+                        <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-chart-line text-white"></i>
+                        </div>
+                        <span class="text-white font-medium">ดูคอมมิชชั่น</span>
+                    </div>
+                    <div class="flex items-center gap-3 bg-white/5 rounded-xl p-4">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-users text-white"></i>
+                        </div>
+                        <span class="text-white font-medium">จัดการทีม</span>
+                    </div>
+                    <div class="flex items-center gap-3 bg-white/5 rounded-xl p-4">
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-wallet text-white"></i>
+                        </div>
+                        <span class="text-white font-medium">ถอนเงิน</span>
+                    </div>
+                    <div class="flex items-center gap-3 bg-white/5 rounded-xl p-4">
+                        <div class="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-bell text-white"></i>
+                        </div>
+                        <span class="text-white font-medium">แจ้งเตือน</span>
+                    </div>
+                </div>
+
+                {{-- Download Buttons --}}
+                <div class="space-y-4">
+                    {{-- APK Direct Download --}}
+                    @if($siteSettings->app_apk_enabled ?? true)
+                    <a href="{{ $siteSettings->app_apk_url ?? '#' }}"
+                       class="group flex items-center gap-4 w-full px-6 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-2xl shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 {{ empty($siteSettings->app_apk_url) ? 'opacity-60 cursor-not-allowed' : '' }}"
+                       {{ empty($siteSettings->app_apk_url) ? 'onclick=return false;' : '' }}>
+                        <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="fab fa-android text-3xl text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-white/70 text-sm">ดาวน์โหลดไฟล์</p>
+                            <p class="text-white font-bold text-lg">APK สำหรับ Android</p>
+                        </div>
+                        <div class="flex items-center gap-2 text-white">
+                            @if(empty($siteSettings->app_apk_url))
+                                <span class="text-sm opacity-70">กำลังเตรียมลิงก์...</span>
+                            @else
+                                <i class="fas fa-download text-xl group-hover:animate-bounce"></i>
+                            @endif
+                        </div>
+                    </a>
+                    @endif
+
+                    {{-- Google Play Store --}}
+                    @if($siteSettings->app_playstore_enabled ?? false)
+                    <a href="{{ $siteSettings->app_playstore_url ?? '#' }}"
+                       target="_blank"
+                       class="group flex items-center gap-4 w-full px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-2xl shadow-lg shadow-green-500/30 hover:shadow-green-500/50 transition-all duration-300">
+                        <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="fab fa-google-play text-3xl text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-white/70 text-sm">ดาวน์โหลดจาก</p>
+                            <p class="text-white font-bold text-lg">Google Play Store</p>
+                        </div>
+                        <i class="fas fa-external-link-alt text-white text-xl group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                    @else
+                    <div class="flex items-center gap-4 w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl cursor-not-allowed">
+                        <div class="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center">
+                            <i class="fab fa-google-play text-3xl text-white/50"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-white/50 text-sm">ดาวน์โหลดจาก</p>
+                            <p class="text-white/70 font-bold text-lg">Google Play Store</p>
+                        </div>
+                        <span class="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full text-sm font-medium">
+                            เร็วๆ นี้
+                        </span>
+                    </div>
+                    @endif
+
+                    {{-- Apple App Store --}}
+                    @if($siteSettings->app_appstore_enabled ?? false)
+                    <a href="{{ $siteSettings->app_appstore_url ?? '#' }}"
+                       target="_blank"
+                       class="group flex items-center gap-4 w-full px-6 py-4 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 rounded-2xl shadow-lg shadow-gray-500/30 hover:shadow-gray-500/50 transition-all duration-300">
+                        <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="fab fa-apple text-3xl text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-white/70 text-sm">ดาวน์โหลดจาก</p>
+                            <p class="text-white font-bold text-lg">App Store</p>
+                        </div>
+                        <i class="fas fa-external-link-alt text-white text-xl group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                    @else
+                    <div class="flex items-center gap-4 w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl cursor-not-allowed">
+                        <div class="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center">
+                            <i class="fab fa-apple text-3xl text-white/50"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-white/50 text-sm">ดาวน์โหลดจาก</p>
+                            <p class="text-white/70 font-bold text-lg">App Store (iOS)</p>
+                        </div>
+                        <span class="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full text-sm font-medium">
+                            เร็วๆ นี้
+                        </span>
+                    </div>
+                    @endif
+                </div>
+
+                {{-- Note --}}
+                <p class="text-center text-slate-400 text-sm mt-6">
+                    <i class="fas fa-shield-alt text-green-400 mr-2"></i>
+                    แอปปลอดภัย 100% ไม่มีไวรัส ไม่มีโฆษณา
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+@endif
+
+{{-- ================================================================
     PLATFORM DEMO SECTION - สื่อการเรียนรู้ระบบ
 ================================================================ --}}
 <section id="demo" class="py-20 lg:py-28 bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 relative overflow-hidden">
