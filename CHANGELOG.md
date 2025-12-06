@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.371.6] - 2025-12-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2158 from xjanova/claude/auto-sku-generation-015jqs3C95PvY8s65uQgEdLD (e655bf5e)
+- fix: always show profit section in calculator with guidance (e27ea72c)
+### 🔧 Other Changes
+
+
 ## [v3.371.5] - 2025-12-06
 
 ### ✨ Features
