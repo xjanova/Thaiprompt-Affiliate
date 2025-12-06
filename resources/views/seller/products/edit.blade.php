@@ -77,26 +77,26 @@
                 $pvValue = old('pv_value', $existingPv?->pv_value ?? 0);
             @endphp
 
-            <!-- Section 2: Pricing with Real-time Calculator -->
-            <x-modern-card
-                title="ราคา, ค่าการตลาด (PV) และกำไร"
-                description="กำหนดราคาขาย ค่าการตลาด และติดตามกำไรของคุณแบบเรียลไทม์"
-                icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'>
-
-                <div x-data="{
+            {{-- Wrapper x-data สำหรับ Section 2 และ 3 เพื่อให้ calculator ทำงานร่วมกัน --}}
+            <div x-data="{
                     price: {{ old('price', $product->price) }},
                     comparePrice: {{ old('compare_at_price', $product->compare_at_price ?? 0) }},
                     costPrice: {{ old('cost_price', $product->cost_price ?? 0) }},
                     commissionRate: {{ old('commission_rate', $product->commission_rate ?? 10) }},
                     pvValue: {{ old('pv_value', $pvValue) }},
+                    cashbackFixed: {{ old('customer_cashback', $product->customer_cashback ?? 0) }},
+                    cashbackPercentage: {{ old('cashback_percentage', $product->cashback_percentage ?? 0) }},
                     get pvAmount() {
                         return this.price * (this.pvValue / 100);
                     },
                     get commission() {
                         return this.price * (this.commissionRate / 100);
                     },
+                    get cashbackAmount() {
+                        return this.cashbackFixed + (this.price * (this.cashbackPercentage / 100));
+                    },
                     get totalDeduction() {
-                        return this.commission + this.pvAmount;
+                        return this.commission + this.pvAmount + this.cashbackAmount;
                     },
                     get sellerReceive() {
                         return this.price - this.totalDeduction;
@@ -112,6 +112,13 @@
                     }
                 }" class="space-y-6">
 
+            <!-- Section 2: Pricing with Real-time Calculator -->
+            <x-modern-card
+                title="ราคา, ค่าการตลาด (PV) และกำไร"
+                description="กำหนดราคาขาย ค่าการตลาด และติดตามกำไรของคุณแบบเรียลไทม์"
+                icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'>
+
+                <div class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <x-form-field
                             label="ราคาขาย"
@@ -285,6 +292,22 @@
                                 </span>
                             </div>
 
+                            {{-- Cashback (แสดงเมื่อมีค่า) --}}
+                            <template x-if="cashbackAmount > 0">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">
+                                        🎁 Cashback
+                                        <span x-show="cashbackFixed > 0" class="text-xs">(฿<span x-text="cashbackFixed"></span></span>
+                                        <span x-show="cashbackFixed > 0 && cashbackPercentage > 0" class="text-xs">+</span>
+                                        <span x-show="cashbackPercentage > 0" class="text-xs"><span x-text="cashbackPercentage"></span>%)</span>
+                                        <span x-show="cashbackFixed > 0 && cashbackPercentage == 0" class="text-xs">)</span>
+                                    </span>
+                                    <span class="text-purple-600 dark:text-purple-400">
+                                        -฿<span x-text="cashbackAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                    </span>
+                                </div>
+                            </template>
+
                             {{-- เส้นแบ่ง --}}
                             <div class="border-t border-gray-200 dark:border-gray-600 my-2"></div>
 
@@ -328,7 +351,7 @@
                         {{-- คำอธิบายเพิ่มเติม --}}
                         <div class="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
                             <p class="text-xs text-amber-800 dark:text-amber-300">
-                                <strong>💡 สูตรคำนวณ:</strong> กำไรสุทธิ = ร้านค้าได้รับ - ราคาทุน = (ราคาขาย - ค่าแพลตฟอร์ม - ค่า PV) - ราคาทุน
+                                <strong>💡 สูตรคำนวณ:</strong> กำไรสุทธิ = ร้านค้าได้รับ - ราคาทุน = (ราคาขาย - ค่าแพลตฟอร์ม - ค่า PV - Cashback) - ราคาทุน
                             </p>
                         </div>
                     </div>
@@ -347,6 +370,7 @@
                             label="Cashback แบบจำนวนคงที่ (฿)"
                             name="customer_cashback"
                             type="number"
+                            x-model.number="cashbackFixed"
                             :value="old('customer_cashback', $product->customer_cashback ?? 0)"
                             placeholder="0.00"
                             :step="0.01"
@@ -360,6 +384,7 @@
                             label="Cashback แบบเปอร์เซ็นต์ (%)"
                             name="cashback_percentage"
                             type="number"
+                            x-model.number="cashbackPercentage"
                             :value="old('cashback_percentage', $product->cashback_percentage ?? 0)"
                             placeholder="0.00"
                             :step="0.01"
@@ -384,6 +409,9 @@
                     </div>
                 </div>
             </x-modern-card>
+
+            </div>
+            {{-- End of wrapper x-data สำหรับ Section 2 และ 3 --}}
 
             <!-- Section 4: Inventory Management -->
             <x-modern-card
