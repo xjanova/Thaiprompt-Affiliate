@@ -737,11 +737,20 @@ function productForm(config) {
         pvValue: {{ old('pv_value', 0) }},
 
         // ===== MLM Settings (จาก config - ค่าปัจจุบันจาก database) =====
-        mlmLevels: config.mlmLevels || [],
-        // commission_per_pv = ค่าคอมมิชชันต่อ 1 PV (บาท) - ใช้แปลง PV เป็นเงิน
-        commissionPerPv: config.commissionPerPv || 1.00,
-        // global_pv_rate = 1 บาท = X PV (อัตราแปลงเงินเป็น PV)
-        globalPvRate: config.globalPvRate || 1.00,
+        // mlmLevels อาจเป็น JSON string ต้องแปลงเป็น array
+        mlmLevels: (() => {
+            const levels = config.mlmLevels;
+            if (!levels) return [];
+            if (Array.isArray(levels)) return levels;
+            if (typeof levels === 'string') {
+                try { return JSON.parse(levels); } catch (e) { return []; }
+            }
+            return [];
+        })(),
+        // commission_per_pv = ค่าคอมมิชชันต่อ 1 PV (บาท) - ใช้แปลง PV เป็นเงิน (แปลงเป็น number)
+        commissionPerPv: parseFloat(config.commissionPerPv) || 1.00,
+        // global_pv_rate = 1 บาท = X PV (อัตราแปลงเงินเป็น PV) (แปลงเป็น number)
+        globalPvRate: parseFloat(config.globalPvRate) || 1.00,
         vatEnabled: config.vatEnabled !== false,
 
         // ===== UI State =====
