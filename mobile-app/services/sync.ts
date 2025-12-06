@@ -12,6 +12,17 @@ import {
   getCurrentUser,
 } from './api';
 
+// =====================================================
+// Constants
+// =====================================================
+
+/** ระยะเวลาขั้นต่ำระหว่าง sync (5 นาที) */
+const SYNC_INTERVAL_MS = 5 * 60 * 1000;
+
+// =====================================================
+// Types
+// =====================================================
+
 interface SyncStatus {
   lastSync: number | null;
   isSyncing: boolean;
@@ -192,14 +203,13 @@ export const loadLastSyncTime = async (): Promise<number | null> => {
 };
 
 /**
- * ตรวจสอบว่าควร sync หรือยัง (ถ้าเกิน 5 นาที)
+ * ตรวจสอบว่าควร sync หรือยัง (ถ้าเกิน SYNC_INTERVAL_MS)
  */
 export const shouldSync = async (): Promise<boolean> => {
   const lastSync = await loadLastSyncTime();
   if (!lastSync) return true;
 
-  const fiveMinutes = 5 * 60 * 1000;
-  return Date.now() - lastSync > fiveMinutes;
+  return Date.now() - lastSync > SYNC_INTERVAL_MS;
 };
 
 /**

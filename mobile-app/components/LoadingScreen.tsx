@@ -4,11 +4,9 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, Easing, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Animated, Easing, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { APP_INFO } from '@/config/appConfig';
-
-const { width } = Dimensions.get('window');
 
 interface LoadingScreenProps {
   message?: string;
@@ -42,8 +40,13 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   const particleRotation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // ใช้ ref เพื่อตรวจสอบว่า component ยัง mounted อยู่หรือไม่
+    let isMounted = true;
+
     // Dot animation - sequential fade
     const dotAnimation = () => {
+      if (!isMounted) return;
+
       Animated.sequence([
         Animated.timing(dot1Opacity, {
           toValue: 1,
@@ -77,11 +80,15 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
             useNativeDriver: true,
           }),
         ]),
-      ]).start(() => dotAnimation());
+      ]).start(() => {
+        if (isMounted) dotAnimation();
+      });
     };
 
     // Logo pulse animation พร้อม glow
     const pulseAnimation = () => {
+      if (!isMounted) return;
+
       Animated.parallel([
         // Logo scale
         Animated.sequence([
@@ -128,7 +135,9 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
             useNativeDriver: true,
           }),
         ]),
-      ]).start(() => pulseAnimation());
+      ]).start(() => {
+        if (isMounted) pulseAnimation();
+      });
     };
 
     // Radiant rings animation - วงแสงขยายออก
@@ -138,6 +147,8 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
       delay: number
     ) => {
       const animate = () => {
+        if (!isMounted) return;
+
         scaleValue.setValue(0.5);
         opacityValue.setValue(0.8);
 
@@ -156,31 +167,41 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
             easing: Easing.out(Easing.ease),
             useNativeDriver: true,
           }),
-        ]).start(() => animate());
+        ]).start(() => {
+          if (isMounted) animate();
+        });
       };
       animate();
     };
 
     // Spinner rotation
     const spinAnimation = () => {
+      if (!isMounted) return;
+
       spinValue.setValue(0);
       Animated.timing(spinValue, {
         toValue: 1,
         duration: 1500,
         easing: Easing.linear,
         useNativeDriver: true,
-      }).start(() => spinAnimation());
+      }).start(() => {
+        if (isMounted) spinAnimation();
+      });
     };
 
     // Particle rotation (หมุนรอบโลโก้)
     const particleAnim = () => {
+      if (!isMounted) return;
+
       particleRotation.setValue(0);
       Animated.timing(particleRotation, {
         toValue: 1,
         duration: 4000,
         easing: Easing.linear,
         useNativeDriver: true,
-      }).start(() => particleAnim());
+      }).start(() => {
+        if (isMounted) particleAnim();
+      });
     };
 
     dotAnimation();
@@ -190,7 +211,42 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     ringAnimation(ring3Scale, ring3Opacity, 1200);
     spinAnimation();
     particleAnim();
-  }, []);
+
+    // Cleanup function - หยุด animations เมื่อ component unmount
+    return () => {
+      isMounted = false;
+      // หยุด animation ทั้งหมด
+      dot1Opacity.stopAnimation();
+      dot2Opacity.stopAnimation();
+      dot3Opacity.stopAnimation();
+      logoScale.stopAnimation();
+      glowOpacity.stopAnimation();
+      glowScale.stopAnimation();
+      ring1Scale.stopAnimation();
+      ring1Opacity.stopAnimation();
+      ring2Scale.stopAnimation();
+      ring2Opacity.stopAnimation();
+      ring3Scale.stopAnimation();
+      ring3Opacity.stopAnimation();
+      spinValue.stopAnimation();
+      particleRotation.stopAnimation();
+    };
+  }, [
+    dot1Opacity,
+    dot2Opacity,
+    dot3Opacity,
+    logoScale,
+    glowOpacity,
+    glowScale,
+    ring1Scale,
+    ring1Opacity,
+    ring2Scale,
+    ring2Opacity,
+    ring3Scale,
+    ring3Opacity,
+    spinValue,
+    particleRotation,
+  ]);
 
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
