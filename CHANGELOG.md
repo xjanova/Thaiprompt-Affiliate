@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.371.5] - 2025-12-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2157 from xjanova/claude/auto-sku-generation-015jqs3C95PvY8s65uQgEdLD (2e86d69c)
+- fix: use correct MLM settings key for PV to money conversion (1a2f843b)
+### 🔧 Other Changes
+
+
 ## [v3.371.4] - 2025-12-06
 
 ### ✨ Features
