@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.371.0] - 2025-12-06
+
+### ✨ Features
+- feat: add fraud prevention and network error protection for QR transfer (e4135b46)
+- feat: add QR code wallet transfer with fee system (0f7c9ea0)
+- feat: complete rider system with tracking, notifications and admin views (21de8fdd)
+- feat: add admin rider management with GPS monitoring integration (abde2e24)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2152 from xjanova/claude/fix-logo-screen-hang-01QPy6yBcdQxgUo5j1LRKLjJ (0bdc91fd)
+
 ## [v3.370.0] - 2025-12-06
 
 ### ✨ Features
