@@ -61,7 +61,7 @@ const QuickActionButton = ({
   </Animated.View>
 );
 
-// Hub Card Component (ใหม่ สวยขึ้น)
+// Hub Card Component (แบบเรียบง่าย - ไม่ใช้ gradient)
 const HubCard = ({
   item,
   onPress,
@@ -82,11 +82,16 @@ const HubCard = ({
         transform: [{ scale: pressed ? 0.97 : 1 }],
       })}
     >
-      <LinearGradient
-        colors={[item.gradientStart, item.gradientEnd]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        className="rounded-2xl p-4 min-h-[130px] relative overflow-hidden"
+      {/* ใช้ View ธรรมดาแทน LinearGradient เพื่อทดสอบ */}
+      <View
+        style={{
+          backgroundColor: item.gradientStart,
+          borderRadius: 16,
+          padding: 16,
+          minHeight: 130,
+          position: 'relative',
+          overflow: 'hidden',
+        }}
       >
         {/* Badge */}
         {item.hasBadge && (
@@ -112,7 +117,7 @@ const HubCard = ({
 
         {/* Decorative */}
         <View className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-white/10" />
-      </LinearGradient>
+      </View>
     </Pressable>
   </Animated.View>
 );
@@ -235,10 +240,16 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Header */}
-          <LinearGradient
-            colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
-            className="px-5 pt-4 pb-8 rounded-b-3xl"
+          {/* Header - ใช้สีธรรมดาแทน gradient เพื่อทดสอบ */}
+          <View
+            style={{
+              backgroundColor: isDark ? '#1E3A8A' : '#3B82F6',
+              paddingHorizontal: 20,
+              paddingTop: 16,
+              paddingBottom: 32,
+              borderBottomLeftRadius: 24,
+              borderBottomRightRadius: 24,
+            }}
           >
             {/* Top Row */}
             <Animated.View
@@ -310,7 +321,7 @@ export default function HomeScreen() {
                 </View>
               </Animated.View>
             )}
-          </LinearGradient>
+          </View>
 
           {/* Quick Actions */}
           <View className="px-5 mt-5">
