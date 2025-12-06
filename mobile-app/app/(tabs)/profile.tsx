@@ -185,8 +185,8 @@ export default function ProfileScreen() {
     );
   };
 
-  // ถ้ายังไม่ login
-  if (!isAuthenticated && !user) {
+  // ถ้ายังไม่ login หรือ user ยังไม่โหลด
+  if (!isAuthenticated || !user) {
     return (
       <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
         <SafeAreaView className="flex-1 justify-center items-center px-6">
