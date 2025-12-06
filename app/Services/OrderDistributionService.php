@@ -17,14 +17,25 @@ use Illuminate\Support\Facades\Log;
  * OrderDistributionService
  *
  * จัดการการแบ่งเงินจาก Order - หักค่า Fee, VAT, MLM Commission แล้วโอนให้ Seller
+ *
+ * Flow การคำนวณ Commission:
+ * 1. หัก Platform Fee → platform_fee wallet
+ * 2. หัก VAT → vat wallet
+ * 3. หัก PV (MLM Commission) → mlm_pool wallet
+ * 4. คำนวณและสร้าง Commission ให้ uplines:
+ *    - Direct Referral Bonus → original_sponsor (ผู้แนะนำตรงจริงๆ)
+ *    - Unilevel Commission → unilevel_sponsor (สายงาน)
+ *    - Binary Commission → binary_sponsor (ตำแหน่ง binary)
  */
 class OrderDistributionService
 {
     protected PlatformRevenueService $revenueService;
+    protected MlmCommissionService $mlmCommissionService;
 
     public function __construct()
     {
         $this->revenueService = new PlatformRevenueService();
+        $this->mlmCommissionService = new MlmCommissionService();
     }
 
     /**
@@ -268,15 +279,122 @@ class OrderDistributionService
     /**
      * ประมวลผล MLM Commissions
      *
+     * คำนวณและสร้าง commission ให้ uplines ตามประเภท:
+     * - Direct Referral Bonus: จ่ายให้ original_sponsor (ผู้แนะนำตรงจริงๆ)
+     * - Unilevel Commission: จ่ายให้ unilevel_sponsor หลายชั้น (พร้อม rollup ถ้า inactive)
+     * - Binary Commission: จ่ายให้ binary_sponsor (ตาม matching/pairing)
+     *
      * @param Order $order
-     * @return array
+     * @return array ผลลัพธ์การคำนวณ commission
      */
     protected function processMlmCommissions(Order $order): array
     {
-        // TODO: เรียกใช้ MlmCommissionService หรือ MlmCalculationService
-        // เพื่อคำนวณและสร้าง commission ให้ uplines
-        // ตอนนี้ return empty array ก่อน
-        return [];
+        try {
+            // คำนวณ PV รวมจาก Order items
+            $pvData = $this->calculateTotalPvFromOrder($order);
+
+            // ตรวจสอบว่ามีการเปิดใช้ระบบ Genealogy หรือไม่
+            $genealogyEnabled = MlmGlobalSetting::get('genealogy_enabled', true);
+
+            if (!$genealogyEnabled && $pvData['total_pv'] <= 0) {
+                Log::debug('MLM Commission skipped: genealogy disabled and no PV', [
+                    'order_id' => $order->id,
+                ]);
+                return [
+                    'success' => true,
+                    'direct_referral' => null,
+                    'unilevel' => [],
+                    'binary' => [],
+                    'total_pv' => 0,
+                    'message' => 'ไม่มี PV และระบบ Genealogy ปิดอยู่',
+                ];
+            }
+
+            // เรียกใช้ MlmCommissionService เพื่อคำนวณ commission ทั้งหมด
+            $result = $this->mlmCommissionService->processOrderCommissions($order, $pvData);
+
+            // Log ผลลัพธ์
+            Log::info('MLM Commissions processed for order', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'total_pv' => $pvData['total_pv'],
+                'pv_amount_thb' => $pvData['pv_amount_thb'],
+                'has_direct_referral' => $result['direct_referral'] !== null,
+                'unilevel_count' => count($result['unilevel']),
+                'binary_count' => count($result['binary']),
+            ]);
+
+            return [
+                'success' => true,
+                'direct_referral' => $result['direct_referral'],
+                'unilevel' => $result['unilevel'],
+                'binary' => $result['binary'],
+                'total_pv' => $pvData['total_pv'],
+                'pv_amount_thb' => $pvData['pv_amount_thb'],
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('MLM Commission processing failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'direct_referral' => null,
+                'unilevel' => [],
+                'binary' => [],
+            ];
+        }
+    }
+
+    /**
+     * คำนวณ PV รวมจาก Order items
+     *
+     * PV (Point Value) คือค่าการตลาดที่ร้านค้าจ่ายเอง เป็น % ของราคาสินค้า
+     * ใช้เป็นฐานในการคำนวณ Unilevel และ Binary Commission
+     *
+     * @param Order $order
+     * @return array ['total_pv' => float, 'pv_amount_thb' => float, 'items' => array]
+     */
+    protected function calculateTotalPvFromOrder(Order $order): array
+    {
+        $totalPv = 0;
+        $pvAmountThb = 0;
+        $itemsDetail = [];
+
+        foreach ($order->items as $item) {
+            // ดึง PV percentage จาก item หรือ product
+            $pvPercentage = $item->pv_value ?? $item->product?->pv_value ?? 0;
+
+            if ($pvPercentage > 0) {
+                // คำนวณ PV points (อาจเท่ากับ pvPercentage หรือคำนวณตามสูตรอื่น)
+                // ในที่นี้ใช้ PV = ราคาสินค้า / 100 × PV%
+                $itemPv = ($item->total / 100) * $pvPercentage;
+                $totalPv += $itemPv;
+
+                // คำนวณค่า PV เป็นจำนวนเงิน THB
+                $itemPvThb = $item->total * ($pvPercentage / 100);
+                $pvAmountThb += $itemPvThb;
+
+                $itemsDetail[] = [
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product_name,
+                    'total' => $item->total,
+                    'pv_percentage' => $pvPercentage,
+                    'pv_points' => round($itemPv, 2),
+                    'pv_amount_thb' => round($itemPvThb, 2),
+                ];
+            }
+        }
+
+        return [
+            'total_pv' => round($totalPv, 2),
+            'pv_amount_thb' => round($pvAmountThb, 2),
+            'items' => $itemsDetail,
+        ];
     }
 
     /**
