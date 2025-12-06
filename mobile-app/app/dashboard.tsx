@@ -1,6 +1,7 @@
 /**
  * Dashboard Screen - แดชบอร์ดผู้ใช้
  * แปลงจาก .NET MAUI DashboardPage
+ * พร้อม LavaBackground RGB Effect
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -18,6 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
+import { LavaBackground, GlassCard } from '@/components';
 import { getDashboardStats, getCommissions } from '@/services/api';
 import { formatCurrency, getGreetingByTime } from '@/constants';
 import type { DashboardStats, Commission } from '@/types';
@@ -131,7 +133,7 @@ export default function DashboardScreen() {
   };
 
   return (
-    <LinearGradient colors={['#0F0F23', '#1A1A2E']} style={{ flex: 1 }}>
+    <LavaBackground variant="crypto" intensity="medium">
       <SafeAreaView className="flex-1">
         <ScrollView
           className="flex-1"
@@ -149,15 +151,32 @@ export default function DashboardScreen() {
             <Pressable
               onPress={goBack}
               className="w-10 h-10 rounded-full bg-white/10 items-center justify-center"
+              style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 4,
+              }}
             >
               <Ionicons name="arrow-back" size={24} color="white" />
             </Pressable>
 
-            <Text className="text-white text-lg font-bold">แดชบอร์ด</Text>
+            <View className="flex-row items-center">
+              <Ionicons name="speedometer" size={20} color="#3B82F6" style={{ marginRight: 6 }} />
+              <Text className="text-white text-lg font-bold">แดชบอร์ด</Text>
+            </View>
 
             <Pressable
               onPress={handleLogout}
               className="w-10 h-10 rounded-full bg-white/10 items-center justify-center"
+              style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+                elevation: 4,
+              }}
             >
               <Ionicons name="log-out" size={20} color="white" />
             </Pressable>
@@ -302,6 +321,6 @@ export default function DashboardScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </LavaBackground>
   );
 }

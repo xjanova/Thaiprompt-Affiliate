@@ -1,7 +1,7 @@
 /**
  * Login Screen - หน้าเข้าสู่ระบบ
  * แปลงจาก .NET MAUI LoginPage
- * รองรับ LINE Login
+ * รองรับ LINE Login + LavaBackground Effect
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -13,7 +13,6 @@ import {
   ScrollView,
   Pressable,
   Alert,
-  Linking,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,7 +21,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '@/stores/authStore';
-import { Button, Input } from '@/components';
+import { LavaBackground, GlassCard, Button, Input } from '@/components';
 import { isValidEmail } from '@/constants';
 
 export default function LoginScreen() {
@@ -161,7 +160,7 @@ export default function LoginScreen() {
   const goBack = () => router.back();
 
   return (
-    <LinearGradient colors={['#0F0F23', '#1A1A2E']} className="flex-1">
+    <LavaBackground variant="default" intensity="medium">
       <SafeAreaView className="flex-1">
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -177,6 +176,13 @@ export default function LoginScreen() {
               <Pressable
                 onPress={goBack}
                 className="w-10 h-10 rounded-full bg-white/10 items-center justify-center"
+                style={{
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                  elevation: 4,
+                }}
               >
                 <Ionicons name="arrow-back" size={24} color="white" />
               </Pressable>
@@ -186,7 +192,25 @@ export default function LoginScreen() {
             <View className="flex-1 px-6 pt-8">
               {/* Logo */}
               <View className="items-center mb-8">
-                <Text className="text-5xl mb-4">🚀</Text>
+                <LinearGradient
+                  colors={['#3B82F6', '#8B5CF6', '#06B6D4']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 24,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 16,
+                    shadowColor: '#3B82F6',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.5,
+                    shadowRadius: 20,
+                  }}
+                >
+                  <Ionicons name="log-in" size={40} color="white" />
+                </LinearGradient>
                 <Text className="text-white text-2xl font-bold">
                   เข้าสู่ระบบ
                 </Text>
@@ -196,11 +220,14 @@ export default function LoginScreen() {
               </View>
 
               {/* Form */}
-              <View className="bg-white/5 rounded-3xl p-6">
+              <GlassCard>
                 {/* Error Message */}
                 {error && (
                   <View className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-4">
-                    <Text className="text-red-400 text-center">{error}</Text>
+                    <View className="flex-row items-center justify-center">
+                      <Ionicons name="alert-circle" size={20} color="#EF4444" />
+                      <Text className="text-red-400 text-center ml-2">{error}</Text>
+                    </View>
                   </View>
                 )}
 
@@ -246,6 +273,7 @@ export default function LoginScreen() {
                   loading={isLoading}
                   fullWidth
                   size="lg"
+                  icon={<Ionicons name="log-in" size={20} color="white" />}
                 />
 
                 {/* Register Link */}
@@ -255,32 +283,36 @@ export default function LoginScreen() {
                     <Text className="text-primary-400 font-bold">สมัครเลย</Text>
                   </Pressable>
                 </View>
-              </View>
+              </GlassCard>
 
               {/* Social Login */}
               <View className="mt-8">
                 <View className="flex-row items-center mb-6">
-                  <View className="flex-1 h-px bg-gray-700" />
+                  <View className="flex-1 h-px bg-white/20" />
                   <Text className="text-gray-500 mx-4">หรือ</Text>
-                  <View className="flex-1 h-px bg-gray-700" />
+                  <View className="flex-1 h-px bg-white/20" />
                 </View>
 
                 {/* LINE Login */}
                 <Pressable
                   onPress={handleLineLogin}
                   disabled={isLoading || isLineLoading}
-                  className={`flex-row items-center justify-center bg-[#00B900] rounded-xl py-4 ${
+                  className={`flex-row items-center justify-center bg-[#00B900] rounded-2xl py-4 ${
                     (isLoading || isLineLoading) ? 'opacity-60' : ''
                   }`}
+                  style={{
+                    shadowColor: '#00B900',
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 4,
+                  }}
                 >
                   {isLineLoading ? (
                     <ActivityIndicator color="white" />
                   ) : (
                     <>
-                      <View className="w-6 h-6 mr-2 items-center justify-center">
-                        <Text className="text-white font-bold text-xl">L</Text>
-                      </View>
-                      <Text className="text-white font-bold text-lg">
+                      <Ionicons name="chatbubbles" size={24} color="white" />
+                      <Text className="text-white font-bold text-lg ml-2">
                         เข้าสู่ระบบด้วย LINE
                       </Text>
                     </>
@@ -291,6 +323,6 @@ export default function LoginScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </LinearGradient>
+    </LavaBackground>
   );
 }

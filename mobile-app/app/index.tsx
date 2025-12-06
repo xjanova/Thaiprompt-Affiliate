@@ -1,6 +1,7 @@
 /**
  * Index Screen - Hub Selection (หน้าหลัก)
  * แปลงจาก .NET MAUI HubSelectionPage
+ * พร้อม LavaBackground RGB Effect
  */
 
 import React, { useEffect, useState } from 'react';
@@ -17,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
-import { HubCard, Button } from '@/components';
+import { LavaBackground, HubCard, Button } from '@/components';
 import { HUB_ITEMS, getGreetingByTime, formatCurrency } from '@/constants';
 import { getDashboardStats } from '@/services/api';
 import type { HubItem } from '@/types';
@@ -97,7 +98,7 @@ export default function IndexScreen() {
   };
 
   return (
-    <LinearGradient colors={['#0F0F23', '#1A1A2E']} style={{ flex: 1 }}>
+    <LavaBackground variant="shopping" intensity="medium">
       <SafeAreaView className="flex-1">
         <ScrollView
           className="flex-1"
@@ -126,6 +127,13 @@ export default function IndexScreen() {
                 <Pressable
                   onPress={goToDashboard}
                   className="w-12 h-12 rounded-full bg-primary-500 items-center justify-center"
+                  style={{
+                    shadowColor: '#3B82F6',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.5,
+                    shadowRadius: 10,
+                    elevation: 8,
+                  }}
                 >
                   <Text className="text-white text-lg font-bold">
                     {user?.name?.charAt(0).toUpperCase() || 'U'}
@@ -136,6 +144,7 @@ export default function IndexScreen() {
                   title="เข้าสู่ระบบ"
                   onPress={goToLogin}
                   size="sm"
+                  icon={<Ionicons name="log-in" size={16} color="white" />}
                 />
               )}
             </View>
@@ -191,12 +200,13 @@ export default function IndexScreen() {
 
           {/* Footer */}
           <View className="px-5 mt-6 items-center">
+            <Ionicons name="sparkles" size={16} color="#6B7280" style={{ marginBottom: 4 }} />
             <Text className="text-gray-500 text-xs">
               Thaiprompt Affiliate v1.0.0
             </Text>
           </View>
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </LavaBackground>
   );
 }
