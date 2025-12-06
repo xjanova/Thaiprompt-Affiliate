@@ -278,7 +278,7 @@ export default function NetworkScreen() {
           {/* Tree View Button */}
           <Animated.View entering={FadeInDown.delay(100).springify()}>
             <Pressable
-              onPress={() => Alert.alert('แผนผังสายงาน', 'กำลังพัฒนา...')}
+              onPress={() => router.push('/mlm-tree')}
               className="mb-4"
             >
               <LinearGradient

@@ -2065,5 +2065,284 @@ export const sendDeviceHeartbeat = async (deviceId: string): Promise<{
   }
 };
 
+// =====================================================
+// Profile APIs
+// =====================================================
+
+/**
+ * อัพเดทข้อมูลโปรไฟล์
+ */
+export const updateProfile = async (data: {
+  name?: string;
+  phone?: string;
+  address?: string;
+  bio?: string;
+  bank_name?: string;
+  bank_account?: string;
+  bank_account_name?: string;
+}): Promise<{
+  success: boolean;
+  data?: User;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.put(API_ENDPOINTS.PROFILE_UPDATE, data);
+
+    // อัพเดท user data ใน storage
+    if (response.data.success && response.data.data) {
+      await SecureStore.setItemAsync(
+        STORAGE_KEYS.USER_DATA,
+        JSON.stringify(response.data.data)
+      );
+    }
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'อัพเดทข้อมูลไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * อัพโหลดรูปโปรไฟล์ (Avatar)
+ */
+export const uploadAvatar = async (imageUri: string): Promise<{
+  success: boolean;
+  data?: {
+    avatarUrl: string;
+    user: User;
+  };
+  message?: string;
+}> => {
+  try {
+    const formData = new FormData();
+
+    const filename = imageUri.split('/').pop() || 'avatar.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const fileType = match ? `image/${match[1]}` : 'image/jpeg';
+
+    formData.append('avatar', {
+      uri: imageUri,
+      name: filename,
+      type: fileType,
+    } as unknown as Blob);
+
+    const response = await apiClient.post(API_ENDPOINTS.AVATAR_UPLOAD, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    // อัพเดท user data ใน storage
+    if (response.data.success && response.data.data?.user) {
+      await SecureStore.setItemAsync(
+        STORAGE_KEYS.USER_DATA,
+        JSON.stringify(response.data.data.user)
+      );
+    }
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'อัพโหลดรูปภาพไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * ลบรูปโปรไฟล์
+ */
+export const deleteAvatar = async (): Promise<{
+  success: boolean;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.delete(API_ENDPOINTS.AVATAR_DELETE);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'ลบรูปภาพไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * เปลี่ยนรหัสผ่าน
+ */
+export const changePassword = async (data: {
+  current_password: string;
+  new_password: string;
+  new_password_confirmation: string;
+}): Promise<{
+  success: boolean;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.put(API_ENDPOINTS.CHANGE_PASSWORD, data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'เปลี่ยนรหัสผ่านไม่สำเร็จ',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+// =====================================================
+// MLM Tree APIs
+// =====================================================
+
+export interface TreeNode {
+  id: number;
+  name: string;
+  email?: string;
+  avatar?: string;
+  level: number;
+  rank?: {
+    id: number;
+    name: string;
+    nameTh: string;
+    icon?: string;
+    color?: string;
+  };
+  statistics?: {
+    directReferrals: number;
+    totalTeamMembers: number;
+    monthlyPV: number;
+    totalSales: number;
+  };
+  isActive: boolean;
+  joinedAt: string;
+  children: TreeNode[];
+  childrenCount: number;
+  hasMoreChildren?: boolean;
+}
+
+/**
+ * ดึงผังทีมแบบ Tree (สำหรับแสดง Interactive Tree)
+ */
+export const getMLMTree = async (params?: {
+  userId?: number;
+  depth?: number;
+}): Promise<{
+  success: boolean;
+  data?: {
+    root: TreeNode;
+    maxDepth: number;
+    totalMembers: number;
+    currentUserLevel: number;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.MLM_TREE, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Get MLM tree error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึง Children ของ node (Lazy Loading)
+ */
+export const getTreeNodeChildren = async (userId: number): Promise<{
+  success: boolean;
+  data?: {
+    children: TreeNode[];
+    hasMore: boolean;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(`${API_ENDPOINTS.MLM_TREE}/${userId}/children`);
+    return response.data;
+  } catch (error) {
+    console.error('Get tree children error:', error);
+    return null;
+  }
+};
+
+/**
+ * ค้นหาสมาชิกในทีม
+ */
+export const searchTeamMember = async (query: string): Promise<{
+  success: boolean;
+  data?: {
+    results: TeamMember[];
+    total: number;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.MLM_SEARCH, {
+      params: { q: query },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Search team member error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงสถิติของสมาชิกในทีม
+ */
+export const getTeamMemberStats = async (userId: number): Promise<{
+  success: boolean;
+  data?: {
+    member: TeamMember;
+    statistics: {
+      totalReferrals: number;
+      activeReferrals: number;
+      totalSales: number;
+      monthlyPV: number;
+      totalEarnings: number;
+      joinedDaysAgo: number;
+    };
+    genealogy: {
+      parent?: TeamMember;
+      siblings?: TeamMember[];
+    };
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(`${API_ENDPOINTS.MLM_MEMBER}/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Get team member stats error:', error);
+    return null;
+  }
+};
+
 // Export axios instance สำหรับใช้งานตรงๆ ถ้าต้องการ
 export { apiClient };
