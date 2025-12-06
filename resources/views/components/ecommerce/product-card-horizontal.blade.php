@@ -32,7 +32,7 @@
 
     <div class="flex gap-4 {{ $compact ? 'p-3' : 'p-4' }}">
         {{-- Image --}}
-        <a href="{{ route('marketplace.product.show', $product->slug) }}"
+        <a href="{{ route('official-shop.show', $product->slug) }}"
            class="relative flex-shrink-0 {{ $compact ? 'w-20 h-20' : 'w-24 h-24 sm:w-32 sm:h-32' }}
                   rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
             <img src="{{ $product->primary_image_url ?? asset('images/placeholder.png') }}"
@@ -62,7 +62,7 @@
             {{-- Category & Rating --}}
             <div class="flex items-center justify-between gap-2">
                 @if($product->category)
-                <a href="{{ route('marketplace.category', $product->category->slug) }}"
+                <a href="{{ route('official-shop.category', $product->category->slug) }}"
                    class="text-xs text-purple-600 dark:text-purple-400 font-medium hover:underline">
                     {{ $product->category->name }}
                 </a>
@@ -82,7 +82,7 @@
             <h3 class="{{ $compact ? 'text-sm' : 'text-base' }} font-semibold
                        text-gray-900 dark:text-white
                        {{ $compact ? 'line-clamp-1' : 'line-clamp-2' }}">
-                <a href="{{ route('marketplace.product.show', $product->slug) }}"
+                <a href="{{ route('official-shop.show', $product->slug) }}"
                    class="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                     {{ $product->name }}
                 </a>

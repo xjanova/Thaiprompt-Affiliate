@@ -103,7 +103,7 @@
             {{-- Category & Rating --}}
             <div class="flex items-center justify-between">
                 @if($product->category)
-                <a href="{{ route('marketplace.category', $product->category->slug) }}"
+                <a href="{{ route('official-shop.category', $product->category->slug) }}"
                    class="text-sm text-white/90 font-medium hover:text-white transition-colors">
                     {{ $product->category->name }}
                 </a>
@@ -133,7 +133,7 @@
             {{-- Product Name --}}
             <h3 class="text-2xl font-bold text-white leading-tight
                        group-hover:text-yellow-200 transition-colors">
-                <a href="{{ route('marketplace.product.show', $product->slug) }}">
+                <a href="{{ route('official-shop.show', $product->slug) }}">
                     {{ $product->name }}
                 </a>
             </h3>
