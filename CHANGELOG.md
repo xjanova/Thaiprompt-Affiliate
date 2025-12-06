@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.369.0] - 2025-12-06
+
+### ✨ Features
+- Merge pull request #2150 from xjanova/claude/fix-mobile-workflow-01JiuTGbKDS6tkcrMpDMKcVE (7c1ca0ee)
+- feat: add Cashback to real-time seller profit calculator (19dee11b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.368.0] - 2025-12-06
 
 ### ✨ Features
