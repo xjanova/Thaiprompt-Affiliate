@@ -101,6 +101,15 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
         ->middleware('two-factor:transfer')
         ->name('transfer.submit');
 
+    // QR Code Transfer Routes
+    Route::get('/qr-code', [WalletController::class, 'qrCode'])->name('qr-code');
+    Route::get('/qr-transfer', [WalletController::class, 'qrTransfer'])->name('qr-transfer');
+    Route::post('/qr-transfer/process', [WalletController::class, 'processQrTransfer'])
+        ->middleware('two-factor:transfer')
+        ->name('qr-transfer.process');
+    Route::post('/qr-transfer/lookup', [WalletController::class, 'getWalletFromQr'])->name('qr-transfer.lookup');
+    Route::post('/qr-transfer/calculate-fee', [WalletController::class, 'calculateQrFee'])->name('qr-transfer.calculate-fee');
+
     // Transaction Routes
     Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
 

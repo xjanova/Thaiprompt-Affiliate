@@ -8,6 +8,8 @@ use App\Services\WithdrawalService;
 use App\Services\PaymentGatewayService;
 use App\Services\CashbackService;
 use App\Models\PaymentMethod;
+use App\Models\Wallet;
+use App\Models\WalletSetting;
 use Illuminate\Http\Request;
 use Exception;
 
@@ -586,5 +588,271 @@ class WalletController extends Controller
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
+    }
+
+    // =====================================================
+    // QR Code Transfer Functions
+    // =====================================================
+
+    /**
+     * แสดง QR Code สำหรับรับเงิน
+     *
+     * สร้าง QR Code จาก Wallet Address
+     * ผู้ใช้สามารถแชร์ QR ให้คนอื่นสแกนเพื่อโอนเงินมาได้
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function qrCode(Request $request)
+    {
+        $wallet = $this->walletService->getOrCreateWallet(auth()->user());
+
+        // จำนวนเงินที่ต้องการรับ (ถ้ามี)
+        $requestedAmount = $request->input('amount', null);
+
+        // ค่าธรรมเนียมการโอน
+        $transferFee = WalletSetting::get('transfer_fee_amount', 0);
+        $transferFeeType = WalletSetting::get('transfer_fee_type', 'fixed');
+        $minTransferAmount = WalletSetting::get('transfer_min_amount', 1);
+
+        // สร้าง QR Data (JSON format)
+        $qrData = [
+            'type' => 'tpwallet_transfer',
+            'address' => $wallet->wallet_address,
+            'name' => auth()->user()->name,
+            'amount' => $requestedAmount,
+            'timestamp' => now()->timestamp,
+        ];
+
+        return view('user.wallet.qr-code', [
+            'wallet' => $wallet,
+            'qrData' => json_encode($qrData),
+            'requestedAmount' => $requestedAmount,
+            'transferFee' => $transferFee,
+            'transferFeeType' => $transferFeeType,
+            'minTransferAmount' => $minTransferAmount,
+        ]);
+    }
+
+    /**
+     * แสดงหน้าสแกน QR Code เพื่อโอนเงิน
+     *
+     * @return \Illuminate\View\View
+     */
+    public function qrTransfer()
+    {
+        $wallet = $this->walletService->getOrCreateWallet(auth()->user());
+
+        // ค่าธรรมเนียมการโอน
+        $transferFee = WalletSetting::get('transfer_fee_amount', 0);
+        $transferFeeType = WalletSetting::get('transfer_fee_type', 'fixed');
+        $minTransferAmount = WalletSetting::get('transfer_min_amount', 1);
+
+        return view('user.wallet.qr-transfer', [
+            'wallet' => $wallet,
+            'transferFee' => $transferFee,
+            'transferFeeType' => $transferFeeType,
+            'minTransferAmount' => $minTransferAmount,
+        ]);
+    }
+
+    /**
+     * ดำเนินการโอนเงินผ่าน QR Code
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function processQrTransfer(Request $request)
+    {
+        $request->validate([
+            'wallet_address' => 'required|string',
+            'amount' => 'required|numeric|min:0.01',
+            'pin' => 'required|string|size:6',
+            'description' => 'nullable|string|max:255',
+        ], [
+            'wallet_address.required' => 'ไม่พบ Wallet Address ผู้รับ',
+            'amount.required' => 'กรุณาระบุจำนวนเงิน',
+            'amount.numeric' => 'จำนวนเงินต้องเป็นตัวเลข',
+            'amount.min' => 'จำนวนเงินต้องมากกว่า 0',
+            'pin.required' => 'กรุณาระบุ PIN',
+            'pin.size' => 'PIN ต้องมี 6 หลัก',
+        ]);
+
+        try {
+            $fromWallet = $this->walletService->getOrCreateWallet(auth()->user());
+            $toWallet = Wallet::where('wallet_address', $request->wallet_address)->first();
+
+            // ตรวจสอบ Wallet ผู้รับ
+            if (!$toWallet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบ Wallet ผู้รับ กรุณาตรวจสอบ QR Code',
+                ], 400);
+            }
+
+            // ป้องกันโอนให้ตัวเอง
+            if ($fromWallet->id === $toWallet->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่สามารถโอนเงินให้ตัวเองได้',
+                ], 400);
+            }
+
+            $amount = (float) $request->amount;
+
+            // ตรวจสอบยอดขั้นต่ำ
+            $validationErrors = WalletSetting::validateTransferAmount($amount);
+            if (!empty($validationErrors)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validationErrors[0],
+                ], 400);
+            }
+
+            // คำนวณค่าธรรมเนียม
+            $fee = $this->calculateQrTransferFee($amount);
+            $totalDeduction = $amount + $fee;
+
+            // ตรวจสอบยอดเงินเพียงพอ (รวมค่าธรรมเนียม)
+            if ($fromWallet->balance < $totalDeduction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ยอดเงินไม่เพียงพอ ต้องการ ฿' . number_format($totalDeduction, 2) . ' (รวมค่าธรรมเนียม ฿' . number_format($fee, 2) . ')',
+                ], 400);
+            }
+
+            // ดำเนินการโอนเงินผ่าน WalletService (รวมค่าธรรมเนียม)
+            $description = $request->description ?? 'QR Transfer';
+            $result = $this->walletService->transferWithFee(
+                $fromWallet,
+                $toWallet,
+                $amount,
+                $request->pin,
+                $description
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'โอนเงินสำเร็จ!',
+                'data' => [
+                    'amount' => $amount,
+                    'fee' => $result['fee'] ?? $fee,
+                    'total' => $result['total_amount'] ?? $totalDeduction,
+                    'to_name' => $toWallet->user->name ?? 'ไม่ระบุชื่อ',
+                    'to_address' => $toWallet->wallet_address,
+                    'transaction_id' => $result['out_transaction']->id ?? null,
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * API: ดึงข้อมูล Wallet จาก QR Code
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getWalletFromQr(Request $request)
+    {
+        $request->validate([
+            'wallet_address' => 'required|string',
+        ]);
+
+        try {
+            $wallet = Wallet::where('wallet_address', $request->wallet_address)->first();
+
+            if (!$wallet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบ Wallet Address นี้ในระบบ',
+                ], 404);
+            }
+
+            // ไม่ให้โอนให้ตัวเอง
+            $myWallet = $this->walletService->getOrCreateWallet(auth()->user());
+            if ($wallet->id === $myWallet->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่สามารถโอนเงินให้ตัวเองได้',
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'wallet_address' => $wallet->wallet_address,
+                    'user_name' => $wallet->user->name ?? 'ไม่ระบุชื่อ',
+                    'user_avatar' => $wallet->user->avatar ?? null,
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * API: คำนวณค่าธรรมเนียมการโอน QR
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function calculateQrFee(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+        ]);
+
+        $amount = (float) $request->amount;
+        $fee = $this->calculateQrTransferFee($amount);
+
+        $myWallet = $this->walletService->getOrCreateWallet(auth()->user());
+        $totalDeduction = $amount + $fee;
+        $hasEnoughBalance = $myWallet->balance >= $totalDeduction;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'amount' => $amount,
+                'fee' => $fee,
+                'total' => $totalDeduction,
+                'balance' => $myWallet->balance,
+                'has_enough_balance' => $hasEnoughBalance,
+            ],
+        ]);
+    }
+
+    /**
+     * คำนวณค่าธรรมเนียมการโอน QR
+     *
+     * @param float $amount จำนวนเงินที่โอน
+     * @return float ค่าธรรมเนียม
+     */
+    private function calculateQrTransferFee(float $amount): float
+    {
+        $feeType = WalletSetting::get('transfer_fee_type', 'fixed');
+        $feeAmount = WalletSetting::get('transfer_fee_amount', 0);
+        $feeMin = WalletSetting::get('transfer_fee_min', 0);
+        $feeMax = WalletSetting::get('transfer_fee_max', 999999);
+
+        if ($feeType === 'percentage') {
+            // คิดเป็นเปอร์เซ็นต์
+            $fee = ($amount * $feeAmount) / 100;
+        } else {
+            // คิดเป็นจำนวนคงที่
+            $fee = $feeAmount;
+        }
+
+        // Apply min/max limits
+        $fee = max($feeMin, min($feeMax, $fee));
+
+        return round($fee, 2);
     }
 }
