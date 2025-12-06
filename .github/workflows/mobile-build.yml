@@ -10,13 +10,10 @@
 name: 📱 Mobile App Build
 
 on:
-  # Build เมื่อสร้าง tag
+  # Build เมื่อสร้าง tag หรือ push ไป main
   push:
     tags:
       - 'mobile-v*'
-
-  # Build เมื่อ push ไป main (preview build)
-  push:
     branches:
       - main
     paths:
