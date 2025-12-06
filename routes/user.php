@@ -101,14 +101,18 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
         ->middleware('two-factor:transfer')
         ->name('transfer.submit');
 
-    // QR Code Transfer Routes
+    // QR Code Transfer Routes (พร้อมระบบป้องกัน)
     Route::get('/qr-code', [WalletController::class, 'qrCode'])->name('qr-code');
     Route::get('/qr-transfer', [WalletController::class, 'qrTransfer'])->name('qr-transfer');
     Route::post('/qr-transfer/process', [WalletController::class, 'processQrTransfer'])
-        ->middleware('two-factor:transfer')
+        ->middleware(['two-factor:transfer', 'idempotency', 'throttle:5,1']) // ป้องกัน double transfer + rate limit 5 ครั้ง/นาที
         ->name('qr-transfer.process');
-    Route::post('/qr-transfer/lookup', [WalletController::class, 'getWalletFromQr'])->name('qr-transfer.lookup');
-    Route::post('/qr-transfer/calculate-fee', [WalletController::class, 'calculateQrFee'])->name('qr-transfer.calculate-fee');
+    Route::post('/qr-transfer/lookup', [WalletController::class, 'getWalletFromQr'])
+        ->middleware('throttle:30,1') // rate limit lookup
+        ->name('qr-transfer.lookup');
+    Route::post('/qr-transfer/calculate-fee', [WalletController::class, 'calculateQrFee'])
+        ->middleware('throttle:60,1') // rate limit fee calculation
+        ->name('qr-transfer.calculate-fee');
 
     // Transaction Routes
     Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');

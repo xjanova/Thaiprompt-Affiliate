@@ -11,6 +11,10 @@ use App\Models\PaymentMethod;
 use App\Models\Wallet;
 use App\Models\WalletSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Exception;
 
 class WalletController extends Controller
@@ -659,6 +663,13 @@ class WalletController extends Controller
     /**
      * ดำเนินการโอนเงินผ่าน QR Code
      *
+     * ระบบป้องกันหลายชั้น:
+     * 1. Idempotency Middleware - ป้องกัน double submit
+     * 2. Rate Limiting - จำกัดความถี่การโอน
+     * 3. Transfer Lock - ป้องกัน concurrent transfers
+     * 4. Row-level Locking - ป้องกัน race condition ใน DB
+     * 5. Balance Verification - ตรวจยอดเงินภายใน transaction
+     *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
@@ -678,72 +689,140 @@ class WalletController extends Controller
             'pin.size' => 'PIN ต้องมี 6 หลัก',
         ]);
 
+        $user = auth()->user();
+        $transactionRef = 'QRT-' . Str::upper(Str::random(12));
+
+        // บันทึก Audit Log เริ่มต้น
+        Log::info('QR Transfer Initiated', [
+            'ref' => $transactionRef,
+            'user_id' => $user->id,
+            'to_address' => $request->wallet_address,
+            'amount' => $request->amount,
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
         try {
-            $fromWallet = $this->walletService->getOrCreateWallet(auth()->user());
-            $toWallet = Wallet::where('wallet_address', $request->wallet_address)->first();
+            // === ระบบป้องกันที่ 1: Transfer Lock ===
+            // ป้องกันการโอนพร้อมกันหลายรายการจากบัญชีเดียวกัน
+            $lockKey = "qr_transfer_lock:user:{$user->id}";
+            $lock = Cache::lock($lockKey, 30); // lock 30 วินาที
 
-            // ตรวจสอบ Wallet ผู้รับ
-            if (!$toWallet) {
+            if (!$lock->get()) {
+                Log::warning('QR Transfer Lock Failed', [
+                    'ref' => $transactionRef,
+                    'user_id' => $user->id,
+                    'reason' => 'Another transfer in progress',
+                ]);
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'ไม่พบ Wallet ผู้รับ กรุณาตรวจสอบ QR Code',
-                ], 400);
+                    'message' => 'มีการโอนเงินอยู่ระหว่างดำเนินการ กรุณารอสักครู่แล้วลองใหม่',
+                ], 409);
             }
 
-            // ป้องกันโอนให้ตัวเอง
-            if ($fromWallet->id === $toWallet->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ไม่สามารถโอนเงินให้ตัวเองได้',
-                ], 400);
+            try {
+                // === ดำเนินการภายใน Database Transaction ===
+                return DB::transaction(function () use ($request, $user, $transactionRef) {
+                    // ดึง Wallet ผู้ส่งพร้อม Lock (ป้องกัน race condition)
+                    $fromWallet = Wallet::where('user_id', $user->id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$fromWallet) {
+                        throw new Exception('ไม่พบกระเป๋าเงินของคุณ');
+                    }
+
+                    // ดึง Wallet ผู้รับ
+                    $toWallet = Wallet::where('wallet_address', $request->wallet_address)->first();
+
+                    // ตรวจสอบ Wallet ผู้รับ
+                    if (!$toWallet) {
+                        throw new Exception('ไม่พบ Wallet ผู้รับ กรุณาตรวจสอบ QR Code');
+                    }
+
+                    // ป้องกันโอนให้ตัวเอง
+                    if ($fromWallet->id === $toWallet->id) {
+                        throw new Exception('ไม่สามารถโอนเงินให้ตัวเองได้');
+                    }
+
+                    $amount = (float) $request->amount;
+
+                    // ตรวจสอบยอดขั้นต่ำ
+                    $validationErrors = WalletSetting::validateTransferAmount($amount);
+                    if (!empty($validationErrors)) {
+                        throw new Exception($validationErrors[0]);
+                    }
+
+                    // คำนวณค่าธรรมเนียม
+                    $fee = $this->calculateQrTransferFee($amount);
+                    $totalDeduction = $amount + $fee;
+
+                    // === ระบบป้องกันที่ 2: ตรวจยอดเงินซ้ำภายใน transaction ===
+                    // (สำคัญ: ตรวจจาก row ที่ lock แล้วเท่านั้น)
+                    if ($fromWallet->balance < $totalDeduction) {
+                        Log::warning('QR Transfer Insufficient Balance', [
+                            'ref' => $transactionRef,
+                            'user_id' => $user->id,
+                            'balance' => $fromWallet->balance,
+                            'required' => $totalDeduction,
+                        ]);
+
+                        throw new Exception('ยอดเงินไม่เพียงพอ ต้องการ ฿' . number_format($totalDeduction, 2) . ' (รวมค่าธรรมเนียม ฿' . number_format($fee, 2) . ')');
+                    }
+
+                    // ดำเนินการโอนเงินผ่าน WalletService (รวมค่าธรรมเนียม)
+                    $description = ($request->description ?? 'QR Transfer') . " [Ref: {$transactionRef}]";
+                    $result = $this->walletService->transferWithFee(
+                        $fromWallet,
+                        $toWallet,
+                        $amount,
+                        $request->pin,
+                        $description
+                    );
+
+                    // บันทึก Audit Log สำเร็จ
+                    Log::info('QR Transfer Success', [
+                        'ref' => $transactionRef,
+                        'user_id' => $user->id,
+                        'from_wallet' => $fromWallet->wallet_address,
+                        'to_wallet' => $toWallet->wallet_address,
+                        'to_user_id' => $toWallet->user_id,
+                        'amount' => $amount,
+                        'fee' => $result['fee'] ?? $fee,
+                        'transaction_id' => $result['out_transaction']->id ?? null,
+                        'balance_before' => $result['out_transaction']->balance_before ?? null,
+                        'balance_after' => $result['out_transaction']->balance_after ?? null,
+                    ]);
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'โอนเงินสำเร็จ!',
+                        'data' => [
+                            'reference' => $transactionRef,
+                            'amount' => $amount,
+                            'fee' => $result['fee'] ?? $fee,
+                            'total' => $result['total_amount'] ?? $totalDeduction,
+                            'to_name' => $toWallet->user->name ?? 'ไม่ระบุชื่อ',
+                            'to_address' => $toWallet->wallet_address,
+                            'transaction_id' => $result['out_transaction']->id ?? null,
+                        ],
+                    ]);
+                });
+            } finally {
+                $lock->release();
             }
-
-            $amount = (float) $request->amount;
-
-            // ตรวจสอบยอดขั้นต่ำ
-            $validationErrors = WalletSetting::validateTransferAmount($amount);
-            if (!empty($validationErrors)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $validationErrors[0],
-                ], 400);
-            }
-
-            // คำนวณค่าธรรมเนียม
-            $fee = $this->calculateQrTransferFee($amount);
-            $totalDeduction = $amount + $fee;
-
-            // ตรวจสอบยอดเงินเพียงพอ (รวมค่าธรรมเนียม)
-            if ($fromWallet->balance < $totalDeduction) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ยอดเงินไม่เพียงพอ ต้องการ ฿' . number_format($totalDeduction, 2) . ' (รวมค่าธรรมเนียม ฿' . number_format($fee, 2) . ')',
-                ], 400);
-            }
-
-            // ดำเนินการโอนเงินผ่าน WalletService (รวมค่าธรรมเนียม)
-            $description = $request->description ?? 'QR Transfer';
-            $result = $this->walletService->transferWithFee(
-                $fromWallet,
-                $toWallet,
-                $amount,
-                $request->pin,
-                $description
-            );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'โอนเงินสำเร็จ!',
-                'data' => [
-                    'amount' => $amount,
-                    'fee' => $result['fee'] ?? $fee,
-                    'total' => $result['total_amount'] ?? $totalDeduction,
-                    'to_name' => $toWallet->user->name ?? 'ไม่ระบุชื่อ',
-                    'to_address' => $toWallet->wallet_address,
-                    'transaction_id' => $result['out_transaction']->id ?? null,
-                ],
-            ]);
         } catch (Exception $e) {
+            // บันทึก Audit Log ล้มเหลว
+            Log::error('QR Transfer Failed', [
+                'ref' => $transactionRef,
+                'user_id' => $user->id,
+                'to_address' => $request->wallet_address,
+                'amount' => $request->amount,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),

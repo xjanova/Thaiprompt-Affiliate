@@ -262,6 +262,10 @@
 
             <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6 text-left">
                 <div class="flex justify-between mb-2">
+                    <span class="text-gray-500">เลขอ้างอิง</span>
+                    <span class="font-mono text-sm text-indigo-600 dark:text-indigo-400" x-text="successData?.reference"></span>
+                </div>
+                <div class="flex justify-between mb-2">
                     <span class="text-gray-500">ผู้รับ</span>
                     <span class="font-medium text-gray-900 dark:text-white" x-text="successData?.to_name"></span>
                 </div>
