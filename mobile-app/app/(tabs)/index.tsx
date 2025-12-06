@@ -22,6 +22,7 @@ import Animated, {
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import { HUB_ITEMS, getGreetingByTime, formatCurrency } from '@/constants';
+import { APP_INFO } from '@/config/appConfig';
 import { getDashboardStats } from '@/services/api';
 import * as Cache from '@/services/cache';
 import * as Network from '@/services/network';
@@ -389,7 +390,7 @@ export default function HomeScreen() {
           {/* Footer */}
           <View className="items-center mt-6 pb-4">
             <Text className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-              Thaiprompt Affiliate v1.0.0
+              {APP_INFO.NAME} v{APP_INFO.VERSION}
             </Text>
           </View>
         </ScrollView>
