@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.4] - 2025-12-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2180 from xjanova/claude/add-terms-privacy-policy-01DXYbyNEhS1DntwNP3GHmE3 (f2f5350d)
+- test(mobile-app): ลองเปลี่ยน gradient เป็นสีธรรมดาเพื่อทดสอบ white screen (ccc2d1a8)
+
 ## [v3.372.3] - 2025-12-06
 
 ### ✨ Features
