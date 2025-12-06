@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.367.0] - 2025-12-06
+
+### ✨ Features
+- Merge pull request #2148 from xjanova/claude/fix-mobile-workflow-01JiuTGbKDS6tkcrMpDMKcVE (92aa5791)
+- feat: add PV (marketing cost) real-time calculator to seller product edit (1e712a26)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.366.1] - 2025-12-06
 
 ### ✨ Features
