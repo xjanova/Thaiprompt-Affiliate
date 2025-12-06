@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.364.20] - 2025-12-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: add comprehensive safety features to prevent app hang (40a40c2b)
+- fix: prevent mobile app from hanging on logo screen (6a1e7726)
+### 🔧 Other Changes
+- Merge pull request #2141 from xjanova/claude/fix-logo-screen-hang-01QPy6yBcdQxgUo5j1LRKLjJ (4c69627a)
+
 ## [v3.364.19] - 2025-12-05
 
 ### ✨ Features
