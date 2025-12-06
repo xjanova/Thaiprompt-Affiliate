@@ -2,9 +2,15 @@
  * Root Layout - Layout หลักของ app
  * ใช้ Expo Router สำหรับ navigation
  * รองรับ Offline Mode - เข้า app ได้แม้ไม่มีเน็ต
+ *
+ * Safety Features:
+ * - Font timeout: 5 วินาที (ถ้าโหลดไม่ได้จะข้ามไป)
+ * - Auth timeout: 10 วินาที (ถ้า init ไม่เสร็จจะข้ามไป)
+ * - Force ready: 10 วินาที (ข้ามทุกอย่างถ้ายังไม่พร้อม)
+ * - Splash hide: 3 วินาที (ซ่อน native splash อย่างไรก็ตาม)
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -21,12 +27,14 @@ import {
 } from '@expo-google-fonts/open-sans';
 
 // ไม่ให้ซ่อน splash screen อัตโนมัติ
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Splash screen อาจถูกซ่อนไปแล้ว - ไม่ต้อง handle
+});
 
-// Maximum time to wait for initialization (15 seconds)
-const MAX_INIT_WAIT = 15000;
-// Maximum time to wait for fonts (5 seconds)
-const MAX_FONT_WAIT = 5000;
+// Timeouts (ลดเวลาลงเพื่อให้ผู้ใช้ไม่ต้องรอนาน)
+const MAX_INIT_WAIT = 10000; // 10 วินาที (ลดจาก 15)
+const MAX_FONT_WAIT = 5000; // 5 วินาที
+const FORCE_SPLASH_HIDE = 3000; // 3 วินาที - ซ่อน splash อย่างไรก็ตาม
 
 export default function RootLayout() {
   const { initialize, isInitialized } = useAuthStore();
@@ -38,32 +46,61 @@ export default function RootLayout() {
   const [splashHidden, setSplashHidden] = useState(false);
   // State สำหรับ force skip fonts ถ้า timeout
   const [fontTimeout, setFontTimeout] = useState(false);
+  // Track if component is mounted
+  const isMounted = useRef(true);
 
   // โหลดฟอนต์จาก Google Fonts
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     OpenSans: OpenSans_400Regular,
     'OpenSans-Bold': OpenSans_700Bold,
     'OpenSans-SemiBold': OpenSans_600SemiBold,
   });
 
+  // ถ้าโหลด font error ให้ข้ามไปเลย
+  useEffect(() => {
+    if (fontError) {
+      console.log('Font loading error, proceeding without custom fonts');
+      setFontTimeout(true);
+    }
+  }, [fontError]);
+
   // Font timeout - ถ้าโหลดไม่ได้ใน 5 วินาที ให้ข้ามไป
   useEffect(() => {
-    if (fontsLoaded) return;
+    if (fontsLoaded || fontTimeout) return;
 
     const fontTimeoutId = setTimeout(() => {
-      console.log('Font loading timeout, proceeding without custom fonts');
-      setFontTimeout(true);
+      if (isMounted.current) {
+        console.log('Font loading timeout, proceeding without custom fonts');
+        setFontTimeout(true);
+      }
     }, MAX_FONT_WAIT);
 
     return () => clearTimeout(fontTimeoutId);
-  }, [fontsLoaded]);
+  }, [fontsLoaded, fontTimeout]);
+
+  // Force hide splash screen หลังจาก 3 วินาที ไม่ว่าจะเกิดอะไรขึ้น
+  useEffect(() => {
+    const forceSplashHideId = setTimeout(() => {
+      if (isMounted.current && !splashHidden) {
+        console.log('Force hiding splash screen');
+        SplashScreen.hideAsync().catch(() => {}).finally(() => {
+          if (isMounted.current) {
+            setSplashHidden(true);
+          }
+        });
+      }
+    }, FORCE_SPLASH_HIDE);
+
+    return () => clearTimeout(forceSplashHideId);
+  }, [splashHidden]);
 
   // ซ่อน native splash screen ทันทีที่ fonts โหลดเสร็จหรือ timeout
-  // เพื่อให้ผู้ใช้เห็น LoadingScreen พร้อม animation
   useEffect(() => {
     if ((fontsLoaded || fontTimeout) && !splashHidden) {
-      SplashScreen.hideAsync().then(() => {
-        setSplashHidden(true);
+      SplashScreen.hideAsync().catch(() => {}).finally(() => {
+        if (isMounted.current) {
+          setSplashHidden(true);
+        }
       });
     }
   }, [fontsLoaded, fontTimeout, splashHidden]);
@@ -75,29 +112,46 @@ export default function RootLayout() {
 
     const initApp = async () => {
       try {
-        // Update loading message after 3 seconds
+        // Update loading message after 2 seconds
         messageTimeoutId = setTimeout(() => {
-          setLoadingMessage('กำลังเชื่อมต่อเซิร์ฟเวอร์...');
-        }, 3000);
+          if (isMounted.current) {
+            setLoadingMessage('กำลังเชื่อมต่อเซิร์ฟเวอร์...');
+          }
+        }, 2000);
 
-        // โหลด settings และ auth state
-        await Promise.all([loadSettings(), initialize()]);
+        // โหลด settings และ auth state พร้อมกัน แต่ไม่ให้ค้าง
+        const initPromise = Promise.all([
+          loadSettings().catch((e) => console.error('loadSettings error:', e)),
+          initialize().catch((e) => console.error('initialize error:', e)),
+        ]);
+
+        // Race กับ timeout 8 วินาที (ให้ init มี buffer 2 วินาทีก่อน force timeout)
+        await Promise.race([
+          initPromise,
+          new Promise((resolve) => setTimeout(resolve, 8000)),
+        ]);
       } catch (error) {
         console.error('Init error:', error);
       } finally {
-        setAppReady(true);
-        clearTimeout(messageTimeoutId);
+        if (isMounted.current) {
+          setAppReady(true);
+          clearTimeout(messageTimeoutId);
+        }
       }
     };
 
     // Set timeout เพื่อ force proceed ถ้า init นานเกินไป
     timeoutId = setTimeout(() => {
-      console.log('Init timeout, forcing app to proceed');
-      setLoadingMessage('กำลังเข้าสู่โหมดออฟไลน์...');
-      setTimeout(() => {
-        setForceReady(true);
-        setAppReady(true);
-      }, 1000);
+      if (isMounted.current) {
+        console.log('Init timeout, forcing app to proceed');
+        setLoadingMessage('กำลังเข้าสู่โหมดออฟไลน์...');
+        setTimeout(() => {
+          if (isMounted.current) {
+            setForceReady(true);
+            setAppReady(true);
+          }
+        }, 500); // ลดจาก 1000 เป็น 500
+      }
     }, MAX_INIT_WAIT);
 
     initApp().finally(() => {
@@ -105,6 +159,7 @@ export default function RootLayout() {
     });
 
     return () => {
+      isMounted.current = false;
       clearTimeout(timeoutId);
       clearTimeout(messageTimeoutId);
     };
