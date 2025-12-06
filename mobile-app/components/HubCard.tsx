@@ -26,7 +26,13 @@ export const HubCard: React.FC<HubCardProps> = ({ item, onPress }) => {
         colors={[item.gradientStart, item.gradientEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        className="rounded-2xl p-4 min-h-[140px] relative overflow-hidden"
+        style={{
+          borderRadius: 16,
+          padding: 16,
+          minHeight: 140,
+          position: 'relative',
+          overflow: 'hidden',
+        }}
       >
         {/* Badge */}
         {item.hasBadge && item.badgeText && (
