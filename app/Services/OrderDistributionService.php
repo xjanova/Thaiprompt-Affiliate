@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\User;
 use App\Models\EarningsLedger;
 use App\Models\PayoutSetting;
@@ -53,8 +54,8 @@ class OrderDistributionService
             $itemsBySeller = $order->items->groupBy('seller_id');
 
             foreach ($itemsBySeller as $sellerId => $items) {
-                // ถ้า seller_id = null → สินค้าของ Admin (Official Shop)
-                if (!$sellerId || $sellerId == 0) {
+                // ถ้า seller_id = Official Shop Seller ID → สินค้าของ Admin (Official Shop)
+                if ($this->isOfficialShopSeller($sellerId)) {
                     $adminResult = $this->processAdminShopItems($order, $items);
                     $results['distributions'][] = $adminResult;
                     continue;
@@ -275,7 +276,7 @@ class OrderDistributionService
 
     /**
      * ประมวลผลรายการสินค้าของ Admin Shop (Official Shop)
-     * สินค้าที่ seller_id = null หรือ 0 คือสินค้าของ Admin
+     * สินค้าที่ seller_id = Official Seller ID คือสินค้าของ Admin
      *
      * @param Order $order
      * @param \Illuminate\Support\Collection $items
@@ -516,5 +517,20 @@ class OrderDistributionService
         }
 
         return $results;
+    }
+
+    /**
+     * ตรวจสอบว่า seller_id เป็นของ Official Shop หรือไม่
+     *
+     * @param int|null $sellerId
+     * @return bool
+     */
+    protected function isOfficialShopSeller($sellerId): bool
+    {
+        if (!$sellerId) {
+            return false;
+        }
+
+        return $sellerId === Product::getOfficialSellerId();
     }
 }

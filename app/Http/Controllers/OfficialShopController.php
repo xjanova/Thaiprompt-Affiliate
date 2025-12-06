@@ -29,11 +29,11 @@ class OfficialShopController extends Controller
      */
     public function index(Request $request)
     {
-        // Query สินค้าของระบบเท่านั้น (seller_id เป็น null)
+        // Query สินค้าของระบบเท่านั้น (Official Shop)
         $query = Product::with(['category'])
             ->active()
             ->inStock()
-            ->whereNull('seller_id'); // เฉพาะสินค้าของระบบ
+            ->officialShop(); // เฉพาะสินค้าของระบบ
 
         // ค้นหา
         if ($request->filled('search')) {
@@ -91,7 +91,7 @@ class OfficialShopController extends Controller
         // Get categories for filter (เฉพาะที่มีสินค้าของระบบ)
         $categories = ProductCategory::active()
             ->whereHas('products', function ($q) {
-                $q->active()->inStock()->whereNull('seller_id');
+                $q->active()->inStock()->officialShop();
             })
             ->root()
             ->orderBy('sort_order')
@@ -100,7 +100,7 @@ class OfficialShopController extends Controller
         // Get unique brands from official products
         $brands = Product::active()
             ->inStock()
-            ->whereNull('seller_id')
+            ->officialShop()
             ->whereNotNull('brand')
             ->distinct('brand')
             ->pluck('brand')
@@ -111,14 +111,14 @@ class OfficialShopController extends Controller
             ->active()
             ->featured()
             ->inStock()
-            ->whereNull('seller_id')
+            ->officialShop()
             ->take(8)
             ->get();
 
         // สถิติร้านของระบบ
         $stats = [
-            'official' => Product::active()->inStock()->whereNull('seller_id')->count(),
-            'featured' => Product::active()->featured()->inStock()->whereNull('seller_id')->count(),
+            'official' => Product::active()->inStock()->officialShop()->count(),
+            'featured' => Product::active()->featured()->inStock()->officialShop()->count(),
             'categories' => $categories->count(),
         ];
 
@@ -145,7 +145,7 @@ class OfficialShopController extends Controller
             'variants',
             'approvedReviews.user'
         ])
-            ->whereNull('seller_id') // ต้องเป็นสินค้าของระบบ
+            ->officialShop() // ต้องเป็นสินค้าของระบบ
             ->where('slug', $slug)
             ->firstOrFail();
 
@@ -156,7 +156,7 @@ class OfficialShopController extends Controller
         $relatedProducts = Product::with(['category'])
             ->active()
             ->inStock()
-            ->whereNull('seller_id')
+            ->officialShop()
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->take(8)
@@ -209,7 +209,7 @@ class OfficialShopController extends Controller
         $query = Product::with(['category'])
             ->active()
             ->inStock()
-            ->whereNull('seller_id') // เฉพาะของระบบ
+            ->officialShop() // เฉพาะของระบบ
             ->where('category_id', $category->id);
 
         // Apply same filters and sorting as index
@@ -268,7 +268,7 @@ class OfficialShopController extends Controller
 
         $products = Product::active()
             ->inStock()
-            ->whereNull('seller_id') // เฉพาะของระบบ
+            ->officialShop() // เฉพาะของระบบ
             ->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('sku', 'like', "%{$search}%");
@@ -291,12 +291,12 @@ class OfficialShopController extends Controller
             ->active()
             ->featured()
             ->inStock()
-            ->whereNull('seller_id')
+            ->officialShop()
             ->latest('published_at')
             ->paginate(24);
 
         $stats = [
-            'official' => Product::active()->inStock()->whereNull('seller_id')->count(),
+            'official' => Product::active()->inStock()->officialShop()->count(),
             'featured' => $products->total(),
         ];
 

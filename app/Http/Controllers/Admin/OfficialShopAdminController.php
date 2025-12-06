@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductImage;
+use App\Models\User;
 use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -16,16 +18,77 @@ use Illuminate\Support\Str;
  * Official Shop Admin Controller
  *
  * จัดการสินค้าของระบบ (Official Shop) ใน Admin Panel
- * สินค้าที่สร้างจากที่นี่จะมี seller_id = null
+ * สินค้าที่สร้างจากที่นี่จะใช้ Official Seller ID พิเศษ
  * เพื่อแสดงในหน้า Official Shop Premium V3
  */
 class OfficialShopAdminController extends Controller
 {
     protected ImageUploadService $imageUploadService;
 
+    /**
+     * Cache สำหรับ Official Seller
+     *
+     * @var User|null
+     */
+    protected static ?User $officialSeller = null;
+
     public function __construct(ImageUploadService $imageUploadService)
     {
         $this->imageUploadService = $imageUploadService;
+    }
+
+    /**
+     * ดึง Official Shop Seller ID
+     *
+     * @return int
+     */
+    protected function getOfficialSellerId(): int
+    {
+        return $this->getOrCreateOfficialSeller()->id;
+    }
+
+    /**
+     * สร้างหรือดึง Official Shop Seller
+     *
+     * @return User
+     */
+    protected function getOrCreateOfficialSeller(): User
+    {
+        // ใช้ cache ถ้ามี
+        if (self::$officialSeller !== null) {
+            return self::$officialSeller;
+        }
+
+        $email = config('shop.official_shop.seller_email', 'official-shop@thaiprompt.com');
+
+        // หา Official Seller จาก email
+        $seller = User::where('email', $email)->first();
+
+        if (!$seller) {
+            // สร้าง Official Seller ใหม่ถ้าไม่มี
+            $seller = User::create([
+                'name' => config('shop.official_shop.name', 'Official Shop'),
+                'email' => $email,
+                'password' => Hash::make(Str::random(32)), // รหัสผ่านสุ่มปลอดภัย
+                'role' => 'seller',
+                'email_verified_at' => now(),
+            ]);
+        }
+
+        self::$officialSeller = $seller;
+
+        return $seller;
+    }
+
+    /**
+     * ตรวจสอบว่าเป็นสินค้า Official Shop หรือไม่
+     *
+     * @param Product $product
+     * @return bool
+     */
+    protected function isOfficialProduct(Product $product): bool
+    {
+        return $product->seller_id === $this->getOfficialSellerId();
     }
 
     /**
@@ -35,33 +98,35 @@ class OfficialShopAdminController extends Controller
      */
     public function dashboard()
     {
-        // สถิติสินค้า Official Shop (seller_id = null)
+        $officialSellerId = $this->getOfficialSellerId();
+
+        // สถิติสินค้า Official Shop
         $stats = [
-            'total_products' => Product::whereNull('seller_id')->count(),
-            'active_products' => Product::whereNull('seller_id')->where('is_active', true)->count(),
-            'featured_products' => Product::whereNull('seller_id')->where('is_featured', true)->count(),
-            'out_of_stock' => Product::whereNull('seller_id')->where('stock_status', 'out_of_stock')->count(),
-            'total_views' => Product::whereNull('seller_id')->sum('view_count'),
-            'total_sales' => Product::whereNull('seller_id')->sum('sales_count'),
+            'total_products' => Product::where('seller_id', $officialSellerId)->count(),
+            'active_products' => Product::where('seller_id', $officialSellerId)->where('is_active', true)->count(),
+            'featured_products' => Product::where('seller_id', $officialSellerId)->where('is_featured', true)->count(),
+            'out_of_stock' => Product::where('seller_id', $officialSellerId)->where('stock_status', 'out_of_stock')->count(),
+            'total_views' => Product::where('seller_id', $officialSellerId)->sum('view_count'),
+            'total_sales' => Product::where('seller_id', $officialSellerId)->sum('sales_count'),
         ];
 
         // สินค้าขายดี
-        $topProducts = Product::whereNull('seller_id')
+        $topProducts = Product::where('seller_id', $officialSellerId)
             ->with('category')
             ->orderBy('sales_count', 'desc')
             ->take(5)
             ->get();
 
         // สินค้าที่เพิ่มล่าสุด
-        $recentProducts = Product::whereNull('seller_id')
+        $recentProducts = Product::where('seller_id', $officialSellerId)
             ->with('category')
             ->latest()
             ->take(5)
             ->get();
 
         // หมวดหมู่ที่มีสินค้า Official
-        $categoriesWithProducts = ProductCategory::withCount(['products' => function ($q) {
-            $q->whereNull('seller_id')->where('is_active', true);
+        $categoriesWithProducts = ProductCategory::withCount(['products' => function ($q) use ($officialSellerId) {
+            $q->where('seller_id', $officialSellerId)->where('is_active', true);
         }])
             ->having('products_count', '>', 0)
             ->orderBy('products_count', 'desc')
@@ -84,8 +149,10 @@ class OfficialShopAdminController extends Controller
      */
     public function index(Request $request)
     {
+        $officialSellerId = $this->getOfficialSellerId();
+
         $query = Product::with(['category', 'images'])
-            ->whereNull('seller_id'); // เฉพาะสินค้าของระบบ
+            ->where('seller_id', $officialSellerId); // เฉพาะสินค้าของระบบ
 
         // ค้นหา
         if ($request->filled('search')) {
@@ -132,10 +199,10 @@ class OfficialShopAdminController extends Controller
 
         // สถิติ
         $stats = [
-            'total' => Product::whereNull('seller_id')->count(),
-            'active' => Product::whereNull('seller_id')->where('is_active', true)->count(),
-            'featured' => Product::whereNull('seller_id')->where('is_featured', true)->count(),
-            'out_of_stock' => Product::whereNull('seller_id')->where('stock_status', 'out_of_stock')->count(),
+            'total' => Product::where('seller_id', $officialSellerId)->count(),
+            'active' => Product::where('seller_id', $officialSellerId)->where('is_active', true)->count(),
+            'featured' => Product::where('seller_id', $officialSellerId)->where('is_featured', true)->count(),
+            'out_of_stock' => Product::where('seller_id', $officialSellerId)->where('stock_status', 'out_of_stock')->count(),
         ];
 
         return view('admin.official-shop.products.index', compact(
@@ -216,8 +283,8 @@ class OfficialShopAdminController extends Controller
                 $counter++;
             }
 
-            // ⭐ IMPORTANT: seller_id = null สำหรับ Official Shop
-            $validated['seller_id'] = null;
+            // ⭐ IMPORTANT: ใช้ Official Seller ID สำหรับ Official Shop
+            $validated['seller_id'] = $this->getOfficialSellerId();
 
             // ตั้งค่าเริ่มต้น
             $validated['is_active'] = $request->boolean('is_active', true);
@@ -290,7 +357,7 @@ class OfficialShopAdminController extends Controller
     public function show(Product $product)
     {
         // ตรวจสอบว่าเป็นสินค้า Official Shop
-        if ($product->seller_id !== null) {
+        if (!$this->isOfficialProduct($product)) {
             abort(403, 'สินค้านี้ไม่ใช่สินค้าของ Official Shop');
         }
 
@@ -308,7 +375,7 @@ class OfficialShopAdminController extends Controller
     public function edit(Product $product)
     {
         // ตรวจสอบว่าเป็นสินค้า Official Shop
-        if ($product->seller_id !== null) {
+        if (!$this->isOfficialProduct($product)) {
             abort(403, 'สินค้านี้ไม่ใช่สินค้าของ Official Shop');
         }
 
@@ -331,7 +398,7 @@ class OfficialShopAdminController extends Controller
     public function update(Request $request, Product $product)
     {
         // ตรวจสอบว่าเป็นสินค้า Official Shop
-        if ($product->seller_id !== null) {
+        if (!$this->isOfficialProduct($product)) {
             abort(403, 'สินค้านี้ไม่ใช่สินค้าของ Official Shop');
         }
 
@@ -472,7 +539,7 @@ class OfficialShopAdminController extends Controller
     public function destroy(Product $product)
     {
         // ตรวจสอบว่าเป็นสินค้า Official Shop
-        if ($product->seller_id !== null) {
+        if (!$this->isOfficialProduct($product)) {
             abort(403, 'สินค้านี้ไม่ใช่สินค้าของ Official Shop');
         }
 
@@ -515,7 +582,7 @@ class OfficialShopAdminController extends Controller
      */
     public function toggleActive(Product $product)
     {
-        if ($product->seller_id !== null) {
+        if (!$this->isOfficialProduct($product)) {
             abort(403, 'สินค้านี้ไม่ใช่สินค้าของ Official Shop');
         }
 
@@ -534,7 +601,7 @@ class OfficialShopAdminController extends Controller
      */
     public function toggleFeatured(Product $product)
     {
-        if ($product->seller_id !== null) {
+        if (!$this->isOfficialProduct($product)) {
             abort(403, 'สินค้านี้ไม่ใช่สินค้าของ Official Shop');
         }
 
@@ -558,13 +625,15 @@ class OfficialShopAdminController extends Controller
             'product_ids.*' => 'exists:products,id',
         ]);
 
+        $officialSellerId = $this->getOfficialSellerId();
         $count = 0;
 
         foreach ($request->product_ids as $productId) {
             $product = Product::find($productId);
 
-            if ($product && $product->seller_id !== null) {
-                $product->update(['seller_id' => null]);
+            // นำเข้าเฉพาะสินค้าที่ไม่ใช่ของ Official Shop
+            if ($product && $product->seller_id !== $officialSellerId) {
+                $product->update(['seller_id' => $officialSellerId]);
                 $count++;
             }
         }

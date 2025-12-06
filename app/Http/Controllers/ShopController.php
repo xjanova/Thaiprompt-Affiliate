@@ -119,9 +119,9 @@ class ShopController extends Controller
         // สถิติสำหรับตัวกรอง (V3)
         $stats = [
             'all' => Product::active()->inStock()->count(),
-            'official' => Product::active()->inStock()->whereNull('seller_id')->count(),
+            'official' => Product::active()->inStock()->officialShop()->count(),
             'premium' => Product::active()->inStock()
-                ->whereNotNull('seller_id')
+                ->notOfficialShop()
                 ->where('rating_average', '>=', 4.5)
                 ->where('rating_count', '>', 0)
                 ->count(),

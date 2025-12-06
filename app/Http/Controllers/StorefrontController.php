@@ -190,9 +190,9 @@ class StorefrontController extends Controller
         // กรองตามประเภทร้าน
         $shopType = $request->get('shop_type');
         if ($shopType === 'official') {
-            $query->whereNull('seller_id');
+            $query->officialShop();
         } elseif ($shopType === 'premium') {
-            $query->whereNotNull('seller_id')
+            $query->notOfficialShop()
                 ->where('rating_average', '>=', 4.5)
                 ->where('rating_count', '>', 0);
         }
@@ -266,9 +266,9 @@ class StorefrontController extends Controller
         return Cache::remember('storefront_stats', 600, function () {
             return [
                 'all' => Product::active()->visible()->inStock()->count(),
-                'official' => Product::active()->visible()->inStock()->whereNull('seller_id')->count(),
+                'official' => Product::active()->visible()->inStock()->officialShop()->count(),
                 'premium' => Product::active()->visible()->inStock()
-                    ->whereNotNull('seller_id')
+                    ->notOfficialShop()
                     ->where('rating_average', '>=', 4.5)
                     ->where('rating_count', '>', 0)
                     ->count(),

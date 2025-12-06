@@ -317,6 +317,73 @@ class Product extends Model
     }
 
     /**
+     * Scope: สินค้าของ Official Shop
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeOfficialShop($query)
+    {
+        $officialSellerId = self::getOfficialSellerId();
+
+        return $query->where('seller_id', $officialSellerId);
+    }
+
+    /**
+     * Scope: สินค้าของ Seller ทั่วไป (ไม่ใช่ Official Shop)
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeNotOfficialShop($query)
+    {
+        $officialSellerId = self::getOfficialSellerId();
+
+        return $query->where('seller_id', '!=', $officialSellerId);
+    }
+
+    /**
+     * ดึง Official Shop Seller ID
+     *
+     * @return int
+     */
+    public static function getOfficialSellerId(): int
+    {
+        static $officialSellerId = null;
+
+        if ($officialSellerId === null) {
+            $email = config('shop.official_shop.seller_email', 'official-shop@thaiprompt.com');
+            $seller = User::where('email', $email)->first();
+
+            if ($seller) {
+                $officialSellerId = $seller->id;
+            } else {
+                // ถ้าไม่พบ ให้สร้างใหม่
+                $seller = User::create([
+                    'name' => config('shop.official_shop.name', 'Official Shop'),
+                    'email' => $email,
+                    'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(32)),
+                    'role' => 'seller',
+                    'email_verified_at' => now(),
+                ]);
+                $officialSellerId = $seller->id;
+            }
+        }
+
+        return $officialSellerId;
+    }
+
+    /**
+     * ตรวจสอบว่าสินค้านี้เป็นของ Official Shop หรือไม่
+     *
+     * @return bool
+     */
+    public function isOfficialShopProduct(): bool
+    {
+        return $this->seller_id === self::getOfficialSellerId();
+    }
+
+    /**
      * Check if product is in stock
      */
     public function isInStock(): bool
