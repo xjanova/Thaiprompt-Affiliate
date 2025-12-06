@@ -72,6 +72,25 @@
         </a>
     </div>
 
+    <!-- QR Code Actions -->
+    <div class="grid grid-cols-2 gap-4">
+        <a href="{{ route('user.wallet.qr-code') }}" class="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl shadow-lg hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02] group">
+            <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">
+                <i class="fas fa-qrcode text-white"></i>
+            </div>
+            <p class="text-white font-bold text-lg">QR Code ของฉัน</p>
+            <p class="text-white/80 text-sm mt-1">แสดง QR เพื่อรับเงิน</p>
+        </a>
+
+        <a href="{{ route('user.wallet.qr-transfer') }}" class="bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-500 rounded-xl shadow-lg hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02] group">
+            <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">
+                <i class="fas fa-camera text-white"></i>
+            </div>
+            <p class="text-white font-bold text-lg">สแกนจ่าย</p>
+            <p class="text-white/80 text-sm mt-1">สแกน QR เพื่อโอนเงิน</p>
+        </a>
+    </div>
+
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <x-arrow-x.stats.card-3d

@@ -2695,6 +2695,70 @@ Route::prefix('gps-monitoring')->name('gps-monitoring.')->group(function () {
     Route::get('/booking/{booking}/playback', [\App\Http\Controllers\Admin\GpsMonitoringController::class, 'playback'])->name('booking.playback');
 });
 
+// ============================================
+// Rider Management System 🏍️
+// ============================================
+Route::prefix('riders')->name('riders.')->group(function () {
+    // รายการไรเดอร์
+    Route::get('/', [\App\Http\Controllers\Admin\RiderController::class, 'index'])->name('index');
+
+    // ไรเดอร์รอตรวจสอบ
+    Route::get('/pending', [\App\Http\Controllers\Admin\RiderController::class, 'pending'])->name('pending');
+
+    // แผนที่ GPS ไรเดอร์ทั้งหมด
+    Route::get('/map', [\App\Http\Controllers\Admin\RiderController::class, 'map'])->name('map');
+
+    // API: ดึงข้อมูล GPS ของไรเดอร์ทั้งหมด
+    Route::get('/gps-data', [\App\Http\Controllers\Admin\RiderController::class, 'getGpsData'])->name('gps-data');
+
+    // รายละเอียดไรเดอร์
+    Route::get('/{rider}', [\App\Http\Controllers\Admin\RiderController::class, 'show'])->name('show');
+
+    // อนุมัติไรเดอร์
+    Route::post('/{rider}/approve', [\App\Http\Controllers\Admin\RiderController::class, 'approve'])->name('approve');
+
+    // ปฏิเสธไรเดอร์
+    Route::post('/{rider}/reject', [\App\Http\Controllers\Admin\RiderController::class, 'reject'])->name('reject');
+
+    // ระงับไรเดอร์
+    Route::post('/{rider}/suspend', [\App\Http\Controllers\Admin\RiderController::class, 'suspend'])->name('suspend');
+
+    // สลับสถานะ Active
+    Route::post('/{rider}/toggle-active', [\App\Http\Controllers\Admin\RiderController::class, 'toggleActive'])->name('toggle-active');
+
+    // ดูตำแหน่ง GPS และประวัติ
+    Route::get('/{rider}/locations', [\App\Http\Controllers\Admin\RiderController::class, 'locations'])->name('locations');
+
+    // API: ดึงตำแหน่ง GPS ล่าสุด
+    Route::get('/{rider}/latest-location', [\App\Http\Controllers\Admin\RiderController::class, 'getLatestLocation'])->name('latest-location');
+
+    // Playback ประวัติตำแหน่ง
+    Route::get('/{rider}/playback', [\App\Http\Controllers\Admin\RiderController::class, 'locationPlayback'])->name('playback');
+
+    // API: ดึงประวัติตำแหน่ง
+    Route::get('/{rider}/location-history', [\App\Http\Controllers\Admin\RiderController::class, 'getLocationHistory'])->name('location-history');
+});
+
+// ============================================
+// Rider Jobs Management 📦
+// ============================================
+Route::prefix('rider-jobs')->name('rider-jobs.')->group(function () {
+    // รายการงานทั้งหมด
+    Route::get('/', [\App\Http\Controllers\Admin\RiderJobController::class, 'index'])->name('index');
+
+    // สถิติงาน (ต้องอยู่ก่อน {job} เพื่อหลีกเลี่ยง route conflict)
+    Route::get('/statistics', [\App\Http\Controllers\Admin\RiderJobController::class, 'statistics'])->name('statistics');
+
+    // รายละเอียดงาน
+    Route::get('/{job}', [\App\Http\Controllers\Admin\RiderJobController::class, 'show'])->name('show');
+
+    // ยกเลิกงาน
+    Route::post('/{job}/cancel', [\App\Http\Controllers\Admin\RiderJobController::class, 'cancel'])->name('cancel');
+
+    // เปลี่ยนไรเดอร์
+    Route::post('/{job}/reassign', [\App\Http\Controllers\Admin\RiderJobController::class, 'reassign'])->name('reassign');
+});
+
 // Service Providers Management (Admin)
 Route::prefix('service-providers')->name('service-providers.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\ServiceProviderController::class, 'index'])->name('index');

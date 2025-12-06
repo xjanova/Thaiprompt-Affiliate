@@ -101,6 +101,19 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
         ->middleware('two-factor:transfer')
         ->name('transfer.submit');
 
+    // QR Code Transfer Routes (พร้อมระบบป้องกัน)
+    Route::get('/qr-code', [WalletController::class, 'qrCode'])->name('qr-code');
+    Route::get('/qr-transfer', [WalletController::class, 'qrTransfer'])->name('qr-transfer');
+    Route::post('/qr-transfer/process', [WalletController::class, 'processQrTransfer'])
+        ->middleware(['two-factor:transfer', 'idempotency', 'throttle:5,1']) // ป้องกัน double transfer + rate limit 5 ครั้ง/นาที
+        ->name('qr-transfer.process');
+    Route::post('/qr-transfer/lookup', [WalletController::class, 'getWalletFromQr'])
+        ->middleware('throttle:30,1') // rate limit lookup
+        ->name('qr-transfer.lookup');
+    Route::post('/qr-transfer/calculate-fee', [WalletController::class, 'calculateQrFee'])
+        ->middleware('throttle:60,1') // rate limit fee calculation
+        ->name('qr-transfer.calculate-fee');
+
     // Transaction Routes
     Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
 
@@ -613,4 +626,34 @@ Route::prefix('academy')->name('academy.')->group(function () {
 
     // อัพเดท progress
     Route::post('/article/{slug}/progress', [\App\Http\Controllers\User\AcademyController::class, 'updateProgress'])->name('article.progress');
+});
+
+// ============================================
+// Rider System Routes (ระบบไรเดอร์)
+// ============================================
+Route::prefix('rider')->name('rider.')->group(function () {
+    // หน้า Dashboard ไรเดอร์
+    Route::get('/', [\App\Http\Controllers\User\RiderController::class, 'index'])->name('dashboard');
+
+    // สมัครเป็นไรเดอร์
+    Route::get('/register', [\App\Http\Controllers\User\RiderController::class, 'register'])->name('register');
+    Route::post('/register', [\App\Http\Controllers\User\RiderController::class, 'submitRegistration'])->name('register.submit');
+
+    // ติดตามสถานะการสมัคร
+    Route::get('/status', [\App\Http\Controllers\User\RiderController::class, 'status'])->name('status');
+
+    // อัพโหลดเอกสาร
+    Route::get('/documents', [\App\Http\Controllers\User\RiderController::class, 'documents'])->name('documents');
+    Route::post('/documents', [\App\Http\Controllers\User\RiderController::class, 'uploadDocument'])->name('documents.upload');
+
+    // งานของฉัน
+    Route::get('/jobs', [\App\Http\Controllers\User\RiderController::class, 'jobs'])->name('jobs');
+    Route::get('/jobs/{job}', [\App\Http\Controllers\User\RiderController::class, 'showJob'])->name('jobs.show');
+
+    // รายได้
+    Route::get('/earnings', [\App\Http\Controllers\User\RiderController::class, 'earnings'])->name('earnings');
+
+    // ตั้งค่า
+    Route::get('/settings', [\App\Http\Controllers\User\RiderController::class, 'settings'])->name('settings');
+    Route::post('/settings', [\App\Http\Controllers\User\RiderController::class, 'updateSettings'])->name('settings.update');
 });
