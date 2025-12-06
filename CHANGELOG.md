@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.370.0] - 2025-12-06
+
+### ✨ Features
+- feat: add comprehensive service system for riders and customers (4b3527c3)
+- feat: add GPS, photo verification, delivery fee calculation and error handling to rider system (223fb78b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2151 from xjanova/claude/fix-logo-screen-hang-01QPy6yBcdQxgUo5j1LRKLjJ (d790be97)
+
 ## [v3.369.0] - 2025-12-06
 
 ### ✨ Features
