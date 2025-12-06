@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.366.1] - 2025-12-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2147 from xjanova/claude/fix-mobile-workflow-01JiuTGbKDS6tkcrMpDMKcVE (55cd985a)
+- fix: resolve duplicate push trigger in mobile-build workflow (dd86c204)
+### 🔧 Other Changes
+
+
 ## [v3.366.0] - 2025-12-06
 
 ### ✨ Features
