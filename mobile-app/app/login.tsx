@@ -55,7 +55,7 @@ export default function LoginScreen() {
   // Clear error เมื่อ unmount
   useEffect(() => {
     return () => clearError();
-  }, []);
+  }, [clearError]);
 
   // Handle LINE OAuth callback
   useEffect(() => {

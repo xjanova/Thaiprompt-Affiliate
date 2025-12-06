@@ -170,7 +170,9 @@ export const processOfflineQueue = async (): Promise<void> => {
 };
 
 /**
- * Process queue item - implement based on your API
+ * Process queue item - ประมวลผล offline queue item ตาม type
+ *
+ * @param item รายการที่รอดำเนินการ
  */
 const processQueueItem = async (item: QueueItem): Promise<void> => {
   // Import API functions dynamically to avoid circular dependency
@@ -178,19 +180,47 @@ const processQueueItem = async (item: QueueItem): Promise<void> => {
 
   switch (item.type) {
     case 'commission':
-      // Process commission actions
+      // Commission actions ไม่มี offline action (read-only)
+      console.log('Commission item processed (no action needed):', item.id);
       break;
 
     case 'order':
-      // Process order actions
+      // Order actions - ส่ง pending order ไปยัง server
+      // TODO: เพิ่ม API endpoint สำหรับ sync order เมื่อพร้อม
+      console.log('Order sync not yet implemented:', item.id);
       break;
 
     case 'profile':
-      // Process profile updates
+      // Profile updates - อัพเดทข้อมูลโปรไฟล์
+      if (item.action === 'update' && item.data) {
+        const profileData = item.data as {
+          name?: string;
+          phone?: string;
+          address?: string;
+        };
+        const result = await api.updateProfile(profileData);
+        if (!result.success) {
+          throw new Error(result.message || 'Profile update failed');
+        }
+        console.log('Profile updated from offline queue:', item.id);
+      }
+      break;
+
+    case 'location':
+      // Location updates - ส่งตำแหน่งที่ค้างไว้
+      if (item.data) {
+        const locationData = item.data as {
+          latitude: number;
+          longitude: number;
+          [key: string]: unknown;
+        };
+        await api.updateRiderLocation(locationData);
+        console.log('Location sent from offline queue:', item.id);
+      }
       break;
 
     default:
-      console.log(`Unknown queue item type: ${item.type}`);
+      console.warn(`Unknown queue item type: ${item.type}`, item);
   }
 };
 
