@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.2] - 2025-12-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(mobile-app): แก้ไข white screen จาก LinearGradient className (2fb7deb3)
+- fix: แก้ไข route fallback สำหรับ FAQ link (1b175274)
+### 🔧 Other Changes
+- Merge pull request #2178 from xjanova/claude/add-terms-privacy-policy-01DXYbyNEhS1DntwNP3GHmE3 (e7a4a3bc)
+- revert: ย้อนกลับ footer ไปใช้แบบเดิมก่อน (de67ffac)
+
 ## [v3.372.1] - 2025-12-06
 
 ### ✨ Features
