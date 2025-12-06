@@ -475,8 +475,60 @@
                         </div>
                     </div>
 
+                    {{-- Quick Input Section (กรอกค่าได้โดยตรงใน Calculator) --}}
+                    <div class="space-y-3 mb-4 pb-4 border-b border-blue-200/50 dark:border-blue-700/30">
+                        {{-- ราคาขาย --}}
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">ราคาขาย (บาท)</label>
+                            <input type="number"
+                                   x-model.number="price"
+                                   min="0"
+                                   step="0.01"
+                                   class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
+                        {{-- Cashback & PV in row --}}
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cashback (%)</label>
+                                <input type="number"
+                                       x-model.number="cashback"
+                                       min="0"
+                                       max="100"
+                                       step="0.5"
+                                       class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">PV (MLM)</label>
+                                <input type="number"
+                                       x-model.number="pvValue"
+                                       min="0"
+                                       step="1"
+                                       class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                        </div>
+
+                        {{-- Cost Price (optional) --}}
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">ราคาทุน (บาท) - ไม่บังคับ</label>
+                            <input type="number"
+                                   x-model.number="costPrice"
+                                   min="0"
+                                   step="0.01"
+                                   placeholder="กรอกเพื่อดูกำไร"
+                                   class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        </div>
+                    </div>
+
                     {{-- Calculation Result (Real-time) --}}
                     <div class="space-y-3">
+                        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                            รายละเอียดการหัก
+                        </h4>
+
                         {{-- ราคาขาย --}}
                         <div class="flex justify-between items-center text-sm">
                             <span class="text-gray-600 dark:text-gray-400">ราคาขาย:</span>
@@ -495,17 +547,15 @@
                             </span>
                         </div>
 
-                        {{-- Cashback (แสดงเมื่อ > 0) --}}
-                        <template x-if="cashback > 0">
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="text-gray-600 dark:text-gray-400">
-                                    Cashback (<span x-text="cashback.toFixed(2)"></span>%):
-                                </span>
-                                <span class="text-purple-600 dark:text-purple-400">
-                                    -฿<span x-text="calc.cashbackAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
-                                </span>
-                            </div>
-                        </template>
+                        {{-- Cashback (แสดงเสมอ) --}}
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">
+                                Cashback (<span x-text="cashback.toFixed(2)"></span>%):
+                            </span>
+                            <span :class="cashback > 0 ? 'text-purple-600 dark:text-purple-400' : 'text-gray-400 dark:text-gray-500'">
+                                -฿<span x-text="calc.cashbackAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                            </span>
+                        </div>
 
                         {{-- VAT --}}
                         <template x-if="vatEnabled">
@@ -519,34 +569,32 @@
                             </div>
                         </template>
 
-                        {{-- MLM Commission (แสดงเมื่อ pvValue > 0) --}}
-                        <template x-if="pvValue > 0">
-                            <div>
-                                <div class="flex justify-between items-center text-sm">
-                                    <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                                        คอม MLM (PV: <span x-text="pvValue"></span>)
-                                        <button @click="showMlmDetail = !showMlmDetail" class="text-xs text-blue-500">
-                                            <svg class="w-3 h-3" :class="showMlmDetail ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                            </svg>
-                                        </button>
-                                    </span>
-                                    <span class="text-indigo-600 dark:text-indigo-400">
-                                        -฿<span x-text="calc.mlmCommissionTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
-                                    </span>
-                                </div>
-
-                                {{-- MLM Detail --}}
-                                <div x-show="showMlmDetail" x-transition class="ml-4 mt-2 space-y-1 text-xs">
-                                    <template x-for="(level, index) in calc.mlmLevelDetails" :key="index">
-                                        <div class="flex justify-between text-gray-500 dark:text-gray-400">
-                                            <span>Level <span x-text="level.level"></span> (<span x-text="level.percentage"></span>%):</span>
-                                            <span>-฿<span x-text="level.amount.toFixed(2)"></span></span>
-                                        </div>
-                                    </template>
-                                </div>
+                        {{-- MLM Commission (แสดงเสมอ) --}}
+                        <div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                    คอม MLM (PV: <span x-text="pvValue"></span>)
+                                    <button x-show="pvValue > 0" @click="showMlmDetail = !showMlmDetail" class="text-xs text-blue-500">
+                                        <svg class="w-3 h-3" :class="showMlmDetail ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+                                </span>
+                                <span :class="pvValue > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'">
+                                    -฿<span x-text="calc.mlmCommissionTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                </span>
                             </div>
-                        </template>
+
+                            {{-- MLM Detail --}}
+                            <div x-show="showMlmDetail && pvValue > 0" x-transition class="ml-4 mt-2 space-y-1 text-xs">
+                                <template x-for="(level, index) in calc.mlmLevelDetails" :key="index">
+                                    <div class="flex justify-between text-gray-500 dark:text-gray-400">
+                                        <span>Level <span x-text="level.level"></span> (<span x-text="level.percentage"></span>%):</span>
+                                        <span>-฿<span x-text="level.amount.toFixed(2)"></span></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
 
                         {{-- Divider --}}
                         <div class="border-t border-blue-300/50 dark:border-blue-600/30 my-3"></div>
