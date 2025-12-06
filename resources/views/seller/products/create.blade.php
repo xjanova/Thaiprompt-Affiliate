@@ -2,6 +2,17 @@
 
 @section('title', 'เพิ่มสินค้าใหม่')
 
+@php
+    // ดึงค่า platform fee จาก settings (readonly)
+    $platformFeeFromSettings = \App\Models\MarketplaceSetting::get('platform_fee_percentage', 10);
+    $vatFromSettings = \App\Models\MarketplaceSetting::get('vat_percentage', 7);
+
+    // ดึง MLM settings
+    $mlmLevels = \App\Models\MlmGlobalSetting::get('unilevel_levels', []);
+    $pvToMoneyRate = \App\Models\MlmGlobalSetting::get('pv_to_money_rate', 1.00);
+    $vatEnabled = \App\Models\MlmGlobalSetting::get('vat_enabled', true);
+@endphp
+
 @section('content')
 <div class="max-w-7xl mx-auto">
     <!-- Header -->
@@ -19,7 +30,13 @@
     </div>
 
     {{-- Grid Layout: Form + Calculator --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" x-data="productForm()">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" x-data="productForm({{ json_encode([
+        'platformFee' => $platformFeeFromSettings,
+        'vat' => $vatFromSettings,
+        'mlmLevels' => $mlmLevels,
+        'pvToMoneyRate' => $pvToMoneyRate,
+        'vatEnabled' => $vatEnabled,
+    ]) }})">
         {{-- Left Column: Form (2/3 width on desktop) --}}
         <div class="lg:col-span-2 space-y-6">
     <!-- Form -->
@@ -114,34 +131,53 @@
                 />
             </div>
 
+            {{-- Platform Fee & VAT (Readonly - ดึงจาก Settings) --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
-                <x-form-field
-                    label="ค่าแพลตฟอร์ม (%)"
-                    name="platform_fee_percentage"
-                    type="number"
-                    :value="old('platform_fee_percentage', 10)"
-                    placeholder="10.00"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    helpText="ค่าธรรมเนียมแพลตฟอร์ม (default: 10%)"
-                    tooltip="ค่าธรรมเนียมที่แพลตฟอร์มจะหักจากราคาขาย"
-                    x-model.number="platformFee"
-                />
+                {{-- Platform Fee - Readonly --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        ค่าแพลตฟอร์ม (%)
+                        <span class="ml-1 text-xs text-gray-500">(กำหนดโดยระบบ)</span>
+                    </label>
+                    <div class="relative">
+                        <input type="text"
+                               :value="platformFee.toFixed(2) + '%'"
+                               disabled
+                               class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 cursor-not-allowed">
+                        <input type="hidden" name="platform_fee_percentage" :value="platformFee">
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        ค่าธรรมเนียมที่แพลตฟอร์มหักจากการขาย
+                    </p>
+                </div>
 
-                <x-form-field
-                    label="VAT (%)"
-                    name="vat_percentage"
-                    type="number"
-                    :value="old('vat_percentage', 7)"
-                    placeholder="7.00"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    helpText="ภาษีมูลค่าเพิ่ม (default: 7%)"
-                    tooltip="VAT จะถูกหักจากรายได้สุทธิของผู้ขาย"
-                    x-model.number="vat"
-                />
+                {{-- VAT - Readonly --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        VAT (%)
+                        <span class="ml-1 text-xs text-gray-500">(กำหนดโดยระบบ)</span>
+                    </label>
+                    <div class="relative">
+                        <input type="text"
+                               :value="vat.toFixed(2) + '%'"
+                               disabled
+                               class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 cursor-not-allowed">
+                        <input type="hidden" name="vat_percentage" :value="vat">
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        ภาษีมูลค่าเพิ่มที่หักจากรายได้สุทธิ
+                    </p>
+                </div>
             </div>
 
             <!-- Info Banner -->
@@ -221,15 +257,36 @@
             :icon="'<svg class=\'w-6 h-6\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4\'/></svg>'"
         >
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <x-form-field
-                    label="SKU"
-                    name="sku"
-                    type="text"
-                    :value="old('sku')"
-                    placeholder="จะสร้างอัตโนมัติถ้าไม่กรอก"
-                    helpText="รหัสสินค้าเฉพาะ (ถ้าว่างจะสร้างให้อัตโนมัติ)"
-                    tooltip="SKU ใช้สำหรับจัดการสต็อกและระบุตัวสินค้า ควรไม่ซ้ำกัน"
-                />
+                {{-- SKU with Auto-Generate --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        SKU (รหัสสินค้า)
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text"
+                               name="sku"
+                               x-model="sku"
+                               :placeholder="skuPlaceholder"
+                               class="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all">
+                        <button type="button"
+                                @click="generateSku()"
+                                class="px-4 py-3 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white rounded-xl font-medium transition-all flex items-center gap-2 whitespace-nowrap"
+                                title="สร้าง SKU อัตโนมัติ">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            <span class="hidden sm:inline">สร้าง SKU</span>
+                        </button>
+                    </div>
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        <span x-show="!sku" class="text-orange-600 dark:text-orange-400">
+                            💡 คลิก "สร้าง SKU" หรือปล่อยว่างเพื่อให้ระบบสร้างอัตโนมัติ
+                        </span>
+                        <span x-show="sku">
+                            ✓ SKU สามารถแก้ไขได้ตามต้องการ
+                        </span>
+                    </p>
+                </div>
 
                 <x-form-field
                     label="จำนวนสต็อก"
@@ -373,24 +430,187 @@
         </div>
         {{-- End Left Column --}}
 
-        {{-- Right Column: Earnings Calculator (1/3 width on desktop, sticky) --}}
+        {{-- Right Column: Inline Earnings Calculator (sync กับ form โดยตรง) --}}
         <div class="lg:col-span-1">
             <div class="lg:sticky lg:top-6">
-                <x-earnings-calculator
-                    itemType="product"
-                    :price="old('price', 1000)"
-                    :costPrice="old('cost_price', 0)"
-                    :platformFee="old('platform_fee_percentage', 10)"
-                    :cashback="old('cashback_percentage', 0)"
-                    :vat="old('vat_percentage', 7)"
-                    :pvValue="old('pv_value', 0)"
-                    x-bind:price="price"
-                    x-bind:costPrice="costPrice"
-                    x-bind:platformFee="platformFee"
-                    x-bind:cashback="cashback"
-                    x-bind:vat="vat"
-                    x-bind:pvValue="pvValue"
-                />
+                {{-- Inline Earnings Calculator --}}
+                <div class="backdrop-blur-xl bg-gradient-to-br from-blue-50/90 to-indigo-100/80 dark:from-blue-900/40 dark:to-indigo-800/30 rounded-2xl border border-blue-200/50 dark:border-blue-700/30 p-6">
+
+                    {{-- Header --}}
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-bold text-blue-900 dark:text-blue-100 flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                            คำนวณรายได้สุทธิ
+                        </h3>
+                        <button @click="showCalculatorHelp = !showCalculatorHelp"
+                                class="text-blue-600 dark:text-blue-400 hover:text-blue-700 text-sm flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                            </svg>
+                            วิธีคำนวณ
+                        </button>
+                    </div>
+
+                    {{-- Calculator Help Modal --}}
+                    <div x-show="showCalculatorHelp" x-transition @click.away="showCalculatorHelp = false"
+                         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                        <div @click.stop class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-lg max-h-[80vh] overflow-y-auto">
+                            <h4 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">🧮 สูตรการคำนวณ</h4>
+                            <div class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+                                <div><strong>1. ราคาขาย:</strong> ราคาที่ลูกค้าจ่าย</div>
+                                <div><strong>2. หัก Platform Fee:</strong> ค่าบริการแพลตฟอร์ม</div>
+                                <div><strong>3. หัก Cashback:</strong> คุณจ่ายเอง เป็นค่าการตลาด</div>
+                                <div><strong>4. หัก VAT:</strong> ภาษีมูลค่าเพิ่ม (คุณจ่าย)</div>
+                                <div><strong>5. หัก MLM Commission:</strong> คำนวณจาก PV</div>
+                                <div class="pt-2 border-t dark:border-gray-700"><strong>= รายได้สุทธิ</strong> (โอนเข้า wallet)</div>
+                                <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-yellow-800 dark:text-yellow-200">
+                                    <strong>💡 เคล็ดลับ:</strong> ยิ่ง Cashback & PV สูง = ลูกค้าสนใจมากขึ้น แต่กำไรคุณลด
+                                </div>
+                            </div>
+                            <button @click="showCalculatorHelp = false" class="mt-4 w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                                เข้าใจแล้ว
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Calculation Result (Real-time) --}}
+                    <div class="space-y-3">
+                        {{-- ราคาขาย --}}
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">ราคาขาย:</span>
+                            <span class="font-semibold text-gray-900 dark:text-gray-100">
+                                ฿<span x-text="price.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                            </span>
+                        </div>
+
+                        {{-- Platform Fee --}}
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">
+                                ค่า Platform (<span x-text="platformFee.toFixed(2)"></span>%):
+                            </span>
+                            <span class="text-red-600 dark:text-red-400">
+                                -฿<span x-text="calc.platformFeeAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                            </span>
+                        </div>
+
+                        {{-- Cashback (แสดงเมื่อ > 0) --}}
+                        <template x-if="cashback > 0">
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-600 dark:text-gray-400">
+                                    Cashback (<span x-text="cashback.toFixed(2)"></span>%):
+                                </span>
+                                <span class="text-purple-600 dark:text-purple-400">
+                                    -฿<span x-text="calc.cashbackAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                </span>
+                            </div>
+                        </template>
+
+                        {{-- VAT --}}
+                        <template x-if="vatEnabled">
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-600 dark:text-gray-400">
+                                    VAT (<span x-text="vat.toFixed(2)"></span>%):
+                                </span>
+                                <span class="text-yellow-600 dark:text-yellow-400">
+                                    -฿<span x-text="calc.vatAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                </span>
+                            </div>
+                        </template>
+
+                        {{-- MLM Commission (แสดงเมื่อ pvValue > 0) --}}
+                        <template x-if="pvValue > 0">
+                            <div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                        คอม MLM (PV: <span x-text="pvValue"></span>)
+                                        <button @click="showMlmDetail = !showMlmDetail" class="text-xs text-blue-500">
+                                            <svg class="w-3 h-3" :class="showMlmDetail ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </button>
+                                    </span>
+                                    <span class="text-indigo-600 dark:text-indigo-400">
+                                        -฿<span x-text="calc.mlmCommissionTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                    </span>
+                                </div>
+
+                                {{-- MLM Detail --}}
+                                <div x-show="showMlmDetail" x-transition class="ml-4 mt-2 space-y-1 text-xs">
+                                    <template x-for="(level, index) in calc.mlmLevelDetails" :key="index">
+                                        <div class="flex justify-between text-gray-500 dark:text-gray-400">
+                                            <span>Level <span x-text="level.level"></span> (<span x-text="level.percentage"></span>%):</span>
+                                            <span>-฿<span x-text="level.amount.toFixed(2)"></span></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+
+                        {{-- Divider --}}
+                        <div class="border-t border-blue-300/50 dark:border-blue-600/30 my-3"></div>
+
+                        {{-- รายได้สุทธิ --}}
+                        <div class="flex justify-between items-center pt-2">
+                            <span class="font-bold text-gray-900 dark:text-gray-100">คุณจะได้รับ:</span>
+                            <span class="text-3xl font-bold text-green-600 dark:text-green-400">
+                                ฿<span x-text="calc.netEarnings.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                            </span>
+                        </div>
+
+                        {{-- เปอร์เซ็นต์รายได้ --}}
+                        <div class="text-center">
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                                คุณได้รับ
+                                <span class="font-bold text-lg" :class="{
+                                    'text-green-600 dark:text-green-400': calc.earningsPercentage > 70,
+                                    'text-yellow-600 dark:text-yellow-400': calc.earningsPercentage > 50 && calc.earningsPercentage <= 70,
+                                    'text-orange-600 dark:text-orange-400': calc.earningsPercentage <= 50
+                                }" x-text="calc.earningsPercentage.toFixed(2)"></span>%
+                            </span>
+                        </div>
+
+                        {{-- Progress Bar --}}
+                        <div class="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all duration-300"
+                                 :style="{ width: Math.min(calc.earningsPercentage, 100) + '%' }"></div>
+                        </div>
+
+                        {{-- กำไรสุทธิ (ถ้ามี cost) --}}
+                        <template x-if="costPrice > 0">
+                            <div class="mt-4 p-4 rounded-lg bg-gradient-to-br from-green-50/90 to-emerald-100/80 dark:from-green-900/40 dark:to-emerald-800/30 border border-green-200/50 dark:border-green-700/30">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">ต้นทุน:</span>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                                        ฿<span x-text="costPrice.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                    </span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="font-bold text-gray-900 dark:text-gray-100">กำไรสุทธิ:</span>
+                                    <span class="text-2xl font-bold"
+                                          :class="calc.netProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                                        <span x-text="calc.netProfit >= 0 ? '+' : ''"></span>฿<span x-text="Math.abs(calc.netProfit).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                    </span>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <span class="text-xs text-gray-600 dark:text-gray-400">
+                                        Profit Margin:
+                                        <span class="font-bold" x-text="calc.profitMargin.toFixed(2)"></span>%
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
+
+                        {{-- Tip --}}
+                        <div class="mt-4 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-900/20 border border-blue-200/50 dark:border-blue-700/30">
+                            <p class="text-xs text-blue-700 dark:text-blue-300">
+                                💡 <strong>เคล็ดลับ:</strong> ปรับค่า Cashback และ PV เพื่อหายอดขายเพิ่ม แต่อย่าลืมคำนวณกำไรด้วย!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {{-- End Inline Earnings Calculator --}}
             </div>
         </div>
         {{-- End Right Column --}}
@@ -400,15 +620,119 @@
 
 @push('scripts')
 <script>
-function productForm() {
+function productForm(config) {
     return {
-        // Pricing data (reactive for calculator)
+        // ===== SKU Generator =====
+        sku: '{{ old('sku', '') }}',
+        skuPlaceholder: 'เช่น: PRD-XXXXXXXX',
+
+        /**
+         * สร้าง SKU อัตโนมัติ
+         * รูปแบบ: PRD-XXXXXXXX (8 ตัวอักษรสุ่ม)
+         */
+        generateSku() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let randomPart = '';
+            for (let i = 0; i < 8; i++) {
+                randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            this.sku = 'PRD-' + randomPart;
+        },
+
+        // ===== Pricing Data =====
         price: {{ old('price', 1000) }},
         costPrice: {{ old('cost_price', 0) }},
-        platformFee: {{ old('platform_fee_percentage', 10) }},
+        platformFee: config.platformFee || 10,
+        vat: config.vat || 7,
         cashback: {{ old('cashback_percentage', 0) }},
-        vat: {{ old('vat_percentage', 7) }},
         pvValue: {{ old('pv_value', 0) }},
+
+        // ===== MLM Settings (จาก config) =====
+        mlmLevels: config.mlmLevels || [],
+        pvToMoneyRate: config.pvToMoneyRate || 1.00,
+        vatEnabled: config.vatEnabled !== false,
+
+        // ===== UI State =====
+        showCalculatorHelp: false,
+        showMlmDetail: false,
+
+        // ===== Calculator (Computed) =====
+        get calc() {
+            const price = this.price || 0;
+
+            // 1. Platform Fee
+            const platformFeeAmount = price * (this.platformFee / 100);
+
+            // 2. Cashback
+            const cashbackAmount = price * (this.cashback / 100);
+
+            // 3. ก่อนหัก VAT
+            const beforeTax = price - platformFeeAmount - cashbackAmount;
+
+            // 4. VAT
+            const vatAmount = this.vatEnabled ? (beforeTax * (this.vat / 100)) : 0;
+
+            // 5. MLM Commission (คำนวณจาก PV)
+            const mlmResult = this.calculateMlmCommission();
+
+            // 6. รายได้สุทธิ
+            const netEarnings = beforeTax - vatAmount - mlmResult.total;
+
+            // 7. กำไร (ถ้ามี cost)
+            const cost = this.costPrice || 0;
+            const netProfit = netEarnings - cost;
+            const profitMargin = price > 0 ? (netProfit / price) * 100 : 0;
+
+            return {
+                platformFeeAmount,
+                cashbackAmount,
+                vatAmount,
+                mlmCommissionTotal: mlmResult.total,
+                mlmLevelDetails: mlmResult.levels,
+                netEarnings: Math.max(0, netEarnings),
+                earningsPercentage: price > 0 ? (Math.max(0, netEarnings) / price) * 100 : 0,
+                netProfit,
+                profitMargin,
+            };
+        },
+
+        /**
+         * คำนวณ MLM Commission ตาม PV และ levels
+         */
+        calculateMlmCommission() {
+            if (this.pvValue <= 0 || !this.mlmLevels || this.mlmLevels.length === 0) {
+                return { total: 0, levels: [] };
+            }
+
+            let total = 0;
+            const levels = [];
+
+            this.mlmLevels.forEach(level => {
+                const percentage = level.percentage || 0;
+                if (percentage > 0) {
+                    const levelPv = this.pvValue * (percentage / 100);
+                    const amount = levelPv * this.pvToMoneyRate;
+                    total += amount;
+
+                    levels.push({
+                        level: level.level,
+                        percentage: percentage,
+                        pv: levelPv,
+                        amount: amount,
+                    });
+                }
+            });
+
+            return { total, levels };
+        },
+
+        // ===== Initialize =====
+        init() {
+            // สร้าง SKU อัตโนมัติถ้ายังไม่มี (optional - ให้ user กดปุ่มเอง)
+            // if (!this.sku) {
+            //     this.generateSku();
+            // }
+        }
     }
 }
 </script>
