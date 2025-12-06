@@ -655,11 +655,11 @@
                         {{-- กำไรสุทธิ (แสดงเสมอ) --}}
                         <div class="mt-4 p-4 rounded-lg bg-gradient-to-br from-green-50/90 to-emerald-100/80 dark:from-green-900/40 dark:to-emerald-800/30 border border-green-200/50 dark:border-green-700/30">
                             {{-- ถ้ามี costPrice --}}
-                            <div x-show="costPrice > 0" x-cloak>
+                            <div x-show="Number(costPrice) > 0" x-cloak>
                                 <div class="flex justify-between items-center mb-2">
                                     <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">ต้นทุน:</span>
                                     <span class="text-sm text-gray-600 dark:text-gray-400">
-                                        ฿<span x-text="costPrice.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                        ฿<span x-text="Number(costPrice).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
                                     </span>
                                 </div>
                                 <div class="flex justify-between items-center">
@@ -678,7 +678,7 @@
                             </div>
 
                             {{-- ถ้ายังไม่มี costPrice --}}
-                            <div x-show="!costPrice || costPrice <= 0" class="text-center">
+                            <div x-show="Number(costPrice) <= 0" class="text-center">
                                 <div class="flex justify-between items-center mb-2">
                                     <span class="font-bold text-gray-900 dark:text-gray-100">กำไรสุทธิ:</span>
                                     <span class="text-xl font-bold text-gray-400 dark:text-gray-500">
@@ -750,19 +750,24 @@ function productForm(config) {
 
         // ===== Calculator (Computed) =====
         get calc() {
-            const price = this.price || 0;
+            // แปลงค่าให้เป็นตัวเลขทั้งหมดเพื่อป้องกัน NaN
+            const price = Number(this.price) || 0;
+            const platformFeeRate = Number(this.platformFee) || 0;
+            const cashbackRate = Number(this.cashback) || 0;
+            const vatRate = Number(this.vat) || 0;
+            const costPrice = Number(this.costPrice) || 0;
 
             // 1. Platform Fee
-            const platformFeeAmount = price * (this.platformFee / 100);
+            const platformFeeAmount = price * (platformFeeRate / 100);
 
             // 2. Cashback
-            const cashbackAmount = price * (this.cashback / 100);
+            const cashbackAmount = price * (cashbackRate / 100);
 
             // 3. ก่อนหัก VAT
             const beforeTax = price - platformFeeAmount - cashbackAmount;
 
             // 4. VAT
-            const vatAmount = this.vatEnabled ? (beforeTax * (this.vat / 100)) : 0;
+            const vatAmount = this.vatEnabled ? (beforeTax * (vatRate / 100)) : 0;
 
             // 5. MLM Commission (คำนวณจาก PV)
             const mlmResult = this.calculateMlmCommission();
@@ -771,8 +776,7 @@ function productForm(config) {
             const netEarnings = beforeTax - vatAmount - mlmResult.total;
 
             // 7. กำไร (ถ้ามี cost)
-            const cost = this.costPrice || 0;
-            const netProfit = netEarnings - cost;
+            const netProfit = netEarnings - costPrice;
             const profitMargin = price > 0 ? (netProfit / price) * 100 : 0;
 
             return {
