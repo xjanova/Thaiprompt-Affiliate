@@ -2746,6 +2746,9 @@ Route::prefix('rider-jobs')->name('rider-jobs.')->group(function () {
     // รายการงานทั้งหมด
     Route::get('/', [\App\Http\Controllers\Admin\RiderJobController::class, 'index'])->name('index');
 
+    // สถิติงาน (ต้องอยู่ก่อน {job} เพื่อหลีกเลี่ยง route conflict)
+    Route::get('/statistics', [\App\Http\Controllers\Admin\RiderJobController::class, 'statistics'])->name('statistics');
+
     // รายละเอียดงาน
     Route::get('/{job}', [\App\Http\Controllers\Admin\RiderJobController::class, 'show'])->name('show');
 
@@ -2754,9 +2757,6 @@ Route::prefix('rider-jobs')->name('rider-jobs.')->group(function () {
 
     // เปลี่ยนไรเดอร์
     Route::post('/{job}/reassign', [\App\Http\Controllers\Admin\RiderJobController::class, 'reassign'])->name('reassign');
-
-    // สถิติงาน
-    Route::get('/statistics', [\App\Http\Controllers\Admin\RiderJobController::class, 'statistics'])->name('statistics');
 });
 
 // Service Providers Management (Admin)

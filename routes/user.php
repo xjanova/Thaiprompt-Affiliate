@@ -614,3 +614,33 @@ Route::prefix('academy')->name('academy.')->group(function () {
     // อัพเดท progress
     Route::post('/article/{slug}/progress', [\App\Http\Controllers\User\AcademyController::class, 'updateProgress'])->name('article.progress');
 });
+
+// ============================================
+// Rider System Routes (ระบบไรเดอร์)
+// ============================================
+Route::prefix('rider')->name('rider.')->group(function () {
+    // หน้า Dashboard ไรเดอร์
+    Route::get('/', [\App\Http\Controllers\User\RiderController::class, 'index'])->name('dashboard');
+
+    // สมัครเป็นไรเดอร์
+    Route::get('/register', [\App\Http\Controllers\User\RiderController::class, 'register'])->name('register');
+    Route::post('/register', [\App\Http\Controllers\User\RiderController::class, 'submitRegistration'])->name('register.submit');
+
+    // ติดตามสถานะการสมัคร
+    Route::get('/status', [\App\Http\Controllers\User\RiderController::class, 'status'])->name('status');
+
+    // อัพโหลดเอกสาร
+    Route::get('/documents', [\App\Http\Controllers\User\RiderController::class, 'documents'])->name('documents');
+    Route::post('/documents', [\App\Http\Controllers\User\RiderController::class, 'uploadDocument'])->name('documents.upload');
+
+    // งานของฉัน
+    Route::get('/jobs', [\App\Http\Controllers\User\RiderController::class, 'jobs'])->name('jobs');
+    Route::get('/jobs/{job}', [\App\Http\Controllers\User\RiderController::class, 'showJob'])->name('jobs.show');
+
+    // รายได้
+    Route::get('/earnings', [\App\Http\Controllers\User\RiderController::class, 'earnings'])->name('earnings');
+
+    // ตั้งค่า
+    Route::get('/settings', [\App\Http\Controllers\User\RiderController::class, 'settings'])->name('settings');
+    Route::post('/settings', [\App\Http\Controllers\User\RiderController::class, 'updateSettings'])->name('settings.update');
+});

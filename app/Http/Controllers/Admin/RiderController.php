@@ -7,6 +7,7 @@ use App\Models\Rider;
 use App\Models\RiderJob;
 use App\Models\RiderLocation;
 use App\Models\ServiceCategory;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -174,7 +175,24 @@ class RiderController extends Controller
                 'rejection_reason' => null,
             ]);
 
-            // TODO: ส่ง notification ให้ไรเดอร์
+            // ส่ง notification ให้ไรเดอร์
+            if ($rider->user) {
+                $notificationService = app(NotificationService::class);
+                $notificationService->create(
+                    $rider->user,
+                    'rider_approved',
+                    'ยินดีด้วย! คุณได้รับการอนุมัติเป็นไรเดอร์แล้ว',
+                    'การสมัครเป็นไรเดอร์ของคุณได้รับการอนุมัติแล้ว คุณสามารถเริ่มรับงานได้ทันที',
+                    ['rider_id' => $rider->id],
+                    route('user.rider.dashboard'),
+                    'เริ่มต้นใช้งาน',
+                    'high',
+                    true,
+                    true,
+                    'fas fa-motorcycle',
+                    'green'
+                );
+            }
 
             DB::commit();
 
@@ -222,7 +240,24 @@ class RiderController extends Controller
                 'rejected_by' => auth()->id(),
             ]);
 
-            // TODO: ส่ง notification ให้ไรเดอร์
+            // ส่ง notification ให้ไรเดอร์
+            if ($rider->user) {
+                $notificationService = app(NotificationService::class);
+                $notificationService->create(
+                    $rider->user,
+                    'rider_rejected',
+                    'การสมัครไรเดอร์ไม่ผ่านการอนุมัติ',
+                    'เหตุผล: ' . $request->reason . ' หากมีข้อสงสัย กรุณาติดต่อทีมงาน',
+                    ['rider_id' => $rider->id, 'reason' => $request->reason],
+                    route('user.support.create'),
+                    'ติดต่อทีมงาน',
+                    'high',
+                    true,
+                    true,
+                    'fas fa-exclamation-circle',
+                    'red'
+                );
+            }
 
             DB::commit();
 
