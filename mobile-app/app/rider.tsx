@@ -859,15 +859,33 @@ export default function RiderScreen() {
               </View>
 
               {isPending && (
-                <Text className="text-white/90">
-                  เอกสารของคุณกำลังได้รับการตรวจสอบ โดยปกติใช้เวลา 1-3 วันทำการ
-                </Text>
+                <View>
+                  <Text className="text-white/90 mb-3">
+                    เอกสารของคุณกำลังได้รับการตรวจสอบ โดยปกติใช้เวลา 1-3 วันทำการ
+                  </Text>
+                  <Pressable
+                    onPress={() => router.push('/rider-documents')}
+                    className="bg-white/20 rounded-xl py-2 px-4 self-start"
+                  >
+                    <Text className="text-white font-medium">📄 ดูเอกสารที่ส่ง</Text>
+                  </Pressable>
+                </View>
               )}
 
-              {isRejected && riderData.rejectionReason && (
-                <Text className="text-white/90">
-                  เหตุผล: {riderData.rejectionReason}
-                </Text>
+              {isRejected && (
+                <View>
+                  {riderData.rejectionReason && (
+                    <Text className="text-white/90 mb-3">
+                      เหตุผล: {riderData.rejectionReason}
+                    </Text>
+                  )}
+                  <Pressable
+                    onPress={() => router.push('/rider-documents')}
+                    className="bg-white/20 rounded-xl py-2 px-4 self-start"
+                  >
+                    <Text className="text-white font-medium">📄 อัพโหลดเอกสารใหม่</Text>
+                  </Pressable>
+                </View>
               )}
 
               {isApproved && (
@@ -1018,6 +1036,66 @@ export default function RiderScreen() {
               )}
             </Pressable>
           </Animated.View>
+
+          {/* Quick Actions Menu - สำหรับไรเดอร์ที่ได้รับอนุมัติ */}
+          {isApproved && (
+            <Animated.View entering={FadeInDown.delay(250).springify()}>
+              <Text
+                className={`text-lg font-bold mb-3 ${isDark ? 'text-white' : 'text-gray-800'}`}
+              >
+                เมนูลัด
+              </Text>
+              <View className="flex-row flex-wrap mb-4">
+                {/* ดูงานที่รอรับ */}
+                <Pressable
+                  onPress={() => router.push('/rider-jobs')}
+                  className="w-[48%] mr-[4%] mb-3 bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
+                >
+                  <View className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 items-center justify-center mb-2">
+                    <Ionicons name="list" size={24} color="#3B82F6" />
+                  </View>
+                  <Text className="text-gray-900 dark:text-white font-bold">งานที่รอรับ</Text>
+                  <Text className="text-gray-500 dark:text-gray-400 text-xs">ดูรายการงานใหม่</Text>
+                </Pressable>
+
+                {/* งานปัจจุบัน */}
+                <Pressable
+                  onPress={() => router.push('/rider-job-detail')}
+                  className="w-[48%] mb-3 bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
+                >
+                  <View className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 items-center justify-center mb-2">
+                    <Ionicons name="navigate" size={24} color="#10B981" />
+                  </View>
+                  <Text className="text-gray-900 dark:text-white font-bold">งานปัจจุบัน</Text>
+                  <Text className="text-gray-500 dark:text-gray-400 text-xs">ดูงานที่กำลังทำ</Text>
+                </Pressable>
+
+                {/* อัพโหลดเอกสาร */}
+                <Pressable
+                  onPress={() => router.push('/rider-documents')}
+                  className="w-[48%] mr-[4%] bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
+                >
+                  <View className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 items-center justify-center mb-2">
+                    <Ionicons name="document-text" size={24} color="#8B5CF6" />
+                  </View>
+                  <Text className="text-gray-900 dark:text-white font-bold">เอกสาร</Text>
+                  <Text className="text-gray-500 dark:text-gray-400 text-xs">อัพเดทเอกสาร</Text>
+                </Pressable>
+
+                {/* ประวัติงาน */}
+                <Pressable
+                  onPress={() => Alert.alert('เร็วๆ นี้', 'ฟีเจอร์นี้กำลังพัฒนา')}
+                  className="w-[48%] bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
+                >
+                  <View className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 items-center justify-center mb-2">
+                    <Ionicons name="time" size={24} color="#F59E0B" />
+                  </View>
+                  <Text className="text-gray-900 dark:text-white font-bold">ประวัติงาน</Text>
+                  <Text className="text-gray-500 dark:text-gray-400 text-xs">ดูงานที่ทำแล้ว</Text>
+                </Pressable>
+              </View>
+            </Animated.View>
+          )}
 
           {/* Online/Offline Toggle */}
           {isApproved && (
