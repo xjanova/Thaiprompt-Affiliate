@@ -1070,10 +1070,22 @@ export default function RiderScreen() {
                   <Text className="text-gray-500 dark:text-gray-400 text-xs">ดูงานที่กำลังทำ</Text>
                 </Pressable>
 
+                {/* บริการของฉัน */}
+                <Pressable
+                  onPress={() => router.push('/rider-services')}
+                  className="w-[48%] mr-[4%] mb-3 bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
+                >
+                  <View className="w-12 h-12 rounded-xl bg-pink-100 dark:bg-pink-900/30 items-center justify-center mb-2">
+                    <Ionicons name="briefcase" size={24} color="#EC4899" />
+                  </View>
+                  <Text className="text-gray-900 dark:text-white font-bold">บริการของฉัน</Text>
+                  <Text className="text-gray-500 dark:text-gray-400 text-xs">เลือกบริการที่ให้</Text>
+                </Pressable>
+
                 {/* อัพโหลดเอกสาร */}
                 <Pressable
                   onPress={() => router.push('/rider-documents')}
-                  className="w-[48%] mr-[4%] bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
+                  className="w-[48%] mb-3 bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
                 >
                   <View className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 items-center justify-center mb-2">
                     <Ionicons name="document-text" size={24} color="#8B5CF6" />
@@ -1085,13 +1097,25 @@ export default function RiderScreen() {
                 {/* ประวัติงาน */}
                 <Pressable
                   onPress={() => Alert.alert('เร็วๆ นี้', 'ฟีเจอร์นี้กำลังพัฒนา')}
-                  className="w-[48%] bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
+                  className="w-[48%] mr-[4%] bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
                 >
                   <View className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 items-center justify-center mb-2">
                     <Ionicons name="time" size={24} color="#F59E0B" />
                   </View>
                   <Text className="text-gray-900 dark:text-white font-bold">ประวัติงาน</Text>
                   <Text className="text-gray-500 dark:text-gray-400 text-xs">ดูงานที่ทำแล้ว</Text>
+                </Pressable>
+
+                {/* รายได้ */}
+                <Pressable
+                  onPress={() => Alert.alert('เร็วๆ นี้', 'ฟีเจอร์นี้กำลังพัฒนา')}
+                  className="w-[48%] bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
+                >
+                  <View className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 items-center justify-center mb-2">
+                    <Ionicons name="wallet" size={24} color="#10B981" />
+                  </View>
+                  <Text className="text-gray-900 dark:text-white font-bold">รายได้</Text>
+                  <Text className="text-gray-500 dark:text-gray-400 text-xs">ดูรายได้ทั้งหมด</Text>
                 </Pressable>
               </View>
             </Animated.View>
