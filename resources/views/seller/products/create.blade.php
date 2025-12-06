@@ -548,27 +548,27 @@
                         <div class="flex justify-between items-center text-sm">
                             <span class="text-gray-600 dark:text-gray-400">ราคาขาย:</span>
                             <span class="font-semibold text-gray-900 dark:text-gray-100">
-                                ฿<span x-text="price.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                ฿<span x-text="Number(price).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
                             </span>
                         </div>
 
                         {{-- Platform Fee --}}
                         <div class="flex justify-between items-center text-sm">
                             <span class="text-gray-600 dark:text-gray-400">
-                                ค่า Platform (<span x-text="platformFee.toFixed(2)"></span>%):
+                                ค่า Platform (<span x-text="Number(platformFee).toFixed(2)"></span>%):
                             </span>
                             <span class="text-red-600 dark:text-red-400">
-                                -฿<span x-text="calc.platformFeeAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                -฿<span x-text="(calc?.platformFeeAmount ?? 0).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
                             </span>
                         </div>
 
                         {{-- Cashback (แสดงเสมอ) --}}
                         <div class="flex justify-between items-center text-sm">
                             <span class="text-gray-600 dark:text-gray-400">
-                                Cashback (<span x-text="cashback.toFixed(2)"></span>%):
+                                Cashback (<span x-text="Number(cashback).toFixed(2)"></span>%):
                             </span>
                             <span :class="cashback > 0 ? 'text-purple-600 dark:text-purple-400' : 'text-gray-400 dark:text-gray-500'">
-                                -฿<span x-text="calc.cashbackAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                -฿<span x-text="(calc?.cashbackAmount ?? 0).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
                             </span>
                         </div>
 
@@ -576,10 +576,10 @@
                         <template x-if="vatEnabled">
                             <div class="flex justify-between items-center text-sm">
                                 <span class="text-gray-600 dark:text-gray-400">
-                                    VAT (<span x-text="vat.toFixed(2)"></span>%):
+                                    VAT (<span x-text="Number(vat).toFixed(2)"></span>%):
                                 </span>
                                 <span class="text-yellow-600 dark:text-yellow-400">
-                                    -฿<span x-text="calc.vatAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                    -฿<span x-text="(calc?.vatAmount ?? 0).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
                                 </span>
                             </div>
                         </template>
@@ -588,15 +588,15 @@
                         <div>
                             <div class="flex justify-between items-center text-sm">
                                 <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                                    คอม MLM (PV: <span x-text="pvValue"></span>)
-                                    <button x-show="pvValue > 0" @click="showMlmDetail = !showMlmDetail" class="text-xs text-blue-500">
+                                    คอม MLM (PV: <span x-text="Number(pvValue)"></span>)
+                                    <button x-show="Number(pvValue) > 0" @click="showMlmDetail = !showMlmDetail" class="text-xs text-blue-500">
                                         <svg class="w-3 h-3" :class="showMlmDetail ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                         </svg>
                                     </button>
                                 </span>
-                                <span :class="pvValue > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'">
-                                    -฿<span x-text="calc.mlmCommissionTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                <span :class="Number(pvValue) > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'">
+                                    -฿<span x-text="(calc?.mlmCommissionTotal ?? 0).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
                                 </span>
                             </div>
 
@@ -610,13 +610,13 @@
                             </div>
 
                             {{-- MLM Detail --}}
-                            <div x-show="showMlmDetail && pvValue > 0" x-transition class="ml-4 mt-2 space-y-1 text-xs">
-                                <template x-for="(level, index) in calc.mlmLevelDetails" :key="index">
+                            <div x-show="showMlmDetail && Number(pvValue) > 0" x-transition class="ml-4 mt-2 space-y-1 text-xs">
+                                <template x-for="(level, index) in (calc?.mlmLevelDetails ?? [])" :key="index">
                                     <div class="flex justify-between text-gray-500 dark:text-gray-400">
                                         <span>Level <span x-text="level.level"></span> (<span x-text="level.percentage"></span>%):</span>
                                         <span class="flex items-center gap-1">
-                                            <span class="text-gray-400">(<span x-text="level.pv.toFixed(2)"></span> PV)</span>
-                                            -฿<span x-text="level.amount.toFixed(2)"></span>
+                                            <span class="text-gray-400">(<span x-text="(level.pv ?? 0).toFixed(2)"></span> PV)</span>
+                                            -฿<span x-text="(level.amount ?? 0).toFixed(2)"></span>
                                         </span>
                                     </div>
                                 </template>
@@ -630,7 +630,7 @@
                         <div class="flex justify-between items-center pt-2">
                             <span class="font-bold text-gray-900 dark:text-gray-100">คุณจะได้รับ:</span>
                             <span class="text-3xl font-bold text-green-600 dark:text-green-400">
-                                ฿<span x-text="calc.netEarnings.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                ฿<span x-text="(calc?.netEarnings ?? 0).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
                             </span>
                         </div>
 
@@ -639,17 +639,17 @@
                             <span class="text-xs text-gray-500 dark:text-gray-400">
                                 คุณได้รับ
                                 <span class="font-bold text-lg" :class="{
-                                    'text-green-600 dark:text-green-400': calc.earningsPercentage > 70,
-                                    'text-yellow-600 dark:text-yellow-400': calc.earningsPercentage > 50 && calc.earningsPercentage <= 70,
-                                    'text-orange-600 dark:text-orange-400': calc.earningsPercentage <= 50
-                                }" x-text="calc.earningsPercentage.toFixed(2)"></span>%
+                                    'text-green-600 dark:text-green-400': (calc?.earningsPercentage ?? 0) > 70,
+                                    'text-yellow-600 dark:text-yellow-400': (calc?.earningsPercentage ?? 0) > 50 && (calc?.earningsPercentage ?? 0) <= 70,
+                                    'text-orange-600 dark:text-orange-400': (calc?.earningsPercentage ?? 0) <= 50
+                                }" x-text="(calc?.earningsPercentage ?? 0).toFixed(2)"></span>%
                             </span>
                         </div>
 
                         {{-- Progress Bar --}}
                         <div class="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div class="h-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all duration-300"
-                                 :style="{ width: Math.min(calc.earningsPercentage, 100) + '%' }"></div>
+                                 :style="{ width: Math.min((calc?.earningsPercentage ?? 0), 100) + '%' }"></div>
                         </div>
 
                         {{-- กำไรสุทธิ (แสดงเสมอ) --}}
@@ -665,14 +665,14 @@
                                 <div class="flex justify-between items-center">
                                     <span class="font-bold text-gray-900 dark:text-gray-100">กำไรสุทธิ:</span>
                                     <span class="text-2xl font-bold"
-                                          :class="calc.netProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
-                                        <span x-text="calc.netProfit >= 0 ? '+' : ''"></span>฿<span x-text="Math.abs(calc.netProfit).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                          :class="(calc?.netProfit ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                                        <span x-text="(calc?.netProfit ?? 0) >= 0 ? '+' : ''"></span>฿<span x-text="Math.abs(calc?.netProfit ?? 0).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
                                     </span>
                                 </div>
                                 <div class="text-center mt-2">
                                     <span class="text-xs text-gray-600 dark:text-gray-400">
                                         Profit Margin:
-                                        <span class="font-bold" x-text="calc.profitMargin.toFixed(2)"></span>%
+                                        <span class="font-bold" x-text="(calc?.profitMargin ?? 0).toFixed(2)"></span>%
                                     </span>
                                 </div>
                             </div>
