@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.371.19] - 2025-12-06
+
+### ✨ Features
+- feat(mobile-app): เพิ่ม LavaBackground RGB และตั้งค่าธีมมืด/สว่าง (701d1685)
+### 🐛 Bug Fixes
+- fix(mobile-app): แก้ไขปัญหาจอขาวใน Dashboard และ Shopping (4254bae2)
+### 🔧 Other Changes
+- Merge pull request #2171 from xjanova/claude/review-mobile-app-code-018UabmCri3oqTVB6G5GMRgd (a05af4b7)
+- chore(mobile-app): ลบไฟล์ hub-selection.tsx ที่ย้ายไป index.tsx แล้ว (e56a4ec3)
+- refactor(mobile-app): เปลี่ยน Hub Selection เป็นหน้าหลักหลัง splash screen (aab4b71f)
+
 ## [v3.371.18] - 2025-12-06
 
 ### ✨ Features
