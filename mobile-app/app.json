@@ -19,7 +19,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.thaiprompt.affiliate",
-      "buildNumber": "2"
+      "buildNumber": "2",
+      "infoPlist": {
+        "NSCameraUsageDescription": "แอปต้องการใช้กล้องเพื่อถ่ายรูปเอกสาร KYC และรูปโปรไฟล์",
+        "NSPhotoLibraryUsageDescription": "แอปต้องการเข้าถึงรูปภาพเพื่ออัพโหลดเอกสาร",
+        "NSLocationWhenInUseUsageDescription": "แอปต้องการตำแหน่งเพื่อแสดงงานใกล้เคียงสำหรับไรเดอร์",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "แอปต้องการติดตามตำแหน่งเพื่อแจ้งสถานะการจัดส่งให้ลูกค้า",
+        "UIBackgroundModes": ["location"]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -30,7 +37,15 @@
       "versionCode": 2,
       "permissions": [
         "android.permission.INTERNET",
-        "android.permission.ACCESS_NETWORK_STATE"
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "web": {
@@ -41,7 +56,30 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-dev-client"
+      "expo-dev-client",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "แอปต้องการใช้กล้องเพื่อถ่ายรูปเอกสาร KYC"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "แอปต้องการเข้าถึงรูปภาพเพื่ออัพโหลดเอกสาร",
+          "cameraPermission": "แอปต้องการใช้กล้องเพื่อถ่ายรูปเอกสาร KYC"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "แอปต้องการติดตามตำแหน่งเพื่อแจ้งสถานะการจัดส่งให้ลูกค้า",
+          "locationAlwaysPermission": "แอปต้องการติดตามตำแหน่งในพื้นหลังเมื่อคุณรับงานส่งของ",
+          "locationWhenInUsePermission": "แอปต้องการตำแหน่งเพื่อแสดงงานใกล้เคียงสำหรับไรเดอร์",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
