@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.366.0] - 2025-12-06
+
+### ✨ Features
+- feat: enhance splash animation and shopping page with infinite scroll (71472684)
+### 🐛 Bug Fixes
+- fix: improve mobile app UX and fix multiple issues (a70061af)
+### 🔧 Other Changes
+- Merge pull request #2146 from xjanova/claude/fix-logo-screen-hang-01QPy6yBcdQxgUo5j1LRKLjJ (e36364b4)
+
 ## [v3.365.0] - 2025-12-06
 
 ### ✨ Features
