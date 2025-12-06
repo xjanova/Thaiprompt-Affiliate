@@ -36,6 +36,16 @@ class SiteSettingSeeder extends Seeder
             'maintenance_mode' => false,
             'meta_keywords' => 'affiliate, mlm, marketing, commission, ระบบ affiliate, ระบบคอมมิชชั่น',
             'meta_description' => 'TP-Affiliate - ระบบ Affiliate Marketing และ MLM ที่ครบครันและทรงพลังที่สุดในประเทศไทย',
+            // App Download Settings (TP Ultra Mobile App)
+            'app_download_enabled' => true,
+            'app_name' => 'TP Ultra',
+            'app_description' => 'แอปพลิเคชั่น TP Ultra สำหรับจัดการธุรกิจ Affiliate ทุกที่ทุกเวลา พร้อมฟีเจอร์ครบครัน ดูคอมมิชชั่น, สมัครสมาชิก, ถอนเงิน และอื่นๆ อีกมากมาย',
+            'app_apk_url' => null,  // แอดมินจะใส่ลิงก์เอง
+            'app_apk_enabled' => true,
+            'app_playstore_url' => null,  // เร็วๆ นี้
+            'app_playstore_enabled' => false,
+            'app_appstore_url' => null,  // เร็วๆ นี้
+            'app_appstore_enabled' => false,
         ]);
 
         $this->command->info('✅ Seed ข้อมูล Site Settings สำเร็จ!');
