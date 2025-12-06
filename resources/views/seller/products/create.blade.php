@@ -710,6 +710,43 @@
 @push('scripts')
 <script>
 function productForm(config) {
+    // Default MLM levels ถ้าไม่มีข้อมูลจาก database
+    const DEFAULT_MLM_LEVELS = [
+        { level: 1, percentage: 10 },
+        { level: 2, percentage: 5 },
+        { level: 3, percentage: 3 },
+        { level: 4, percentage: 2 },
+        { level: 5, percentage: 1 },
+        { level: 6, percentage: 1 },
+        { level: 7, percentage: 1 },
+        { level: 8, percentage: 1 },
+        { level: 9, percentage: 1 },
+        { level: 10, percentage: 1 },
+    ];
+
+    // Parse mlmLevels จาก config (อาจเป็น JSON string)
+    const parseMlmLevels = (levels) => {
+        if (!levels) return DEFAULT_MLM_LEVELS;
+        if (Array.isArray(levels)) {
+            // ถ้าเป็น array ว่าง ใช้ default
+            return levels.length > 0 ? levels : DEFAULT_MLM_LEVELS;
+        }
+        if (typeof levels === 'string') {
+            try {
+                const parsed = JSON.parse(levels);
+                // ถ้า parse ได้แต่เป็น array ว่าง ใช้ default
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    return parsed;
+                }
+                return DEFAULT_MLM_LEVELS;
+            } catch (e) {
+                console.warn('Failed to parse mlmLevels:', e);
+                return DEFAULT_MLM_LEVELS;
+            }
+        }
+        return DEFAULT_MLM_LEVELS;
+    };
+
     return {
         // ===== SKU Generator =====
         sku: '{{ old('sku', '') }}',
@@ -731,26 +768,18 @@ function productForm(config) {
         // ===== Pricing Data =====
         price: {{ old('price', 1000) }},
         costPrice: {{ old('cost_price', 0) }},
-        platformFee: config.platformFee || 10,
-        vat: config.vat || 7,
+        platformFee: Number(config.platformFee) || 10,
+        vat: Number(config.vat) || 7,
         cashback: {{ old('cashback_percentage', 0) }},
         pvValue: {{ old('pv_value', 0) }},
 
         // ===== MLM Settings (จาก config - ค่าปัจจุบันจาก database) =====
-        // mlmLevels อาจเป็น JSON string ต้องแปลงเป็น array
-        mlmLevels: (() => {
-            const levels = config.mlmLevels;
-            if (!levels) return [];
-            if (Array.isArray(levels)) return levels;
-            if (typeof levels === 'string') {
-                try { return JSON.parse(levels); } catch (e) { return []; }
-            }
-            return [];
-        })(),
+        // mlmLevels แปลงจาก config พร้อม fallback เป็น default
+        mlmLevels: parseMlmLevels(config.mlmLevels),
         // commission_per_pv = ค่าคอมมิชชันต่อ 1 PV (บาท) - ใช้แปลง PV เป็นเงิน (แปลงเป็น number)
-        commissionPerPv: parseFloat(config.commissionPerPv) || 1.00,
+        commissionPerPv: Number(config.commissionPerPv) || 1.00,
         // global_pv_rate = 1 บาท = X PV (อัตราแปลงเงินเป็น PV) (แปลงเป็น number)
-        globalPvRate: parseFloat(config.globalPvRate) || 1.00,
+        globalPvRate: Number(config.globalPvRate) || 1.00,
         vatEnabled: config.vatEnabled !== false,
 
         // ===== UI State =====
@@ -808,24 +837,31 @@ function productForm(config) {
          * ตัวอย่าง: 100 PV × (10% / 100) × 1.00 = 10 THB (Level 1)
          */
         calculateMlmCommission() {
-            if (this.pvValue <= 0 || !this.mlmLevels || this.mlmLevels.length === 0) {
+            const pv = Number(this.pvValue) || 0;
+            const commissionRate = Number(this.commissionPerPv) || 1.00;
+
+            // ตรวจสอบว่ามี PV และ mlmLevels
+            if (pv <= 0 || !this.mlmLevels || !Array.isArray(this.mlmLevels) || this.mlmLevels.length === 0) {
                 return { total: 0, levels: [] };
             }
 
             let total = 0;
             const levels = [];
 
-            this.mlmLevels.forEach(level => {
-                const percentage = level.percentage || 0;
+            this.mlmLevels.forEach((level, index) => {
+                // ดึง percentage จาก level object (รองรับหลาย field name)
+                const percentage = Number(level.percentage) || Number(level.commission_percentage) || 0;
+                const levelNum = Number(level.level) || (index + 1);
+
                 if (percentage > 0) {
                     // คำนวณ PV ที่แต่ละ level ได้รับ
-                    const levelPv = this.pvValue * (percentage / 100);
+                    const levelPv = pv * (percentage / 100);
                     // แปลง PV เป็นเงิน (THB) โดยใช้ commissionPerPv
-                    const amount = levelPv * this.commissionPerPv;
+                    const amount = levelPv * commissionRate;
                     total += amount;
 
                     levels.push({
-                        level: level.level,
+                        level: levelNum,
                         percentage: percentage,
                         pv: levelPv,
                         amount: amount,
@@ -838,6 +874,14 @@ function productForm(config) {
 
         // ===== Initialize =====
         init() {
+            // Debug: แสดงค่าที่ได้รับจาก config (เปิดเฉพาะตอน debug)
+            console.log('MLM Config loaded:', {
+                mlmLevels: this.mlmLevels,
+                mlmLevelsLength: this.mlmLevels?.length,
+                commissionPerPv: this.commissionPerPv,
+                globalPvRate: this.globalPvRate,
+            });
+
             // สร้าง SKU อัตโนมัติถ้ายังไม่มี (optional - ให้ user กดปุ่มเอง)
             // if (!this.sku) {
             //     this.generateSku();
