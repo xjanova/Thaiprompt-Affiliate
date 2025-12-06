@@ -56,7 +56,7 @@
             rows="{{ $rows }}"
             {{ $required ? 'required' : '' }}
             placeholder="{{ $placeholder }}"
-            class="w-full px-4 py-3 text-base border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none"
+            {{ $attributes->merge(['class' => 'w-full px-4 py-3 text-base border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none']) }}
         >{{ $value }}</textarea>
     @elseif($type === 'select')
         <select
@@ -64,7 +64,7 @@
             name="{{ $name }}"
             {{ $multiple ? 'multiple' : '' }}
             {{ $required ? 'required' : '' }}
-            class="w-full px-4 py-3 text-base border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+            {{ $attributes->merge(['class' => 'w-full px-4 py-3 text-base border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all']) }}
         >
             @foreach($options as $optValue => $optLabel)
                 <option value="{{ $optValue }}" {{ $value == $optValue ? 'selected' : '' }}>
@@ -83,7 +83,7 @@
             @if($min !== null) min="{{ $min }}" @endif
             @if($max !== null) max="{{ $max }}" @endif
             @if($step !== null) step="{{ $step }}" @endif
-            class="w-full px-4 py-3 text-base border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+            {{ $attributes->merge(['class' => 'w-full px-4 py-3 text-base border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all']) }}
         />
     @endif
 
