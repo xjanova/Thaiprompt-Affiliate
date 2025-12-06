@@ -8,11 +8,8 @@
     $vatFromSettings = \App\Models\MarketplaceSetting::get('vat_percentage', 7);
 
     // ดึง MLM settings (ค่าปัจจุบันจาก database)
-    $mlmLevels = \App\Models\MlmGlobalSetting::get('unilevel_levels', []);
-    // commission_per_pv = ค่าคอมมิชชันต่อ 1 PV (บาท) - นี่คือค่าที่ใช้แปลง PV เป็นเงิน
+    // commission_per_pv = ค่าคอมมิชชันต่อ 1 PV (บาท) - ใช้แปลง PV เป็นเงินที่หักเป็นค่า MLM Commission
     $commissionPerPv = \App\Models\MlmGlobalSetting::get('commission_per_pv', 1.00);
-    // global_pv_rate = 1 บาท = X PV (อัตราแปลงเงินเป็น PV)
-    $globalPvRate = \App\Models\MlmGlobalSetting::get('global_pv_rate', 1.00);
     $vatEnabled = \App\Models\MlmGlobalSetting::get('vat_enabled', true);
 @endphp
 
@@ -36,9 +33,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" x-data="productForm({{ json_encode([
         'platformFee' => $platformFeeFromSettings,
         'vat' => $vatFromSettings,
-        'mlmLevels' => $mlmLevels,
         'commissionPerPv' => $commissionPerPv,
-        'globalPvRate' => $globalPvRate,
         'vatEnabled' => $vatEnabled,
     ]) }})">
         {{-- Left Column: Form (2/3 width on desktop) --}}
@@ -584,42 +579,22 @@
                             </div>
                         </template>
 
-                        {{-- MLM Commission (แสดงเสมอ) --}}
+                        {{-- MLM Commission (Unilevel + Binary) --}}
                         <div>
                             <div class="flex justify-between items-center text-sm">
-                                <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                                    คอม MLM (PV: <span x-text="Number(pvValue)"></span>)
-                                    <button x-show="Number(pvValue) > 0" @click="showMlmDetail = !showMlmDetail" class="text-xs text-blue-500">
-                                        <svg class="w-3 h-3" :class="showMlmDetail ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                        </svg>
-                                    </button>
+                                <span class="text-gray-600 dark:text-gray-400">
+                                    คอม MLM (<span x-text="Number(pvValue).toLocaleString()"></span> PV):
                                 </span>
-                                <span :class="Number(pvValue) > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-500'">
+                                <span :class="Number(pvValue) > 0 ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-400 dark:text-gray-500'">
                                     -฿<span x-text="(calc?.mlmCommissionTotal ?? 0).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
                                 </span>
                             </div>
 
-                            {{-- PV to Money Rate Info --}}
-                            <div x-show="pvValue > 0" class="mt-1 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded px-2 py-1">
-                                <span class="font-medium">อัตราแปลง:</span>
-                                1 PV = ฿<span x-text="commissionPerPv.toFixed(2)"></span>
-                                <span class="mx-1">|</span>
-                                <span x-text="pvValue"></span> PV × ฿<span x-text="commissionPerPv.toFixed(2)"></span>
-                                = ฿<span x-text="(pvValue * commissionPerPv).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span> (PV รวม)
-                            </div>
-
-                            {{-- MLM Detail --}}
-                            <div x-show="showMlmDetail && Number(pvValue) > 0" x-transition class="ml-4 mt-2 space-y-1 text-xs">
-                                <template x-for="(level, index) in (calc?.mlmLevelDetails ?? [])" :key="index">
-                                    <div class="flex justify-between text-gray-500 dark:text-gray-400">
-                                        <span>Level <span x-text="level.level"></span> (<span x-text="level.percentage"></span>%):</span>
-                                        <span class="flex items-center gap-1">
-                                            <span class="text-gray-400">(<span x-text="(level.pv ?? 0).toFixed(2)"></span> PV)</span>
-                                            -฿<span x-text="(level.amount ?? 0).toFixed(2)"></span>
-                                        </span>
-                                    </div>
-                                </template>
+                            {{-- PV Calculation Info --}}
+                            <div x-show="pvValue > 0" class="mt-1 text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded px-2 py-1">
+                                <span x-text="Number(pvValue).toLocaleString()"></span> PV × ฿<span x-text="Number(commissionPerPv).toFixed(2)"></span>
+                                = <strong>฿<span x-text="(pvValue * commissionPerPv).toLocaleString('th-TH', {minimumFractionDigits: 2})"></span></strong>
+                                <span class="text-gray-500 dark:text-gray-400 ml-1">(แบ่งให้ Unilevel + Binary)</span>
                             </div>
                         </div>
 
@@ -710,43 +685,6 @@
 @push('scripts')
 <script>
 function productForm(config) {
-    // Default MLM levels ถ้าไม่มีข้อมูลจาก database
-    const DEFAULT_MLM_LEVELS = [
-        { level: 1, percentage: 10 },
-        { level: 2, percentage: 5 },
-        { level: 3, percentage: 3 },
-        { level: 4, percentage: 2 },
-        { level: 5, percentage: 1 },
-        { level: 6, percentage: 1 },
-        { level: 7, percentage: 1 },
-        { level: 8, percentage: 1 },
-        { level: 9, percentage: 1 },
-        { level: 10, percentage: 1 },
-    ];
-
-    // Parse mlmLevels จาก config (อาจเป็น JSON string)
-    const parseMlmLevels = (levels) => {
-        if (!levels) return DEFAULT_MLM_LEVELS;
-        if (Array.isArray(levels)) {
-            // ถ้าเป็น array ว่าง ใช้ default
-            return levels.length > 0 ? levels : DEFAULT_MLM_LEVELS;
-        }
-        if (typeof levels === 'string') {
-            try {
-                const parsed = JSON.parse(levels);
-                // ถ้า parse ได้แต่เป็น array ว่าง ใช้ default
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    return parsed;
-                }
-                return DEFAULT_MLM_LEVELS;
-            } catch (e) {
-                console.warn('Failed to parse mlmLevels:', e);
-                return DEFAULT_MLM_LEVELS;
-            }
-        }
-        return DEFAULT_MLM_LEVELS;
-    };
-
     return {
         // ===== SKU Generator =====
         sku: '{{ old('sku', '') }}',
@@ -774,17 +712,12 @@ function productForm(config) {
         pvValue: {{ old('pv_value', 0) }},
 
         // ===== MLM Settings (จาก config - ค่าปัจจุบันจาก database) =====
-        // mlmLevels แปลงจาก config พร้อม fallback เป็น default
-        mlmLevels: parseMlmLevels(config.mlmLevels),
-        // commission_per_pv = ค่าคอมมิชชันต่อ 1 PV (บาท) - ใช้แปลง PV เป็นเงิน (แปลงเป็น number)
+        // commission_per_pv = ค่าคอมมิชชันต่อ 1 PV (บาท) - ใช้แปลง PV เป็นเงิน
         commissionPerPv: Number(config.commissionPerPv) || 1.00,
-        // global_pv_rate = 1 บาท = X PV (อัตราแปลงเงินเป็น PV) (แปลงเป็น number)
-        globalPvRate: Number(config.globalPvRate) || 1.00,
         vatEnabled: config.vatEnabled !== false,
 
         // ===== UI State =====
         showCalculatorHelp: false,
-        showMlmDetail: false,
 
         // ===== Calculator (Computed) =====
         get calc() {
@@ -822,7 +755,6 @@ function productForm(config) {
                 cashbackAmount,
                 vatAmount,
                 mlmCommissionTotal: mlmResult.total,
-                mlmLevelDetails: mlmResult.levels,
                 netEarnings: Math.max(0, netEarnings),
                 earningsPercentage: price > 0 ? (Math.max(0, netEarnings) / price) * 100 : 0,
                 netProfit,
@@ -831,61 +763,33 @@ function productForm(config) {
         },
 
         /**
-         * คำนวณ MLM Commission ตาม PV และ levels
+         * คำนวณ MLM Commission จาก PV
          *
-         * สูตร: PV × (percentage / 100) × commissionPerPv = THB
-         * ตัวอย่าง: 100 PV × (10% / 100) × 1.00 = 10 THB (Level 1)
+         * สูตร: PV × commissionPerPv = THB (หักทั้งก้อน)
+         * เงินนี้จะถูกแบ่งให้ Unilevel + Binary ภายหลัง
+         *
+         * ตัวอย่าง: 10000 PV × ฿0.01 = ฿100.00 (หักทั้งหมด)
          */
         calculateMlmCommission() {
             const pv = Number(this.pvValue) || 0;
             const commissionRate = Number(this.commissionPerPv) || 1.00;
 
-            // ตรวจสอบว่ามี PV และ mlmLevels
-            if (pv <= 0 || !this.mlmLevels || !Array.isArray(this.mlmLevels) || this.mlmLevels.length === 0) {
-                return { total: 0, levels: [] };
+            // ถ้าไม่มี PV ไม่ต้องคำนวณ
+            if (pv <= 0) {
+                return { total: 0 };
             }
 
-            let total = 0;
-            const levels = [];
+            // คำนวณ MLM Commission = PV × commissionPerPv (หักทั้งก้อน)
+            // เงินนี้จะถูกแบ่งให้ Unilevel + Binary ภายหลังตามระบบ
+            const total = pv * commissionRate;
 
-            this.mlmLevels.forEach((level, index) => {
-                // ดึง percentage จาก level object (รองรับหลาย field name)
-                const percentage = Number(level.percentage) || Number(level.commission_percentage) || 0;
-                const levelNum = Number(level.level) || (index + 1);
-
-                if (percentage > 0) {
-                    // คำนวณ PV ที่แต่ละ level ได้รับ
-                    const levelPv = pv * (percentage / 100);
-                    // แปลง PV เป็นเงิน (THB) โดยใช้ commissionPerPv
-                    const amount = levelPv * commissionRate;
-                    total += amount;
-
-                    levels.push({
-                        level: levelNum,
-                        percentage: percentage,
-                        pv: levelPv,
-                        amount: amount,
-                    });
-                }
-            });
-
-            return { total, levels };
+            return { total };
         },
 
         // ===== Initialize =====
         init() {
-            // Debug: แสดงค่าที่ได้รับจาก config (เปิดเฉพาะตอน debug)
-            console.log('MLM Config loaded:', {
-                mlmLevels: this.mlmLevels,
-                mlmLevelsLength: this.mlmLevels?.length,
-                commissionPerPv: this.commissionPerPv,
-                globalPvRate: this.globalPvRate,
-            });
-
-            // สร้าง SKU อัตโนมัติถ้ายังไม่มี (optional - ให้ user กดปุ่มเอง)
-            // if (!this.sku) {
-            //     this.generateSku();
-            // }
+            // Debug: แสดงค่า MLM config (เปิดเฉพาะตอน debug)
+            console.log('MLM Config:', { commissionPerPv: this.commissionPerPv });
         }
     }
 }
