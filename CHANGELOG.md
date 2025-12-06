@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.1] - 2025-12-06
+
+### ✨ Features
+- Merge pull request #2177 from xjanova/claude/add-app-download-section-01Dj1KKtRbxXQTEMz2hRY7fu (ed6a9c21)
+- feat(app-download): เพิ่ม section ดาวน์โหลดแอป TP Ultra ในหน้า Home (f3f445b0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.372.0] - 2025-12-06
 
 ### ✨ Features
