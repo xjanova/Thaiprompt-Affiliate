@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.368.0] - 2025-12-06
+
+### ✨ Features
+- feat: implement complete rider system with jobs, documents, and navigation (7413b281)
+- feat: add premium MLM and profile management features (cf524218)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2149 from xjanova/claude/fix-logo-screen-hang-01QPy6yBcdQxgUo5j1LRKLjJ (cf4c415c)
+
 ## [v3.367.0] - 2025-12-06
 
 ### ✨ Features
