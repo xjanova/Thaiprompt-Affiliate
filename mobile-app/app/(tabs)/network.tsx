@@ -108,6 +108,18 @@ const MemberCard = ({
   );
 };
 
+// Inline Loading Indicator
+const LoadingIndicator = ({ isDark }: { isDark: boolean }) => (
+  <View className="flex-1 justify-center items-center py-20">
+    <View className="w-12 h-12 rounded-full border-4 border-primary-200 border-t-primary-500"
+      style={{ borderTopColor: '#8B5CF6', borderColor: isDark ? '#374151' : '#E5E7EB' }}
+    />
+    <Text className={`mt-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+      กำลังโหลดข้อมูลทีม...
+    </Text>
+  </View>
+);
+
 export default function NetworkScreen() {
   const { isAuthenticated } = useAuthStore();
   const { resolvedTheme } = useAppStore();
@@ -116,10 +128,14 @@ export default function NetworkScreen() {
   const [data, setData] = useState<ReferralsData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   // โหลดข้อมูล
   const loadData = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const online = await Network.checkNetworkStatus();
@@ -145,6 +161,8 @@ export default function NetworkScreen() {
       }
     } catch (error) {
       console.error('Load network data error:', error);
+    } finally {
+      setIsLoading(false);
     }
   }, [isAuthenticated]);
 
@@ -185,6 +203,17 @@ export default function NetworkScreen() {
           >
             <Text className="text-white font-bold">เข้าสู่ระบบ</Text>
           </Pressable>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  // แสดง Loading ขณะโหลดข้อมูล
+  if (isLoading && !data) {
+    return (
+      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
+        <SafeAreaView className="flex-1">
+          <LoadingIndicator isDark={isDark} />
         </SafeAreaView>
       </View>
     );

@@ -7,10 +7,9 @@
 // API Configuration
 // =====================================================
 
-// Production API URL
-export const API_BASE_URL = __DEV__
-  ? 'https://member123.thaiprompt.online/api/v1' // Development Server
-  : 'https://main.thaiprompt.online/api/v1';
+// Production API URL - ใช้ production เสมอ
+// เพราะ dev server อาจมีปัญหา และ production มีข้อมูลจริง
+export const API_BASE_URL = 'https://main.thaiprompt.online/api/v1';
 
 // API Endpoints
 export const API_ENDPOINTS = {

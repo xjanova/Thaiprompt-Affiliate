@@ -32,7 +32,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
-import { APP_CONFIG } from '@/config/appConfig';
+import { APP_INFO } from '@/config/appConfig';
 
 // Setting Item Component
 const SettingItem = ({
@@ -162,11 +162,11 @@ export default function SettingsScreen() {
   };
 
   const handlePrivacyPolicy = () => {
-    Linking.openURL(APP_CONFIG.PRIVACY_URL || 'https://main.thaiprompt.online/privacy');
+    Linking.openURL(APP_INFO.PRIVACY_URL || 'https://main.thaiprompt.online/privacy');
   };
 
   const handleTermsOfService = () => {
-    Linking.openURL(APP_CONFIG.TERMS_URL || 'https://main.thaiprompt.online/terms');
+    Linking.openURL(APP_INFO.TERMS_URL || 'https://main.thaiprompt.online/terms');
   };
 
   const handleRateApp = () => {
@@ -370,7 +370,7 @@ export default function SettingsScreen() {
           <SettingItem
             icon="information-circle-outline"
             title="เวอร์ชัน"
-            subtitle={APP_CONFIG.VERSION || '1.0.0'}
+            subtitle={APP_INFO.VERSION || '1.1.0'}
             isDark={isDark}
             rightElement={<View />}
           />
