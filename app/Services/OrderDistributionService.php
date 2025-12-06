@@ -232,32 +232,37 @@ class OrderDistributionService
     }
 
     /**
-     * คำนวณ MLM Commission จากรายการสินค้า
+     * คำนวณ MLM Commission (ค่าการตลาด/PV) จากรายการสินค้า
+     *
+     * PV (Point Value) คือค่าการตลาดที่ร้านค้าจ่ายเอง เป็น % ของราคาสินค้า
+     * - PV สูง = สินค้าถูกแนะนำมากขึ้น, Affiliate ได้ค่าคอมฯ มากขึ้น
+     * - PV ต่ำ = สินค้าถูกแนะนำน้อยลง, Affiliate ได้ค่าคอมฯ น้อย
      *
      * @param \Illuminate\Support\Collection $items
-     * @return float
+     * @return float จำนวนเงิน (THB) ที่หักเป็นค่าการตลาด PV
      */
     protected function calculateMlmCommissionFromItems($items): float
     {
-        $totalPv = 0;
-        $commissionPerPv = MlmGlobalSetting::get('commission_per_pv', 1);
+        $totalPvAmount = 0;
 
         foreach ($items as $item) {
-            // ดึง PV จาก product หรือ item
-            $pvValue = $item->pv_value ?? $item->product?->pv_value ?? 0;
-            $totalPv += $pvValue * $item->quantity;
+            // ดึง PV percentage จาก item หรือ product (เช่น 10 หมายถึง 10%)
+            $pvPercentage = $item->pv_value ?? $item->product?->pv_value ?? 0;
+
+            if ($pvPercentage > 0) {
+                // คำนวณค่า PV เป็นจำนวนเงิน = ราคาสินค้า × PV%
+                // ใช้ $item->total ซึ่งรวม quantity แล้ว
+                $itemPvAmount = $item->total * ($pvPercentage / 100);
+                $totalPvAmount += $itemPvAmount;
+            }
         }
 
         // ไม่มี PV = ไม่มี MLM Commission
-        if ($totalPv <= 0) {
+        if ($totalPvAmount <= 0) {
             return 0;
         }
 
-        // คำนวณ commission = PV × commission_per_pv × max_commission_percentage
-        $maxCommissionPercentage = MlmGlobalSetting::get('max_commission_percentage', 50) / 100;
-        $baseCommission = $totalPv * $commissionPerPv;
-
-        return round($baseCommission * $maxCommissionPercentage, 4);
+        return round($totalPvAmount, 4);
     }
 
     /**
