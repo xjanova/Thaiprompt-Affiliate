@@ -197,7 +197,7 @@ export default function RootLayout() {
             }}
           />
 
-          {/* Main Menu - หน้าแรกหลัง Splash (Premium) */}
+          {/* Hub Selection - หน้าแรกหลัง Splash */}
           <Stack.Screen
             name="index"
             options={{
@@ -206,9 +206,9 @@ export default function RootLayout() {
             }}
           />
 
-          {/* Hub Selection */}
+          {/* Main Menu (Premium) */}
           <Stack.Screen
-            name="hub-selection"
+            name="main-menu"
             options={{
               headerShown: false,
             }}
