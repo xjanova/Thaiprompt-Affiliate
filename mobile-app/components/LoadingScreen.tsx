@@ -385,9 +385,9 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         <Animated.View style={[styles.dot, { opacity: dot3Opacity }]} />
       </View>
 
-      {/* Version */}
+      {/* Version - แสดง build date เพื่อยืนยันเวอร์ชั่น */}
       <Text style={styles.version}>
-        Version {APP_INFO?.VERSION || '1.1.0'}
+        v{APP_INFO?.VERSION || '1.1.1'} ({APP_INFO?.BUILD_DATE || 'unknown'})
       </Text>
     </LinearGradient>
   );
