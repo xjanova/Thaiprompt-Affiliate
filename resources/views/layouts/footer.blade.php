@@ -35,7 +35,7 @@
             <div>
                 <h4 class="text-lg font-semibold mb-4">ช่วยเหลือ</h4>
                 <ul class="space-y-2">
-                    <li><a href="{{ route('page.show', 'faq') }}" class="text-gray-300 hover:text-white transition">คำถามที่พบบ่อย</a></li>
+                    <li><a href="{{ route('page.show', 'faq') ?? '#' }}" class="text-gray-300 hover:text-white transition">คำถามที่พบบ่อย</a></li>
                     <li><a href="{{ route('forum.index') }}" class="text-gray-300 hover:text-white transition">ฟอรั่มถาม-ตอบ</a></li>
                     <li><a href="{{ route('contact') }}" class="text-gray-300 hover:text-white transition">ติดต่อสนับสนุน</a></li>
                 </ul>
