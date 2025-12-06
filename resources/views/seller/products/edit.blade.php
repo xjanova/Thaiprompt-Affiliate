@@ -79,8 +79,8 @@
 
             <!-- Section 2: Pricing with Real-time Calculator -->
             <x-modern-card
-                title="ราคาและกำไร"
-                description="กำหนดราคาขายและติดตามกำไรของคุณแบบเรียลไทม์"
+                title="ราคา, ค่าการตลาด (PV) และกำไร"
+                description="กำหนดราคาขาย ค่าการตลาด และติดตามกำไรของคุณแบบเรียลไทม์"
                 icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'>
 
                 <div x-data="{
@@ -88,11 +88,21 @@
                     comparePrice: {{ old('compare_at_price', $product->compare_at_price ?? 0) }},
                     costPrice: {{ old('cost_price', $product->cost_price ?? 0) }},
                     commissionRate: {{ old('commission_rate', $product->commission_rate ?? 10) }},
+                    pvValue: {{ old('pv_value', $pvValue) }},
+                    get pvAmount() {
+                        return this.price * (this.pvValue / 100);
+                    },
                     get commission() {
                         return this.price * (this.commissionRate / 100);
                     },
+                    get totalDeduction() {
+                        return this.commission + this.pvAmount;
+                    },
+                    get sellerReceive() {
+                        return this.price - this.totalDeduction;
+                    },
                     get profit() {
-                        return this.price - this.costPrice - this.commission;
+                        return this.sellerReceive - this.costPrice;
                     },
                     get profitMargin() {
                         return this.price > 0 ? ((this.profit / this.price) * 100).toFixed(2) : 0;
@@ -147,6 +157,93 @@
                         />
                     </div>
 
+                    <!-- PV (Point Value / ค่าการตลาด) Section -->
+                    <div class="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-xl p-6 border border-purple-200 dark:border-purple-700/50">
+                        {{-- ส่วนอธิบาย PV --}}
+                        <div class="mb-6">
+                            <h3 class="font-bold text-purple-900 dark:text-purple-200 mb-3 flex items-center gap-2 text-lg">
+                                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                                </svg>
+                                PV (Point Value) - ค่าการตลาด
+                            </h3>
+                            <div class="bg-white/80 dark:bg-gray-800/80 rounded-lg p-4 space-y-2">
+                                <p class="text-sm text-gray-700 dark:text-gray-300">
+                                    <strong class="text-purple-700 dark:text-purple-300">PV คืออะไร?</strong>
+                                    เป็นค่าการตลาดที่ร้านค้า<strong>จ่ายเอง</strong>เพื่อให้ระบบช่วยโปรโมทและแนะนำสินค้าของคุณผ่านเครือข่าย Affiliate
+                                </p>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1.5 list-none">
+                                    <li class="flex items-start gap-2">
+                                        <span class="text-green-500 mt-0.5">📈</span>
+                                        <span><strong class="text-green-700 dark:text-green-400">PV สูง</strong> = สินค้าถูกแนะนำ<strong>มากขึ้น</strong>, Affiliate ได้ค่าคอมฯ มากขึ้น จึง<strong>กระตุ้นให้ช่วยขายมากขึ้น</strong></span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <span class="text-orange-500 mt-0.5">📉</span>
+                                        <span><strong class="text-orange-700 dark:text-orange-400">PV ต่ำ</strong> = สินค้าถูกแนะนำ<strong>น้อยลง</strong>, Affiliate ได้ค่าคอมฯ น้อย จึง<strong>ไม่ค่อยจูงใจให้ช่วยขาย</strong></span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <span class="text-red-500 mt-0.5">⚠️</span>
+                                        <span><strong class="text-red-700 dark:text-red-400">หมายเหตุ:</strong> ค่า PV จะถูก<strong>หักออกก่อน</strong>โอนยอดขายให้ร้านค้า</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {{-- PV Slider --}}
+                        <div class="space-y-4">
+                            <label class="block font-semibold text-gray-900 dark:text-gray-100">
+                                ตั้งค่า PV ของสินค้านี้ (%)
+                            </label>
+
+                            {{-- Current PV Display --}}
+                            <div class="text-center py-2">
+                                <span class="text-5xl font-bold text-purple-600 dark:text-purple-400" x-text="pvValue.toFixed(1)"></span>
+                                <span class="text-2xl text-gray-500 dark:text-gray-400">%</span>
+                            </div>
+
+                            {{-- Slider --}}
+                            <input type="range"
+                                   name="pv_value"
+                                   x-model.number="pvValue"
+                                   min="0"
+                                   max="30"
+                                   step="0.5"
+                                   class="w-full h-3 bg-gradient-to-r from-green-300 via-yellow-300 to-red-300 dark:from-green-700 dark:via-yellow-700 dark:to-red-700 rounded-lg appearance-none cursor-pointer accent-purple-600">
+
+                            {{-- Min/Max Labels --}}
+                            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                <span>0% (กำไรสูง, แนะนำน้อย)</span>
+                                <span>30% (กำไรต่ำ, แนะนำมาก)</span>
+                            </div>
+
+                            {{-- Strategy Indicator --}}
+                            <div class="p-3 rounded-lg text-sm text-center font-semibold transition-all"
+                                 :class="{
+                                     'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700': pvValue < 5,
+                                     'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700': pvValue >= 5 && pvValue < 10,
+                                     'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700': pvValue >= 10 && pvValue < 15,
+                                     'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 border border-orange-300 dark:border-orange-700': pvValue >= 15 && pvValue < 20,
+                                     'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700': pvValue >= 20
+                                 }">
+                                <template x-if="pvValue < 5">
+                                    <span>💰 กลยุทธ์: <strong>เน้นกำไร</strong> - เหมาะกับสินค้าที่มีฐานลูกค้าแล้ว</span>
+                                </template>
+                                <template x-if="pvValue >= 5 && pvValue < 10">
+                                    <span>⚖️ กลยุทธ์: <strong>สมดุล</strong> - กำไรดี + มีคนช่วยขายบ้าง</span>
+                                </template>
+                                <template x-if="pvValue >= 10 && pvValue < 15">
+                                    <span>📣 กลยุทธ์: <strong>การตลาดปานกลาง</strong> - Affiliate จะสนใจช่วยขาย</span>
+                                </template>
+                                <template x-if="pvValue >= 15 && pvValue < 20">
+                                    <span>🚀 กลยุทธ์: <strong>การตลาดเชิงรุก</strong> - Affiliate แนะนำสินค้ามากขึ้น</span>
+                                </template>
+                                <template x-if="pvValue >= 20">
+                                    <span>🔥 กลยุทธ์: <strong>ขยายตลาดสูงสุด</strong> - Affiliate แย่งกันช่วยขาย!</span>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Real-time Profit Calculator -->
                     <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-6 border border-blue-200 dark:border-slate-500">
                         <div class="flex items-center gap-3 mb-4">
@@ -155,19 +252,71 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                                 </svg>
                             </div>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">การคำนวณกำไรแบบเรียลไทม์</h3>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">การคำนวณรายได้แบบเรียลไทม์</h3>
                         </div>
+
+                        {{-- แสดงรายละเอียดการหักเงิน --}}
+                        <div class="bg-white/80 dark:bg-slate-800/80 rounded-lg p-4 mb-4 space-y-3">
+                            {{-- ราคาขาย --}}
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-600 dark:text-gray-400">💵 ราคาขาย</span>
+                                <span class="font-semibold text-gray-900 dark:text-gray-100">
+                                    ฿<span x-text="price.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                </span>
+                            </div>
+
+                            {{-- ค่าแพลตฟอร์ม/คอมมิชชั่น --}}
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-600 dark:text-gray-400">
+                                    🏢 ค่าแพลตฟอร์ม (<span x-text="commissionRate.toFixed(1)"></span>%)
+                                </span>
+                                <span class="text-red-600 dark:text-red-400">
+                                    -฿<span x-text="commission.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                </span>
+                            </div>
+
+                            {{-- ค่า PV --}}
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-600 dark:text-gray-400">
+                                    ⭐ ค่าการตลาด PV (<span x-text="pvValue.toFixed(1)"></span>%)
+                                </span>
+                                <span class="text-orange-600 dark:text-orange-400">
+                                    -฿<span x-text="pvAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                </span>
+                            </div>
+
+                            {{-- เส้นแบ่ง --}}
+                            <div class="border-t border-gray-200 dark:border-gray-600 my-2"></div>
+
+                            {{-- รวมหักทั้งหมด --}}
+                            <div class="flex justify-between items-center text-sm font-semibold">
+                                <span class="text-gray-700 dark:text-gray-300">📊 รวมหักทั้งหมด</span>
+                                <span class="text-red-600 dark:text-red-400">
+                                    -฿<span x-text="totalDeduction.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                </span>
+                            </div>
+
+                            {{-- ร้านค้าได้รับ --}}
+                            <div class="flex justify-between items-center pt-2 border-t-2 border-green-300 dark:border-green-700">
+                                <span class="font-bold text-gray-900 dark:text-gray-100">💰 ร้านค้าได้รับ</span>
+                                <span class="text-2xl font-bold text-green-600 dark:text-green-400">
+                                    ฿<span x-text="sellerReceive.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        {{-- สรุปตัวเลขสำคัญ --}}
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">ส่วนลด</p>
                                 <p class="text-2xl font-bold text-green-600 dark:text-green-400" x-text="discount + '%'"></p>
                             </div>
                             <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">ค่าคอมมิชชั่น</p>
-                                <p class="text-2xl font-bold text-orange-600 dark:text-orange-400" x-text="'฿' + commission.toFixed(2)"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">ค่าใช้จ่ายรวม</p>
+                                <p class="text-2xl font-bold text-red-600 dark:text-red-400" x-text="'฿' + totalDeduction.toFixed(2)"></p>
                             </div>
                             <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">กำไรสุทธิ</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">กำไรสุทธิ (หลังหักทุน)</p>
                                 <p class="text-2xl font-bold" :class="profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'" x-text="'฿' + profit.toFixed(2)"></p>
                             </div>
                             <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
@@ -175,46 +324,24 @@
                                 <p class="text-2xl font-bold text-blue-600 dark:text-blue-400" x-text="profitMargin + '%'"></p>
                             </div>
                         </div>
+
+                        {{-- คำอธิบายเพิ่มเติม --}}
+                        <div class="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                            <p class="text-xs text-amber-800 dark:text-amber-300">
+                                <strong>💡 สูตรคำนวณ:</strong> กำไรสุทธิ = ร้านค้าได้รับ - ราคาทุน = (ราคาขาย - ค่าแพลตฟอร์ม - ค่า PV) - ราคาทุน
+                            </p>
+                        </div>
                     </div>
                 </div>
             </x-modern-card>
 
-            <!-- Section 3: MLM & Commissions -->
+            <!-- Section 3: Cashback & Rewards -->
             <x-modern-card
-                title="MLM & รางวัล"
-                description="กำหนด Point Value และ Cashback สำหรับระบบ MLM และสิทธิประโยชน์ลูกค้า"
+                title="Cashback & สิทธิประโยชน์ลูกค้า"
+                description="กำหนดเงินคืนและสิทธิประโยชน์พิเศษสำหรับลูกค้าที่ซื้อสินค้า"
                 icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'>
 
                 <div class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <x-form-field
-                            label="PV (Point Value)"
-                            name="pv_value"
-                            type="number"
-                            :value="old('pv_value', $pvValue)"
-                            placeholder="0"
-                            :step="0.01"
-                            :min="0"
-                            helpText="แต้มที่ใช้คำนวณค่าคอมมิชชั่น MLM"
-                            tooltip="PV คือแต้มที่จะนำไปคำนวณรายได้ในเครือข่าย MLM ยิ่ง PV สูง ค่าคอมฯ ก็สูงตาม"
-                            icon='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>'
-                        />
-
-                        <x-form-field
-                            label="อัตราค่าคอมมิชชั่น (%)"
-                            name="commission_rate"
-                            type="number"
-                            :value="old('commission_rate', $product->commission_rate ?? 10)"
-                            placeholder="10.00"
-                            :step="0.01"
-                            :min="0"
-                            :max="100"
-                            helpText="เปอร์เซ็นต์ค่าคอมฯ ที่แพลตฟอร์มหัก"
-                            tooltip="แพลตฟอร์มจะหักค่าคอมมิชชั่นจากราคาขาย ค่าเริ่มต้น 10%"
-                            icon='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>'
-                        />
-                    </div>
-
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <x-form-field
                             label="Cashback แบบจำนวนคงที่ (฿)"
