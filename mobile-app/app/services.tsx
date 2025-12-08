@@ -344,7 +344,7 @@ const ServiceDetailModal = ({
       <BlurView
         intensity={isDark ? 40 : 80}
         tint={isDark ? 'dark' : 'light'}
-        className="flex-1"
+        style={{ flex: 1 }}
       >
         <Pressable
           className="flex-1 justify-end"
