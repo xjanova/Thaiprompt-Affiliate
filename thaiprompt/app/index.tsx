@@ -1,92 +1,132 @@
 /**
- * Index Screen - DEBUG VERSION
- * ⚠️ แบบ Simple สุดๆ เพื่อทดสอบปัญหาหน้าจอขาว
- * ไม่ใช้: LavaBackground, LinearGradient, Ionicons, NativeWind className
+ * Index Screen - Landing Page Premium Design
+ * ใช้ StyleSheet + LinearGradient + Ionicons (ไม่ใช้ NativeWind)
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   Pressable,
   StyleSheet,
   StatusBar,
+  Dimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 
+const { width, height } = Dimensions.get('window');
+
 export default function IndexScreen() {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
 
-  // ถ้า login แล้ว ไปหน้า tabs
-  const goToHome = () => router.replace('/(tabs)');
+  // Auto redirect ถ้า login แล้ว
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/(tabs)');
+    }
+  }, [isAuthenticated]);
+
   const goToLogin = () => router.push('/login');
+  const goToRegister = () => router.push('/register');
+  const goToHome = () => router.replace('/(tabs)');
 
-  const handleLogout = async () => {
-    await logout();
-  };
+  // ถ้า login แล้ว แสดง loading ระหว่าง redirect
+  if (isAuthenticated) {
+    return (
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#0F0F23', '#1A1A2E', '#16213E']}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <View style={styles.loadingContainer}>
+          <Ionicons name="sparkles" size={48} color="#3B82F6" />
+          <Text style={styles.loadingText}>กำลังเข้าสู่ระบบ...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
+      {/* Background Gradient */}
+      <LinearGradient
+        colors={['#0F0F23', '#1A1A2E', '#16213E']}
+        style={StyleSheet.absoluteFillObject}
+      />
+
+      {/* Decorative Elements */}
+      <View style={styles.decorCircle1} />
+      <View style={styles.decorCircle2} />
+
+      {/* Content */}
+      <View style={styles.content}>
+        {/* Logo Section */}
+        <View style={styles.logoSection}>
+          <LinearGradient
+            colors={['#3B82F6', '#8B5CF6']}
+            style={styles.logoContainer}
+          >
+            <Ionicons name="diamond" size={48} color="#FFFFFF" />
+          </LinearGradient>
           <Text style={styles.appName}>Thaiprompt</Text>
           <Text style={styles.appSubtitle}>Affiliate</Text>
         </View>
 
-        {/* User Status */}
-        <View style={styles.statusCard}>
-          {isAuthenticated ? (
-            <>
-              <Text style={styles.greeting}>สวัสดี 👋</Text>
-              <Text style={styles.userName}>{user?.name || 'ผู้ใช้'}</Text>
-              <Text style={styles.statusText}>✅ เข้าสู่ระบบแล้ว</Text>
-            </>
-          ) : (
-            <>
-              <Text style={styles.greeting}>ยินดีต้อนรับ</Text>
-              <Text style={styles.statusText}>กรุณาเข้าสู่ระบบ</Text>
-            </>
-          )}
-        </View>
-
-        {/* Action Buttons */}
-        <View style={styles.buttonContainer}>
-          {isAuthenticated ? (
-            <>
-              <Pressable style={styles.primaryButton} onPress={goToHome}>
-                <Text style={styles.primaryButtonText}>🏠 เข้าสู่หน้าหลัก</Text>
-              </Pressable>
-
-              <Pressable style={styles.secondaryButton} onPress={handleLogout}>
-                <Text style={styles.secondaryButtonText}>🚪 ออกจากระบบ</Text>
-              </Pressable>
-            </>
-          ) : (
-            <Pressable style={styles.primaryButton} onPress={goToLogin}>
-              <Text style={styles.primaryButtonText}>🔑 เข้าสู่ระบบ</Text>
-            </Pressable>
-          )}
-        </View>
-
-        {/* Debug Info */}
-        <View style={styles.debugInfo}>
-          <Text style={styles.debugTitle}>🔧 DEBUG INFO</Text>
-          <Text style={styles.debugText}>
-            Version: {APP_INFO.VERSION}{'\n'}
-            Build: {APP_INFO.BUILD_DATE}{'\n'}
-            {'\n'}
-            หน้านี้ใช้แค่ React Native พื้นฐาน{'\n'}
-            ไม่มี LavaBackground{'\n'}
-            ไม่มี LinearGradient{'\n'}
-            ไม่มี Ionicons{'\n'}
-            ไม่มี NativeWind
+        {/* Tagline */}
+        <View style={styles.taglineSection}>
+          <Text style={styles.tagline}>สร้างรายได้</Text>
+          <Text style={styles.taglineHighlight}>ไม่จำกัด</Text>
+          <Text style={styles.taglineDescription}>
+            ร่วมเป็นส่วนหนึ่งของเครือข่ายพันธมิตรที่เติบโตเร็วที่สุด
           </Text>
+        </View>
+
+        {/* Features */}
+        <View style={styles.featuresSection}>
+          <View style={styles.featureItem}>
+            <View style={styles.featureIcon}>
+              <Ionicons name="wallet" size={20} color="#10B981" />
+            </View>
+            <Text style={styles.featureText}>รับค่าคอมมิชชั่นทันที</Text>
+          </View>
+          <View style={styles.featureItem}>
+            <View style={styles.featureIcon}>
+              <Ionicons name="people" size={20} color="#8B5CF6" />
+            </View>
+            <Text style={styles.featureText}>สร้างทีมได้ไม่จำกัด</Text>
+          </View>
+          <View style={styles.featureItem}>
+            <View style={styles.featureIcon}>
+              <Ionicons name="shield-checkmark" size={20} color="#3B82F6" />
+            </View>
+            <Text style={styles.featureText}>ปลอดภัย มั่นคง</Text>
+          </View>
+        </View>
+
+        {/* Buttons */}
+        <View style={styles.buttonSection}>
+          <Pressable onPress={goToLogin}>
+            <LinearGradient
+              colors={['#3B82F6', '#2563EB']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.primaryButton}
+            >
+              <Ionicons name="log-in" size={20} color="#FFFFFF" />
+              <Text style={styles.primaryButtonText}>เข้าสู่ระบบ</Text>
+            </LinearGradient>
+          </Pressable>
+
+          <Pressable style={styles.secondaryButton} onPress={goToRegister}>
+            <Ionicons name="person-add" size={20} color="#FFFFFF" />
+            <Text style={styles.secondaryButtonText}>สมัครสมาชิก</Text>
+          </Pressable>
         </View>
 
         {/* Footer */}
@@ -95,7 +135,7 @@ export default function IndexScreen() {
             v{APP_INFO.VERSION} ({APP_INFO.BUILD_DATE})
           </Text>
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -105,95 +145,158 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0F0F23',
   },
-  scrollView: {
+  loadingContainer: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    marginTop: 16,
+  },
+  decorCircle1: {
+    position: 'absolute',
+    top: -100,
+    right: -100,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  decorCircle2: {
+    position: 'absolute',
+    bottom: -50,
+    left: -100,
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
   },
   content: {
-    padding: 20,
-    paddingTop: 60,
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: height * 0.1,
+    paddingBottom: 40,
   },
-  header: {
+  logoSection: {
     alignItems: 'center',
     marginBottom: 40,
+  },
+  logoContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 15,
   },
   appName: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#3B82F6',
+    color: '#FFFFFF',
   },
   appSubtitle: {
     fontSize: 18,
-    color: '#9CA3AF',
-    marginTop: 4,
+    color: '#3B82F6',
+    fontWeight: '600',
+    letterSpacing: 4,
   },
-  statusCard: {
-    backgroundColor: '#1A1A2E',
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
+  taglineSection: {
     alignItems: 'center',
+    marginBottom: 40,
   },
-  greeting: {
-    fontSize: 16,
-    color: '#9CA3AF',
-    marginBottom: 4,
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  tagline: {
+    fontSize: 28,
     color: '#FFFFFF',
-    marginBottom: 8,
+    fontWeight: '300',
   },
-  statusText: {
-    fontSize: 14,
-    color: '#10B981',
-  },
-  buttonContainer: {
-    marginBottom: 24,
-  },
-  primaryButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
+  taglineHighlight: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#3B82F6',
     marginBottom: 12,
   },
-  primaryButtonText: {
-    color: '#FFFFFF',
+  taglineDescription: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  featuresSection: {
+    marginBottom: 40,
+    gap: 16,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  featureIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  featureText: {
     fontSize: 16,
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  buttonSection: {
+    gap: 12,
+    marginTop: 'auto',
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    borderRadius: 16,
+    gap: 10,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  primaryButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   secondaryButton: {
-    backgroundColor: '#374151',
-    borderRadius: 12,
-    padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    gap: 10,
   },
   secondaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-  },
-  debugInfo: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-  },
-  debugTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#92400E',
-    marginBottom: 8,
-  },
-  debugText: {
-    fontSize: 14,
-    color: '#92400E',
-    lineHeight: 22,
+    color: '#FFFFFF',
   },
   footer: {
     alignItems: 'center',
-    paddingVertical: 20,
+    marginTop: 24,
   },
   footerText: {
     fontSize: 12,
