@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'Thaiprompt Affiliate',
-  VERSION: '1.2.2',
-  BUILD_NUMBER: 6,
-  BUILD_DATE: '2025-12-08-DEBUG2', // DEBUG VERSION 2 - ลบ index.tsx fancy
+  VERSION: '1.3.0',
+  BUILD_NUMBER: 7,
+  BUILD_DATE: '2025-12-08-PREMIUM', // PREMIUM VERSION - ใช้ StyleSheet ไม่ใช้ NativeWind
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs
