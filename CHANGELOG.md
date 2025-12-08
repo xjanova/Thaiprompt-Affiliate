@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.12] - 2025-12-08
+
+### ✨ Features
+- Merge pull request #2188 from xjanova/claude/fix-white-screen-login-01X8Ta4WVKdrbCffsKj67ZXy (a181f3eb)
+- feat(mobile-app): เพิ่มหน้าดูดวงไพ่ทาโรต์สำหรับมือถือ (c7941ebc)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.372.11] - 2025-12-08
 
 ### ✨ Features
