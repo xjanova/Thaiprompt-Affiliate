@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.6] - 2025-12-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(mobile-app): แก้ไข LinearGradient className ให้ใช้ style แทน (ed40cab6)
+- fix(mobile-app): แก้ไข white screen หลัง login - LinearGradient className (c8cb0759)
+### 🔧 Other Changes
+- Merge pull request #2182 from xjanova/claude/add-terms-privacy-policy-01DXYbyNEhS1DntwNP3GHmE3 (be5adedc)
+
 ## [v3.372.5] - 2025-12-06
 
 ### ✨ Features
