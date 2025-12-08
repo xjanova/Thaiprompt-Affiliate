@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.7] - 2025-12-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2183 from xjanova/claude/add-terms-privacy-policy-01DXYbyNEhS1DntwNP3GHmE3 (2b369029)
+- fix(mobile-app): แก้ไข missing closing tag สำหรับ LinearGradient ใน index.tsx (50a39f32)
+### 🔧 Other Changes
+
+
 ## [v3.372.6] - 2025-12-08
 
 ### ✨ Features
