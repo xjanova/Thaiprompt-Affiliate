@@ -185,7 +185,7 @@ export default function ProfileScreen() {
     );
   };
 
-  // ถ้ายังไม่ login หรือ user ยังไม่โหลด
+  // ถ้ายังไม่ login หรือ user ยังไม่โหลด (ใช้ || เพราะหลัง login isAuthenticated อาจเป็น true ก่อน user โหลดเสร็จ)
   if (!isAuthenticated || !user) {
     return (
       <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
@@ -241,7 +241,11 @@ export default function ProfileScreen() {
           {/* Profile Header */}
           <LinearGradient
             colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
-            className="px-6 pt-6 pb-8"
+            style={{
+              paddingHorizontal: 24,
+              paddingTop: 24,
+              paddingBottom: 32,
+            }}
           >
             <Text className="text-white text-2xl font-bold mb-6">โปรไฟล์</Text>
 
