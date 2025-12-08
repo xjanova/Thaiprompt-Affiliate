@@ -322,7 +322,7 @@ export default function HomeScreen() {
                 </View>
               </Animated.View>
             )}
-          </View>
+          </LinearGradient>
 
           {/* Quick Actions */}
           <View className="px-5 mt-5">
