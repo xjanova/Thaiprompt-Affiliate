@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.11] - 2025-12-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2187 from xjanova/claude/fix-white-screen-login-01X8Ta4WVKdrbCffsKj67ZXy (701e2284)
+- chore(mobile-app): bump version to 1.2.0 เพื่อบังคับ build ใหม่ (a9ff13d5)
+
 ## [v3.372.10] - 2025-12-08
 
 ### ✨ Features
