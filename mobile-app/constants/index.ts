@@ -89,6 +89,16 @@ export const API_ENDPOINTS = {
   PUSH_BULK_CONFIRM: '/mobile/push/bulk-confirm',
   PUSH_ANALYTICS: '/mobile/push/analytics',
 
+  // Tarot / Fortune Telling (Mobile App)
+  TAROT_CATEGORIES: '/tarot/categories',
+  TAROT_SPREAD_TYPES: '/tarot/spread-types',
+  TAROT_START_READING: '/tarot/start',
+  TAROT_CARDS: '/tarot/cards',
+  TAROT_CARD_BACKS: '/tarot/card-backs',
+  TAROT_SAVE_SELECTION: '/tarot/save-selection',
+  TAROT_READING: '/tarot/reading', // + /{readingId}
+  TAROT_HISTORY: '/tarot/history',
+
   // Rank System (Mobile App)
   RANKS: '/mobile/ranks',
   RANK_DETAIL: '/mobile/ranks', // + /{rankId}
