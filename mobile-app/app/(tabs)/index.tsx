@@ -134,47 +134,56 @@ export default function HomeScreen() {
   const [greeting] = useState(getGreetingByTime());
 
   // โหลดข้อมูล
+  // ⚠️ DEBUG: ปิดการเรียก API ชั่วคราวเพื่อทดสอบปัญหาหน้าจอขาว
   const loadData = useCallback(async () => {
     try {
-      // ตรวจสอบ network
-      const online = await Network.checkNetworkStatus();
-      setIsOnline(online);
+      // ✅ DEBUG: ข้ามการเช็ค network ไปก่อน
+      // const online = await Network.checkNetworkStatus();
+      // setIsOnline(online);
+      setIsOnline(true); // สมมติว่า online
 
       if (isAuthenticated) {
-        // ดึงจาก cache ก่อน
-        const cached = await Cache.getCache<DashboardStats>(
-          Cache.CACHE_KEYS.DASHBOARD_STATS
-        );
-        if (cached) setStats(cached);
+        // ✅ DEBUG: ข้าม cache และ API ไปก่อน - ใช้ mock data แทน
+        // const cached = await Cache.getCache<DashboardStats>(
+        //   Cache.CACHE_KEYS.DASHBOARD_STATS
+        // );
+        // if (cached) setStats(cached);
 
-        // ถ้า online ให้ดึงข้อมูลใหม่
-        if (online) {
-          const freshData = await getDashboardStats();
-          if (freshData) {
-            setStats(freshData);
-            await Cache.setCache(
-              Cache.CACHE_KEYS.DASHBOARD_STATS,
-              freshData,
-              Cache.OFFLINE_CACHE_DURATION
-            );
-          }
-        }
+        // const freshData = await getDashboardStats();
+        // if (freshData) {
+        //   setStats(freshData);
+        //   await Cache.setCache(...);
+        // }
+
+        // ใช้ mock data เพื่อทดสอบ
+        setStats({
+          totalEarnings: 0,
+          pendingEarnings: 0,
+          totalReferrals: 0,
+          recentCommissions: [],
+        });
       }
     } catch (error) {
       console.error('Load data error:', error);
+      // ✅ DEBUG: ถ้าเกิด error ให้ set default stats
+      setStats({
+        totalEarnings: 0,
+        pendingEarnings: 0,
+        totalReferrals: 0,
+        recentCommissions: [],
+      });
     }
   }, [isAuthenticated]);
 
   useEffect(() => {
     loadData();
 
-    // Listen to network changes
-    const unsubscribe = Network.addNetworkListener((connected) => {
-      setIsOnline(connected);
-      if (connected) loadData();
-    });
-
-    return () => unsubscribe();
+    // ✅ DEBUG: ปิด network listener ชั่วคราวเพื่อทดสอบ
+    // const unsubscribe = Network.addNetworkListener((connected) => {
+    //   setIsOnline(connected);
+    //   if (connected) loadData();
+    // });
+    // return () => unsubscribe();
   }, [loadData]);
 
   // Pull to refresh
