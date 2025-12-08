@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.15] - 2025-12-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2191 from xjanova/claude/fix-white-screen-login-01X8Ta4WVKdrbCffsKj67ZXy (60080442)
+- fix(mobile-app): แก้ไข owner เป็น thaiprompt111 ให้ตรงกับ EAS project (ad51cf26)
+### 🔧 Other Changes
+
+
 ## [v3.372.14] - 2025-12-08
 
 ### ✨ Features
