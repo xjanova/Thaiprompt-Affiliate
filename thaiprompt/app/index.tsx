@@ -1,212 +1,202 @@
 /**
- * Index Screen - Hub Selection (หน้าหลัก)
- * แปลงจาก .NET MAUI HubSelectionPage
- * พร้อม LavaBackground RGB Effect
+ * Index Screen - DEBUG VERSION
+ * ⚠️ แบบ Simple สุดๆ เพื่อทดสอบปัญหาหน้าจอขาว
+ * ไม่ใช้: LavaBackground, LinearGradient, Ionicons, NativeWind className
  */
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   ScrollView,
   Pressable,
-  Alert,
-  RefreshControl,
+  StyleSheet,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
-import { LavaBackground, HubCard, Button } from '@/components';
-import { HUB_ITEMS, getGreetingByTime, formatCurrency } from '@/constants';
-import { getDashboardStats } from '@/services/api';
-import type { HubItem } from '@/types';
+import { APP_INFO } from '@/config/appConfig';
 
 export default function IndexScreen() {
   const { user, isAuthenticated, logout } = useAuthStore();
-  const [balance, setBalance] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const [greeting, setGreeting] = useState(getGreetingByTime());
 
-  // โหลดข้อมูล balance
-  const loadBalance = async () => {
-    if (!isAuthenticated) return;
-    try {
-      const stats = await getDashboardStats();
-      if (stats) {
-        setBalance(stats.totalEarnings);
-      }
-    } catch (error) {
-      console.error('Load balance error:', error);
-    }
-  };
-
-  useEffect(() => {
-    loadBalance();
-    // อัพเดท greeting ทุก 1 นาที
-    const interval = setInterval(() => {
-      setGreeting(getGreetingByTime());
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated]);
-
-  // Pull to refresh
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadBalance();
-    setRefreshing(false);
-  };
-
-  // เมื่อเลือก Hub
-  const onHubPress = (hub: typeof HUB_ITEMS[number]) => {
-    // ตรวจสอบว่าต้อง login ก่อนไหม
-    if (hub.requiresLogin && !isAuthenticated) {
-      Alert.alert(
-        'ต้องเข้าสู่ระบบ',
-        `กรุณาเข้าสู่ระบบเพื่อใช้บริการ ${hub.title}`,
-        [
-          { text: 'ยกเลิก', style: 'cancel' },
-          { text: 'เข้าสู่ระบบ', onPress: () => router.push('/login') },
-        ]
-      );
-      return;
-    }
-
-    // นำทางไปยังหน้าที่เลือก
-    router.push(hub.route as any);
-  };
-
-  // ไปหน้า login
+  // ถ้า login แล้ว ไปหน้า tabs
+  const goToHome = () => router.replace('/(tabs)');
   const goToLogin = () => router.push('/login');
 
-  // ไปหน้า dashboard
-  const goToDashboard = () => router.push('/dashboard');
-
-  // Logout
-  const handleLogout = () => {
-    Alert.alert('ออกจากระบบ', 'คุณต้องการออกจากระบบใช่หรือไม่?', [
-      { text: 'ยกเลิก', style: 'cancel' },
-      {
-        text: 'ออกจากระบบ',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-        },
-      },
-    ]);
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
-    <LavaBackground variant="shopping" intensity="medium">
-      <SafeAreaView className="flex-1">
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="pb-6"
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor="#3B82F6"
-            />
-          }
-        >
-          {/* Header */}
-          <View className="px-5 pt-4 pb-6">
-            {/* Top Row - Greeting & Profile */}
-            <View className="flex-row justify-between items-center mb-4">
-              <View>
-                <Text className="text-gray-400 text-sm">{greeting}</Text>
-                <Text className="text-white text-xl font-bold">
-                  {isAuthenticated ? user?.name : 'ยินดีต้อนรับ'}
-                </Text>
-              </View>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
 
-              {/* Profile / Login Button */}
-              {isAuthenticated ? (
-                <Pressable
-                  onPress={goToDashboard}
-                  className="w-12 h-12 rounded-full bg-primary-500 items-center justify-center"
-                  style={{
-                    shadowColor: '#3B82F6',
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.5,
-                    shadowRadius: 10,
-                    elevation: 8,
-                  }}
-                >
-                  <Text className="text-white text-lg font-bold">
-                    {user?.name?.charAt(0).toUpperCase() || 'U'}
-                  </Text>
-                </Pressable>
-              ) : (
-                <Button
-                  title="เข้าสู่ระบบ"
-                  onPress={goToLogin}
-                  size="sm"
-                  icon={<Ionicons name="log-in" size={16} color="white" />}
-                />
-              )}
-            </View>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.appName}>Thaiprompt</Text>
+          <Text style={styles.appSubtitle}>Affiliate</Text>
+        </View>
 
-            {/* Balance Card (ถ้า login แล้ว) */}
-            {isAuthenticated && (
-              <LinearGradient
-                colors={['#3B82F6', '#1D4ED8']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{ borderRadius: 16, padding: 20, marginBottom: 8 }}
-              >
-                <Text className="text-white/80 text-sm mb-1">ยอดเงินคงเหลือ</Text>
-                <Text className="text-white text-3xl font-bold mb-3">
-                  {formatCurrency(balance)}
-                </Text>
-                <View className="flex-row">
-                  <Pressable
-                    onPress={goToDashboard}
-                    className="flex-row items-center bg-white/20 rounded-full px-4 py-2 mr-2"
-                  >
-                    <Ionicons name="wallet" size={16} color="white" />
-                    <Text className="text-white text-sm ml-2">ดูแดชบอร์ด</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={handleLogout}
-                    className="flex-row items-center bg-white/10 rounded-full px-4 py-2"
-                  >
-                    <Ionicons name="log-out" size={16} color="white" />
-                    <Text className="text-white text-sm ml-2">ออก</Text>
-                  </Pressable>
-                </View>
-              </LinearGradient>
-            )}
-          </View>
+        {/* User Status */}
+        <View style={styles.statusCard}>
+          {isAuthenticated ? (
+            <>
+              <Text style={styles.greeting}>สวัสดี 👋</Text>
+              <Text style={styles.userName}>{user?.name || 'ผู้ใช้'}</Text>
+              <Text style={styles.statusText}>✅ เข้าสู่ระบบแล้ว</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.greeting}>ยินดีต้อนรับ</Text>
+              <Text style={styles.statusText}>กรุณาเข้าสู่ระบบ</Text>
+            </>
+          )}
+        </View>
 
-          {/* Section Title */}
-          <View className="px-5 mb-4">
-            <Text className="text-white text-lg font-bold">บริการทั้งหมด</Text>
-            <Text className="text-gray-400 text-sm">เลือกบริการที่คุณต้องการ</Text>
-          </View>
+        {/* Action Buttons */}
+        <View style={styles.buttonContainer}>
+          {isAuthenticated ? (
+            <>
+              <Pressable style={styles.primaryButton} onPress={goToHome}>
+                <Text style={styles.primaryButtonText}>🏠 เข้าสู่หน้าหลัก</Text>
+              </Pressable>
 
-          {/* Hub Grid (2 columns) */}
-          <View className="px-3">
-            <View className="flex-row flex-wrap">
-              {HUB_ITEMS.map((hub) => (
-                <View key={hub.id} className="w-1/2">
-                  <HubCard item={hub as HubItem} onPress={() => onHubPress(hub)} />
-                </View>
-              ))}
-            </View>
-          </View>
+              <Pressable style={styles.secondaryButton} onPress={handleLogout}>
+                <Text style={styles.secondaryButtonText}>🚪 ออกจากระบบ</Text>
+              </Pressable>
+            </>
+          ) : (
+            <Pressable style={styles.primaryButton} onPress={goToLogin}>
+              <Text style={styles.primaryButtonText}>🔑 เข้าสู่ระบบ</Text>
+            </Pressable>
+          )}
+        </View>
 
-          {/* Footer */}
-          <View className="px-5 mt-6 items-center">
-            <Ionicons name="sparkles" size={16} color="#6B7280" style={{ marginBottom: 4 }} />
-            <Text className="text-gray-500 text-xs">
-              Thaiprompt Affiliate v1.0.0
-            </Text>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </LavaBackground>
+        {/* Debug Info */}
+        <View style={styles.debugInfo}>
+          <Text style={styles.debugTitle}>🔧 DEBUG INFO</Text>
+          <Text style={styles.debugText}>
+            Version: {APP_INFO.VERSION}{'\n'}
+            Build: {APP_INFO.BUILD_DATE}{'\n'}
+            {'\n'}
+            หน้านี้ใช้แค่ React Native พื้นฐาน{'\n'}
+            ไม่มี LavaBackground{'\n'}
+            ไม่มี LinearGradient{'\n'}
+            ไม่มี Ionicons{'\n'}
+            ไม่มี NativeWind
+          </Text>
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            v{APP_INFO.VERSION} ({APP_INFO.BUILD_DATE})
+          </Text>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0F0F23',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    padding: 20,
+    paddingTop: 60,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  appName: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#3B82F6',
+  },
+  appSubtitle: {
+    fontSize: 18,
+    color: '#9CA3AF',
+    marginTop: 4,
+  },
+  statusCard: {
+    backgroundColor: '#1A1A2E',
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  greeting: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    marginBottom: 4,
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  statusText: {
+    fontSize: 14,
+    color: '#10B981',
+  },
+  buttonContainer: {
+    marginBottom: 24,
+  },
+  primaryButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    backgroundColor: '#374151',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  debugInfo: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+  },
+  debugTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#92400E',
+    marginBottom: 8,
+  },
+  debugText: {
+    fontSize: 14,
+    color: '#92400E',
+    lineHeight: 22,
+  },
+  footer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+});

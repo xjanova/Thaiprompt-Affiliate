@@ -2,7 +2,7 @@
   "expo": {
     "name": "Thaiprompt Affiliate",
     "slug": "thaiprompt",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "thaiprompt",
@@ -19,7 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.thaiprompt.affiliate",
-      "buildNumber": "5",
+      "buildNumber": "6",
       "infoPlist": {
         "NSCameraUsageDescription": "แอปต้องการใช้กล้องเพื่อถ่ายรูปเอกสาร KYC และรูปโปรไฟล์",
         "NSPhotoLibraryUsageDescription": "แอปต้องการเข้าถึงรูปภาพเพื่ออัพโหลดเอกสาร",
@@ -34,7 +34,7 @@
         "backgroundColor": "#0F0F23"
       },
       "package": "com.thaiprompt.affiliate",
-      "versionCode": 5,
+      "versionCode": 6,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
