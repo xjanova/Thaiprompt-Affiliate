@@ -87,7 +87,12 @@ const AvatarSection = ({
             colors={['#3B82F6', '#8B5CF6', '#06B6D4', '#3B82F6']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            className="w-full h-full rounded-full p-1"
+            style={{
+              width: '100%',
+              height: '100%',
+              borderRadius: 9999,
+              padding: 4,
+            }}
           >
             <View className={`w-full h-full rounded-full overflow-hidden items-center justify-center ${
               isDark ? 'bg-gray-800' : 'bg-white'
@@ -119,7 +124,13 @@ const AvatarSection = ({
           >
             <LinearGradient
               colors={['#3B82F6', '#8B5CF6']}
-              className="w-full h-full rounded-full items-center justify-center"
+              style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: 9999,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
               {isUploading ? (
                 <ActivityIndicator size="small" color="white" />
@@ -151,7 +162,14 @@ const SectionHeader = ({
   <View className="flex-row items-center mb-4">
     <LinearGradient
       colors={['rgba(59, 130, 246, 0.2)', 'rgba(139, 92, 246, 0.2)']}
-      className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+      }}
     >
       <Ionicons name={icon} size={20} color="#3B82F6" />
     </LinearGradient>
@@ -454,7 +472,11 @@ export default function EditProfileScreen() {
         {/* Header */}
         <LinearGradient
           colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
-          className="px-5 pt-4 pb-8"
+          style={{
+            paddingHorizontal: 20,
+            paddingTop: 16,
+            paddingBottom: 32,
+          }}
         >
           <View className="flex-row items-center justify-between mb-6">
             <Pressable
@@ -599,7 +621,14 @@ export default function EditProfileScreen() {
                   <View className="flex-row items-center">
                     <LinearGradient
                       colors={['rgba(239, 68, 68, 0.2)', 'rgba(239, 68, 68, 0.1)']}
-                      className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: 12,
+                      }}
                     >
                       <Ionicons name="key" size={20} color="#EF4444" />
                     </LinearGradient>
@@ -650,7 +679,11 @@ export default function EditProfileScreen() {
                     >
                       <LinearGradient
                         colors={['#EF4444', '#DC2626']}
-                        className="py-4 rounded-xl items-center"
+                        style={{
+                          paddingVertical: 16,
+                          borderRadius: 12,
+                          alignItems: 'center',
+                        }}
                       >
                         {isChangingPassword ? (
                           <ActivityIndicator color="white" />
@@ -693,8 +726,10 @@ export default function EditProfileScreen() {
                   colors={['#3B82F6', '#8B5CF6']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  className="py-4 rounded-2xl items-center"
                   style={{
+                    paddingVertical: 16,
+                    borderRadius: 16,
+                    alignItems: 'center',
                     shadowColor: '#3B82F6',
                     shadowOffset: { width: 0, height: 4 },
                     shadowOpacity: 0.3,

@@ -227,7 +227,7 @@ export default function LeaderboardScreen() {
                 <View className="items-center flex-1">
                   <LinearGradient
                     colors={getPositionStyle(2).gradient}
-                    className="w-16 h-16 rounded-full items-center justify-center mb-2"
+                    style={{ width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}
                   >
                     <Text className="text-3xl">{getPositionStyle(2).icon}</Text>
                   </LinearGradient>
@@ -251,7 +251,7 @@ export default function LeaderboardScreen() {
                 <View className="items-center flex-1 mx-2">
                   <LinearGradient
                     colors={getPositionStyle(1).gradient}
-                    className="w-20 h-20 rounded-full items-center justify-center mb-2"
+                    style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}
                   >
                     <Text className="text-4xl">{getPositionStyle(1).icon}</Text>
                   </LinearGradient>
@@ -275,7 +275,7 @@ export default function LeaderboardScreen() {
                 <View className="items-center flex-1">
                   <LinearGradient
                     colors={getPositionStyle(3).gradient}
-                    className="w-14 h-14 rounded-full items-center justify-center mb-2"
+                    style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}
                   >
                     <Text className="text-2xl">{getPositionStyle(3).icon}</Text>
                   </LinearGradient>

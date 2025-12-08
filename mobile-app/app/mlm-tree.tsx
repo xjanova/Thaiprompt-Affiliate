@@ -178,7 +178,7 @@ const TreeNodeItem = ({
             colors={['#3B82F6', '#8B5CF6']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            className="h-1"
+            style={{ height: 4 }}
           />
         )}
 
@@ -221,7 +221,13 @@ const TreeNodeItem = ({
             ) : (
               <LinearGradient
                 colors={['#3B82F6', '#8B5CF6']}
-                className="w-12 h-12 rounded-full items-center justify-center"
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 9999,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
                 <Text className="text-white font-bold text-lg">
                   {node.name.charAt(0).toUpperCase()}
@@ -348,7 +354,12 @@ const MemberDetailModal = ({
             <View className="relative mb-3">
               <LinearGradient
                 colors={['#3B82F6', '#8B5CF6', '#06B6D4']}
-                className="w-24 h-24 rounded-full p-1"
+                style={{
+                  width: 96,
+                  height: 96,
+                  borderRadius: 9999,
+                  padding: 4,
+                }}
               >
                 <View className={`w-full h-full rounded-full items-center justify-center ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
                   <Text className="text-primary-500 font-bold text-3xl">
@@ -476,8 +487,12 @@ const MemberDetailModal = ({
             <Pressable onPress={onViewTree}>
               <LinearGradient
                 colors={['#8B5CF6', '#6D28D9']}
-                className="rounded-2xl py-4 flex-row items-center justify-center"
                 style={{
+                  borderRadius: 16,
+                  paddingVertical: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   shadowColor: '#8B5CF6',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.3,
@@ -1062,7 +1077,11 @@ export default function MLMTreeScreen() {
             >
               <LinearGradient
                 colors={['#8B5CF6', '#6D28D9']}
-                className="px-6 py-3 rounded-xl"
+                style={{
+                  paddingHorizontal: 24,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                }}
               >
                 <Text className="text-white font-bold">แนะนำเพื่อน</Text>
               </LinearGradient>

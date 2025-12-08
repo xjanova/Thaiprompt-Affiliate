@@ -237,7 +237,10 @@ const AcceptJobModal = ({
           {/* Header */}
           <LinearGradient
             colors={['#3B82F6', '#1D4ED8']}
-            className="p-6 items-center"
+            style={{
+              padding: 24,
+              alignItems: 'center',
+            }}
           >
             <View className="w-20 h-20 bg-white/20 rounded-full items-center justify-center mb-4">
               <Ionicons name="bicycle" size={40} color="white" />
@@ -517,7 +520,12 @@ export default function RiderJobsScreen() {
             >
               <LinearGradient
                 colors={['#10B981', '#059669']}
-                className="rounded-2xl p-4 flex-row items-center"
+                style={{
+                  borderRadius: 16,
+                  padding: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
               >
                 <View className="w-12 h-12 bg-white/20 rounded-xl items-center justify-center mr-3">
                   <Ionicons name="bicycle" size={24} color="white" />

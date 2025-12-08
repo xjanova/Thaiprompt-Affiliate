@@ -511,7 +511,10 @@ export default function RiderDocumentsScreen() {
           >
             <LinearGradient
               colors={['#3B82F6', '#1D4ED8']}
-              className="rounded-2xl p-4"
+              style={{
+                borderRadius: 16,
+                padding: 16,
+              }}
             >
               <View className="flex-row items-center">
                 <View className="w-12 h-12 bg-white/20 rounded-xl items-center justify-center mr-3">
@@ -613,7 +616,12 @@ export default function RiderDocumentsScreen() {
                   ? ['#10B981', '#059669']
                   : ['#9CA3AF', '#6B7280']
               }
-              className="py-4 flex-row items-center justify-center"
+              style={{
+                paddingVertical: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
               {uploadingType !== null ? (
                 <ActivityIndicator color="white" />
