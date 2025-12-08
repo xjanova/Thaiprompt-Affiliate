@@ -450,7 +450,10 @@ const PhotoProofModal = ({
         >
           <LinearGradient
             colors={['#10B981', '#059669']}
-            className="p-6 items-center"
+            style={{
+              padding: 24,
+              alignItems: 'center',
+            }}
           >
             <Ionicons name="camera" size={40} color="white" />
             <Text className="text-white text-xl font-bold mt-2">
@@ -1030,7 +1033,12 @@ export default function RiderJobDetailScreen() {
               >
                 <LinearGradient
                   colors={nextAction.color}
-                  className="py-4 flex-row items-center justify-center"
+                  style={{
+                    paddingVertical: 16,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
                 >
                   {isUpdating ? (
                     <ActivityIndicator color="white" />

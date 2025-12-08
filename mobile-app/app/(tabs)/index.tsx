@@ -61,7 +61,7 @@ const QuickActionButton = ({
   </Animated.View>
 );
 
-// Hub Card Component (แบบเรียบง่าย - ไม่ใช้ gradient)
+// Hub Card Component - ใช้ LinearGradient + style (ไม่ใช้ className)
 const HubCard = ({
   item,
   onPress,
@@ -82,10 +82,11 @@ const HubCard = ({
         transform: [{ scale: pressed ? 0.97 : 1 }],
       })}
     >
-      {/* ใช้ View ธรรมดาแทน LinearGradient เพื่อทดสอบ */}
-      <View
+      <LinearGradient
+        colors={[item.gradientStart, item.gradientEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          backgroundColor: item.gradientStart,
           borderRadius: 16,
           padding: 16,
           minHeight: 130,
@@ -117,7 +118,7 @@ const HubCard = ({
 
         {/* Decorative */}
         <View className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-white/10" />
-      </View>
+      </LinearGradient>
     </Pressable>
   </Animated.View>
 );
@@ -240,10 +241,10 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Header - ใช้สีธรรมดาแทน gradient เพื่อทดสอบ */}
-          <View
+          {/* Header - ใช้ LinearGradient + style (ไม่ใช้ className) */}
+          <LinearGradient
+            colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
             style={{
-              backgroundColor: isDark ? '#1E3A8A' : '#3B82F6',
               paddingHorizontal: 20,
               paddingTop: 16,
               paddingBottom: 32,

@@ -115,8 +115,13 @@ const ServiceCard = ({
             {/* Icon with Gradient Background */}
             <LinearGradient
               colors={service.gradient}
-              className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
               style={{
+                width: 56,
+                height: 56,
+                borderRadius: 16,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 16,
                 shadowColor: service.color,
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.3,
@@ -308,7 +313,13 @@ const SelectedServicesSummary = ({
         colors={['#3B82F6', '#1D4ED8']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        className="px-4 py-3 flex-row items-center justify-between"
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
       >
         <View className="flex-row items-center">
           <View className="w-8 h-8 bg-white/20 rounded-full items-center justify-center mr-3">
@@ -605,7 +616,10 @@ export default function RiderServicesScreen() {
                   ? ['#1F2937', '#111827']
                   : ['#F3F4F6', '#E5E7EB']
               }
-              className="rounded-2xl p-4"
+              style={{
+                borderRadius: 16,
+                padding: 16,
+              }}
             >
               <View className="flex-row items-center">
                 <View
@@ -696,7 +710,12 @@ export default function RiderServicesScreen() {
                   ? ['#10B981', '#059669']
                   : ['#9CA3AF', '#6B7280']
               }
-              className="py-4 flex-row items-center justify-center"
+              style={{
+                paddingVertical: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
               {isSaving ? (
                 <ActivityIndicator color="white" />

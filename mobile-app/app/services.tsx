@@ -96,8 +96,10 @@ const FeaturedServiceCard = ({
           colors={service.gradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          className="rounded-3xl p-5 overflow-hidden"
           style={{
+            borderRadius: 24,
+            padding: 20,
+            overflow: 'hidden',
             width: CARD_WIDTH,
             height: CARD_WIDTH * 1.2,
             shadowColor: service.color,
@@ -259,8 +261,13 @@ const ServiceGridCard = ({
         {/* Icon with Gradient */}
         <LinearGradient
           colors={service.gradient}
-          className="w-14 h-14 rounded-2xl items-center justify-center mb-3"
           style={{
+            width: 56,
+            height: 56,
+            borderRadius: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 12,
             shadowColor: service.color,
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.3,
@@ -369,8 +376,11 @@ const ServiceDetailModal = ({
               {/* Header with Gradient */}
               <LinearGradient
                 colors={service.gradient}
-                className="mx-5 rounded-3xl p-6 mb-6"
                 style={{
+                  marginHorizontal: 20,
+                  borderRadius: 24,
+                  padding: 24,
+                  marginBottom: 24,
                   shadowColor: service.color,
                   shadowOffset: { width: 0, height: 8 },
                   shadowOpacity: 0.4,
@@ -496,7 +506,12 @@ const ServiceDetailModal = ({
                 <Pressable onPress={onOrder} className="rounded-2xl overflow-hidden">
                   <LinearGradient
                     colors={service.gradient}
-                    className="py-4 flex-row items-center justify-center"
+                    style={{
+                      paddingVertical: 16,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
                   >
                     <Ionicons name="calendar" size={22} color="white" />
                     <Text className="text-white font-bold text-lg ml-2">
@@ -811,7 +826,10 @@ export default function ServicesScreen() {
           >
             <LinearGradient
               colors={isDark ? ['#1F2937', '#111827'] : ['#F0F9FF', '#E0F2FE']}
-              className="rounded-3xl p-6"
+              style={{
+                borderRadius: 24,
+                padding: 24,
+              }}
             >
               <View className="flex-row items-center">
                 <View className="w-16 h-16 bg-primary-500/20 rounded-2xl items-center justify-center mr-4">

@@ -138,7 +138,7 @@ const FeatureCard = ({
     >
       <LinearGradient
         colors={['rgba(59, 130, 246, 0.2)', 'rgba(139, 92, 246, 0.2)']}
-        className="w-12 h-12 rounded-xl items-center justify-center mr-4"
+        style={{ width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}
       >
         <Ionicons name={icon} size={24} color="#3B82F6" />
       </LinearGradient>
@@ -418,8 +418,10 @@ export default function RegisterScreen() {
           colors={['#3B82F6', '#8B5CF6']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          className="py-4 rounded-2xl items-center"
           style={{
+            paddingVertical: 16,
+            borderRadius: 16,
+            alignItems: 'center',
             shadowColor: '#3B82F6',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.3,
@@ -554,8 +556,10 @@ export default function RegisterScreen() {
             colors={['#3B82F6', '#8B5CF6']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            className="py-4 rounded-2xl items-center"
             style={{
+              paddingVertical: 16,
+              borderRadius: 16,
+              alignItems: 'center',
               shadowColor: '#3B82F6',
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,
@@ -688,8 +692,10 @@ export default function RegisterScreen() {
             colors={['#10B981', '#059669']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            className="py-4 rounded-2xl items-center"
             style={{
+              paddingVertical: 16,
+              borderRadius: 16,
+              alignItems: 'center',
               shadowColor: '#10B981',
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,
@@ -769,7 +775,13 @@ export default function RegisterScreen() {
                   colors={['#3B82F6', '#8B5CF6', '#06B6D4']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  className="w-full h-full rounded-3xl items-center justify-center"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: 24,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
                 >
                   <Text className="text-5xl">🚀</Text>
                 </LinearGradient>

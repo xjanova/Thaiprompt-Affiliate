@@ -548,7 +548,7 @@ export default function SupportScreen() {
           <View className="flex-1 justify-center items-center px-6">
             <LinearGradient
               colors={['#3B82F6', '#8B5CF6']}
-              className="w-24 h-24 rounded-full items-center justify-center mb-6"
+              style={{ width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}
             >
               <Ionicons name="chatbubbles-outline" size={48} color="white" />
             </LinearGradient>

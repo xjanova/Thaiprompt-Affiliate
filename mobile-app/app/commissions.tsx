@@ -371,7 +371,7 @@ export default function CommissionsScreen() {
               colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              className="rounded-3xl p-6"
+              style={{ borderRadius: 24, padding: 24 }}
             >
               <Text className="text-blue-100">รายได้ทั้งหมด</Text>
               <Text className="text-white text-4xl font-bold mt-2">

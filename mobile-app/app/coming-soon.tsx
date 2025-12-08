@@ -330,7 +330,11 @@ export default function ComingSoonScreen() {
             colors={['#3B82F6', '#8B5CF6']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            className="rounded-3xl p-6 overflow-hidden"
+            style={{
+              borderRadius: 24,
+              padding: 24,
+              overflow: 'hidden',
+            }}
           >
             <View className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/10 -mr-20 -mt-20" />
             <View className="absolute bottom-0 left-0 w-32 h-32 rounded-full bg-black/10 -ml-16 -mb-16" />
@@ -400,7 +404,11 @@ export default function ComingSoonScreen() {
                   >
                     <LinearGradient
                       colors={feature.gradientColors}
-                      className="h-24 items-center justify-center"
+                      style={{
+                        height: 96,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
                       <Text className="text-4xl">{feature.icon}</Text>
                     </LinearGradient>

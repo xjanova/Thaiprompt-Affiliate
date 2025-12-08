@@ -283,7 +283,12 @@ export default function NetworkScreen() {
             >
               <LinearGradient
                 colors={['#8B5CF6', '#6D28D9']}
-                className="rounded-2xl p-4 flex-row items-center"
+                style={{
+                  borderRadius: 16,
+                  padding: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
               >
                 <View className="w-12 h-12 rounded-xl bg-white/20 items-center justify-center mr-3">
                   <Ionicons name="git-network" size={24} color="white" />
@@ -309,7 +314,12 @@ export default function NetworkScreen() {
             >
               <LinearGradient
                 colors={['#EC4899', '#BE185D']}
-                className="rounded-2xl p-4 flex-row items-center"
+                style={{
+                  borderRadius: 16,
+                  padding: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
               >
                 <View className="w-12 h-12 rounded-xl bg-white/20 items-center justify-center mr-3">
                   <Ionicons name="share-social" size={24} color="white" />

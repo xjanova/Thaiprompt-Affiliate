@@ -191,7 +191,7 @@ export default function RankScreen() {
             colors={getRankColor(currentRank)}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            className="rounded-3xl p-6 overflow-hidden"
+            style={{ borderRadius: 24, padding: 24, overflow: 'hidden' }}
           >
             {/* Decorative Elements */}
             <View className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/10 -mr-20 -mt-20" />
