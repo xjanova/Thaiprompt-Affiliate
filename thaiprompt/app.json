@@ -1,0 +1,97 @@
+{
+  "expo": {
+    "name": "Thaiprompt Affiliate",
+    "slug": "thaiprompt",
+    "version": "1.2.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "thaiprompt",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F0F23"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.thaiprompt.affiliate",
+      "buildNumber": "3",
+      "infoPlist": {
+        "NSCameraUsageDescription": "แอปต้องการใช้กล้องเพื่อถ่ายรูปเอกสาร KYC และรูปโปรไฟล์",
+        "NSPhotoLibraryUsageDescription": "แอปต้องการเข้าถึงรูปภาพเพื่ออัพโหลดเอกสาร",
+        "NSLocationWhenInUseUsageDescription": "แอปต้องการตำแหน่งเพื่อแสดงงานใกล้เคียงสำหรับไรเดอร์",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "แอปต้องการติดตามตำแหน่งเพื่อแจ้งสถานะการจัดส่งให้ลูกค้า",
+        "UIBackgroundModes": ["location"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0F0F23"
+      },
+      "package": "com.thaiprompt.affiliate",
+      "versionCode": 3,
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-dev-client",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "แอปต้องการใช้กล้องเพื่อถ่ายรูปเอกสาร KYC"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "แอปต้องการเข้าถึงรูปภาพเพื่ออัพโหลดเอกสาร",
+          "cameraPermission": "แอปต้องการใช้กล้องเพื่อถ่ายรูปเอกสาร KYC"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "แอปต้องการติดตามตำแหน่งเพื่อแจ้งสถานะการจัดส่งให้ลูกค้า",
+          "locationAlwaysPermission": "แอปต้องการติดตามตำแหน่งในพื้นหลังเมื่อคุณรับงานส่งของ",
+          "locationWhenInUsePermission": "แอปต้องการตำแหน่งเพื่อแสดงงานใกล้เคียงสำหรับไรเดอร์",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "29122722-d021-4079-969b-a12b75e9ad3f"
+      }
+    },
+    "owner": "thaiprompt103"
+  }
+}
