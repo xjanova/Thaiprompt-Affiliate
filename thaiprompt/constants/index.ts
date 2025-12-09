@@ -48,6 +48,9 @@ export const API_ENDPOINTS = {
   // Wallet (Mobile App)
   WALLET: '/wallet',
   WALLET_TRANSACTIONS: '/wallet/transactions',
+  WALLET_WITHDRAW: '/wallet/withdraw',
+  WALLET_TRANSFER: '/wallet/transfer',
+  WALLET_LOOKUP: '/wallet/lookup',
 
   // KYC (Mobile App)
   KYC_STATUS: '/kyc/status',

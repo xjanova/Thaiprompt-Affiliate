@@ -224,8 +224,7 @@ export default function WalletScreen() {
 
   // Handle actions
   const handleTopUp = () => {
-    // Open web for top up
-    Linking.openURL('https://main.thaiprompt.online/user/wallet/topup');
+    router.push('/wallet-topup');
   };
 
   const handleWithdraw = () => {
@@ -240,22 +239,15 @@ export default function WalletScreen() {
       );
       return;
     }
-    // Open web for withdraw
-    Linking.openURL('https://main.thaiprompt.online/user/wallet/withdraw');
+    router.push('/wallet-withdraw');
   };
 
   const handleTransfer = () => {
-    Alert.alert(
-      'โอนเงิน',
-      'เลือกวิธีการโอนเงิน',
-      [
-        { text: 'โอนให้สมาชิก', onPress: () => Linking.openURL('https://main.thaiprompt.online/user/wallet/transfer') },
-        { text: 'ยกเลิก', style: 'cancel' },
-      ]
-    );
+    router.push('/wallet-transfer');
   };
 
   const handleHistory = () => {
+    // เปิดเว็บสำหรับดูประวัติทั้งหมด (หน้าละเอียดมากกว่า)
     Linking.openURL('https://main.thaiprompt.online/user/wallet/history');
   };
 
