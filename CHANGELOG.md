@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.32] - 2025-12-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2208 from xjanova/claude/fix-payment-billing-01N6gctYunRfUGQXbRo5SdXu (3a0e875a)
+- fix: แก้ไข QR Code wallet ไม่แสดง (9855fed0)
+### 🔧 Other Changes
+
+
 ## [v3.372.31] - 2025-12-09
 
 ### ✨ Features
