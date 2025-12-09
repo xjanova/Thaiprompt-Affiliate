@@ -576,6 +576,100 @@ export const getWalletTransactions = async (
   }
 };
 
+/**
+ * ส่งคำขอถอนเงิน
+ */
+export const createWithdrawalRequest = async (data: {
+  amount: number;
+  payment_method?: string;
+  pin: string;
+  note?: string;
+}): Promise<{
+  success: boolean;
+  data?: {
+    request_id: string;
+    amount: number;
+    fee: number;
+    tax: number;
+    net_amount: number;
+    status: string;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.WALLET_WITHDRAW, data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Create withdrawal request error:', error);
+    if (error.response?.data?.message) {
+      return { success: false, message: error.response.data.message };
+    }
+    return null;
+  }
+};
+
+/**
+ * ค้นหา Wallet Address
+ */
+export const lookupWalletAddress = async (
+  walletAddress: string
+): Promise<{
+  success: boolean;
+  data?: {
+    user_id: number;
+    name: string;
+    avatar?: string;
+    wallet_address: string;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(
+      `${API_ENDPOINTS.WALLET_LOOKUP}?address=${encodeURIComponent(walletAddress)}`
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('Lookup wallet address error:', error);
+    if (error.response?.data?.message) {
+      return { success: false, message: error.response.data.message };
+    }
+    return null;
+  }
+};
+
+/**
+ * โอนเงิน
+ */
+export const transferMoney = async (data: {
+  wallet_address: string;
+  amount: number;
+  pin: string;
+  note?: string;
+}): Promise<{
+  success: boolean;
+  data?: {
+    transaction_id: string;
+    amount: number;
+    fee: number;
+    total_deduction: number;
+    to_name: string;
+    to_address: string;
+    balance_after: number;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.WALLET_TRANSFER, data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Transfer money error:', error);
+    if (error.response?.data?.message) {
+      return { success: false, message: error.response.data.message };
+    }
+    return null;
+  }
+};
+
 // =====================================================
 // KYC APIs
 // =====================================================
