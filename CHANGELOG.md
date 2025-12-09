@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.34] - 2025-12-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2210 from xjanova/claude/check-mobile-app-updates-01V5ouhzjfb9PEMPykjCgHbZ (48bc90ca)
+- fix(mobile-app): เพิ่ม expo-localization dependency ที่ขาดหาย (076cff84)
+### 🔧 Other Changes
+
+
 ## [v3.372.33] - 2025-12-09
 
 ### ✨ Features
