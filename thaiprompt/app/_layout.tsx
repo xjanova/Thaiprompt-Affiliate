@@ -3,12 +3,12 @@
  * โหลด Fonts และ Initialize App
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
-import * as Font from 'expo-font';
+import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
@@ -45,66 +45,41 @@ const loadingStyles = StyleSheet.create({
 });
 
 export default function RootLayout() {
-  const { initialize, isInitialized } = useAuthStore();
-  const [isReady, setIsReady] = useState(false);
-  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const { initialize } = useAuthStore();
+  const [appIsReady, setAppIsReady] = useState(false);
+
+  // โหลด Ionicons font ด้วย useFonts hook (เสถียรกว่า)
+  const [fontsLoaded, fontError] = useFonts({
+    ...Ionicons.font,
+  });
 
   useEffect(() => {
     let isMounted = true;
 
-    const init = async () => {
+    const prepareApp = async () => {
       try {
-        // โหลด Fonts ก่อน (สำคัญมาก!)
-        await Font.loadAsync({
-          ...Ionicons.font,
-        });
-
-        if (isMounted) {
-          setFontsLoaded(true);
-        }
-
-        // ซ่อน splash หลังโหลด font เสร็จ
-        await SplashScreen.hideAsync().catch(() => {});
-
-        // Initialize auth (timeout 5 วินาที)
-        const initPromise = initialize().catch((e) => {
-          console.error('Init error:', e);
-        });
-
-        // Race กับ timeout
+        // Initialize auth พร้อม timeout 5 วินาที
         await Promise.race([
-          initPromise,
+          initialize().catch((e) => console.error('Init error:', e)),
           new Promise((resolve) => setTimeout(resolve, 5000)),
         ]);
       } catch (error) {
-        console.error('Layout init error:', error);
-        // ถึงแม้จะ error ก็ต้องโหลด fonts
-        if (isMounted && !fontsLoaded) {
-          try {
-            await Font.loadAsync({
-              ...Ionicons.font,
-            });
-            setFontsLoaded(true);
-          } catch (fontError) {
-            console.error('Font load error:', fontError);
-          }
-        }
+        console.error('App prepare error:', error);
       } finally {
         if (isMounted) {
-          setIsReady(true);
+          setAppIsReady(true);
         }
       }
     };
 
-    // Force ready หลังจาก 6 วินาที ไม่ว่าจะเกิดอะไรขึ้น
+    prepareApp();
+
+    // Force ready หลัง 4 วินาที
     const forceTimeout = setTimeout(() => {
       if (isMounted) {
-        setFontsLoaded(true);
-        setIsReady(true);
+        setAppIsReady(true);
       }
-    }, 6000);
-
-    init();
+    }, 4000);
 
     return () => {
       isMounted = false;
@@ -112,13 +87,21 @@ export default function RootLayout() {
     };
   }, []);
 
-  // แสดง loading ถ้ายังไม่พร้อมหรือ fonts ยังไม่โหลด
-  if (!isReady || !fontsLoaded) {
+  // ซ่อน splash เมื่อ fonts โหลดเสร็จ และ app พร้อม
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded || fontError) {
+      await SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded, fontError]);
+
+  // รอ fonts โหลด (หรือ error) และ app พร้อม
+  // ถ้า font error ก็ยังแสดงแอพได้ (แค่ไอคอนอาจไม่ขึ้น)
+  if ((!fontsLoaded && !fontError) || !appIsReady) {
     return <SimpleLoadingScreen />;
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }} onLayout={onLayoutRootView}>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -154,10 +137,21 @@ export default function RootLayout() {
         <Stack.Screen name="coming-soon" options={{ title: 'เร็วๆ นี้', headerShown: true }} />
         <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
 
+        {/* Wallet Screens */}
+        <Stack.Screen name="wallet-topup" options={{ headerShown: false }} />
+        <Stack.Screen name="wallet-withdraw" options={{ headerShown: false }} />
+        <Stack.Screen name="wallet-transfer" options={{ headerShown: false }} />
+
         {/* Tarot Screens */}
         <Stack.Screen name="tarot/index" options={{ title: 'ดูดวงไพ่ทาโรต์', headerShown: true }} />
         <Stack.Screen name="tarot/select-cards" options={{ title: 'เลือกไพ่', headerShown: true }} />
         <Stack.Screen name="tarot/reading" options={{ title: 'ผลการดูดวง', headerShown: true }} />
+
+        {/* MLM Tree */}
+        <Stack.Screen name="mlm-tree" options={{ headerShown: false }} />
+
+        {/* Wealth Guide */}
+        <Stack.Screen name="wealth-guide" options={{ headerShown: false }} />
       </Stack>
     </View>
   );
