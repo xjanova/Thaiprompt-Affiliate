@@ -20,9 +20,34 @@ class LineWebhookController extends Controller
 {
     /**
      * Handle LINE webhook events
+     *
+     * รองรับ LINE webhook verification และ event handling
+     * - LINE จะส่ง verify request โดยมี events เป็น array ว่าง
+     * - ต้อง return 200 OK เพื่อให้ LINE verify สำเร็จ
      */
     public function handle(Request $request)
     {
+        // ดึง request info สำหรับ logging
+        $signature = $request->header('X-Line-Signature');
+        $body = $request->getContent();
+        $events = $request->input('events', []);
+
+        Log::info('LINE webhook received', [
+            'has_signature' => !empty($signature),
+            'body_length' => strlen($body),
+            'events_count' => count($events),
+            'ip' => $request->ip(),
+        ]);
+
+        // ✅ กรณี LINE Verify Webhook (events ว่าง)
+        // LINE ส่ง POST request เปล่าๆ เพื่อ verify webhook URL
+        // ต้อง return 200 OK เพื่อให้ verify ผ่าน
+        if (empty($events)) {
+            Log::info('LINE webhook verification request - returning 200 OK');
+            return response()->json(['status' => 'ok']);
+        }
+
+        // ตรวจสอบ settings
         $settings = LineOaSetting::getActive();
 
         if (!$settings) {
@@ -30,17 +55,31 @@ class LineWebhookController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Settings not configured'], 400);
         }
 
-        // Verify webhook signature
-        $signature = $request->header('X-Line-Signature');
-        $body = $request->getContent();
+        // ✅ Handle null signature - return 403 with logging
+        if (empty($signature)) {
+            Log::warning('LINE webhook missing X-Line-Signature header', [
+                'ip' => $request->ip(),
+                'events_count' => count($events),
+            ]);
+            return response()->json(['status' => 'error', 'message' => 'Missing signature'], 403);
+        }
 
+        // ✅ Handle null/empty channel_secret
+        if (empty($settings->channel_secret)) {
+            Log::error('LINE webhook channel_secret not configured in settings');
+            return response()->json(['status' => 'error', 'message' => 'Channel secret not configured'], 500);
+        }
+
+        // Verify webhook signature
         if (!$this->verifySignature($signature, $body, $settings->channel_secret)) {
-            Log::warning('LINE webhook signature verification failed');
+            Log::warning('LINE webhook signature verification failed', [
+                'ip' => $request->ip(),
+                'signature_received' => substr($signature, 0, 20) . '...',
+            ]);
             return response()->json(['status' => 'error', 'message' => 'Invalid signature'], 403);
         }
 
-        $events = $request->input('events', []);
-
+        // ประมวลผล events
         foreach ($events as $event) {
             $this->handleEvent($event, $settings);
         }
