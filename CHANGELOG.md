@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.19] - 2025-12-09
+
+### ✨ Features
+- Merge pull request #2195 from xjanova/claude/add-wallet-balance-topbar-019TDVzsSPmC4KCSBZs1xUtn (502f2a78)
+- feat(navbar): เพิ่มแสดงยอดคงเหลือกระเป๋าเงินใน topbar (133e1154)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.372.18] - 2025-12-08
 
 ### ✨ Features
