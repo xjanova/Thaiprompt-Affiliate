@@ -498,6 +498,177 @@ export const lineLoginCallback = async (
 };
 
 // =====================================================
+// Web-Based Mobile Authentication (PKCE)
+// =====================================================
+
+/**
+ * สร้าง code_verifier สำหรับ PKCE
+ * code_verifier ต้องมีความยาว 43-128 characters
+ */
+export const generateCodeVerifier = (): string => {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
+};
+
+/**
+ * ขั้นตอนที่ 1: เริ่มต้น web-based login
+ * สร้าง login_token และ login_url สำหรับเปิดใน browser
+ */
+export const initWebAuth = async (
+  deviceId: string,
+  deviceName: string,
+  codeVerifier: string
+): Promise<{
+  success: boolean;
+  data?: {
+    login_url: string;
+    login_token: string;
+    state: string;
+    expires_in: number;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.WEB_AUTH_INIT, {
+      device_id: deviceId,
+      device_name: deviceName,
+      code_verifier: codeVerifier,
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        return {
+          success: false,
+          message: ERROR_MESSAGES.NETWORK_MESSAGE,
+        };
+      }
+      return {
+        success: false,
+        message: error.response.data?.message || 'ไม่สามารถเริ่มต้นการเข้าสู่ระบบได้',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * ขั้นตอนที่ 5: แลก auth_code เป็น access_token
+ * ใช้หลังจากได้รับ auth_code จาก deep link callback
+ */
+export const exchangeWebAuthCode = async (
+  authCode: string,
+  codeVerifier: string,
+  state: string
+): Promise<{
+  success: boolean;
+  data?: {
+    token: string;
+    user: User;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.WEB_AUTH_EXCHANGE, {
+      auth_code: authCode,
+      code_verifier: codeVerifier,
+      state: state,
+    });
+
+    const result = response.data;
+
+    if (result.success && result.data?.token) {
+      await saveAuthToken(result.data.token);
+
+      // บันทึกข้อมูล user
+      if (result.data.user) {
+        await SecureStore.setItemAsync(
+          STORAGE_KEYS.USER_DATA,
+          JSON.stringify(result.data.user)
+        );
+      }
+    }
+
+    return result;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        return {
+          success: false,
+          message: ERROR_MESSAGES.NETWORK_MESSAGE,
+        };
+      }
+      return {
+        success: false,
+        message: error.response.data?.message || 'ไม่สามารถยืนยันตัวตนได้',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    };
+  }
+};
+
+/**
+ * ตรวจสอบสถานะการ login (สำหรับ polling)
+ */
+export const checkWebAuthStatus = async (
+  loginToken: string,
+  state: string
+): Promise<{
+  success: boolean;
+  status?: 'pending' | 'authenticated' | 'expired';
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.WEB_AUTH_STATUS, {
+      params: { login_token: loginToken, state },
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'ไม่สามารถตรวจสอบสถานะได้',
+      };
+    }
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด',
+    };
+  }
+};
+
+/**
+ * ยกเลิกการ login
+ */
+export const cancelWebAuth = async (
+  loginToken: string,
+  state: string
+): Promise<{
+  success: boolean;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.WEB_AUTH_CANCEL, {
+      login_token: loginToken,
+      state: state,
+    });
+    return response.data;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'เกิดข้อผิดพลาด',
+    };
+  }
+};
+
+// =====================================================
 // Wallet APIs
 // =====================================================
 

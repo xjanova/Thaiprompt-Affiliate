@@ -23,6 +23,12 @@ export const API_ENDPOINTS = {
   LINE_LOGIN_URL: '/auth/line/mobile-url',
   LINE_LOGIN_CALLBACK: '/auth/line/mobile-callback',
 
+  // Web-Based Mobile Authentication (PKCE) - ปลอดภัยกว่า direct login
+  WEB_AUTH_INIT: '/auth/mobile/init',
+  WEB_AUTH_EXCHANGE: '/auth/mobile/exchange',
+  WEB_AUTH_STATUS: '/auth/mobile/status',
+  WEB_AUTH_CANCEL: '/auth/mobile/cancel',
+
   // Dashboard
   DASHBOARD_STATS: '/dashboard/statistics',
   DASHBOARD_CHARTS: '/dashboard/charts',

@@ -15,6 +15,9 @@ import {
   setAuthHeader,
   getLineLoginUrl as apiGetLineLoginUrl,
   lineLoginCallback as apiLineLoginCallback,
+  initWebAuth,
+  exchangeWebAuthCode,
+  generateCodeVerifier,
 } from '@/services/api';
 import { STORAGE_KEYS } from '@/constants';
 import * as Network from '@/services/network';
@@ -30,12 +33,19 @@ interface AuthState {
   error: string | null;
   isOfflineMode: boolean;
   lineLoginState: string | null;
+  // Web Auth state
+  webAuthCodeVerifier: string | null;
+  webAuthState: string | null;
+  webAuthLoginToken: string | null;
 
   // Actions
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
   loginWithLine: () => Promise<{ success: boolean; authUrl?: string; message?: string }>;
   handleLineCallback: (code: string, state: string, referralCode?: string) => Promise<boolean>;
+  // Web-Based Login (PKCE) - ปลอดภัยกว่า direct login
+  loginWithWeb: (deviceId: string, deviceName: string) => Promise<{ success: boolean; loginUrl?: string; message?: string }>;
+  handleWebAuthCallback: (authCode: string, state: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   clearError: () => void;
@@ -79,6 +89,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   error: null,
   isOfflineMode: false,
   lineLoginState: null,
+  // Web Auth state
+  webAuthCodeVerifier: null,
+  webAuthState: null,
+  webAuthLoginToken: null,
 
   /**
    * Initialize - เรียกตอนเปิด app
@@ -360,6 +374,137 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย LINE',
         isLoading: false,
         lineLoginState: null,
+      });
+      return false;
+    }
+  },
+
+  /**
+   * Login with Web - เข้าสู่ระบบผ่านเว็บ (PKCE - ปลอดภัยกว่า)
+   *
+   * Flow:
+   * 1. สร้าง code_verifier
+   * 2. ส่ง code_verifier ไป server → ได้ login_url
+   * 3. เปิด login_url ใน browser
+   * 4. User login ที่เว็บ
+   * 5. เว็บ redirect กลับ app ด้วย auth_code
+   * 6. App ส่ง auth_code + code_verifier → ได้ access_token
+   */
+  loginWithWeb: async (deviceId: string, deviceName: string) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      // สร้าง code_verifier สำหรับ PKCE
+      const codeVerifier = generateCodeVerifier();
+
+      const response = await initWebAuth(deviceId, deviceName, codeVerifier);
+
+      if (response.success && response.data) {
+        // เก็บ code_verifier และ state ไว้สำหรับใช้ตอน exchange
+        set({
+          webAuthCodeVerifier: codeVerifier,
+          webAuthState: response.data.state,
+          webAuthLoginToken: response.data.login_token,
+          isLoading: false,
+        });
+
+        return {
+          success: true,
+          loginUrl: response.data.login_url,
+        };
+      }
+
+      set({
+        error: response.message || 'ไม่สามารถเริ่มต้นการเข้าสู่ระบบได้',
+        isLoading: false,
+      });
+      return {
+        success: false,
+        message: response.message,
+      };
+    } catch (error) {
+      console.error('Web Login init error:', error);
+      set({
+        error: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ',
+        isLoading: false,
+      });
+      return {
+        success: false,
+        message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+      };
+    }
+  },
+
+  /**
+   * Handle Web Auth Callback - จัดการ response จาก web login
+   * เรียกหลังจากได้รับ auth_code จาก deep link callback
+   */
+  handleWebAuthCallback: async (authCode: string, state: string) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      // ตรวจสอบ state เพื่อป้องกัน CSRF
+      const savedState = get().webAuthState;
+      const codeVerifier = get().webAuthCodeVerifier;
+
+      if (!codeVerifier) {
+        set({
+          error: 'ข้อมูลการยืนยันตัวตนหายไป กรุณาลองใหม่',
+          isLoading: false,
+          webAuthCodeVerifier: null,
+          webAuthState: null,
+          webAuthLoginToken: null,
+        });
+        return false;
+      }
+
+      if (savedState && savedState !== state) {
+        set({
+          error: 'การยืนยันตัวตนไม่ถูกต้อง กรุณาลองใหม่',
+          isLoading: false,
+          webAuthCodeVerifier: null,
+          webAuthState: null,
+          webAuthLoginToken: null,
+        });
+        return false;
+      }
+
+      // Exchange auth_code for access_token
+      const response = await exchangeWebAuthCode(authCode, codeVerifier, state);
+
+      if (response.success && response.data) {
+        // บันทึก user ลง storage สำหรับใช้ offline
+        await saveUserToStorage(response.data.user);
+
+        set({
+          user: response.data.user,
+          token: response.data.token,
+          isAuthenticated: true,
+          isLoading: false,
+          isOfflineMode: false,
+          webAuthCodeVerifier: null,
+          webAuthState: null,
+          webAuthLoginToken: null,
+        });
+        return true;
+      }
+
+      set({
+        error: response.message || 'เข้าสู่ระบบไม่สำเร็จ',
+        isLoading: false,
+        webAuthCodeVerifier: null,
+        webAuthState: null,
+        webAuthLoginToken: null,
+      });
+      return false;
+    } catch (error) {
+      console.error('Web Auth Callback error:', error);
+      set({
+        error: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ',
+        isLoading: false,
+        webAuthCodeVerifier: null,
+        webAuthState: null,
+        webAuthLoginToken: null,
       });
       return false;
     }

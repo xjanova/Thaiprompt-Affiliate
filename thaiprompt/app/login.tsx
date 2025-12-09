@@ -89,7 +89,7 @@ export default function LoginScreen() {
       if (result.success && result.authUrl) {
         const browserResult = await WebBrowser.openAuthSessionAsync(
           result.authUrl,
-          'thaiprompt-affiliate://login'
+          'thaiprompt://login'
         );
         if (browserResult.type === 'success' && browserResult.url) {
           const url = new URL(browserResult.url);

@@ -237,6 +237,24 @@ Route::middleware('auth')->group(function () {
     Route::post('/auth/line/unlink', [LineLoginController::class, 'unlink'])->name('line.unlink');
 });
 
+// Mobile App Web-Based Login (PKCE Authentication)
+// สำหรับ mobile app login ผ่านเว็บอย่างปลอดภัย
+Route::prefix('mobile-login')->name('mobile-login.')->group(function () {
+    // แสดงหน้า login (public)
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\MobileLoginController::class, 'show'])->name('show');
+
+    // ดำเนินการ login
+    Route::post('/login', [\App\Http\Controllers\MobileLoginController::class, 'login'])->name('login');
+
+    // อนุมัติให้แอพเข้าถึง (ต้อง auth แล้ว)
+    Route::post('/authorize', [\App\Http\Controllers\MobileLoginController::class, 'authorize'])
+        ->middleware('auth')
+        ->name('authorize');
+
+    // ปฏิเสธการ authorize
+    Route::post('/deny', [\App\Http\Controllers\MobileLoginController::class, 'deny'])->name('deny');
+});
+
 // Language Switcher (Public - no auth required)
 Route::prefix('language')->name('language.')->group(function () {
     Route::get('/switch/{lang}', [\App\Http\Controllers\LanguageSwitcherController::class, 'switch'])->name('switch');
