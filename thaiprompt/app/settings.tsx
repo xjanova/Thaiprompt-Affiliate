@@ -1,11 +1,6 @@
 /**
  * Settings Screen - หน้าตั้งค่า
- * - ตั้งค่าโปรไฟล์
- * - ตั้งค่าการแจ้งเตือน
- * - ตั้งค่าธีม (Dark/Light) พร้อม RGB Lava Effect
- * - ตั้งค่าภาษา
- * - ความปลอดภัย
- * - เกี่ยวกับแอพ
+ * ใช้ StyleSheet แทน Reanimated เพื่อความเสถียร
  */
 
 import React, { useState } from 'react';
@@ -18,24 +13,72 @@ import {
   StyleSheet,
   Alert,
   Linking,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import Animated, {
-  FadeInDown,
-  FadeInUp,
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
-import { LavaBackground, GlassCard } from '@/components';
 import { APP_INFO } from '@/config/appConfig';
 
-// Theme Option Component
+// Setting Item Component
+const SettingItem = ({
+  icon,
+  iconColor,
+  title,
+  subtitle,
+  onPress,
+  rightElement,
+  isDark,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
+  title: string;
+  subtitle?: string;
+  onPress?: () => void;
+  rightElement?: React.ReactNode;
+  isDark: boolean;
+}) => (
+  <Pressable
+    onPress={onPress}
+    style={[
+      styles.settingItem,
+      { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFF' },
+    ]}
+  >
+    <View
+      style={[
+        styles.iconContainer,
+        { backgroundColor: iconColor ? `${iconColor}20` : 'rgba(212,175,55,0.2)' },
+      ]}
+    >
+      <Ionicons name={icon} size={22} color={iconColor || '#D4AF37'} />
+    </View>
+    <View style={styles.settingContent}>
+      <Text style={[styles.settingTitle, { color: isDark ? '#FFFFFF' : '#1F2937' }]}>
+        {title}
+      </Text>
+      {subtitle && (
+        <Text style={[styles.settingSubtitle, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+          {subtitle}
+        </Text>
+      )}
+    </View>
+    {rightElement || (
+      <Ionicons name="chevron-forward" size={20} color={isDark ? '#666666' : '#999999'} />
+    )}
+  </Pressable>
+);
+
+// Section Header
+const SectionHeader = ({ title, isDark }: { title: string; isDark: boolean }) => (
+  <Text style={[styles.sectionHeader, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+    {title}
+  </Text>
+);
+
+// Theme Option
 const ThemeOption = ({
   mode,
   currentMode,
@@ -67,12 +110,12 @@ const ThemeOption = ({
               : 'rgba(59, 130, 246, 0.1)'
             : isDark
             ? 'rgba(255,255,255,0.05)'
-            : 'rgba(0,0,0,0.02)',
+            : '#FFF',
           borderColor: isSelected
             ? '#3B82F6'
             : isDark
             ? 'rgba(255,255,255,0.1)'
-            : 'rgba(0,0,0,0.05)',
+            : '#E5E7EB',
         },
       ]}
     >
@@ -88,7 +131,7 @@ const ThemeOption = ({
                 : '#3B82F6'
               : isDark
               ? 'rgba(255,255,255,0.1)'
-              : 'rgba(0,0,0,0.05)',
+              : '#F3F4F6',
           },
         ]}
       >
@@ -102,13 +145,7 @@ const ThemeOption = ({
         <Text
           style={[
             styles.themeTitle,
-            {
-              color: isSelected
-                ? '#3B82F6'
-                : isDark
-                ? '#FFFFFF'
-                : '#1F2937',
-            },
+            { color: isSelected ? '#3B82F6' : isDark ? '#FFFFFF' : '#1F2937' },
           ]}
         >
           {title}
@@ -118,85 +155,11 @@ const ThemeOption = ({
         </Text>
       </View>
       {isSelected && (
-        <View style={styles.checkContainer}>
-          <Ionicons name="checkmark-circle" size={24} color="#3B82F6" />
-        </View>
+        <Ionicons name="checkmark-circle" size={24} color="#3B82F6" />
       )}
     </Pressable>
   );
 };
-
-// Setting Item Component
-const SettingItem = ({
-  icon,
-  iconColor,
-  title,
-  subtitle,
-  onPress,
-  rightElement,
-  isDark,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  iconColor?: string;
-  title: string;
-  subtitle?: string;
-  onPress?: () => void;
-  rightElement?: React.ReactNode;
-  isDark: boolean;
-}) => {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  return (
-    <Animated.View style={animatedStyle}>
-      <Pressable
-        onPress={onPress}
-        onPressIn={() => {
-          scale.value = withSpring(0.98);
-        }}
-        onPressOut={() => {
-          scale.value = withSpring(1);
-        }}
-        style={[
-          styles.settingItem,
-          { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' },
-        ]}
-      >
-        <View
-          style={[
-            styles.iconContainer,
-            { backgroundColor: iconColor ? `${iconColor}20` : 'rgba(212,175,55,0.2)' },
-          ]}
-        >
-          <Ionicons name={icon} size={22} color={iconColor || '#D4AF37'} />
-        </View>
-        <View style={styles.settingContent}>
-          <Text style={[styles.settingTitle, { color: isDark ? '#FFFFFF' : '#1F2937' }]}>
-            {title}
-          </Text>
-          {subtitle && (
-            <Text style={[styles.settingSubtitle, { color: isDark ? '#999999' : '#666666' }]}>
-              {subtitle}
-            </Text>
-          )}
-        </View>
-        {rightElement || (
-          <Ionicons name="chevron-forward" size={20} color={isDark ? '#666666' : '#999999'} />
-        )}
-      </Pressable>
-    </Animated.View>
-  );
-};
-
-// Section Header
-const SectionHeader = ({ title, isDark }: { title: string; isDark: boolean }) => (
-  <Text style={[styles.sectionHeader, { color: isDark ? '#999999' : '#666666' }]}>
-    {title}
-  </Text>
-);
 
 export default function SettingsScreen() {
   const { resolvedTheme, themeMode, setThemeMode } = useAppStore();
@@ -285,248 +248,251 @@ export default function SettingsScreen() {
     );
   };
 
-  const getThemeText = () => {
-    switch (themeMode) {
-      case 'light':
-        return 'สว่าง';
-      case 'dark':
-        return 'มืด (RGB Lava)';
-      default:
-        return 'ตามระบบ';
-    }
-  };
-
   return (
-    <LavaBackground variant="default" intensity="low">
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Profile Header */}
-          {isAuthenticated && user && (
-            <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.profileCard}>
-              <LinearGradient
-                colors={isDark ? ['#7B2CBF', '#3B82F6'] : ['#D4AF37', '#B8941E']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.profileGradient}
+    <View style={[styles.container, { backgroundColor: isDark ? '#0F0F23' : '#F9FAFB' }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB' }]}>
+        <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color={isDark ? '#FFF' : '#1F2937'} />
+        </Pressable>
+        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#1F2937' }]}>
+          ตั้งค่า
+        </Text>
+        <View style={styles.placeholder} />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Profile Header */}
+        {isAuthenticated && user && (
+          <View style={styles.profileCard}>
+            <LinearGradient
+              colors={isDark ? ['#7B2CBF', '#3B82F6'] : ['#3B82F6', '#60A5FA']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.profileGradient}
+            >
+              <View style={styles.avatarContainer}>
+                <Text style={styles.avatarText}>
+                  {user.name?.charAt(0).toUpperCase() || 'U'}
+                </Text>
+              </View>
+              <Text style={styles.profileName}>{user.name}</Text>
+              <Text style={styles.profileEmail}>{user.email}</Text>
+              <Pressable
+                onPress={() => router.push('/(tabs)/profile')}
+                style={styles.editProfileButton}
               >
-                <View style={styles.avatarContainer}>
-                  <Text style={styles.avatarText}>
-                    {user.name?.charAt(0).toUpperCase() || 'U'}
-                  </Text>
-                </View>
-                <Text style={styles.profileName}>{user.name}</Text>
-                <Text style={styles.profileEmail}>{user.email}</Text>
-                <Pressable
-                  onPress={() => router.push('/(tabs)/profile')}
-                  style={styles.editProfileButton}
-                >
-                  <Ionicons name="pencil" size={16} color="white" style={{ marginRight: 6 }} />
-                  <Text style={styles.editProfileText}>แก้ไขโปรไฟล์</Text>
-                </Pressable>
-              </LinearGradient>
-            </Animated.View>
-          )}
+                <Ionicons name="pencil" size={16} color="white" />
+                <Text style={styles.editProfileText}>แก้ไขโปรไฟล์</Text>
+              </Pressable>
+            </LinearGradient>
+          </View>
+        )}
 
-          {/* Theme Settings - Prominent */}
-          <SectionHeader title="🎨 ธีมและการแสดงผล" isDark={isDark} />
-          <Animated.View entering={FadeInUp.delay(150).springify()}>
-            <GlassCard style={{ marginBottom: 16 }}>
-              <Text style={[styles.themeSectionTitle, { color: isDark ? '#FFFFFF' : '#1F2937' }]}>
-                เลือกธีม
-              </Text>
-              <Text style={[styles.themeSectionSubtitle, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
-                โหมดมืดจะแสดงเอฟเฟค RGB Lava Lamp เรืองแสง
-              </Text>
+        {/* Theme Settings */}
+        <SectionHeader title="🎨 ธีมและการแสดงผล" isDark={isDark} />
+        <View style={[styles.card, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFF' }]}>
+          <Text style={[styles.cardTitle, { color: isDark ? '#FFFFFF' : '#1F2937' }]}>
+            เลือกธีม
+          </Text>
 
-              <ThemeOption
-                mode="light"
-                currentMode={themeMode}
-                icon="sunny"
-                title="โหมดสว่าง"
-                description="สีสันสดใส เหมาะสำหรับกลางวัน"
-                onPress={() => setThemeMode('light')}
-                isDark={isDark}
-              />
+          <ThemeOption
+            mode="light"
+            currentMode={themeMode}
+            icon="sunny"
+            title="โหมดสว่าง"
+            description="สีสันสดใส เหมาะสำหรับกลางวัน"
+            onPress={() => setThemeMode('light')}
+            isDark={isDark}
+          />
 
-              <ThemeOption
-                mode="dark"
-                currentMode={themeMode}
-                icon="moon"
-                title="โหมดมืด (RGB Lava)"
-                description="ธีมมืดพร้อมเอฟเฟค Lava Lamp RGB เรืองแสง"
-                onPress={() => setThemeMode('dark')}
-                isDark={isDark}
-              />
+          <ThemeOption
+            mode="dark"
+            currentMode={themeMode}
+            icon="moon"
+            title="โหมดมืด"
+            description="ธีมมืดถนอมสายตา"
+            onPress={() => setThemeMode('dark')}
+            isDark={isDark}
+          />
 
-              <ThemeOption
-                mode="system"
-                currentMode={themeMode}
-                icon="phone-portrait"
-                title="ตามระบบ"
-                description="เปลี่ยนตามการตั้งค่าของอุปกรณ์"
-                onPress={() => setThemeMode('system')}
-                isDark={isDark}
-              />
-            </GlassCard>
+          <ThemeOption
+            mode="system"
+            currentMode={themeMode}
+            icon="phone-portrait"
+            title="ตามระบบ"
+            description="เปลี่ยนตามการตั้งค่าของอุปกรณ์"
+            onPress={() => setThemeMode('system')}
+            isDark={isDark}
+          />
+        </View>
 
-            <SettingItem
-              icon="language"
-              iconColor="#f093fb"
-              title="ภาษา"
-              subtitle="ไทย"
-              onPress={handleLanguageChange}
-              isDark={isDark}
+        <SettingItem
+          icon="language"
+          iconColor="#f093fb"
+          title="ภาษา"
+          subtitle="ไทย"
+          onPress={handleLanguageChange}
+          isDark={isDark}
+        />
+
+        {/* Account Settings */}
+        <SectionHeader title="👤 บัญชี" isDark={isDark} />
+        <SettingItem
+          icon="shield-checkmark"
+          iconColor="#10B981"
+          title="ยืนยันตัวตน (KYC)"
+          subtitle="ยืนยันตัวตนเพื่อเพิ่มวงเงิน"
+          onPress={handleKYC}
+          isDark={isDark}
+        />
+        <SettingItem
+          icon="lock-closed"
+          iconColor="#7B2CBF"
+          title="เปลี่ยนรหัสผ่าน"
+          subtitle="เปลี่ยนรหัสผ่านเข้าสู่ระบบ"
+          onPress={handleChangePassword}
+          isDark={isDark}
+        />
+
+        {/* Notifications */}
+        <SectionHeader title="🔔 การแจ้งเตือน" isDark={isDark} />
+        <SettingItem
+          icon="notifications"
+          iconColor="#FF6B6B"
+          title="Push Notification"
+          subtitle="รับการแจ้งเตือนบนอุปกรณ์"
+          isDark={isDark}
+          rightElement={
+            <Switch
+              value={pushNotifications}
+              onValueChange={setPushNotifications}
+              trackColor={{ false: '#767577', true: isDark ? '#7B2CBF' : '#3B82F6' }}
+              thumbColor={pushNotifications ? '#FFFFFF' : '#f4f3f4'}
             />
-          </Animated.View>
-
-          {/* Account Settings */}
-          <SectionHeader title="👤 บัญชี" isDark={isDark} />
-          <Animated.View entering={FadeInUp.delay(200).springify()}>
-            <SettingItem
-              icon="shield-checkmark"
-              iconColor="#10B981"
-              title="ยืนยันตัวตน (KYC)"
-              subtitle="ยืนยันตัวตนเพื่อเพิ่มวงเงิน"
-              onPress={handleKYC}
-              isDark={isDark}
+          }
+        />
+        <SettingItem
+          icon="mail"
+          iconColor="#4ECDC4"
+          title="Email Notification"
+          subtitle="รับการแจ้งเตือนทางอีเมล"
+          isDark={isDark}
+          rightElement={
+            <Switch
+              value={emailNotifications}
+              onValueChange={setEmailNotifications}
+              trackColor={{ false: '#767577', true: isDark ? '#7B2CBF' : '#3B82F6' }}
+              thumbColor={emailNotifications ? '#FFFFFF' : '#f4f3f4'}
             />
-            <SettingItem
-              icon="lock-closed"
-              iconColor="#7B2CBF"
-              title="เปลี่ยนรหัสผ่าน"
-              subtitle="เปลี่ยนรหัสผ่านเข้าสู่ระบบ"
-              onPress={handleChangePassword}
-              isDark={isDark}
-            />
-          </Animated.View>
+          }
+        />
 
-          {/* Notifications */}
-          <SectionHeader title="🔔 การแจ้งเตือน" isDark={isDark} />
-          <Animated.View entering={FadeInUp.delay(250).springify()}>
+        {/* Security */}
+        <SectionHeader title="🔐 ความปลอดภัย" isDark={isDark} />
+        <SettingItem
+          icon="finger-print"
+          iconColor="#45B7D1"
+          title="Biometric Login"
+          subtitle="เข้าสู่ระบบด้วยลายนิ้วมือ/Face ID"
+          isDark={isDark}
+          rightElement={
+            <Switch
+              value={biometricEnabled}
+              onValueChange={setBiometricEnabled}
+              trackColor={{ false: '#767577', true: isDark ? '#7B2CBF' : '#3B82F6' }}
+              thumbColor={biometricEnabled ? '#FFFFFF' : '#f4f3f4'}
+            />
+          }
+        />
+
+        {/* About */}
+        <SectionHeader title="ℹ️ เกี่ยวกับ" isDark={isDark} />
+        <SettingItem
+          icon="document-text"
+          iconColor="#3B82F6"
+          title="นโยบายความเป็นส่วนตัว"
+          onPress={handlePrivacyPolicy}
+          isDark={isDark}
+        />
+        <SettingItem
+          icon="shield"
+          iconColor="#8B5CF6"
+          title="ข้อกำหนดการใช้งาน"
+          onPress={handleTermsOfService}
+          isDark={isDark}
+        />
+        <SettingItem
+          icon="star"
+          iconColor="#FFD700"
+          title="ให้คะแนนแอพ"
+          onPress={handleRateApp}
+          isDark={isDark}
+        />
+        <SettingItem
+          icon="information-circle"
+          iconColor="#6B7280"
+          title="เวอร์ชัน"
+          subtitle={APP_INFO.VERSION || '1.1.0'}
+          isDark={isDark}
+          rightElement={<View />}
+        />
+
+        {/* Account Actions */}
+        {isAuthenticated && (
+          <>
+            <SectionHeader title="⚙️ จัดการบัญชี" isDark={isDark} />
             <SettingItem
-              icon="notifications"
+              icon="log-out"
               iconColor="#FF6B6B"
-              title="Push Notification"
-              subtitle="รับการแจ้งเตือนบนอุปกรณ์"
+              title="ออกจากระบบ"
+              onPress={handleLogout}
               isDark={isDark}
-              rightElement={
-                <Switch
-                  value={pushNotifications}
-                  onValueChange={setPushNotifications}
-                  trackColor={{ false: '#767577', true: isDark ? '#7B2CBF' : '#3B82F6' }}
-                  thumbColor={pushNotifications ? '#FFFFFF' : '#f4f3f4'}
-                />
-              }
             />
             <SettingItem
-              icon="mail"
-              iconColor="#4ECDC4"
-              title="Email Notification"
-              subtitle="รับการแจ้งเตือนทางอีเมล"
+              icon="trash"
+              iconColor="#DC143C"
+              title="ลบบัญชี"
+              subtitle="ลบบัญชีของคุณอย่างถาวร"
+              onPress={handleDeleteAccount}
               isDark={isDark}
-              rightElement={
-                <Switch
-                  value={emailNotifications}
-                  onValueChange={setEmailNotifications}
-                  trackColor={{ false: '#767577', true: isDark ? '#7B2CBF' : '#3B82F6' }}
-                  thumbColor={emailNotifications ? '#FFFFFF' : '#f4f3f4'}
-                />
-              }
             />
-          </Animated.View>
+          </>
+        )}
 
-          {/* Security */}
-          <SectionHeader title="🔐 ความปลอดภัย" isDark={isDark} />
-          <Animated.View entering={FadeInUp.delay(300).springify()}>
-            <SettingItem
-              icon="finger-print"
-              iconColor="#45B7D1"
-              title="Biometric Login"
-              subtitle="เข้าสู่ระบบด้วยลายนิ้วมือ/Face ID"
-              isDark={isDark}
-              rightElement={
-                <Switch
-                  value={biometricEnabled}
-                  onValueChange={setBiometricEnabled}
-                  trackColor={{ false: '#767577', true: isDark ? '#7B2CBF' : '#3B82F6' }}
-                  thumbColor={biometricEnabled ? '#FFFFFF' : '#f4f3f4'}
-                />
-              }
-            />
-          </Animated.View>
-
-          {/* About */}
-          <SectionHeader title="ℹ️ เกี่ยวกับ" isDark={isDark} />
-          <Animated.View entering={FadeInUp.delay(350).springify()}>
-            <SettingItem
-              icon="document-text"
-              iconColor="#3B82F6"
-              title="นโยบายความเป็นส่วนตัว"
-              onPress={handlePrivacyPolicy}
-              isDark={isDark}
-            />
-            <SettingItem
-              icon="shield"
-              iconColor="#8B5CF6"
-              title="ข้อกำหนดการใช้งาน"
-              onPress={handleTermsOfService}
-              isDark={isDark}
-            />
-            <SettingItem
-              icon="star"
-              iconColor="#FFD700"
-              title="ให้คะแนนแอพ"
-              onPress={handleRateApp}
-              isDark={isDark}
-            />
-            <SettingItem
-              icon="information-circle"
-              iconColor="#6B7280"
-              title="เวอร์ชัน"
-              subtitle={APP_INFO.VERSION || '1.1.0'}
-              isDark={isDark}
-              rightElement={<View />}
-            />
-          </Animated.View>
-
-          {/* Account Actions */}
-          {isAuthenticated && (
-            <>
-              <SectionHeader title="⚙️ จัดการบัญชี" isDark={isDark} />
-              <Animated.View entering={FadeInUp.delay(400).springify()}>
-                <SettingItem
-                  icon="log-out"
-                  iconColor="#FF6B6B"
-                  title="ออกจากระบบ"
-                  onPress={handleLogout}
-                  isDark={isDark}
-                />
-                <SettingItem
-                  icon="trash"
-                  iconColor="#DC143C"
-                  title="ลบบัญชี"
-                  subtitle="ลบบัญชีของคุณอย่างถาวร"
-                  onPress={handleDeleteAccount}
-                  isDark={isDark}
-                />
-              </Animated.View>
-            </>
-          )}
-
-          {/* Bottom Spacer */}
-          <View style={{ height: 40 }} />
-        </ScrollView>
-      </SafeAreaView>
-    </LavaBackground>
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 50,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  placeholder: {
+    width: 40,
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -573,6 +539,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 20,
+    gap: 6,
   },
   editProfileText: {
     fontSize: 14,
@@ -614,14 +581,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  // Theme Options
-  themeSectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 4,
+  card: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
   },
-  themeSectionSubtitle: {
-    fontSize: 13,
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
     marginBottom: 16,
   },
   themeOption: {
@@ -650,8 +617,5 @@ const styles = StyleSheet.create({
   },
   themeDescription: {
     fontSize: 12,
-  },
-  checkContainer: {
-    marginLeft: 8,
   },
 });
