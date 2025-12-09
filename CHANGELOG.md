@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.22] - 2025-12-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2198 from xjanova/claude/update-book-data-01JaNpkS3GeJVvo7CYHQEdeT (942d0222)
+- docs: อัปเดตหนังสือเส้นทางเศรษฐีให้ตรงกับข้อมูลจริงในระบบ (d28b046b)
+
 ## [v3.372.21] - 2025-12-09
 
 ### ✨ Features
