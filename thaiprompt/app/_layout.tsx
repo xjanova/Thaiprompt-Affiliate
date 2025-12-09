@@ -8,7 +8,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, StyleSheet, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
-import { useFonts } from 'expo-font';
+import * as Font from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
@@ -48,18 +48,23 @@ const loadingStyles = StyleSheet.create({
 export default function RootLayout() {
   const { initialize } = useAuthStore();
   const [appIsReady, setAppIsReady] = useState(false);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
   const appState = useRef(AppState.currentState);
-
-  // โหลด Ionicons font ด้วย useFonts hook (เสถียรกว่า)
-  const [fontsLoaded, fontError] = useFonts({
-    ...Ionicons.font,
-  });
 
   useEffect(() => {
     let isMounted = true;
 
     const prepareApp = async () => {
       try {
+        // โหลด Ionicons font แบบ manual (เสถียรกว่า useFonts hook)
+        await Font.loadAsync({
+          ...Ionicons.font,
+        });
+
+        if (isMounted) {
+          setFontsLoaded(true);
+        }
+
         // Initialize auth พร้อม timeout 5 วินาที
         await Promise.race([
           initialize().catch((e) => console.error('Init error:', e)),
@@ -70,6 +75,10 @@ export default function RootLayout() {
         initDeviceTracking().catch((e) => console.log('Device tracking:', e));
       } catch (error) {
         console.error('App prepare error:', error);
+        // ถ้า font error ก็ยังแสดงแอพได้
+        if (isMounted) {
+          setFontsLoaded(true);
+        }
       } finally {
         if (isMounted) {
           setAppIsReady(true);
@@ -82,6 +91,7 @@ export default function RootLayout() {
     // Force ready หลัง 4 วินาที
     const forceTimeout = setTimeout(() => {
       if (isMounted) {
+        setFontsLoaded(true);
         setAppIsReady(true);
       }
     }, 4000);
@@ -109,14 +119,13 @@ export default function RootLayout() {
 
   // ซ่อน splash เมื่อ fonts โหลดเสร็จ และ app พร้อม
   const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded || fontError) {
+    if (fontsLoaded && appIsReady) {
       await SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, appIsReady]);
 
-  // รอ fonts โหลด (หรือ error) และ app พร้อม
-  // ถ้า font error ก็ยังแสดงแอพได้ (แค่ไอคอนอาจไม่ขึ้น)
-  if ((!fontsLoaded && !fontError) || !appIsReady) {
+  // รอ fonts โหลด และ app พร้อม
+  if (!fontsLoaded || !appIsReady) {
     return <SimpleLoadingScreen />;
   }
 
