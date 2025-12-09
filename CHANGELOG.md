@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.37] - 2025-12-09
+
+### ✨ Features
+- feat(line-login): รองรับ LINE login จาก mobile app (9173933d)
+- feat(mobile-auth): เพิ่มระบบ Web-Based Mobile Authentication แบบ PKCE (59fed930)
+### 🐛 Bug Fixes
+- fix(mobile): แก้ไข deep link scheme ให้ตรงกับ app.json (21b1897a)
+### 🔧 Other Changes
+- Merge pull request #2213 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (eb35861e)
+
 ## [v3.372.36] - 2025-12-09
 
 ### ✨ Features
