@@ -1,73 +1,55 @@
 /**
  * Tarot Card Selection Screen - หน้าเลือกไพ่ทาโรต์
- * Animation สวยงาม พร้อมเอฟเฟกต์ mystical
+ * รองรับ 78 ใบ และจำนวนไพ่ตามโหมดที่เลือก
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
+  ScrollView,
   Pressable,
   StyleSheet,
   Dimensions,
   Animated,
   StatusBar,
   Alert,
-  PanResponder,
+  FlatList,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import {
+  ALL_TAROT_CARDS,
+  getSpreadBySlug,
+  TarotCard,
+  SpreadType,
+} from '@/data/tarotData';
 
 const { width, height } = Dimensions.get('window');
-const CARD_WIDTH = 70;
-const CARD_HEIGHT = 110;
-const TOTAL_CARDS = 22; // Major Arcana
-const CARDS_NEEDED = 3; // จำนวนไพ่ที่ต้องเลือก
+const CARD_SIZE = (width - 60) / 6; // 6 cards per row
 
-// Card Component with Flip Animation
-const TarotCard = ({
-  index,
+// Card Component
+const TarotCardItem = ({
+  card,
   isSelected,
-  isRevealed,
+  selectionOrder,
   onSelect,
-  cardPosition,
+  disabled,
 }: {
-  index: number;
+  card: TarotCard;
   isSelected: boolean;
-  isRevealed: boolean;
+  selectionOrder: number | null;
   onSelect: () => void;
-  cardPosition: { x: number; y: number; rotation: number };
+  disabled: boolean;
 }) => {
-  const flipAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (isSelected) {
-      // Flip animation
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 1.2,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.parallel([
-          Animated.timing(flipAnim, {
-            toValue: 1,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start();
-
-      // Glow effect
+      // Glow animation
       Animated.loop(
         Animated.sequence([
           Animated.timing(glowAnim, {
@@ -76,49 +58,52 @@ const TarotCard = ({
             useNativeDriver: true,
           }),
           Animated.timing(glowAnim, {
-            toValue: 0,
+            toValue: 0.5,
             duration: 1000,
             useNativeDriver: true,
           }),
         ])
       ).start();
+    } else {
+      glowAnim.setValue(0);
     }
-  }, [isSelected, flipAnim, scaleAnim, glowAnim]);
+  }, [isSelected, glowAnim]);
 
-  const frontInterpolate = flipAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
-  });
+  const handlePress = () => {
+    if (disabled || isSelected) return;
 
-  const backInterpolate = flipAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['180deg', '360deg'],
-  });
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onSelect();
+  };
 
   const glowOpacity = glowAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 0.8],
+    outputRange: [0, 0.8],
   });
 
   return (
     <Pressable
-      onPress={onSelect}
-      disabled={isSelected}
-      style={[
-        styles.cardWrapper,
-        {
-          left: cardPosition.x,
-          top: cardPosition.y,
-          transform: [{ rotate: `${cardPosition.rotation}deg` }],
-        },
-      ]}
+      onPress={handlePress}
+      disabled={disabled && !isSelected}
+      style={styles.cardWrapper}
     >
       <Animated.View
         style={[
-          styles.cardContainer,
-          {
-            transform: [{ scale: scaleAnim }],
-          },
+          styles.cardItem,
+          { transform: [{ scale: scaleAnim }] },
         ]}
       >
         {/* Glow Effect */}
@@ -131,18 +116,24 @@ const TarotCard = ({
           />
         )}
 
-        {/* Card Back */}
-        <Animated.View
-          style={[
-            styles.card,
-            styles.cardBack,
-            { transform: [{ rotateY: frontInterpolate }] },
-          ]}
+        <LinearGradient
+          colors={
+            isSelected
+              ? ['#8B5CF6', '#EC4899']
+              : ['#4C1D95', '#7C3AED', '#4C1D95']
+          }
+          style={styles.cardGradient}
         >
-          <LinearGradient
-            colors={['#4C1D95', '#7C3AED', '#4C1D95']}
-            style={styles.cardBackGradient}
-          >
+          {isSelected ? (
+            // Selected - Show order number and icon
+            <>
+              <View style={styles.selectionBadge}>
+                <Text style={styles.selectionNumber}>{selectionOrder}</Text>
+              </View>
+              <Text style={styles.cardIconSelected}>{card.icon}</Text>
+            </>
+          ) : (
+            // Not selected - Show card back
             <View style={styles.cardBackPattern}>
               <Text style={styles.cardBackSymbol}>✦</Text>
               <View style={styles.cardBackBorder}>
@@ -150,25 +141,13 @@ const TarotCard = ({
               </View>
               <Text style={styles.cardBackSymbol}>✦</Text>
             </View>
-          </LinearGradient>
-        </Animated.View>
+          )}
+        </LinearGradient>
 
-        {/* Card Front (shown when selected) */}
-        <Animated.View
-          style={[
-            styles.card,
-            styles.cardFront,
-            { transform: [{ rotateY: backInterpolate }] },
-          ]}
-        >
-          <LinearGradient
-            colors={['#FEF3C7', '#FDE68A', '#FCD34D']}
-            style={styles.cardFrontGradient}
-          >
-            <Text style={styles.cardNumber}>{index + 1}</Text>
-            <Text style={styles.cardSymbol}>🌟</Text>
-          </LinearGradient>
-        </Animated.View>
+        {/* Disabled overlay */}
+        {disabled && !isSelected && (
+          <View style={styles.disabledOverlay} />
+        )}
       </Animated.View>
     </Pressable>
   );
@@ -230,34 +209,28 @@ const FloatingParticle = ({ delay }: { delay: number }) => {
 
 export default function SelectCardsScreen() {
   const params = useLocalSearchParams();
-  const { categoryName } = params;
+  const {
+    categoryName,
+    spreadSlug,
+    spreadName,
+    cardCount: cardCountStr,
+    categoryPrice,
+  } = params;
+
+  const cardCount = parseInt(cardCountStr as string) || 3;
+  const spread = useMemo(() => getSpreadBySlug(spreadSlug as string), [spreadSlug]);
 
   const [selectedCards, setSelectedCards] = useState<number[]>([]);
-  const [cardPositions, setCardPositions] = useState<
-    Array<{ x: number; y: number; rotation: number }>
-  >([]);
+  const [shuffledCards, setShuffledCards] = useState<TarotCard[]>([]);
   const [isComplete, setIsComplete] = useState(false);
 
   const progressAnim = useRef(new Animated.Value(0)).current;
   const headerOpacity = useRef(new Animated.Value(0)).current;
 
-  // Generate card positions in arc formation
+  // Shuffle cards on mount
   useEffect(() => {
-    const positions = [];
-    const centerX = width / 2 - CARD_WIDTH / 2;
-    const centerY = height / 2 - CARD_HEIGHT / 2 + 50;
-    const radius = Math.min(width, height) * 0.35;
-
-    for (let i = 0; i < TOTAL_CARDS; i++) {
-      const angle = (Math.PI * (i / (TOTAL_CARDS - 1))) - Math.PI / 2;
-      const x = centerX + Math.cos(angle) * radius - (CARD_WIDTH / 2) * Math.cos(angle);
-      const y = centerY + Math.sin(angle) * radius * 0.6;
-      const rotation = ((i - (TOTAL_CARDS - 1) / 2) / (TOTAL_CARDS - 1)) * 60;
-
-      positions.push({ x, y, rotation });
-    }
-
-    setCardPositions(positions);
+    const shuffled = [...ALL_TAROT_CARDS].sort(() => Math.random() - 0.5);
+    setShuffledCards(shuffled);
 
     // Header animation
     Animated.timing(headerOpacity, {
@@ -270,24 +243,23 @@ export default function SelectCardsScreen() {
   // Update progress bar
   useEffect(() => {
     Animated.timing(progressAnim, {
-      toValue: selectedCards.length / CARDS_NEEDED,
+      toValue: selectedCards.length / cardCount,
       duration: 300,
       useNativeDriver: false,
     }).start();
 
-    if (selectedCards.length === CARDS_NEEDED) {
+    if (selectedCards.length === cardCount) {
       setIsComplete(true);
     }
-  }, [selectedCards, progressAnim]);
+  }, [selectedCards, cardCount, progressAnim]);
 
-  const handleCardSelect = useCallback((index: number) => {
-    if (selectedCards.includes(index) || selectedCards.length >= CARDS_NEEDED) {
+  const handleCardSelect = useCallback((cardId: number) => {
+    if (selectedCards.includes(cardId) || selectedCards.length >= cardCount) {
       return;
     }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setSelectedCards((prev) => [...prev, index]);
-  }, [selectedCards]);
+    setSelectedCards((prev) => [...prev, cardId]);
+  }, [selectedCards, cardCount]);
 
   const handleContinue = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -311,6 +283,9 @@ export default function SelectCardsScreen() {
           onPress: () => {
             setSelectedCards([]);
             setIsComplete(false);
+            // Re-shuffle
+            const shuffled = [...ALL_TAROT_CARDS].sort(() => Math.random() - 0.5);
+            setShuffledCards(shuffled);
           },
         },
       ]
@@ -321,6 +296,11 @@ export default function SelectCardsScreen() {
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
   });
+
+  const getSelectionOrder = (cardId: number): number | null => {
+    const index = selectedCards.indexOf(cardId);
+    return index !== -1 ? index + 1 : null;
+  };
 
   return (
     <View style={styles.container}>
@@ -333,8 +313,8 @@ export default function SelectCardsScreen() {
       />
 
       {/* Floating Particles */}
-      {[...Array(15)].map((_, i) => (
-        <FloatingParticle key={i} delay={i * 500} />
+      {[...Array(10)].map((_, i) => (
+        <FloatingParticle key={i} delay={i * 300} />
       ))}
 
       {/* Header */}
@@ -344,9 +324,9 @@ export default function SelectCardsScreen() {
         </Pressable>
 
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>{categoryName || 'เลือกไพ่'}</Text>
+          <Text style={styles.headerTitle}>{categoryName}</Text>
           <Text style={styles.headerSubtitle}>
-            เลือกไพ่ {CARDS_NEEDED} ใบ ({selectedCards.length}/{CARDS_NEEDED})
+            {spreadName} • เลือก {cardCount} ใบ ({selectedCards.length}/{cardCount})
           </Text>
         </View>
 
@@ -378,7 +358,7 @@ export default function SelectCardsScreen() {
           </Animated.View>
         </View>
         <View style={styles.progressDots}>
-          {[...Array(CARDS_NEEDED)].map((_, i) => (
+          {[...Array(cardCount)].map((_, i) => (
             <View
               key={i}
               style={[
@@ -390,6 +370,13 @@ export default function SelectCardsScreen() {
         </View>
       </View>
 
+      {/* Card Count Info */}
+      <View style={styles.cardCountInfo}>
+        <Text style={styles.cardCountText}>
+          🃏 ไพ่ทั้งหมด 78 ใบ (22 Major + 56 Minor Arcana)
+        </Text>
+      </View>
+
       {/* Instructions */}
       <View style={styles.instructionContainer}>
         <Text style={styles.instruction}>
@@ -399,41 +386,67 @@ export default function SelectCardsScreen() {
         </Text>
       </View>
 
-      {/* Cards Area */}
-      <View style={styles.cardsArea}>
-        {cardPositions.map((position, index) => (
-          <TarotCard
-            key={index}
-            index={index}
-            isSelected={selectedCards.includes(index)}
-            isRevealed={false}
-            onSelect={() => handleCardSelect(index)}
-            cardPosition={position}
+      {/* Cards Grid */}
+      <FlatList
+        data={shuffledCards}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={6}
+        contentContainerStyle={styles.cardsGrid}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <TarotCardItem
+            card={item}
+            isSelected={selectedCards.includes(item.id)}
+            selectionOrder={getSelectionOrder(item.id)}
+            onSelect={() => handleCardSelect(item.id)}
+            disabled={selectedCards.length >= cardCount}
           />
-        ))}
-      </View>
+        )}
+      />
 
       {/* Selected Cards Display */}
-      <View style={styles.selectedCardsContainer}>
-        <Text style={styles.selectedLabel}>ไพ่ที่เลือก:</Text>
-        <View style={styles.selectedCardsRow}>
-          {[...Array(CARDS_NEEDED)].map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.selectedCardSlot,
-                selectedCards[i] !== undefined && styles.selectedCardSlotFilled,
-              ]}
-            >
-              {selectedCards[i] !== undefined && (
-                <Text style={styles.selectedCardNumber}>
-                  {selectedCards[i] + 1}
-                </Text>
-              )}
-            </View>
-          ))}
+      {selectedCards.length > 0 && (
+        <View style={styles.selectedCardsContainer}>
+          <Text style={styles.selectedLabel}>ไพ่ที่เลือก:</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.selectedCardsRow}
+          >
+            {spread?.positions.map((pos, i) => {
+              const selectedCardId = selectedCards[i];
+              const card = selectedCardId
+                ? ALL_TAROT_CARDS.find((c) => c.id === selectedCardId)
+                : null;
+
+              return (
+                <View key={i} style={styles.selectedCardSlot}>
+                  <View
+                    style={[
+                      styles.selectedCardBox,
+                      card && styles.selectedCardBoxFilled,
+                    ]}
+                  >
+                    {card ? (
+                      <>
+                        <Text style={styles.selectedCardIcon}>{card.icon}</Text>
+                        <View style={styles.selectedOrderBadge}>
+                          <Text style={styles.selectedOrderText}>{i + 1}</Text>
+                        </View>
+                      </>
+                    ) : (
+                      <Text style={styles.selectedCardEmpty}>?</Text>
+                    )}
+                  </View>
+                  <Text style={styles.positionLabel} numberOfLines={1}>
+                    {pos.name_th}
+                  </Text>
+                </View>
+              );
+            })}
+          </ScrollView>
         </View>
-      </View>
+      )}
 
       {/* Continue Button */}
       {isComplete && (
@@ -484,14 +497,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
-    marginTop: 4,
+    marginTop: 2,
   },
   resetButton: {
     width: 44,
@@ -518,113 +531,115 @@ const styles = StyleSheet.create({
   },
   progressDots: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
     marginTop: 10,
+    gap: 8,
   },
   progressDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
   },
   progressDotFilled: {
     backgroundColor: '#8B5CF6',
     borderColor: '#EC4899',
   },
+  cardCountInfo: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  cardCountText: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.5)',
+  },
   instructionContainer: {
     alignItems: 'center',
-    paddingVertical: 15,
+    paddingVertical: 8,
   },
   instruction: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'rgba(255,255,255,0.8)',
   },
-  cardsArea: {
-    flex: 1,
-    position: 'relative',
+  cardsGrid: {
+    paddingHorizontal: 10,
+    paddingBottom: 20,
   },
   cardWrapper: {
-    position: 'absolute',
+    width: CARD_SIZE,
+    height: CARD_SIZE * 1.4,
+    padding: 2,
   },
-  cardContainer: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
+  cardItem: {
+    flex: 1,
+    borderRadius: 6,
+    overflow: 'hidden',
     position: 'relative',
   },
   cardGlow: {
     position: 'absolute',
-    top: -8,
-    left: -8,
-    right: -8,
-    bottom: -8,
-    borderRadius: 12,
+    top: -4,
+    left: -4,
+    right: -4,
+    bottom: -4,
+    borderRadius: 10,
     backgroundColor: '#8B5CF6',
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 20,
+    zIndex: -1,
   },
-  card: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    backfaceVisibility: 'hidden',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  cardBack: {
-    zIndex: 1,
-  },
-  cardFront: {
-    zIndex: 0,
-  },
-  cardBackGradient: {
+  cardGradient: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#9D4EDD',
-    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(157, 78, 221, 0.5)',
+    borderRadius: 6,
   },
   cardBackPattern: {
     alignItems: 'center',
   },
   cardBackSymbol: {
-    fontSize: 14,
+    fontSize: 8,
     color: '#FFD700',
   },
   cardBackBorder: {
-    width: 40,
-    height: 50,
+    width: 24,
+    height: 30,
     borderWidth: 1,
     borderColor: '#FFD700',
-    borderRadius: 4,
+    borderRadius: 3,
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 4,
+    marginVertical: 2,
   },
   cardBackCenter: {
-    fontSize: 20,
+    fontSize: 12,
     color: '#FFD700',
   },
-  cardFrontGradient: {
-    flex: 1,
+  selectionBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#10B981',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#D97706',
-    borderRadius: 8,
   },
-  cardNumber: {
-    fontSize: 18,
+  selectionNumber: {
+    fontSize: 10,
     fontWeight: 'bold',
-    color: '#92400E',
+    color: '#FFFFFF',
   },
-  cardSymbol: {
-    fontSize: 24,
-    marginTop: 4,
+  cardIconSelected: {
+    fontSize: 20,
+  },
+  disabledOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 6,
   },
   particle: {
     position: 'absolute',
@@ -632,21 +647,24 @@ const styles = StyleSheet.create({
     color: '#FFD700',
   },
   selectedCardsContainer: {
-    paddingHorizontal: 30,
-    paddingBottom: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
   selectedLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: 'rgba(255,255,255,0.6)',
-    marginBottom: 10,
-    textAlign: 'center',
+    marginBottom: 8,
   },
   selectedCardsRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
+    gap: 12,
+    paddingRight: 20,
   },
   selectedCardSlot: {
+    alignItems: 'center',
+  },
+  selectedCardBox: {
     width: 50,
     height: 70,
     borderRadius: 8,
@@ -655,20 +673,48 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    position: 'relative',
   },
-  selectedCardSlotFilled: {
+  selectedCardBoxFilled: {
     borderStyle: 'solid',
     borderColor: '#8B5CF6',
     backgroundColor: 'rgba(139, 92, 246, 0.2)',
   },
-  selectedCardNumber: {
-    fontSize: 20,
+  selectedCardIcon: {
+    fontSize: 24,
+  },
+  selectedOrderBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#EC4899',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectedOrderText: {
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
+  selectedCardEmpty: {
+    fontSize: 20,
+    color: 'rgba(255,255,255,0.3)',
+  },
+  positionLabel: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 4,
+    maxWidth: 50,
+    textAlign: 'center',
+  },
   continueContainer: {
-    paddingHorizontal: 30,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    paddingTop: 10,
   },
   continueButton: {
     borderRadius: 16,
@@ -683,7 +729,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
+    paddingVertical: 16,
     gap: 12,
   },
   continueText: {

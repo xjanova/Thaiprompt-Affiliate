@@ -1,6 +1,6 @@
 /**
- * Product Detail Screen - หน้ารายละเอียดสินค้า
- * ใช้ Lava Lamp Background Theme สำหรับ Shopping Experience
+ * Product Detail Screen - Premium Stable Version
+ * ใช้ StyleSheet แทน NativeWind
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -13,15 +13,14 @@ import {
   Share,
   ActivityIndicator,
   Dimensions,
+  StyleSheet,
+  StatusBar,
+  Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
-import { LavaBackground, GlassCard, Button } from '@/components';
-import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { formatCurrency, API_BASE_URL } from '@/constants';
 import type { Product } from '@/types';
@@ -31,23 +30,18 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { resolvedTheme } = useAppStore();
   const { user, isAuthenticated, token } = useAuthStore();
-  const isDark = resolvedTheme === 'dark';
 
-  // State
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
 
   // โหลดข้อมูลสินค้า
   const fetchProduct = useCallback(async () => {
     if (!id) return;
-
     setIsLoading(true);
     setError('');
 
@@ -75,35 +69,23 @@ export default function ProductDetailScreen() {
   // เพิ่มลงตะกร้า
   const addToCart = async () => {
     if (!isAuthenticated) {
-      Alert.alert(
-        'กรุณาเข้าสู่ระบบ',
-        'คุณต้องเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า',
-        [
-          { text: 'ยกเลิก', style: 'cancel' },
-          { text: 'เข้าสู่ระบบ', onPress: () => router.push('/login') },
-        ]
-      );
+      Alert.alert('กรุณาเข้าสู่ระบบ', 'คุณต้องเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า', [
+        { text: 'ยกเลิก', style: 'cancel' },
+        { text: 'เข้าสู่ระบบ', onPress: () => router.push('/login') },
+      ]);
       return;
     }
-
     if (!product) return;
 
     setIsAddingToCart(true);
-
     try {
       const response = await axios.post(
         `${API_BASE_URL}/cart/add`,
-        {
-          product_id: product.id,
-          quantity,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { product_id: product.id, quantity },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data.success) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert('สำเร็จ!', `เพิ่ม ${product.name} ลงตะกร้าแล้ว`, [
           { text: 'ดูตะกร้า', onPress: () => router.push('/cart') },
           { text: 'ช้อปต่อ', style: 'cancel' },
@@ -121,17 +103,12 @@ export default function ProductDetailScreen() {
   // แชร์สินค้า
   const shareProduct = async () => {
     if (!product) return;
-
     try {
       const referralCode = user?.referral_code || '';
-      const shareUrl = `https://shop.thaiprompt.com/product/${product.id}${
-        referralCode ? `?ref=${referralCode}` : ''
-      }`;
-
+      const shareUrl = `https://shop.thaiprompt.com/product/${product.id}${referralCode ? `?ref=${referralCode}` : ''}`;
       await Share.share({
         title: product.name,
         message: `${product.name}\n\nราคา: ${formatCurrency(product.price)}\n\nซื้อได้ที่: ${shareUrl}`,
-        url: shareUrl,
       });
     } catch (error) {
       console.error('Share error:', error);
@@ -141,309 +118,265 @@ export default function ProductDetailScreen() {
   // คัดลอกลิงก์
   const copyLink = async () => {
     if (!product) return;
-
     const referralCode = user?.referral_code || '';
-    const shareUrl = `https://shop.thaiprompt.com/product/${product.id}${
-      referralCode ? `?ref=${referralCode}` : ''
-    }`;
-
+    const shareUrl = `https://shop.thaiprompt.com/product/${product.id}${referralCode ? `?ref=${referralCode}` : ''}`;
     await Clipboard.setStringAsync(shareUrl);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert('คัดลอกแล้ว!', 'ลิงก์สินค้าถูกคัดลอกไปยังคลิปบอร์ด');
   };
 
-  // Toggle favorite
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
+  // คำนวณ
+  const commissionRate = product?.commission_rate || 5;
+  const estimatedCommission = product ? (product.price * commissionRate / 100) : 0;
+  const pv = product?.pv || Math.round((product?.price || 0) * 0.1); // PV = 10% of price if not set
+  const hasDiscount = product?.original_price && product.original_price > product.price;
+  const discountPercent = hasDiscount ? Math.round(((product.original_price! - product.price) / product.original_price!) * 100) : 0;
+  const productImage = product?.image || product?.images?.[0] || `https://picsum.photos/seed/${id}/600/600`;
 
-  // ปุ่มกลับ
-  const goBack = () => router.back();
-
-  // Mock images (เมื่อไม่มี images จาก API)
-  const productImages = product?.images?.length
-    ? product.images
-    : product
-    ? [`https://picsum.photos/seed/${product.id}/600/600`]
-    : [];
-
-  // คำนวณคอมมิชชั่นที่ได้
-  const commissionRate = 0.05; // 5%
-  const estimatedCommission = product ? product.price * commissionRate : 0;
-
+  // Loading
   if (isLoading) {
     return (
-      <LavaBackground variant="shopping" intensity="low">
-        <SafeAreaView className="flex-1 items-center justify-center">
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+        <View style={styles.centerBox}>
           <ActivityIndicator size="large" color="#FF6B35" />
-          <Text className={`mt-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
-            กำลังโหลดข้อมูลสินค้า...
-          </Text>
-        </SafeAreaView>
-      </LavaBackground>
+          <Text style={styles.loadingText}>กำลังโหลดข้อมูลสินค้า...</Text>
+        </View>
+      </View>
     );
   }
 
+  // Error
   if (error || !product) {
     return (
-      <LavaBackground variant="shopping" intensity="low">
-        <SafeAreaView className="flex-1 items-center justify-center px-6">
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+        <View style={styles.centerBox}>
           <Ionicons name="alert-circle" size={64} color="#EF4444" />
-          <Text className={`text-xl font-bold mt-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
-            {error || 'ไม่พบสินค้า'}
-          </Text>
-          <Button title="กลับ" onPress={goBack} variant="secondary" style={{ marginTop: 16 }} />
-        </SafeAreaView>
-      </LavaBackground>
+          <Text style={styles.errorText}>{error || 'ไม่พบสินค้า'}</Text>
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backButtonText}>กลับ</Text>
+          </Pressable>
+        </View>
+      </View>
     );
   }
 
   return (
-    <LavaBackground variant="shopping" intensity="low">
-      <SafeAreaView className="flex-1" edges={['top']}>
-        {/* Header */}
-        <View className="flex-row items-center justify-between px-4 py-2">
-          <Pressable
-            onPress={goBack}
-            className="w-10 h-10 rounded-full bg-black/20 items-center justify-center"
-          >
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </Pressable>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+      <LinearGradient colors={['#0F0F23', '#1A1A2E', '#16213E']} style={StyleSheet.absoluteFill} />
 
-          <View className="flex-row gap-2">
-            <Pressable
-              onPress={toggleFavorite}
-              className="w-10 h-10 rounded-full bg-black/20 items-center justify-center"
-            >
-              <Ionicons
-                name={isFavorite ? 'heart' : 'heart-outline'}
-                size={24}
-                color={isFavorite ? '#EF4444' : 'white'}
-              />
-            </Pressable>
-            <Pressable
-              onPress={shareProduct}
-              className="w-10 h-10 rounded-full bg-black/20 items-center justify-center"
-            >
-              <Ionicons name="share-outline" size={24} color="white" />
-            </Pressable>
+      {/* Header */}
+      <View style={styles.header}>
+        <Pressable style={styles.headerButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#FFF" />
+        </Pressable>
+        <View style={styles.headerRight}>
+          <Pressable style={styles.headerButton} onPress={() => setIsFavorite(!isFavorite)}>
+            <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={24} color={isFavorite ? '#EF4444' : '#FFF'} />
+          </Pressable>
+          <Pressable style={styles.headerButton} onPress={shareProduct}>
+            <Ionicons name="share-outline" size={24} color="#FFF" />
+          </Pressable>
+        </View>
+      </View>
+
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Product Image */}
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: productImage }} style={styles.productImage} resizeMode="cover" />
+
+          {/* Discount Badge */}
+          {hasDiscount && (
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountText}>-{discountPercent}%</Text>
+            </View>
+          )}
+
+          {/* PV Badge */}
+          <View style={styles.pvBadge}>
+            <Ionicons name="star" size={12} color="#FFD700" />
+            <Text style={styles.pvBadgeText}>{pv} PV</Text>
           </View>
         </View>
 
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-          {/* Product Images */}
-          <View className="bg-white/5 rounded-b-3xl overflow-hidden">
-            <Image
-              source={{ uri: productImages[selectedImageIndex] }}
-              style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH }}
-              contentFit="cover"
-              transition={300}
-            />
+        {/* Product Info */}
+        <View style={styles.infoSection}>
+          {/* Name & Price Card */}
+          <View style={styles.card}>
+            {product.category && (
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryText}>{product.category}</Text>
+              </View>
+            )}
 
-            {/* Image Indicators */}
-            {productImages.length > 1 && (
-              <View className="flex-row justify-center gap-2 py-4">
-                {productImages.map((_, index) => (
-                  <Pressable
-                    key={index}
-                    onPress={() => setSelectedImageIndex(index)}
-                    className={`w-2 h-2 rounded-full ${
-                      index === selectedImageIndex ? 'bg-primary-500 w-6' : 'bg-white/30'
-                    }`}
-                  />
-                ))}
+            <Text style={styles.productName}>{product.name}</Text>
+
+            {/* Price Row */}
+            <View style={styles.priceRow}>
+              <Text style={styles.price}>{formatCurrency(product.price)}</Text>
+              {hasDiscount && (
+                <>
+                  <Text style={styles.originalPrice}>{formatCurrency(product.original_price!)}</Text>
+                  <View style={styles.discountTag}>
+                    <Text style={styles.discountTagText}>ลด {discountPercent}%</Text>
+                  </View>
+                </>
+              )}
+            </View>
+
+            {/* PV Info */}
+            <View style={styles.pvInfo}>
+              <LinearGradient colors={['rgba(255,215,0,0.15)', 'rgba(255,165,0,0.15)']} style={styles.pvGradient}>
+                <Ionicons name="star" size={18} color="#FFD700" />
+                <Text style={styles.pvText}>ได้รับ <Text style={styles.pvValue}>{pv} PV</Text> เมื่อซื้อสินค้านี้</Text>
+              </LinearGradient>
+            </View>
+
+            {/* Commission Info */}
+            {isAuthenticated && (
+              <View style={styles.commissionBox}>
+                <Ionicons name="cash-outline" size={20} color="#10B981" />
+                <Text style={styles.commissionText}>
+                  คอมมิชชั่นโดยประมาณ: <Text style={styles.commissionValue}>{formatCurrency(estimatedCommission)}</Text> ({commissionRate}%)
+                </Text>
               </View>
             )}
           </View>
 
-          {/* Product Info */}
-          <View className="px-4 pt-6 pb-32">
-            {/* Price & Name */}
-            <GlassCard style={{ marginBottom: 16 }}>
-              {/* Category Badge */}
-              {product.category && (
-                <View className="flex-row mb-2">
-                  <View className="bg-primary-500/20 rounded-full px-3 py-1">
-                    <Text className="text-primary-400 text-sm font-medium">
-                      {product.category}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {/* Name */}
-              <Text className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                {product.name}
-              </Text>
-
-              {/* Price */}
-              <View className="flex-row items-baseline mb-4">
-                <Text className="text-3xl font-bold text-primary-500">
-                  {formatCurrency(product.price)}
-                </Text>
-                {product.original_price && product.original_price > product.price && (
-                  <>
-                    <Text
-                      className={`text-lg ml-3 line-through ${
-                        isDark ? 'text-gray-500' : 'text-gray-400'
-                      }`}
-                    >
-                      {formatCurrency(product.original_price)}
-                    </Text>
-                    <View className="bg-red-500 rounded px-2 py-1 ml-2">
-                      <Text className="text-white text-sm font-bold">
-                        -{Math.round(((product.original_price - product.price) / product.original_price) * 100)}%
-                      </Text>
-                    </View>
-                  </>
-                )}
-              </View>
-
-              {/* Commission Info */}
-              {isAuthenticated && (
-                <View className="bg-green-500/10 rounded-xl p-3 border border-green-500/30">
-                  <View className="flex-row items-center">
-                    <Ionicons name="cash-outline" size={20} color="#10B981" />
-                    <Text className="text-green-400 ml-2">
-                      คอมมิชชั่นโดยประมาณ:{' '}
-                      <Text className="font-bold">{formatCurrency(estimatedCommission)}</Text>
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </GlassCard>
-
-            {/* Quantity Selector */}
-            <GlassCard style={{ marginBottom: 16 }}>
-              <Text className={`font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                จำนวน
-              </Text>
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center bg-white/10 rounded-xl">
-                  <Pressable
-                    onPress={() => quantity > 1 && setQuantity(quantity - 1)}
-                    className="w-12 h-12 items-center justify-center"
-                    disabled={quantity <= 1}
-                  >
-                    <Ionicons
-                      name="remove"
-                      size={24}
-                      color={quantity <= 1 ? '#6B7280' : isDark ? '#fff' : '#374151'}
-                    />
-                  </Pressable>
-                  <Text
-                    className={`text-xl font-bold w-12 text-center ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}
-                  >
-                    {quantity}
-                  </Text>
-                  <Pressable
-                    onPress={() => setQuantity(quantity + 1)}
-                    className="w-12 h-12 items-center justify-center"
-                  >
-                    <Ionicons name="add" size={24} color={isDark ? '#fff' : '#374151'} />
-                  </Pressable>
-                </View>
-
-                <View>
-                  <Text className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    ราคารวม
-                  </Text>
-                  <Text className="text-xl font-bold text-primary-500">
-                    {formatCurrency(product.price * quantity)}
-                  </Text>
-                </View>
-              </View>
-            </GlassCard>
-
-            {/* Description */}
-            <GlassCard style={{ marginBottom: 16 }}>
-              <Text className={`font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                รายละเอียดสินค้า
-              </Text>
-              <Text className={isDark ? 'text-gray-300' : 'text-gray-600'}>
-                {product.description || 'ไม่มีรายละเอียดสินค้า'}
-              </Text>
-            </GlassCard>
-
-            {/* Share & Referral */}
-            <GlassCard>
-              <Text className={`font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                แชร์สินค้านี้และรับค่าคอมมิชชั่น!
-              </Text>
-              <View className="flex-row gap-3">
+          {/* Quantity Selector */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>จำนวน</Text>
+            <View style={styles.quantityRow}>
+              <View style={styles.quantitySelector}>
                 <Pressable
-                  onPress={shareProduct}
-                  className="flex-1 flex-row items-center justify-center bg-blue-500/20 rounded-xl py-3"
+                  style={[styles.quantityButton, quantity <= 1 && styles.quantityButtonDisabled]}
+                  onPress={() => quantity > 1 && setQuantity(quantity - 1)}
+                  disabled={quantity <= 1}
                 >
-                  <Ionicons name="share-social" size={20} color="#3B82F6" />
-                  <Text className="text-blue-400 font-medium ml-2">แชร์</Text>
+                  <Ionicons name="remove" size={24} color={quantity <= 1 ? '#4B5563' : '#FFF'} />
                 </Pressable>
-                <Pressable
-                  onPress={copyLink}
-                  className="flex-1 flex-row items-center justify-center bg-purple-500/20 rounded-xl py-3"
-                >
-                  <Ionicons name="link" size={20} color="#8B5CF6" />
-                  <Text className="text-purple-400 font-medium ml-2">คัดลอกลิงก์</Text>
+                <Text style={styles.quantityText}>{quantity}</Text>
+                <Pressable style={styles.quantityButton} onPress={() => setQuantity(quantity + 1)}>
+                  <Ionicons name="add" size={24} color="#FFF" />
                 </Pressable>
               </View>
-            </GlassCard>
+              <View style={styles.totalBox}>
+                <Text style={styles.totalLabel}>ราคารวม</Text>
+                <Text style={styles.totalPrice}>{formatCurrency(product.price * quantity)}</Text>
+                <Text style={styles.totalPV}>{pv * quantity} PV</Text>
+              </View>
+            </View>
           </View>
-        </ScrollView>
 
-        {/* Bottom Action Bar */}
-        <View
-          className={`absolute bottom-0 left-0 right-0 px-4 pb-8 pt-4 ${
-            isDark ? 'bg-dark-800/95' : 'bg-white/95'
-          }`}
-          style={{
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: -4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 12,
-            elevation: 10,
-          }}
-        >
-          <View className="flex-row gap-3">
-            {/* Chat Button */}
-            <Pressable
-              onPress={() => Alert.alert('แชท', 'ระบบแชทกำลังพัฒนา')}
-              className="w-14 h-14 rounded-xl bg-white/10 items-center justify-center border border-gray-300/30"
-            >
-              <Ionicons name="chatbubble-outline" size={24} color={isDark ? '#fff' : '#374151'} />
-            </Pressable>
+          {/* Description */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>รายละเอียดสินค้า</Text>
+            <Text style={styles.description}>{product.description || 'ไม่มีรายละเอียดสินค้า'}</Text>
+          </View>
 
-            {/* Add to Cart Button */}
-            <Pressable
-              onPress={() => router.push('/cart')}
-              className="w-14 h-14 rounded-xl bg-white/10 items-center justify-center border border-gray-300/30"
-            >
-              <Ionicons name="cart-outline" size={24} color={isDark ? '#fff' : '#374151'} />
-            </Pressable>
-
-            {/* Buy Now Button */}
-            <View className="flex-1">
-              <Button
-                title={isAddingToCart ? 'กำลังเพิ่ม...' : 'เพิ่มลงตะกร้า'}
-                onPress={addToCart}
-                loading={isAddingToCart}
-                disabled={isAddingToCart}
-                fullWidth
-                size="lg"
-                variant="primary"
-                style={{
-                  backgroundColor: '#FF6B35',
-                  shadowColor: '#FF6B35',
-                  shadowOpacity: 0.4,
-                  shadowRadius: 12,
-                }}
-              />
+          {/* Share Section */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>แชร์สินค้านี้และรับค่าคอมมิชชั่น!</Text>
+            <View style={styles.shareRow}>
+              <Pressable style={styles.shareButton} onPress={shareProduct}>
+                <Ionicons name="share-social" size={20} color="#3B82F6" />
+                <Text style={styles.shareButtonText}>แชร์</Text>
+              </Pressable>
+              <Pressable style={[styles.shareButton, styles.copyButton]} onPress={copyLink}>
+                <Ionicons name="link" size={20} color="#8B5CF6" />
+                <Text style={[styles.shareButtonText, styles.copyButtonText]}>คัดลอกลิงก์</Text>
+              </Pressable>
             </View>
           </View>
         </View>
-      </SafeAreaView>
-    </LavaBackground>
+
+        <View style={{ height: 120 }} />
+      </ScrollView>
+
+      {/* Bottom Action Bar */}
+      <View style={styles.bottomBar}>
+        <Pressable style={styles.bottomIconButton} onPress={() => Alert.alert('แชท', 'ระบบแชทกำลังพัฒนา')}>
+          <Ionicons name="chatbubble-outline" size={24} color="#9CA3AF" />
+        </Pressable>
+        <Pressable style={styles.bottomIconButton} onPress={() => router.push('/cart')}>
+          <Ionicons name="cart-outline" size={24} color="#9CA3AF" />
+        </Pressable>
+        <Pressable
+          style={[styles.addToCartButton, isAddingToCart && styles.buttonDisabled]}
+          onPress={addToCart}
+          disabled={isAddingToCart}
+        >
+          <LinearGradient colors={['#FF6B35', '#FF8F5A']} style={styles.addToCartGradient}>
+            {isAddingToCart ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <>
+                <Ionicons name="cart" size={20} color="#FFF" />
+                <Text style={styles.addToCartText}>เพิ่มลงตะกร้า</Text>
+              </>
+            )}
+          </LinearGradient>
+        </Pressable>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#0F0F23' },
+  centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+  loadingText: { color: '#9CA3AF', marginTop: 16 },
+  errorText: { fontSize: 18, fontWeight: 'bold', color: '#FFF', marginTop: 16, textAlign: 'center' },
+  backButton: { backgroundColor: '#3B82F6', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginTop: 16 },
+  backButtonText: { color: '#FFF', fontWeight: 'bold' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 56, paddingBottom: 12, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  headerButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
+  headerRight: { flexDirection: 'row', gap: 8 },
+  scrollView: { flex: 1 },
+  imageContainer: { width: SCREEN_WIDTH, height: SCREEN_WIDTH, backgroundColor: '#1F2937', position: 'relative' },
+  productImage: { width: '100%', height: '100%' },
+  discountBadge: { position: 'absolute', top: 70, left: 16, backgroundColor: '#EF4444', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  discountText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
+  pvBadge: { position: 'absolute', top: 70, right: 16, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  pvBadgeText: { color: '#FFD700', fontWeight: 'bold', fontSize: 14 },
+  infoSection: { paddingHorizontal: 16, paddingTop: 20 },
+  card: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  categoryBadge: { backgroundColor: 'rgba(59,130,246,0.2)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 4, alignSelf: 'flex-start', marginBottom: 8 },
+  categoryText: { color: '#60A5FA', fontSize: 12, fontWeight: '600' },
+  productName: { fontSize: 22, fontWeight: 'bold', color: '#FFF', marginBottom: 12 },
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: 16 },
+  price: { fontSize: 28, fontWeight: 'bold', color: '#FF6B35' },
+  originalPrice: { fontSize: 16, color: '#6B7280', textDecorationLine: 'line-through', marginLeft: 12 },
+  discountTag: { backgroundColor: '#EF4444', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginLeft: 8 },
+  discountTagText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+  pvInfo: { marginBottom: 12 },
+  pvGradient: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, padding: 12, gap: 8 },
+  pvText: { color: '#FCD34D', fontSize: 14 },
+  pvValue: { fontWeight: 'bold', color: '#FFD700' },
+  commissionBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(16,185,129,0.1)', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)' },
+  commissionText: { color: '#34D399', marginLeft: 8, flex: 1 },
+  commissionValue: { fontWeight: 'bold' },
+  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#FFF', marginBottom: 12 },
+  quantityRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  quantitySelector: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12 },
+  quantityButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  quantityButtonDisabled: { opacity: 0.5 },
+  quantityText: { fontSize: 20, fontWeight: 'bold', color: '#FFF', width: 48, textAlign: 'center' },
+  totalBox: { alignItems: 'flex-end' },
+  totalLabel: { fontSize: 12, color: '#9CA3AF' },
+  totalPrice: { fontSize: 22, fontWeight: 'bold', color: '#FF6B35' },
+  totalPV: { fontSize: 12, color: '#FFD700' },
+  description: { color: '#D1D5DB', lineHeight: 22 },
+  shareRow: { flexDirection: 'row', gap: 12 },
+  shareButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(59,130,246,0.15)', borderRadius: 12, paddingVertical: 12, gap: 8 },
+  shareButtonText: { color: '#3B82F6', fontWeight: '600' },
+  copyButton: { backgroundColor: 'rgba(139,92,246,0.15)' },
+  copyButtonText: { color: '#8B5CF6' },
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 34, paddingTop: 16, backgroundColor: 'rgba(15,15,35,0.95)', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)', gap: 8 },
+  bottomIconButton: { width: 52, height: 52, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  addToCartButton: { flex: 1, borderRadius: 14, overflow: 'hidden' },
+  buttonDisabled: { opacity: 0.6 },
+  addToCartGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, gap: 8 },
+  addToCartText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+});
