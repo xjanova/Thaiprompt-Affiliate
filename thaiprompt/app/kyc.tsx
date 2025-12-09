@@ -746,30 +746,65 @@ export default function KycScreen() {
 
   // ขอ permission กล้อง
   const requestCameraPermission = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(
-        'ต้องการสิทธิ์กล้อง',
-        'กรุณาอนุญาตให้แอพใช้กล้องเพื่อถ่ายรูปเอกสาร',
-        [{ text: 'ตกลง' }]
-      );
+    try {
+      const { status, canAskAgain } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        if (!canAskAgain) {
+          // ผู้ใช้เลือก "Don't ask again" ต้องไปตั้งค่าเอง
+          Alert.alert(
+            'ต้องการสิทธิ์กล้อง',
+            'กรุณาไปที่ตั้งค่าเพื่ออนุญาตให้แอพใช้กล้อง',
+            [
+              { text: 'ยกเลิก', style: 'cancel' },
+              { text: 'ไปตั้งค่า', onPress: () => require('react-native').Linking.openSettings() },
+            ]
+          );
+        } else {
+          Alert.alert(
+            'ต้องการสิทธิ์กล้อง',
+            'กรุณาอนุญาตให้แอพใช้กล้องเพื่อถ่ายรูปเอกสาร',
+            [{ text: 'ตกลง' }]
+          );
+        }
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Camera permission error:', error);
+      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์กล้องได้');
       return false;
     }
-    return true;
   };
 
   // ขอ permission แกลเลอรี่ (media library)
   const requestMediaLibraryPermission = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(
-        'ต้องการสิทธิ์เข้าถึงรูปภาพ',
-        'กรุณาอนุญาตให้แอพเข้าถึงรูปภาพเพื่อเลือกเอกสาร',
-        [{ text: 'ตกลง' }]
-      );
+    try {
+      const { status, canAskAgain } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        if (!canAskAgain) {
+          Alert.alert(
+            'ต้องการสิทธิ์เข้าถึงรูปภาพ',
+            'กรุณาไปที่ตั้งค่าเพื่ออนุญาตให้แอพเข้าถึงรูปภาพ',
+            [
+              { text: 'ยกเลิก', style: 'cancel' },
+              { text: 'ไปตั้งค่า', onPress: () => require('react-native').Linking.openSettings() },
+            ]
+          );
+        } else {
+          Alert.alert(
+            'ต้องการสิทธิ์เข้าถึงรูปภาพ',
+            'กรุณาอนุญาตให้แอพเข้าถึงรูปภาพเพื่อเลือกเอกสาร',
+            [{ text: 'ตกลง' }]
+          );
+        }
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Media library permission error:', error);
+      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์เข้าถึงรูปภาพได้');
       return false;
     }
-    return true;
   };
 
   // ถ่ายรูปหรือเลือกจากแกลเลอรี่
@@ -781,37 +816,47 @@ export default function KycScreen() {
       {
         text: '📷 ถ่ายรูป',
         onPress: async () => {
-          const hasPermission = await requestCameraPermission();
-          if (!hasPermission) return;
+          try {
+            const hasPermission = await requestCameraPermission();
+            if (!hasPermission) return;
 
-          const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect,
-            quality: 0.8,
-          });
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              aspect,
+              quality: 0.8,
+            });
 
-          if (!result.canceled && result.assets[0]) {
-            handleImageSelected(result.assets[0].uri, type);
+            if (!result.canceled && result.assets[0]) {
+              handleImageSelected(result.assets[0].uri, type);
+            }
+          } catch (error) {
+            console.error('Camera launch error:', error);
+            Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถเปิดกล้องได้ กรุณาลองใหม่');
           }
         },
       },
       {
         text: '🖼️ เลือกจากแกลเลอรี่',
         onPress: async () => {
-          // ขอ permission media library ก่อน
-          const hasPermission = await requestMediaLibraryPermission();
-          if (!hasPermission) return;
+          try {
+            // ขอ permission media library ก่อน
+            const hasPermission = await requestMediaLibraryPermission();
+            if (!hasPermission) return;
 
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect,
-            quality: 0.8,
-          });
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              aspect,
+              quality: 0.8,
+            });
 
-          if (!result.canceled && result.assets[0]) {
-            handleImageSelected(result.assets[0].uri, type);
+            if (!result.canceled && result.assets[0]) {
+              handleImageSelected(result.assets[0].uri, type);
+            }
+          } catch (error) {
+            console.error('Gallery launch error:', error);
+            Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถเปิดแกลเลอรี่ได้ กรุณาลองใหม่');
           }
         },
       },
