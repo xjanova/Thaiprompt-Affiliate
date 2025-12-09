@@ -335,28 +335,47 @@ class LineLoginController extends Controller
     }
 
     /**
+     * Auth code expiry (seconds)
+     */
+    private const AUTH_CODE_EXPIRY = 60;
+
+    /**
      * Authorize mobile app หลังจาก LINE login สำเร็จ
      *
      * สร้าง auth_code และ redirect กลับไปแอพผ่าน deep link
      *
      * @param User $user ผู้ใช้ที่ login สำเร็จ
-     * @param string $mobileToken login_token จาก mobile app
+     * @param string $mobileToken login_token จาก mobile app (raw, unhashed)
      * @param string $mobileState state จาก mobile app
      * @return RedirectResponse|View
      */
     protected function authorizeMobileApp(User $user, string $mobileToken, string $mobileState): RedirectResponse|View
     {
+        // Hash token ก่อน query (ฐานข้อมูลเก็บแบบ hash)
+        $loginTokenHash = hash('sha256', $mobileToken);
+
         // หา MobileAuthToken
-        $authToken = MobileAuthToken::where('login_token', $mobileToken)
+        $authToken = MobileAuthToken::where('login_token', $loginTokenHash)
             ->where('state', $mobileState)
-            ->where('status', 'pending')
-            ->where('expires_at', '>', now())
+            ->whereNull('used_at')
             ->first();
 
         if (!$authToken) {
-            Log::warning('Mobile auth token not found or expired for LINE login', [
-                'token' => substr($mobileToken, 0, 10) . '...',
+            Log::warning('Mobile auth token not found for LINE login', [
+                'token_hash' => substr($loginTokenHash, 0, 10) . '...',
                 'state' => $mobileState,
+            ]);
+
+            return view('auth.mobile-login-error', [
+                'error' => 'expired',
+                'message' => 'Session หมดอายุแล้ว กรุณาเริ่มต้นใหม่จากแอพ',
+            ]);
+        }
+
+        // ตรวจสอบ expiry
+        if ($authToken->isLoginTokenExpired()) {
+            Log::warning('Mobile auth token expired for LINE login', [
+                'token_id' => $authToken->id,
             ]);
 
             return view('auth.mobile-login-error', [
@@ -372,8 +391,7 @@ class LineLoginController extends Controller
         $authToken->update([
             'user_id' => $user->id,
             'auth_code' => hash('sha256', $authCode),
-            'status' => 'authorized',
-            'authorized_at' => now(),
+            'auth_code_expires_at' => now()->addSeconds(self::AUTH_CODE_EXPIRY),
         ]);
 
         Log::info('Mobile app authorized via LINE login', [
