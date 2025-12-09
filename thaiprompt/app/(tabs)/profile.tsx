@@ -1,9 +1,9 @@
 /**
- * Profile Screen - หน้าโปรไฟล์และตั้งค่า
- * รองรับ Offline Mode - แสดงข้อมูลจาก local storage
+ * Profile Screen - Premium Stable Version
+ * ใช้ StyleSheet แทน NativeWind
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,19 +12,16 @@ import {
   Alert,
   Switch,
   RefreshControl,
+  StyleSheet,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores/authStore';
-import { useAppStore } from '@/stores/appStore';
-import * as Sync from '@/services/sync';
-import * as Network from '@/services/network';
 import { APP_INFO } from '@/config/appConfig';
 
-// Menu Item
+// Menu Item Component
 const MenuItem = ({
   icon,
   label,
@@ -32,130 +29,76 @@ const MenuItem = ({
   onPress,
   showArrow = true,
   danger = false,
-  disabled = false,
-  delay,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   label: string;
   value?: string;
   onPress: () => void;
   showArrow?: boolean;
   danger?: boolean;
-  disabled?: boolean;
-  delay: number;
 }) => (
-  <Animated.View entering={FadeInDown.delay(delay).springify()}>
-    <Pressable
-      onPress={disabled ? undefined : onPress}
-      className={`flex-row items-center py-4 px-4 bg-white dark:bg-dark-50 mb-1 ${
-        disabled ? 'opacity-50' : ''
-      }`}
-      style={({ pressed }) => ({ opacity: disabled ? 0.5 : pressed ? 0.7 : 1 })}
-    >
-      <View
-        className={`w-9 h-9 rounded-xl items-center justify-center mr-3 ${
-          danger ? 'bg-red-100' : 'bg-gray-100 dark:bg-gray-700'
-        }`}
-      >
-        <Ionicons
-          name={icon}
-          size={18}
-          color={danger ? '#EF4444' : '#6B7280'}
-        />
-      </View>
-      <Text
-        className={`flex-1 font-medium ${
-          danger ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'
-        }`}
-      >
-        {label}
-      </Text>
-      {value && (
-        <Text className="text-gray-500 text-sm mr-2">{value}</Text>
-      )}
-      {showArrow && !disabled && (
-        <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-      )}
-    </Pressable>
-  </Animated.View>
+  <Pressable
+    onPress={onPress}
+    style={({ pressed }) => [
+      styles.menuItem,
+      { opacity: pressed ? 0.7 : 1 },
+    ]}
+  >
+    <View style={[styles.menuIcon, danger && styles.menuIconDanger]}>
+      <Ionicons
+        name={icon as any}
+        size={18}
+        color={danger ? '#EF4444' : '#6B7280'}
+      />
+    </View>
+    <Text style={[styles.menuLabel, danger && styles.menuLabelDanger]}>
+      {label}
+    </Text>
+    {value && <Text style={styles.menuValue}>{value}</Text>}
+    {showArrow && (
+      <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+    )}
+  </Pressable>
 );
 
-// Toggle Item
+// Toggle Item Component
 const ToggleItem = ({
   icon,
   label,
   value,
   onValueChange,
-  delay,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   label: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
-  delay: number;
 }) => (
-  <Animated.View entering={FadeInDown.delay(delay).springify()}>
-    <View className="flex-row items-center py-4 px-4 bg-white dark:bg-dark-50 mb-1">
-      <View className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 items-center justify-center mr-3">
-        <Ionicons name={icon} size={18} color="#6B7280" />
-      </View>
-      <Text className="flex-1 font-medium text-gray-700 dark:text-gray-300">
-        {label}
-      </Text>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: '#D1D5DB', true: '#93C5FD' }}
-        thumbColor={value ? '#3B82F6' : '#F3F4F6'}
-      />
+  <View style={styles.menuItem}>
+    <View style={styles.menuIcon}>
+      <Ionicons name={icon as any} size={18} color="#6B7280" />
     </View>
-  </Animated.View>
+    <Text style={styles.menuLabel}>{label}</Text>
+    <Switch
+      value={value}
+      onValueChange={onValueChange}
+      trackColor={{ false: '#374151', true: '#3B82F6' }}
+      thumbColor="#FFFFFF"
+    />
+  </View>
 );
 
 export default function ProfileScreen() {
-  const { user, isAuthenticated, isOfflineMode, logout, refreshUser } = useAuthStore();
-  const { themeMode, setThemeMode, resolvedTheme } = useAppStore();
-  const isDark = resolvedTheme === 'dark';
-
-  const [isOnline, setIsOnline] = useState(true);
+  const { user, isAuthenticated, logout, refreshUser } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
-  const lastSync = Sync.getLastSyncFormatted();
-
-  // ตรวจสอบสถานะเน็ตเมื่อเปิดหน้า
-  useEffect(() => {
-    const checkNetwork = async () => {
-      const online = await Network.checkNetworkStatus();
-      setIsOnline(online);
-    };
-    checkNetwork();
-
-    // Subscribe network changes
-    const unsubscribe = Network.subscribeNetworkChanges((online) => {
-      setIsOnline(online);
-    });
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, []);
-
-  // Pull to refresh
   const onRefresh = async () => {
     setRefreshing(true);
     await refreshUser();
-    const online = await Network.checkNetworkStatus();
-    setIsOnline(online);
     setRefreshing(false);
   };
 
-  // Handle logout
   const handleLogout = () => {
-    if (!isOnline) {
-      Alert.alert('ออฟไลน์', 'ไม่สามารถออกจากระบบขณะออฟไลน์ได้');
-      return;
-    }
-
     Alert.alert('ออกจากระบบ', 'คุณต้องการออกจากระบบใช่หรือไม่?', [
       { text: 'ยกเลิก', style: 'cancel' },
       {
@@ -169,288 +112,314 @@ export default function ProfileScreen() {
     ]);
   };
 
-  // Handle sync
-  const handleSync = async () => {
-    if (!isOnline) {
-      Alert.alert('ออฟไลน์', 'ไม่สามารถ sync ข้อมูลขณะออฟไลน์ได้');
-      return;
-    }
-
-    Alert.alert('Sync ข้อมูล', 'กำลัง sync ข้อมูล...');
-    const success = await Sync.syncAll();
-    await refreshUser();
-    Alert.alert(
-      success ? 'สำเร็จ' : 'ผิดพลาด',
-      success ? 'Sync ข้อมูลเรียบร้อย' : 'ไม่สามารถ sync ได้'
-    );
-  };
-
-  // ถ้ายังไม่ login หรือ user ยังไม่โหลด (ใช้ || เพราะหลัง login isAuthenticated อาจเป็น true ก่อน user โหลดเสร็จ)
+  // ถ้ายังไม่ login
   if (!isAuthenticated || !user) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1 justify-center items-center px-6">
-          <Ionicons
-            name="person-circle"
-            size={100}
-            color={isDark ? '#4B5563' : '#9CA3AF'}
-          />
-          <Text className={`text-xl font-bold mt-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
-            โปรไฟล์ของคุณ
-          </Text>
-          <Text className="text-gray-500 text-center mt-2">
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+        <View style={styles.notLoggedIn}>
+          <Ionicons name="person-circle-outline" size={80} color="#4B5563" />
+          <Text style={styles.notLoggedInTitle}>โปรไฟล์ของคุณ</Text>
+          <Text style={styles.notLoggedInText}>
             เข้าสู่ระบบเพื่อจัดการโปรไฟล์และตั้งค่า
           </Text>
-          <Pressable
-            onPress={() => router.push('/login')}
-            className="bg-primary-500 px-8 py-3 rounded-xl mt-6"
-          >
-            <Text className="text-white font-bold">เข้าสู่ระบบ</Text>
+          <Pressable style={styles.loginButton} onPress={() => router.push('/login')}>
+            <Text style={styles.loginButtonText}>เข้าสู่ระบบ</Text>
           </Pressable>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-100'}`}>
-      <SafeAreaView className="flex-1" edges={['top']}>
-        <ScrollView
-          className="flex-1"
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor="#3B82F6"
-            />
-          }
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#3B82F6"
+            colors={['#3B82F6']}
+          />
+        }
+      >
+        {/* Profile Header */}
+        <LinearGradient
+          colors={['#3B82F6', '#2563EB']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.profileHeader}
         >
-          {/* Offline Banner */}
-          {(!isOnline || isOfflineMode) && (
-            <View className="bg-yellow-100 dark:bg-yellow-900/30 px-4 py-2">
-              <View className="flex-row items-center justify-center">
-                <Ionicons name="cloud-offline" size={16} color="#D97706" />
-                <Text className="text-yellow-700 dark:text-yellow-400 text-sm ml-2">
-                  โหมดออฟไลน์ - แสดงข้อมูลที่บันทึกไว้
-                </Text>
-              </View>
+          <Text style={styles.headerTitle}>โปรไฟล์</Text>
+
+          <View style={styles.profileRow}>
+            {/* Avatar */}
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </Text>
             </View>
-          )}
 
-          {/* Profile Header */}
-          <LinearGradient
-            colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
-            style={{
-              paddingHorizontal: 24,
-              paddingTop: 24,
-              paddingBottom: 32,
-            }}
-          >
-            <Text className="text-white text-2xl font-bold mb-6">โปรไฟล์</Text>
-
-            <View className="flex-row items-center">
-              {/* Avatar */}
-              <View className="w-20 h-20 rounded-full bg-white items-center justify-center mr-4">
-                <Text className="text-primary-600 font-bold text-3xl">
-                  {user?.name?.charAt(0).toUpperCase() || 'U'}
-                </Text>
-              </View>
-
-              {/* Info */}
-              <View className="flex-1">
-                <Text className="text-white text-xl font-bold">{user?.name}</Text>
-                <Text className="text-blue-100">{user?.email}</Text>
-                <View className="flex-row items-center mt-1">
-                  <View className="bg-white/20 px-2 py-0.5 rounded-full mr-2">
-                    <Text className="text-white text-xs">
-                      {user?.role || 'Member'}
-                    </Text>
-                  </View>
-                  {user?.referralCode && (
-                    <View className="bg-green-500/30 px-2 py-0.5 rounded-full">
-                      <Text className="text-white text-xs">
-                        รหัส: {user.referralCode}
-                      </Text>
-                    </View>
-                  )}
+            {/* Info */}
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{user?.name}</Text>
+              <Text style={styles.profileEmail}>{user?.email}</Text>
+              <View style={styles.profileBadges}>
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{user?.role || 'Member'}</Text>
                 </View>
+                {user?.referralCode && (
+                  <View style={[styles.badge, { backgroundColor: 'rgba(16,185,129,0.3)' }]}>
+                    <Text style={styles.badgeText}>รหัส: {user.referralCode}</Text>
+                  </View>
+                )}
               </View>
             </View>
-          </LinearGradient>
-
-          {/* Menu Sections */}
-          <View className="mt-4">
-            {/* Account */}
-            <Text className="text-gray-500 text-xs font-medium uppercase px-4 mb-2">
-              บัญชี
-            </Text>
-            <MenuItem
-              icon="person"
-              label="แก้ไขโปรไฟล์"
-              onPress={() => Alert.alert('แก้ไขโปรไฟล์', 'กำลังพัฒนา...')}
-              disabled={!isOnline}
-              delay={100}
-            />
-            <MenuItem
-              icon="key"
-              label="เปลี่ยนรหัสผ่าน"
-              onPress={() => Alert.alert('เปลี่ยนรหัสผ่าน', 'กำลังพัฒนา...')}
-              disabled={!isOnline}
-              delay={150}
-            />
-            <MenuItem
-              icon="shield-checkmark"
-              label="ความปลอดภัย"
-              onPress={() => Alert.alert('ความปลอดภัย', 'กำลังพัฒนา...')}
-              disabled={!isOnline}
-              delay={200}
-            />
           </View>
+        </LinearGradient>
 
-          <View className="mt-4">
-            {/* Referral - always available offline */}
-            <Text className="text-gray-500 text-xs font-medium uppercase px-4 mb-2">
-              การแนะนำ
-            </Text>
-            <MenuItem
-              icon="share-social"
-              label="แนะนำเพื่อน"
-              value={user?.referralCode || ''}
-              onPress={() => router.push('/referral')}
-              delay={220}
-            />
-            <MenuItem
-              icon="qr-code"
-              label="QR Code ของฉัน"
-              onPress={() => router.push('/referral')}
-              delay={240}
-            />
-          </View>
+        {/* Menu Sections */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>บัญชี</Text>
+          <MenuItem
+            icon="person-outline"
+            label="แก้ไขโปรไฟล์"
+            onPress={() => Alert.alert('แก้ไขโปรไฟล์', 'กำลังพัฒนา...')}
+          />
+          <MenuItem
+            icon="key-outline"
+            label="เปลี่ยนรหัสผ่าน"
+            onPress={() => Alert.alert('เปลี่ยนรหัสผ่าน', 'กำลังพัฒนา...')}
+          />
+          <MenuItem
+            icon="shield-checkmark-outline"
+            label="ความปลอดภัย"
+            onPress={() => Alert.alert('ความปลอดภัย', 'กำลังพัฒนา...')}
+          />
+        </View>
 
-          <View className="mt-4">
-            {/* Settings */}
-            <Text className="text-gray-500 text-xs font-medium uppercase px-4 mb-2">
-              ตั้งค่า
-            </Text>
-            <ToggleItem
-              icon="moon"
-              label="โหมดมืด"
-              value={themeMode === 'dark'}
-              onValueChange={(value) => setThemeMode(value ? 'dark' : 'light')}
-              delay={250}
-            />
-            <MenuItem
-              icon="notifications"
-              label="การแจ้งเตือน"
-              onPress={() => Alert.alert('การแจ้งเตือน', 'กำลังพัฒนา...')}
-              delay={300}
-            />
-            <MenuItem
-              icon="language"
-              label="ภาษา"
-              value="ไทย"
-              onPress={() => Alert.alert('ภาษา', 'กำลังพัฒนา...')}
-              delay={350}
-            />
-          </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>การแนะนำ</Text>
+          <MenuItem
+            icon="share-social-outline"
+            label="แนะนำเพื่อน"
+            value={user?.referralCode || ''}
+            onPress={() => router.push('/referral')}
+          />
+          <MenuItem
+            icon="qr-code-outline"
+            label="QR Code ของฉัน"
+            onPress={() => router.push('/referral')}
+          />
+        </View>
 
-          <View className="mt-4">
-            {/* Data */}
-            <Text className="text-gray-500 text-xs font-medium uppercase px-4 mb-2">
-              ข้อมูล
-            </Text>
-            <MenuItem
-              icon="sync"
-              label="Sync ข้อมูล"
-              value={lastSync}
-              onPress={handleSync}
-              disabled={!isOnline}
-              delay={400}
-            />
-            <MenuItem
-              icon="cloud-download"
-              label="ดาวน์โหลดข้อมูลออฟไลน์"
-              onPress={async () => {
-                if (!isOnline) {
-                  Alert.alert('ออฟไลน์', 'ต้องมีเน็ตเพื่อดาวน์โหลด');
-                  return;
-                }
-                Alert.alert('กำลังดาวน์โหลด', 'ดาวน์โหลดข้อมูลสำหรับใช้งานออฟไลน์...');
-                await Sync.syncAll();
-                Alert.alert('สำเร็จ', 'ดาวน์โหลดข้อมูลออฟไลน์เรียบร้อย');
-              }}
-              disabled={!isOnline}
-              delay={430}
-            />
-            <MenuItem
-              icon="trash"
-              label="ล้าง Cache"
-              onPress={() => {
-                Alert.alert('ล้าง Cache', 'คุณต้องการล้าง cache ทั้งหมด?', [
-                  { text: 'ยกเลิก', style: 'cancel' },
-                  {
-                    text: 'ล้าง',
-                    onPress: async () => {
-                      const Cache = await import('@/services/cache');
-                      await Cache.clearAllCache();
-                      Alert.alert('สำเร็จ', 'ล้าง cache เรียบร้อย');
-                    },
-                  },
-                ]);
-              }}
-              delay={450}
-            />
-          </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>ตั้งค่า</Text>
+          <ToggleItem
+            icon="moon-outline"
+            label="โหมดมืด"
+            value={isDarkMode}
+            onValueChange={setIsDarkMode}
+          />
+          <MenuItem
+            icon="notifications-outline"
+            label="การแจ้งเตือน"
+            onPress={() => Alert.alert('การแจ้งเตือน', 'กำลังพัฒนา...')}
+          />
+          <MenuItem
+            icon="language-outline"
+            label="ภาษา"
+            value="ไทย"
+            onPress={() => Alert.alert('ภาษา', 'กำลังพัฒนา...')}
+          />
+        </View>
 
-          <View className="mt-4">
-            {/* Support */}
-            <Text className="text-gray-500 text-xs font-medium uppercase px-4 mb-2">
-              ช่วยเหลือ
-            </Text>
-            <MenuItem
-              icon="help-circle"
-              label="ศูนย์ช่วยเหลือ"
-              onPress={() => Alert.alert('ศูนย์ช่วยเหลือ', 'กำลังพัฒนา...')}
-              delay={500}
-            />
-            <MenuItem
-              icon="chatbubble"
-              label="ติดต่อเรา"
-              onPress={() => Alert.alert('ติดต่อเรา', 'กำลังพัฒนา...')}
-              delay={550}
-            />
-            <MenuItem
-              icon="document-text"
-              label="เงื่อนไขการใช้งาน"
-              onPress={() => Alert.alert('เงื่อนไขการใช้งาน', 'กำลังพัฒนา...')}
-              delay={600}
-            />
-            <MenuItem
-              icon="information-circle"
-              label="เกี่ยวกับแอพ"
-              value={`v${APP_INFO.VERSION}`}
-              onPress={() => Alert.alert(
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>ช่วยเหลือ</Text>
+          <MenuItem
+            icon="help-circle-outline"
+            label="ศูนย์ช่วยเหลือ"
+            onPress={() => Alert.alert('ศูนย์ช่วยเหลือ', 'กำลังพัฒนา...')}
+          />
+          <MenuItem
+            icon="chatbubble-outline"
+            label="ติดต่อเรา"
+            onPress={() => Alert.alert('ติดต่อเรา', 'กำลังพัฒนา...')}
+          />
+          <MenuItem
+            icon="document-text-outline"
+            label="เงื่อนไขการใช้งาน"
+            onPress={() => Alert.alert('เงื่อนไขการใช้งาน', 'กำลังพัฒนา...')}
+          />
+          <MenuItem
+            icon="information-circle-outline"
+            label="เกี่ยวกับแอพ"
+            value={`v${APP_INFO.VERSION}`}
+            onPress={() =>
+              Alert.alert(
                 APP_INFO.NAME,
                 `Version ${APP_INFO.VERSION} (Build ${APP_INFO.BUILD_NUMBER})\n\n© 2024 Thaiprompt`
-              )}
-              delay={650}
-            />
-          </View>
+              )
+            }
+          />
+        </View>
 
-          <View className="mt-4 mb-8">
-            <MenuItem
-              icon="log-out"
-              label="ออกจากระบบ"
-              onPress={handleLogout}
-              showArrow={false}
-              danger
-              disabled={!isOnline}
-              delay={700}
-            />
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+        <View style={[styles.section, { marginBottom: 100 }]}>
+          <MenuItem
+            icon="log-out-outline"
+            label="ออกจากระบบ"
+            onPress={handleLogout}
+            showArrow={false}
+            danger
+          />
+        </View>
+      </ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0F0F23',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  notLoggedIn: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  notLoggedInTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginTop: 16,
+  },
+  notLoggedInText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  loginButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 24,
+  },
+  loginButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  profileHeader: {
+    paddingHorizontal: 24,
+    paddingTop: 56,
+    paddingBottom: 32,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 20,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  avatarText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#3B82F6',
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  profileEmail: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+  profileBadges: {
+    flexDirection: 'row',
+    marginTop: 8,
+  },
+  badge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginRight: 8,
+  },
+  badgeText: {
+    fontSize: 11,
+    color: '#FFFFFF',
+  },
+  section: {
+    marginTop: 16,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 1,
+  },
+  menuIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  menuIconDanger: {
+    backgroundColor: 'rgba(239,68,68,0.15)',
+  },
+  menuLabel: {
+    flex: 1,
+    fontSize: 15,
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  menuLabelDanger: {
+    color: '#EF4444',
+  },
+  menuValue: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginRight: 8,
+  },
+});
