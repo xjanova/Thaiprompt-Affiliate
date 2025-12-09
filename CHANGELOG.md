@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.23] - 2025-12-09
+
+### ✨ Features
+- feat(mobile-app): ปรับปรุงระบบไพ่ทาโรต์ครบ 78 ใบ + ตรวจสอบวอลเลต (f341bc07)
+- feat(mobile-app): แก้ไขระบบโปรไฟล์, Wallet, Dark Mode, รหัสสมาชิก v1.5.0 (9db2c6bc)
+### 🐛 Bug Fixes
+- fix(mobile-app): แก้ไขหน้าช้อปปิ้งและ Product Detail ให้ใช้ StyleSheet + เพิ่ม PV (0fafdeb3)
+### 🔧 Other Changes
+- Merge pull request #2199 from xjanova/claude/fix-white-screen-login-01X8Ta4WVKdrbCffsKj67ZXy (f296a9af)
+
 ## [v3.372.22] - 2025-12-09
 
 ### ✨ Features
