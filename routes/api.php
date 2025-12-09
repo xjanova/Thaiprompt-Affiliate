@@ -100,6 +100,14 @@ Route::prefix('v1')->group(function () {
         Route::post('/mobile-callback', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'lineLoginCallback']);
     });
 
+    // Web-Based Mobile Authentication (PKCE) - สำหรับ mobile app login ผ่านเว็บ
+    Route::prefix('auth/mobile')->group(function () {
+        Route::post('/init', [\App\Http\Controllers\Api\V1\MobileAuthController::class, 'init']);
+        Route::post('/exchange', [\App\Http\Controllers\Api\V1\MobileAuthController::class, 'exchange']);
+        Route::get('/status', [\App\Http\Controllers\Api\V1\MobileAuthController::class, 'status']);
+        Route::post('/cancel', [\App\Http\Controllers\Api\V1\MobileAuthController::class, 'cancel']);
+    });
+
     // App settings (public)
     Route::get('/settings', [DashboardController::class, 'settings']);
 
