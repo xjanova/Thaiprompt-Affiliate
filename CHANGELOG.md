@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.39] - 2025-12-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2215 from xjanova/claude/fix-forum-trophy-seeder-013ax2UEim7pyARL4mN2oRaZ (76235488)
+- fix(seeder): แก้ไข output ของ ForumTrophySeeder ให้ชัดเจน (d96fabaf)
+### 🔧 Other Changes
+
+
 ## [v3.372.38] - 2025-12-09
 
 ### ✨ Features
