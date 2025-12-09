@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.40] - 2025-12-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2216 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (ffe1d685)
+- fix(line-oa): เพิ่ม validation สำหรับ mobile LINE login fields ใน controller (ebe6aa0d)
+### 🔧 Other Changes
+
+
 ## [v3.372.39] - 2025-12-09
 
 ### ✨ Features
