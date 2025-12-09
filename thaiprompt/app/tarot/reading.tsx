@@ -1,9 +1,9 @@
 /**
- * Tarot Reading Result Screen - หน้าแสดงผลการอ่านไพ่
- * แสดงความหมายและคำทำนายอย่างสวยงาม
+ * Tarot Reading Result Screen - หน้าแสดงผลการอ่านไพ่ 78 ใบ
+ * รองรับทุกโหมดการเปิดไพ่ (1, 3, 5, 10 ใบ)
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -21,49 +21,32 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
+// นำเข้าข้อมูลไพ่ 78 ใบจาก tarotData.ts
+import {
+  TarotCard,
+  SpreadPosition,
+  getCardById,
+  getSpreadBySlug,
+  SPREAD_TYPES,
+} from '../../data/tarotData';
+
 const { width } = Dimensions.get('window');
 
-// Mock Major Arcana Cards Data
-const MAJOR_ARCANA = [
-  { id: 0, name: 'The Fool', nameTh: 'คนโง่', icon: '🃏', meaning: 'การเริ่มต้นใหม่ การผจญภัย ความไร้เดียงสา' },
-  { id: 1, name: 'The Magician', nameTh: 'นักมายากล', icon: '✨', meaning: 'พลังสร้างสรรค์ ทักษะ ความมุ่งมั่น' },
-  { id: 2, name: 'The High Priestess', nameTh: 'นักบวชหญิง', icon: '🌙', meaning: 'สัญชาตญาณ ความลึกลับ ปัญญาภายใน' },
-  { id: 3, name: 'The Empress', nameTh: 'จักรพรรดินี', icon: '👑', meaning: 'ความอุดมสมบูรณ์ ความงาม ธรรมชาติ' },
-  { id: 4, name: 'The Emperor', nameTh: 'จักรพรรดิ', icon: '🏛️', meaning: 'อำนาจ โครงสร้าง ความมั่นคง' },
-  { id: 5, name: 'The Hierophant', nameTh: 'พระสันตะปาปา', icon: '📿', meaning: 'ประเพณี ศรัทธา การศึกษา' },
-  { id: 6, name: 'The Lovers', nameTh: 'คู่รัก', icon: '💕', meaning: 'ความรัก ทางเลือก ความสัมพันธ์' },
-  { id: 7, name: 'The Chariot', nameTh: 'รถศึก', icon: '🏇', meaning: 'ชัยชนะ ความมุ่งมั่น การควบคุม' },
-  { id: 8, name: 'Strength', nameTh: 'พลัง', icon: '🦁', meaning: 'ความกล้าหาญ อดทน พลังภายใน' },
-  { id: 9, name: 'The Hermit', nameTh: 'ฤาษี', icon: '🏔️', meaning: 'การค้นหาตัวเอง ความสันโดษ ปัญญา' },
-  { id: 10, name: 'Wheel of Fortune', nameTh: 'วงล้อโชคชะตา', icon: '🎡', meaning: 'โชคชะตา การเปลี่ยนแปลง วัฏจักร' },
-  { id: 11, name: 'Justice', nameTh: 'ความยุติธรรม', icon: '⚖️', meaning: 'ความเที่ยงธรรม ความจริง กฎหมาย' },
-  { id: 12, name: 'The Hanged Man', nameTh: 'ชายถูกแขวน', icon: '🙃', meaning: 'การปล่อยวาง มุมมองใหม่ การเสียสละ' },
-  { id: 13, name: 'Death', nameTh: 'ความตาย', icon: '🦋', meaning: 'การเปลี่ยนแปลง จบสิ้น การเกิดใหม่' },
-  { id: 14, name: 'Temperance', nameTh: 'ความพอดี', icon: '⚗️', meaning: 'ความสมดุล อดทน การผสมผสาน' },
-  { id: 15, name: 'The Devil', nameTh: 'ปีศาจ', icon: '😈', meaning: 'การยึดติด สิ่งล่อใจ ความมืด' },
-  { id: 16, name: 'The Tower', nameTh: 'หอคอย', icon: '🗼', meaning: 'การพังทลาย การเปลี่ยนแปลงกะทันหัน ความจริง' },
-  { id: 17, name: 'The Star', nameTh: 'ดวงดาว', icon: '⭐', meaning: 'ความหวัง แรงบันดาลใจ ความสงบ' },
-  { id: 18, name: 'The Moon', nameTh: 'พระจันทร์', icon: '🌕', meaning: 'ภาพลวง ความกลัว จิตใต้สำนึก' },
-  { id: 19, name: 'The Sun', nameTh: 'พระอาทิตย์', icon: '☀️', meaning: 'ความสุข ความสำเร็จ ความมีชีวิตชีวา' },
-  { id: 20, name: 'Judgement', nameTh: 'การพิพากษา', icon: '📯', meaning: 'การตัดสิน การฟื้นคืน การเรียก' },
-  { id: 21, name: 'The World', nameTh: 'โลก', icon: '🌍', meaning: 'ความสำเร็จ ความสมบูรณ์ การบรรลุ' },
+// Default positions fallback (สำหรับกรณีไม่มี spread)
+const DEFAULT_POSITIONS: SpreadPosition[] = [
+  { name_en: 'Past', name_th: 'อดีต', description_th: 'สิ่งที่ผ่านมาและส่งผลต่อปัจจุบัน' },
+  { name_en: 'Present', name_th: 'ปัจจุบัน', description_th: 'สถานการณ์ที่คุณกำลังเผชิญ' },
+  { name_en: 'Future', name_th: 'อนาคต', description_th: 'แนวโน้มและสิ่งที่รออยู่ข้างหน้า' },
 ];
 
-// Position meanings for 3-card spread
-const POSITIONS = [
-  { name: 'อดีต', description: 'สิ่งที่ผ่านมาและส่งผลต่อปัจจุบัน' },
-  { name: 'ปัจจุบัน', description: 'สถานการณ์ที่คุณกำลังเผชิญ' },
-  { name: 'อนาคต', description: 'แนวโน้มและสิ่งที่รออยู่ข้างหน้า' },
-];
-
-// Reading Card Component
+// Reading Card Component - รองรับไพ่ 78 ใบ
 const ReadingCard = ({
   card,
   position,
   index,
 }: {
-  card: typeof MAJOR_ARCANA[0];
-  position: typeof POSITIONS[0];
+  card: TarotCard;
+  position: SpreadPosition;
   index: number;
 }) => {
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -88,6 +71,28 @@ const ReadingCard = ({
     ]).start();
   }, [index, scaleAnim, opacityAnim]);
 
+  // แสดง suit badge สำหรับ Minor Arcana
+  const getSuitBadge = () => {
+    if (card.type === 'major_arcana') return null;
+    const suitColors: Record<string, string> = {
+      wands: '#F59E0B',
+      cups: '#3B82F6',
+      swords: '#6B7280',
+      pentacles: '#10B981',
+    };
+    const suitNames: Record<string, string> = {
+      wands: 'ไม้เท้า',
+      cups: 'ถ้วย',
+      swords: 'ดาบ',
+      pentacles: 'เหรียญ',
+    };
+    return (
+      <View style={[styles.suitBadge, { backgroundColor: suitColors[card.suit || ''] }]}>
+        <Text style={styles.suitBadgeText}>{suitNames[card.suit || '']}</Text>
+      </View>
+    );
+  };
+
   return (
     <Animated.View
       style={[
@@ -109,27 +114,52 @@ const ReadingCard = ({
         style={styles.readingCardGradient}
       >
         {/* Position Name */}
-        <Text style={styles.positionName}>{position.name}</Text>
-        <Text style={styles.positionDesc}>{position.description}</Text>
+        <Text style={styles.positionName}>{position.name_th}</Text>
+        <Text style={styles.positionDesc}>{position.description_th}</Text>
 
         {/* Card Display */}
         <View style={styles.cardDisplay}>
           <LinearGradient
-            colors={['#FEF3C7', '#FDE68A', '#FCD34D']}
+            colors={card.type === 'major_arcana'
+              ? ['#FEF3C7', '#FDE68A', '#FCD34D']
+              : ['#E0E7FF', '#C7D2FE', '#A5B4FC']}
             style={styles.cardImageContainer}
           >
             <Text style={styles.cardIcon}>{card.icon}</Text>
           </LinearGradient>
+          {getSuitBadge()}
         </View>
 
         {/* Card Name */}
-        <Text style={styles.cardName}>{card.nameTh}</Text>
-        <Text style={styles.cardNameEn}>{card.name}</Text>
+        <Text style={styles.cardName}>{card.name_th}</Text>
+        <Text style={styles.cardNameEn}>{card.name_en}</Text>
+
+        {/* Card Type Badge */}
+        <View style={[
+          styles.typeBadge,
+          { backgroundColor: card.type === 'major_arcana' ? '#8B5CF6' : '#6366F1' }
+        ]}>
+          <Text style={styles.typeBadgeText}>
+            {card.type === 'major_arcana' ? 'Major Arcana' : 'Minor Arcana'}
+          </Text>
+        </View>
 
         {/* Card Meaning */}
         <View style={styles.meaningContainer}>
-          <Text style={styles.meaningLabel}>ความหมาย:</Text>
-          <Text style={styles.meaningText}>{card.meaning}</Text>
+          <Text style={styles.meaningLabel}>ความหมาย (ด้านตั้ง):</Text>
+          <Text style={styles.meaningText}>{card.upright_meaning_th}</Text>
+        </View>
+
+        {/* Keywords */}
+        <View style={styles.keywordsContainer}>
+          <Text style={styles.keywordsLabel}>คำสำคัญ:</Text>
+          <View style={styles.keywordsTags}>
+            {card.keywords_th.slice(0, 4).map((keyword, i) => (
+              <View key={i} style={styles.keywordTag}>
+                <Text style={styles.keywordText}>{keyword}</Text>
+              </View>
+            ))}
+          </View>
         </View>
       </LinearGradient>
     </Animated.View>
@@ -138,11 +168,44 @@ const ReadingCard = ({
 
 export default function ReadingScreen() {
   const params = useLocalSearchParams();
-  const { categoryName, selectedCards: selectedCardsStr } = params;
+  const {
+    categoryName,
+    selectedCards: selectedCardsStr,
+    spreadSlug = 'past-present-future',
+  } = params;
 
   const [loading, setLoading] = useState(true);
   const [interpretation, setInterpretation] = useState('');
-  const selectedCards = (selectedCardsStr as string)?.split(',').map(Number) || [];
+
+  // แปลง selectedCards string เป็น array ของ IDs
+  const selectedCardIds = useMemo(() => {
+    return (selectedCardsStr as string)?.split(',').map(Number) || [];
+  }, [selectedCardsStr]);
+
+  // ดึงข้อมูลไพ่จาก ID (รองรับ 78 ใบ)
+  const cards = useMemo(() => {
+    return selectedCardIds
+      .map((id) => getCardById(id))
+      .filter((card): card is TarotCard => card !== undefined);
+  }, [selectedCardIds]);
+
+  // ดึงข้อมูล spread type
+  const spread = useMemo(() => {
+    return getSpreadBySlug(spreadSlug as string);
+  }, [spreadSlug]);
+
+  // ดึงตำแหน่งไพ่ตาม spread
+  const positions = useMemo(() => {
+    if (spread && spread.positions.length > 0) {
+      return spread.positions;
+    }
+    // Fallback positions ตามจำนวนไพ่
+    const fallback: SpreadPosition[] = [];
+    for (let i = 0; i < cards.length; i++) {
+      fallback.push(DEFAULT_POSITIONS[i % DEFAULT_POSITIONS.length]);
+    }
+    return fallback;
+  }, [spread, cards.length]);
 
   const headerOpacity = useRef(new Animated.Value(0)).current;
   const interpretationOpacity = useRef(new Animated.Value(0)).current;
@@ -153,8 +216,7 @@ export default function ReadingScreen() {
       setLoading(false);
 
       // Generate interpretation
-      const cards = selectedCards.map((i) => MAJOR_ARCANA[i]);
-      const interp = generateInterpretation(cards, categoryName as string);
+      const interp = generateInterpretation(cards, positions, categoryName as string);
       setInterpretation(interp);
 
       // Animations
@@ -170,42 +232,68 @@ export default function ReadingScreen() {
           duration: 600,
           useNativeDriver: true,
         }).start();
-      }, selectedCards.length * 300 + 500);
+      }, cards.length * 300 + 500);
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [selectedCards, categoryName, headerOpacity, interpretationOpacity]);
+  }, [cards, positions, categoryName, headerOpacity, interpretationOpacity]);
 
+  // สร้างคำทำนายแบบ dynamic ตามจำนวนไพ่
   const generateInterpretation = (
-    cards: typeof MAJOR_ARCANA,
+    cards: TarotCard[],
+    positions: SpreadPosition[],
     category: string
   ): string => {
-    const pastCard = cards[0];
-    const presentCard = cards[1];
-    const futureCard = cards[2];
+    if (cards.length === 0) {
+      return '🔮 ไม่พบข้อมูลไพ่ กรุณาลองใหม่อีกครั้ง';
+    }
 
-    return `🔮 การทำนายของคุณ\n\n` +
-      `จากไพ่ที่คุณเลือก ในอดีต "${pastCard?.nameTh}" แสดงถึง${pastCard?.meaning} ` +
-      `ซึ่งมีผลต่อสถานการณ์ปัจจุบันของคุณ\n\n` +
-      `ปัจจุบัน ไพ่ "${presentCard?.nameTh}" บ่งบอกว่าคุณกำลังอยู่ในช่วงของ${presentCard?.meaning} ` +
-      `นี่คือช่วงเวลาที่สำคัญในการตัดสินใจ\n\n` +
-      `สำหรับอนาคต ไพ่ "${futureCard?.nameTh}" ชี้ให้เห็นว่า${futureCard?.meaning} ` +
-      `กำลังรอคุณอยู่ข้างหน้า หากคุณดำเนินชีวิตอย่างมีสติและรอบคอบ\n\n` +
-      `✨ คำแนะนำ: จงเชื่อมั่นในตัวเอง และเปิดใจรับสิ่งใหม่ๆ ที่กำลังจะเข้ามา`;
+    // สำหรับไพ่ใบเดียว
+    if (cards.length === 1) {
+      const card = cards[0];
+      return `🔮 การทำนายของคุณ\n\n` +
+        `ไพ่ "${card.name_th}" (${card.name_en}) ได้ปรากฏขึ้นเพื่อตอบคำถามของคุณ\n\n` +
+        `${card.upright_meaning_th}\n\n` +
+        `คำสำคัญ: ${card.keywords_th.join(', ')}\n\n` +
+        `✨ คำแนะนำ: จงใคร่ครวญความหมายของไพ่นี้ และปรับใช้กับสถานการณ์ของคุณ`;
+    }
+
+    // สำหรับหลายไพ่
+    let text = `🔮 การทำนายของคุณ\n\n`;
+
+    cards.forEach((card, index) => {
+      const pos = positions[index];
+      if (pos) {
+        text += `📍 ${pos.name_th}:\n`;
+        text += `ไพ่ "${card.name_th}" บ่งบอกว่า ${card.keywords_th.slice(0, 2).join(' และ ')} `;
+        text += `กำลังมีบทบาทสำคัญในช่วงนี้\n\n`;
+      }
+    });
+
+    // สรุป
+    text += `✨ คำแนะนำรวม:\n`;
+    text += `จากการรวมความหมายของไพ่ทั้งหมด คุณควรเปิดใจรับสิ่งใหม่ๆ `;
+    text += `และเชื่อมั่นในการตัดสินใจของตัวเอง ผลลัพธ์ที่ดีกำลังรอคุณอยู่`;
+
+    return text;
   };
 
   const handleShare = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const cards = selectedCards.map((i) => MAJOR_ARCANA[i]);
+      // สร้างรายการไพ่สำหรับแชร์
+      let cardsList = '';
+      cards.forEach((card, index) => {
+        const pos = positions[index];
+        cardsList += `${index + 1}. ${pos?.name_th || `ไพ่ที่ ${index + 1}`}: ${card.name_th}\n`;
+      });
+
       await Share.share({
         message:
           `🔮 ผลดูดวงไพ่ทาโรต์\n\n` +
-          `หมวด: ${categoryName}\n\n` +
-          `ไพ่ที่ได้:\n` +
-          `1. อดีต: ${cards[0]?.nameTh}\n` +
-          `2. ปัจจุบัน: ${cards[1]?.nameTh}\n` +
-          `3. อนาคต: ${cards[2]?.nameTh}\n\n` +
+          `หมวด: ${categoryName}\n` +
+          `โหมด: ${spread?.name_th || 'ทำนายทั่วไป'}\n\n` +
+          `ไพ่ที่ได้:\n${cardsList}\n` +
           `ดูดวงเพิ่มเติมที่ Thaiprompt App`,
       });
     } catch (error) {
@@ -264,15 +352,26 @@ export default function ReadingScreen() {
           </Pressable>
         </Animated.View>
 
+        {/* Spread Info */}
+        {spread && (
+          <View style={styles.spreadInfo}>
+            <Text style={styles.spreadIcon}>{spread.icon}</Text>
+            <Text style={styles.spreadName}>{spread.name_th}</Text>
+            <Text style={styles.spreadDesc}>{spread.description_th}</Text>
+          </View>
+        )}
+
         {/* Cards Section */}
         <View style={styles.cardsSection}>
-          <Text style={styles.sectionTitle}>🃏 ไพ่ที่คุณเลือก</Text>
+          <Text style={styles.sectionTitle}>
+            🃏 ไพ่ที่คุณเลือก ({cards.length} ใบ)
+          </Text>
 
-          {selectedCards.map((cardIndex, i) => (
+          {cards.map((card, i) => (
             <ReadingCard
-              key={i}
-              card={MAJOR_ARCANA[cardIndex]}
-              position={POSITIONS[i]}
+              key={card.id}
+              card={card}
+              position={positions[i] || DEFAULT_POSITIONS[0]}
               index={i}
             />
           ))}
@@ -496,6 +595,81 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     lineHeight: 24,
+  },
+  // Suit badge สำหรับ Minor Arcana
+  suitBadge: {
+    position: 'absolute',
+    bottom: -8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  suitBadgeText: {
+    fontSize: 10,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  // Type badge
+  typeBadge: {
+    alignSelf: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  // Keywords
+  keywordsContainer: {
+    marginTop: 12,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 10,
+    padding: 12,
+  },
+  keywordsLabel: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.5)',
+    marginBottom: 8,
+  },
+  keywordsTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  keywordTag: {
+    backgroundColor: 'rgba(139, 92, 246, 0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  keywordText: {
+    fontSize: 12,
+    color: '#E9D5FF',
+  },
+  // Spread info
+  spreadInfo: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginBottom: 10,
+  },
+  spreadIcon: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  spreadName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  spreadDesc: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.6)',
+    textAlign: 'center',
   },
   interpretationSection: {
     paddingHorizontal: 20,
