@@ -72,6 +72,7 @@ $intentionallyExcludedSeeders = [
     'MlmHierarchySeeder',       // ❌ ลบ - ใช้ ThaipromptMlmSeeder แทน
     'PageBuilderSeeder',        // SKIP: Already exists - ใช้ครั้งเดียว
     'ThaipromptMlmSeeder',      // ❌ ปิดไว้ - ทดสอบสมัครปกติ
+    'WalletTopupPackagesSeeder', // ❌ ยกเลิก - ระบบเติมเงินไม่ใช้สินค้าแล้ว ใช้ PaymentTransaction โดยตรง
 ];
 
 // Check if directories exist
