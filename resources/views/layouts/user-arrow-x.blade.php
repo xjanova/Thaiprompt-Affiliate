@@ -10,8 +10,7 @@
 
     <title>@yield('title', 'Dashboard') - {{ config('app.name') }}</title>
 
-    {{-- Favicon (C
-I2 Theme Setting) --}}
+    {{-- Favicon (จาก Theme Setting) --}}
     @php
         $themeSetting = \App\Models\ThemeSetting::active();
         $faviconPath = $themeSetting && $themeSetting->favicon_path
@@ -55,12 +54,12 @@ I2 Theme Setting) --}}
 <body class="h-full font-sans overflow-hidden flex"
       x-data="{ profileOpen: false }"
       x-init="
-          // @#4H!I theme store A%0 sidebar store
+          // เริ่มต้น theme store และ sidebar store
           $store.theme.init();
           $store.sidebar.init();
       ">
 
-    {{-- Background Gradient 7I+%1A Arrow X Theme --}}
+    {{-- Background Gradient จาก Arrow X Theme --}}
     {{-- Light mode: Colorful gradient | Dark mode: Dark gradient --}}
     <div class="fixed inset-0 -z-10 transition-all duration-500"
          :style="$store.theme.isDark
@@ -68,7 +67,7 @@ I2 Theme Setting) --}}
              : 'background: var(--arrow-x-primary-gradient, linear-gradient(to right, #9333EA, #EC4899, #F97316))'">
     </div>
 
-    {{-- Animated Background Circles '%!@%7H-D+'7I+%1 ('8!2 Theme Settings) --}}
+    {{-- Animated Background Circles ตามการตั้งค่า Theme Settings --}}
     <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none"
          :style="'display: ' + (window.getComputedStyle(document.documentElement).getPropertyValue('--bg-effects-enabled').trim() === '1' ? 'block' : 'none')">
         {{-- Circle 1 --}}
@@ -98,11 +97,10 @@ I2 Theme Setting) --}}
         </div>
     </div>
 
-    {{-- Sidebar Component *3+#1 User (C
-I arrow-x-sidebar component) --}}
+    {{-- Sidebar Component สำหรับ User (ใช้ arrow-x-sidebar component) --}}
     <x-arrow-x.sidebar-v3 type="user" />
 
-    {{-- Main Content Area (Flex-1 @7H-"2"@G!7I5H) --}}
+    {{-- Main Content Area (Flex-1 เพื่อขยายเต็มที่) --}}
     <div class="flex flex-col flex-1 h-full overflow-hidden">
         {{-- Top Navbar Component --}}
         <x-arrow-x.navbar-v3 type="user" />
@@ -150,7 +148,7 @@ I arrow-x-sidebar component) --}}
         </template>
     </div>
 
-    {{-- Laravel Session Flash Messages (A%@G notifications) --}}
+    {{-- Laravel Session Flash Messages (แปลงเป็น notifications) --}}
     @if (session('success'))
         <div x-data x-init="$dispatch('notify', { type: 'success', message: '{{ session('success') }}' })"></div>
     @endif
@@ -164,7 +162,7 @@ I arrow-x-sidebar component) --}}
         <div x-data x-init="$dispatch('notify', { type: 'warning', message: '{{ session('warning') }}' })"></div>
     @endif
 
-    {{-- Mobile Bottom Navigation - A*@	20!7-7- --}}
+    {{-- Mobile Bottom Navigation - แสดงเฉพาะมือถือ --}}
     <x-mobile-bottom-navigation type="user" />
 
     {{-- Mobile Quick Actions - FAB --}}
@@ -174,27 +172,27 @@ I arrow-x-sidebar component) --}}
 
     <script>
     /**
-     * 1 theme change events 2 Alpine Store
-     * -1@ Chart.js A%0 components 5H3@G
+     * รับ theme change events จาก Alpine Store
+     * เพื่ออัพเดท Chart.js และ components ต่างๆ
      */
     window.addEventListener('theme-changed', (event) => {
-        console.log('<� Theme changed in User Dashboard:', event.detail.isDark ? 'Dark' : 'Light');
+        console.log('Theme changed in User Dashboard:', event.detail.isDark ? 'Dark' : 'Light');
 
-        // -1@ Chart.js I2!5
+        // อัพเดท Chart.js ถ้ามี
         if (typeof Chart !== 'undefined') {
             Chart.defaults.color = event.detail.isDark ? '#e2e8f0' : '#1f2937';
             Chart.defaults.borderColor = event.detail.isDark ? '#374151' : '#e5e7eb';
             Chart.defaults.backgroundColor = event.detail.isDark ? '#1f2937' : '#ffffff';
         }
 
-        // Dispatch event *3+#1 custom components
+        // Dispatch event สำหรับ custom components
         window.dispatchEvent(new CustomEvent('user-theme-changed', {
             detail: event.detail
         }));
     });
 
     /**
-     * Helper function *3+#1 show notification
+     * Helper function สำหรับ show notification
      */
     window.showNotification = function(message, type = 'info') {
         window.dispatchEvent(new CustomEvent('notify', {
