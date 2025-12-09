@@ -144,6 +144,9 @@
         {{-- Notifications (ใช้ Notification Bell V3 Component) --}}
         <x-arrow-x.navbar.notification-bell-v3 />
 
+        {{-- 💰 Wallet Balance Badge (แสดงเฉพาะเมื่อ login แล้ว) --}}
+        <x-arrow-x.navbar.wallet-balance-badge-v3 />
+
         {{-- 🛒 Cart Badge (แสดงเฉพาะเมื่อ login แล้ว) --}}
         @auth
             <x-arrow-x.navbar.cart-badge-v3 />

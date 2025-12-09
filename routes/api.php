@@ -162,6 +162,7 @@ Route::prefix('v1')->group(function () {
         // Wallet (Mobile App)
         Route::prefix('wallet')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getWallet']);
+            Route::get('/balance', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getWalletBalance']);
             Route::get('/transactions', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getWalletTransactions']);
             Route::post('/topup', [\App\Http\Controllers\Api\V1\PaymentApiController::class, 'initializeWalletTopup']);
         });
