@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.30] - 2025-12-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: เพิ่ม favicon.ico symlink ไปยัง tp-ultra-icon.png (b7852b94)
+- fix: แก้ไข encoding ของ user-arrow-x.blade.php ที่เสียหาย (17a26b74)
+### 🔧 Other Changes
+- Merge pull request #2206 from xjanova/claude/fix-payment-billing-01N6gctYunRfUGQXbRo5SdXu (66937199)
+
 ## [v3.372.29] - 2025-12-09
 
 ### ✨ Features
