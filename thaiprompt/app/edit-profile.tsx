@@ -259,6 +259,13 @@ export default function EditProfileScreen() {
         {
           text: 'เลือกจากแกลเลอรี่',
           onPress: async () => {
+            // ขอ permission media library ก่อน
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+              Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้แอพเข้าถึงรูปภาพ');
+              return;
+            }
+
             const result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ImagePicker.MediaTypeOptions.Images,
               allowsEditing: true,

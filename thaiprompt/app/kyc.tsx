@@ -758,6 +758,20 @@ export default function KycScreen() {
     return true;
   };
 
+  // ขอ permission แกลเลอรี่ (media library)
+  const requestMediaLibraryPermission = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'ต้องการสิทธิ์เข้าถึงรูปภาพ',
+        'กรุณาอนุญาตให้แอพเข้าถึงรูปภาพเพื่อเลือกเอกสาร',
+        [{ text: 'ตกลง' }]
+      );
+      return false;
+    }
+    return true;
+  };
+
   // ถ่ายรูปหรือเลือกจากแกลเลอรี่
   const pickImage = async (type: 'id_card' | 'selfie') => {
     const title = type === 'id_card' ? 'บัตรประชาชน' : 'รูปถ่ายคู่บัตร';
@@ -785,6 +799,10 @@ export default function KycScreen() {
       {
         text: '🖼️ เลือกจากแกลเลอรี่',
         onPress: async () => {
+          // ขอ permission media library ก่อน
+          const hasPermission = await requestMediaLibraryPermission();
+          if (!hasPermission) return;
+
           const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
