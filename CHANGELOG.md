@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.26] - 2025-12-09
+
+### ✨ Features
+- Merge pull request #2202 from xjanova/claude/fix-payment-billing-01N6gctYunRfUGQXbRo5SdXu (04ae8d3f)
+- feat(wallet): ปรับปรุงระบบเติมเงิน Wallet ให้แยกออกจากตะกร้าสินค้า (abc3aea4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.372.25] - 2025-12-09
 
 ### ✨ Features
