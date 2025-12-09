@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.28] - 2025-12-09
+
+### ✨ Features
+- Merge pull request #2204 from xjanova/claude/fix-white-screen-login-01X8Ta4WVKdrbCffsKj67ZXy (a79604c0)
+- feat(mobile-app): เพิ่มระบบเติมเงิน ถอนเงิน โอนเงิน ใน Wallet v1.6.0 (f048965d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.372.27] - 2025-12-09
 
 ### ✨ Features
