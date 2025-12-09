@@ -35,7 +35,7 @@
                     </div>
                     <div class="bg-gradient-to-br from-purple-500/20 to-purple-600/20 backdrop-blur-sm rounded-xl p-4 border border-purple-400/30">
                         <div class="text-3xl mb-2">🎯</div>
-                        <div class="text-2xl font-bold text-purple-400">5</div>
+                        <div class="text-2xl font-bold text-purple-400">8</div>
                         <div class="text-sm text-gray-300">ระดับยศ</div>
                     </div>
                     <div class="bg-gradient-to-br from-amber-500/20 to-amber-600/20 backdrop-blur-sm rounded-xl p-4 border border-amber-400/30">
@@ -201,35 +201,35 @@
                         <div class="flex-1">
                             <h3 class="text-2xl font-bold text-cyan-400 mb-2">1. Direct Commission (รายได้ตรง)</h3>
                             <div class="inline-block px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-full text-sm font-semibold">
-                                30-15% ต่อระดับ
+                                10%-1% ต่อระดับ (10 ชั้น)
                             </div>
                         </div>
                     </div>
 
                     <p class="text-gray-300 mb-4">
-                        รายได้จากการขายตรงและทีมของคุณ แบบ Unilevel ลึกถึง 5 ชั้น
+                        รายได้จากการขายตรงและทีมของคุณ แบบ Unilevel ลึกถึง 10 ชั้น
                     </p>
 
                     <div class="space-y-3 mb-4">
                         <div class="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg">
                             <span class="text-gray-300">ชั้นที่ 1 (Direct)</span>
-                            <span class="font-bold text-cyan-400">30%</span>
+                            <span class="font-bold text-cyan-400">10%</span>
                         </div>
                         <div class="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg">
                             <span class="text-gray-300">ชั้นที่ 2</span>
-                            <span class="font-bold text-cyan-400">20%</span>
+                            <span class="font-bold text-cyan-400">5%</span>
                         </div>
                         <div class="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg">
-                            <span class="text-gray-300">ชั้นที่ 3-5</span>
-                            <span class="font-bold text-cyan-400">10-15%</span>
+                            <span class="text-gray-300">ชั้นที่ 3-10</span>
+                            <span class="font-bold text-cyan-400">1-3%</span>
                         </div>
                     </div>
 
                     <div class="p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-xl">
                         <div class="text-sm text-cyan-300 mb-2">💡 ตัวอย่างรายได้:</div>
                         <div class="text-gray-300 text-sm">
-                            สมาชิกชั้น 1 ซื้อ 1,000฿ = คุณได้ <strong class="text-cyan-400">300฿</strong><br>
-                            มี 10 คน = <strong class="text-cyan-400">3,000฿/เดือน</strong>
+                            สมาชิกชั้น 1 ซื้อ 1,000฿ = คุณได้ <strong class="text-cyan-400">100฿</strong><br>
+                            มี 10 คน = <strong class="text-cyan-400">1,000฿/เดือน</strong>
                         </div>
                     </div>
 
@@ -252,7 +252,7 @@
                         <div class="flex-1">
                             <h3 class="text-2xl font-bold text-red-400 mb-2">2. Binary Matching Bonus</h3>
                             <div class="inline-block px-3 py-1 bg-red-500/20 text-red-300 rounded-full text-sm font-semibold">
-                                1,000฿ ต่อคู่
+                                100฿ ต่อคู่ (Match 50%)
                             </div>
                         </div>
                     </div>
@@ -284,7 +284,7 @@
                         <div class="text-sm text-red-300 mb-2">💡 กลยุทธ์:</div>
                         <div class="text-gray-300 text-sm">
                             สร้างทีมให้สมดุลทั้ง 2 ขา จะได้รายได้สูงสุด<br>
-                            <strong class="text-red-400">50 คู่/สัปดาห์ = 200,000฿/เดือน</strong>
+                            <strong class="text-red-400">50,000 PV จับคู่ = 25,000฿</strong>
                         </div>
                     </div>
 
@@ -307,7 +307,7 @@
                         <div class="flex-1">
                             <h3 class="text-2xl font-bold text-green-400 mb-2">3. Rank Achievement Bonus</h3>
                             <div class="inline-block px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm font-semibold">
-                                5,000฿ - 500,000฿
+                                100฿ - 1,000,000฿ (8 ระดับ)
                             </div>
                         </div>
                     </div>
@@ -319,31 +319,43 @@
                     <div class="space-y-2 mb-4">
                         <div class="flex items-center justify-between p-2 bg-gradient-to-r from-orange-900/30 to-orange-800/30 rounded-lg border border-orange-600/30">
                             <span class="text-orange-300">🥉 Bronze</span>
-                            <span class="font-bold text-orange-400">5,000฿ + 1,000฿/ด.</span>
+                            <span class="font-bold text-orange-400">100฿ | 5%</span>
                         </div>
                         <div class="flex items-center justify-between p-2 bg-gradient-to-r from-gray-400/30 to-gray-300/30 rounded-lg border border-gray-400/30">
                             <span class="text-gray-200">🥈 Silver</span>
-                            <span class="font-bold text-gray-300">20,000฿ + 5,000฿/ด.</span>
+                            <span class="font-bold text-gray-300">500฿ | 7.5%</span>
                         </div>
                         <div class="flex items-center justify-between p-2 bg-gradient-to-r from-yellow-600/30 to-yellow-500/30 rounded-lg border border-yellow-500/30">
                             <span class="text-yellow-300">🥇 Gold</span>
-                            <span class="font-bold text-yellow-400">50,000฿ + 15,000฿/ด.</span>
+                            <span class="font-bold text-yellow-400">2,000฿ + 500/ด. | 10%</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 bg-gradient-to-r from-cyan-600/30 to-cyan-500/30 rounded-lg border border-cyan-500/30">
+                            <span class="text-cyan-300">💎 Platinum</span>
+                            <span class="font-bold text-cyan-400">10,000฿ + 2,000/ด. | 15%</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 bg-gradient-to-r from-blue-400/30 to-blue-400/30 rounded-lg border border-blue-400/30">
+                            <span class="text-blue-300">💠 Diamond</span>
+                            <span class="font-bold text-blue-400">50,000฿ + 5,000/ด. | 20%</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 bg-gradient-to-r from-amber-600/30 to-amber-500/30 rounded-lg border border-amber-500/30">
+                            <span class="text-amber-300">👑 Crown</span>
+                            <span class="font-bold text-amber-400">100,000฿ + 10,000/ด. | 25%</span>
                         </div>
                         <div class="flex items-center justify-between p-2 bg-gradient-to-r from-purple-600/30 to-purple-500/30 rounded-lg border border-purple-500/30">
-                            <span class="text-purple-300">💎 Platinum</span>
-                            <span class="font-bold text-purple-400">200,000฿ + 50,000฿/ด.</span>
+                            <span class="text-purple-300">🏆 Royal</span>
+                            <span class="font-bold text-purple-400">300,000฿ + 25,000/ด. | 30%</span>
                         </div>
-                        <div class="flex items-center justify-between p-2 bg-gradient-to-r from-blue-400/30 to-cyan-400/30 rounded-lg border border-cyan-400/30">
-                            <span class="text-cyan-300">💠 Diamond</span>
-                            <span class="font-bold text-cyan-400">500,000฿ + 150,000฿/ด.</span>
+                        <div class="flex items-center justify-between p-2 bg-gradient-to-r from-rose-600/30 to-rose-500/30 rounded-lg border border-rose-500/30">
+                            <span class="text-rose-300">🌟 Legend</span>
+                            <span class="font-bold text-rose-400">1,000,000฿ + 100,000/ด. | 35%</span>
                         </div>
                     </div>
 
                     <div class="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
-                        <div class="text-sm text-green-300 mb-2">💡 เป้าหมาย:</div>
+                        <div class="text-sm text-green-300 mb-2">💡 ยศสูงสุด Legend:</div>
                         <div class="text-gray-300 text-sm">
-                            Diamond = <strong class="text-green-400">650,000฿ ในเดือนแรก</strong><br>
-                            + <strong class="text-green-400">150,000฿ ทุกเดือน</strong> ตลอดชีวิต
+                            Legend = <strong class="text-green-400">1,000,000฿ โบนัสเลื่อนตำแหน่ง!</strong><br>
+                            + <strong class="text-green-400">100,000฿ ทุกเดือน</strong> ตลอดชีวิต
                         </div>
                     </div>
 
