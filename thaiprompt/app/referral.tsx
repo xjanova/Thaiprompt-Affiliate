@@ -26,7 +26,7 @@ import * as Haptics from 'expo-haptics';
 import QRCode from 'react-native-qrcode-svg';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
-import { getReferralStats } from '@/services/api';
+import { getReferralStats, getMyAffiliate } from '@/services/api';
 import { formatCurrency } from '@/constants';
 import type { ReferralStats } from '@/types';
 
@@ -339,10 +339,15 @@ export default function ReferralScreen() {
 
   const [stats, setStats] = useState<ReferralStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // ข้อมูล referral จาก API (เหมือนในเว็บ)
+  const [affiliateData, setAffiliateData] = useState<{
+    referralCode: string;
+    referralLink: string;
+  } | null>(null);
 
-  // สร้าง referral link
-  const referralCode = user?.referralCode || user?.referral_code || user?.id?.toString() || 'XXXX';
-  const referralLink = `https://main.thaiprompt.online/register?ref=${referralCode}`;
+  // ใช้ข้อมูลจาก API หรือ fallback
+  const referralCode = affiliateData?.referralCode || user?.referralCode || user?.referral_code || user?.id?.toString() || 'XXXX';
+  const referralLink = affiliateData?.referralLink || `https://main.thaiprompt.online/register?ref=${referralCode}`;
 
   // Commission tiers
   const commissionTiers: CommissionTier[] = [
@@ -388,26 +393,39 @@ export default function ReferralScreen() {
     },
   ];
 
-  // โหลดข้อมูล stats
-  const loadStats = useCallback(async () => {
+  // โหลดข้อมูล stats และ affiliate data
+  const loadData = useCallback(async () => {
     if (!isAuthenticated) {
       setIsLoading(false);
       return;
     }
     try {
       setIsLoading(true);
-      const data = await getReferralStats();
-      if (data) setStats(data);
+      // โหลดข้อมูลพร้อมกัน
+      const [statsData, affiliateResult] = await Promise.all([
+        getReferralStats(),
+        getMyAffiliate(),
+      ]);
+
+      if (statsData) setStats(statsData);
+
+      // ใช้ข้อมูล referral link จาก API (เหมือนในเว็บ)
+      if (affiliateResult?.success && affiliateResult.data) {
+        setAffiliateData({
+          referralCode: affiliateResult.data.referralCode,
+          referralLink: affiliateResult.data.referralLink,
+        });
+      }
     } catch (error) {
-      console.error('Load referral stats error:', error);
+      console.error('Load referral data error:', error);
     } finally {
       setIsLoading(false);
     }
   }, [isAuthenticated]);
 
   useEffect(() => {
-    loadStats();
-  }, [loadStats]);
+    loadData();
+  }, [loadData]);
 
   // Copy code
   const handleCopyCode = async () => {
