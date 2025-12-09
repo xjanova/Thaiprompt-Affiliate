@@ -18,9 +18,11 @@ import {
   ScrollView,
   Linking,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { getBanners, trackBannerClick, type Banner } from '@/services/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -148,10 +150,11 @@ export default function BannerCarousel({
   if (loading) {
     return (
       <View
-        style={{ height }}
-        className={`mx-4 rounded-2xl items-center justify-center ${
-          isDark ? 'bg-slate-800' : 'bg-gray-100'
-        }`}
+        style={[
+          styles.loadingContainer,
+          { height },
+          isDark ? styles.loadingContainerDark : styles.loadingContainerLight,
+        ]}
       >
         <ActivityIndicator size="small" color={isDark ? '#3B82F6' : '#6B7280'} />
       </View>
@@ -172,7 +175,7 @@ export default function BannerCarousel({
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingHorizontal: 16 }}
+        contentContainerStyle={styles.scrollContent}
         decelerationRate="fast"
         snapToInterval={SCREEN_WIDTH - 32}
       >
@@ -180,7 +183,7 @@ export default function BannerCarousel({
           <Animated.View
             key={banner.id}
             entering={FadeInRight.delay(index * 100)}
-            style={{ width: SCREEN_WIDTH - 32 }}
+            style={[styles.bannerWrapper, { width: SCREEN_WIDTH - 32 }]}
           >
             <Pressable
               onPress={() => handleBannerPress(banner)}
@@ -189,26 +192,25 @@ export default function BannerCarousel({
                 transform: [{ scale: pressed ? 0.98 : 1 }],
               })}
             >
-              <View
-                style={{ height }}
-                className="rounded-2xl overflow-hidden mr-2"
-              >
+              <View style={[styles.bannerContainer, { height }]}>
                 {banner.image ? (
                   <Image
                     source={{ uri: banner.image }}
-                    style={{ width: '100%', height: '100%' }}
+                    style={styles.bannerImage}
                     resizeMode="cover"
                   />
                 ) : (
                   <View
-                    className={`flex-1 items-center justify-center ${
-                      isDark ? 'bg-slate-700' : 'bg-gray-200'
-                    }`}
+                    style={[
+                      styles.placeholderContainer,
+                      isDark ? styles.placeholderDark : styles.placeholderLight,
+                    ]}
                   >
                     <Text
-                      className={`text-lg font-bold ${
-                        isDark ? 'text-white' : 'text-gray-700'
-                      }`}
+                      style={[
+                        styles.placeholderText,
+                        isDark ? styles.textLight : styles.textDark,
+                      ]}
                     >
                       {banner.title}
                     </Text>
@@ -217,11 +219,12 @@ export default function BannerCarousel({
 
                 {/* Title Overlay */}
                 {banner.title && banner.image && (
-                  <View className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                    <Text className="text-white font-bold text-base">
-                      {banner.title}
-                    </Text>
-                  </View>
+                  <LinearGradient
+                    colors={['transparent', 'rgba(0,0,0,0.7)']}
+                    style={styles.titleOverlay}
+                  >
+                    <Text style={styles.titleText}>{banner.title}</Text>
+                  </LinearGradient>
                 )}
               </View>
             </Pressable>
@@ -231,17 +234,18 @@ export default function BannerCarousel({
 
       {/* Indicators */}
       {showIndicators && banners.length > 1 && (
-        <View className="flex-row justify-center mt-3">
+        <View style={styles.indicatorsContainer}>
           {banners.map((_, index) => (
             <View
               key={index}
-              className={`w-2 h-2 rounded-full mx-1 ${
+              style={[
+                styles.indicator,
                 index === currentIndex
-                  ? 'bg-blue-500 w-4'
+                  ? styles.indicatorActive
                   : isDark
-                  ? 'bg-slate-600'
-                  : 'bg-gray-300'
-              }`}
+                  ? styles.indicatorInactiveDark
+                  : styles.indicatorInactiveLight,
+              ]}
             />
           ))}
         </View>
@@ -249,3 +253,86 @@ export default function BannerCarousel({
     </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    marginHorizontal: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingContainerDark: {
+    backgroundColor: '#1E293B',
+  },
+  loadingContainerLight: {
+    backgroundColor: '#F3F4F6',
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+  },
+  bannerWrapper: {
+    paddingRight: 8,
+  },
+  bannerContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  placeholderContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderDark: {
+    backgroundColor: '#334155',
+  },
+  placeholderLight: {
+    backgroundColor: '#E5E7EB',
+  },
+  placeholderText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  textLight: {
+    color: '#FFFFFF',
+  },
+  textDark: {
+    color: '#374151',
+  },
+  titleOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+  },
+  titleText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  indicatorsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  indicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+  indicatorActive: {
+    backgroundColor: '#3B82F6',
+    width: 16,
+  },
+  indicatorInactiveDark: {
+    backgroundColor: '#475569',
+  },
+  indicatorInactiveLight: {
+    backgroundColor: '#D1D5DB',
+  },
+});
