@@ -21,7 +21,7 @@
                         <span class="font-bold">🎯 จากมือใหม่สู่แม่ทีม</span>
                     </div>
                     <div class="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full border-2 border-white/50">
-                        <span class="font-bold">💎 5 ระดับยศ</span>
+                        <span class="font-bold">💎 8 ระดับยศ</span>
                     </div>
                 </div>
             </div>
@@ -224,14 +224,14 @@
                                 <div class="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg font-bold">คุณ</div>
                             </div>
                             <div class="text-center mb-2">
-                                <div class="text-blue-600">↓ Level 1 (30%)</div>
+                                <div class="text-blue-600">↓ Level 1 (10%)</div>
                                 <div class="flex justify-center gap-2 mb-2">
                                     <div class="bg-blue-400 text-white px-3 py-1 rounded text-sm">A</div>
                                     <div class="bg-blue-400 text-white px-3 py-1 rounded text-sm">B</div>
                                 </div>
                             </div>
                             <div class="text-center">
-                                <div class="text-blue-600">↓ Level 2 (20%)</div>
+                                <div class="text-blue-600">↓ Level 2 (5%)</div>
                                 <div class="flex justify-center gap-2">
                                     <div class="bg-blue-300 text-white px-2 py-1 rounded text-xs">C</div>
                                     <div class="bg-blue-300 text-white px-2 py-1 rounded text-xs">D</div>
@@ -263,7 +263,7 @@
                                 </div>
                             </div>
                             <div class="mt-4 text-center bg-green-100 p-3 rounded-lg">
-                                <div class="text-green-800 font-bold">✅ จับคู่ 3 คู่ = 3,000 บาท</div>
+                                <div class="text-green-800 font-bold">✅ จับคู่ 3 คู่ = 300 บาท</div>
                             </div>
                         </div>
                     </div>
@@ -273,19 +273,19 @@
                     <h4 class="font-bold text-xl text-indigo-900 mb-4">📈 ตัวอย่างการคำนวณ</h4>
                     <div class="space-y-3 text-indigo-800">
                         <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                            <div class="font-bold mb-2">สมมติ: ลูกทีม Level 1 ขายได้ 10,000 บาท</div>
+                            <div class="font-bold mb-2">สมมติ: ลูกทีม Level 1 ขายได้ 10,000 บาท (= 10,000 PV)</div>
                             <div class="ml-4">
-                                <div>💰 คุณได้ค่าคอม Unilevel = 10,000 × 30% = <strong class="text-green-600">3,000 บาท</strong></div>
+                                <div>💰 คุณได้ค่าคอม Unilevel = 10,000 × 10% = <strong class="text-green-600">1,000 บาท</strong></div>
                             </div>
                         </div>
                         <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
                             <div class="font-bold mb-2">สมมติ: ทีมซ้าย-ขวาจับคู่กันได้ 5 คู่</div>
                             <div class="ml-4">
-                                <div>💰 คุณได้โบนัส Binary = 5 × 1,000 = <strong class="text-green-600">5,000 บาท</strong></div>
+                                <div>💰 คุณได้โบนัส Binary = 5 × 100 = <strong class="text-green-600">500 บาท</strong></div>
                             </div>
                         </div>
                         <div class="bg-gradient-to-r from-green-400 to-emerald-500 text-white p-4 rounded-lg font-bold text-lg">
-                            🎉 รวมรายได้ = 3,000 + 5,000 = <span class="text-2xl">8,000 บาท</span>
+                            🎉 รวมรายได้ = 1,000 + 500 = <span class="text-2xl">1,500 บาท</span>
                         </div>
                     </div>
                 </div>
@@ -322,15 +322,19 @@
                                     <div class="space-y-2">
                                         <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
                                             <span class="font-semibold">Level 1 (ลูกทีมตรง)</span>
-                                            <span class="font-bold text-blue-600">30%</span>
+                                            <span class="font-bold text-blue-600">10%</span>
                                         </div>
                                         <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
                                             <span class="font-semibold">Level 2 (ลูกของลูก)</span>
-                                            <span class="font-bold text-blue-600">20%</span>
+                                            <span class="font-bold text-blue-600">5%</span>
                                         </div>
                                         <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                                            <span class="font-semibold">Level 3-5</span>
-                                            <span class="font-bold text-blue-600">10-15%</span>
+                                            <span class="font-semibold">Level 3</span>
+                                            <span class="font-bold text-blue-600">3%</span>
+                                        </div>
+                                        <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                                            <span class="font-semibold">Level 4-10</span>
+                                            <span class="font-bold text-blue-600">1-2%</span>
                                         </div>
                                     </div>
                                 </div>
@@ -338,8 +342,8 @@
                                 <div class="bg-green-100 border-l-4 border-green-600 p-4 rounded-r-lg">
                                     <div class="font-bold text-green-900 mb-2">💡 ตัวอย่าง:</div>
                                     <div class="text-green-800">
-                                        ลูกทีม Level 1 จำนวน 10 คน ขายคนละ 5,000 บาท/เดือน<br>
-                                        <strong>รายได้ของคุณ = 10 × 5,000 × 30% = 15,000 บาท/เดือน</strong>
+                                        ลูกทีม Level 1 จำนวน 10 คน ซื้อสินค้าคนละ 5,000 บาท/เดือน<br>
+                                        <strong>รายได้ของคุณ = 10 × 5,000 × 10% = 5,000 บาท/เดือน</strong>
                                     </div>
                                 </div>
                             </div>
@@ -359,15 +363,15 @@
                                     <div class="space-y-3">
                                         <div class="p-3 bg-purple-50 rounded-lg">
                                             <div class="font-semibold mb-1">💎 ค่าโบนัสต่อคู่</div>
-                                            <div class="text-purple-700">1,000 บาท/คู่ (หรือตามแผนของคุณ)</div>
+                                            <div class="text-purple-700">100 บาท/คู่ (Match 50%)</div>
                                         </div>
                                         <div class="p-3 bg-purple-50 rounded-lg">
-                                            <div class="font-semibold mb-1">📊 PV ขั้นต่ำ</div>
-                                            <div class="text-purple-700">ต้องมี PV อย่างน้อย 10,000 ทั้งสองข้าง</div>
+                                            <div class="font-semibold mb-1">📊 การจับคู่</div>
+                                            <div class="text-purple-700">นับจาก PV ข้างที่น้อยกว่า (Weak Leg)</div>
                                         </div>
                                         <div class="p-3 bg-purple-50 rounded-lg">
-                                            <div class="font-semibold mb-1">⚡ จำกัดต่อวัน</div>
-                                            <div class="text-purple-700">สูงสุด 10 คู่/วัน (หรือตามแผน)</div>
+                                            <div class="font-semibold mb-1">⚡ ไม่จำกัดต่อวัน</div>
+                                            <div class="text-purple-700">ไม่จำกัดจำนวนคู่ (ขึ้นอยู่กับ PV ของทีม)</div>
                                         </div>
                                     </div>
                                 </div>
@@ -375,8 +379,8 @@
                                 <div class="bg-green-100 border-l-4 border-green-600 p-4 rounded-r-lg">
                                     <div class="font-bold text-green-900 mb-2">💡 ตัวอย่าง:</div>
                                     <div class="text-green-800">
-                                        ทีมซ้าย 50,000 PV | ทีมขวา 30,000 PV = จับคู่ได้ 3 คู่<br>
-                                        <strong>รายได้ = 3 × 1,000 = 3,000 บาท/วัน</strong>
+                                        ทีมซ้าย 50,000 PV | ทีมขวา 30,000 PV<br>
+                                        <strong>รายได้ = 30,000 × 50% × 100 ÷ 100 = 15,000 บาท</strong>
                                     </div>
                                 </div>
                             </div>
@@ -392,35 +396,47 @@
                                 <p class="text-yellow-800 mb-4">รับโบนัสพิเศษเมื่อขึ้นยศใหม่ และรายได้ประจำทุกเดือน</p>
 
                                 <div class="bg-white dark:bg-gray-800 p-4 rounded-xl mb-4">
-                                    <h4 class="font-bold text-yellow-900 mb-3">โบนัสตามยศ:</h4>
+                                    <h4 class="font-bold text-yellow-900 mb-3">โบนัสตามยศ (8 ระดับ):</h4>
                                     <div class="space-y-2">
-                                        <div class="flex justify-between items-center p-3 bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg">
-                                            <span class="font-semibold">🥉 Bronze</span>
-                                            <span class="font-bold text-gray-700 dark:text-gray-300">5,000 บาท (ครั้งเดียว) + 500 บาท/เดือน</span>
+                                        <div class="flex justify-between items-center p-3 bg-gradient-to-r from-orange-100 to-orange-200 rounded-lg">
+                                            <span class="font-semibold">🥉 Bronze (สำริด)</span>
+                                            <span class="font-bold text-orange-700">100 บาท (ต้อนรับ) | Commission 5%</span>
                                         </div>
-                                        <div class="flex justify-between items-center p-3 bg-gradient-to-r from-gray-300 to-gray-400 rounded-lg">
-                                            <span class="font-semibold">🥈 Silver</span>
-                                            <span class="font-bold text-gray-800 dark:text-white">15,000 บาท (ครั้งเดียว) + 2,000 บาท/เดือน</span>
+                                        <div class="flex justify-between items-center p-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg">
+                                            <span class="font-semibold">🥈 Silver (เงิน)</span>
+                                            <span class="font-bold text-gray-700">500 บาท | Commission 7.5%</span>
                                         </div>
                                         <div class="flex justify-between items-center p-3 bg-gradient-to-r from-yellow-200 to-yellow-400 rounded-lg">
-                                            <span class="font-semibold">🥇 Gold</span>
-                                            <span class="font-bold text-yellow-900">50,000 บาท (ครั้งเดียว) + 10,000 บาท/เดือน</span>
+                                            <span class="font-semibold">🥇 Gold (ทอง)</span>
+                                            <span class="font-bold text-yellow-900">2,000 บาท + 500/ด. | 10%</span>
                                         </div>
-                                        <div class="flex justify-between items-center p-3 bg-gradient-to-r from-cyan-200 to-blue-400 rounded-lg">
-                                            <span class="font-semibold">💎 Platinum</span>
-                                            <span class="font-bold text-blue-900">150,000 บาท (ครั้งเดียว) + 30,000 บาท/เดือน</span>
+                                        <div class="flex justify-between items-center p-3 bg-gradient-to-r from-cyan-200 to-cyan-400 rounded-lg">
+                                            <span class="font-semibold">💎 Platinum (แพลตินัม)</span>
+                                            <span class="font-bold text-cyan-900">10,000 บาท + 2,000/ด. | 15%</span>
                                         </div>
-                                        <div class="flex justify-between items-center p-3 bg-gradient-to-r from-purple-400 to-pink-500 rounded-lg">
-                                            <span class="font-semibold text-white">💎 Diamond</span>
-                                            <span class="font-bold text-white">500,000 บาท (ครั้งเดียว) + 100,000 บาท/เดือน</span>
+                                        <div class="flex justify-between items-center p-3 bg-gradient-to-r from-blue-200 to-blue-400 rounded-lg">
+                                            <span class="font-semibold">💠 Diamond (เพชร)</span>
+                                            <span class="font-bold text-blue-900">50,000 บาท + 5,000/ด. | 20%</span>
+                                        </div>
+                                        <div class="flex justify-between items-center p-3 bg-gradient-to-r from-amber-300 to-amber-500 rounded-lg">
+                                            <span class="font-semibold text-white">👑 Crown (มงกุฎ)</span>
+                                            <span class="font-bold text-white">100,000 บาท + 10,000/ด. | 25%</span>
+                                        </div>
+                                        <div class="flex justify-between items-center p-3 bg-gradient-to-r from-purple-400 to-purple-600 rounded-lg">
+                                            <span class="font-semibold text-white">🏆 Royal (รอยัล)</span>
+                                            <span class="font-bold text-white">300,000 บาท + 25,000/ด. | 30%</span>
+                                        </div>
+                                        <div class="flex justify-between items-center p-3 bg-gradient-to-r from-pink-400 to-rose-600 rounded-lg">
+                                            <span class="font-semibold text-white">🌟 Legend (ตำนาน)</span>
+                                            <span class="font-bold text-white">1,000,000 บาท + 100,000/ด. | 35%</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="bg-green-100 border-l-4 border-green-600 p-4 rounded-r-lg">
-                                    <div class="font-bold text-green-900 mb-2">💡 ข้อดี:</div>
+                                    <div class="font-bold text-green-900 mb-2">💡 ยศสูงสุด Legend:</div>
                                     <div class="text-green-800">
-                                        โบนัสยศช่วยให้คุณมีรายได้ประจำที่มั่นคง แม้ในช่วงที่ยอดขายน้อย
+                                        เมื่อถึงยศ Legend คุณจะได้รับโบนัส <strong>1,000,000 บาท</strong> ทันที! พร้อมรายได้ประจำเดือน 100,000 บาท
                                     </div>
                                 </div>
                             </div>
@@ -463,28 +479,28 @@
 
                 <!-- Total Income Example -->
                 <div class="bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600 text-white rounded-2xl p-8 shadow-2xl">
-                    <h3 class="text-3xl font-bold mb-6 text-center">🎯 ตัวอย่างรายได้รวม 1 เดือน</h3>
+                    <h3 class="text-3xl font-bold mb-6 text-center">🎯 ตัวอย่างรายได้รวม 1 เดือน (ยศ Gold)</h3>
                     <div class="grid md:grid-cols-2 gap-4 mb-6">
                         <div class="bg-white/20 backdrop-blur-sm p-4 rounded-xl">
-                            <div class="text-sm mb-1">Direct Commission</div>
-                            <div class="text-2xl font-bold">15,000 บาท</div>
-                        </div>
-                        <div class="bg-white/20 backdrop-blur-sm p-4 rounded-xl">
-                            <div class="text-sm mb-1">Binary Bonus (10 คู่/วัน)</div>
-                            <div class="text-2xl font-bold">300,000 บาท</div>
-                        </div>
-                        <div class="bg-white/20 backdrop-blur-sm p-4 rounded-xl">
-                            <div class="text-sm mb-1">Rank Bonus (Gold)</div>
-                            <div class="text-2xl font-bold">10,000 บาท</div>
-                        </div>
-                        <div class="bg-white/20 backdrop-blur-sm p-4 rounded-xl">
-                            <div class="text-sm mb-1">Sponsorship Bonus</div>
+                            <div class="text-sm mb-1">Unilevel Commission (ทีม 50 คน)</div>
                             <div class="text-2xl font-bold">5,000 บาท</div>
+                        </div>
+                        <div class="bg-white/20 backdrop-blur-sm p-4 rounded-xl">
+                            <div class="text-sm mb-1">Binary Bonus (50,000 PV จับคู่)</div>
+                            <div class="text-2xl font-bold">25,000 บาท</div>
+                        </div>
+                        <div class="bg-white/20 backdrop-blur-sm p-4 rounded-xl">
+                            <div class="text-sm mb-1">Rank Monthly Bonus (Gold)</div>
+                            <div class="text-2xl font-bold">500 บาท</div>
+                        </div>
+                        <div class="bg-white/20 backdrop-blur-sm p-4 rounded-xl">
+                            <div class="text-sm mb-1">Direct Referral Bonus (5 คนใหม่)</div>
+                            <div class="text-2xl font-bold">500 บาท</div>
                         </div>
                     </div>
                     <div class="text-center bg-white/30 backdrop-blur-sm p-6 rounded-xl">
                         <div class="text-xl mb-2">💰 รายได้รวมทั้งหมด</div>
-                        <div class="text-6xl font-bold">330,000 บาท</div>
+                        <div class="text-6xl font-bold">31,000 บาท</div>
                         <div class="text-sm mt-2 opacity-90">*ตัวเลขขึ้นอยู่กับยอดขายและทีมงานของคุณ</div>
                     </div>
                 </div>
@@ -508,77 +524,76 @@
 
                 <div class="space-y-6">
                     <!-- Bronze -->
-                    <div class="bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-gray-400 rounded-2xl p-6">
+                    <div class="bg-gradient-to-r from-orange-100 to-orange-200 border-2 border-orange-400 rounded-2xl p-6">
                         <div class="flex items-start gap-4 mb-4">
                             <div class="text-5xl">🥉</div>
                             <div>
-                                <h3 class="text-2xl font-bold text-gray-800 dark:text-white">Bronze (บรอนซ์)</h3>
-                                <p class="text-gray-600 dark:text-gray-400">ยศเริ่มต้นสำหรับผู้มุ่งมั่น</p>
+                                <h3 class="text-2xl font-bold text-orange-800 dark:text-orange-300">Bronze (สำริด)</h3>
+                                <p class="text-orange-600 dark:text-orange-400">ยศเริ่มต้นสำหรับสมาชิกใหม่ทุกคน</p>
                             </div>
                         </div>
                         <div class="grid md:grid-cols-3 gap-4">
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📊 เงื่อนไข</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• ทีมอย่างน้อย 10 คน</li>
-                                    <li>• ยอดขายทีม 50,000 บาท/เดือน</li>
-                                    <li>• ลูกทีมตรง 3 คน</li>
+                                    <li>• ไม่มีเงื่อนไข</li>
+                                    <li>• สมัครสมาชิกได้ทันที</li>
+                                    <li>• เริ่มต้นทุกคนที่ Bronze</li>
                                 </ul>
                             </div>
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">💰 รางวัล</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• โบนัส 5,000 บาท (ครั้งเดียว)</li>
-                                    <li>• รายได้ 500 บาท/เดือน</li>
-                                    <li>• ค่าคอม +5%</li>
+                                    <li>• โบนัสต้อนรับ 100 บาท</li>
+                                    <li>• Commission Rate: 5%</li>
+                                    <li>• Unilevel 3 ชั้น</li>
                                 </ul>
                             </div>
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🎁 สิทธิพิเศษ</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• กรอบโปรไฟล์พิเศษ</li>
-                                    <li>• เข้าร่วมกลุ่ม VIP</li>
-                                    <li>• ใบประกาศนียบัตร</li>
+                                    <li>• เข้าถึงระบบ MLM</li>
+                                    <li>• ลิงก์แนะนำส่วนตัว</li>
+                                    <li>• ถอนเงินได้ 2 ครั้ง/เดือน</li>
                                 </ul>
                             </div>
                         </div>
                     </div>
 
                     <!-- Silver -->
-                    <div class="bg-gradient-to-r from-gray-300 to-gray-400 border-2 border-gray-500 rounded-2xl p-6">
+                    <div class="bg-gradient-to-r from-gray-200 to-gray-300 border-2 border-gray-500 rounded-2xl p-6">
                         <div class="flex items-start gap-4 mb-4">
                             <div class="text-5xl">🥈</div>
                             <div>
-                                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Silver (ซิลเวอร์)</h3>
-                                <p class="text-gray-700 dark:text-gray-300">ก้าวสู่ระดับกลาง มั่นคงขึ้น</p>
+                                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Silver (เงิน)</h3>
+                                <p class="text-gray-700 dark:text-gray-300">พันธมิตรที่กำลังเติบโต</p>
                             </div>
                         </div>
                         <div class="grid md:grid-cols-3 gap-4">
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📊 เงื่อนไข</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• ทีมอย่างน้อย 30 คน</li>
-                                    <li>• ยอดขายทีม 150,000 บาท/เดือน</li>
-                                    <li>• ลูกทีมตรง 5 คน</li>
-                                    <li>• มีลูกทีม Bronze 2 คน</li>
+                                    <li>• รับคะแนน 100 แต้ม</li>
+                                    <li>• แนะนำ 5 คน</li>
+                                    <li>• ยอดขาย 10,000 บาท</li>
+                                    <li>• รักษายอด 50 PV/เดือน</li>
                                 </ul>
                             </div>
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">💰 รางวัล</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• โบนัส 15,000 บาท (ครั้งเดียว)</li>
-                                    <li>• รายได้ 2,000 บาท/เดือน</li>
-                                    <li>• ค่าคอม +10%</li>
-                                    <li>• Multiplier 1.2x</li>
+                                    <li>• โบนัส 500 บาท (ครั้งเดียว)</li>
+                                    <li>• Commission Rate: 7.5%</li>
+                                    <li>• Multiplier 1.25x</li>
+                                    <li>• Unilevel 4 ชั้น</li>
                                 </ul>
                             </div>
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🎁 สิทธิพิเศษ</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• กรอบโปรไฟล์เงิน</li>
-                                    <li>• เครื่องมือวิเคราะห์ขั้นสูง</li>
-                                    <li>• ส่วนลดสินค้า 10%</li>
-                                    <li>• เข้าอบรมฟรี</li>
+                                    <li>• VIP Support</li>
+                                    <li>• ลดค่าธรรมเนียมถอน 5%</li>
+                                    <li>• ถอนเงินได้ 4 ครั้ง/เดือน</li>
                                 </ul>
                             </div>
                         </div>
@@ -590,115 +605,248 @@
                             <div class="text-5xl">🥇</div>
                             <div>
                                 <h3 class="text-2xl font-bold text-yellow-900">Gold (ทอง)</h3>
-                                <p class="text-yellow-800">ระดับมืออาชีพ รายได้มั่นคง</p>
+                                <p class="text-yellow-800">พันธมิตรที่ประสบความสำเร็จ คุณเป็นผู้นำแล้ว!</p>
                             </div>
                         </div>
                         <div class="grid md:grid-cols-3 gap-4">
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📊 เงื่อนไข</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• ทีมอย่างน้อย 100 คน</li>
-                                    <li>• ยอดขายทีม 500,000 บาท/เดือน</li>
-                                    <li>• ลูกทีมตรง 10 คน</li>
-                                    <li>• มีลูกทีม Silver 3 คน</li>
+                                    <li>• รับคะแนน 500 แต้ม</li>
+                                    <li>• แนะนำ 20 คน</li>
+                                    <li>• ยอดขาย 50,000 บาท</li>
+                                    <li>• สมาชิก Active 10 คน</li>
+                                    <li>• รักษายอด 100 PV/เดือน</li>
                                 </ul>
                             </div>
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">💰 รางวัล</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• โบนัส 50,000 บาท (ครั้งเดียว)</li>
-                                    <li>• รายได้ 10,000 บาท/เดือน</li>
-                                    <li>• ค่าคอม +15%</li>
+                                    <li>• โบนัส 2,000 บาท (ครั้งเดียว)</li>
+                                    <li>• โบนัสรายเดือน 500 บาท</li>
+                                    <li>• Commission Rate: 10%</li>
                                     <li>• Multiplier 1.5x</li>
+                                    <li>• Unilevel 5 ชั้น</li>
                                 </ul>
                             </div>
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🎁 สิทธิพิเศษ</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• กรอบโปรไฟล์ทอง</li>
-                                    <li>• ทริปต่างประเทศ</li>
-                                    <li>• ส่วนลดสินค้า 20%</li>
-                                    <li>• โค้ชส่วนตัว</li>
+                                    <li>• VIP Support</li>
+                                    <li>• Priority Withdrawal</li>
+                                    <li>• ลดค่าธรรมเนียมถอน 10%</li>
+                                    <li>• ถอนเงินได้ 8 ครั้ง/เดือน</li>
                                 </ul>
                             </div>
                         </div>
                     </div>
 
                     <!-- Platinum -->
-                    <div class="bg-gradient-to-r from-cyan-200 via-blue-400 to-indigo-500 border-2 border-blue-600 rounded-2xl p-6 shadow-2xl">
+                    <div class="bg-gradient-to-r from-cyan-200 via-cyan-400 to-cyan-500 border-2 border-cyan-600 rounded-2xl p-6 shadow-2xl">
                         <div class="flex items-start gap-4 mb-4">
                             <div class="text-5xl">💎</div>
                             <div>
-                                <h3 class="text-2xl font-bold text-white drop-shadow-lg">Platinum (แพลทินัม)</h3>
-                                <p class="text-blue-100">ผู้นำระดับสูง ทีมแข็งแกร่ง</p>
+                                <h3 class="text-2xl font-bold text-cyan-900">Platinum (แพลตินัม)</h3>
+                                <p class="text-cyan-800">พันธมิตรระดับยอดเยี่ยม ผู้สร้างธุรกิจตัวจริง!</p>
                             </div>
                         </div>
                         <div class="grid md:grid-cols-3 gap-4">
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📊 เงื่อนไข</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• ทีมอย่างน้อย 300 คน</li>
-                                    <li>• ยอดขายทีม 1,500,000 บาท/เดือน</li>
-                                    <li>• ลูกทีมตรง 15 คน</li>
-                                    <li>• มีลูกทีม Gold 5 คน</li>
+                                    <li>• รับคะแนน 2,000 แต้ม</li>
+                                    <li>• แนะนำ 50 คน</li>
+                                    <li>• ยอดขาย 200,000 บาท</li>
+                                    <li>• สมาชิก Active 25 คน</li>
+                                    <li>• ยอดขายทีม 500,000 บาท</li>
                                 </ul>
                             </div>
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">💰 รางวัล</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• โบนัส 150,000 บาท (ครั้งเดียว)</li>
-                                    <li>• รายได้ 30,000 บาท/เดือน</li>
-                                    <li>• ค่าคอม +20%</li>
+                                    <li>• โบนัส 10,000 บาท (ครั้งเดียว)</li>
+                                    <li>• โบนัสรายเดือน 2,000 บาท</li>
+                                    <li>• Commission Rate: 15%</li>
                                     <li>• Multiplier 2.0x</li>
+                                    <li>• Unilevel 6 ชั้น</li>
                                 </ul>
                             </div>
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🎁 สิทธิพิเศษ</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• กรอบโปรไฟล์แพลทินัม</li>
-                                    <li>• ทริปหรูทั่วโลก</li>
-                                    <li>• ส่วนลดสินค้า 30%</li>
-                                    <li>• เข้าร่วมตัดสินใจบริษัท</li>
+                                    <li>• Exclusive Products</li>
+                                    <li>• Leadership Training</li>
+                                    <li>• ลดค่าธรรมเนียมถอน 20%</li>
+                                    <li>• ถอนเงินได้ 15 ครั้ง/เดือน</li>
                                 </ul>
                             </div>
                         </div>
                     </div>
 
                     <!-- Diamond -->
-                    <div class="bg-gradient-to-br from-purple-400 via-pink-500 to-rose-600 border-2 border-pink-700 rounded-2xl p-6 shadow-2xl">
+                    <div class="bg-gradient-to-r from-blue-200 via-blue-400 to-blue-500 border-2 border-blue-600 rounded-2xl p-6 shadow-2xl">
                         <div class="flex items-start gap-4 mb-4">
-                            <div class="text-5xl">💎✨</div>
+                            <div class="text-5xl">💠</div>
                             <div>
-                                <h3 class="text-2xl font-bold text-white drop-shadow-lg">Diamond (เพชร)</h3>
-                                <p class="text-pink-100">ยอดของยอด ผู้นำสูงสุด</p>
+                                <h3 class="text-2xl font-bold text-blue-900">Diamond (เพชร)</h3>
+                                <p class="text-blue-800">พันธมิตรระดับสูง ผลงานโดดเด่น คุณเจิดจรัส!</p>
                             </div>
                         </div>
                         <div class="grid md:grid-cols-3 gap-4">
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📊 เงื่อนไข</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• ทีมอย่างน้อย 1,000 คน</li>
-                                    <li>• ยอดขายทีม 5,000,000 บาท/เดือน</li>
-                                    <li>• ลูกทีมตรง 25 คน</li>
-                                    <li>• มีลูกทีม Platinum 7 คน</li>
+                                    <li>• รับคะแนน 10,000 แต้ม</li>
+                                    <li>• แนะนำ 100 คน</li>
+                                    <li>• ยอดขาย 1,000,000 บาท</li>
+                                    <li>• สมาชิก Active 50 คน</li>
+                                    <li>• ยอดขายทีม 2,000,000 บาท</li>
                                 </ul>
                             </div>
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">💰 รางวัล</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• โบนัส 500,000 บาท (ครั้งเดียว)</li>
-                                    <li>• รายได้ 100,000 บาท/เดือน</li>
-                                    <li>• ค่าคอม +25%</li>
-                                    <li>• Multiplier 3.0x</li>
+                                    <li>• โบนัส 50,000 บาท (ครั้งเดียว)</li>
+                                    <li>• โบนัสรายเดือน 5,000 บาท</li>
+                                    <li>• Commission Rate: 20%</li>
+                                    <li>• Multiplier 2.5x</li>
+                                    <li>• Unilevel 7 ชั้น</li>
                                 </ul>
                             </div>
                             <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🎁 สิทธิพิเศษ</div>
                                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                    <li>• กรอบโปรไฟล์เพชร</li>
-                                    <li>• รถยนต์หรู</li>
-                                    <li>• ส่วนลดสินค้า 40%</li>
-                                    <li>• หุ้นบริษัท</li>
+                                    <li>• Travel Rewards</li>
+                                    <li>• VIP Support</li>
+                                    <li>• ลดค่าธรรมเนียมถอน 30%</li>
+                                    <li>• ถอนเงินไม่จำกัด</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Crown -->
+                    <div class="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 border-2 border-amber-600 rounded-2xl p-6 shadow-2xl">
+                        <div class="flex items-start gap-4 mb-4">
+                            <div class="text-5xl">👑</div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-amber-900">Crown (มงกุฎ)</h3>
+                                <p class="text-amber-800">ผู้นำระดับเอลิท สวมมงกุฎแห่งความสำเร็จ!</p>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📊 เงื่อนไข</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                    <li>• รับคะแนน 25,000 แต้ม</li>
+                                    <li>• แนะนำ 200 คน</li>
+                                    <li>• ยอดขาย 2,500,000 บาท</li>
+                                    <li>• สมาชิก Active 100 คน</li>
+                                    <li>• ยอดขายทีม 5,000,000 บาท</li>
+                                    <li>• มีลูกทีม Diamond 2 คน</li>
+                                </ul>
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">💰 รางวัล</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                    <li>• โบนัส 100,000 บาท (ครั้งเดียว)</li>
+                                    <li>• โบนัสรายเดือน 10,000 บาท</li>
+                                    <li>• Commission Rate: 25%</li>
+                                    <li>• Multiplier 3.0x</li>
+                                    <li>• Unilevel 8 ชั้น</li>
+                                </ul>
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🎁 สิทธิพิเศษ</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                    <li>• 🚗 Car Bonus (20,000 บาท/เดือน)</li>
+                                    <li>• ลดค่าธรรมเนียมถอน 40%</li>
+                                    <li>• ถอนเงินไม่จำกัด</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Royal -->
+                    <div class="bg-gradient-to-r from-purple-400 via-purple-500 to-purple-600 border-2 border-purple-700 rounded-2xl p-6 shadow-2xl">
+                        <div class="flex items-start gap-4 mb-4">
+                            <div class="text-5xl">🏆</div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-white drop-shadow-lg">Royal (รอยัล)</h3>
+                                <p class="text-purple-100">ผู้นำระดับรอยัล คุณอยู่ในกลุ่มราชวงศ์แห่งความสำเร็จ!</p>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📊 เงื่อนไข</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                    <li>• รับคะแนน 50,000 แต้ม</li>
+                                    <li>• แนะนำ 350 คน</li>
+                                    <li>• ยอดขาย 5,000,000 บาท</li>
+                                    <li>• สมาชิก Active 200 คน</li>
+                                    <li>• ยอดขายทีม 10,000,000 บาท</li>
+                                    <li>• มีลูกทีม Crown 3 คน</li>
+                                </ul>
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">💰 รางวัล</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                    <li>• โบนัส 300,000 บาท (ครั้งเดียว)</li>
+                                    <li>• โบนัสรายเดือน 25,000 บาท</li>
+                                    <li>• Commission Rate: 30%</li>
+                                    <li>• Multiplier 4.0x</li>
+                                    <li>• Unilevel 9 ชั้น</li>
+                                </ul>
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🎁 สิทธิพิเศษ</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                    <li>• 🏠 House Bonus (50,000 บาท/เดือน)</li>
+                                    <li>• Personal Assistant</li>
+                                    <li>• ลดค่าธรรมเนียมถอน 50%</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="bg-gradient-to-br from-pink-400 via-rose-500 to-rose-600 border-2 border-rose-700 rounded-2xl p-6 shadow-2xl">
+                        <div class="flex items-start gap-4 mb-4">
+                            <div class="text-5xl">🌟</div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-white drop-shadow-lg">Legend (ตำนาน)</h3>
+                                <p class="text-rose-100">ความสำเร็จสูงสุด! คุณคือตำนาน 🎉</p>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📊 เงื่อนไข</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                    <li>• รับคะแนน 100,000 แต้ม</li>
+                                    <li>• แนะนำ 500 คน</li>
+                                    <li>• ยอดขาย 10,000,000 บาท</li>
+                                    <li>• สมาชิก Active 300 คน</li>
+                                    <li>• ยอดขายทีม 25,000,000 บาท</li>
+                                    <li>• มีลูกทีม Royal 3 คน</li>
+                                </ul>
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">💰 รางวัล</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                    <li>• 🎉 โบนัส 1,000,000 บาท!</li>
+                                    <li>• โบนัสรายเดือน 100,000 บาท</li>
+                                    <li>• Commission Rate: 35%</li>
+                                    <li>• Multiplier 5.0x</li>
+                                    <li>• Unilevel 10 ชั้น</li>
+                                </ul>
+                            </div>
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🎁 สิทธิพิเศษ</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                    <li>• Global Bonus Pool (2% กำไรโลก)</li>
+                                    <li>• ถอนเงินฟรี ไม่มีค่าธรรมเนียม</li>
+                                    <li>• ถอนเงินไม่จำกัด</li>
+                                    <li>• สิทธิพิเศษสูงสุดทุกอย่าง</li>
                                 </ul>
                             </div>
                         </div>
@@ -1044,8 +1192,9 @@
 
         <!-- Footer -->
         <div class="text-center mt-12 text-gray-600 dark:text-gray-400">
-            <p class="text-sm">© {{ date('Y') }} Thaiprompt-Affiliate - เส้นทางเศรษฐี เวอร์ชั่น 1.0</p>
-            <p class="text-xs mt-2">สงวนลิขสิทธิ์ ห้ามทำซ้ำหรือเผยแพร่โดยไม่ได้รับอนุญาต</p>
+            <p class="text-sm">© {{ date('Y') }} Thaiprompt-Affiliate - เส้นทางเศรษฐี เวอร์ชั่น 2.0</p>
+            <p class="text-xs mt-2">อัปเดต: ระบบยศ 8 ระดับ + Commission Rates ใหม่</p>
+            <p class="text-xs mt-1">สงวนลิขสิทธิ์ ห้ามทำซ้ำหรือเผยแพร่โดยไม่ได้รับอนุญาต</p>
         </div>
 
     </div>
