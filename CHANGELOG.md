@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.25] - 2025-12-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2201 from xjanova/claude/fix-payment-billing-01N6gctYunRfUGQXbRo5SdXu (e9c5e355)
+- fix(payment): แก้ไข payment_method enum ไม่ครอบคลุม payment methods ทั้งหมด (75243e63)
+### 🔧 Other Changes
+
+
 ## [v3.372.24] - 2025-12-09
 
 ### ✨ Features
