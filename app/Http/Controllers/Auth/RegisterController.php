@@ -34,9 +34,20 @@ class RegisterController extends Controller
     {
         $referralCode = $request->query('ref');
 
-        // ดึงข้อมูลผู้แนะนำเริ่มต้น (MLM)
+        // ดึงข้อมูลผู้แนะนำ (MLM)
+        $referrerName = null;
+        $referrerPicture = null;
         $defaultSponsorName = null;
-        if (empty($referralCode)) {
+
+        if (!empty($referralCode)) {
+            // มีรหัสแนะนำ - ดึงข้อมูลผู้แนะนำ
+            $referrer = MlmMember::where('member_code', $referralCode)->with('user')->first();
+            if ($referrer && $referrer->user) {
+                $referrerName = $referrer->user->name;
+                $referrerPicture = $referrer->user->profile_picture ?? $referrer->user->line_picture_url;
+            }
+        } else {
+            // ไม่มีรหัสแนะนำ - ใช้ default sponsor
             $defaultSponsorCode = Setting::get('default_sponsor_member_code');
             if (!empty($defaultSponsorCode)) {
                 $defaultSponsor = MlmMember::where('member_code', $defaultSponsorCode)->with('user')->first();
@@ -52,7 +63,7 @@ class RegisterController extends Controller
         // ดึงรางวัลการสมัครสมาชิกที่ active สำหรับสมัครฟรี
         $signupRewards = LineSignupReward::getAvailableRewards(null);
 
-        return view('auth.register', compact('referralCode', 'defaultSponsorName', 'lineProfile', 'signupRewards'));
+        return view('auth.register', compact('referralCode', 'referrerName', 'referrerPicture', 'defaultSponsorName', 'lineProfile', 'signupRewards'));
     }
 
     /**

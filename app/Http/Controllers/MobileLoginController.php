@@ -115,9 +115,9 @@ class MobileLoginController extends Controller
      * อนุมัติให้แอพเข้าถึง (หลัง login หรือถ้า login อยู่แล้ว)
      *
      * @param Request $request
-     * @return RedirectResponse
+     * @return View|RedirectResponse
      */
-    public function authorize(Request $request): RedirectResponse
+    public function authorize(Request $request): View|RedirectResponse
     {
         $request->validate([
             'token' => 'required|string',

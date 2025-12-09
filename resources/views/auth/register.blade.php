@@ -296,8 +296,41 @@
                             <form method="POST" action="{{ route('register') }}" class="space-y-4">
                                 @csrf
 
-                                {{-- Referral Code Notice --}}
-                                @if (!empty($referralCode))
+                                {{-- Referral Code Notice - แสดงชื่อผู้เชิญ --}}
+                                @if (!empty($referralCode) && !empty($referrerName))
+                                <div class="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-xl p-4">
+                                    <div class="flex items-center gap-4">
+                                        {{-- รูปผู้เชิญ --}}
+                                        @if(!empty($referrerPicture))
+                                            <img src="{{ $referrerPicture }}"
+                                                 alt="{{ $referrerName }}"
+                                                 class="w-12 h-12 rounded-full object-cover ring-2 ring-green-400/50 flex-shrink-0">
+                                        @else
+                                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center ring-2 ring-green-400/50 flex-shrink-0">
+                                                <i class="fas fa-user text-white text-lg"></i>
+                                            </div>
+                                        @endif
+
+                                        {{-- ข้อมูลผู้เชิญ --}}
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-green-300 text-sm font-medium">
+                                                <i class="fas fa-handshake mr-1"></i>
+                                                คุณได้รับเชิญจาก
+                                            </p>
+                                            <p class="text-white font-bold text-lg truncate">{{ $referrerName }}</p>
+                                            <p class="text-green-400/70 text-xs">รหัส: {{ $referralCode }}</p>
+                                        </div>
+
+                                        {{-- ไอคอน --}}
+                                        <div class="flex-shrink-0">
+                                            <div class="w-10 h-10 bg-green-500/30 rounded-full flex items-center justify-center">
+                                                <i class="fas fa-check text-green-400"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                @elseif (!empty($referralCode))
+                                {{-- กรณีมีรหัสแต่หาชื่อไม่เจอ --}}
                                 <div class="bg-green-500/20 border border-green-500/30 text-green-300 px-4 py-3 rounded-xl text-sm">
                                     <div class="flex items-center gap-2">
                                         <i class="fas fa-user-check"></i>

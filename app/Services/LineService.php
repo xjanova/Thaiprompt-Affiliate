@@ -60,16 +60,27 @@ class LineService
         // Use custom redirect_uri from settings if available, otherwise use route
         $redirectUri = $redirectUri ?? $this->settings->redirect_uri ?? route('line.callback');
 
-        $params = http_build_query([
+        $params = [
             'response_type' => 'code',
             'client_id' => $this->settings->login_channel_id,
             'redirect_uri' => $redirectUri,
             'state' => $state,
             'scope' => 'profile openid email',
-            'bot_prompt' => 'aggressive', // Prompt to add as friend
+        ];
+
+        // เพิ่ม bot_prompt เฉพาะเมื่อเชื่อมกับ LINE OA แล้ว (มี channel_access_token)
+        if (!empty($this->settings->channel_access_token)) {
+            $params['bot_prompt'] = 'aggressive';
+        }
+
+        // Log สำหรับ debug
+        Log::info('LINE Login authorization URL generated', [
+            'client_id' => $this->settings->login_channel_id,
+            'redirect_uri' => $redirectUri,
+            'has_bot_prompt' => !empty($this->settings->channel_access_token),
         ]);
 
-        return self::LINE_OAUTH_BASE . "/authorize?{$params}";
+        return self::LINE_OAUTH_BASE . "/authorize?" . http_build_query($params);
     }
 
     /**

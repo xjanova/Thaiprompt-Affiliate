@@ -108,6 +108,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/cancel', [\App\Http\Controllers\Api\V1\MobileAuthController::class, 'cancel']);
     });
 
+    // Native LINE Login สำหรับ Mobile App (ใช้ LINE SDK โดยตรง)
+    Route::prefix('auth/line-native')->group(function () {
+        Route::get('/config', [\App\Http\Controllers\Api\V1\MobileLineAuthController::class, 'config']);
+        Route::post('/verify', [\App\Http\Controllers\Api\V1\MobileLineAuthController::class, 'verify']);
+    });
+
     // App settings (public)
     Route::get('/settings', [DashboardController::class, 'settings']);
 

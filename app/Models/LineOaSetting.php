@@ -11,9 +11,14 @@ class LineOaSetting extends Model
     use HasFactory;
 
     protected $fillable = [
-        'login_channel_id',        // LINE Login Channel ID (for OAuth)
-        'channel_secret',          // LINE Login Channel Secret (for OAuth)
-        'redirect_uri',            // LINE Login callback URL
+        'login_channel_id',        // LINE Login Channel ID (for OAuth - Web)
+        'channel_secret',          // LINE Login Channel Secret (for OAuth - Web)
+        'redirect_uri',            // LINE Login callback URL (Web)
+
+        // Mobile LINE Login (แยก channel สำหรับ mobile app)
+        'mobile_login_channel_id',     // LINE Login Channel ID สำหรับ Mobile App
+        'mobile_login_channel_secret', // LINE Login Channel Secret สำหรับ Mobile App
+
         'messaging_channel_id',    // LINE Messaging API Channel ID (optional)
         'channel_access_token',    // LINE Messaging API Access Token
         'liff_id',
@@ -32,6 +37,7 @@ class LineOaSetting extends Model
 
     protected $hidden = [
         'channel_secret',
+        'mobile_login_channel_secret',
         'channel_access_token',
     ];
 
@@ -90,5 +96,32 @@ class LineOaSetting extends Model
     public function getRegistrationSuccessMessageAttribute($value): string
     {
         return $value ?? "🎉 สมัครสมาชิกสำเร็จ!\n\nยินดีต้อนรับสู่ระบบ Affiliate ของเรา คุณได้เข้าร่วมทีมเรียบร้อยแล้ว\n\nคุณสามารถเข้าสู่ระบบและเริ่มต้นสร้างรายได้ได้ทันที!";
+    }
+
+    /**
+     * ตรวจสอบว่า Mobile LINE Login ถูกตั้งค่าแล้วหรือไม่
+     *
+     * @return bool
+     */
+    public function isMobileLineLoginConfigured(): bool
+    {
+        return !empty($this->mobile_login_channel_id) && !empty($this->mobile_login_channel_secret);
+    }
+
+    /**
+     * ดึงข้อมูล Mobile LINE Login สำหรับ API
+     *
+     * @return array|null
+     */
+    public function getMobileLineConfig(): ?array
+    {
+        if (!$this->isMobileLineLoginConfigured()) {
+            return null;
+        }
+
+        return [
+            'channel_id' => $this->mobile_login_channel_id,
+            // ไม่ส่ง secret กลับไป - แอพใช้ LINE SDK ที่ไม่ต้องการ secret
+        ];
     }
 }

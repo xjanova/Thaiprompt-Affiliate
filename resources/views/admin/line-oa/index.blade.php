@@ -166,6 +166,73 @@
                     </div>
                 </div>
 
+                <!-- Mobile LINE Login Channel Configuration -->
+                <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden border border-white/20 dark:border-white/10">
+                    <div class="bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-4">
+                        <h3 class="text-lg font-bold text-white flex items-center">
+                            <i class="fas fa-mobile-alt mr-2"></i>
+                            Mobile LINE Login Channel (สำหรับแอพมือถือ)
+                        </h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="p-3 bg-purple-50 rounded-xl border border-purple-200 mb-4">
+                            <p class="text-xs text-purple-800">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                <strong>ทำไมต้องแยก Channel?</strong> Mobile App ใช้ LINE SDK ซึ่งต้องการ Channel แยกต่างหากเพื่อให้ login แบบ native ได้
+                                ไม่ต้องเปิด browser ทำให้ UX ดีขึ้นมาก
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-id-card text-purple-500 mr-1"></i> Mobile Channel ID
+                            </label>
+                            <input type="text" name="mobile_login_channel_id" value="{{ old('mobile_login_channel_id', $settings->mobile_login_channel_id) }}"
+                                class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                                placeholder="1234567890">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">สร้าง LINE Login Channel ใหม่สำหรับ Mobile App</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-lock text-purple-500 mr-1"></i> Mobile Channel Secret
+                            </label>
+                            <input type="password" name="mobile_login_channel_secret" value="{{ old('mobile_login_channel_secret', $settings->mobile_login_channel_secret) }}"
+                                class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                                placeholder="••••••••••••••••">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Channel Secret สำหรับ verify token จากแอพ</p>
+                        </div>
+
+                        <div class="mt-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-lightbulb text-purple-500 text-xl mt-0.5"></i>
+                                <div class="text-sm">
+                                    <p class="font-semibold text-purple-900 mb-1">วิธีตั้งค่า Mobile LINE Login</p>
+                                    <ol class="text-purple-700 space-y-1 list-decimal list-inside">
+                                        <li>ไปที่ LINE Developers Console</li>
+                                        <li>สร้าง LINE Login Channel ใหม่ (ภายใต้ Provider เดิม)</li>
+                                        <li>ตั้งชื่อเช่น "MyApp Mobile"</li>
+                                        <li>คัดลอก Channel ID และ Secret มาวางที่นี่</li>
+                                        <li>ไม่ต้องตั้งค่า Callback URL (ใช้ LINE SDK)</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if($settings->mobile_login_channel_id)
+                        <div class="mt-4 p-4 bg-green-50 rounded-xl border border-green-200">
+                            <div class="flex items-center gap-2 text-green-800">
+                                <i class="fas fa-check-circle text-green-600"></i>
+                                <span class="font-semibold">Mobile LINE Login ถูกตั้งค่าแล้ว</span>
+                            </div>
+                            <p class="text-xs text-green-700 mt-1">
+                                API Endpoint: <code class="bg-white px-2 py-1 rounded">{{ url('/api/v1/auth/line-native/config') }}</code>
+                            </p>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
                 <!-- LINE Messaging API Configuration -->
                 <div class="glass-fusion rounded-2xl shadow-lg border border-gray-100 overflow-hidden border border-white/20 dark:border-white/10">
                     <div class="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4">
@@ -370,6 +437,15 @@
                                 <span class="px-3 py-1 bg-yellow-400 rounded-full text-xs font-bold text-yellow-900">Yes</span>
                             @else
                                 <span class="px-3 py-1 bg-gray-400 rounded-full text-xs font-bold text-gray-900">No</span>
+                            @endif
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 glass-fusion backdrop-blur-sm rounded-xl border border-white/20 dark:border-white/10">
+                            <span class="text-sm">Mobile:</span>
+                            @if($settings->mobile_login_channel_id)
+                                <span class="px-3 py-1 bg-purple-400 rounded-full text-xs font-bold text-purple-900">Connected</span>
+                            @else
+                                <span class="px-3 py-1 bg-gray-400 rounded-full text-xs font-bold text-gray-900">Not Set</span>
                             @endif
                         </div>
                     </div>
