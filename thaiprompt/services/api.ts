@@ -515,6 +515,7 @@ export const getWallet = async (): Promise<{
     thisMonthIncome: number;
     thisMonthExpense: number;
     currency: string;
+    walletAddress?: string;
   };
   message?: string;
 } | null> => {

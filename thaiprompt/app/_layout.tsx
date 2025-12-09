@@ -1,7 +1,6 @@
 /**
- * Root Layout - DEBUG VERSION
- * ⚠️ แบบ Simple สุดๆ เพื่อทดสอบปัญหาหน้าจอขาว
- * ไม่ใช้: GestureHandlerRootView, SafeAreaProvider, Google Fonts
+ * Root Layout
+ * โหลด Fonts และ Initialize App
  */
 
 import React, { useEffect, useState } from 'react';
@@ -9,6 +8,8 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Font from 'expo-font';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 
@@ -46,13 +47,23 @@ const loadingStyles = StyleSheet.create({
 export default function RootLayout() {
   const { initialize, isInitialized } = useAuthStore();
   const [isReady, setIsReady] = useState(false);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
     const init = async () => {
       try {
-        // ซ่อน splash ทันที
+        // โหลด Fonts ก่อน (สำคัญมาก!)
+        await Font.loadAsync({
+          ...Ionicons.font,
+        });
+
+        if (isMounted) {
+          setFontsLoaded(true);
+        }
+
+        // ซ่อน splash หลังโหลด font เสร็จ
         await SplashScreen.hideAsync().catch(() => {});
 
         // Initialize auth (timeout 5 วินาที)
@@ -67,6 +78,17 @@ export default function RootLayout() {
         ]);
       } catch (error) {
         console.error('Layout init error:', error);
+        // ถึงแม้จะ error ก็ต้องโหลด fonts
+        if (isMounted && !fontsLoaded) {
+          try {
+            await Font.loadAsync({
+              ...Ionicons.font,
+            });
+            setFontsLoaded(true);
+          } catch (fontError) {
+            console.error('Font load error:', fontError);
+          }
+        }
       } finally {
         if (isMounted) {
           setIsReady(true);
@@ -77,6 +99,7 @@ export default function RootLayout() {
     // Force ready หลังจาก 6 วินาที ไม่ว่าจะเกิดอะไรขึ้น
     const forceTimeout = setTimeout(() => {
       if (isMounted) {
+        setFontsLoaded(true);
         setIsReady(true);
       }
     }, 6000);
@@ -89,8 +112,8 @@ export default function RootLayout() {
     };
   }, []);
 
-  // แสดง loading ถ้ายังไม่พร้อม
-  if (!isReady) {
+  // แสดง loading ถ้ายังไม่พร้อมหรือ fonts ยังไม่โหลด
+  if (!isReady || !fontsLoaded) {
     return <SimpleLoadingScreen />;
   }
 

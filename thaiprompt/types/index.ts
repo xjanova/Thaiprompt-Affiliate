@@ -14,6 +14,7 @@ export interface User {
   role: string;
   avatar?: string;
   referralCode?: string;
+  wallet_address?: string;
   permissions: string[];
   createdAt: string;
 }

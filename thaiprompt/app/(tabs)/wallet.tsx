@@ -22,6 +22,9 @@ import {
   StatusBar,
   ActivityIndicator,
   Linking,
+  Modal,
+  TouchableOpacity,
+  Share,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -30,6 +33,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import { getWallet, getWalletTransactions, getKycStatus } from '@/services/api';
 import { formatCurrency } from '@/constants';
+import QRCode from 'react-native-qrcode-svg';
 
 // Wallet data type
 interface WalletData {
@@ -41,6 +45,7 @@ interface WalletData {
   thisMonthIncome: number;
   thisMonthExpense: number;
   currency: string;
+  walletAddress?: string;
 }
 
 // Transaction type
@@ -169,6 +174,7 @@ export default function WalletScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [kycStatus, setKycStatus] = useState<string | null>(null);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   // โหลดข้อมูล
   const loadData = useCallback(async () => {
@@ -251,6 +257,27 @@ export default function WalletScreen() {
     Linking.openURL('https://main.thaiprompt.online/user/wallet/history');
   };
 
+  const handleShowQr = () => {
+    setShowQrModal(true);
+  };
+
+  const handleShareWalletAddress = async () => {
+    const address = wallet?.walletAddress || user?.wallet_address;
+    if (!address) {
+      Alert.alert('ไม่พบ Wallet Address', 'กรุณาลองใหม่อีกครั้ง');
+      return;
+    }
+
+    try {
+      await Share.share({
+        message: `Wallet Address ของฉัน: ${address}\n\nสแกน QR Code หรือกรอก Address นี้เพื่อโอนเงินให้ฉัน`,
+        title: 'Wallet Address',
+      });
+    } catch (error) {
+      console.error('Share error:', error);
+    }
+  };
+
   // ถ้ายังไม่ login
   if (!isAuthenticated) {
     return (
@@ -321,9 +348,15 @@ export default function WalletScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.balanceCard}
           >
-            <View style={styles.balanceHeader}>
-              <Ionicons name="wallet-outline" size={22} color="rgba(255,255,255,0.9)" />
-              <Text style={styles.balanceLabel}>ยอดเงินคงเหลือ</Text>
+            <View style={styles.balanceHeaderRow}>
+              <View style={styles.balanceHeader}>
+                <Ionicons name="wallet-outline" size={22} color="rgba(255,255,255,0.9)" />
+                <Text style={styles.balanceLabel}>ยอดเงินคงเหลือ</Text>
+              </View>
+              {/* QR Code Button */}
+              <Pressable style={styles.qrButton} onPress={handleShowQr}>
+                <Ionicons name="qr-code" size={24} color="#FFF" />
+              </Pressable>
             </View>
             <Text style={styles.balanceAmount}>
               {formatCurrency(wallet?.balance || 0)}
@@ -440,6 +473,80 @@ export default function WalletScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* QR Code Modal */}
+      <Modal
+        visible={showQrModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowQrModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.qrModalContent, !isDark && styles.qrModalContentLight]}>
+            {/* Header */}
+            <View style={styles.qrModalHeader}>
+              <Text style={[styles.qrModalTitle, !isDark && styles.textDark]}>
+                QR Code รับเงิน
+              </Text>
+              <Pressable
+                style={styles.qrModalClose}
+                onPress={() => setShowQrModal(false)}
+              >
+                <Ionicons name="close" size={24} color={isDark ? '#FFF' : '#1F2937'} />
+              </Pressable>
+            </View>
+
+            {/* QR Code */}
+            <View style={styles.qrCodeBox}>
+              {(wallet?.walletAddress || user?.wallet_address) ? (
+                <QRCode
+                  value={wallet?.walletAddress || user?.wallet_address || ''}
+                  size={200}
+                  backgroundColor="white"
+                  color="#1F2937"
+                />
+              ) : (
+                <View style={styles.qrPlaceholder}>
+                  <Ionicons name="qr-code-outline" size={60} color="#9CA3AF" />
+                  <Text style={styles.qrPlaceholderText}>ไม่พบ Wallet Address</Text>
+                </View>
+              )}
+            </View>
+
+            {/* User Info */}
+            <View style={styles.qrUserInfo}>
+              <Ionicons name="person-circle-outline" size={24} color="#3B82F6" />
+              <Text style={[styles.qrUserName, !isDark && styles.textDark]}>
+                {user?.name || 'ผู้ใช้'}
+              </Text>
+            </View>
+
+            {/* Wallet Address */}
+            <View style={[styles.walletAddressBox, !isDark && styles.walletAddressBoxLight]}>
+              <Text style={styles.walletAddressLabel}>Wallet Address</Text>
+              <Text style={[styles.walletAddressValue, !isDark && styles.textDark]}>
+                {wallet?.walletAddress || user?.wallet_address || '-'}
+              </Text>
+            </View>
+
+            {/* Actions */}
+            <View style={styles.qrModalActions}>
+              <Pressable
+                style={[styles.qrActionBtn, styles.qrShareBtn]}
+                onPress={handleShareWalletAddress}
+              >
+                <Ionicons name="share-outline" size={20} color="#FFF" />
+                <Text style={styles.qrActionBtnText}>แชร์</Text>
+              </Pressable>
+            </View>
+
+            {/* Info */}
+            <Text style={styles.qrInfoText}>
+              ให้ผู้โอนสแกน QR Code นี้ หรือกรอก Wallet Address เพื่อโอนเงินให้คุณ
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -509,10 +616,23 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 24,
   },
+  balanceHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   balanceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+  },
+  qrButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   balanceLabel: {
     fontSize: 14,
@@ -738,5 +858,118 @@ const styles = StyleSheet.create({
   emptyTxText: {
     color: '#9CA3AF',
     marginTop: 8,
+  },
+
+  // QR Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  qrModalContent: {
+    backgroundColor: '#1F2937',
+    borderRadius: 24,
+    padding: 24,
+    width: '100%',
+    maxWidth: 360,
+    alignItems: 'center',
+  },
+  qrModalContentLight: {
+    backgroundColor: '#FFFFFF',
+  },
+  qrModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 24,
+  },
+  qrModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  qrModalClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrCodeBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+  },
+  qrPlaceholder: {
+    width: 200,
+    height: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrPlaceholderText: {
+    color: '#9CA3AF',
+    marginTop: 12,
+    fontSize: 14,
+  },
+  qrUserInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  qrUserName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginLeft: 8,
+  },
+  walletAddressBox: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    padding: 16,
+    width: '100%',
+    marginBottom: 20,
+  },
+  walletAddressBoxLight: {
+    backgroundColor: '#F3F4F6',
+  },
+  walletAddressLabel: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginBottom: 4,
+  },
+  walletAddressValue: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  qrModalActions: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  qrActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  qrShareBtn: {
+    backgroundColor: '#3B82F6',
+  },
+  qrActionBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  qrInfoText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });
