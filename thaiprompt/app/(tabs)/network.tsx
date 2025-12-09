@@ -1,5 +1,6 @@
 /**
- * Network/MLM Screen - หน้าสายงาน/เครือข่าย
+ * Network/MLM Screen - Premium Stable Version
+ * ใช้ StyleSheet แทน NativeWind
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -10,124 +11,73 @@ import {
   Pressable,
   RefreshControl,
   Alert,
+  StyleSheet,
+  StatusBar,
+  ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores/authStore';
-import { useAppStore } from '@/stores/appStore';
 import { getReferrals } from '@/services/api';
-import * as Cache from '@/services/cache';
-import * as Network from '@/services/network';
 import { formatCurrency } from '@/constants';
 import type { ReferralsData, Referral } from '@/types';
 
-// Stat Card
+// Stat Card Component
 const StatCard = ({
   icon,
   label,
   value,
   color,
-  delay,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   label: string;
   value: string;
   color: string;
-  delay: number;
 }) => (
-  <Animated.View
-    entering={FadeInDown.delay(delay).springify()}
-    className="flex-1 mx-1"
-  >
-    <View className="bg-white dark:bg-dark-50 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
-      <View
-        className="w-10 h-10 rounded-xl items-center justify-center mb-2"
-        style={{ backgroundColor: color + '20' }}
-      >
-        <Ionicons name={icon} size={20} color={color} />
-      </View>
-      <Text className="text-gray-500 dark:text-gray-400 text-xs">{label}</Text>
-      <Text className="text-gray-900 dark:text-white font-bold text-lg mt-0.5">
-        {value}
-      </Text>
+  <View style={styles.statCard}>
+    <View style={[styles.statIconBox, { backgroundColor: color + '20' }]}>
+      <Ionicons name={icon as any} size={20} color={color} />
     </View>
-  </Animated.View>
-);
-
-// Member Card
-const MemberCard = ({
-  member,
-  index,
-}: {
-  member: Referral;
-  index: number;
-}) => {
-  const statusColor =
-    member.status === 'active'
-      ? 'bg-green-100 text-green-600'
-      : 'bg-gray-100 text-gray-500';
-  const statusText = member.status === 'active' ? 'ใช้งาน' : 'ไม่ใช้งาน';
-
-  return (
-    <Animated.View
-      entering={FadeInDown.delay(200 + index * 50).springify()}
-      className="bg-white dark:bg-dark-50 rounded-2xl p-4 mb-3 border border-gray-100 dark:border-gray-700"
-    >
-      <View className="flex-row items-center">
-        {/* Avatar */}
-        <View className="w-12 h-12 rounded-full bg-primary-100 items-center justify-center mr-3">
-          <Text className="text-primary-600 font-bold text-lg">
-            {member.user.name.charAt(0).toUpperCase()}
-          </Text>
-        </View>
-
-        {/* Info */}
-        <View className="flex-1">
-          <Text className="text-gray-900 dark:text-white font-semibold">
-            {member.user.name}
-          </Text>
-          <Text className="text-gray-500 dark:text-gray-400 text-xs">
-            ระดับ {member.level} • {member.user.email}
-          </Text>
-        </View>
-
-        {/* Status & Earnings */}
-        <View className="items-end">
-          <View className={`px-2 py-0.5 rounded-full ${statusColor}`}>
-            <Text className="text-xs font-medium">{statusText}</Text>
-          </View>
-          <Text className="text-primary-500 font-semibold text-sm mt-1">
-            {formatCurrency(member.earnings)}
-          </Text>
-        </View>
-      </View>
-    </Animated.View>
-  );
-};
-
-// Inline Loading Indicator
-const LoadingIndicator = ({ isDark }: { isDark: boolean }) => (
-  <View className="flex-1 justify-center items-center py-20">
-    <View className="w-12 h-12 rounded-full border-4 border-primary-200 border-t-primary-500"
-      style={{ borderTopColor: '#8B5CF6', borderColor: isDark ? '#374151' : '#E5E7EB' }}
-    />
-    <Text className={`mt-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-      กำลังโหลดข้อมูลทีม...
-    </Text>
+    <Text style={styles.statLabel}>{label}</Text>
+    <Text style={styles.statValue}>{value}</Text>
   </View>
 );
 
+// Member Card Component
+const MemberCard = ({ member }: { member: Referral }) => {
+  const isActive = member.status === 'active';
+
+  return (
+    <View style={styles.memberCard}>
+      <View style={styles.memberAvatar}>
+        <Text style={styles.memberAvatarText}>
+          {member.user.name.charAt(0).toUpperCase()}
+        </Text>
+      </View>
+      <View style={styles.memberInfo}>
+        <Text style={styles.memberName}>{member.user.name}</Text>
+        <Text style={styles.memberMeta}>
+          ระดับ {member.level} • {member.user.email}
+        </Text>
+      </View>
+      <View style={styles.memberRight}>
+        <View style={[styles.statusBadge, { backgroundColor: isActive ? '#D1FAE5' : '#E5E7EB' }]}>
+          <Text style={[styles.statusText, { color: isActive ? '#059669' : '#6B7280' }]}>
+            {isActive ? 'ใช้งาน' : 'ไม่ใช้งาน'}
+          </Text>
+        </View>
+        <Text style={styles.memberEarnings}>{formatCurrency(member.earnings)}</Text>
+      </View>
+    </View>
+  );
+};
+
 export default function NetworkScreen() {
   const { isAuthenticated } = useAuthStore();
-  const { resolvedTheme } = useAppStore();
-  const isDark = resolvedTheme === 'dark';
 
   const [data, setData] = useState<ReferralsData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   // โหลดข้อมูล
@@ -138,26 +88,9 @@ export default function NetworkScreen() {
     }
 
     try {
-      const online = await Network.checkNetworkStatus();
-      setIsOnline(online);
-
-      // ดึงจาก cache ก่อน
-      const cached = await Cache.getCache<ReferralsData>(
-        Cache.CACHE_KEYS.REFERRALS
-      );
-      if (cached) setData(cached);
-
-      // ถ้า online ให้ดึงข้อมูลใหม่
-      if (online) {
-        const freshData = await getReferrals();
-        if (freshData) {
-          setData(freshData);
-          await Cache.setCache(
-            Cache.CACHE_KEYS.REFERRALS,
-            freshData,
-            Cache.OFFLINE_CACHE_DURATION
-          );
-        }
+      const freshData = await getReferrals();
+      if (freshData) {
+        setData(freshData);
       }
     } catch (error) {
       console.error('Load network data error:', error);
@@ -170,7 +103,6 @@ export default function NetworkScreen() {
     loadData();
   }, [loadData]);
 
-  // Pull to refresh
   const onRefresh = async () => {
     setRefreshing(true);
     await loadData();
@@ -180,196 +112,352 @@ export default function NetworkScreen() {
   // ถ้ายังไม่ login
   if (!isAuthenticated) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1 justify-center items-center px-6">
-          <Ionicons
-            name="people"
-            size={80}
-            color={isDark ? '#4B5563' : '#9CA3AF'}
-          />
-          <Text
-            className={`text-xl font-bold mt-4 ${
-              isDark ? 'text-white' : 'text-gray-800'
-            }`}
-          >
-            ดูสายงานของคุณ
-          </Text>
-          <Text className="text-gray-500 text-center mt-2">
-            เข้าสู่ระบบเพื่อดูข้อมูลสายงานและทีมของคุณ
-          </Text>
-          <Pressable
-            onPress={() => router.push('/login')}
-            className="bg-primary-500 px-8 py-3 rounded-xl mt-6"
-          >
-            <Text className="text-white font-bold">เข้าสู่ระบบ</Text>
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+        <View style={styles.notLoggedIn}>
+          <Ionicons name="people-outline" size={70} color="#4B5563" />
+          <Text style={styles.notLoggedInTitle}>สายงานของคุณ</Text>
+          <Text style={styles.notLoggedInText}>เข้าสู่ระบบเพื่อดูข้อมูลทีมและเครือข่าย</Text>
+          <Pressable style={styles.loginButton} onPress={() => router.push('/login')}>
+            <Text style={styles.loginButtonText}>เข้าสู่ระบบ</Text>
           </Pressable>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
-  // แสดง Loading ขณะโหลดข้อมูล
+  // Loading
   if (isLoading && !data) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1">
-          <LoadingIndicator isDark={isDark} />
-        </SafeAreaView>
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+        <View style={styles.loadingBox}>
+          <ActivityIndicator size="large" color="#8B5CF6" />
+          <Text style={styles.loadingText}>กำลังโหลดข้อมูลทีม...</Text>
+        </View>
       </View>
     );
   }
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-      <SafeAreaView className="flex-1" edges={['top']}>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#8B5CF6"
+            colors={['#8B5CF6']}
+          />
+        }
+      >
         {/* Header */}
-        <View className="px-5 pt-4 pb-2">
-          <Text
-            className={`text-2xl font-bold ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}
-          >
-            สายงานของฉัน
-          </Text>
-          <Text className="text-gray-500 dark:text-gray-400">
-            ดูข้อมูลทีมและเครือข่ายของคุณ
-          </Text>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>สายงานของฉัน</Text>
+          <Text style={styles.headerSubtitle}>ดูข้อมูลทีมและเครือข่ายของคุณ</Text>
         </View>
 
-        {/* Offline Banner */}
-        {!isOnline && (
-          <View className="mx-5 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl px-4 py-2 mb-3">
-            <Text className="text-yellow-700 dark:text-yellow-400 text-sm">
-              📡 ออฟไลน์ - แสดงข้อมูลที่บันทึกไว้
-            </Text>
-          </View>
-        )}
+        {/* Stats Row */}
+        <View style={styles.statsRow}>
+          <StatCard
+            icon="people"
+            label="สมาชิกทั้งหมด"
+            value={`${data?.totalReferrals || 0} คน`}
+            color="#8B5CF6"
+          />
+          <StatCard
+            icon="cash-outline"
+            label="รายได้จากทีม"
+            value={formatCurrency(data?.totalEarnings || 0)}
+            color="#10B981"
+          />
+        </View>
 
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="px-4 pb-6"
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor="#3B82F6"
-            />
-          }
-        >
-          {/* Stats */}
-          <View className="flex-row mt-2 mb-4 -mx-1">
-            <StatCard
-              icon="people"
-              label="สมาชิกทั้งหมด"
-              value={`${data?.totalReferrals || 0} คน`}
-              color="#8B5CF6"
-              delay={0}
-            />
-            <StatCard
-              icon="cash"
-              label="รายได้จากทีม"
-              value={formatCurrency(data?.totalEarnings || 0)}
-              color="#10B981"
-              delay={50}
-            />
-          </View>
-
-          {/* Tree View Button */}
-          <Animated.View entering={FadeInDown.delay(100).springify()}>
-            <Pressable
-              onPress={() => router.push('/mlm-tree')}
-              className="mb-4"
+        {/* Tree View Button */}
+        <View style={styles.actionCardWrapper}>
+          <Pressable onPress={() => router.push('/mlm-tree')}>
+            <LinearGradient
+              colors={['#8B5CF6', '#6D28D9']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.actionCard}
             >
-              <LinearGradient
-                colors={['#8B5CF6', '#6D28D9']}
-                style={{
-                  borderRadius: 16,
-                  padding: 16,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                }}
-              >
-                <View className="w-12 h-12 rounded-xl bg-white/20 items-center justify-center mr-3">
-                  <Ionicons name="git-network" size={24} color="white" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-white font-bold text-base">
-                    ดูแผนผังสายงาน
-                  </Text>
-                  <Text className="text-purple-200 text-sm">
-                    ดู Tree View แบบเต็ม
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={24} color="white" />
-              </LinearGradient>
-            </Pressable>
-          </Animated.View>
+              <View style={styles.actionCardIcon}>
+                <Ionicons name="git-network-outline" size={24} color="#FFF" />
+              </View>
+              <View style={styles.actionCardInfo}>
+                <Text style={styles.actionCardTitle}>ดูแผนผังสายงาน</Text>
+                <Text style={styles.actionCardDesc}>ดู Tree View แบบเต็ม</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#FFF" />
+            </LinearGradient>
+          </Pressable>
+        </View>
 
-          {/* Referral Link */}
-          <Animated.View entering={FadeInDown.delay(150).springify()}>
-            <Pressable
-              onPress={() => router.push('/referral')}
-              className="mb-4"
+        {/* Referral Link Button */}
+        <View style={styles.actionCardWrapper}>
+          <Pressable onPress={() => router.push('/referral')}>
+            <LinearGradient
+              colors={['#EC4899', '#BE185D']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.actionCard}
             >
-              <LinearGradient
-                colors={['#EC4899', '#BE185D']}
-                style={{
-                  borderRadius: 16,
-                  padding: 16,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                }}
-              >
-                <View className="w-12 h-12 rounded-xl bg-white/20 items-center justify-center mr-3">
-                  <Ionicons name="share-social" size={24} color="white" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-white font-bold text-base">
-                    แนะนำเพื่อน
-                  </Text>
-                  <Text className="text-pink-200 text-sm">
-                    แชร์ลิงก์เพื่อเพิ่มสมาชิก
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={24} color="white" />
-              </LinearGradient>
-            </Pressable>
-          </Animated.View>
+              <View style={styles.actionCardIcon}>
+                <Ionicons name="share-social-outline" size={24} color="#FFF" />
+              </View>
+              <View style={styles.actionCardInfo}>
+                <Text style={styles.actionCardTitle}>แนะนำเพื่อน</Text>
+                <Text style={styles.actionCardDesc}>แชร์ลิงก์เพื่อเพิ่มสมาชิก</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#FFF" />
+            </LinearGradient>
+          </Pressable>
+        </View>
 
-          {/* Member List */}
-          <Text
-            className={`text-base font-bold mt-2 mb-3 ${
-              isDark ? 'text-white' : 'text-gray-800'
-            }`}
-          >
-            สมาชิกในทีม
-          </Text>
+        {/* Member List */}
+        <View style={styles.memberSection}>
+          <Text style={styles.sectionTitle}>สมาชิกในทีม</Text>
 
           {data?.referrals && data.referrals.length > 0 ? (
-            data.referrals.map((member, index) => (
-              <MemberCard key={member.id} member={member} index={index} />
+            data.referrals.map((member) => (
+              <MemberCard key={member.id} member={member} />
             ))
           ) : (
-            <View className="bg-white dark:bg-dark-50 rounded-2xl p-8 items-center border border-gray-100 dark:border-gray-700">
-              <Ionicons
-                name="people-outline"
-                size={48}
-                color={isDark ? '#4B5563' : '#9CA3AF'}
-              />
-              <Text className="text-gray-500 dark:text-gray-400 mt-3 text-center">
-                ยังไม่มีสมาชิกในทีม
-              </Text>
-              <Pressable
-                onPress={() => router.push('/referral')}
-                className="bg-primary-500 px-6 py-2.5 rounded-xl mt-4"
-              >
-                <Text className="text-white font-semibold">แนะนำเพื่อน</Text>
+            <View style={styles.emptyBox}>
+              <Ionicons name="people-outline" size={48} color="#4B5563" />
+              <Text style={styles.emptyText}>ยังไม่มีสมาชิกในทีม</Text>
+              <Pressable style={styles.emptyButton} onPress={() => router.push('/referral')}>
+                <Text style={styles.emptyButtonText}>แนะนำเพื่อน</Text>
               </Pressable>
             </View>
           )}
-        </ScrollView>
-      </SafeAreaView>
+        </View>
+      </ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0F0F23',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 56,
+    paddingBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginTop: 4,
+  },
+  notLoggedIn: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  notLoggedInTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginTop: 16,
+  },
+  notLoggedInText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  loginButton: {
+    backgroundColor: '#8B5CF6',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 24,
+  },
+  loginButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  loadingBox: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#9CA3AF',
+    marginTop: 12,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  statIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginTop: 2,
+  },
+  actionCardWrapper: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  actionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    padding: 16,
+  },
+  actionCardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  actionCardInfo: {
+    flex: 1,
+  },
+  actionCardTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  actionCardDesc: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 2,
+  },
+  memberSection: {
+    paddingHorizontal: 20,
+    marginTop: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 12,
+  },
+  memberCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  memberAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(139,92,246,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  memberAvatarText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#8B5CF6',
+  },
+  memberInfo: {
+    flex: 1,
+  },
+  memberName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  memberMeta: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  memberRight: {
+    alignItems: 'flex-end',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  memberEarnings: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#8B5CF6',
+    marginTop: 4,
+  },
+  emptyBox: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    padding: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  emptyText: {
+    color: '#9CA3AF',
+    marginTop: 12,
+  },
+  emptyButton: {
+    backgroundColor: '#8B5CF6',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginTop: 16,
+  },
+  emptyButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+});

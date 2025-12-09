@@ -1,9 +1,9 @@
 /**
- * Index Screen - Landing Page Premium Design
- * ใช้ StyleSheet + LinearGradient + Ionicons (ไม่ใช้ NativeWind)
+ * Index Screen - Landing Page Stable Version
+ * แก้ไข: crash on resume
  */
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -11,99 +11,76 @@ import {
   StyleSheet,
   StatusBar,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, Redirect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 export default function IndexScreen() {
-  const { user, isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isInitialized } = useAuthStore();
 
-  // Auto redirect ถ้า login แล้ว
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.replace('/(tabs)');
-    }
-  }, [isAuthenticated]);
+  // ถ้า login แล้ว redirect ไป tabs ทันที
+  if (isAuthenticated && isInitialized) {
+    return <Redirect href="/(tabs)" />;
+  }
 
   const goToLogin = () => router.push('/login');
   const goToRegister = () => router.push('/register');
-  const goToHome = () => router.replace('/(tabs)');
-
-  // ถ้า login แล้ว แสดง loading ระหว่าง redirect
-  if (isAuthenticated) {
-    return (
-      <View style={styles.container}>
-        <LinearGradient
-          colors={['#0F0F23', '#1A1A2E', '#16213E']}
-          style={StyleSheet.absoluteFillObject}
-        />
-        <View style={styles.loadingContainer}>
-          <Ionicons name="sparkles" size={48} color="#3B82F6" />
-          <Text style={styles.loadingText}>กำลังเข้าสู่ระบบ...</Text>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
 
-      {/* Background Gradient */}
-      <LinearGradient
-        colors={['#0F0F23', '#1A1A2E', '#16213E']}
-        style={StyleSheet.absoluteFillObject}
-      />
-
-      {/* Decorative Elements */}
-      <View style={styles.decorCircle1} />
-      <View style={styles.decorCircle2} />
-
-      {/* Content */}
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Logo Section */}
         <View style={styles.logoSection}>
-          <LinearGradient
-            colors={['#3B82F6', '#8B5CF6']}
-            style={styles.logoContainer}
-          >
-            <Ionicons name="diamond" size={48} color="#FFFFFF" />
-          </LinearGradient>
+          <View style={styles.logoBox}>
+            <LinearGradient
+              colors={['#3B82F6', '#8B5CF6']}
+              style={styles.logoGradient}
+            >
+              <Ionicons name="diamond-outline" size={44} color="#FFF" />
+            </LinearGradient>
+          </View>
           <Text style={styles.appName}>Thaiprompt</Text>
-          <Text style={styles.appSubtitle}>Affiliate</Text>
+          <Text style={styles.appSubtitle}>AFFILIATE</Text>
         </View>
 
         {/* Tagline */}
         <View style={styles.taglineSection}>
           <Text style={styles.tagline}>สร้างรายได้</Text>
           <Text style={styles.taglineHighlight}>ไม่จำกัด</Text>
-          <Text style={styles.taglineDescription}>
-            ร่วมเป็นส่วนหนึ่งของเครือข่ายพันธมิตรที่เติบโตเร็วที่สุด
+          <Text style={styles.taglineDesc}>
+            ร่วมเป็นส่วนหนึ่งของเครือข่ายพันธมิตร{'\n'}ที่เติบโตเร็วที่สุด
           </Text>
         </View>
 
         {/* Features */}
         <View style={styles.featuresSection}>
-          <View style={styles.featureItem}>
+          <View style={styles.featureRow}>
             <View style={styles.featureIcon}>
-              <Ionicons name="wallet" size={20} color="#10B981" />
+              <Ionicons name="wallet-outline" size={20} color="#10B981" />
             </View>
             <Text style={styles.featureText}>รับค่าคอมมิชชั่นทันที</Text>
           </View>
-          <View style={styles.featureItem}>
+          <View style={styles.featureRow}>
             <View style={styles.featureIcon}>
-              <Ionicons name="people" size={20} color="#8B5CF6" />
+              <Ionicons name="people-outline" size={20} color="#8B5CF6" />
             </View>
             <Text style={styles.featureText}>สร้างทีมได้ไม่จำกัด</Text>
           </View>
-          <View style={styles.featureItem}>
+          <View style={styles.featureRow}>
             <View style={styles.featureIcon}>
-              <Ionicons name="shield-checkmark" size={20} color="#3B82F6" />
+              <Ionicons name="shield-checkmark-outline" size={20} color="#3B82F6" />
             </View>
             <Text style={styles.featureText}>ปลอดภัย มั่นคง</Text>
           </View>
@@ -118,13 +95,13 @@ export default function IndexScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.primaryButton}
             >
-              <Ionicons name="log-in" size={20} color="#FFFFFF" />
+              <Ionicons name="log-in-outline" size={20} color="#FFF" />
               <Text style={styles.primaryButtonText}>เข้าสู่ระบบ</Text>
             </LinearGradient>
           </Pressable>
 
           <Pressable style={styles.secondaryButton} onPress={goToRegister}>
-            <Ionicons name="person-add" size={20} color="#FFFFFF" />
+            <Ionicons name="person-add-outline" size={20} color="#FFF" />
             <Text style={styles.secondaryButtonText}>สมัครสมาชิก</Text>
           </Pressable>
         </View>
@@ -135,7 +112,7 @@ export default function IndexScreen() {
             v{APP_INFO.VERSION} ({APP_INFO.BUILD_DATE})
           </Text>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -145,161 +122,129 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0F0F23',
   },
-  loadingContainer: {
+  scrollView: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  loadingText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    marginTop: 16,
-  },
-  decorCircle1: {
-    position: 'absolute',
-    top: -100,
-    right: -100,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-  },
-  decorCircle2: {
-    position: 'absolute',
-    bottom: -50,
-    left: -100,
-    width: 250,
-    height: 250,
-    borderRadius: 125,
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-  },
-  content: {
-    flex: 1,
+  scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: height * 0.1,
+    paddingTop: height * 0.08,
     paddingBottom: 40,
+    minHeight: height,
   },
   logoSection: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 36,
   },
-  logoContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 30,
+  logoBox: {
+    marginBottom: 16,
+  },
+  logoGradient: {
+    width: 90,
+    height: 90,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 15,
   },
   appName: {
-    fontSize: 36,
+    fontSize: 34,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
   appSubtitle: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#3B82F6',
     fontWeight: '600',
-    letterSpacing: 4,
+    letterSpacing: 6,
+    marginTop: 2,
   },
   taglineSection: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
   },
   tagline: {
-    fontSize: 28,
+    fontSize: 26,
     color: '#FFFFFF',
     fontWeight: '300',
   },
   taglineHighlight: {
-    fontSize: 40,
+    fontSize: 38,
     fontWeight: 'bold',
     color: '#3B82F6',
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  taglineDescription: {
+  taglineDesc: {
     fontSize: 14,
     color: '#9CA3AF',
     textAlign: 'center',
     lineHeight: 22,
   },
   featuresSection: {
-    marginBottom: 40,
-    gap: 16,
+    marginBottom: 36,
   },
-  featureItem: {
+  featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 14,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   featureIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 14,
   },
   featureText: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#FFFFFF',
     fontWeight: '500',
   },
   buttonSection: {
-    gap: 12,
     marginTop: 'auto',
   },
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
-    borderRadius: 16,
-    gap: 10,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 10,
+    paddingVertical: 16,
+    borderRadius: 14,
+    marginBottom: 12,
   },
   primaryButtonText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    marginLeft: 8,
   },
   secondaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
-    borderRadius: 16,
+    paddingVertical: 16,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    gap: 10,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   secondaryButtonText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: '#FFFFFF',
+    marginLeft: 8,
   },
   footer: {
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 20,
   },
   footerText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6B7280',
   },
 });
