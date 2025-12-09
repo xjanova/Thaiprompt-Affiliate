@@ -1,9 +1,6 @@
 /**
- * Rider Screen - หน้าสมัครและจัดการไรเดอร์
- * รองรับการขออนุญาตตามมาตรฐาน Google:
- * - GPS/Location - แชร์ตำแหน่งเฉพาะเมื่อรับงาน
- * - Camera - ถ่ายรูปเอกสารและหลักฐานการส่ง
- * - Microphone - สำหรับการติดต่อลูกค้า
+ * Rider Screen - Premium Stable Version
+ * ใช้ StyleSheet แทน NativeWind
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -16,23 +13,20 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
-  Platform,
+  StyleSheet,
+  StatusBar,
   Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores/authStore';
-import { useAppStore } from '@/stores/appStore';
 import {
   getRiderStatus,
   registerRider,
-  uploadRiderDocument,
   updateRiderPermissions,
   setRiderAvailability,
   updateRiderLocation,
@@ -45,153 +39,82 @@ import {
   getCurrentLocation,
 } from '@/services/location';
 
-// =====================================================
-// Permission Request Modal Component
-// =====================================================
-
-interface PermissionModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onGrant: () => void;
-  permissionType: 'location' | 'camera' | 'microphone';
-  isLoading?: boolean;
-}
-
+// Permission Modal
 const PermissionModal = ({
   visible,
   onClose,
   onGrant,
   permissionType,
   isLoading,
-}: PermissionModalProps) => {
-  const permissionInfo = {
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onGrant: () => void;
+  permissionType: 'location' | 'camera' | 'microphone';
+  isLoading?: boolean;
+}) => {
+  const info = {
     location: {
       icon: 'location',
       title: 'การเข้าถึงตำแหน่ง',
-      description:
-        'แอปจะขอเข้าถึงตำแหน่งของคุณเพื่อ:\n\n• แสดงตำแหน่งของคุณให้ลูกค้าเห็นเมื่อคุณรับงาน\n• ช่วยค้นหางานที่อยู่ใกล้คุณ\n• คำนวณระยะทางและเวลาในการส่ง',
-      warning:
-        '⚠️ ตำแหน่งจะถูกแชร์เฉพาะเมื่อคุณรับงานและกำลังจัดส่งเท่านั้น ไม่แชร์ตลอดเวลา',
+      description: 'แอปจะขอเข้าถึงตำแหน่งเพื่อแสดงให้ลูกค้าเห็นเมื่อรับงาน',
       color: '#3B82F6',
     },
     camera: {
       icon: 'camera',
       title: 'การเข้าถึงกล้อง',
-      description:
-        'แอปจะขอเข้าถึงกล้องของคุณเพื่อ:\n\n• ถ่ายรูปบัตรประชาชนสำหรับยืนยันตัวตน\n• ถ่ายรูปใบขับขี่และทะเบียนรถ\n• ถ่ายรูปหลักฐานการรับ-ส่งของ',
-      warning: '📷 รูปภาพจะใช้เฉพาะในการยืนยันตัวตนและบันทึกหลักฐานการทำงาน',
+      description: 'แอปจะขอเข้าถึงกล้องเพื่อถ่ายรูปเอกสารและหลักฐาน',
       color: '#10B981',
     },
     microphone: {
       icon: 'mic',
       title: 'การเข้าถึงไมโครโฟน',
-      description:
-        'แอปจะขอเข้าถึงไมโครโฟนของคุณเพื่อ:\n\n• โทรหาลูกค้าผ่านแอป\n• บันทึกเสียงสำหรับรายงานปัญหา\n• การสื่อสารกับทีมสนับสนุน',
-      warning: '🎤 ไมโครโฟนจะทำงานเฉพาะเมื่อคุณใช้ฟีเจอร์โทรหรือบันทึกเสียง',
+      description: 'แอปจะขอเข้าถึงไมโครโฟนเพื่อโทรหาลูกค้า',
       color: '#8B5CF6',
     },
-  };
-
-  const info = permissionInfo[permissionType];
+  }[permissionType];
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View className="flex-1 bg-black/60 justify-center items-center px-6">
-        <Animated.View
-          entering={FadeInUp.springify()}
-          className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md overflow-hidden"
-        >
-          {/* Header */}
-          <LinearGradient
-            colors={[info.color, info.color + 'CC']}
-            style={{ padding: 24, alignItems: 'center' }}
-          >
-            <View className="w-20 h-20 bg-white/20 rounded-full items-center justify-center mb-4">
-              <Ionicons
-                name={info.icon as keyof typeof Ionicons.glyphMap}
-                size={40}
-                color="white"
-              />
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <LinearGradient colors={[info.color, info.color + 'CC']} style={styles.modalHeader}>
+            <View style={styles.modalIconBox}>
+              <Ionicons name={info.icon as any} size={32} color="#FFF" />
             </View>
-            <Text className="text-white text-xl font-bold text-center">
-              {info.title}
-            </Text>
+            <Text style={styles.modalTitle}>{info.title}</Text>
           </LinearGradient>
 
-          {/* Content */}
-          <View className="p-6">
-            <Text className="text-gray-700 dark:text-gray-300 text-base leading-6">
-              {info.description}
-            </Text>
-
-            <View className="mt-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-xl p-4">
-              <Text className="text-yellow-800 dark:text-yellow-200 text-sm">
-                {info.warning}
-              </Text>
-            </View>
+          <View style={styles.modalBody}>
+            <Text style={styles.modalDesc}>{info.description}</Text>
           </View>
 
-          {/* Actions */}
-          <View className="flex-row p-4 border-t border-gray-200 dark:border-gray-700">
-            <Pressable
-              onPress={onClose}
-              className="flex-1 py-3 mr-2 bg-gray-100 dark:bg-gray-700 rounded-xl"
-            >
-              <Text className="text-gray-700 dark:text-gray-300 text-center font-medium">
-                ภายหลัง
-              </Text>
+          <View style={styles.modalActions}>
+            <Pressable style={styles.modalCancelBtn} onPress={onClose}>
+              <Text style={styles.modalCancelText}>ภายหลัง</Text>
             </Pressable>
             <Pressable
+              style={[styles.modalGrantBtn, { backgroundColor: info.color }]}
               onPress={onGrant}
               disabled={isLoading}
-              className="flex-1 py-3 ml-2 rounded-xl"
-              style={{ backgroundColor: info.color }}
             >
               {isLoading ? (
-                <ActivityIndicator color="white" />
+                <ActivityIndicator color="#FFF" />
               ) : (
-                <Text className="text-white text-center font-bold">อนุญาต</Text>
+                <Text style={styles.modalGrantText}>อนุญาต</Text>
               )}
             </Pressable>
           </View>
-        </Animated.View>
+        </View>
       </View>
     </Modal>
   );
 };
 
-// =====================================================
-// Main Rider Screen
-// =====================================================
-
 export default function RiderScreen() {
   const { isAuthenticated, user } = useAuthStore();
-  const { resolvedTheme } = useAppStore();
-  const isDark = resolvedTheme === 'dark';
 
-  // Rider state
-  const [riderData, setRiderData] = useState<{
-    isRider: boolean;
-    riderId?: number;
-    status?: string;
-    statusText?: string;
-    availability?: string;
-    availabilityText?: string;
-    permissions?: {
-      gps: boolean;
-      camera: boolean;
-      microphone: boolean;
-      notification: boolean;
-      allGranted: boolean;
-    };
-    rating?: number;
-    totalJobs?: number;
-    completedJobs?: number;
-    totalEarnings?: number;
-    rejectionReason?: string;
-  } | null>(null);
-
-  // Form state
+  const [riderData, setRiderData] = useState<any>(null);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [formData, setFormData] = useState({
     full_name: user?.name || '',
@@ -200,32 +123,21 @@ export default function RiderScreen() {
     vehicle_plate: '',
   });
 
-  // Permission modal state
   const [permissionModal, setPermissionModal] = useState<{
     visible: boolean;
     type: 'location' | 'camera' | 'microphone';
-  }>({
-    visible: false,
-    type: 'location',
-  });
+  }>({ visible: false, type: 'location' });
 
-  // Loading states
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGrantingPermission, setIsGrantingPermission] = useState(false);
   const [isTogglingAvailability, setIsTogglingAvailability] = useState(false);
-
-  // Location sharing state
   const [isLocationSharing, setIsLocationSharing] = useState(false);
   const [isTogglingLocationShare, setIsTogglingLocationShare] = useState(false);
 
-  // =====================================================
   // Load Rider Status
-  // =====================================================
-
   const loadRiderStatus = useCallback(async () => {
     if (!isAuthenticated) return;
-
     setIsLoading(true);
     try {
       const response = await getRiderStatus();
@@ -241,53 +153,27 @@ export default function RiderScreen() {
 
   useEffect(() => {
     loadRiderStatus();
+    setIsLocationSharing(isTrackingLocation());
   }, [loadRiderStatus]);
 
-  // =====================================================
   // Permission Handlers
-  // =====================================================
-
   const requestLocationPermission = async () => {
     setIsGrantingPermission(true);
     try {
-      const { status: foregroundStatus } =
-        await Location.requestForegroundPermissionsAsync();
-
-      if (foregroundStatus === 'granted') {
-        // Request background permission for tracking while delivering
-        const { status: backgroundStatus } =
-          await Location.requestBackgroundPermissionsAsync();
-
-        const granted = backgroundStatus === 'granted';
-
-        // Save to server
-        await updateRiderPermissions({ gps: granted });
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const { status: bg } = await Location.requestBackgroundPermissionsAsync();
+        await updateRiderPermissions({ gps: bg === 'granted' });
         await loadRiderStatus();
-
-        if (granted) {
-          Alert.alert('สำเร็จ', 'อนุญาตการเข้าถึงตำแหน่งเรียบร้อย');
-        } else {
-          Alert.alert(
-            'คำเตือน',
-            'คุณอนุญาตเฉพาะการเข้าถึงตำแหน่งขณะใช้งานแอป การติดตามตำแหน่งขณะจัดส่งอาจไม่ทำงานเต็มประสิทธิภาพ'
-          );
-        }
+        Alert.alert('สำเร็จ', 'อนุญาตการเข้าถึงตำแหน่งเรียบร้อย');
       } else {
-        Alert.alert(
-          'ไม่ได้รับอนุญาต',
-          'คุณต้องอนุญาตการเข้าถึงตำแหน่งเพื่อเป็นไรเดอร์',
-          [
-            { text: 'ยกเลิก', style: 'cancel' },
-            {
-              text: 'ไปตั้งค่า',
-              onPress: () => Linking.openSettings(),
-            },
-          ]
-        );
+        Alert.alert('ไม่ได้รับอนุญาต', 'คุณต้องอนุญาตการเข้าถึงตำแหน่ง', [
+          { text: 'ยกเลิก', style: 'cancel' },
+          { text: 'ไปตั้งค่า', onPress: () => Linking.openSettings() },
+        ]);
       }
     } catch (error) {
-      console.error('Location permission error:', error);
-      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์การเข้าถึงตำแหน่งได้');
+      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์ได้');
     } finally {
       setIsGrantingPermission(false);
       setPermissionModal({ visible: false, type: 'location' });
@@ -298,29 +184,11 @@ export default function RiderScreen() {
     setIsGrantingPermission(true);
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      const granted = status === 'granted';
-
-      await updateRiderPermissions({ camera: granted });
+      await updateRiderPermissions({ camera: status === 'granted' });
       await loadRiderStatus();
-
-      if (granted) {
-        Alert.alert('สำเร็จ', 'อนุญาตการเข้าถึงกล้องเรียบร้อย');
-      } else {
-        Alert.alert(
-          'ไม่ได้รับอนุญาต',
-          'คุณต้องอนุญาตการเข้าถึงกล้องเพื่อถ่ายรูปเอกสารและหลักฐาน',
-          [
-            { text: 'ยกเลิก', style: 'cancel' },
-            {
-              text: 'ไปตั้งค่า',
-              onPress: () => Linking.openSettings(),
-            },
-          ]
-        );
-      }
+      if (status === 'granted') Alert.alert('สำเร็จ', 'อนุญาตการเข้าถึงกล้องเรียบร้อย');
     } catch (error) {
-      console.error('Camera permission error:', error);
-      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์การเข้าถึงกล้องได้');
+      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์ได้');
     } finally {
       setIsGrantingPermission(false);
       setPermissionModal({ visible: false, type: 'camera' });
@@ -331,29 +199,11 @@ export default function RiderScreen() {
     setIsGrantingPermission(true);
     try {
       const { status } = await Audio.requestPermissionsAsync();
-      const granted = status === 'granted';
-
-      await updateRiderPermissions({ microphone: granted });
+      await updateRiderPermissions({ microphone: status === 'granted' });
       await loadRiderStatus();
-
-      if (granted) {
-        Alert.alert('สำเร็จ', 'อนุญาตการเข้าถึงไมโครโฟนเรียบร้อย');
-      } else {
-        Alert.alert(
-          'ไม่ได้รับอนุญาต',
-          'คุณต้องอนุญาตการเข้าถึงไมโครโฟนเพื่อโทรหาลูกค้า',
-          [
-            { text: 'ยกเลิก', style: 'cancel' },
-            {
-              text: 'ไปตั้งค่า',
-              onPress: () => Linking.openSettings(),
-            },
-          ]
-        );
-      }
+      if (status === 'granted') Alert.alert('สำเร็จ', 'อนุญาตการเข้าถึงไมโครโฟนเรียบร้อย');
     } catch (error) {
-      console.error('Microphone permission error:', error);
-      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์การเข้าถึงไมโครโฟนได้');
+      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์ได้');
     } finally {
       setIsGrantingPermission(false);
       setPermissionModal({ visible: false, type: 'microphone' });
@@ -362,32 +212,18 @@ export default function RiderScreen() {
 
   const handleGrantPermission = async () => {
     switch (permissionModal.type) {
-      case 'location':
-        await requestLocationPermission();
-        break;
-      case 'camera':
-        await requestCameraPermission();
-        break;
-      case 'microphone':
-        await requestMicrophonePermission();
-        break;
+      case 'location': await requestLocationPermission(); break;
+      case 'camera': await requestCameraPermission(); break;
+      case 'microphone': await requestMicrophonePermission(); break;
     }
   };
 
-  // =====================================================
-  // Registration Handler
-  // =====================================================
-
+  // Register Handler
   const handleRegister = async () => {
-    if (!formData.full_name.trim()) {
-      Alert.alert('ข้อผิดพลาด', 'กรุณากรอกชื่อ-นามสกุล');
+    if (!formData.full_name.trim() || !formData.phone.trim()) {
+      Alert.alert('ข้อผิดพลาด', 'กรุณากรอกข้อมูลให้ครบ');
       return;
     }
-    if (!formData.phone.trim()) {
-      Alert.alert('ข้อผิดพลาด', 'กรุณากรอกเบอร์โทรศัพท์');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const response = await registerRider(formData);
@@ -396,842 +232,374 @@ export default function RiderScreen() {
         setShowRegisterForm(false);
         await loadRiderStatus();
       } else {
-        Alert.alert('ข้อผิดพลาด', response.message || 'สมัครไรเดอร์ไม่สำเร็จ');
+        Alert.alert('ข้อผิดพลาด', response.message || 'สมัครไม่สำเร็จ');
       }
     } catch (error) {
-      console.error('Register rider error:', error);
       Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาด กรุณาลองใหม่');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // =====================================================
   // Availability Toggle
-  // =====================================================
-
   const toggleAvailability = async () => {
     if (!riderData?.permissions?.gps) {
-      Alert.alert(
-        'ต้องอนุญาตตำแหน่งก่อน',
-        'คุณต้องอนุญาตการเข้าถึงตำแหน่งก่อนเปิดรับงาน',
-        [
-          { text: 'ยกเลิก', style: 'cancel' },
-          {
-            text: 'อนุญาต',
-            onPress: () =>
-              setPermissionModal({ visible: true, type: 'location' }),
-          },
-        ]
-      );
+      Alert.alert('ต้องอนุญาตตำแหน่งก่อน', 'คุณต้องอนุญาตการเข้าถึงตำแหน่งก่อนเปิดรับงาน', [
+        { text: 'ยกเลิก', style: 'cancel' },
+        { text: 'อนุญาต', onPress: () => setPermissionModal({ visible: true, type: 'location' }) },
+      ]);
       return;
     }
-
     setIsTogglingAvailability(true);
     try {
-      const newAvailability =
-        riderData?.availability === 'online' ? 'offline' : 'online';
-      const response = await setRiderAvailability(newAvailability);
-
+      const newStatus = riderData?.availability === 'online' ? 'offline' : 'online';
+      const response = await setRiderAvailability(newStatus);
       if (response.success) {
         await loadRiderStatus();
-
-        if (newAvailability === 'online') {
-          Alert.alert(
-            '🟢 เปิดรับงานแล้ว',
-            'ระบบจะแจ้งเตือนเมื่อมีงานใกล้คุณ\n\n⚠️ ตำแหน่งของคุณจะถูกแชร์เมื่อคุณรับงานเท่านั้น'
-          );
-        }
+        if (newStatus === 'online') Alert.alert('🟢 เปิดรับงานแล้ว', 'ระบบจะแจ้งเตือนเมื่อมีงานใกล้คุณ');
       } else {
         Alert.alert('ข้อผิดพลาด', response.message || 'ไม่สามารถเปลี่ยนสถานะได้');
       }
     } catch (error) {
-      console.error('Toggle availability error:', error);
       Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาด กรุณาลองใหม่');
     } finally {
       setIsTogglingAvailability(false);
     }
   };
 
-  // =====================================================
   // Location Sharing Toggle
-  // =====================================================
-
-  // Check tracking status on mount
-  useEffect(() => {
-    setIsLocationSharing(isTrackingLocation());
-  }, []);
-
   const toggleLocationSharing = async () => {
-    // ตรวจสอบสิทธิ์ GPS ก่อน
     if (!riderData?.permissions?.gps) {
-      Alert.alert(
-        'ต้องอนุญาตตำแหน่งก่อน',
-        'คุณต้องอนุญาตการเข้าถึงตำแหน่งก่อนแชร์ตำแหน่ง',
-        [
-          { text: 'ยกเลิก', style: 'cancel' },
-          {
-            text: 'อนุญาต',
-            onPress: () =>
-              setPermissionModal({ visible: true, type: 'location' }),
-          },
-        ]
-      );
+      Alert.alert('ต้องอนุญาตตำแหน่งก่อน', 'กรุณาอนุญาตการเข้าถึงตำแหน่ง', [
+        { text: 'ยกเลิก', style: 'cancel' },
+        { text: 'อนุญาต', onPress: () => setPermissionModal({ visible: true, type: 'location' }) },
+      ]);
       return;
     }
-
     setIsTogglingLocationShare(true);
     try {
       if (isLocationSharing) {
-        // หยุดแชร์ตำแหน่ง
         await stopTracking();
         setIsLocationSharing(false);
-        Alert.alert('หยุดแชร์ตำแหน่งแล้ว', 'ตำแหน่งของคุณจะไม่ถูกส่งไปยังระบบ');
+        Alert.alert('หยุดแชร์ตำแหน่งแล้ว');
       } else {
-        // เริ่มแชร์ตำแหน่ง
-        const jobId = 0; // ใช้ 0 สำหรับการแชร์ตำแหน่งแบบ manual
-        const success = await startTracking(jobId);
-
+        const success = await startTracking(0);
         if (success) {
           setIsLocationSharing(true);
-
-          // ส่งตำแหน่งปัจจุบันไป server ทันที
           const location = await getCurrentLocation();
           if (location) {
-            await updateRiderLocation({
-              latitude: location.latitude,
-              longitude: location.longitude,
-              accuracy: location.accuracy,
-            });
+            await updateRiderLocation({ latitude: location.latitude, longitude: location.longitude, accuracy: location.accuracy });
           }
-
-          Alert.alert(
-            '🟢 เริ่มแชร์ตำแหน่งแล้ว',
-            'ตำแหน่งของคุณกำลังถูกส่งไปยังระบบ\n\nแอดมินสามารถเห็นตำแหน่งของคุณในหน้า GPS Monitor'
-          );
+          Alert.alert('🟢 เริ่มแชร์ตำแหน่งแล้ว');
         } else {
-          Alert.alert('ไม่สามารถเริ่มแชร์ตำแหน่งได้', 'กรุณาตรวจสอบการอนุญาตตำแหน่ง');
+          Alert.alert('ไม่สามารถเริ่มแชร์ตำแหน่งได้');
         }
       }
     } catch (error) {
-      console.error('Toggle location sharing error:', error);
       Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาด กรุณาลองใหม่');
     } finally {
       setIsTogglingLocationShare(false);
     }
   };
 
-  // =====================================================
-  // Render: Not Authenticated
-  // =====================================================
-
+  // Not Authenticated
   if (!isAuthenticated) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1 justify-center items-center px-6">
-          <Ionicons
-            name="bicycle"
-            size={80}
-            color={isDark ? '#4B5563' : '#9CA3AF'}
-          />
-          <Text
-            className={`text-xl font-bold mt-4 ${isDark ? 'text-white' : 'text-gray-800'}`}
-          >
-            สมัครเป็นไรเดอร์
-          </Text>
-          <Text className="text-gray-500 text-center mt-2">
-            เข้าสู่ระบบเพื่อสมัครเป็นไรเดอร์และรับงาน
-          </Text>
-          <Pressable
-            onPress={() => router.push('/login')}
-            className="bg-primary-500 px-8 py-3 rounded-xl mt-6"
-          >
-            <Text className="text-white font-bold">เข้าสู่ระบบ</Text>
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+        <View style={styles.centerBox}>
+          <Ionicons name="bicycle" size={80} color="#4B5563" />
+          <Text style={styles.centerTitle}>สมัครเป็นไรเดอร์</Text>
+          <Text style={styles.centerText}>เข้าสู่ระบบเพื่อสมัครเป็นไรเดอร์และรับงาน</Text>
+          <Pressable style={styles.primaryButton} onPress={() => router.push('/login')}>
+            <Text style={styles.primaryButtonText}>เข้าสู่ระบบ</Text>
           </Pressable>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
-  // =====================================================
-  // Render: Loading
-  // =====================================================
-
+  // Loading
   if (isLoading) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1 justify-center items-center">
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+        <View style={styles.centerBox}>
           <ActivityIndicator size="large" color="#3B82F6" />
-          <Text className="text-gray-500 mt-4">กำลังโหลด...</Text>
-        </SafeAreaView>
+          <Text style={styles.loadingText}>กำลังโหลด...</Text>
+        </View>
       </View>
     );
   }
 
-  // =====================================================
-  // Render: Not a Rider - Show Registration
-  // =====================================================
-
+  // Not a Rider - Show Registration
   if (!riderData?.isRider) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1">
-          <ScrollView className="flex-1 px-5 pt-4">
-            {/* Header */}
-            <View className="flex-row items-center mb-6">
-              <Pressable onPress={() => router.back()} className="mr-4">
-                <Ionicons
-                  name="arrow-back"
-                  size={24}
-                  color={isDark ? '#fff' : '#000'}
-                />
-              </Pressable>
-              <Text
-                className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}
-              >
-                สมัครเป็นไรเดอร์
-              </Text>
-            </View>
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          {/* Header */}
+          <View style={styles.headerRow}>
+            <Pressable style={styles.backBtn} onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color="#FFF" />
+            </Pressable>
+            <Text style={styles.headerTitle}>สมัครเป็นไรเดอร์</Text>
+            <View style={{ width: 44 }} />
+          </View>
 
-            {/* Benefits */}
-            <Animated.View entering={FadeInDown.delay(100).springify()}>
-              <LinearGradient
-                colors={['#06B6D4', '#0891B2']}
-                style={{ borderRadius: 16, padding: 24, marginBottom: 24 }}
-              >
-                <Text className="text-white text-xl font-bold mb-4">
-                  🚴 ทำไมต้องเป็นไรเดอร์กับเรา?
-                </Text>
-                <View className="space-y-3">
-                  <View className="flex-row items-center">
-                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                    <Text className="text-white ml-2">รายได้ดี คิดค่าบริการยุติธรรม</Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                    <Text className="text-white ml-2">เวลาทำงานยืดหยุ่น</Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                    <Text className="text-white ml-2">ถอนเงินได้ทันที</Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                    <Text className="text-white ml-2">ประกันอุบัติเหตุ</Text>
-                  </View>
-                </View>
-              </LinearGradient>
-            </Animated.View>
-
-            {/* Permission Notice */}
-            <Animated.View
-              entering={FadeInDown.delay(200).springify()}
-              className="bg-yellow-50 dark:bg-yellow-900/30 rounded-xl p-4 mb-6"
-            >
-              <Text className="text-yellow-800 dark:text-yellow-200 font-bold mb-2">
-                ⚠️ แอปจะขอสิทธิ์ดังนี้:
-              </Text>
-              <View className="space-y-2">
-                <Text className="text-yellow-700 dark:text-yellow-300 text-sm">
-                  📍 ตำแหน่ง - แชร์เฉพาะเมื่อรับงานเพื่อให้ลูกค้าติดตามได้
-                </Text>
-                <Text className="text-yellow-700 dark:text-yellow-300 text-sm">
-                  📷 กล้อง - ถ่ายรูปเอกสารและหลักฐานการส่ง
-                </Text>
-                <Text className="text-yellow-700 dark:text-yellow-300 text-sm">
-                  🎤 ไมโครโฟน - โทรหาลูกค้าผ่านแอป
-                </Text>
+          {/* Benefits Card */}
+          <LinearGradient colors={['#06B6D4', '#0891B2']} style={styles.benefitsCard}>
+            <Text style={styles.benefitsTitle}>🚴 ทำไมต้องเป็นไรเดอร์กับเรา?</Text>
+            {['รายได้ดี คิดค่าบริการยุติธรรม', 'เวลาทำงานยืดหยุ่น', 'ถอนเงินได้ทันที', 'ประกันอุบัติเหตุ'].map((item, i) => (
+              <View key={i} style={styles.benefitItem}>
+                <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                <Text style={styles.benefitText}>{item}</Text>
               </View>
-            </Animated.View>
+            ))}
+          </LinearGradient>
 
-            {/* Register Form */}
-            {showRegisterForm ? (
-              <Animated.View
-                entering={FadeInDown.springify()}
-                className="bg-white dark:bg-gray-800 rounded-2xl p-5 mb-6"
+          {/* Permission Notice */}
+          <View style={styles.warningCard}>
+            <Text style={styles.warningTitle}>⚠️ แอปจะขอสิทธิ์ดังนี้:</Text>
+            <Text style={styles.warningItem}>📍 ตำแหน่ง - แชร์เฉพาะเมื่อรับงาน</Text>
+            <Text style={styles.warningItem}>📷 กล้อง - ถ่ายรูปเอกสารและหลักฐาน</Text>
+            <Text style={styles.warningItem}>🎤 ไมโครโฟน - โทรหาลูกค้า</Text>
+          </View>
+
+          {/* Register Form */}
+          {showRegisterForm ? (
+            <View style={styles.formCard}>
+              <Text style={styles.formTitle}>กรอกข้อมูลสมัคร</Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>ชื่อ-นามสกุล *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="ชื่อจริง นามสกุล"
+                  placeholderTextColor="#6B7280"
+                  value={formData.full_name}
+                  onChangeText={(t) => setFormData({ ...formData, full_name: t })}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>เบอร์โทรศัพท์ *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="08X-XXX-XXXX"
+                  placeholderTextColor="#6B7280"
+                  value={formData.phone}
+                  onChangeText={(t) => setFormData({ ...formData, phone: t })}
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>ประเภทยานพาหนะ *</Text>
+                <View style={styles.vehicleRow}>
+                  {[
+                    { value: 'motorcycle', label: '🏍️ มอเตอร์ไซค์' },
+                    { value: 'car', label: '🚗 รถยนต์' },
+                    { value: 'bicycle', label: '🚲 จักรยาน' },
+                    { value: 'walk', label: '🚶 เดินเท้า' },
+                  ].map((opt) => (
+                    <Pressable
+                      key={opt.value}
+                      style={[styles.vehicleBtn, formData.vehicle_type === opt.value && styles.vehicleBtnActive]}
+                      onPress={() => setFormData({ ...formData, vehicle_type: opt.value as any })}
+                    >
+                      <Text style={[styles.vehicleBtnText, formData.vehicle_type === opt.value && styles.vehicleBtnTextActive]}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              {formData.vehicle_type !== 'walk' && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>ทะเบียนรถ</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="กข 1234"
+                    placeholderTextColor="#6B7280"
+                    value={formData.vehicle_plate}
+                    onChangeText={(t) => setFormData({ ...formData, vehicle_plate: t })}
+                  />
+                </View>
+              )}
+
+              <Pressable
+                style={[styles.submitBtn, isSubmitting && styles.buttonDisabled]}
+                onPress={handleRegister}
+                disabled={isSubmitting}
               >
-                <Text
-                  className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-800'}`}
-                >
-                  กรอกข้อมูลสมัคร
-                </Text>
-
-                {/* Full Name */}
-                <View className="mb-4">
-                  <Text className="text-gray-600 dark:text-gray-400 mb-1">
-                    ชื่อ-นามสกุล *
-                  </Text>
-                  <TextInput
-                    value={formData.full_name}
-                    onChangeText={(text) =>
-                      setFormData({ ...formData, full_name: text })
-                    }
-                    placeholder="ชื่อจริง นามสกุล"
-                    placeholderTextColor="#9CA3AF"
-                    className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white"
-                  />
-                </View>
-
-                {/* Phone */}
-                <View className="mb-4">
-                  <Text className="text-gray-600 dark:text-gray-400 mb-1">
-                    เบอร์โทรศัพท์ *
-                  </Text>
-                  <TextInput
-                    value={formData.phone}
-                    onChangeText={(text) =>
-                      setFormData({ ...formData, phone: text })
-                    }
-                    placeholder="08X-XXX-XXXX"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="phone-pad"
-                    className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white"
-                  />
-                </View>
-
-                {/* Vehicle Type */}
-                <View className="mb-4">
-                  <Text className="text-gray-600 dark:text-gray-400 mb-2">
-                    ประเภทยานพาหนะ *
-                  </Text>
-                  <View className="flex-row flex-wrap">
-                    {[
-                      { value: 'motorcycle', label: '🏍️ มอเตอร์ไซค์' },
-                      { value: 'car', label: '🚗 รถยนต์' },
-                      { value: 'bicycle', label: '🚲 จักรยาน' },
-                      { value: 'walk', label: '🚶 เดินเท้า' },
-                    ].map((option) => (
-                      <Pressable
-                        key={option.value}
-                        onPress={() =>
-                          setFormData({
-                            ...formData,
-                            vehicle_type: option.value as typeof formData.vehicle_type,
-                          })
-                        }
-                        className={`mr-2 mb-2 px-4 py-2 rounded-xl ${
-                          formData.vehicle_type === option.value
-                            ? 'bg-primary-500'
-                            : 'bg-gray-100 dark:bg-gray-700'
-                        }`}
-                      >
-                        <Text
-                          className={
-                            formData.vehicle_type === option.value
-                              ? 'text-white font-medium'
-                              : 'text-gray-700 dark:text-gray-300'
-                          }
-                        >
-                          {option.label}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-
-                {/* Vehicle Plate */}
-                {formData.vehicle_type !== 'walk' && (
-                  <View className="mb-6">
-                    <Text className="text-gray-600 dark:text-gray-400 mb-1">
-                      ทะเบียนรถ
-                    </Text>
-                    <TextInput
-                      value={formData.vehicle_plate}
-                      onChangeText={(text) =>
-                        setFormData({ ...formData, vehicle_plate: text })
-                      }
-                      placeholder="กข 1234"
-                      placeholderTextColor="#9CA3AF"
-                      className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-white"
-                    />
-                  </View>
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={styles.submitBtnText}>สมัครเป็นไรเดอร์</Text>
                 )}
-
-                {/* Submit Button */}
-                <Pressable
-                  onPress={handleRegister}
-                  disabled={isSubmitting}
-                  className={`bg-primary-500 rounded-xl py-4 ${isSubmitting ? 'opacity-60' : ''}`}
-                >
-                  {isSubmitting ? (
-                    <ActivityIndicator color="white" />
-                  ) : (
-                    <Text className="text-white text-center font-bold text-lg">
-                      สมัครเป็นไรเดอร์
-                    </Text>
-                  )}
-                </Pressable>
-              </Animated.View>
-            ) : (
-              <Animated.View entering={FadeInDown.delay(300).springify()}>
-                <Pressable
-                  onPress={() => setShowRegisterForm(true)}
-                  className="bg-primary-500 rounded-xl py-4"
-                >
-                  <Text className="text-white text-center font-bold text-lg">
-                    สมัครเลย
-                  </Text>
-                </Pressable>
-              </Animated.View>
-            )}
-
-            <View className="h-10" />
-          </ScrollView>
-        </SafeAreaView>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable style={styles.primaryButtonLarge} onPress={() => setShowRegisterForm(true)}>
+              <Text style={styles.primaryButtonText}>สมัครเลย</Text>
+            </Pressable>
+          )}
+        </ScrollView>
       </View>
     );
   }
 
-  // =====================================================
-  // Render: Rider Dashboard
-  // =====================================================
-
+  // Rider Dashboard
   const isApproved = riderData.status === 'approved';
   const isPending = riderData.status === 'pending';
   const isRejected = riderData.status === 'rejected';
   const isOnline = riderData.availability === 'online';
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-      <SafeAreaView className="flex-1">
-        <ScrollView className="flex-1 px-5 pt-4">
-          {/* Header */}
-          <View className="flex-row items-center justify-between mb-6">
-            <View className="flex-row items-center">
-              <Pressable onPress={() => router.back()} className="mr-4">
-                <Ionicons
-                  name="arrow-back"
-                  size={24}
-                  color={isDark ? '#fff' : '#000'}
-                />
-              </Pressable>
-              <Text
-                className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}
-              >
-                ไรเดอร์
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
+        <View style={styles.headerRow}>
+          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#FFF" />
+          </Pressable>
+          <Text style={styles.headerTitle}>ไรเดอร์</Text>
+          {isApproved && (
+            <View style={[styles.statusBadge, isOnline && styles.statusBadgeOnline]}>
+              <Text style={[styles.statusBadgeText, isOnline && styles.statusBadgeTextOnline]}>
+                {isOnline ? '🟢 ออนไลน์' : '⚫ ออฟไลน์'}
               </Text>
             </View>
-            {isApproved && (
-              <View
-                className={`px-3 py-1 rounded-full ${isOnline ? 'bg-green-100' : 'bg-gray-100'}`}
-              >
-                <Text
-                  className={`text-sm font-medium ${isOnline ? 'text-green-600' : 'text-gray-600'}`}
-                >
-                  {isOnline ? '🟢 ออนไลน์' : '⚫ ออฟไลน์'}
-                </Text>
-              </View>
-            )}
+          )}
+        </View>
+
+        {/* Status Card */}
+        <LinearGradient
+          colors={isPending ? ['#F59E0B', '#D97706'] : isRejected ? ['#EF4444', '#DC2626'] : ['#10B981', '#059669']}
+          style={styles.statusCard}
+        >
+          <View style={styles.statusRow}>
+            <Ionicons name={isPending ? 'time' : isRejected ? 'close-circle' : 'checkmark-circle'} size={32} color="#FFF" />
+            <View style={styles.statusInfo}>
+              <Text style={styles.statusTitle}>{riderData.statusText}</Text>
+              <Text style={styles.statusSubtitle}>รหัสไรเดอร์: #{riderData.riderId}</Text>
+            </View>
           </View>
 
-          {/* Status Card */}
-          <Animated.View entering={FadeInDown.delay(100).springify()}>
-            <LinearGradient
-              colors={
-                isPending
-                  ? ['#F59E0B', '#D97706']
-                  : isRejected
-                    ? ['#EF4444', '#DC2626']
-                    : ['#10B981', '#059669']
-              }
-              style={{ borderRadius: 16, padding: 24, marginBottom: 24 }}
-            >
-              <View className="flex-row items-center mb-4">
-                <Ionicons
-                  name={
-                    isPending
-                      ? 'time'
-                      : isRejected
-                        ? 'close-circle'
-                        : 'checkmark-circle'
-                  }
-                  size={32}
-                  color="white"
-                />
-                <View className="ml-3">
-                  <Text className="text-white text-lg font-bold">
-                    {riderData.statusText}
-                  </Text>
-                  <Text className="text-white/80 text-sm">
-                    รหัสไรเดอร์: #{riderData.riderId}
-                  </Text>
-                </View>
-              </View>
-
-              {isPending && (
-                <View>
-                  <Text className="text-white/90 mb-3">
-                    เอกสารของคุณกำลังได้รับการตรวจสอบ โดยปกติใช้เวลา 1-3 วันทำการ
-                  </Text>
-                  <Pressable
-                    onPress={() => router.push('/rider-documents')}
-                    className="bg-white/20 rounded-xl py-2 px-4 self-start"
-                  >
-                    <Text className="text-white font-medium">📄 ดูเอกสารที่ส่ง</Text>
-                  </Pressable>
-                </View>
-              )}
-
-              {isRejected && (
-                <View>
-                  {riderData.rejectionReason && (
-                    <Text className="text-white/90 mb-3">
-                      เหตุผล: {riderData.rejectionReason}
-                    </Text>
-                  )}
-                  <Pressable
-                    onPress={() => router.push('/rider-documents')}
-                    className="bg-white/20 rounded-xl py-2 px-4 self-start"
-                  >
-                    <Text className="text-white font-medium">📄 อัพโหลดเอกสารใหม่</Text>
-                  </Pressable>
-                </View>
-              )}
-
-              {isApproved && (
-                <View className="flex-row">
-                  <View className="flex-1">
-                    <Text className="text-white/70 text-sm">งานทั้งหมด</Text>
-                    <Text className="text-white font-bold text-xl">
-                      {riderData.totalJobs || 0}
-                    </Text>
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-white/70 text-sm">เสร็จสิ้น</Text>
-                    <Text className="text-white font-bold text-xl">
-                      {riderData.completedJobs || 0}
-                    </Text>
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-white/70 text-sm">รายได้รวม</Text>
-                    <Text className="text-white font-bold text-xl">
-                      {formatCurrency(riderData.totalEarnings || 0)}
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </LinearGradient>
-          </Animated.View>
-
-          {/* Permission Status */}
-          <Animated.View
-            entering={FadeInDown.delay(200).springify()}
-            className="bg-white dark:bg-gray-800 rounded-2xl p-5 mb-6"
-          >
-            <Text
-              className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-800'}`}
-            >
-              สถานะสิทธิ์การใช้งาน
-            </Text>
-
-            {/* Location */}
-            <Pressable
-              onPress={() =>
-                !riderData.permissions?.gps &&
-                setPermissionModal({ visible: true, type: 'location' })
-              }
-              className="flex-row items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700"
-            >
-              <View className="flex-row items-center">
-                <View
-                  className={`w-10 h-10 rounded-full items-center justify-center ${
-                    riderData.permissions?.gps ? 'bg-green-100' : 'bg-red-100'
-                  }`}
-                >
-                  <Ionicons
-                    name="location"
-                    size={20}
-                    color={riderData.permissions?.gps ? '#10B981' : '#EF4444'}
-                  />
-                </View>
-                <View className="ml-3">
-                  <Text className="text-gray-800 dark:text-white font-medium">
-                    ตำแหน่ง (GPS)
-                  </Text>
-                  <Text className="text-gray-500 text-xs">
-                    แชร์เฉพาะเมื่อรับงาน
-                  </Text>
-                </View>
-              </View>
-              {riderData.permissions?.gps ? (
-                <Ionicons name="checkmark-circle" size={24} color="#10B981" />
-              ) : (
-                <Text className="text-primary-500 font-medium">อนุญาต</Text>
-              )}
-            </Pressable>
-
-            {/* Camera */}
-            <Pressable
-              onPress={() =>
-                !riderData.permissions?.camera &&
-                setPermissionModal({ visible: true, type: 'camera' })
-              }
-              className="flex-row items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700"
-            >
-              <View className="flex-row items-center">
-                <View
-                  className={`w-10 h-10 rounded-full items-center justify-center ${
-                    riderData.permissions?.camera ? 'bg-green-100' : 'bg-red-100'
-                  }`}
-                >
-                  <Ionicons
-                    name="camera"
-                    size={20}
-                    color={riderData.permissions?.camera ? '#10B981' : '#EF4444'}
-                  />
-                </View>
-                <View className="ml-3">
-                  <Text className="text-gray-800 dark:text-white font-medium">
-                    กล้อง
-                  </Text>
-                  <Text className="text-gray-500 text-xs">
-                    ถ่ายรูปเอกสารและหลักฐาน
-                  </Text>
-                </View>
-              </View>
-              {riderData.permissions?.camera ? (
-                <Ionicons name="checkmark-circle" size={24} color="#10B981" />
-              ) : (
-                <Text className="text-primary-500 font-medium">อนุญาต</Text>
-              )}
-            </Pressable>
-
-            {/* Microphone */}
-            <Pressable
-              onPress={() =>
-                !riderData.permissions?.microphone &&
-                setPermissionModal({ visible: true, type: 'microphone' })
-              }
-              className="flex-row items-center justify-between py-3"
-            >
-              <View className="flex-row items-center">
-                <View
-                  className={`w-10 h-10 rounded-full items-center justify-center ${
-                    riderData.permissions?.microphone
-                      ? 'bg-green-100'
-                      : 'bg-red-100'
-                  }`}
-                >
-                  <Ionicons
-                    name="mic"
-                    size={20}
-                    color={
-                      riderData.permissions?.microphone ? '#10B981' : '#EF4444'
-                    }
-                  />
-                </View>
-                <View className="ml-3">
-                  <Text className="text-gray-800 dark:text-white font-medium">
-                    ไมโครโฟน
-                  </Text>
-                  <Text className="text-gray-500 text-xs">
-                    โทรหาลูกค้า
-                  </Text>
-                </View>
-              </View>
-              {riderData.permissions?.microphone ? (
-                <Ionicons name="checkmark-circle" size={24} color="#10B981" />
-              ) : (
-                <Text className="text-primary-500 font-medium">อนุญาต</Text>
-              )}
-            </Pressable>
-          </Animated.View>
-
-          {/* Quick Actions Menu - สำหรับไรเดอร์ที่ได้รับอนุมัติ */}
-          {isApproved && (
-            <Animated.View entering={FadeInDown.delay(250).springify()}>
-              <Text
-                className={`text-lg font-bold mb-3 ${isDark ? 'text-white' : 'text-gray-800'}`}
-              >
-                เมนูลัด
-              </Text>
-              <View className="flex-row flex-wrap mb-4">
-                {/* ดูงานที่รอรับ */}
-                <Pressable
-                  onPress={() => router.push('/rider-jobs')}
-                  className="w-[48%] mr-[4%] mb-3 bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
-                >
-                  <View className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 items-center justify-center mb-2">
-                    <Ionicons name="list" size={24} color="#3B82F6" />
-                  </View>
-                  <Text className="text-gray-900 dark:text-white font-bold">งานที่รอรับ</Text>
-                  <Text className="text-gray-500 dark:text-gray-400 text-xs">ดูรายการงานใหม่</Text>
-                </Pressable>
-
-                {/* งานปัจจุบัน */}
-                <Pressable
-                  onPress={() => router.push('/rider-job-detail')}
-                  className="w-[48%] mb-3 bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
-                >
-                  <View className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 items-center justify-center mb-2">
-                    <Ionicons name="navigate" size={24} color="#10B981" />
-                  </View>
-                  <Text className="text-gray-900 dark:text-white font-bold">งานปัจจุบัน</Text>
-                  <Text className="text-gray-500 dark:text-gray-400 text-xs">ดูงานที่กำลังทำ</Text>
-                </Pressable>
-
-                {/* บริการของฉัน */}
-                <Pressable
-                  onPress={() => router.push('/rider-services')}
-                  className="w-[48%] mr-[4%] mb-3 bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
-                >
-                  <View className="w-12 h-12 rounded-xl bg-pink-100 dark:bg-pink-900/30 items-center justify-center mb-2">
-                    <Ionicons name="briefcase" size={24} color="#EC4899" />
-                  </View>
-                  <Text className="text-gray-900 dark:text-white font-bold">บริการของฉัน</Text>
-                  <Text className="text-gray-500 dark:text-gray-400 text-xs">เลือกบริการที่ให้</Text>
-                </Pressable>
-
-                {/* อัพโหลดเอกสาร */}
-                <Pressable
-                  onPress={() => router.push('/rider-documents')}
-                  className="w-[48%] mb-3 bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
-                >
-                  <View className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 items-center justify-center mb-2">
-                    <Ionicons name="document-text" size={24} color="#8B5CF6" />
-                  </View>
-                  <Text className="text-gray-900 dark:text-white font-bold">เอกสาร</Text>
-                  <Text className="text-gray-500 dark:text-gray-400 text-xs">อัพเดทเอกสาร</Text>
-                </Pressable>
-
-                {/* ประวัติงาน */}
-                <Pressable
-                  onPress={() => Alert.alert('เร็วๆ นี้', 'ฟีเจอร์นี้กำลังพัฒนา')}
-                  className="w-[48%] mr-[4%] bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
-                >
-                  <View className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 items-center justify-center mb-2">
-                    <Ionicons name="time" size={24} color="#F59E0B" />
-                  </View>
-                  <Text className="text-gray-900 dark:text-white font-bold">ประวัติงาน</Text>
-                  <Text className="text-gray-500 dark:text-gray-400 text-xs">ดูงานที่ทำแล้ว</Text>
-                </Pressable>
-
-                {/* รายได้ */}
-                <Pressable
-                  onPress={() => Alert.alert('เร็วๆ นี้', 'ฟีเจอร์นี้กำลังพัฒนา')}
-                  className="w-[48%] bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700"
-                >
-                  <View className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 items-center justify-center mb-2">
-                    <Ionicons name="wallet" size={24} color="#10B981" />
-                  </View>
-                  <Text className="text-gray-900 dark:text-white font-bold">รายได้</Text>
-                  <Text className="text-gray-500 dark:text-gray-400 text-xs">ดูรายได้ทั้งหมด</Text>
-                </Pressable>
-              </View>
-            </Animated.View>
-          )}
-
-          {/* Online/Offline Toggle */}
-          {isApproved && (
-            <Animated.View entering={FadeInDown.delay(300).springify()}>
-              <Pressable
-                onPress={toggleAvailability}
-                disabled={isTogglingAvailability}
-                className={`rounded-2xl py-5 ${
-                  isOnline ? 'bg-red-500' : 'bg-green-500'
-                } ${isTogglingAvailability ? 'opacity-60' : ''}`}
-              >
-                {isTogglingAvailability ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <Text className="text-white text-center font-bold text-lg">
-                    {isOnline ? '🔴 ปิดรับงาน' : '🟢 เปิดรับงาน'}
-                  </Text>
-                )}
+          {isPending && (
+            <View style={styles.statusNote}>
+              <Text style={styles.statusNoteText}>เอกสารกำลังตรวจสอบ โดยปกติใช้เวลา 1-3 วันทำการ</Text>
+              <Pressable style={styles.statusBtn} onPress={() => router.push('/rider-documents')}>
+                <Text style={styles.statusBtnText}>📄 ดูเอกสารที่ส่ง</Text>
               </Pressable>
-
-              {isOnline && (
-                <View className="mt-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl p-4">
-                  <Text className="text-blue-800 dark:text-blue-200 text-center text-sm">
-                    📍 ตำแหน่งจะถูกแชร์เมื่อคุณรับงานเท่านั้น
-                  </Text>
-                </View>
-              )}
-            </Animated.View>
+            </View>
           )}
 
-          {/* Location Sharing Toggle Button */}
           {isApproved && (
-            <Animated.View entering={FadeInDown.delay(400).springify()} className="mt-6">
-              <Pressable
-                onPress={toggleLocationSharing}
-                disabled={isTogglingLocationShare}
-                className={`rounded-2xl py-5 flex-row items-center justify-center ${
-                  isLocationSharing
-                    ? 'bg-green-500 border-2 border-green-300'
-                    : 'bg-gray-200 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600'
-                } ${isTogglingLocationShare ? 'opacity-60' : ''}`}
-              >
-                {isTogglingLocationShare ? (
-                  <ActivityIndicator color={isLocationSharing ? 'white' : '#3B82F6'} />
-                ) : (
-                  <>
-                    {/* Location Sharing Indicator */}
-                    <View
-                      className={`w-6 h-6 rounded-full mr-3 items-center justify-center ${
-                        isLocationSharing ? 'bg-white/30' : 'bg-gray-400 dark:bg-gray-500'
-                      }`}
-                    >
-                      {isLocationSharing && (
-                        <Animated.View
-                          className="w-3 h-3 rounded-full bg-white"
-                          style={{
-                            shadowColor: '#fff',
-                            shadowOffset: { width: 0, height: 0 },
-                            shadowOpacity: 0.8,
-                            shadowRadius: 4,
-                          }}
-                        />
-                      )}
-                    </View>
-
-                    <View className="items-center">
-                      <Text
-                        className={`font-bold text-lg ${
-                          isLocationSharing ? 'text-white' : 'text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        {isLocationSharing ? '📍 กำลังแชร์ตำแหน่ง' : '📍 แชร์ตำแหน่ง'}
-                      </Text>
-                      <Text
-                        className={`text-xs mt-1 ${
-                          isLocationSharing ? 'text-white/80' : 'text-gray-500'
-                        }`}
-                      >
-                        {isLocationSharing ? 'กดเพื่อหยุดแชร์' : 'กดเพื่อแชร์ตำแหน่งกับแอดมิน'}
-                      </Text>
-                    </View>
-
-                    {/* Pulsing indicator when sharing */}
-                    {isLocationSharing && (
-                      <View className="absolute right-4">
-                        <View className="w-4 h-4 rounded-full bg-white animate-pulse" />
-                      </View>
-                    )}
-                  </>
-                )}
-              </Pressable>
-
-              {/* Info text */}
-              {isLocationSharing && (
-                <View className="mt-3 bg-green-50 dark:bg-green-900/30 rounded-xl p-4">
-                  <View className="flex-row items-center">
-                    <View className="w-3 h-3 rounded-full bg-green-500 mr-2" />
-                    <Text className="text-green-800 dark:text-green-200 text-sm font-medium flex-1">
-                      ตำแหน่งของคุณกำลังถูกส่งไปยังระบบ
-                    </Text>
-                  </View>
-                  <Text className="text-green-700 dark:text-green-300 text-xs mt-2">
-                    แอดมินสามารถเห็นตำแหน่งของคุณใน GPS Monitor
-                  </Text>
-                </View>
-              )}
-            </Animated.View>
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>งานทั้งหมด</Text>
+                <Text style={styles.statValue}>{riderData.totalJobs || 0}</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>เสร็จสิ้น</Text>
+                <Text style={styles.statValue}>{riderData.completedJobs || 0}</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>รายได้รวม</Text>
+                <Text style={styles.statValue}>{formatCurrency(riderData.totalEarnings || 0)}</Text>
+              </View>
+            </View>
           )}
+        </LinearGradient>
 
-          <View className="h-10" />
-        </ScrollView>
-      </SafeAreaView>
+        {/* Permission Status */}
+        <View style={styles.permissionCard}>
+          <Text style={styles.permissionTitle}>สถานะสิทธิ์การใช้งาน</Text>
+
+          {[
+            { key: 'gps', icon: 'location', label: 'ตำแหน่ง (GPS)', desc: 'แชร์เฉพาะเมื่อรับงาน', type: 'location' as const },
+            { key: 'camera', icon: 'camera', label: 'กล้อง', desc: 'ถ่ายรูปเอกสาร', type: 'camera' as const },
+            { key: 'microphone', icon: 'mic', label: 'ไมโครโฟน', desc: 'โทรหาลูกค้า', type: 'microphone' as const },
+          ].map((perm) => (
+            <Pressable
+              key={perm.key}
+              style={styles.permissionRow}
+              onPress={() => !riderData.permissions?.[perm.key] && setPermissionModal({ visible: true, type: perm.type })}
+            >
+              <View style={[styles.permissionIcon, riderData.permissions?.[perm.key] ? styles.permissionIconGranted : styles.permissionIconDenied]}>
+                <Ionicons name={perm.icon as any} size={20} color={riderData.permissions?.[perm.key] ? '#10B981' : '#EF4444'} />
+              </View>
+              <View style={styles.permissionInfo}>
+                <Text style={styles.permissionLabel}>{perm.label}</Text>
+                <Text style={styles.permissionDesc}>{perm.desc}</Text>
+              </View>
+              {riderData.permissions?.[perm.key] ? (
+                <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+              ) : (
+                <Text style={styles.permissionGrantText}>อนุญาต</Text>
+              )}
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Quick Actions - Approved Only */}
+        {isApproved && (
+          <>
+            <Text style={styles.sectionTitle}>เมนูลัด</Text>
+            <View style={styles.actionsGrid}>
+              {[
+                { icon: 'list', label: 'งานที่รอรับ', desc: 'ดูรายการงานใหม่', color: '#3B82F6', route: '/rider-jobs' },
+                { icon: 'navigate', label: 'งานปัจจุบัน', desc: 'ดูงานที่กำลังทำ', color: '#10B981', route: '/rider-job-detail' },
+                { icon: 'briefcase', label: 'บริการของฉัน', desc: 'เลือกบริการที่ให้', color: '#EC4899', route: '/rider-services' },
+                { icon: 'document-text', label: 'เอกสาร', desc: 'อัพเดทเอกสาร', color: '#8B5CF6', route: '/rider-documents' },
+              ].map((action, i) => (
+                <Pressable key={i} style={styles.actionCard} onPress={() => router.push(action.route as any)}>
+                  <View style={[styles.actionIcon, { backgroundColor: action.color + '20' }]}>
+                    <Ionicons name={action.icon as any} size={24} color={action.color} />
+                  </View>
+                  <Text style={styles.actionLabel}>{action.label}</Text>
+                  <Text style={styles.actionDesc}>{action.desc}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Online/Offline Toggle */}
+            <Pressable
+              style={[styles.toggleBtn, isOnline ? styles.toggleBtnOffline : styles.toggleBtnOnline, isTogglingAvailability && styles.buttonDisabled]}
+              onPress={toggleAvailability}
+              disabled={isTogglingAvailability}
+            >
+              {isTogglingAvailability ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.toggleBtnText}>{isOnline ? '🔴 ปิดรับงาน' : '🟢 เปิดรับงาน'}</Text>
+              )}
+            </Pressable>
+
+            {/* Location Sharing Toggle */}
+            <Pressable
+              style={[styles.locationShareBtn, isLocationSharing && styles.locationShareBtnActive, isTogglingLocationShare && styles.buttonDisabled]}
+              onPress={toggleLocationSharing}
+              disabled={isTogglingLocationShare}
+            >
+              {isTogglingLocationShare ? (
+                <ActivityIndicator color={isLocationSharing ? '#FFF' : '#3B82F6'} />
+              ) : (
+                <>
+                  <View style={[styles.locationDot, isLocationSharing && styles.locationDotActive]} />
+                  <Text style={[styles.locationShareText, isLocationSharing && styles.locationShareTextActive]}>
+                    {isLocationSharing ? '📍 กำลังแชร์ตำแหน่ง' : '📍 แชร์ตำแหน่ง'}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+          </>
+        )}
+      </ScrollView>
 
       {/* Permission Modal */}
       <PermissionModal
@@ -1244,3 +612,94 @@ export default function RiderScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#0F0F23' },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
+  centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+  centerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFF', marginTop: 16 },
+  centerText: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', marginTop: 8 },
+  loadingText: { color: '#9CA3AF', marginTop: 12 },
+  primaryButton: { backgroundColor: '#3B82F6', paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12, marginTop: 24 },
+  primaryButtonLarge: { backgroundColor: '#3B82F6', paddingVertical: 16, borderRadius: 14, marginTop: 16 },
+  primaryButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 56, paddingBottom: 16 },
+  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#FFF' },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+  benefitsCard: { borderRadius: 16, padding: 24, marginBottom: 16 },
+  benefitsTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF', marginBottom: 16 },
+  benefitItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  benefitText: { color: '#FFF', marginLeft: 8 },
+  warningCard: { backgroundColor: 'rgba(245,158,11,0.15)', borderRadius: 12, padding: 16, marginBottom: 16 },
+  warningTitle: { color: '#FBBF24', fontWeight: 'bold', marginBottom: 8 },
+  warningItem: { color: '#FCD34D', fontSize: 13, marginBottom: 4 },
+  formCard: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: 20, marginBottom: 16 },
+  formTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF', marginBottom: 16 },
+  inputGroup: { marginBottom: 16 },
+  label: { color: '#E5E7EB', fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  input: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, color: '#FFF', fontSize: 16 },
+  vehicleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  vehicleBtn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.08)' },
+  vehicleBtnActive: { backgroundColor: '#3B82F6' },
+  vehicleBtnText: { color: '#9CA3AF', fontWeight: '500' },
+  vehicleBtnTextActive: { color: '#FFF' },
+  submitBtn: { backgroundColor: '#3B82F6', paddingVertical: 16, borderRadius: 14, marginTop: 8 },
+  submitBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
+  buttonDisabled: { opacity: 0.6 },
+  statusCard: { borderRadius: 16, padding: 24, marginBottom: 16 },
+  statusRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  statusInfo: { marginLeft: 12, flex: 1 },
+  statusTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF' },
+  statusSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+  statusNote: { marginTop: 8 },
+  statusNoteText: { color: 'rgba(255,255,255,0.9)', marginBottom: 12 },
+  statusBtn: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12, paddingVertical: 8, paddingHorizontal: 16, alignSelf: 'flex-start' },
+  statusBtnText: { color: '#FFF', fontWeight: '500' },
+  statsRow: { flexDirection: 'row', marginTop: 8 },
+  statItem: { flex: 1 },
+  statLabel: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+  statValue: { fontSize: 18, fontWeight: 'bold', color: '#FFF', marginTop: 2 },
+  statusBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.1)' },
+  statusBadgeOnline: { backgroundColor: 'rgba(16,185,129,0.2)' },
+  statusBadgeText: { fontSize: 12, fontWeight: '600', color: '#9CA3AF' },
+  statusBadgeTextOnline: { color: '#10B981' },
+  permissionCard: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: 20, marginBottom: 16 },
+  permissionTitle: { fontSize: 16, fontWeight: 'bold', color: '#FFF', marginBottom: 16 },
+  permissionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)' },
+  permissionIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  permissionIconGranted: { backgroundColor: 'rgba(16,185,129,0.15)' },
+  permissionIconDenied: { backgroundColor: 'rgba(239,68,68,0.15)' },
+  permissionInfo: { flex: 1, marginLeft: 12 },
+  permissionLabel: { fontSize: 15, fontWeight: '500', color: '#FFF' },
+  permissionDesc: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  permissionGrantText: { color: '#3B82F6', fontWeight: '600' },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#FFF', marginBottom: 12, marginTop: 8 },
+  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  actionCard: { width: '47%', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  actionIcon: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  actionLabel: { fontSize: 14, fontWeight: 'bold', color: '#FFF' },
+  actionDesc: { fontSize: 11, color: '#6B7280', marginTop: 2 },
+  toggleBtn: { borderRadius: 16, paddingVertical: 18, marginTop: 16 },
+  toggleBtnOnline: { backgroundColor: '#10B981' },
+  toggleBtnOffline: { backgroundColor: '#EF4444' },
+  toggleBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
+  locationShareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 16, paddingVertical: 18, marginTop: 12, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.1)' },
+  locationShareBtnActive: { backgroundColor: '#10B981', borderColor: '#34D399' },
+  locationDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#6B7280', marginRight: 12 },
+  locationDotActive: { backgroundColor: '#FFF' },
+  locationShareText: { fontSize: 16, fontWeight: 'bold', color: '#9CA3AF' },
+  locationShareTextActive: { color: '#FFF' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+  modalContent: { backgroundColor: '#1F2937', borderRadius: 24, width: '100%', overflow: 'hidden' },
+  modalHeader: { padding: 24, alignItems: 'center' },
+  modalIconBox: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF' },
+  modalBody: { padding: 20 },
+  modalDesc: { fontSize: 14, color: '#D1D5DB', lineHeight: 22 },
+  modalActions: { flexDirection: 'row', padding: 16, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' },
+  modalCancelBtn: { flex: 1, paddingVertical: 12, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, marginRight: 8 },
+  modalCancelText: { color: '#9CA3AF', textAlign: 'center', fontWeight: '600' },
+  modalGrantBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, marginLeft: 8 },
+  modalGrantText: { color: '#FFF', textAlign: 'center', fontWeight: 'bold' },
+});
