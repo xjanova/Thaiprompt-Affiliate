@@ -29,6 +29,10 @@ class LineOaController extends Controller
             'login_channel_id' => ['nullable', 'string', 'max:255'],
             'channel_secret' => ['nullable', 'string', 'max:255'],
             'redirect_uri' => ['nullable', 'url', 'max:500'],
+            // Mobile LINE Login
+            'mobile_login_channel_id' => ['nullable', 'string', 'max:255'],
+            'mobile_login_channel_secret' => ['nullable', 'string', 'max:255'],
+            // Messaging API
             'messaging_channel_id' => ['nullable', 'string', 'max:255'],
             'channel_access_token' => ['nullable', 'string'],
             'liff_id' => ['nullable', 'string', 'max:255'],
