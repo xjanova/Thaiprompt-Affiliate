@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.24] - 2025-12-09
+
+### ✨ Features
+- Merge pull request #2200 from xjanova/claude/fix-white-screen-login-01X8Ta4WVKdrbCffsKj67ZXy (e2ae7e60)
+- feat(mobile-app): แก้ MLM Tree + เพิ่มหนังสือเส้นทางเศรษฐี v1.5.1 (1d74844c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.372.23] - 2025-12-09
 
 ### ✨ Features
