@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.33] - 2025-12-09
+
+### ✨ Features
+- feat(mobile-app): เชื่อมต่อกับระบบควบคุมแอพของ Admin (5ce00224)
+### 🐛 Bug Fixes
+- fix(mobile-app): แก้ไขกล้องและ GPS ไม่ทำงาน (b1e25cc4)
+- fix(mobile-app): แก้ไข Shopping ค้างและ BannerCarousel (7209a367)
+- fix(mobile-app): เพิ่มเมนูและแก้ไขระบบแนะนำเพื่อน (3ab7317e)
+### 🔧 Other Changes
+- Merge pull request #2209 from xjanova/claude/check-mobile-app-updates-01V5ouhzjfb9PEMPykjCgHbZ (fb26efbc)
+
 ## [v3.372.32] - 2025-12-09
 
 ### ✨ Features
