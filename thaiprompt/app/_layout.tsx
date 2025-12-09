@@ -3,15 +3,16 @@
  * โหลด Fonts และ Initialize App
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
+import { initDeviceTracking, sendHeartbeat } from '@/services/deviceService';
 
 // ไม่ให้ซ่อน splash screen อัตโนมัติ
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -47,6 +48,7 @@ const loadingStyles = StyleSheet.create({
 export default function RootLayout() {
   const { initialize } = useAuthStore();
   const [appIsReady, setAppIsReady] = useState(false);
+  const appState = useRef(AppState.currentState);
 
   // โหลด Ionicons font ด้วย useFonts hook (เสถียรกว่า)
   const [fontsLoaded, fontError] = useFonts({
@@ -63,6 +65,9 @@ export default function RootLayout() {
           initialize().catch((e) => console.error('Init error:', e)),
           new Promise((resolve) => setTimeout(resolve, 5000)),
         ]);
+
+        // ลงทะเบียนเครื่องกับ Admin Dashboard (non-blocking)
+        initDeviceTracking().catch((e) => console.log('Device tracking:', e));
       } catch (error) {
         console.error('App prepare error:', error);
       } finally {
@@ -84,6 +89,21 @@ export default function RootLayout() {
     return () => {
       isMounted = false;
       clearTimeout(forceTimeout);
+    };
+  }, []);
+
+  // ส่ง heartbeat เมื่อแอพกลับมา foreground (สำหรับ Admin Analytics)
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        // แอพกลับมา foreground - ส่ง heartbeat
+        sendHeartbeat().catch(() => {});
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
     };
   }, []);
 
