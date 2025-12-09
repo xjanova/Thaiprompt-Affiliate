@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.31] - 2025-12-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(mobile-app): แก้ไขหน้า Settings และ Coming Soon ที่ทำให้แอพค้าง (6bc2525a)
+- fix(mobile-app): แก้ไขแอพค้างที่ splash screen (12a4b3b1)
+### 🔧 Other Changes
+- Merge pull request #2207 from xjanova/claude/fix-white-screen-login-01X8Ta4WVKdrbCffsKj67ZXy (9471634a)
+
 ## [v3.372.30] - 2025-12-09
 
 ### ✨ Features
