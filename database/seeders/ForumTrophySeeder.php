@@ -407,13 +407,18 @@ class ForumTrophySeeder extends Seeder
         ];
 
         foreach ($trophies as $trophyData) {
-            ForumTrophy::updateOrCreate(
-                ['slug' => $trophyData['slug']],
-                $trophyData
-            );
+            try {
+                ForumTrophy::updateOrCreate(
+                    ['slug' => $trophyData['slug']],
+                    $trophyData
+                );
 
-            $type = $trophyData['type'] === 'positive' ? '✅' : '❌';
-            $this->command->info("  {$type} สร้างโทรฟี่: {$trophyData['name']}");
+                // แสดงประเภทโทรฟี่ด้วยสัญลักษณ์ที่เข้าใจง่าย
+                $typeLabel = $trophyData['type'] === 'positive' ? '🟢 positive' : '🔴 negative';
+                $this->command->info("  ✅ สร้าง: {$trophyData['name']} ({$typeLabel})");
+            } catch (\Exception $e) {
+                $this->command->error("  ❌ ล้มเหลว: {$trophyData['name']} - {$e->getMessage()}");
+            }
         }
 
         $this->command->info('✨ Seed โทรฟี่ฟอรั่มสำเร็จ!');
