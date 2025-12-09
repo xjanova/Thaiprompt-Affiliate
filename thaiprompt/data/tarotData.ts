@@ -20,7 +20,18 @@ export interface TarotCard {
   upright_meaning_th: string;
   reversed_meaning_th: string;
   icon: string;
+  image_url?: string; // URL รูปไพ่ (ถ้ามี)
 }
+
+// URL รูปไพ่พื้นฐาน
+export const CARD_IMAGES = {
+  // รูปหลังไพ่
+  cardBack: '/images/tarot/card-back-default.svg',
+  // รูปไพ่ default
+  defaultCard: '/images/tarot/default-card.svg',
+  // Base URL สำหรับรูปไพ่ (ใช้เมื่อมีรูปจริง)
+  baseUrl: '/images/tarot/cards/',
+};
 
 // หมวดหมู่การอ่านไพ่
 export interface TarotCategory {
@@ -667,4 +678,34 @@ export const getMinorArcana = (): TarotCard[] => {
  */
 export const getCardsBySuit = (suit: Suit): TarotCard[] => {
   return ALL_TAROT_CARDS.filter((card) => card.suit === suit);
+};
+
+/**
+ * ดึง URL รูปไพ่ พร้อม fallback ถ้าไม่มีรูป
+ */
+export const getCardImageUrl = (card: TarotCard): string => {
+  if (card.image_url) {
+    return card.image_url;
+  }
+  // สร้าง URL ตามรูปแบบ: major-00-fool.jpg หรือ wands-01-ace.jpg
+  const slug = card.name_en.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  if (card.type === 'major_arcana') {
+    return `${CARD_IMAGES.baseUrl}major-${String(card.number).padStart(2, '0')}-${slug}.jpg`;
+  } else {
+    return `${CARD_IMAGES.baseUrl}${card.suit}-${String(card.number).padStart(2, '0')}-${slug}.jpg`;
+  }
+};
+
+/**
+ * ดึง URL รูปหลังไพ่
+ */
+export const getCardBackUrl = (): string => {
+  return CARD_IMAGES.cardBack;
+};
+
+/**
+ * ดึง URL รูป default สำหรับแสดงแทนที่เมื่อไม่มีรูป
+ */
+export const getDefaultCardUrl = (): string => {
+  return CARD_IMAGES.defaultCard;
 };
