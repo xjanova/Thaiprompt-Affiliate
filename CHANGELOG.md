@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.38] - 2025-12-09
+
+### ✨ Features
+- feat(mobile-line): เพิ่ม Native LINE Login สำหรับ Mobile App (d7b25c2a)
+### 🐛 Bug Fixes
+- fix(mobile-auth): แก้ไข login loop และเพิ่มแสดงชื่อผู้เชิญ (73d51151)
+- fix(line): แก้ไข 400 error โดยทำ bot_prompt เป็น conditional (27265e30)
+### 🔧 Other Changes
+- Merge pull request #2214 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (ea3e94ad)
+
 ## [v3.372.37] - 2025-12-09
 
 ### ✨ Features
