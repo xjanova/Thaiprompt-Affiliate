@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.29] - 2025-12-09
+
+### ✨ Features
+- feat(mobile-app): เพิ่ม wallet_address ใน User type และ API response (a3191974)
+- feat(mobile-app): เพิ่ม QR Code Modal สำหรับรับเงินใน Wallet (10a7f353)
+### 🐛 Bug Fixes
+- fix(mobile-app): แก้ไข Ionicons ไม่แสดงทั้งแอพ (4fdda199)
+### 🔧 Other Changes
+- Merge pull request #2205 from xjanova/claude/fix-white-screen-login-01X8Ta4WVKdrbCffsKj67ZXy (21ce77b4)
+
 ## [v3.372.28] - 2025-12-09
 
 ### ✨ Features
