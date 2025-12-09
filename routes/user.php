@@ -75,9 +75,13 @@ Route::prefix('kyc')->name('kyc.')->group(function () {
 Route::prefix('wallet')->name('wallet.')->group(function () {
     Route::get('/', [WalletController::class, 'index'])->name('index');
 
-    // Topup Routes (Wallet Topup Packages)
+    // Topup Routes (ระบบเติมเงินแยกจากตะกร้าสินค้า)
     Route::get('/topup', [WalletController::class, 'topup'])->name('topup');
     Route::post('/topup/process', [WalletController::class, 'processTopup'])->name('topup.process');
+    Route::get('/topup/{transactionId}/payment', [WalletController::class, 'topupPayment'])->name('topup.payment');
+    Route::post('/topup/{transactionId}/payment', [WalletController::class, 'processTopupPayment'])->name('topup.payment.process');
+    Route::get('/topup/{transactionId}/status', [WalletController::class, 'topupStatus'])->name('topup.status');
+    Route::get('/topup/{transactionId}/check', [WalletController::class, 'checkTopupStatus'])->name('topup.check');
 
     // Deposit Routes
     Route::get('/deposit', [WalletController::class, 'deposit'])->name('deposit');

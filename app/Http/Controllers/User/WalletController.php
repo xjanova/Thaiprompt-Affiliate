@@ -7,7 +7,10 @@ use App\Services\WalletService;
 use App\Services\WithdrawalService;
 use App\Services\PaymentGatewayService;
 use App\Services\CashbackService;
+use App\Services\Payment\PaymentService;
 use App\Models\PaymentMethod;
+use App\Models\PaymentTransaction;
+use App\Models\PaymentGateway;
 use App\Models\Wallet;
 use App\Models\WalletSetting;
 use Illuminate\Http\Request;
@@ -137,7 +140,10 @@ class WalletController extends Controller
     }
 
     /**
-     * แสดงหน้าเติมเงิน Wallet (Topup Packages)
+     * แสดงหน้าเติมเงิน Wallet
+     *
+     * ระบบเติมเงินแยกออกจากตะกร้าสินค้าโดยสมบูรณ์
+     * ใช้ PaymentTransaction โดยตรง
      *
      * @return \Illuminate\View\View
      */
@@ -146,20 +152,14 @@ class WalletController extends Controller
         $user = auth()->user();
         $wallet = $this->walletService->getOrCreateWallet($user);
 
-        // ดึงแพ็คเกจเติมเงิน (virtual products ในหมวด wallet-topup)
-        $topupPackages = \App\Models\Product::where('is_virtual', true)
-            ->where('is_active', true)
-            ->whereHas('category', function ($query) {
-                $query->where('slug', 'wallet-topup');
-            })
-            ->orderBy('price', 'asc')
-            ->get();
-
-        return view('user.wallet.topup', compact('wallet', 'topupPackages'));
+        return view('user.wallet.topup', compact('wallet'));
     }
 
     /**
      * ประมวลผลการเติมเงิน Wallet
+     *
+     * สร้าง PaymentTransaction โดยตรง และ redirect ไปหน้าชำระเงิน
+     * ไม่ผ่านระบบตะกร้าสินค้า
      *
      * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
@@ -176,40 +176,42 @@ class WalletController extends Controller
         ]);
 
         try {
-            $amount = $request->amount;
+            $user = auth()->user();
+            $amount = (float) $request->amount;
 
-            // หาหรือสร้างแพ็คเกจเติมเงิน
-            $product = $this->findOrCreateTopupPackage($amount);
-
-            if (!$product) {
-                return redirect()->back()
-                    ->with('error', 'ไม่สามารถสร้างแพ็คเกจเติมเงินได้ กรุณาติดต่อผู้ดูแลระบบ')
-                    ->withInput();
-            }
-
-            // เพิ่มสินค้าเข้าตะกร้า
-            $cart = \App\Models\Cart::firstOrCreate([
-                'user_id' => auth()->id(),
+            // สร้าง PaymentTransaction สำหรับ wallet_topup โดยตรง
+            $transaction = PaymentTransaction::create([
+                'user_id' => $user->id,
+                'type' => 'wallet_topup',
+                'payment_method' => 'pending', // รอเลือกวิธีชำระเงิน
+                'status' => 'pending',
+                'amount' => $amount,
+                'currency' => 'THB',
+                'expired_at' => now()->addMinutes(30),
+                'metadata' => [
+                    'source' => 'web',
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ],
             ]);
 
-            // ลบสินค้าเติมเงินเก่าออกจากตะกร้า (ถ้ามี)
-            $cart->items()
-                ->whereHas('product.category', function ($query) {
-                    $query->where('slug', 'wallet-topup');
-                })
-                ->delete();
-
-            // เพิ่มแพ็คเกจเติมเงินใหม่
-            $cart->items()->create([
-                'product_id' => $product->id,
-                'quantity' => 1,
-                'price' => $product->price,
+            Log::info('Wallet Topup Transaction Created', [
+                'transaction_id' => $transaction->transaction_id,
+                'user_id' => $user->id,
+                'amount' => $amount,
             ]);
 
-            // ไปหน้า Checkout
-            return redirect()->route('checkout.index')
-                ->with('success', 'เพิ่มแพ็คเกจเติมเงิน ' . number_format($amount, 2) . ' บาทเข้าตะกร้าแล้ว');
+            // Redirect ไปหน้าชำระเงินเติมเงิน
+            return redirect()->route('user.wallet.topup.payment', $transaction->transaction_id)
+                ->with('success', 'สร้างรายการเติมเงินสำเร็จ กรุณาเลือกวิธีชำระเงิน');
+
         } catch (Exception $e) {
+            Log::error('Wallet Topup Error', [
+                'user_id' => auth()->id(),
+                'amount' => $request->amount,
+                'error' => $e->getMessage(),
+            ]);
+
             return redirect()->back()
                 ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
                 ->withInput();
@@ -217,67 +219,186 @@ class WalletController extends Controller
     }
 
     /**
-     * หาหรือสร้างแพ็คเกจเติมเงิน
+     * แสดงหน้าชำระเงินสำหรับเติมเงิน
      *
-     * @param float $amount จำนวนเงิน
-     * @return \App\Models\Product|null
+     * @param string $transactionId
+     * @return \Illuminate\View\View
      */
-    private function findOrCreateTopupPackage(float $amount)
+    public function topupPayment(string $transactionId)
     {
-        // หาหมวดหมู่ wallet-topup
-        $category = \App\Models\ProductCategory::firstOrCreate(
-            ['slug' => 'wallet-topup'],
-            [
-                'name' => 'เติมเงิน Wallet',
-                'description' => 'แพ็คเกจเติมเงินเข้า Wallet',
-                'is_active' => true,
-                'sort_order' => 0,
-            ]
-        );
+        $user = auth()->user();
 
-        // หา admin user สำหรับเป็น seller
-        $adminUser = \App\Models\User::whereIn('role', ['admin', 'super_admin'])->first();
-        if (!$adminUser) {
-            return null;
+        // ค้นหา transaction
+        $transaction = PaymentTransaction::where('transaction_id', $transactionId)
+            ->where('user_id', $user->id)
+            ->where('type', 'wallet_topup')
+            ->firstOrFail();
+
+        // ตรวจสอบว่า transaction หมดอายุหรือยัง
+        if ($transaction->isExpired()) {
+            return redirect()->route('user.wallet.topup')
+                ->with('error', 'รายการเติมเงินหมดอายุแล้ว กรุณาสร้างรายการใหม่');
         }
 
-        // หาแพ็คเกจที่มีราคาตรงกัน
-        $slug = 'topup-' . (int)$amount;
-        $product = \App\Models\Product::where('slug', $slug)
-            ->where('category_id', $category->id)
-            ->where('is_virtual', true)
+        // ตรวจสอบว่า transaction ชำระเงินแล้วหรือยัง
+        if ($transaction->isCompleted()) {
+            return redirect()->route('user.wallet.index')
+                ->with('success', 'รายการเติมเงินนี้ชำระเงินสำเร็จแล้ว');
+        }
+
+        // ดึง payment gateways ที่พร้อมใช้งาน
+        $paymentGateways = PaymentGateway::where('is_active', true)
+            ->where('is_available', true)
+            ->where('is_coming_soon', false)
+            ->where('supports_deposit', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $wallet = $this->walletService->getOrCreateWallet($user);
+
+        return view('user.wallet.topup-payment', compact('transaction', 'paymentGateways', 'wallet'));
+    }
+
+    /**
+     * ประมวลผลการชำระเงินเติมเงิน
+     *
+     * @param Request $request
+     * @param string $transactionId
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\View\View
+     */
+    public function processTopupPayment(Request $request, string $transactionId)
+    {
+        $request->validate([
+            'payment_method' => 'required|string',
+        ], [
+            'payment_method.required' => 'กรุณาเลือกวิธีชำระเงิน',
+        ]);
+
+        $user = auth()->user();
+
+        // ค้นหา transaction
+        $transaction = PaymentTransaction::where('transaction_id', $transactionId)
+            ->where('user_id', $user->id)
+            ->where('type', 'wallet_topup')
+            ->firstOrFail();
+
+        // ตรวจสอบว่า transaction หมดอายุหรือยัง
+        if ($transaction->isExpired()) {
+            return redirect()->route('user.wallet.topup')
+                ->with('error', 'รายการเติมเงินหมดอายุแล้ว กรุณาสร้างรายการใหม่');
+        }
+
+        // ตรวจสอบว่า transaction ชำระเงินแล้วหรือยัง
+        if ($transaction->isCompleted()) {
+            return redirect()->route('user.wallet.index')
+                ->with('success', 'รายการเติมเงินนี้ชำระเงินสำเร็จแล้ว');
+        }
+
+        try {
+            $paymentMethod = $request->payment_method;
+
+            // อัปเดต payment method
+            $transaction->update([
+                'payment_method' => $paymentMethod,
+            ]);
+
+            // ประมวลผลตามประเภทการชำระเงิน
+            $paymentService = app(PaymentService::class);
+
+            $result = $paymentService->processPayment($transaction, [
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
+            if (!$result['success']) {
+                return redirect()->back()
+                    ->with('error', $result['message'] ?? 'การชำระเงินล้มเหลว');
+            }
+
+            // ตรวจสอบผลลัพธ์
+            $updatedTransaction = $result['transaction'];
+
+            // ถ้าต้องแสดง QR Code (PromptPay)
+            if ($paymentMethod === 'promptpay' && isset($result['data']['qr_code'])) {
+                return view('user.wallet.topup-promptpay', [
+                    'transaction' => $updatedTransaction,
+                    'qrCode' => $result['data']['qr_code'],
+                    'refNo' => $result['data']['ref_no'] ?? null,
+                    'response' => $result['data']['response'] ?? [],
+                ]);
+            }
+
+            // ถ้าชำระเงินสำเร็จทันที
+            if ($updatedTransaction->isCompleted()) {
+                return redirect()->route('user.wallet.index')
+                    ->with('success', 'เติมเงิน ฿' . number_format($transaction->amount, 2) . ' สำเร็จแล้ว!');
+            }
+
+            // ถ้ายังรอดำเนินการ
+            return redirect()->route('user.wallet.topup.status', $transactionId)
+                ->with('info', 'กำลังดำเนินการ กรุณารอสักครู่');
+
+        } catch (Exception $e) {
+            Log::error('Topup Payment Error', [
+                'transaction_id' => $transactionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ตรวจสอบสถานะการชำระเงินเติมเงิน
+     *
+     * @param string $transactionId
+     * @return \Illuminate\View\View
+     */
+    public function topupStatus(string $transactionId)
+    {
+        $user = auth()->user();
+
+        $transaction = PaymentTransaction::where('transaction_id', $transactionId)
+            ->where('user_id', $user->id)
+            ->where('type', 'wallet_topup')
+            ->firstOrFail();
+
+        return view('user.wallet.topup-status', compact('transaction'));
+    }
+
+    /**
+     * API: ตรวจสอบสถานะ transaction (สำหรับ polling)
+     *
+     * @param string $transactionId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkTopupStatus(string $transactionId)
+    {
+        $user = auth()->user();
+
+        $transaction = PaymentTransaction::where('transaction_id', $transactionId)
+            ->where('user_id', $user->id)
+            ->where('type', 'wallet_topup')
             ->first();
 
-        // ถ้าไม่มี ให้สร้างใหม่
-        if (!$product) {
-            $product = \App\Models\Product::create([
-                'seller_id' => $adminUser->id,
-                'category_id' => $category->id,
-                'name' => '💰 เติมเงิน ' . number_format($amount) . ' บาท',
-                'slug' => $slug,
-                'sku' => 'TOPUP-' . strtoupper($slug),
-                'description' => 'เติมเงิน ' . number_format($amount, 2) . ' บาท เข้า Wallet ของคุณ',
-                'short_description' => 'เติม ' . number_format($amount) . ' บาท',
-                'price' => $amount,
-                'compare_at_price' => null,
-                'cost_price' => $amount,
-                'stock_quantity' => 999999,
-                'track_inventory' => false,
-                'stock_status' => 'in_stock',
-                'is_virtual' => true,
-                'is_active' => true,
-                'is_featured' => false,
-                'is_public_approved' => true,
-                'public_approved_at' => now(),
-                'public_approved_by' => $adminUser->id,
-                'published_at' => now(),
-                'commission_rate' => 0,
-                'customer_cashback' => 0,
-                'cashback_percentage' => 0,
-            ]);
+        if (!$transaction) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบรายการ',
+            ], 404);
         }
 
-        return $product;
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'status' => $transaction->status,
+                'is_completed' => $transaction->isCompleted(),
+                'is_expired' => $transaction->isExpired(),
+                'amount' => $transaction->amount,
+                'paid_at' => $transaction->paid_at?->toIso8601String(),
+            ],
+        ]);
     }
 
     /**

@@ -28,15 +28,6 @@
     <x-arrow-x.card-v3 class="p-6">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">เลือกจำนวนเงินที่ต้องการเติม</h2>
 
-        @if($topupPackages->isEmpty())
-            <div class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-600 rounded-lg">
-                <p class="text-yellow-800 dark:text-yellow-300">
-                    ⚠️ <strong>ข้อมูลแพ็คเกจยังไม่พร้อม</strong><br>
-                    กรุณาติดต่อผู้ดูแลระบบเพื่อรัน seeder: <code class="bg-yellow-100 dark:bg-yellow-800 px-2 py-1 rounded">php artisan db:seed --class=WalletTopupPackagesSeeder</code>
-                </p>
-            </div>
-        @endif
-
         <form id="topup-form" action="{{ route('user.wallet.topup.process') }}" method="POST">
             @csrf
             <input type="hidden" id="topup-amount" name="amount" value="">
@@ -106,8 +97,8 @@
                 <ol class="text-sm text-gray-700 dark:text-gray-300 space-y-1 list-decimal list-inside">
                     <li>เลือกจำนวนเงินที่ต้องการเติม (คลิกปุ่มด่วนหรือกรอกเอง)</li>
                     <li>กดปุ่ม "ดำเนินการเติมเงิน"</li>
-                    <li>ระบบจะพาไปหน้า Checkout เพื่อชำระเงิน</li>
-                    <li>เลือกช่องทางการชำระเงิน (PromptPay, โอนธนาคาร, บัตรเครดิต, ฯลฯ)</li>
+                    <li>เลือกช่องทางการชำระเงิน (พร้อมเพย์, โอนธนาคาร, บัตรเครดิต, ฯลฯ)</li>
+                    <li>ทำการชำระเงินตามขั้นตอน</li>
                     <li>หลังชำระเงินสำเร็จ ยอดเงินจะเข้า Wallet ทันที</li>
                 </ol>
             </div>

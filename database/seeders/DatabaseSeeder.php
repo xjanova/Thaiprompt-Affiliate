@@ -98,7 +98,7 @@ class DatabaseSeeder extends Seeder
             ProductCategorySeeder::class,       // หมวดหมู่สินค้า (ต้องมาก่อน ProductSeeder)
             ProductSeeder::class,               // สินค้าตัวอย่าง
             OfficialShopProductsSeeder::class,  // 🆕 สินค้าของระบบ (Official Shop) - seller_id = null, คอมมิชชั่นสูง 25-40%
-            WalletTopupPackagesSeeder::class,   // แพ็คเกจเติมเงิน Wallet
+            // WalletTopupPackagesSeeder::class,   // ❌ ยกเลิก - ระบบเติมเงินไม่ใช้สินค้าแล้ว ใช้ PaymentTransaction โดยตรง
             VendorPackageSeeder::class,         // แพคเกจสำหรับผู้ขาย/Vendor
             VendorPackageFeatureSeeder::class,  // ฟีเจอร์ของแพคเกจ Vendor
             MarketplacePlatformSeeder::class,   // Marketplace Platforms (Shopee, Lazada, etc.)
