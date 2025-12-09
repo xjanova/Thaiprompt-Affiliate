@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.36] - 2025-12-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2212 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (6f4a5708)
+- fix(line-webhook): แก้ไข 403 Forbidden เมื่อ LINE verify webhook (5099ee62)
+### 🔧 Other Changes
+
+
 ## [v3.372.35] - 2025-12-09
 
 ### ✨ Features
