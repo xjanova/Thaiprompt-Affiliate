@@ -23,15 +23,18 @@ import { APP_INFO } from '@/config/appConfig';
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 52) / 2;
 
-// Menu Items
+// Menu Items - เพิ่มเมนูครบตามที่ต้องการ
 const MENU_ITEMS = [
   { id: 'wallet', title: 'กระเป๋าเงิน', icon: 'wallet-outline', colors: ['#10B981', '#059669'], route: '/(tabs)/wallet' },
   { id: 'network', title: 'สายงาน', icon: 'people-outline', colors: ['#8B5CF6', '#6D28D9'], route: '/(tabs)/network' },
-  { id: 'shopping', title: 'ช้อปปิ้ง', icon: 'cart-outline', colors: ['#F59E0B', '#D97706'], route: '/shopping' },
-  { id: 'commissions', title: 'คอมมิชชั่น', icon: 'cash-outline', colors: ['#3B82F6', '#2563EB'], route: '/commissions' },
   { id: 'referral', title: 'แนะนำเพื่อน', icon: 'person-add-outline', colors: ['#EC4899', '#DB2777'], route: '/referral' },
+  { id: 'commissions', title: 'คอมมิชชั่น', icon: 'cash-outline', colors: ['#3B82F6', '#2563EB'], route: '/commissions' },
+  { id: 'shopping', title: 'ช้อปปิ้ง', icon: 'cart-outline', colors: ['#F59E0B', '#D97706'], route: '/shopping' },
+  { id: 'rider', title: 'ไรเดอร์', icon: 'bicycle-outline', colors: ['#06B6D4', '#0891B2'], route: '/rider' },
+  { id: 'wealth-guide', title: 'เส้นทางเศรษฐี', icon: 'book-outline', colors: ['#F59E0B', '#D97706'], route: '/wealth-guide' },
   { id: 'tarot', title: 'ดูดวง', icon: 'sparkles-outline', colors: ['#6366F1', '#4F46E5'], route: '/tarot' },
   { id: 'leaderboard', title: 'อันดับ', icon: 'trophy-outline', colors: ['#EF4444', '#DC2626'], route: '/leaderboard' },
+  { id: 'coming-soon', title: 'เร็วๆ นี้', icon: 'rocket-outline', colors: ['#8B5CF6', '#6D28D9'], route: '/coming-soon' },
   { id: 'settings', title: 'ตั้งค่า', icon: 'settings-outline', colors: ['#6B7280', '#4B5563'], route: '/settings' },
 ] as const;
 

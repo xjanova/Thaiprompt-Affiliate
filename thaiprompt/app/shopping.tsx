@@ -353,18 +353,19 @@ export default function ShoppingScreen() {
     }
   }, [selectedCategory]);
 
-  // Initial load
+  // Initial load stores - โหลดครั้งแรกเท่านั้น
   useEffect(() => {
     loadStores();
-    loadProducts(1);
-  }, [loadStores, loadProducts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Reload when category changes
+  // Initial load products และ reload เมื่อ category เปลี่ยน
   useEffect(() => {
     setPage(1);
     setProducts([]);
     setHasMore(true);
     loadProducts(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory]);
 
   // Load more handler
