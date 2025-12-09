@@ -154,15 +154,15 @@
 </div>
 
 @push('scripts')
-<!-- QRCode.js Library -->
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<!-- QRCode.js Library (qrcodejs - เหมือนกับหน้า recruit ที่ใช้งานได้) -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
     function qrCodeManager() {
         return {
             requestedAmount: {{ $requestedAmount ?? 'null' }},
             walletAddress: '{{ $wallet->wallet_address }}',
             userName: '{{ auth()->user()->name }}',
-            qrCanvas: null,
+            qrInstance: null,
 
             init() {
                 this.generateQrCode();
@@ -180,21 +180,14 @@
                 const container = document.getElementById('qrcode');
                 container.innerHTML = '';
 
-                QRCode.toCanvas(JSON.stringify(qrData), {
+                // ใช้ qrcodejs library (API: new QRCode)
+                this.qrInstance = new QRCode(container, {
+                    text: JSON.stringify(qrData),
                     width: 250,
-                    margin: 2,
-                    color: {
-                        dark: '#1e1b4b',
-                        light: '#ffffff'
-                    }
-                }, (err, canvas) => {
-                    if (err) {
-                        console.error(err);
-                        return;
-                    }
-                    canvas.style.borderRadius = '12px';
-                    container.appendChild(canvas);
-                    this.qrCanvas = canvas;
+                    height: 250,
+                    colorDark: '#1e1b4b',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
                 });
             },
 
@@ -202,22 +195,50 @@
                 this.generateQrCode();
             },
 
+            getQrCanvas() {
+                // qrcodejs สร้าง canvas หรือ img element ภายใน container
+                const container = document.getElementById('qrcode');
+                return container.querySelector('canvas') || container.querySelector('img');
+            },
+
             downloadQr() {
-                if (!this.qrCanvas) return;
+                const qrElement = this.getQrCanvas();
+                if (!qrElement) {
+                    this.showNotification('ไม่พบ QR Code', 'error');
+                    return;
+                }
 
                 const link = document.createElement('a');
                 link.download = `wallet-qr-${this.walletAddress}.png`;
-                link.href = this.qrCanvas.toDataURL('image/png');
+
+                if (qrElement.tagName === 'CANVAS') {
+                    link.href = qrElement.toDataURL('image/png');
+                } else {
+                    // ถ้าเป็น img element
+                    link.href = qrElement.src;
+                }
                 link.click();
+                this.showNotification('ดาวน์โหลด QR Code สำเร็จ!', 'success');
             },
 
             async shareQr() {
-                if (!this.qrCanvas) return;
+                const qrElement = this.getQrCanvas();
+                if (!qrElement) {
+                    this.showNotification('ไม่พบ QR Code', 'error');
+                    return;
+                }
 
                 try {
-                    const blob = await new Promise(resolve =>
-                        this.qrCanvas.toBlob(resolve, 'image/png')
-                    );
+                    let blob;
+                    if (qrElement.tagName === 'CANVAS') {
+                        blob = await new Promise(resolve =>
+                            qrElement.toBlob(resolve, 'image/png')
+                        );
+                    } else {
+                        // ถ้าเป็น img element - fetch และ convert
+                        const response = await fetch(qrElement.src);
+                        blob = await response.blob();
+                    }
 
                     if (navigator.share && navigator.canShare) {
                         const file = new File([blob], 'wallet-qr.png', { type: 'image/png' });
