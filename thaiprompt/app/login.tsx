@@ -1,7 +1,6 @@
 /**
- * Login Screen - หน้าเข้าสู่ระบบ
- * แปลงจาก .NET MAUI LoginPage
- * รองรับ LINE Login + LavaBackground Effect
+ * Login Screen - Premium Stable Version
+ * ใช้ StyleSheet แทน NativeWind
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -14,15 +13,20 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  TextInput,
+  StyleSheet,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '@/stores/authStore';
-import { LavaBackground, GlassCard, Button, Input } from '@/components';
-import { isValidEmail } from '@/constants';
+
+// Email validation
+const isValidEmail = (email: string) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
 
 export default function LoginScreen() {
   const {
@@ -35,7 +39,6 @@ export default function LoginScreen() {
     isAuthenticated
   } = useAuthStore();
 
-  // รับ LINE callback parameters
   const params = useLocalSearchParams<{ code?: string; state?: string; error?: string }>();
 
   const [email, setEmail] = useState('');
@@ -43,6 +46,7 @@ export default function LoginScreen() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isLineLoading, setIsLineLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // ถ้า login แล้ว ให้กลับไปหน้าหลัก
   useEffect(() => {
@@ -51,7 +55,6 @@ export default function LoginScreen() {
     }
   }, [isAuthenticated]);
 
-  // Clear error เมื่อ unmount
   useEffect(() => {
     return () => clearError();
   }, [clearError]);
@@ -72,10 +75,9 @@ export default function LoginScreen() {
           setIsLineLoading(false);
         }
       } else if (params.error) {
-        Alert.alert('LINE Login ล้มเหลว', 'ไม่สามารถเข้าสู่ระบบด้วย LINE ได้ กรุณาลองใหม่');
+        Alert.alert('LINE Login ล้มเหลว', 'ไม่สามารถเข้าสู่ระบบด้วย LINE ได้');
       }
     };
-
     handleCallback();
   }, [params.code, params.state, params.error]);
 
@@ -84,20 +86,15 @@ export default function LoginScreen() {
     setIsLineLoading(true);
     try {
       const result = await loginWithLine();
-
       if (result.success && result.authUrl) {
-        // เปิด LINE Login ใน WebBrowser
         const browserResult = await WebBrowser.openAuthSessionAsync(
           result.authUrl,
           'thaiprompt-affiliate://login'
         );
-
         if (browserResult.type === 'success' && browserResult.url) {
-          // Parse callback URL
           const url = new URL(browserResult.url);
           const code = url.searchParams.get('code');
           const state = url.searchParams.get('state');
-
           if (code && state) {
             const success = await handleLineCallback(code, state);
             if (success) {
@@ -109,7 +106,6 @@ export default function LoginScreen() {
         Alert.alert('LINE Login', result.message || 'ไม่สามารถเชื่อมต่อ LINE ได้');
       }
     } catch (err) {
-      console.error('LINE Login error:', err);
       Alert.alert('ข้อผิดพลาด', 'ไม่สามารถเข้าสู่ระบบด้วย LINE ได้');
     } finally {
       setIsLineLoading(false);
@@ -119,8 +115,6 @@ export default function LoginScreen() {
   // Validate form
   const validateForm = (): boolean => {
     let isValid = true;
-
-    // Validate email
     if (!email.trim()) {
       setEmailError('กรุณากรอกอีเมล');
       isValid = false;
@@ -130,8 +124,6 @@ export default function LoginScreen() {
     } else {
       setEmailError('');
     }
-
-    // Validate password
     if (!password) {
       setPasswordError('กรุณากรอกรหัสผ่าน');
       isValid = false;
@@ -141,188 +133,361 @@ export default function LoginScreen() {
     } else {
       setPasswordError('');
     }
-
     return isValid;
   };
 
   // Handle login
   const handleLogin = async () => {
     if (!validateForm()) return;
-
     const success = await login(email.trim(), password);
-
     if (success) {
       router.replace('/');
     }
   };
 
-  // Go back
-  const goBack = () => router.back();
-
   return (
-    <LavaBackground variant="default" intensity="medium">
-      <SafeAreaView className="flex-1">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          className="flex-1"
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+
+      {/* Background Gradient */}
+      <LinearGradient
+        colors={['#0F0F23', '#1A1A2E', '#16213E']}
+        style={StyleSheet.absoluteFill}
+      />
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <ScrollView
-            className="flex-1"
-            contentContainerClassName="flex-grow"
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Header */}
-            <View className="px-5 pt-4">
-              <Pressable
-                onPress={goBack}
-                className="w-10 h-10 rounded-full bg-white/10 items-center justify-center"
-                style={{
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 4,
-                  elevation: 4,
-                }}
-              >
-                <Ionicons name="arrow-back" size={24} color="white" />
-              </Pressable>
-            </View>
+          {/* Header */}
+          <View style={styles.header}>
+            <Pressable style={styles.backButton} onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color="#FFF" />
+            </Pressable>
+          </View>
 
-            {/* Content */}
-            <View className="flex-1 px-6 pt-8">
-              {/* Logo */}
-              <View className="items-center mb-8">
-                <LinearGradient
-                  colors={['#3B82F6', '#8B5CF6', '#06B6D4']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: 24,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 16,
-                    shadowColor: '#3B82F6',
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.5,
-                    shadowRadius: 20,
-                  }}
-                >
-                  <Ionicons name="log-in" size={40} color="white" />
-                </LinearGradient>
-                <Text className="text-white text-2xl font-bold">
-                  เข้าสู่ระบบ
-                </Text>
-                <Text className="text-gray-400 mt-2">
-                  ยินดีต้อนรับกลับมา
-                </Text>
+          {/* Logo */}
+          <View style={styles.logoContainer}>
+            <LinearGradient
+              colors={['#3B82F6', '#8B5CF6', '#06B6D4']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.logoBox}
+            >
+              <Ionicons name="log-in-outline" size={40} color="#FFF" />
+            </LinearGradient>
+            <Text style={styles.title}>เข้าสู่ระบบ</Text>
+            <Text style={styles.subtitle}>ยินดีต้อนรับกลับมา</Text>
+          </View>
+
+          {/* Form Card */}
+          <View style={styles.formCard}>
+            {/* Error Message */}
+            {error && (
+              <View style={styles.errorBox}>
+                <Ionicons name="alert-circle" size={20} color="#EF4444" />
+                <Text style={styles.errorText}>{error}</Text>
               </View>
+            )}
 
-              {/* Form */}
-              <GlassCard>
-                {/* Error Message */}
-                {error && (
-                  <View className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-4">
-                    <View className="flex-row items-center justify-center">
-                      <Ionicons name="alert-circle" size={20} color="#EF4444" />
-                      <Text className="text-red-400 text-center ml-2">{error}</Text>
-                    </View>
-                  </View>
-                )}
-
-                {/* Email Input */}
-                <Input
-                  label="อีเมล"
+            {/* Email Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>อีเมล</Text>
+              <View style={[styles.inputContainer, emailError && styles.inputError]}>
+                <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
                   placeholder="example@email.com"
+                  placeholderTextColor="#6B7280"
                   value={email}
                   onChangeText={(text) => {
                     setEmail(text);
                     setEmailError('');
                   }}
-                  error={emailError}
-                  leftIcon="mail"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
+              </View>
+              {emailError ? <Text style={styles.errorLabel}>{emailError}</Text> : null}
+            </View>
 
-                {/* Password Input */}
-                <Input
-                  label="รหัสผ่าน"
+            {/* Password Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>รหัสผ่าน</Text>
+              <View style={[styles.inputContainer, passwordError && styles.inputError]}>
+                <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
                   placeholder="••••••••"
+                  placeholderTextColor="#6B7280"
                   value={password}
                   onChangeText={(text) => {
                     setPassword(text);
                     setPasswordError('');
                   }}
-                  error={passwordError}
-                  leftIcon="lock-closed"
-                  isPassword
+                  secureTextEntry={!showPassword}
                 />
-
-                {/* Forgot Password */}
-                <Pressable className="items-end mb-6">
-                  <Text className="text-primary-400">ลืมรหัสผ่าน?</Text>
-                </Pressable>
-
-                {/* Login Button */}
-                <Button
-                  title="เข้าสู่ระบบ"
-                  onPress={handleLogin}
-                  loading={isLoading}
-                  fullWidth
-                  size="lg"
-                  icon={<Ionicons name="log-in" size={20} color="white" />}
-                />
-
-                {/* Register Link */}
-                <View className="flex-row justify-center mt-6">
-                  <Text className="text-gray-400">ยังไม่มีบัญชี? </Text>
-                  <Pressable onPress={() => router.push('/register')}>
-                    <Text className="text-primary-400 font-bold">สมัครเลย</Text>
-                  </Pressable>
-                </View>
-              </GlassCard>
-
-              {/* Social Login */}
-              <View className="mt-8">
-                <View className="flex-row items-center mb-6">
-                  <View className="flex-1 h-px bg-white/20" />
-                  <Text className="text-gray-500 mx-4">หรือ</Text>
-                  <View className="flex-1 h-px bg-white/20" />
-                </View>
-
-                {/* LINE Login */}
-                <Pressable
-                  onPress={handleLineLogin}
-                  disabled={isLoading || isLineLoading}
-                  className={`flex-row items-center justify-center bg-[#00B900] rounded-2xl py-4 ${
-                    (isLoading || isLineLoading) ? 'opacity-60' : ''
-                  }`}
-                  style={{
-                    shadowColor: '#00B900',
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    elevation: 4,
-                  }}
-                >
-                  {isLineLoading ? (
-                    <ActivityIndicator color="white" />
-                  ) : (
-                    <>
-                      <Ionicons name="chatbubbles" size={24} color="white" />
-                      <Text className="text-white font-bold text-lg ml-2">
-                        เข้าสู่ระบบด้วย LINE
-                      </Text>
-                    </>
-                  )}
+                <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9CA3AF" />
                 </Pressable>
               </View>
+              {passwordError ? <Text style={styles.errorLabel}>{passwordError}</Text> : null}
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </LavaBackground>
+
+            {/* Forgot Password */}
+            <Pressable style={styles.forgotButton}>
+              <Text style={styles.forgotText}>ลืมรหัสผ่าน?</Text>
+            </Pressable>
+
+            {/* Login Button */}
+            <Pressable
+              style={[styles.loginButton, isLoading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              <LinearGradient
+                colors={['#3B82F6', '#2563EB']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.loginGradient}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="log-in-outline" size={20} color="#FFF" />
+                    <Text style={styles.loginButtonText}>เข้าสู่ระบบ</Text>
+                  </>
+                )}
+              </LinearGradient>
+            </Pressable>
+
+            {/* Register Link */}
+            <View style={styles.registerRow}>
+              <Text style={styles.registerText}>ยังไม่มีบัญชี? </Text>
+              <Pressable onPress={() => router.push('/register')}>
+                <Text style={styles.registerLink}>สมัครเลย</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Social Login Divider */}
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>หรือ</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* LINE Login */}
+          <Pressable
+            style={[styles.lineButton, (isLoading || isLineLoading) && styles.buttonDisabled]}
+            onPress={handleLineLogin}
+            disabled={isLoading || isLineLoading}
+          >
+            {isLineLoading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <>
+                <Ionicons name="chatbubbles" size={24} color="#FFF" />
+                <Text style={styles.lineButtonText}>เข้าสู่ระบบด้วย LINE</Text>
+              </>
+            )}
+          </Pressable>
+
+          <View style={styles.bottomSpace} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0F0F23',
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+  },
+  header: {
+    paddingTop: 56,
+    paddingBottom: 16,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  logoBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    marginTop: 8,
+  },
+  formCard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239,68,68,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.3)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#EF4444',
+    marginLeft: 8,
+    flex: 1,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    color: '#E5E7EB',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  inputError: {
+    borderColor: '#EF4444',
+  },
+  inputIcon: {
+    marginLeft: 14,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  eyeButton: {
+    padding: 14,
+  },
+  errorLabel: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  forgotButton: {
+    alignItems: 'flex-end',
+    marginBottom: 20,
+  },
+  forgotText: {
+    color: '#3B82F6',
+    fontSize: 14,
+  },
+  loginButton: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  loginGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 8,
+  },
+  loginButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  registerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  registerText: {
+    color: '#9CA3AF',
+    fontSize: 14,
+  },
+  registerLink: {
+    color: '#3B82F6',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  dividerText: {
+    color: '#6B7280',
+    marginHorizontal: 16,
+  },
+  lineButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#00B900',
+    borderRadius: 14,
+    paddingVertical: 16,
+    gap: 8,
+  },
+  lineButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  bottomSpace: {
+    height: 40,
+  },
+});
