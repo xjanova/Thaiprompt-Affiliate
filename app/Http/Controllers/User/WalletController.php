@@ -104,6 +104,39 @@ class WalletController extends Controller
     }
 
     /**
+     * ดึงยอดคงเหลือสำหรับ topbar (AJAX endpoint)
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getBalanceAjax()
+    {
+        $user = auth()->user();
+
+        try {
+            $wallet = $this->walletService->getOrCreateWallet($user);
+
+            return response()->json([
+                'success' => true,
+                'balance' => (float) ($wallet->balance ?? 0),
+                'currency' => $wallet->currency ?? 'THB',
+                'total_income' => (float) ($wallet->total_income ?? 0),
+                'total_expense' => (float) ($wallet->total_expense ?? 0),
+            ]);
+        } catch (Exception $e) {
+            Log::error('Get Wallet Balance AJAX Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'balance' => 0,
+                'message' => 'ไม่สามารถดึงยอดคงเหลือได้',
+            ], 500);
+        }
+    }
+
+    /**
      * แสดงหน้าเติมเงิน Wallet (Topup Packages)
      *
      * @return \Illuminate\View\View

@@ -117,6 +117,9 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
     // Transaction Routes
     Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
 
+    // AJAX: ดึงยอดคงเหลือสำหรับ topbar (lightweight)
+    Route::get('/balance-ajax', [WalletController::class, 'getBalanceAjax'])->name('balance-ajax');
+
     // Payment Methods Routes
     Route::get('/payment-methods', [WalletController::class, 'paymentMethods'])->name('payment-methods');
     Route::post('/payment-method', [WalletController::class, 'storePaymentMethod'])

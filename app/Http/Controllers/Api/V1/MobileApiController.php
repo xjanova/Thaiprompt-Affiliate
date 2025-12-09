@@ -923,6 +923,38 @@ class MobileApiController extends Controller
     }
 
     /**
+     * ดึงยอดคงเหลือกระเป๋าเงิน (แบบ lightweight สำหรับ topbar)
+     *
+     * @return JsonResponse
+     */
+    public function getWalletBalance(): JsonResponse
+    {
+        $user = Auth::user();
+
+        try {
+            $walletService = app(\App\Services\WalletService::class);
+            $wallet = $walletService->getOrCreateWallet($user);
+
+            return response()->json([
+                'success' => true,
+                'balance' => (float) ($wallet->balance ?? 0),
+                'currency' => $wallet->currency ?? 'THB',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Wallet Balance Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'balance' => 0,
+                'message' => 'ไม่สามารถดึงยอดคงเหลือได้',
+            ], 500);
+        }
+    }
+
+    /**
      * ดึงประวัติธุรกรรม
      *
      * @param Request $request
