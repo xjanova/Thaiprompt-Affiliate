@@ -165,12 +165,15 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getProduct']);
         });
 
-        // Cart (Mobile App)
+        // Cart (Mobile App) - คำนวณทุกอย่างที่ server
         Route::prefix('cart')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCart']);
             Route::post('/add', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'addToCart']);
-            Route::put('/update', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateCart']);
-            Route::delete('/remove', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'removeFromCart']);
+            Route::put('/items/{itemId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateCartItem']);
+            Route::delete('/items/{itemId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'removeFromCart']);
+            Route::delete('/clear', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'clearCart']);
+            Route::post('/promo', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'applyPromoCode']);
+            Route::post('/checkout', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'checkout']);
         });
 
         // Wallet (Mobile App)

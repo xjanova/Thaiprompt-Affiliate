@@ -2656,5 +2656,219 @@ export const getTeamMemberStats = async (userId: number): Promise<{
   }
 };
 
+// =====================================================
+// Cart API - ระบบตะกร้าสินค้า (คำนวณทุกอย่างที่ server)
+// =====================================================
+
+/**
+ * Cart Item Type จาก Server
+ */
+export interface CartItemFromServer {
+  id: number;
+  productId: number;
+  productName: string;
+  productImage: string | null;
+  price: number;
+  originalPrice: number;
+  quantity: number;
+  subtotal: number;
+  pvValue: number;
+  pvSubtotal: number;
+  commissionRate: number;
+  attributes: Record<string, any> | null;
+  isAvailable: boolean;
+  stock: number;
+}
+
+/**
+ * Cart Summary Type จาก Server
+ */
+export interface CartSummary {
+  totalItems: number;
+  totalPrice: number;
+  totalPV: number;
+  shippingFee: number;
+  grandTotal: number;
+  estimatedCommission: number;
+}
+
+/**
+ * Cart Response Type จาก Server
+ */
+export interface CartResponse {
+  success: boolean;
+  data?: {
+    cartId: number;
+    items: CartItemFromServer[];
+    summary: CartSummary;
+    freeShippingThreshold: number;
+    amountToFreeShipping: number;
+  };
+  message?: string;
+}
+
+/**
+ * ดึงข้อมูลตะกร้า (คำนวณทุกอย่างจาก server)
+ */
+export const getCart = async (): Promise<CartResponse | null> => {
+  try {
+    const response = await apiClient.get('/cart');
+    return response.data;
+  } catch (error) {
+    console.error('Get cart error:', error);
+    return null;
+  }
+};
+
+/**
+ * เพิ่มสินค้าลงตะกร้า
+ */
+export const addToCart = async (
+  productId: number,
+  quantity: number = 1,
+  attributes?: Record<string, any>
+): Promise<CartResponse | null> => {
+  try {
+    const response = await apiClient.post('/cart/add', {
+      product_id: productId,
+      quantity,
+      attributes,
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('Add to cart error:', error);
+    if (error?.response?.data) {
+      return error.response.data;
+    }
+    return null;
+  }
+};
+
+/**
+ * อัพเดทจำนวนสินค้าในตะกร้า
+ */
+export const updateCartItem = async (
+  itemId: number,
+  quantity: number
+): Promise<CartResponse | null> => {
+  try {
+    const response = await apiClient.put(`/cart/items/${itemId}`, { quantity });
+    return response.data;
+  } catch (error: any) {
+    console.error('Update cart item error:', error);
+    if (error?.response?.data) {
+      return error.response.data;
+    }
+    return null;
+  }
+};
+
+/**
+ * ลบสินค้าออกจากตะกร้า
+ */
+export const removeFromCart = async (itemId: number): Promise<CartResponse | null> => {
+  try {
+    const response = await apiClient.delete(`/cart/items/${itemId}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Remove from cart error:', error);
+    if (error?.response?.data) {
+      return error.response.data;
+    }
+    return null;
+  }
+};
+
+/**
+ * ล้างตะกร้าทั้งหมด
+ */
+export const clearCartApi = async (): Promise<CartResponse | null> => {
+  try {
+    const response = await apiClient.delete('/cart/clear');
+    return response.data;
+  } catch (error) {
+    console.error('Clear cart error:', error);
+    return null;
+  }
+};
+
+/**
+ * Promo Code Response
+ */
+export interface PromoCodeResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    code: string;
+    discountType: 'fixed' | 'percent' | 'shipping';
+    discountAmount: number;
+    totalPrice: number;
+    shippingFee: number;
+    grandTotal: number;
+  };
+}
+
+/**
+ * ใช้โค้ดส่วนลด
+ */
+export const applyPromoCode = async (code: string): Promise<PromoCodeResponse | null> => {
+  try {
+    const response = await apiClient.post('/cart/promo', { code });
+    return response.data;
+  } catch (error: any) {
+    console.error('Apply promo code error:', error);
+    if (error?.response?.data) {
+      return error.response.data;
+    }
+    return null;
+  }
+};
+
+/**
+ * Checkout Request
+ */
+export interface CheckoutRequest {
+  payment_method: 'wallet' | 'bank' | 'card' | 'cod';
+  shipping_address_id?: number;
+  promo_code?: string;
+  note?: string;
+}
+
+/**
+ * Checkout Response
+ */
+export interface CheckoutResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    orderId: number;
+    orderNumber: string;
+    status: string;
+    paymentStatus: string;
+    total: number;
+    pvEarned: number;
+    paymentMethod: string;
+    required?: number;
+    available?: number;
+    shortfall?: number;
+  };
+}
+
+/**
+ * สร้างคำสั่งซื้อ (Checkout)
+ */
+export const checkout = async (data: CheckoutRequest): Promise<CheckoutResponse | null> => {
+  try {
+    const response = await apiClient.post('/cart/checkout', data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Checkout error:', error);
+    if (error?.response?.data) {
+      return error.response.data;
+    }
+    return null;
+  }
+};
+
 // Export axios instance สำหรับใช้งานตรงๆ ถ้าต้องการ
 export { apiClient };
