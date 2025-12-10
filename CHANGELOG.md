@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.65] - 2025-12-10
+
+### ✨ Features
+- feat(login): ปรับปรุง UI หน้า Login ให้ Premium มากขึ้น (29c6965c)
+- feat(network): ปรับปรุง UI หน้า Network ให้ Premium มากขึ้น (9c984be3)
+### 🐛 Bug Fixes
+- fix(wallet): ปรับปุ่ม QR รับเงินให้ชัดเจนขึ้น (e626dbca)
+### 🔧 Other Changes
+- Merge pull request #2239 from xjanova/claude/fix-mobile-connectivity-01HMamgvi2oENVHkGSXvbvCU (fb690ff4)
+
 ## [v3.372.64] - 2025-12-10
 
 ### ✨ Features
