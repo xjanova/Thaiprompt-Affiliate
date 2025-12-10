@@ -2,12 +2,16 @@
  * AnimatedBackground Component
  * สร้างพื้นหลังแบบหิ่งห้อย/อะตอมที่เคลื่อนไหวสวยงาม
  * สำหรับแอพหลักล้าน
+ *
+ * v1.6.3 - แก้ไข crash เมื่อ navigate ระหว่างหน้า
+ * - ใช้ useRef แทน useMemo สำหรับ Animated.Value
+ * - เพิ่ม isMounted check ป้องกัน memory leak
+ * - เพิ่ม error handling
  */
 
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { View, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -36,11 +40,9 @@ interface AnimatedBackgroundProps {
   children?: React.ReactNode;
 }
 
-// ===== Animated SVG Particle =====
+// ===== Firefly Particle Component =====
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
-const FireflyParticle = ({ particle, isDark }: { particle: Particle; isDark: boolean }) => {
+const FireflyParticle = React.memo(({ particle }: { particle: Particle }) => {
   const animatedStyle = {
     transform: [
       { translateX: particle.translateX },
@@ -93,7 +95,7 @@ const FireflyParticle = ({ particle, isDark }: { particle: Particle; isDark: boo
       />
     </Animated.View>
   );
-};
+});
 
 // ===== Main Component =====
 
@@ -105,12 +107,19 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
   intensity = 'medium',
   children,
 }) => {
+  // Track mount state เพื่อป้องกัน memory leak
+  const isMounted = useRef(true);
+  const animationsRef = useRef<Animated.CompositeAnimation[]>([]);
+
   // กำหนดจำนวน particle ตาม intensity
   const actualParticleCount = useMemo(() => {
     switch (intensity) {
-      case 'low': return Math.floor(particleCount * 0.5);
-      case 'high': return Math.floor(particleCount * 1.5);
-      default: return particleCount;
+      case 'low':
+        return Math.floor(particleCount * 0.5);
+      case 'high':
+        return Math.floor(particleCount * 1.5);
+      default:
+        return particleCount;
     }
   }, [particleCount, intensity]);
 
@@ -140,23 +149,26 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
     if (isDark) {
       switch (variant) {
         case 'firefly':
-          return ['#0F0F23', '#1a1a2e', '#16213e'];
+          return ['#0F0F23', '#1a1a2e', '#16213e'] as const;
         case 'stars':
-          return ['#0a0a1a', '#0F0F23', '#1a1a2e'];
+          return ['#0a0a1a', '#0F0F23', '#1a1a2e'] as const;
         case 'particles':
-          return ['#0F0F23', '#1a0a2e', '#2d1b4e'];
+          return ['#0F0F23', '#1a0a2e', '#2d1b4e'] as const;
         case 'aurora':
-          return ['#0F0F23', '#0a1a1a', '#0d2818'];
+          return ['#0F0F23', '#0a1a1a', '#0d2818'] as const;
         default:
-          return ['#0F0F23', '#1a1a2e', '#16213e'];
+          return ['#0F0F23', '#1a1a2e', '#16213e'] as const;
       }
     }
-    return ['#F9FAFB', '#F3F4F6', '#E5E7EB'];
+    return ['#F9FAFB', '#F3F4F6', '#E5E7EB'] as const;
   }, [isDark, variant]);
 
-  // สร้าง particles
-  const particles = useMemo<Particle[]>(() => {
-    return Array.from({ length: actualParticleCount }, (_, i) => ({
+  // ⭐ ใช้ useRef เพื่อเก็บ particles - สร้างครั้งเดียวไม่เปลี่ยน
+  const particlesRef = useRef<Particle[] | null>(null);
+
+  // สร้าง particles ครั้งเดียวตอน mount
+  if (particlesRef.current === null) {
+    particlesRef.current = Array.from({ length: actualParticleCount }, (_, i) => ({
       id: i,
       x: Math.random() * SCREEN_WIDTH,
       y: Math.random() * SCREEN_HEIGHT,
@@ -169,94 +181,133 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
       speed: Math.random() * 3000 + 2000,
       delay: Math.random() * 2000,
     }));
-  }, [actualParticleCount, particleColors]);
+  }
+
+  const particles = particlesRef.current;
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMounted.current = true;
+
+    return () => {
+      isMounted.current = false;
+      // หยุด animations ทั้งหมด
+      animationsRef.current.forEach((anim) => {
+        try {
+          anim.stop();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      });
+      animationsRef.current = [];
+    };
+  }, []);
 
   // Animation effect
   useEffect(() => {
-    const animations = particles.map((particle) => {
-      // Opacity animation (breathing effect)
-      const opacityAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.delay(particle.delay),
-          Animated.timing(particle.opacity, {
-            toValue: Math.random() * 0.5 + 0.5,
-            duration: particle.speed,
-            easing: Easing.inOut(Easing.sine),
-            useNativeDriver: true,
-          }),
-          Animated.timing(particle.opacity, {
-            toValue: 0.1,
-            duration: particle.speed,
-            easing: Easing.inOut(Easing.sine),
-            useNativeDriver: true,
-          }),
-        ])
-      );
+    if (!particles || particles.length === 0) return;
 
-      // Movement animation
-      const moveRange = 50 + Math.random() * 50;
-      const movementAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.delay(particle.delay),
-          Animated.parallel([
-            Animated.timing(particle.translateX, {
-              toValue: (Math.random() - 0.5) * moveRange,
-              duration: particle.speed * 1.5,
+    try {
+      const animations = particles.map((particle) => {
+        // Opacity animation (breathing effect)
+        const opacityAnimation = Animated.loop(
+          Animated.sequence([
+            Animated.delay(particle.delay),
+            Animated.timing(particle.opacity, {
+              toValue: Math.random() * 0.5 + 0.5,
+              duration: particle.speed,
               easing: Easing.inOut(Easing.sine),
               useNativeDriver: true,
             }),
-            Animated.timing(particle.translateY, {
-              toValue: (Math.random() - 0.5) * moveRange,
-              duration: particle.speed * 1.5,
+            Animated.timing(particle.opacity, {
+              toValue: 0.1,
+              duration: particle.speed,
               easing: Easing.inOut(Easing.sine),
               useNativeDriver: true,
             }),
-          ]),
-          Animated.parallel([
-            Animated.timing(particle.translateX, {
-              toValue: 0,
-              duration: particle.speed * 1.5,
-              easing: Easing.inOut(Easing.sine),
+          ])
+        );
+
+        // Movement animation
+        const moveRange = 50 + Math.random() * 50;
+        const movementAnimation = Animated.loop(
+          Animated.sequence([
+            Animated.delay(particle.delay),
+            Animated.parallel([
+              Animated.timing(particle.translateX, {
+                toValue: (Math.random() - 0.5) * moveRange,
+                duration: particle.speed * 1.5,
+                easing: Easing.inOut(Easing.sine),
+                useNativeDriver: true,
+              }),
+              Animated.timing(particle.translateY, {
+                toValue: (Math.random() - 0.5) * moveRange,
+                duration: particle.speed * 1.5,
+                easing: Easing.inOut(Easing.sine),
+                useNativeDriver: true,
+              }),
+            ]),
+            Animated.parallel([
+              Animated.timing(particle.translateX, {
+                toValue: 0,
+                duration: particle.speed * 1.5,
+                easing: Easing.inOut(Easing.sine),
+                useNativeDriver: true,
+              }),
+              Animated.timing(particle.translateY, {
+                toValue: 0,
+                duration: particle.speed * 1.5,
+                easing: Easing.inOut(Easing.sine),
+                useNativeDriver: true,
+              }),
+            ]),
+          ])
+        );
+
+        // Scale animation (pulse effect)
+        const scaleAnimation = Animated.loop(
+          Animated.sequence([
+            Animated.delay(particle.delay + 500),
+            Animated.timing(particle.scale, {
+              toValue: 1.3,
+              duration: particle.speed * 0.8,
+              easing: Easing.inOut(Easing.ease),
               useNativeDriver: true,
             }),
-            Animated.timing(particle.translateY, {
-              toValue: 0,
-              duration: particle.speed * 1.5,
-              easing: Easing.inOut(Easing.sine),
+            Animated.timing(particle.scale, {
+              toValue: 0.8,
+              duration: particle.speed * 0.8,
+              easing: Easing.inOut(Easing.ease),
               useNativeDriver: true,
             }),
-          ]),
-        ])
-      );
+          ])
+        );
 
-      // Scale animation (pulse effect)
-      const scaleAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.delay(particle.delay + 500),
-          Animated.timing(particle.scale, {
-            toValue: 1.3,
-            duration: particle.speed * 0.8,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(particle.scale, {
-            toValue: 0.8,
-            duration: particle.speed * 0.8,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ])
-      );
+        return Animated.parallel([opacityAnimation, movementAnimation, scaleAnimation]);
+      });
 
-      return Animated.parallel([opacityAnimation, movementAnimation, scaleAnimation]);
-    });
+      // เก็บ ref ไว้สำหรับ cleanup
+      animationsRef.current = animations;
 
-    // Start all animations
-    animations.forEach((anim) => anim.start());
+      // Start all animations
+      animations.forEach((anim) => {
+        if (isMounted.current) {
+          anim.start();
+        }
+      });
+    } catch (error) {
+      console.warn('AnimatedBackground animation error:', error);
+    }
 
     // Cleanup
     return () => {
-      animations.forEach((anim) => anim.stop());
+      animationsRef.current.forEach((anim) => {
+        try {
+          anim.stop();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      });
     };
   }, [particles]);
 
@@ -264,7 +315,7 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
     <View style={styles.container}>
       {/* Gradient Background */}
       <LinearGradient
-        colors={gradientColors}
+        colors={gradientColors as unknown as string[]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -273,7 +324,7 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
       {/* Animated Particles Layer - อยู่ด้านล่าง */}
       <View style={styles.particlesContainer} pointerEvents="none">
         {particles.map((particle) => (
-          <FireflyParticle key={particle.id} particle={particle} isDark={isDark} />
+          <FireflyParticle key={particle.id} particle={particle} />
         ))}
       </View>
 
@@ -300,8 +351,11 @@ const FloatingOrb: React.FC<OrbProps> = ({ size, color, x, y, duration, delay })
   const translateY = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0.3)).current;
+  const isMounted = useRef(true);
 
   useEffect(() => {
+    isMounted.current = true;
+
     const yAnimation = Animated.loop(
       Animated.sequence([
         Animated.delay(delay),
@@ -368,11 +422,14 @@ const FloatingOrb: React.FC<OrbProps> = ({ size, color, x, y, duration, delay })
       ])
     );
 
-    yAnimation.start();
-    xAnimation.start();
-    opacityAnimation.start();
+    if (isMounted.current) {
+      yAnimation.start();
+      xAnimation.start();
+      opacityAnimation.start();
+    }
 
     return () => {
+      isMounted.current = false;
       yAnimation.stop();
       xAnimation.stop();
       opacityAnimation.stop();
@@ -401,13 +458,44 @@ export const FloatingOrbsBackground: React.FC<{
   isDark?: boolean;
   children?: React.ReactNode;
 }> = ({ isDark = true, children }) => {
-  const orbs = useMemo(() => [
-    { size: 200, color: 'rgba(123, 44, 191, 0.15)', x: -50, y: 100, duration: 4000, delay: 0 },
-    { size: 150, color: 'rgba(59, 130, 246, 0.15)', x: SCREEN_WIDTH - 100, y: 200, duration: 5000, delay: 500 },
-    { size: 180, color: 'rgba(236, 72, 153, 0.12)', x: 50, y: SCREEN_HEIGHT - 300, duration: 4500, delay: 1000 },
-    { size: 120, color: 'rgba(16, 185, 129, 0.15)', x: SCREEN_WIDTH - 150, y: SCREEN_HEIGHT - 200, duration: 3500, delay: 1500 },
-    { size: 100, color: 'rgba(245, 158, 11, 0.12)', x: SCREEN_WIDTH / 2 - 50, y: 50, duration: 5500, delay: 2000 },
-  ], []);
+  const orbs = useMemo(
+    () => [
+      { size: 200, color: 'rgba(123, 44, 191, 0.15)', x: -50, y: 100, duration: 4000, delay: 0 },
+      {
+        size: 150,
+        color: 'rgba(59, 130, 246, 0.15)',
+        x: SCREEN_WIDTH - 100,
+        y: 200,
+        duration: 5000,
+        delay: 500,
+      },
+      {
+        size: 180,
+        color: 'rgba(236, 72, 153, 0.12)',
+        x: 50,
+        y: SCREEN_HEIGHT - 300,
+        duration: 4500,
+        delay: 1000,
+      },
+      {
+        size: 120,
+        color: 'rgba(16, 185, 129, 0.15)',
+        x: SCREEN_WIDTH - 150,
+        y: SCREEN_HEIGHT - 200,
+        duration: 3500,
+        delay: 1500,
+      },
+      {
+        size: 100,
+        color: 'rgba(245, 158, 11, 0.12)',
+        x: SCREEN_WIDTH / 2 - 50,
+        y: 50,
+        duration: 5500,
+        delay: 2000,
+      },
+    ],
+    []
+  );
 
   return (
     <View style={styles.container}>
