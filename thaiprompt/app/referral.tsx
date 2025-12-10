@@ -33,6 +33,14 @@ import type { ReferralStats } from '@/types';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // =====================================================
+// Format Member ID as Member Code (เหมือน Profile)
+// =====================================================
+
+const formatMemberId = (id: number): string => {
+  return `TP${String(id).padStart(6, '0')}`;
+};
+
+// =====================================================
 // Commission Tier Type
 // =====================================================
 
@@ -96,11 +104,13 @@ const StatCard = ({
 const QRCodeSection = ({
   referralLink,
   referralCode,
+  memberCode,
   isDark,
   onCopyCode,
 }: {
   referralLink: string;
   referralCode: string;
+  memberCode: string;
   isDark: boolean;
   onCopyCode: () => void;
 }) => {
@@ -162,7 +172,7 @@ const QRCodeSection = ({
             >
               <View className="bg-white p-5 rounded-3xl">
                 <QRCode
-                  value={referralLink}
+                  value={memberCode}
                   size={180}
                   color="#1F2937"
                   backgroundColor="white"
@@ -175,9 +185,12 @@ const QRCodeSection = ({
             </LinearGradient>
           </Animated.View>
 
-          {/* Scan instruction */}
+          {/* Member Code Display */}
           <Text className={`text-center mt-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            สแกน QR Code เพื่อสมัครสมาชิก
+            รหัสสมาชิกของคุณ
+          </Text>
+          <Text className="text-pink-500 font-bold text-3xl text-center mt-2 tracking-widest">
+            {memberCode}
           </Text>
 
           {/* Referral Code Display */}
@@ -189,9 +202,9 @@ const QRCodeSection = ({
           >
             <View>
               <Text className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                รหัสแนะนำของคุณ
+                รหัสแนะนำ (สำหรับสมัคร)
               </Text>
-              <Text className="text-pink-500 font-bold text-2xl tracking-widest">
+              <Text className="text-pink-500 font-bold text-xl tracking-widest">
                 {referralCode}
               </Text>
             </View>
@@ -345,8 +358,11 @@ export default function ReferralScreen() {
     referralLink: string;
   } | null>(null);
 
-  // ใช้ข้อมูลจาก API หรือ fallback
-  const referralCode = affiliateData?.referralCode || user?.referralCode || user?.referral_code || user?.id?.toString() || 'XXXX';
+  // ⭐ ใช้รหัสสมาชิก (Member Code) แทน referral code
+  // รูปแบบ: TP000001
+  const memberCode = user?.id ? formatMemberId(user.id) : 'XXXX';
+  // ใช้ข้อมูลจาก API หรือใช้ memberCode
+  const referralCode = affiliateData?.referralCode || user?.referralCode || user?.referral_code || memberCode;
   const referralLink = affiliateData?.referralLink || `https://main.thaiprompt.online/register?ref=${referralCode}`;
 
   // Commission tiers
@@ -580,6 +596,7 @@ export default function ReferralScreen() {
               <QRCodeSection
                 referralLink={referralLink}
                 referralCode={referralCode}
+                memberCode={memberCode}
                 isDark={isDark}
                 onCopyCode={handleCopyCode}
               />
