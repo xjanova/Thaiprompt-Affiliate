@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '1.6.6',
-  BUILD_NUMBER: 18,
-  BUILD_DATE: '2025-12-10-NOANIMATION', // ปิด AnimatedBackground ทั้งหมดเพื่อทดสอบ crash
+  VERSION: '1.6.7',
+  BUILD_NUMBER: 19,
+  BUILD_DATE: '2025-12-10-EMOJI', // เปลี่ยนไอคอนเป็น emoji แทน Ionicons
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs

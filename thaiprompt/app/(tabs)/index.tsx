@@ -25,19 +25,19 @@ import { BannerCarousel } from '@/components';
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 52) / 2;
 
-// Menu Items - เพิ่มเมนูครบตามที่ต้องการ
+// Menu Items - ใช้ emoji icons เพื่อแสดงผลได้ทุกเครื่อง
 const MENU_ITEMS = [
-  { id: 'wallet', title: 'กระเป๋าเงิน', icon: 'wallet-outline', colors: ['#10B981', '#059669'], route: '/(tabs)/wallet' },
-  { id: 'network', title: 'สายงาน', icon: 'people-outline', colors: ['#8B5CF6', '#6D28D9'], route: '/(tabs)/network' },
-  { id: 'referral', title: 'แนะนำเพื่อน', icon: 'person-add-outline', colors: ['#EC4899', '#DB2777'], route: '/referral' },
-  { id: 'commissions', title: 'คอมมิชชั่น', icon: 'cash-outline', colors: ['#3B82F6', '#2563EB'], route: '/commissions' },
-  { id: 'shopping', title: 'ช้อปปิ้ง', icon: 'cart-outline', colors: ['#F59E0B', '#D97706'], route: '/shopping' },
-  { id: 'rider', title: 'ไรเดอร์', icon: 'bicycle-outline', colors: ['#06B6D4', '#0891B2'], route: '/rider' },
-  { id: 'wealth-guide', title: 'เส้นทางเศรษฐี', icon: 'book-outline', colors: ['#F59E0B', '#D97706'], route: '/wealth-guide' },
-  { id: 'tarot', title: 'ดูดวง', icon: 'sparkles-outline', colors: ['#6366F1', '#4F46E5'], route: '/tarot' },
-  { id: 'leaderboard', title: 'อันดับ', icon: 'trophy-outline', colors: ['#EF4444', '#DC2626'], route: '/leaderboard' },
-  { id: 'coming-soon', title: 'เร็วๆ นี้', icon: 'rocket-outline', colors: ['#8B5CF6', '#6D28D9'], route: '/coming-soon' },
-  { id: 'settings', title: 'ตั้งค่า', icon: 'settings-outline', colors: ['#6B7280', '#4B5563'], route: '/settings' },
+  { id: 'wallet', title: 'กระเป๋าเงิน', icon: '💰', colors: ['#10B981', '#059669'], route: '/(tabs)/wallet' },
+  { id: 'network', title: 'สายงาน', icon: '👥', colors: ['#8B5CF6', '#6D28D9'], route: '/(tabs)/network' },
+  { id: 'referral', title: 'แนะนำเพื่อน', icon: '🤝', colors: ['#EC4899', '#DB2777'], route: '/referral' },
+  { id: 'commissions', title: 'คอมมิชชั่น', icon: '💵', colors: ['#3B82F6', '#2563EB'], route: '/commissions' },
+  { id: 'shopping', title: 'ช้อปปิ้ง', icon: '🛒', colors: ['#F59E0B', '#D97706'], route: '/shopping' },
+  { id: 'rider', title: 'ไรเดอร์', icon: '🚴', colors: ['#06B6D4', '#0891B2'], route: '/rider' },
+  { id: 'wealth-guide', title: 'เส้นทางเศรษฐี', icon: '📚', colors: ['#F59E0B', '#D97706'], route: '/wealth-guide' },
+  { id: 'tarot', title: 'ดูดวง', icon: '🔮', colors: ['#6366F1', '#4F46E5'], route: '/tarot' },
+  { id: 'leaderboard', title: 'อันดับ', icon: '🏆', colors: ['#EF4444', '#DC2626'], route: '/leaderboard' },
+  { id: 'coming-soon', title: 'เร็วๆ นี้', icon: '🚀', colors: ['#8B5CF6', '#6D28D9'], route: '/coming-soon' },
+  { id: 'settings', title: 'ตั้งค่า', icon: '⚙️', colors: ['#6B7280', '#4B5563'], route: '/settings' },
 ] as const;
 
 // Get greeting by time
@@ -138,7 +138,7 @@ export default function HomeScreen() {
               style={styles.balanceCard}
             >
               <View style={styles.balanceHeader}>
-                <Ionicons name="wallet-outline" size={24} color="rgba(255,255,255,0.9)" />
+                <Text style={{ fontSize: 22 }}>💳</Text>
                 <Text style={styles.balanceLabel}>ยอดเงินคงเหลือ</Text>
               </View>
               <Text style={styles.balanceAmount}>฿0.00</Text>
@@ -147,14 +147,14 @@ export default function HomeScreen() {
                   style={styles.balanceButton}
                   onPress={() => router.push('/(tabs)/wallet')}
                 >
-                  <Ionicons name="add-circle-outline" size={18} color="#FFF" />
+                  <Text style={{ fontSize: 16 }}>➕</Text>
                   <Text style={styles.balanceButtonText}>เติมเงิน</Text>
                 </Pressable>
                 <Pressable
                   style={styles.balanceButton}
                   onPress={() => router.push('/commissions')}
                 >
-                  <Ionicons name="arrow-up-circle-outline" size={18} color="#FFF" />
+                  <Text style={{ fontSize: 16 }}>💸</Text>
                   <Text style={styles.balanceButtonText}>ถอนเงิน</Text>
                 </Pressable>
               </View>
@@ -166,17 +166,17 @@ export default function HomeScreen() {
         {isAuthenticated && (
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <Ionicons name="people-outline" size={22} color="#8B5CF6" />
+              <Text style={{ fontSize: 20 }}>👥</Text>
               <Text style={styles.statValue}>0</Text>
               <Text style={styles.statLabel}>สมาชิก</Text>
             </View>
             <View style={styles.statCard}>
-              <Ionicons name="trending-up-outline" size={22} color="#10B981" />
+              <Text style={{ fontSize: 20 }}>📈</Text>
               <Text style={styles.statValue}>฿0</Text>
               <Text style={styles.statLabel}>รายได้</Text>
             </View>
             <View style={styles.statCard}>
-              <Ionicons name="star-outline" size={22} color="#F59E0B" />
+              <Text style={{ fontSize: 20 }}>⭐</Text>
               <Text style={styles.statValue}>Bronze</Text>
               <Text style={styles.statLabel}>ระดับ</Text>
             </View>
@@ -200,7 +200,7 @@ export default function HomeScreen() {
                   style={styles.menuGradient}
                 >
                   <View style={styles.menuIconBox}>
-                    <Ionicons name={item.icon as any} size={26} color="#FFF" />
+                    <Text style={styles.menuEmoji}>{item.icon}</Text>
                   </View>
                   <Text style={styles.menuTitle}>{item.title}</Text>
                 </LinearGradient>
@@ -372,6 +372,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  menuEmoji: {
+    fontSize: 24,
+    textAlign: 'center',
   },
   menuTitle: {
     fontSize: 13,
