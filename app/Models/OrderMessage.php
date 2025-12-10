@@ -196,7 +196,51 @@ class OrderMessage extends Model
             'last_message_at' => now(),
         ]);
 
+        // ส่ง Push Notification ไปยังลูกค้าเมื่อ Admin/Seller ส่งข้อความ
+        if (in_array($senderType, ['admin', 'seller']) && $order->user_id) {
+            static::sendPushNotification($order, $orderMessage);
+        }
+
         return $orderMessage;
+    }
+
+    /**
+     * ส่ง Push Notification ไปยังลูกค้า
+     *
+     * @param Order $order
+     * @param OrderMessage $message
+     * @return void
+     */
+    protected static function sendPushNotification(Order $order, OrderMessage $message): void
+    {
+        try {
+            $pushService = app(\App\Services\ExpoPushService::class);
+
+            $senderName = match ($message->sender_type) {
+                'admin' => 'ทีมงาน ' . config('app.name'),
+                'seller' => 'ร้านค้า',
+                default => 'ระบบ',
+            };
+
+            $pushService->sendToUser(
+                $order->user_id,
+                "ข้อความใหม่จาก{$senderName}",
+                \Illuminate\Support\Str::limit($message->message, 100),
+                [
+                    'type' => 'order_message',
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'message_id' => $message->id,
+                    'channel' => 'orders',
+                ]
+            );
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to send order message push notification', [
+                'order_id' => $order->id,
+                'message_id' => $message->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

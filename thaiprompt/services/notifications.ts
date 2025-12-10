@@ -58,7 +58,12 @@ export interface PushNotificationData {
   type?: string;
   ticketId?: number;
   orderId?: number;
+  order_id?: number;  // รองรับทั้ง snake_case และ camelCase
+  messageId?: number;
+  orderNumber?: string;
+  order_number?: string;
   url?: string;
+  channel?: string;
   [key: string]: unknown;
 }
 
