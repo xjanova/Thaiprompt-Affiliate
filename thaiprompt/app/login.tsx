@@ -1,10 +1,15 @@
 /**
- * Login Screen - Premium Stable Version
- * ใช้ StyleSheet แทน NativeWind
- * ปิด AnimatedBackground ชั่วคราวเพื่อทดสอบ crash
+ * Login Screen - Premium V3 Design
+ * ออกแบบใหม่ให้สวยงาม น่าใช้ สมราคา
+ *
+ * Features:
+ * - Animated floating elements
+ * - Glassmorphism form card
+ * - Premium gradient effects
+ * - Smooth animations
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,12 +23,81 @@ import {
   StyleSheet,
   StatusBar,
   Image,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { APP_INFO } from '@/config/appConfig';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '@/stores/authStore';
+
+const { width, height } = Dimensions.get('window');
+
+// Floating Orb Animation Component
+const FloatingOrb = ({ delay, size, color, position }: {
+  delay: number;
+  size: number;
+  color: string;
+  position: { top?: number; bottom?: number; left?: number; right?: number };
+}) => {
+  const translateY = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const floatAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(translateY, {
+            toValue: -20,
+            duration: 3000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0.6,
+            duration: 3000,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(translateY, {
+            toValue: 0,
+            duration: 3000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0.3,
+            duration: 3000,
+            useNativeDriver: true,
+          }),
+        ]),
+      ])
+    );
+
+    const timeout = setTimeout(() => floatAnimation.start(), delay);
+    return () => {
+      clearTimeout(timeout);
+      floatAnimation.stop();
+    };
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          position: 'absolute',
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: color,
+          ...position,
+          transform: [{ translateY }],
+          opacity,
+        },
+      ]}
+    />
+  );
+};
 
 // Email validation
 const isValidEmail = (email: string) => {
@@ -147,16 +221,64 @@ export default function LoginScreen() {
     }
   };
 
+  // Logo animation
+  const logoScale = useRef(new Animated.Value(0.8)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const formSlide = useRef(new Animated.Value(50)).current;
+  const formOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Logo entrance animation
+    Animated.parallel([
+      Animated.spring(logoScale, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoOpacity, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Form entrance animation (delayed)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.spring(formSlide, {
+          toValue: 0,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.timing(formOpacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 300);
+  }, []);
+
   return (
     <View style={styles.container}>
-      {/* Gradient Background แทน AnimatedBackground ชั่วคราว */}
+      {/* Premium Gradient Background */}
       <LinearGradient
-        colors={['#0F0F23', '#1a1a2e', '#16213e']}
+        colors={['#0F0F23', '#1a1a2e', '#16213e', '#0F0F23']}
+        locations={[0, 0.3, 0.7, 1]}
         style={StyleSheet.absoluteFill}
       />
+
+      {/* Floating Orbs Background */}
+      <FloatingOrb delay={0} size={150} color="rgba(59,130,246,0.15)" position={{ top: 50, left: -50 }} />
+      <FloatingOrb delay={500} size={100} color="rgba(139,92,246,0.15)" position={{ top: 200, right: -30 }} />
+      <FloatingOrb delay={1000} size={80} color="rgba(236,72,153,0.15)" position={{ bottom: 200, left: 30 }} />
+      <FloatingOrb delay={1500} size={120} color="rgba(16,185,129,0.1)" position={{ bottom: 100, right: -40 }} />
+
       <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
 
-        <KeyboardAvoidingView
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
@@ -169,32 +291,66 @@ export default function LoginScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Pressable style={styles.backButton} onPress={() => router.back()}>
-              <Text style={{ fontSize: 24 }}>←</Text>
+              <LinearGradient
+                colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)']}
+                style={styles.backButtonGradient}
+              >
+                <Text style={{ fontSize: 22, color: '#FFFFFF' }}>←</Text>
+              </LinearGradient>
             </Pressable>
           </View>
 
-          {/* Logo */}
-          <View style={styles.logoContainer}>
+          {/* Animated Logo */}
+          <Animated.View
+            style={[
+              styles.logoContainer,
+              {
+                transform: [{ scale: logoScale }],
+                opacity: logoOpacity,
+              },
+            ]}
+          >
             <View style={styles.logoWrapper}>
-              <Image
-                source={require('@/assets/images/icon.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
-              {/* Glow effect */}
-              <View style={styles.logoGlow} />
+              {/* Outer glow */}
+              <View style={styles.logoOuterGlow} />
+              {/* Logo container with gradient border */}
+              <LinearGradient
+                colors={['#3B82F6', '#8B5CF6', '#EC4899']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.logoBorder}
+              >
+                <View style={styles.logoInner}>
+                  <Image
+                    source={require('@/assets/images/icon.png')}
+                    style={styles.logo}
+                    resizeMode="contain"
+                  />
+                </View>
+              </LinearGradient>
             </View>
             <Text style={styles.appName}>{APP_INFO.NAME}</Text>
             <Text style={styles.title}>เข้าสู่ระบบ</Text>
-            <Text style={styles.subtitle}>ยินดีต้อนรับกลับมา</Text>
-          </View>
+            <Text style={styles.subtitle}>ยินดีต้อนรับกลับมา 👋</Text>
+          </Animated.View>
 
-          {/* Form Card */}
-          <View style={styles.formCard}>
+          {/* Animated Form Card */}
+          <Animated.View
+            style={[
+              styles.formCard,
+              {
+                transform: [{ translateY: formSlide }],
+                opacity: formOpacity,
+              },
+            ]}
+          >
+            {/* Glassmorphism shine */}
+            <View style={styles.formShine} />
+
             {/* Error Message */}
             {error && (
               <View style={styles.errorBox}>
-                <Text style={{ fontSize: 20 }}>⚠️</Text>
+                <Text style={{ fontSize: 18 }}>⚠️</Text>
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             )}
@@ -279,7 +435,7 @@ export default function LoginScreen() {
                 <Text style={styles.registerLink}>สมัครเลย</Text>
               </Pressable>
             </View>
-          </View>
+          </Animated.View>
 
           {/* Social Login Divider */}
           <View style={styles.dividerRow}>
@@ -315,6 +471,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0F0F23',
+    overflow: 'hidden',
   },
   keyboardView: {
     flex: 1,
@@ -331,12 +488,18 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  backButtonGradient: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   logoContainer: {
     alignItems: 'center',
@@ -344,46 +507,70 @@ const styles = StyleSheet.create({
   },
   logoWrapper: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: 20,
+  },
+  logoOuterGlow: {
+    position: 'absolute',
+    top: -15,
+    left: -15,
+    right: -15,
+    bottom: -15,
+    borderRadius: 40,
+    backgroundColor: '#3B82F6',
+    opacity: 0.2,
+  },
+  logoBorder: {
+    padding: 4,
+    borderRadius: 28,
+  },
+  logoInner: {
+    backgroundColor: '#0F0F23',
+    borderRadius: 24,
+    padding: 2,
   },
   logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 25,
-  },
-  logoGlow: {
-    position: 'absolute',
-    top: -8,
-    left: -8,
-    right: -8,
-    bottom: -8,
-    borderRadius: 33,
-    backgroundColor: '#3B82F6',
-    opacity: 0.25,
-    zIndex: -1,
+    width: 90,
+    height: 90,
+    borderRadius: 22,
   },
   appName: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#3B82F6',
     marginBottom: 8,
+    letterSpacing: 1,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   subtitle: {
     fontSize: 15,
     color: '#9CA3AF',
-    marginTop: 4,
+    marginTop: 6,
   },
   formCard: {
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 24,
+    borderRadius: 28,
     padding: 24,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+    // Shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  formShine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+    backgroundColor: 'rgba(255,255,255,0.03)',
   },
   errorBox: {
     flexDirection: 'row',
