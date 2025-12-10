@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.48] - 2025-12-10
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2224 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (c570d2ce)
+- chore(mobile): อัพเดท EAS project ID, owner และ sync เวอร์ชัน (0ea51c2b)
+
 ## [v3.372.47] - 2025-12-10
 
 ### ✨ Features
