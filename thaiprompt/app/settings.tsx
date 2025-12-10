@@ -1,6 +1,6 @@
 /**
  * Settings Screen - หน้าตั้งค่า
- * UI สวยงามแบบ Glassmorphism พร้อม SVG Icons
+ * UI สวยงามแบบ Glassmorphism พร้อม SVG Icons และ Animated Background
  */
 
 import React, { useState, useCallback } from 'react';
@@ -18,7 +18,11 @@ import {
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
+
+// Import Animated Background
+import { AnimatedBackground } from '@/components/AnimatedBackground';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
@@ -321,25 +325,32 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#0F0F23' : '#F9FAFB' }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+    <AnimatedBackground
+      variant="firefly"
+      isDark={isDark}
+      intensity="medium"
+      particleCount={25}
+    >
+      <View style={styles.container}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      {/* Header - ปรับปรุงให้สวยงามขึ้น */}
-      <LinearGradient
-        colors={isDark ? ['rgba(15,15,35,0.95)', 'rgba(15,15,35,0.8)'] : ['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.8)']}
-        style={[styles.header, { borderBottomColor: isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB' }]}
-      >
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <ArrowBackIcon size={24} color={isDark ? '#FFF' : '#1F2937'} />
-        </Pressable>
-        <View style={styles.headerTitleRow}>
-          <SettingsIcon size={20} color={isDark ? '#FFF' : '#1F2937'} />
-          <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#1F2937' }]}>
-            ตั้งค่า
-          </Text>
-        </View>
-        <View style={styles.placeholder} />
-      </LinearGradient>
+        {/* Header with Glassmorphism */}
+        <BlurView
+          intensity={isDark ? 40 : 60}
+          tint={isDark ? 'dark' : 'light'}
+          style={[styles.header, { borderBottomColor: isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB' }]}
+        >
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <ArrowBackIcon size={24} color={isDark ? '#FFF' : '#1F2937'} />
+          </Pressable>
+          <View style={styles.headerTitleRow}>
+            <SettingsIcon size={20} color={isDark ? '#FFF' : '#1F2937'} />
+            <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#1F2937' }]}>
+              ตั้งค่า
+            </Text>
+          </View>
+          <View style={styles.placeholder} />
+        </BlurView>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -581,7 +592,8 @@ export default function SettingsScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-    </View>
+      </View>
+    </AnimatedBackground>
   );
 }
 
