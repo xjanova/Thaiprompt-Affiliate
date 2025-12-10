@@ -1,6 +1,7 @@
 /**
  * Settings Screen - หน้าตั้งค่า
- * UI สวยงามแบบ Glassmorphism พร้อม SVG Icons และ Animated Background
+ * UI สวยงามแบบ Glassmorphism พร้อม SVG Icons
+ * ปิด AnimatedBackground ชั่วคราวเพื่อทดสอบ crash
  */
 
 import React, { useState, useCallback } from 'react';
@@ -21,8 +22,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 
-// Import Animated Background
-import { AnimatedBackground } from '@/components/AnimatedBackground';
+// ปิด AnimatedBackground ชั่วคราวเพื่อทดสอบ crash
+// import { AnimatedBackground } from '@/components/AnimatedBackground';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
@@ -325,14 +326,13 @@ export default function SettingsScreen() {
   };
 
   return (
-    <AnimatedBackground
-      variant="firefly"
-      isDark={isDark}
-      intensity="medium"
-      particleCount={25}
-    >
-      <View style={styles.container}>
-        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+    <View style={styles.container}>
+      {/* Gradient Background แทน AnimatedBackground ชั่วคราว */}
+      <LinearGradient
+        colors={isDark ? ['#0F0F23', '#1a1a2e', '#16213e'] : ['#F9FAFB', '#F3F4F6', '#E5E7EB']}
+        style={StyleSheet.absoluteFill}
+      />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
         {/* Header with Glassmorphism */}
         <BlurView
@@ -592,8 +592,7 @@ export default function SettingsScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-      </View>
-    </AnimatedBackground>
+    </View>
   );
 }
 

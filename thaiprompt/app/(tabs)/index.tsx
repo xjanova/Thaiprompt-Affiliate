@@ -1,7 +1,7 @@
 /**
  * Home Screen - Premium Design V2
  * แก้ไข: crash on resume, icons หาย
- * เพิ่ม: AnimatedBackground หิ่งห้อยเคลื่อนไหว
+ * ปิด AnimatedBackground ชั่วคราวเพื่อทดสอบ crash
  */
 
 import React, { useState, useCallback } from 'react';
@@ -21,7 +21,6 @@ import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 import { BannerCarousel } from '@/components';
-import { AnimatedBackground } from '@/components/AnimatedBackground';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 52) / 2;
@@ -72,14 +71,13 @@ export default function HomeScreen() {
   };
 
   return (
-    <AnimatedBackground
-      variant="firefly"
-      isDark={true}
-      intensity="low"
-      particleCount={18}
-    >
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+    <View style={styles.container}>
+      {/* Gradient Background แทน AnimatedBackground ชั่วคราว */}
+      <LinearGradient
+        colors={['#0F0F23', '#1a1a2e', '#16213e']}
+        style={StyleSheet.absoluteFill}
+      />
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
 
         <ScrollView
         style={styles.scrollView}
@@ -218,8 +216,7 @@ export default function HomeScreen() {
             </Text>
           </View>
         </ScrollView>
-      </View>
-    </AnimatedBackground>
+    </View>
   );
 }
 
