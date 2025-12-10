@@ -30,31 +30,23 @@ import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 
+// Import SVG Icons
+import {
+  ArrowBackIcon,
+  FlashIcon,
+  FlashOffIcon,
+  CameraIcon,
+  CameraRotateIcon,
+  CheckCircleIcon,
+  CopyIcon,
+  ExternalLinkIcon,
+  QRCodeIcon,
+  AlertCircleIcon,
+  RefreshIcon,
+} from '@/components/icons';
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SCAN_AREA_SIZE = SCREEN_WIDTH * 0.7;
-
-// Simple Icon Component (fallback สำหรับกรณี Ionicons ไม่โหลด)
-const Icon = ({ name, size = 24, color = '#FFF' }: { name: string; size?: number; color?: string }) => {
-  const icons: Record<string, string> = {
-    'arrow-back': '←',
-    'flash': '⚡',
-    'flash-outline': '💡',
-    'camera-outline': '📷',
-    'camera-reverse-outline': '🔄',
-    'checkmark-circle': '✓',
-    'copy-outline': '📋',
-    'open-outline': '🔗',
-    'scan-outline': '📱',
-    'alert-circle': '⚠️',
-    'refresh': '↻',
-  };
-
-  return (
-    <Text style={{ fontSize: size, color, textAlign: 'center' }}>
-      {icons[name] || '•'}
-    </Text>
-  );
-};
 
 export default function QRScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -280,7 +272,7 @@ export default function QRScannerScreen() {
         />
         <View style={styles.centered}>
           <View style={styles.errorBox}>
-            <Icon name="alert-circle" size={60} color="#EF4444" />
+            <AlertCircleIcon size={60} color="#EF4444" />
             <Text style={styles.errorTitle}>เกิดข้อผิดพลาด</Text>
             <Text style={styles.errorText}>{cameraError}</Text>
 
@@ -289,7 +281,7 @@ export default function QRScannerScreen() {
                 colors={['#3B82F6', '#2563EB']}
                 style={styles.retryButtonGradient}
               >
-                <Icon name="refresh" size={20} color="#FFF" />
+                <RefreshIcon size={20} color="#FFF" />
                 <Text style={styles.retryButtonText}>ลองใหม่</Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -315,7 +307,7 @@ export default function QRScannerScreen() {
         <View style={styles.centered}>
           <View style={styles.permissionBox}>
             <View style={styles.permissionIconContainer}>
-              <Icon name="camera-outline" size={50} color="#FFF" />
+              <CameraIcon size={50} color="#FFF" />
             </View>
             <Text style={styles.permissionTitle}>ต้องการสิทธิ์กล้อง</Text>
             <Text style={styles.permissionText}>
@@ -363,11 +355,15 @@ export default function QRScannerScreen() {
         <View style={styles.headerContainer}>
           <BlurView intensity={30} tint="dark" style={styles.header}>
             <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-              <Icon name="arrow-back" size={24} color="#FFF" />
+              <ArrowBackIcon size={24} color="#FFF" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>สแกน QR Code</Text>
             <TouchableOpacity style={styles.headerButton} onPress={toggleFlash}>
-              <Icon name={isFlashOn ? 'flash' : 'flash-outline'} size={24} color={isFlashOn ? '#FFD700' : '#FFF'} />
+              {isFlashOn ? (
+                <FlashIcon size={24} color="#FFD700" />
+              ) : (
+                <FlashOffIcon size={24} color="#FFF" />
+              )}
             </TouchableOpacity>
           </BlurView>
         </View>
@@ -411,7 +407,7 @@ export default function QRScannerScreen() {
               <View style={styles.controlButtons}>
                 <TouchableOpacity style={styles.controlButton} onPress={toggleCamera}>
                   <View style={styles.controlButtonInner}>
-                    <Icon name="camera-reverse-outline" size={28} color="#FFF" />
+                    <CameraRotateIcon size={28} color="#FFF" />
                   </View>
                   <Text style={styles.controlButtonText}>สลับกล้อง</Text>
                 </TouchableOpacity>
@@ -421,7 +417,7 @@ export default function QRScannerScreen() {
                 {/* Scanned Data */}
                 <View style={styles.resultBox}>
                   <View style={styles.resultHeader}>
-                    <Icon name="checkmark-circle" size={24} color="#10B981" />
+                    <CheckCircleIcon size={24} color="#10B981" />
                     <Text style={styles.resultTitle}>ผลการสแกน</Text>
                   </View>
                   <Text style={styles.resultData} numberOfLines={4}>
@@ -433,7 +429,7 @@ export default function QRScannerScreen() {
                 <View style={styles.actionButtons}>
                   <TouchableOpacity style={styles.actionButton} onPress={handleCopy}>
                     <LinearGradient colors={['#6B7280', '#4B5563']} style={styles.actionButtonGradient}>
-                      <Icon name="copy-outline" size={18} color="#FFF" />
+                      <CopyIcon size={18} color="#FFF" />
                       <Text style={styles.actionButtonText}>คัดลอก</Text>
                     </LinearGradient>
                   </TouchableOpacity>
@@ -441,7 +437,7 @@ export default function QRScannerScreen() {
                   {scannedData && isUrl(scannedData) && (
                     <TouchableOpacity style={styles.actionButton} onPress={handleOpenLink}>
                       <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.actionButtonGradient}>
-                        <Icon name="open-outline" size={18} color="#FFF" />
+                        <ExternalLinkIcon size={18} color="#FFF" />
                         <Text style={styles.actionButtonText}>เปิดลิงก์</Text>
                       </LinearGradient>
                     </TouchableOpacity>
@@ -449,7 +445,7 @@ export default function QRScannerScreen() {
 
                   <TouchableOpacity style={styles.actionButton} onPress={handleScanAgain}>
                     <LinearGradient colors={['#10B981', '#059669']} style={styles.actionButtonGradient}>
-                      <Icon name="scan-outline" size={18} color="#FFF" />
+                      <QRCodeIcon size={18} color="#FFF" />
                       <Text style={styles.actionButtonText}>สแกนใหม่</Text>
                     </LinearGradient>
                   </TouchableOpacity>

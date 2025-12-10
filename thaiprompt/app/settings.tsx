@@ -1,6 +1,6 @@
 /**
  * Settings Screen - หน้าตั้งค่า
- * UI สวยงามแบบ Glassmorphism พร้อม Emoji fallback
+ * UI สวยงามแบบ Glassmorphism พร้อม SVG Icons
  */
 
 import React, { useState, useCallback } from 'react';
@@ -18,48 +18,42 @@ import {
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 import { startGpsSharing, stopGpsSharing, requestLocationPermission } from '@/services/location';
 
-// Emoji Icon mapping (fallback สำหรับกรณี Ionicons ไม่โหลด)
-const ICONS: Record<string, string> = {
-  'arrow-back': '←',
-  'sunny': '☀️',
-  'moon': '🌙',
-  'phone-portrait': '📱',
-  'language': '🌐',
-  'shield-checkmark': '🛡️',
-  'lock-closed': '🔒',
-  'notifications': '🔔',
-  'mail': '✉️',
-  'finger-print': '👆',
-  'location': '📍',
-  'navigate': '🧭',
-  'document-text': '📄',
-  'shield': '🛡️',
-  'star': '⭐',
-  'information-circle': '📱',
-  'log-out': '🚪',
-  'trash': '🗑️',
-  'pencil': '✏️',
-  'chevron-forward': '›',
-};
+// Import SVG Icons
+import {
+  Icon,
+  ArrowBackIcon,
+  SunIcon,
+  MoonIcon,
+  PhoneIcon,
+  GlobeIcon,
+  ShieldCheckIcon,
+  LockIcon,
+  BellIcon,
+  MailIcon,
+  FingerprintIcon,
+  LocationIcon,
+  NavigationIcon,
+  FileTextIcon,
+  ShieldIcon,
+  StarIcon,
+  InfoIcon,
+  LogOutIcon,
+  TrashIcon,
+  EditIcon,
+  ChevronRightIcon,
+  CheckCircleIcon,
+  SettingsIcon,
+} from '@/components/icons';
 
-// Icon Component with emoji
-const Icon = ({ name, size = 24, color = '#FFF' }: { name: string; size?: number; color?: string }) => (
-  <Text style={{ fontSize: size * 0.9, color, textAlign: 'center' }}>
-    {ICONS[name] || '•'}
-  </Text>
-);
-
-// Setting Item Component - ปรับปรุงให้สวยงามขึ้น
+// Setting Item Component - ใช้ SVG Icons
 const SettingItem = ({
-  icon,
-  iconEmoji,
+  icon: IconComponent,
   iconColor,
   title,
   subtitle,
@@ -67,8 +61,7 @@ const SettingItem = ({
   rightElement,
   isDark,
 }: {
-  icon?: string;
-  iconEmoji?: string;
+  icon?: React.FC<{ size?: number; color?: string }>;
   iconColor?: string;
   title: string;
   subtitle?: string;
@@ -92,9 +85,7 @@ const SettingItem = ({
       colors={iconColor ? [`${iconColor}30`, `${iconColor}10`] : ['rgba(212,175,55,0.2)', 'rgba(212,175,55,0.1)']}
       style={styles.iconContainer}
     >
-      <Text style={{ fontSize: 20 }}>
-        {iconEmoji || ICONS[icon || ''] || '•'}
-      </Text>
+      {IconComponent && <IconComponent size={22} color={iconColor || '#D4AF37'} />}
     </LinearGradient>
     <View style={styles.settingContent}>
       <Text style={[styles.settingTitle, { color: isDark ? '#FFFFFF' : '#1F2937' }]}>
@@ -107,7 +98,7 @@ const SettingItem = ({
       )}
     </View>
     {rightElement || (
-      <Text style={{ fontSize: 18, color: isDark ? '#666666' : '#999999' }}>›</Text>
+      <ChevronRightIcon size={20} color={isDark ? '#666666' : '#999999'} />
     )}
   </Pressable>
 );
@@ -119,11 +110,11 @@ const SectionHeader = ({ title, isDark }: { title: string; isDark: boolean }) =>
   </Text>
 );
 
-// Theme Option - ปรับปรุงให้ใช้ Emoji
+// Theme Option - ใช้ SVG Icons
 const ThemeOption = ({
   mode,
   currentMode,
-  icon,
+  IconComponent,
   title,
   description,
   onPress,
@@ -131,14 +122,13 @@ const ThemeOption = ({
 }: {
   mode: 'light' | 'dark' | 'system';
   currentMode: string;
-  icon: string;
+  IconComponent: React.FC<{ size?: number; color?: string }>;
   title: string;
   description: string;
   onPress: () => void;
   isDark: boolean;
 }) => {
   const isSelected = currentMode === mode;
-  const emoji = ICONS[icon] || (mode === 'light' ? '☀️' : mode === 'dark' ? '🌙' : '📱');
 
   return (
     <Pressable
@@ -175,7 +165,7 @@ const ThemeOption = ({
         }
         style={styles.themeIconContainer}
       >
-        <Text style={{ fontSize: 24 }}>{emoji}</Text>
+        <IconComponent size={24} color={isSelected ? '#FFFFFF' : isDark ? '#9CA3AF' : '#6B7280'} />
       </LinearGradient>
       <View style={styles.themeContent}>
         <Text
@@ -191,7 +181,7 @@ const ThemeOption = ({
         </Text>
       </View>
       {isSelected && (
-        <Text style={{ fontSize: 20, color: '#3B82F6' }}>✓</Text>
+        <CheckCircleIcon size={22} color="#3B82F6" />
       )}
     </Pressable>
   );
@@ -340,11 +330,14 @@ export default function SettingsScreen() {
         style={[styles.header, { borderBottomColor: isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB' }]}
       >
         <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Text style={{ fontSize: 22, color: isDark ? '#FFF' : '#1F2937' }}>←</Text>
+          <ArrowBackIcon size={24} color={isDark ? '#FFF' : '#1F2937'} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#1F2937' }]}>
-          ⚙️ ตั้งค่า
-        </Text>
+        <View style={styles.headerTitleRow}>
+          <SettingsIcon size={20} color={isDark ? '#FFF' : '#1F2937'} />
+          <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#1F2937' }]}>
+            ตั้งค่า
+          </Text>
+        </View>
         <View style={styles.placeholder} />
       </LinearGradient>
 
@@ -375,7 +368,7 @@ export default function SettingsScreen() {
                   { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] }
                 ]}
               >
-                <Text style={{ fontSize: 14 }}>✏️</Text>
+                <EditIcon size={16} color="#FFFFFF" />
                 <Text style={styles.editProfileText}>แก้ไขโปรไฟล์</Text>
               </Pressable>
             </LinearGradient>
@@ -392,7 +385,7 @@ export default function SettingsScreen() {
           <ThemeOption
             mode="light"
             currentMode={themeMode}
-            icon="sunny"
+            IconComponent={SunIcon}
             title="โหมดสว่าง"
             description="สีสันสดใส เหมาะสำหรับกลางวัน"
             onPress={() => setThemeMode('light')}
@@ -402,7 +395,7 @@ export default function SettingsScreen() {
           <ThemeOption
             mode="dark"
             currentMode={themeMode}
-            icon="moon"
+            IconComponent={MoonIcon}
             title="โหมดมืด"
             description="ธีมมืดถนอมสายตา"
             onPress={() => setThemeMode('dark')}
@@ -412,7 +405,7 @@ export default function SettingsScreen() {
           <ThemeOption
             mode="system"
             currentMode={themeMode}
-            icon="phone-portrait"
+            IconComponent={PhoneIcon}
             title="ตามระบบ"
             description="เปลี่ยนตามการตั้งค่าของอุปกรณ์"
             onPress={() => setThemeMode('system')}
@@ -421,7 +414,7 @@ export default function SettingsScreen() {
         </View>
 
         <SettingItem
-          icon="language"
+          icon={GlobeIcon}
           iconColor="#f093fb"
           title="ภาษา"
           subtitle="ไทย"
@@ -432,7 +425,7 @@ export default function SettingsScreen() {
         {/* Account Settings */}
         <SectionHeader title="👤 บัญชี" isDark={isDark} />
         <SettingItem
-          icon="shield-checkmark"
+          icon={ShieldCheckIcon}
           iconColor="#10B981"
           title="ยืนยันตัวตน (KYC)"
           subtitle="ยืนยันตัวตนเพื่อเพิ่มวงเงิน"
@@ -440,7 +433,7 @@ export default function SettingsScreen() {
           isDark={isDark}
         />
         <SettingItem
-          icon="lock-closed"
+          icon={LockIcon}
           iconColor="#7B2CBF"
           title="เปลี่ยนรหัสผ่าน"
           subtitle="เปลี่ยนรหัสผ่านเข้าสู่ระบบ"
@@ -451,7 +444,7 @@ export default function SettingsScreen() {
         {/* Notifications */}
         <SectionHeader title="🔔 การแจ้งเตือน" isDark={isDark} />
         <SettingItem
-          icon="notifications"
+          icon={BellIcon}
           iconColor="#FF6B6B"
           title="Push Notification"
           subtitle="รับการแจ้งเตือนบนอุปกรณ์"
@@ -466,7 +459,7 @@ export default function SettingsScreen() {
           }
         />
         <SettingItem
-          icon="mail"
+          icon={MailIcon}
           iconColor="#4ECDC4"
           title="Email Notification"
           subtitle="รับการแจ้งเตือนทางอีเมล"
@@ -484,7 +477,7 @@ export default function SettingsScreen() {
         {/* ⭐ GPS Sharing - แยกหมวดให้เห็นชัด */}
         <SectionHeader title="📍 แชร์ตำแหน่ง GPS" isDark={isDark} />
         <SettingItem
-          icon="location"
+          icon={LocationIcon}
           iconColor="#10B981"
           title="เปิดแชร์ตำแหน่ง"
           subtitle={gpsSharing ? '🟢 กำลังแชร์ตำแหน่งอยู่...' : 'แชร์ตำแหน่งให้ Admin GPS Monitor ดู'}
@@ -507,7 +500,7 @@ export default function SettingsScreen() {
             colors={['rgba(16, 185, 129, 0.15)', 'rgba(16, 185, 129, 0.05)']}
             style={styles.gpsStatusCard}
           >
-            <Text style={{ fontSize: 18 }}>🧭</Text>
+            <NavigationIcon size={20} color="#10B981" />
             <Text style={[styles.gpsStatusText, { color: '#10B981' }]}>
               กำลังส่งตำแหน่งทุก 30 วินาที
             </Text>
@@ -517,7 +510,7 @@ export default function SettingsScreen() {
         {/* Security */}
         <SectionHeader title="🔐 ความปลอดภัย" isDark={isDark} />
         <SettingItem
-          icon="finger-print"
+          icon={FingerprintIcon}
           iconColor="#45B7D1"
           title="Biometric Login"
           subtitle="เข้าสู่ระบบด้วยลายนิ้วมือ/Face ID"
@@ -535,28 +528,28 @@ export default function SettingsScreen() {
         {/* About */}
         <SectionHeader title="ℹ️ เกี่ยวกับ" isDark={isDark} />
         <SettingItem
-          icon="document-text"
+          icon={FileTextIcon}
           iconColor="#3B82F6"
           title="นโยบายความเป็นส่วนตัว"
           onPress={handlePrivacyPolicy}
           isDark={isDark}
         />
         <SettingItem
-          icon="shield"
+          icon={ShieldIcon}
           iconColor="#8B5CF6"
           title="ข้อกำหนดการใช้งาน"
           onPress={handleTermsOfService}
           isDark={isDark}
         />
         <SettingItem
-          icon="star"
+          icon={StarIcon}
           iconColor="#FFD700"
           title="ให้คะแนนแอพ"
           onPress={handleRateApp}
           isDark={isDark}
         />
         <SettingItem
-          icon="information-circle"
+          icon={InfoIcon}
           iconColor="#6B7280"
           title="เวอร์ชัน"
           subtitle={APP_INFO.VERSION || '1.1.0'}
@@ -569,14 +562,14 @@ export default function SettingsScreen() {
           <>
             <SectionHeader title="⚙️ จัดการบัญชี" isDark={isDark} />
             <SettingItem
-              icon="log-out"
+              icon={LogOutIcon}
               iconColor="#FF6B6B"
               title="ออกจากระบบ"
               onPress={handleLogout}
               isDark={isDark}
             />
             <SettingItem
-              icon="trash"
+              icon={TrashIcon}
               iconColor="#DC143C"
               title="ลบบัญชี"
               subtitle="ลบบัญชีของคุณอย่างถาวร"
@@ -607,6 +600,11 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   headerTitle: {
     fontSize: 18,
