@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.47] - 2025-12-10
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2223 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (5d0c2678)
+- fix(mobile): แก้ไข Ionicons ไม่แสดง โดยเปลี่ยน contentLayer จาก absoluteFill เป็น flex:1 (3cabf39d)
+### 🔧 Other Changes
+
+
 ## [v3.372.46] - 2025-12-10
 
 ### ✨ Features
