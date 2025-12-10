@@ -1195,6 +1195,52 @@ export const updateRiderLocation = async (location: {
   }
 };
 
+// =====================================================
+// ⭐ GPS Sharing - แชร์ตำแหน่งให้ Admin GPS Monitor
+// =====================================================
+
+/**
+ * แชร์ตำแหน่ง GPS ไปยัง Admin GPS Monitor
+ */
+export const shareGpsLocation = async (location: {
+  latitude: number;
+  longitude: number;
+  altitude?: number;
+  accuracy?: number;
+  speed?: number;
+  heading?: number;
+  battery_level?: number;
+  device_model?: string;
+  os_version?: string;
+}): Promise<{
+  success: boolean;
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.GPS_SHARE, location);
+    return response.data;
+  } catch (error) {
+    console.error('Share GPS location error:', error);
+    return null;
+  }
+};
+
+/**
+ * หยุดแชร์ตำแหน่ง GPS
+ */
+export const stopGpsSharing = async (): Promise<{
+  success: boolean;
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.GPS_STOP);
+    return response.data;
+  } catch (error) {
+    console.error('Stop GPS sharing error:', error);
+    return null;
+  }
+};
+
 /**
  * ดึงงานที่รอไรเดอร์
  */

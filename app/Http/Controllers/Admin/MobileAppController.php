@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MobileDevice;
 use App\Models\MobileBanner;
 use App\Models\MobilePushNotification;
+use App\Services\ExpoPushService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -313,14 +314,51 @@ class MobileAppController extends Controller
 
         // ถ้าไม่ได้ตั้งเวลา ให้ส่งทันที
         if (!$validated['schedule_at']) {
-            // TODO: Dispatch job to send push notification
-            // SendPushNotificationJob::dispatch($notification);
-            $notification->update(['status' => 'sent', 'sent_at' => now()]);
+            // ส่ง Push Notification ผ่าน Expo API
+            $pushService = new ExpoPushService();
+
+            // กำหนด data สำหรับ notification
+            $data = [
+                'type' => 'general',
+                'notification_id' => $notification->id,
+                'url' => $validated['action_url'] ?? null,
+            ];
+
+            // ส่งตาม platform ที่เลือก
+            if ($validated['target'] === 'all') {
+                $results = $pushService->broadcast(
+                    $validated['title'],
+                    $validated['body'],
+                    $data
+                );
+            } else {
+                $results = $pushService->sendToPlatform(
+                    $validated['target'],
+                    $validated['title'],
+                    $validated['body'],
+                    $data
+                );
+            }
+
+            // อัพเดทสถานะ
+            $notification->update([
+                'status' => $results['failed'] === 0 ? 'sent' : ($results['success'] > 0 ? 'sent' : 'failed'),
+                'sent_at' => now(),
+                'success_count' => $results['success'],
+                'failure_count' => $results['failed'],
+            ]);
+
+            $message = "ส่ง Push Notification สำเร็จ {$results['success']} เครื่อง";
+            if ($results['failed'] > 0) {
+                $message .= " (ล้มเหลว {$results['failed']} เครื่อง)";
+            }
+        } else {
+            $message = 'ตั้งเวลาส่ง Push Notification สำเร็จ';
         }
 
         return redirect()
             ->route('admin.mobile-app.push.index')
-            ->with('success', 'สร้าง Push Notification สำเร็จ');
+            ->with('success', $message);
     }
 
     /**

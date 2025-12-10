@@ -16,12 +16,14 @@ interface AppState {
   language: Language;
   isOnline: boolean;
   isAppReady: boolean;
+  gpsSharing: boolean; // ⭐ GPS Sharing state
 
   // Actions
   setThemeMode: (mode: ThemeMode) => void;
   setLanguage: (lang: Language) => void;
   setIsOnline: (online: boolean) => void;
   setAppReady: (ready: boolean) => void;
+  setGpsSharing: (enabled: boolean) => Promise<void>; // ⭐ GPS Sharing toggle
   loadSettings: () => Promise<void>;
 }
 
@@ -32,6 +34,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   language: 'th',
   isOnline: true,
   isAppReady: false,
+  gpsSharing: false, // ⭐ GPS Sharing เริ่มต้นปิด
 
   /**
    * ตั้งค่า Theme Mode
@@ -74,13 +77,24 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   /**
+   * ตั้งค่า GPS Sharing
+   * เมื่อเปิด จะเริ่มแชร์ตำแหน่งไปยัง Admin GPS Monitor ทันที
+   */
+  setGpsSharing: async (enabled: boolean) => {
+    set({ gpsSharing: enabled });
+    // บันทึกลง storage
+    await AsyncStorage.setItem('gps_sharing', enabled ? 'true' : 'false').catch(console.error);
+  },
+
+  /**
    * โหลด settings จาก storage
    */
   loadSettings: async () => {
     try {
-      const [themeMode, language] = await Promise.all([
+      const [themeMode, language, gpsSharing] = await Promise.all([
         AsyncStorage.getItem('themeMode'),
         AsyncStorage.getItem('language'),
+        AsyncStorage.getItem('gps_sharing'),
       ]);
 
       const mode = (themeMode as ThemeMode) || 'system';
@@ -96,6 +110,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         themeMode: mode,
         resolvedTheme,
         language: (language as Language) || 'th',
+        gpsSharing: gpsSharing === 'true', // ⭐ โหลด GPS Sharing state
       });
     } catch (error) {
       console.error('Load settings error:', error);

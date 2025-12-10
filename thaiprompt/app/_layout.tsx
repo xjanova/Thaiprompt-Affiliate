@@ -11,8 +11,17 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
+import { useAppStore } from '@/stores/appStore';
 import { APP_INFO } from '@/config/appConfig';
 import { initDeviceTracking, sendHeartbeat } from '@/services/deviceService';
+import {
+  registerForPushNotifications,
+  addNotificationReceivedListener,
+  addNotificationResponseListener,
+  getNotificationData,
+} from '@/services/notifications';
+import { startGpsSharing } from '@/services/location';
+import { router } from 'expo-router';
 
 // ไม่ให้ซ่อน splash screen อัตโนมัติ
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -47,6 +56,7 @@ const loadingStyles = StyleSheet.create({
 
 export default function RootLayout() {
   const { initialize } = useAuthStore();
+  const { loadSettings, gpsSharing } = useAppStore();
   const [appIsReady, setAppIsReady] = useState(false);
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const appState = useRef(AppState.currentState);
@@ -57,9 +67,27 @@ export default function RootLayout() {
     const prepareApp = async () => {
       try {
         // โหลด Ionicons font แบบ manual (เสถียรกว่า useFonts hook)
-        await Font.loadAsync({
-          ...Ionicons.font,
-        });
+        // ลองโหลดหลายครั้งถ้าล้มเหลว
+        let fontLoaded = false;
+        let retryCount = 0;
+        const maxRetries = 3;
+
+        while (!fontLoaded && retryCount < maxRetries) {
+          try {
+            await Font.loadAsync({
+              ...Ionicons.font,
+            });
+            fontLoaded = true;
+            console.log('✅ Ionicons font loaded successfully');
+          } catch (fontError) {
+            retryCount++;
+            console.warn(`Font loading attempt ${retryCount} failed:`, fontError);
+            // รอ 500ms ก่อนลองใหม่
+            if (retryCount < maxRetries) {
+              await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+          }
+        }
 
         if (isMounted) {
           setFontsLoaded(true);
@@ -71,11 +99,23 @@ export default function RootLayout() {
           new Promise((resolve) => setTimeout(resolve, 5000)),
         ]);
 
+        // ⭐ โหลด app settings (theme, language, gpsSharing)
+        await loadSettings().catch((e) => console.log('Load settings error:', e));
+
         // ลงทะเบียนเครื่องกับ Admin Dashboard (non-blocking)
         initDeviceTracking().catch((e) => console.log('Device tracking:', e));
+
+        // ⭐ ลงทะเบียน Push Notification (non-blocking)
+        registerForPushNotifications()
+          .then((token) => {
+            if (token) {
+              console.log('✅ Push notification registered:', token.substring(0, 30) + '...');
+            }
+          })
+          .catch((e) => console.log('Push notification error:', e));
       } catch (error) {
         console.error('App prepare error:', error);
-        // ถ้า font error ก็ยังแสดงแอพได้
+        // ถ้า font error หลังจากลองหลายครั้งแล้ว ยังแสดงแอพได้ (fallback)
         if (isMounted) {
           setFontsLoaded(true);
         }
@@ -88,13 +128,14 @@ export default function RootLayout() {
 
     prepareApp();
 
-    // Force ready หลัง 4 วินาที
+    // Force ready หลัง 6 วินาที (เพิ่มเวลาให้ font โหลด)
     const forceTimeout = setTimeout(() => {
       if (isMounted) {
+        console.log('⏱️ Force timeout - showing app');
         setFontsLoaded(true);
         setAppIsReady(true);
       }
-    }, 4000);
+    }, 6000);
 
     return () => {
       isMounted = false;
@@ -116,6 +157,53 @@ export default function RootLayout() {
       subscription.remove();
     };
   }, []);
+
+  // ⭐ ฟังการรับ Push Notification
+  useEffect(() => {
+    // Listener สำหรับเมื่อได้รับ notification (แอพเปิดอยู่)
+    const receivedSubscription = addNotificationReceivedListener((notification) => {
+      console.log('📩 Notification received:', notification.request.content.title);
+    });
+
+    // Listener สำหรับเมื่อกด notification
+    const responseSubscription = addNotificationResponseListener((response) => {
+      console.log('👆 Notification tapped');
+      const data = getNotificationData(response);
+
+      // นำทางไปหน้าที่เกี่ยวข้องตาม notification type
+      if (data.type === 'order') {
+        router.push('/commissions');
+      } else if (data.type === 'ticket' && data.ticketId) {
+        router.push('/support');
+      } else if (data.type === 'rider' || data.type === 'job') {
+        router.push('/rider');
+      } else if (data.url) {
+        // ถ้ามี url ให้ไปที่ url นั้น
+        router.push(data.url as never);
+      } else {
+        // default ไปหน้า notifications
+        router.push('/notifications');
+      }
+    });
+
+    return () => {
+      receivedSubscription.remove();
+      responseSubscription.remove();
+    };
+  }, []);
+
+  // ⭐ เริ่ม GPS Sharing ถ้าเคยเปิดไว้
+  useEffect(() => {
+    if (appIsReady && gpsSharing) {
+      startGpsSharing()
+        .then((success) => {
+          if (success) {
+            console.log('📍 GPS sharing auto-started');
+          }
+        })
+        .catch((e) => console.log('GPS sharing auto-start error:', e));
+    }
+  }, [appIsReady, gpsSharing]);
 
   // ซ่อน splash เมื่อ fonts โหลดเสร็จ และ app พร้อม
   const onLayoutRootView = useCallback(async () => {
@@ -181,6 +269,9 @@ export default function RootLayout() {
 
         {/* Wealth Guide */}
         <Stack.Screen name="wealth-guide" options={{ headerShown: false }} />
+
+        {/* QR Scanner */}
+        <Stack.Screen name="qr-scanner" options={{ headerShown: false }} />
       </Stack>
     </View>
   );

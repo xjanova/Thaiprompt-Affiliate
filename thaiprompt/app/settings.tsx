@@ -14,6 +14,7 @@ import {
   Alert,
   Linking,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +22,7 @@ import { router } from 'expo-router';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
+import { startGpsSharing, stopGpsSharing, requestLocationPermission } from '@/services/location';
 
 // Setting Item Component
 const SettingItem = ({
@@ -162,7 +164,7 @@ const ThemeOption = ({
 };
 
 export default function SettingsScreen() {
-  const { resolvedTheme, themeMode, setThemeMode } = useAppStore();
+  const { resolvedTheme, themeMode, setThemeMode, gpsSharing, setGpsSharing } = useAppStore();
   const { user, isAuthenticated, logout } = useAuthStore();
   const isDark = resolvedTheme === 'dark';
 
@@ -170,6 +172,7 @@ export default function SettingsScreen() {
   const [pushNotifications, setPushNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [isGpsLoading, setIsGpsLoading] = useState(false);
 
   // Handlers
   const handleChangePassword = () => {
@@ -246,6 +249,51 @@ export default function SettingsScreen() {
         },
       ]
     );
+  };
+
+  // ⭐ GPS Sharing Handler
+  const handleGpsSharingToggle = async (enabled: boolean) => {
+    if (!isAuthenticated) {
+      Alert.alert('แจ้งเตือน', 'กรุณาเข้าสู่ระบบก่อน');
+      return;
+    }
+
+    setIsGpsLoading(true);
+
+    try {
+      if (enabled) {
+        // ขอสิทธิ์ก่อน
+        const permissions = await requestLocationPermission();
+        if (!permissions.foreground) {
+          Alert.alert(
+            'ต้องการสิทธิ์',
+            'กรุณาอนุญาตการเข้าถึงตำแหน่งในการตั้งค่าเพื่อเปิดใช้งาน GPS Sharing',
+            [{ text: 'ตกลง' }]
+          );
+          setIsGpsLoading(false);
+          return;
+        }
+
+        // เริ่ม GPS Sharing
+        const success = await startGpsSharing();
+        if (success) {
+          await setGpsSharing(true);
+          Alert.alert('เปิดใช้งาน', 'เริ่มแชร์ตำแหน่ง GPS แล้ว\nAdmin จะสามารถเห็นตำแหน่งของคุณได้');
+        } else {
+          Alert.alert('ล้มเหลว', 'ไม่สามารถเริ่ม GPS Sharing ได้');
+        }
+      } else {
+        // หยุด GPS Sharing
+        await stopGpsSharing();
+        await setGpsSharing(false);
+        Alert.alert('ปิดใช้งาน', 'หยุดแชร์ตำแหน่ง GPS แล้ว');
+      }
+    } catch (error) {
+      console.error('GPS Sharing toggle error:', error);
+      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถเปลี่ยนการตั้งค่า GPS ได้');
+    } finally {
+      setIsGpsLoading(false);
+    }
   };
 
   return (
@@ -408,6 +456,27 @@ export default function SettingsScreen() {
               trackColor={{ false: '#767577', true: isDark ? '#7B2CBF' : '#3B82F6' }}
               thumbColor={biometricEnabled ? '#FFFFFF' : '#f4f3f4'}
             />
+          }
+        />
+
+        {/* ⭐ GPS Sharing Toggle */}
+        <SettingItem
+          icon="location"
+          iconColor="#10B981"
+          title="แชร์ตำแหน่ง GPS"
+          subtitle={gpsSharing ? '📍 กำลังแชร์ตำแหน่งอยู่...' : 'แชร์ตำแหน่งให้ Admin GPS Monitor'}
+          isDark={isDark}
+          rightElement={
+            isGpsLoading ? (
+              <ActivityIndicator size="small" color={isDark ? '#7B2CBF' : '#3B82F6'} />
+            ) : (
+              <Switch
+                value={gpsSharing}
+                onValueChange={handleGpsSharingToggle}
+                trackColor={{ false: '#767577', true: '#10B981' }}
+                thumbColor={gpsSharing ? '#FFFFFF' : '#f4f3f4'}
+              />
+            )
           }
         />
 

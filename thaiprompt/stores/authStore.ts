@@ -267,6 +267,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user: response.data.user,
           token: response.data.token,
           isAuthenticated: true,
+          isInitialized: true, // ⭐ ตั้งค่า initialized หลัง login สำเร็จ
           isLoading: false,
           isOfflineMode: false,
         });
@@ -355,6 +356,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user: response.data.user,
           token: response.data.token,
           isAuthenticated: true,
+          isInitialized: true, // ⭐ ตั้งค่า initialized หลัง LINE login สำเร็จ
           isLoading: false,
           isOfflineMode: false,
           lineLoginState: null,
@@ -480,6 +482,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user: response.data.user,
           token: response.data.token,
           isAuthenticated: true,
+          isInitialized: true, // ⭐ ตั้งค่า initialized หลัง Web Auth สำเร็จ
           isLoading: false,
           isOfflineMode: false,
           webAuthCodeVerifier: null,

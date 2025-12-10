@@ -48,10 +48,10 @@ export default function LoginScreen() {
   const [isLineLoading, setIsLineLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // ถ้า login แล้ว ให้กลับไปหน้าหลัก
+  // ถ้า login แล้ว ให้ไปหน้า tabs โดยตรง
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/');
+      router.replace('/(tabs)');
     }
   }, [isAuthenticated]);
 
@@ -67,7 +67,7 @@ export default function LoginScreen() {
         try {
           const success = await handleLineCallback(params.code, params.state);
           if (success) {
-            router.replace('/');
+            router.replace('/(tabs)');
           }
         } catch (err) {
           console.error('LINE callback error:', err);
@@ -98,7 +98,7 @@ export default function LoginScreen() {
           if (code && state) {
             const success = await handleLineCallback(code, state);
             if (success) {
-              router.replace('/');
+              router.replace('/(tabs)');
             }
           }
         }
@@ -141,7 +141,7 @@ export default function LoginScreen() {
     if (!validateForm()) return;
     const success = await login(email.trim(), password);
     if (success) {
-      router.replace('/');
+      router.replace('/(tabs)');
     }
   };
 
