@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.45] - 2025-12-10
+
+### ✨ Features
+- feat(mobile): เพิ่ม AnimatedBackground แบบหิ่งห้อย/อะตอมเคลื่อนไหว (14e57993)
+### 🐛 Bug Fixes
+- fix(mobile): ใช้ SVG Icons แทน emoji และแก้ไข Push Notification API (bd7c3798)
+- fix(mobile): ปรับปรุง QR Scanner และ UI ให้สวยงามขึ้น (84c89d71)
+### 🔧 Other Changes
+- Merge pull request #2221 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (bcef7dd0)
+
 ## [v3.372.44] - 2025-12-10
 
 ### ✨ Features
