@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.56] - 2025-12-10
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(api): แปลง banner image เป็น full URL สำหรับ mobile app (54a031c4)
+- fix(mobile-app): แก้ไข Banner upload และ Push notification (9ec9e52e)
+### 🔧 Other Changes
+- Merge pull request #2232 from xjanova/claude/fix-banner-upload-notifications-01CcM81qPUnNqfcxewrtzJZP (37ff8a07)
+
 ## [v3.372.55] - 2025-12-10
 
 ### ✨ Features
