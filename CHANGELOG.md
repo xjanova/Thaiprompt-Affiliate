@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.57] - 2025-12-10
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(mobile): เพิ่ม confirmation dialog ก่อนโอนเงิน + แสดงยอดคงเหลือหลังโอน (v1.7.4) (0bb9efcd)
+- fix(mobile): แก้ QR Code รับเงิน + KYC gallery + หน้าสินค้า (v1.7.3) (a30369aa)
+- fix(mobile): แก้ไข KYC camera + สร้างหน้าธุรกรรมในแอพ (v1.7.2) (843d03b1)
+### 🔧 Other Changes
+- Merge pull request #2233 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (7ed49913)
+
 ## [v3.372.56] - 2025-12-10
 
 ### ✨ Features
