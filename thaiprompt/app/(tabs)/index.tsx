@@ -18,6 +18,8 @@ import {
   Dimensions,
   RefreshControl,
   Animated,
+  Image,
+  ImageSourcePropType,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
@@ -28,19 +30,28 @@ import { BannerCarousel } from '@/components';
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 52) / 2;
 
-// Menu Items - ใช้ emoji icons เพื่อแสดงผลได้ทุกเครื่อง
+// ภาพปุ่มเมนู - ใช้ภาพจาก assets/images
+const MENU_IMAGES: Record<string, ImageSourcePropType> = {
+  wallet: require('@/assets/images/wallet.png'),
+  network: require('@/assets/images/mlm-network.png'),
+  shopping: require('@/assets/images/shopping.png'),
+  rider: require('@/assets/images/rider.png'),
+  settings: require('@/assets/images/setting.png'),
+};
+
+// Menu Items - ใช้ภาพถ้ามี ไม่มีใช้ emoji
 const MENU_ITEMS = [
-  { id: 'wallet', title: 'กระเป๋าเงิน', icon: '💰', colors: ['#10B981', '#059669'], glowColor: '#10B981', route: '/(tabs)/wallet' },
-  { id: 'network', title: 'สายงาน', icon: '👥', colors: ['#8B5CF6', '#6D28D9'], glowColor: '#8B5CF6', route: '/(tabs)/network' },
-  { id: 'referral', title: 'แนะนำเพื่อน', icon: '🤝', colors: ['#EC4899', '#DB2777'], glowColor: '#EC4899', route: '/referral' },
-  { id: 'commissions', title: 'คอมมิชชั่น', icon: '💵', colors: ['#3B82F6', '#2563EB'], glowColor: '#3B82F6', route: '/commissions' },
-  { id: 'shopping', title: 'ช้อปปิ้ง', icon: '🛒', colors: ['#F59E0B', '#D97706'], glowColor: '#F59E0B', route: '/shopping' },
-  { id: 'rider', title: 'ไรเดอร์', icon: '🚴', colors: ['#06B6D4', '#0891B2'], glowColor: '#06B6D4', route: '/rider' },
-  { id: 'wealth-guide', title: 'เส้นทางเศรษฐี', icon: '📚', colors: ['#F97316', '#EA580C'], glowColor: '#F97316', route: '/wealth-guide' },
-  { id: 'tarot', title: 'ดูดวง', icon: '🔮', colors: ['#6366F1', '#4F46E5'], glowColor: '#6366F1', route: '/tarot' },
-  { id: 'leaderboard', title: 'อันดับ', icon: '🏆', colors: ['#EF4444', '#DC2626'], glowColor: '#EF4444', route: '/leaderboard' },
-  { id: 'coming-soon', title: 'เร็วๆ นี้', icon: '🚀', colors: ['#A855F7', '#9333EA'], glowColor: '#A855F7', route: '/coming-soon' },
-  { id: 'settings', title: 'ตั้งค่า', icon: '⚙️', colors: ['#64748B', '#475569'], glowColor: '#64748B', route: '/settings' },
+  { id: 'wallet', title: 'กระเป๋าเงิน', icon: '💰', colors: ['#10B981', '#059669'], glowColor: '#10B981', route: '/(tabs)/wallet', hasImage: true },
+  { id: 'network', title: 'สายงาน', icon: '👥', colors: ['#8B5CF6', '#6D28D9'], glowColor: '#8B5CF6', route: '/(tabs)/network', hasImage: true },
+  { id: 'referral', title: 'แนะนำเพื่อน', icon: '🤝', colors: ['#EC4899', '#DB2777'], glowColor: '#EC4899', route: '/referral', hasImage: false },
+  { id: 'commissions', title: 'คอมมิชชั่น', icon: '💵', colors: ['#3B82F6', '#2563EB'], glowColor: '#3B82F6', route: '/commissions', hasImage: false },
+  { id: 'shopping', title: 'ช้อปปิ้ง', icon: '🛒', colors: ['#F59E0B', '#D97706'], glowColor: '#F59E0B', route: '/shopping', hasImage: true },
+  { id: 'rider', title: 'ไรเดอร์', icon: '🚴', colors: ['#06B6D4', '#0891B2'], glowColor: '#06B6D4', route: '/rider', hasImage: true },
+  { id: 'wealth-guide', title: 'เส้นทางเศรษฐี', icon: '📚', colors: ['#F97316', '#EA580C'], glowColor: '#F97316', route: '/wealth-guide', hasImage: false },
+  { id: 'tarot', title: 'ดูดวง', icon: '🔮', colors: ['#6366F1', '#4F46E5'], glowColor: '#6366F1', route: '/tarot', hasImage: false },
+  { id: 'leaderboard', title: 'อันดับ', icon: '🏆', colors: ['#EF4444', '#DC2626'], glowColor: '#EF4444', route: '/leaderboard', hasImage: false },
+  { id: 'coming-soon', title: 'เร็วๆ นี้', icon: '🚀', colors: ['#A855F7', '#9333EA'], glowColor: '#A855F7', route: '/coming-soon', hasImage: false },
+  { id: 'settings', title: 'ตั้งค่า', icon: '⚙️', colors: ['#64748B', '#475569'], glowColor: '#64748B', route: '/settings', hasImage: true },
 ] as const;
 
 // Menu Card Component - ปรับปรุงให้สวยงาม
@@ -145,19 +156,29 @@ const MenuCard = ({
           {/* Glass border - ขอบแก้ว */}
           <View style={styles.glassBorder} />
 
-          {/* Icon Container - กล่องไอคอน 3D */}
-          <View style={styles.menuIconContainer}>
-            <View style={styles.menuIconShadow} />
-            <LinearGradient
-              colors={['rgba(255,255,255,0.4)', 'rgba(255,255,255,0.1)']}
-              style={styles.menuIconBox}
-            >
-              <Text style={styles.menuEmoji}>{item.icon}</Text>
-            </LinearGradient>
-          </View>
+          {/* Icon Container - แสดงภาพถ้ามี ไม่งั้นใช้ emoji */}
+          {item.hasImage && MENU_IMAGES[item.id] ? (
+            <View style={styles.menuImageContainer}>
+              <Image
+                source={MENU_IMAGES[item.id]}
+                style={styles.menuImage}
+                resizeMode="cover"
+              />
+            </View>
+          ) : (
+            <View style={styles.menuIconContainer}>
+              <View style={styles.menuIconShadow} />
+              <LinearGradient
+                colors={['rgba(255,255,255,0.4)', 'rgba(255,255,255,0.1)']}
+                style={styles.menuIconBox}
+              >
+                <Text style={styles.menuEmoji}>{item.icon}</Text>
+              </LinearGradient>
+            </View>
+          )}
 
           {/* Title */}
-          <Text style={styles.menuTitle}>{item.title}</Text>
+          <Text style={[styles.menuTitle, item.hasImage && styles.menuTitleWithImage]}>{item.title}</Text>
 
           {/* Bottom shine line */}
           <View style={styles.bottomShine} />
@@ -570,7 +591,7 @@ const styles = StyleSheet.create({
   // Menu Card Styles
   menuCardWrapper: {
     width: CARD_WIDTH,
-    height: 110,
+    height: 120,
     marginBottom: 14,
   },
   menuGlow: {
@@ -643,6 +664,26 @@ const styles = StyleSheet.create({
     fontSize: 26,
     textAlign: 'center',
   },
+  // สไตล์สำหรับปุ่มที่มีภาพ
+  menuImageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  menuImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 14,
+  },
   menuTitle: {
     fontSize: 14,
     fontWeight: '700',
@@ -650,6 +691,9 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+  menuTitleWithImage: {
+    marginTop: 4,
   },
   bottomShine: {
     position: 'absolute',
