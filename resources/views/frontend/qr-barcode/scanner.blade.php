@@ -18,7 +18,7 @@
             </div>
         </div>
 
-        <div x-data="qrScanner()">
+        <div x-data="qrScanner()" x-init="init()">
             <!-- Scanner Mode Selection -->
             <div class="backdrop-blur-lg bg-white/10 dark:bg-gray-800/30 rounded-3xl shadow-2xl border border-white/20 p-8 mb-8">
                 <div class="flex flex-col md:flex-row gap-4">

@@ -19,10 +19,19 @@ function qrScanner() {
 
         /**
          * Initialize
+         * เปิดกล้องอัตโนมัติเมื่อโหลดหน้า (ถ้าอยู่ใน camera mode)
          */
         init() {
             this.codeReader = new ZXing.BrowserMultiFormatReader();
-            this.detectCameras();
+            this.detectCameras().then(() => {
+                // เปิดกล้องอัตโนมัติถ้าอยู่ใน camera mode
+                if (this.scanMode === 'camera') {
+                    // รอให้ DOM พร้อม
+                    this.$nextTick(() => {
+                        this.startCamera();
+                    });
+                }
+            });
         },
 
         /**
