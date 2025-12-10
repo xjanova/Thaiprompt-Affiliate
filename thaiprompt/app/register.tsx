@@ -1,6 +1,7 @@
 /**
  * Register Screen - Premium Stable Version
  * ใช้ StyleSheet แทน NativeWind
+ * เพิ่ม: AnimatedBackground หิ่งห้อยเคลื่อนไหว
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -23,6 +24,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { API_BASE_URL } from '@/constants';
+import { AnimatedBackground } from '@/components/AnimatedBackground';
 
 // Validation
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -161,11 +163,16 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-      <LinearGradient colors={['#0F0F23', '#1A1A2E', '#16213E']} style={StyleSheet.absoluteFill} />
+    <AnimatedBackground
+      variant="aurora"
+      isDark={true}
+      intensity="medium"
+      particleCount={22}
+    >
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
 
-      <KeyboardAvoidingView
+        <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
@@ -425,9 +432,10 @@ export default function RegisterScreen() {
               <Text style={styles.bottomLink}>เข้าสู่ระบบ</Text>
             </Pressable>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </AnimatedBackground>
   );
 }
 

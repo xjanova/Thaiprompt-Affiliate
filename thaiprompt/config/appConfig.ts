@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '1.5.0',
-  BUILD_NUMBER: 11,
-  BUILD_DATE: '2025-12-10-GPS', // แก้ไข: GPS Sharing, เปลี่ยนชื่อแอพ
+  VERSION: '1.6.0',
+  BUILD_NUMBER: 12,
+  BUILD_DATE: '2025-12-10-FIREFLY', // เพิ่ม: Animated Firefly Background ทุกหน้า
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs

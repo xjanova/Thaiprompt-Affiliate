@@ -1,6 +1,7 @@
 /**
  * Home Screen - Premium Design V2
  * แก้ไข: crash on resume, icons หาย
+ * เพิ่ม: AnimatedBackground หิ่งห้อยเคลื่อนไหว
  */
 
 import React, { useState, useCallback } from 'react';
@@ -20,6 +21,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 import { BannerCarousel } from '@/components';
+import { AnimatedBackground } from '@/components/AnimatedBackground';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 52) / 2;
@@ -70,10 +72,16 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+    <AnimatedBackground
+      variant="firefly"
+      isDark={true}
+      intensity="low"
+      particleCount={18}
+    >
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
 
-      <ScrollView
+        <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -204,13 +212,14 @@ export default function HomeScreen() {
         </View>
 
         {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            v{APP_INFO.VERSION} ({APP_INFO.BUILD_DATE})
-          </Text>
-        </View>
-      </ScrollView>
-    </View>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              v{APP_INFO.VERSION} ({APP_INFO.BUILD_DATE})
+            </Text>
+          </View>
+        </ScrollView>
+      </View>
+    </AnimatedBackground>
   );
 }
 
