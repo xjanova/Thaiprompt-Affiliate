@@ -1,12 +1,20 @@
 /**
  * Tab Layout - Stable Premium Version
  * แก้ไข: crash on resume
+ * ใช้ emoji icons แทน Ionicons
  */
 
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, StyleSheet, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+
+// Tab icons ใช้ emoji
+const TAB_ICONS = {
+  home: { active: '🏠', inactive: '🏠' },
+  network: { active: '👥', inactive: '👥' },
+  wallet: { active: '💰', inactive: '💰' },
+  profile: { active: '👤', inactive: '👤' },
+};
 
 export default function TabLayout() {
   return (
@@ -23,13 +31,11 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'หน้าหลัก',
-          tabBarIcon: ({ focused, color, size }) => (
+          tabBarIcon: ({ focused }) => (
             <View style={focused ? styles.activeTab : styles.inactiveTab}>
-              <Ionicons
-                name={focused ? 'home' : 'home-outline'}
-                size={22}
-                color={focused ? '#FFF' : color}
-              />
+              <Text style={styles.tabEmoji}>
+                {focused ? TAB_ICONS.home.active : TAB_ICONS.home.inactive}
+              </Text>
             </View>
           ),
         }}
@@ -38,13 +44,11 @@ export default function TabLayout() {
         name="network"
         options={{
           title: 'สายงาน',
-          tabBarIcon: ({ focused, color, size }) => (
+          tabBarIcon: ({ focused }) => (
             <View style={focused ? styles.activeTab : styles.inactiveTab}>
-              <Ionicons
-                name={focused ? 'people' : 'people-outline'}
-                size={22}
-                color={focused ? '#FFF' : color}
-              />
+              <Text style={styles.tabEmoji}>
+                {focused ? TAB_ICONS.network.active : TAB_ICONS.network.inactive}
+              </Text>
             </View>
           ),
         }}
@@ -53,13 +57,11 @@ export default function TabLayout() {
         name="wallet"
         options={{
           title: 'กระเป๋า',
-          tabBarIcon: ({ focused, color, size }) => (
+          tabBarIcon: ({ focused }) => (
             <View style={focused ? styles.activeTab : styles.inactiveTab}>
-              <Ionicons
-                name={focused ? 'wallet' : 'wallet-outline'}
-                size={22}
-                color={focused ? '#FFF' : color}
-              />
+              <Text style={styles.tabEmoji}>
+                {focused ? TAB_ICONS.wallet.active : TAB_ICONS.wallet.inactive}
+              </Text>
             </View>
           ),
         }}
@@ -68,13 +70,11 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'โปรไฟล์',
-          tabBarIcon: ({ focused, color, size }) => (
+          tabBarIcon: ({ focused }) => (
             <View style={focused ? styles.activeTab : styles.inactiveTab}>
-              <Ionicons
-                name={focused ? 'person' : 'person-outline'}
-                size={22}
-                color={focused ? '#FFF' : color}
-              />
+              <Text style={styles.tabEmoji}>
+                {focused ? TAB_ICONS.profile.active : TAB_ICONS.profile.inactive}
+              </Text>
             </View>
           ),
         }}
@@ -110,5 +110,8 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tabEmoji: {
+    fontSize: 20,
   },
 });

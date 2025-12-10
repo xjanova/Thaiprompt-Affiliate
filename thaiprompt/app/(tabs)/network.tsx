@@ -17,13 +17,22 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
+
+// Emoji icons map - ใช้ emoji แทน Ionicons ทั้งหมด
+const EMOJI_ICONS: Record<string, string> = {
+  'people': '👥',
+  'people-outline': '👥',
+  'cash-outline': '💵',
+  'git-network-outline': '🌳',
+  'share-social-outline': '📤',
+  'chevron-forward': '›',
+};
 import { getReferrals } from '@/services/api';
 import { formatCurrency } from '@/constants';
 import type { ReferralsData, Referral } from '@/types';
 
-// Stat Card Component
+// Stat Card Component - ใช้ emoji icons
 const StatCard = ({
   icon,
   label,
@@ -37,7 +46,7 @@ const StatCard = ({
 }) => (
   <View style={styles.statCard}>
     <View style={[styles.statIconBox, { backgroundColor: color + '20' }]}>
-      <Ionicons name={icon as any} size={20} color={color} />
+      <Text style={{ fontSize: 20 }}>{EMOJI_ICONS[icon] || '📊'}</Text>
     </View>
     <Text style={styles.statLabel}>{label}</Text>
     <Text style={styles.statValue}>{value}</Text>
@@ -115,7 +124,7 @@ export default function NetworkScreen() {
       <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
         <View style={styles.notLoggedIn}>
-          <Ionicons name="people-outline" size={70} color="#4B5563" />
+          <Text style={{ fontSize: 70 }}>👥</Text>
           <Text style={styles.notLoggedInTitle}>สายงานของคุณ</Text>
           <Text style={styles.notLoggedInText}>เข้าสู่ระบบเพื่อดูข้อมูลทีมและเครือข่าย</Text>
           <Pressable style={styles.loginButton} onPress={() => router.push('/login')}>
@@ -188,13 +197,13 @@ export default function NetworkScreen() {
               style={styles.actionCard}
             >
               <View style={styles.actionCardIcon}>
-                <Ionicons name="git-network-outline" size={24} color="#FFF" />
+                <Text style={{ fontSize: 24 }}>🌳</Text>
               </View>
               <View style={styles.actionCardInfo}>
                 <Text style={styles.actionCardTitle}>ดูแผนผังสายงาน</Text>
                 <Text style={styles.actionCardDesc}>ดู Tree View แบบเต็ม</Text>
               </View>
-              <Ionicons name="chevron-forward" size={24} color="#FFF" />
+              <Text style={{ fontSize: 24, color: '#FFF' }}>›</Text>
             </LinearGradient>
           </Pressable>
         </View>
@@ -209,13 +218,13 @@ export default function NetworkScreen() {
               style={styles.actionCard}
             >
               <View style={styles.actionCardIcon}>
-                <Ionicons name="share-social-outline" size={24} color="#FFF" />
+                <Text style={{ fontSize: 24 }}>📤</Text>
               </View>
               <View style={styles.actionCardInfo}>
                 <Text style={styles.actionCardTitle}>แนะนำเพื่อน</Text>
                 <Text style={styles.actionCardDesc}>แชร์ลิงก์เพื่อเพิ่มสมาชิก</Text>
               </View>
-              <Ionicons name="chevron-forward" size={24} color="#FFF" />
+              <Text style={{ fontSize: 24, color: '#FFF' }}>›</Text>
             </LinearGradient>
           </Pressable>
         </View>
@@ -230,7 +239,7 @@ export default function NetworkScreen() {
             ))
           ) : (
             <View style={styles.emptyBox}>
-              <Ionicons name="people-outline" size={48} color="#4B5563" />
+              <Text style={{ fontSize: 48 }}>👥</Text>
               <Text style={styles.emptyText}>ยังไม่มีสมาชิกในทีม</Text>
               <Pressable style={styles.emptyButton} onPress={() => router.push('/referral')}>
                 <Text style={styles.emptyButtonText}>แนะนำเพื่อน</Text>
