@@ -11,6 +11,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
+import { useAppStore } from '@/stores/appStore';
 import { APP_INFO } from '@/config/appConfig';
 import { initDeviceTracking, sendHeartbeat } from '@/services/deviceService';
 import {
@@ -19,6 +20,7 @@ import {
   addNotificationResponseListener,
   getNotificationData,
 } from '@/services/notifications';
+import { startGpsSharing } from '@/services/location';
 import { router } from 'expo-router';
 
 // ไม่ให้ซ่อน splash screen อัตโนมัติ
@@ -54,6 +56,7 @@ const loadingStyles = StyleSheet.create({
 
 export default function RootLayout() {
   const { initialize } = useAuthStore();
+  const { loadSettings, gpsSharing } = useAppStore();
   const [appIsReady, setAppIsReady] = useState(false);
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const appState = useRef(AppState.currentState);
@@ -95,6 +98,9 @@ export default function RootLayout() {
           initialize().catch((e) => console.error('Init error:', e)),
           new Promise((resolve) => setTimeout(resolve, 5000)),
         ]);
+
+        // ⭐ โหลด app settings (theme, language, gpsSharing)
+        await loadSettings().catch((e) => console.log('Load settings error:', e));
 
         // ลงทะเบียนเครื่องกับ Admin Dashboard (non-blocking)
         initDeviceTracking().catch((e) => console.log('Device tracking:', e));
@@ -185,6 +191,19 @@ export default function RootLayout() {
       responseSubscription.remove();
     };
   }, []);
+
+  // ⭐ เริ่ม GPS Sharing ถ้าเคยเปิดไว้
+  useEffect(() => {
+    if (appIsReady && gpsSharing) {
+      startGpsSharing()
+        .then((success) => {
+          if (success) {
+            console.log('📍 GPS sharing auto-started');
+          }
+        })
+        .catch((e) => console.log('GPS sharing auto-start error:', e));
+    }
+  }, [appIsReady, gpsSharing]);
 
   // ซ่อน splash เมื่อ fonts โหลดเสร็จ และ app พร้อม
   const onLayoutRootView = useCallback(async () => {

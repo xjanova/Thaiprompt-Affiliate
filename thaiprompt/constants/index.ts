@@ -152,6 +152,10 @@ export const API_ENDPOINTS = {
   // 3. Device Analytics (Admin ดู Dashboard สถิติเครื่อง)
   DEVICE_REGISTER: '/mobile/device/register',
   DEVICE_HEARTBEAT: '/mobile/device/heartbeat',
+
+  // 4. GPS Sharing (User แชร์ตำแหน่งให้ Admin ดู GPS Monitor)
+  GPS_SHARE: '/mobile/gps/share',
+  GPS_STOP: '/mobile/gps/stop',
 } as const;
 
 // =====================================================
@@ -169,6 +173,7 @@ export const STORAGE_KEYS = {
   LAST_HUB_SELECTED: 'last_hub_selected',
   APP_LANGUAGE: 'app_language',
   REMEMBER_ME: 'remember_me',
+  GPS_SHARING: 'gps_sharing',
 } as const;
 
 // =====================================================
@@ -176,8 +181,8 @@ export const STORAGE_KEYS = {
 // =====================================================
 
 export const APP_CONFIG = {
-  NAME: 'Thaiprompt Affiliate',
-  VERSION: '1.0.0',
+  NAME: 'TP UltraAPP',
+  VERSION: '1.5.0',
   DEFAULT_PAGE_SIZE: 20,
   MAX_PAGE_SIZE: 100,
   API_TIMEOUT: 30000, // 30 seconds

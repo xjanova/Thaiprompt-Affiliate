@@ -1,26 +1,35 @@
 /**
- * Location Service - GPS Tracking สำหรับไรเดอร์
+ * Location Service - GPS Tracking สำหรับไรเดอร์ และ GPS Sharing
  *
  * ติดตามตำแหน่งเฉพาะเมื่อไรเดอร์รับงานเท่านั้น
  * ตามมาตรฐาน Google Play ที่ต้อง:
  * - แจ้งผู้ใช้อย่างชัดเจนว่าจะใช้ตำแหน่งเมื่อไหร่
  * - ไม่ติดตามตำแหน่งตลอดเวลา
  * - แสดง notification เมื่อกำลังติดตาม
+ *
+ * ⭐ GPS Sharing - แชร์ตำแหน่งให้ Admin ดู GPS Monitor
+ * - เปิด/ปิดจากหน้าตั้งค่า
+ * - ส่งตำแหน่งไปยัง server ทุก 30 วินาที
  */
 
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
-import { updateRiderLocation } from './api';
+import { updateRiderLocation, shareGpsLocation, stopGpsSharing as apiStopGpsSharing } from './api';
 import * as Device from 'expo-device';
 
 // ชื่อ Task สำหรับ background location
 export const LOCATION_TASK_NAME = 'RIDER_LOCATION_TRACKING';
+export const GPS_SHARING_TASK_NAME = 'GPS_SHARING_TRACKING';
 
 // สถานะการติดตาม
 let isTracking = false;
 let trackingInterval: NodeJS.Timeout | null = null;
 let currentJobId: number | null = null;
+
+// ⭐ สถานะ GPS Sharing
+let isGpsSharing = false;
+let gpsSharingInterval: NodeJS.Timeout | null = null;
 
 // =====================================================
 // Task Manager Definition
@@ -356,4 +365,114 @@ export const formatDuration = (minutes: number): string => {
   }
 
   return `${hours} ชม. ${mins} นาที`;
+};
+
+// =====================================================
+// ⭐ GPS Sharing Functions - แชร์ตำแหน่งให้ Admin
+// =====================================================
+
+/**
+ * ส่งตำแหน่งไปยัง Admin GPS Monitor
+ */
+const sendGpsToAdmin = async (): Promise<void> => {
+  try {
+    const location = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+
+    const deviceModel = Device.modelName || 'Unknown';
+    const osVersion = Platform.OS + ' ' + Platform.Version;
+
+    await shareGpsLocation({
+      latitude: location.coords.latitude,
+      longitude: location.coords.longitude,
+      altitude: location.coords.altitude ?? undefined,
+      accuracy: location.coords.accuracy ?? undefined,
+      speed: location.coords.speed
+        ? location.coords.speed * 3.6 // m/s to km/h
+        : undefined,
+      heading: location.coords.heading ?? undefined,
+      device_model: deviceModel,
+      os_version: osVersion,
+      battery_level: undefined, // ไม่มี expo-battery ในตอนนี้
+    });
+
+    console.log('📍 GPS shared to admin');
+  } catch (error) {
+    console.error('Send GPS to admin error:', error);
+  }
+};
+
+/**
+ * เริ่ม GPS Sharing
+ * ส่งตำแหน่งให้ Admin ทุก 30 วินาที
+ *
+ * @returns boolean สำเร็จหรือไม่
+ */
+export const startGpsSharing = async (): Promise<boolean> => {
+  if (isGpsSharing) {
+    console.log('GPS sharing already active');
+    return true;
+  }
+
+  try {
+    // ตรวจสอบสิทธิ์
+    const permissions = await checkLocationPermission();
+
+    if (!permissions.foreground) {
+      console.error('Location permission not granted for GPS sharing');
+      return false;
+    }
+
+    isGpsSharing = true;
+
+    // ส่งตำแหน่งแรกทันที
+    await sendGpsToAdmin();
+
+    // ตั้ง interval ส่งทุก 30 วินาที
+    gpsSharingInterval = setInterval(async () => {
+      if (isGpsSharing) {
+        await sendGpsToAdmin();
+      }
+    }, 30000); // 30 วินาที
+
+    console.log('✅ GPS sharing started');
+    return true;
+  } catch (error) {
+    console.error('Start GPS sharing error:', error);
+    isGpsSharing = false;
+    return false;
+  }
+};
+
+/**
+ * หยุด GPS Sharing
+ */
+export const stopGpsSharing = async (): Promise<void> => {
+  if (!isGpsSharing) {
+    return;
+  }
+
+  try {
+    // หยุด interval
+    if (gpsSharingInterval) {
+      clearInterval(gpsSharingInterval);
+      gpsSharingInterval = null;
+    }
+
+    // แจ้ง server ว่าหยุดแชร์
+    await apiStopGpsSharing().catch(() => {});
+
+    isGpsSharing = false;
+    console.log('🛑 GPS sharing stopped');
+  } catch (error) {
+    console.error('Stop GPS sharing error:', error);
+  }
+};
+
+/**
+ * ตรวจสอบว่ากำลัง GPS Sharing อยู่หรือไม่
+ */
+export const isGpsSharingActive = (): boolean => {
+  return isGpsSharing;
 };
