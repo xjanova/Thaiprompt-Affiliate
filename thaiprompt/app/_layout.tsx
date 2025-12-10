@@ -19,6 +19,7 @@ import {
   addNotificationReceivedListener,
   addNotificationResponseListener,
   getNotificationData,
+  setupNotificationHandler,
 } from '@/services/notifications';
 import { startGpsSharing } from '@/services/location';
 import { router } from 'expo-router';
@@ -172,39 +173,69 @@ export default function RootLayout() {
     };
   }, []);
 
-  // ⭐ ฟังการรับ Push Notification
+  // ⭐ ฟังการรับ Push Notification (เฉพาะเมื่อ app พร้อมแล้ว)
   useEffect(() => {
-    // Listener สำหรับเมื่อได้รับ notification (แอพเปิดอยู่)
-    const receivedSubscription = addNotificationReceivedListener((notification) => {
-      console.log('📩 Notification received:', notification.request.content.title);
-    });
+    // รอให้ app พร้อมก่อนถึงจะ set up listeners
+    if (!appIsReady) return;
 
-    // Listener สำหรับเมื่อกด notification
-    const responseSubscription = addNotificationResponseListener((response) => {
-      console.log('👆 Notification tapped');
-      const data = getNotificationData(response);
+    let receivedSubscription: { remove: () => void } | null = null;
+    let responseSubscription: { remove: () => void } | null = null;
 
-      // นำทางไปหน้าที่เกี่ยวข้องตาม notification type
-      if (data.type === 'order') {
-        router.push('/commissions');
-      } else if (data.type === 'ticket' && data.ticketId) {
-        router.push('/support');
-      } else if (data.type === 'rider' || data.type === 'job') {
-        router.push('/rider');
-      } else if (data.url) {
-        // ถ้ามี url ให้ไปที่ url นั้น
-        router.push(data.url as never);
-      } else {
-        // default ไปหน้า notifications
-        router.push('/notifications');
-      }
-    });
+    try {
+      // ตั้งค่า notification handler ก่อน
+      setupNotificationHandler();
+
+      // Listener สำหรับเมื่อได้รับ notification (แอพเปิดอยู่)
+      receivedSubscription = addNotificationReceivedListener((notification) => {
+        try {
+          console.log('📩 Notification received:', notification?.request?.content?.title);
+        } catch (e) {
+          console.warn('Notification received handler error:', e);
+        }
+      });
+
+      // Listener สำหรับเมื่อกด notification
+      responseSubscription = addNotificationResponseListener((response) => {
+        try {
+          console.log('👆 Notification tapped');
+          const data = getNotificationData(response);
+
+          // รอ 100ms ให้ router พร้อมก่อน navigate
+          setTimeout(() => {
+            try {
+              // นำทางไปหน้าที่เกี่ยวข้องตาม notification type
+              if (data.type === 'order') {
+                router.push('/commissions');
+              } else if (data.type === 'ticket' && data.ticketId) {
+                router.push('/support');
+              } else if (data.type === 'rider' || data.type === 'job') {
+                router.push('/rider');
+              } else if (data.url) {
+                router.push(data.url as never);
+              } else {
+                router.push('/notifications');
+              }
+            } catch (navError) {
+              console.warn('Notification navigation error:', navError);
+            }
+          }, 100);
+        } catch (e) {
+          console.warn('Notification response handler error:', e);
+        }
+      });
+    } catch (e) {
+      console.warn('Setup notification listeners error:', e);
+    }
 
     return () => {
-      receivedSubscription.remove();
-      responseSubscription.remove();
+      try {
+        receivedSubscription?.remove();
+        responseSubscription?.remove();
+      } catch (e) {
+        // Ignore cleanup errors
+      }
     };
-  }, []);
+  }, [appIsReady]);
 
   // ⭐ เริ่ม GPS Sharing ถ้าเคยเปิดไว้
   useEffect(() => {
