@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.42] - 2025-12-10
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2218 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (8bc92bc8)
+- fix(qr-scanner): เปิดกล้องอัตโนมัติเมื่อโหลดหน้า QR Scanner (d63b60f8)
+### 🔧 Other Changes
+
+
 ## [v3.372.41] - 2025-12-10
 
 ### ✨ Features
