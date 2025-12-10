@@ -4,12 +4,14 @@
  * รวมศูนย์การขอและตรวจสอบ permissions ทุกประเภท:
  * - กล้อง (Camera)
  * - แกลเลอรี่ / Media Library
+ * - พื้นที่เก็บไฟล์ (File Storage)
  * - ตำแหน่ง (Location)
  * - ไมโครโฟน (Microphone)
  */
 
 import { Alert, Linking, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as MediaLibrary from 'expo-media-library';
 import * as Location from 'expo-location';
 import { Audio } from 'expo-av';
 
@@ -17,7 +19,7 @@ import { Audio } from 'expo-av';
 // Types
 // =====================================================
 
-export type PermissionType = 'camera' | 'mediaLibrary' | 'location' | 'locationBackground' | 'microphone';
+export type PermissionType = 'camera' | 'mediaLibrary' | 'saveMedia' | 'location' | 'locationBackground' | 'microphone';
 
 export interface PermissionResult {
   granted: boolean;
@@ -40,10 +42,21 @@ export const checkCameraPermission = async (): Promise<PermissionResult> => {
 };
 
 /**
- * ตรวจสอบสถานะ permission แกลเลอรี่
+ * ตรวจสอบสถานะ permission แกลเลอรี่ (อ่านรูป)
  */
 export const checkMediaLibraryPermission = async (): Promise<PermissionResult> => {
   const { status, canAskAgain } = await ImagePicker.getMediaLibraryPermissionsAsync();
+  return {
+    granted: status === 'granted',
+    canAskAgain,
+  };
+};
+
+/**
+ * ตรวจสอบสถานะ permission บันทึกรูปลงแกลเลอรี่
+ */
+export const checkSaveMediaPermission = async (): Promise<PermissionResult> => {
+  const { status, canAskAgain } = await MediaLibrary.getPermissionsAsync();
   return {
     granted: status === 'granted',
     canAskAgain,
@@ -119,7 +132,7 @@ export const requestCameraPermission = async (showAlert = true): Promise<boolean
 };
 
 /**
- * ขอ permission แกลเลอรี่ พร้อมแสดง Alert หากถูกปฏิเสธ
+ * ขอ permission แกลเลอรี่ (อ่านรูป) พร้อมแสดง Alert หากถูกปฏิเสธ
  */
 export const requestMediaLibraryPermission = async (showAlert = true): Promise<boolean> => {
   try {
@@ -144,6 +157,36 @@ export const requestMediaLibraryPermission = async (showAlert = true): Promise<b
     return false;
   } catch (error) {
     console.error('Request media library permission error:', error);
+    return false;
+  }
+};
+
+/**
+ * ขอ permission บันทึกรูปลงแกลเลอรี่ พร้อมแสดง Alert หากถูกปฏิเสธ
+ */
+export const requestSaveMediaPermission = async (showAlert = true): Promise<boolean> => {
+  try {
+    const { status, canAskAgain } = await MediaLibrary.requestPermissionsAsync();
+
+    if (status === 'granted') {
+      return true;
+    }
+
+    if (showAlert) {
+      if (!canAskAgain) {
+        showSettingsAlert('บันทึกรูป', 'กรุณาไปที่ตั้งค่าเพื่ออนุญาตให้แอพบันทึกรูปภาพลงแกลเลอรี่');
+      } else {
+        Alert.alert(
+          'ต้องการสิทธิ์บันทึกรูป',
+          'กรุณาอนุญาตให้แอพบันทึกรูปภาพลงในแกลเลอรี่',
+          [{ text: 'ตกลง' }]
+        );
+      }
+    }
+
+    return false;
+  } catch (error) {
+    console.error('Request save media permission error:', error);
     return false;
   }
 };
@@ -288,6 +331,9 @@ export const requestMultiplePermissions = async (
       case 'mediaLibrary':
         results.mediaLibrary = await requestMediaLibraryPermission(false);
         break;
+      case 'saveMedia':
+        results.saveMedia = await requestSaveMediaPermission(false);
+        break;
       case 'location':
         results.location = await requestLocationPermission(false);
         break;
@@ -318,6 +364,9 @@ export const checkMultiplePermissions = async (
         break;
       case 'mediaLibrary':
         results.mediaLibrary = await checkMediaLibraryPermission();
+        break;
+      case 'saveMedia':
+        results.saveMedia = await checkSaveMediaPermission();
         break;
       case 'location':
         results.location = await checkLocationPermission();
@@ -385,6 +434,7 @@ export default {
   // Check functions
   checkCameraPermission,
   checkMediaLibraryPermission,
+  checkSaveMediaPermission,
   checkLocationPermission,
   checkBackgroundLocationPermission,
   checkMicrophonePermission,
@@ -393,6 +443,7 @@ export default {
   // Request functions
   requestCameraPermission,
   requestMediaLibraryPermission,
+  requestSaveMediaPermission,
   requestLocationPermission,
   requestBackgroundLocationPermission,
   requestMicrophonePermission,

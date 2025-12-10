@@ -74,6 +74,14 @@
         }
       ],
       [
+        "expo-media-library",
+        {
+          "photosPermission": "แอปต้องการเข้าถึงรูปภาพเพื่ออัพโหลดเอกสาร KYC และรูปโปรไฟล์",
+          "savePhotosPermission": "แอปต้องการบันทึกรูปภาพลงในแกลเลอรี่",
+          "isAccessMediaLocationEnabled": true
+        }
+      ],
+      [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "แอปต้องการติดตามตำแหน่งเพื่อแจ้งสถานะการจัดส่งให้ลูกค้า",

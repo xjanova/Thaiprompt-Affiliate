@@ -907,6 +907,7 @@ class MobileApiController extends Controller
                     'thisMonthIncome' => $statistics['this_month_income'] ?? 0,
                     'thisMonthExpense' => $statistics['this_month_expense'] ?? 0,
                     'currency' => $wallet->currency ?? 'THB',
+                    'walletAddress' => $wallet->wallet_address ?? null,
                 ],
             ]);
         } catch (\Exception $e) {
