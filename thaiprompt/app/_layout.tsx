@@ -200,6 +200,9 @@ export default function RootLayout() {
 
         {/* Wealth Guide */}
         <Stack.Screen name="wealth-guide" options={{ headerShown: false }} />
+
+        {/* QR Scanner */}
+        <Stack.Screen name="qr-scanner" options={{ headerShown: false }} />
       </Stack>
     </View>
   );
