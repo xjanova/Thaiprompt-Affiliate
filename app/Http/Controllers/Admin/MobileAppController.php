@@ -271,9 +271,18 @@ class MobileAppController extends Controller
      */
     public function pushCreate()
     {
-        $totalDevices = MobileDevice::count();
-        $iosDevices = MobileDevice::where('platform', 'ios')->whereNotNull('push_token')->count();
-        $androidDevices = MobileDevice::where('platform', 'android')->whereNotNull('push_token')->count();
+        // นับเฉพาะ devices ที่ active และมี push_token (ตรงกับเงื่อนไขที่ใช้ส่งจริง)
+        $totalDevices = MobileDevice::where('is_active', true)
+            ->whereNotNull('push_token')
+            ->count();
+        $iosDevices = MobileDevice::where('platform', 'ios')
+            ->where('is_active', true)
+            ->whereNotNull('push_token')
+            ->count();
+        $androidDevices = MobileDevice::where('platform', 'android')
+            ->where('is_active', true)
+            ->whereNotNull('push_token')
+            ->count();
 
         return view('admin.mobile-app.push.create', compact(
             'totalDevices',
@@ -341,12 +350,21 @@ class MobileAppController extends Controller
             }
 
             // อัพเดทสถานะ
+            $totalAttempted = $results['success'] + $results['failed'];
             $notification->update([
-                'status' => $results['failed'] === 0 ? 'sent' : ($results['success'] > 0 ? 'sent' : 'failed'),
+                'status' => $totalAttempted === 0 ? 'failed' : ($results['failed'] === 0 ? 'sent' : ($results['success'] > 0 ? 'sent' : 'failed')),
                 'sent_at' => now(),
                 'success_count' => $results['success'],
                 'failure_count' => $results['failed'],
             ]);
+
+            // สร้าง message ที่ชัดเจน
+            if ($totalAttempted === 0) {
+                // ไม่มี devices ที่สามารถส่งได้
+                return redirect()
+                    ->route('admin.mobile-app.push.index')
+                    ->with('warning', 'ไม่พบอุปกรณ์ที่ลงทะเบียน Push Token - กรุณาตรวจสอบว่ามี devices ที่ active และมี push token');
+            }
 
             $message = "ส่ง Push Notification สำเร็จ {$results['success']} เครื่อง";
             if ($results['failed'] > 0) {
@@ -417,8 +435,8 @@ class MobileAppController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:100'],
             'image' => ['required', 'image', 'max:2048'],
-            'link' => ['nullable', 'string', 'max:500'],
-            'link_type' => ['required', 'in:internal,external,product,category'],
+            'link_url' => ['nullable', 'string', 'max:500'],
+            'link_type' => ['nullable', 'in:internal,external,product,category'],
             'link_target' => ['nullable', 'string', 'max:100'],
             'position' => ['required', 'in:top,middle,bottom'],
             'start_date' => ['nullable', 'date'],
@@ -431,6 +449,13 @@ class MobileAppController extends Controller
             $path = $request->file('image')->store('banners', 'public');
             $validated['image'] = '/storage/' . $path;
         }
+
+        // แปลง link_url เป็น link สำหรับ model
+        $validated['link'] = $validated['link_url'] ?? null;
+        unset($validated['link_url']);
+
+        // กำหนด link_type default เป็น external ถ้าไม่ได้ระบุ
+        $validated['link_type'] = $validated['link_type'] ?? 'external';
 
         // Get next sort order
         $validated['sort_order'] = MobileBanner::max('sort_order') + 1;
@@ -466,8 +491,8 @@ class MobileAppController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:100'],
             'image' => ['nullable', 'image', 'max:2048'],
-            'link' => ['nullable', 'string', 'max:500'],
-            'link_type' => ['required', 'in:internal,external,product,category'],
+            'link_url' => ['nullable', 'string', 'max:500'],
+            'link_type' => ['nullable', 'in:internal,external,product,category'],
             'link_target' => ['nullable', 'string', 'max:100'],
             'position' => ['required', 'in:top,middle,bottom'],
             'start_date' => ['nullable', 'date'],
@@ -480,6 +505,13 @@ class MobileAppController extends Controller
             $path = $request->file('image')->store('banners', 'public');
             $validated['image'] = '/storage/' . $path;
         }
+
+        // แปลง link_url เป็น link สำหรับ model
+        $validated['link'] = $validated['link_url'] ?? null;
+        unset($validated['link_url']);
+
+        // กำหนด link_type default เป็น external ถ้าไม่ได้ระบุ
+        $validated['link_type'] = $validated['link_type'] ?? ($banner->link_type ?? 'external');
 
         $validated['is_active'] = $validated['is_active'] ?? false;
 
