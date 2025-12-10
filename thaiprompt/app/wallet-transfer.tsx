@@ -165,7 +165,7 @@ export default function WalletTransferScreen() {
     setShowScanner(true);
   };
 
-  // เปิด Modal ใส่ PIN
+  // เปิด Modal ใส่ PIN - แสดง confirmation ก่อน
   const handleContinue = () => {
     if (!recipient) {
       Alert.alert('ไม่พบผู้รับ', 'กรุณากรอก Wallet Address หรือสแกน QR Code');
@@ -184,7 +184,23 @@ export default function WalletTransferScreen() {
       return;
     }
 
-    setShowPinModal(true);
+    // แสดง confirmation dialog ก่อนเปิด PIN modal
+    Alert.alert(
+      '📤 ยืนยันการโอนเงิน',
+      `━━━━━━━━━━━━━━━━━━━━━\n` +
+      `👤 ผู้รับ: ${recipient.name}\n` +
+      `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `💵 จำนวนเงินที่โอน: ${formatCurrency(amountNum)}\n` +
+      `📋 ค่าธรรมเนียม (${(TRANSFER_FEE_RATE * 100).toFixed(0)}%): ${formatCurrency(fee)}\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━\n` +
+      `💰 รวมหักจากกระเป๋า: ${formatCurrency(totalDeduction)}\n` +
+      `💳 ยอดคงเหลือหลังโอน: ${formatCurrency(remainingBalance)}\n` +
+      `━━━━━━━━━━━━━━━━━━━━━`,
+      [
+        { text: 'ยกเลิก', style: 'cancel' },
+        { text: '✓ ดำเนินการต่อ', onPress: () => setShowPinModal(true) },
+      ]
+    );
   };
 
   // ยืนยันการโอน
@@ -484,25 +500,36 @@ export default function WalletTransferScreen() {
             {/* สรุปใน Modal */}
             <View style={[styles.modalSummary, isDark && styles.modalSummaryDark]}>
               <View style={styles.modalSummaryRow}>
-                <Text style={[styles.modalSummaryLabel, isDark && styles.textMuted]}>ผู้รับ</Text>
+                <Text style={[styles.modalSummaryLabel, isDark && styles.textMuted]}>👤 ผู้รับ</Text>
                 <Text style={[styles.modalSummaryValue, isDark && styles.textLight]}>
                   {recipient?.name}
                 </Text>
               </View>
               <View style={styles.modalSummaryRow}>
-                <Text style={[styles.modalSummaryLabel, isDark && styles.textMuted]}>จำนวนเงิน</Text>
+                <Text style={[styles.modalSummaryLabel, isDark && styles.textMuted]}>💵 จำนวนเงิน</Text>
                 <Text style={styles.modalAmountText}>{formatCurrency(amountNum)}</Text>
               </View>
               <View style={styles.modalSummaryRow}>
-                <Text style={[styles.modalSummaryLabel, isDark && styles.textMuted]}>ค่าธรรมเนียม</Text>
-                <Text style={[styles.modalSummaryValue, isDark && styles.textMuted]}>
-                  {formatCurrency(fee)}
+                <Text style={[styles.modalSummaryLabel, isDark && styles.textMuted]}>📋 ค่าธรรมเนียม ({(TRANSFER_FEE_RATE * 100).toFixed(0)}%)</Text>
+                <Text style={[styles.feeTextOrange, isDark && styles.textMuted]}>
+                  +{formatCurrency(fee)}
                 </Text>
               </View>
               <View style={styles.modalDivider} />
               <View style={styles.modalSummaryRow}>
-                <Text style={[styles.modalSummaryLabelBold, isDark && styles.textLight]}>รวมหักจากกระเป๋า</Text>
+                <Text style={[styles.modalSummaryLabelBold, isDark && styles.textLight]}>💰 รวมหักจากกระเป๋า</Text>
                 <Text style={styles.modalTotalText}>{formatCurrency(totalDeduction)}</Text>
+              </View>
+              <View style={styles.modalDivider} />
+              <View style={styles.modalSummaryRow}>
+                <Text style={[styles.modalSummaryLabel, isDark && styles.textMuted]}>💳 ยอดปัจจุบัน</Text>
+                <Text style={[styles.modalSummaryValue, isDark && styles.textLight]}>
+                  {formatCurrency(walletBalance)}
+                </Text>
+              </View>
+              <View style={styles.modalSummaryRow}>
+                <Text style={[styles.modalSummaryLabelBold, { color: '#10B981' }]}>✓ ยอดคงเหลือหลังโอน</Text>
+                <Text style={styles.remainingBalanceText}>{formatCurrency(remainingBalance)}</Text>
               </View>
             </View>
 
@@ -810,6 +837,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#F59E0B',
+  },
+  feeTextOrange: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#F59E0B',
+  },
+  remainingBalanceText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#10B981',
   },
   totalAmount: {
     fontSize: 20,

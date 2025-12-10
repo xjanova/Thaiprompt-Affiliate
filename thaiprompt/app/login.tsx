@@ -17,7 +17,9 @@ import {
   TextInput,
   StyleSheet,
   StatusBar,
+  Image,
 } from 'react-native';
+import { APP_INFO } from '@/config/appConfig';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -173,14 +175,16 @@ export default function LoginScreen() {
 
           {/* Logo */}
           <View style={styles.logoContainer}>
-            <LinearGradient
-              colors={['#3B82F6', '#8B5CF6', '#06B6D4']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.logoBox}
-            >
-              <Text style={{ fontSize: 40 }}>🔐</Text>
-            </LinearGradient>
+            <View style={styles.logoWrapper}>
+              <Image
+                source={require('@/assets/images/icon.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+              {/* Glow effect */}
+              <View style={styles.logoGlow} />
+            </View>
+            <Text style={styles.appName}>{APP_INFO.NAME}</Text>
             <Text style={styles.title}>เข้าสู่ระบบ</Text>
             <Text style={styles.subtitle}>ยินดีต้อนรับกลับมา</Text>
           </View>
@@ -338,23 +342,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
   },
-  logoBox: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoWrapper: {
+    position: 'relative',
     marginBottom: 16,
   },
-  title: {
-    fontSize: 28,
+  logo: {
+    width: 100,
+    height: 100,
+    borderRadius: 25,
+  },
+  logoGlow: {
+    position: 'absolute',
+    top: -8,
+    left: -8,
+    right: -8,
+    bottom: -8,
+    borderRadius: 33,
+    backgroundColor: '#3B82F6',
+    opacity: 0.25,
+    zIndex: -1,
+  },
+  appName: {
+    fontSize: 24,
     fontWeight: 'bold',
+    color: '#3B82F6',
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '600',
     color: '#FFFFFF',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#9CA3AF',
-    marginTop: 8,
+    marginTop: 4,
   },
   formCard: {
     backgroundColor: 'rgba(255,255,255,0.05)',

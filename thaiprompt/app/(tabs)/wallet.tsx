@@ -271,16 +271,26 @@ export default function WalletScreen() {
   };
 
   const handleHistory = () => {
-    // เปิดเว็บสำหรับดูประวัติทั้งหมด (หน้าละเอียดมากกว่า)
-    Linking.openURL('https://main.thaiprompt.online/user/wallet/history');
+    // เปิดหน้าประวัติธุรกรรมในแอพ
+    router.push('/wallet-history');
   };
 
   const handleShowQr = () => {
     setShowQrModal(true);
   };
 
+  // สร้าง wallet address - ใช้จาก API หรือสร้างจาก user ID/referral code
+  const getWalletAddress = (): string => {
+    // ลำดับความสำคัญ: API wallet address > user wallet_address > referral code > user ID
+    if (wallet?.walletAddress) return wallet.walletAddress;
+    if (user?.wallet_address) return user.wallet_address;
+    if (user?.referralCode) return `TP-${user.referralCode}`;
+    if (user?.id) return `TP-USER-${user.id}`;
+    return '';
+  };
+
   const handleShareWalletAddress = async () => {
-    const address = wallet?.walletAddress || user?.wallet_address;
+    const address = getWalletAddress();
     if (!address) {
       Alert.alert('ไม่พบ Wallet Address', 'กรุณาลองใหม่อีกครั้ง');
       return;
@@ -516,9 +526,9 @@ export default function WalletScreen() {
 
             {/* QR Code */}
             <View style={styles.qrCodeBox}>
-              {(wallet?.walletAddress || user?.wallet_address) ? (
+              {getWalletAddress() ? (
                 <QRCode
-                  value={wallet?.walletAddress || user?.wallet_address || ''}
+                  value={getWalletAddress()}
                   size={200}
                   backgroundColor="white"
                   color="#1F2937"
@@ -543,7 +553,7 @@ export default function WalletScreen() {
             <View style={[styles.walletAddressBox, !isDark && styles.walletAddressBoxLight]}>
               <Text style={styles.walletAddressLabel}>Wallet Address</Text>
               <Text style={[styles.walletAddressValue, !isDark && styles.textDark]}>
-                {wallet?.walletAddress || user?.wallet_address || '-'}
+                {getWalletAddress() || '-'}
               </Text>
             </View>
 
