@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.44] - 2025-12-10
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(mobile): แก้ไขปัญหาไอคอน, GPS toggle, Push notification และกล้อง (16c7d043)
+- fix(mobile): แก้ไข QR code ให้แสดงรหัสสมาชิก (Member Code) (febc39a4)
+### 🔧 Other Changes
+- Merge pull request #2220 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (6aab6adb)
+
 ## [v3.372.43] - 2025-12-10
 
 ### ✨ Features
