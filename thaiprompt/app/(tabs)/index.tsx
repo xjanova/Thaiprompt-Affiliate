@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
+import { BannerCarousel } from '@/components';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 52) / 2;
@@ -107,6 +108,18 @@ export default function HomeScreen() {
               </Text>
             </LinearGradient>
           </Pressable>
+        </View>
+
+        {/* ⭐ Banner Carousel จาก Admin */}
+        <View style={styles.bannerSection}>
+          <BannerCarousel
+            position="top"
+            height={160}
+            autoPlay={true}
+            autoPlayInterval={5000}
+            showIndicators={true}
+            isDark={true}
+          />
         </View>
 
         {/* Balance Card */}
@@ -211,6 +224,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 100,
+  },
+  bannerSection: {
+    marginBottom: 16,
   },
   header: {
     flexDirection: 'row',

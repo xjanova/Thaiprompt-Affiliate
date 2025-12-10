@@ -13,6 +13,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 import { initDeviceTracking, sendHeartbeat } from '@/services/deviceService';
+import {
+  registerForPushNotifications,
+  addNotificationReceivedListener,
+  addNotificationResponseListener,
+  getNotificationData,
+} from '@/services/notifications';
+import { router } from 'expo-router';
 
 // ไม่ให้ซ่อน splash screen อัตโนมัติ
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -91,6 +98,15 @@ export default function RootLayout() {
 
         // ลงทะเบียนเครื่องกับ Admin Dashboard (non-blocking)
         initDeviceTracking().catch((e) => console.log('Device tracking:', e));
+
+        // ⭐ ลงทะเบียน Push Notification (non-blocking)
+        registerForPushNotifications()
+          .then((token) => {
+            if (token) {
+              console.log('✅ Push notification registered:', token.substring(0, 30) + '...');
+            }
+          })
+          .catch((e) => console.log('Push notification error:', e));
       } catch (error) {
         console.error('App prepare error:', error);
         // ถ้า font error หลังจากลองหลายครั้งแล้ว ยังแสดงแอพได้ (fallback)
@@ -133,6 +149,40 @@ export default function RootLayout() {
 
     return () => {
       subscription.remove();
+    };
+  }, []);
+
+  // ⭐ ฟังการรับ Push Notification
+  useEffect(() => {
+    // Listener สำหรับเมื่อได้รับ notification (แอพเปิดอยู่)
+    const receivedSubscription = addNotificationReceivedListener((notification) => {
+      console.log('📩 Notification received:', notification.request.content.title);
+    });
+
+    // Listener สำหรับเมื่อกด notification
+    const responseSubscription = addNotificationResponseListener((response) => {
+      console.log('👆 Notification tapped');
+      const data = getNotificationData(response);
+
+      // นำทางไปหน้าที่เกี่ยวข้องตาม notification type
+      if (data.type === 'order') {
+        router.push('/commissions');
+      } else if (data.type === 'ticket' && data.ticketId) {
+        router.push('/support');
+      } else if (data.type === 'rider' || data.type === 'job') {
+        router.push('/rider');
+      } else if (data.url) {
+        // ถ้ามี url ให้ไปที่ url นั้น
+        router.push(data.url as never);
+      } else {
+        // default ไปหน้า notifications
+        router.push('/notifications');
+      }
+    });
+
+    return () => {
+      receivedSubscription.remove();
+      responseSubscription.remove();
     };
   }, []);
 
