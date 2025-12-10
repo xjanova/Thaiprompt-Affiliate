@@ -30,27 +30,33 @@ import { BannerCarousel } from '@/components';
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 52) / 2;
 
-// ภาพปุ่มเมนู - ใช้ภาพจาก assets/images
+// ภาพปุ่มเมนู - ใช้ภาพจาก assets/images (ครบทุกปุ่ม)
 const MENU_IMAGES: Record<string, ImageSourcePropType> = {
   wallet: require('@/assets/images/wallet.png'),
   network: require('@/assets/images/mlm-network.png'),
+  referral: require('@/assets/images/refer-friend.png'),
+  commissions: require('@/assets/images/commission.png'),
   shopping: require('@/assets/images/shopping.png'),
   rider: require('@/assets/images/rider.png'),
+  'wealth-guide': require('@/assets/images/riches-path.png'),
+  tarot: require('@/assets/images/tarot.png'),
+  leaderboard: require('@/assets/images/ranking.png'),
+  'coming-soon': require('@/assets/images/coming-soon.png'),
   settings: require('@/assets/images/setting.png'),
 };
 
-// Menu Items - ใช้ภาพถ้ามี ไม่มีใช้ emoji
+// Menu Items - ทุกปุ่มใช้ภาพ
 const MENU_ITEMS = [
   { id: 'wallet', title: 'กระเป๋าเงิน', icon: '💰', colors: ['#10B981', '#059669'], glowColor: '#10B981', route: '/(tabs)/wallet', hasImage: true },
   { id: 'network', title: 'สายงาน', icon: '👥', colors: ['#8B5CF6', '#6D28D9'], glowColor: '#8B5CF6', route: '/(tabs)/network', hasImage: true },
-  { id: 'referral', title: 'แนะนำเพื่อน', icon: '🤝', colors: ['#EC4899', '#DB2777'], glowColor: '#EC4899', route: '/referral', hasImage: false },
-  { id: 'commissions', title: 'คอมมิชชั่น', icon: '💵', colors: ['#3B82F6', '#2563EB'], glowColor: '#3B82F6', route: '/commissions', hasImage: false },
+  { id: 'referral', title: 'แนะนำเพื่อน', icon: '🤝', colors: ['#EC4899', '#DB2777'], glowColor: '#EC4899', route: '/referral', hasImage: true },
+  { id: 'commissions', title: 'คอมมิชชั่น', icon: '💵', colors: ['#3B82F6', '#2563EB'], glowColor: '#3B82F6', route: '/commissions', hasImage: true },
   { id: 'shopping', title: 'ช้อปปิ้ง', icon: '🛒', colors: ['#F59E0B', '#D97706'], glowColor: '#F59E0B', route: '/shopping', hasImage: true },
   { id: 'rider', title: 'ไรเดอร์', icon: '🚴', colors: ['#06B6D4', '#0891B2'], glowColor: '#06B6D4', route: '/rider', hasImage: true },
-  { id: 'wealth-guide', title: 'เส้นทางเศรษฐี', icon: '📚', colors: ['#F97316', '#EA580C'], glowColor: '#F97316', route: '/wealth-guide', hasImage: false },
-  { id: 'tarot', title: 'ดูดวง', icon: '🔮', colors: ['#6366F1', '#4F46E5'], glowColor: '#6366F1', route: '/tarot', hasImage: false },
-  { id: 'leaderboard', title: 'อันดับ', icon: '🏆', colors: ['#EF4444', '#DC2626'], glowColor: '#EF4444', route: '/leaderboard', hasImage: false },
-  { id: 'coming-soon', title: 'เร็วๆ นี้', icon: '🚀', colors: ['#A855F7', '#9333EA'], glowColor: '#A855F7', route: '/coming-soon', hasImage: false },
+  { id: 'wealth-guide', title: 'เส้นทางเศรษฐี', icon: '📚', colors: ['#F97316', '#EA580C'], glowColor: '#F97316', route: '/wealth-guide', hasImage: true },
+  { id: 'tarot', title: 'ดูดวง', icon: '🔮', colors: ['#6366F1', '#4F46E5'], glowColor: '#6366F1', route: '/tarot', hasImage: true },
+  { id: 'leaderboard', title: 'อันดับ', icon: '🏆', colors: ['#EF4444', '#DC2626'], glowColor: '#EF4444', route: '/leaderboard', hasImage: true },
+  { id: 'coming-soon', title: 'เร็วๆ นี้', icon: '🚀', colors: ['#A855F7', '#9333EA'], glowColor: '#A855F7', route: '/coming-soon', hasImage: true },
   { id: 'settings', title: 'ตั้งค่า', icon: '⚙️', colors: ['#64748B', '#475569'], glowColor: '#64748B', route: '/settings', hasImage: true },
 ] as const;
 
