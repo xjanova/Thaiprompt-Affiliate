@@ -1,9 +1,9 @@
 /**
  * Settings Screen - หน้าตั้งค่า
- * ใช้ StyleSheet แทน Reanimated เพื่อความเสถียร
+ * UI สวยงามแบบ Glassmorphism พร้อม Emoji fallback
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,18 +15,51 @@ import {
   Linking,
   StatusBar,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 import { startGpsSharing, stopGpsSharing, requestLocationPermission } from '@/services/location';
 
-// Setting Item Component
+// Emoji Icon mapping (fallback สำหรับกรณี Ionicons ไม่โหลด)
+const ICONS: Record<string, string> = {
+  'arrow-back': '←',
+  'sunny': '☀️',
+  'moon': '🌙',
+  'phone-portrait': '📱',
+  'language': '🌐',
+  'shield-checkmark': '🛡️',
+  'lock-closed': '🔒',
+  'notifications': '🔔',
+  'mail': '✉️',
+  'finger-print': '👆',
+  'location': '📍',
+  'navigate': '🧭',
+  'document-text': '📄',
+  'shield': '🛡️',
+  'star': '⭐',
+  'information-circle': '📱',
+  'log-out': '🚪',
+  'trash': '🗑️',
+  'pencil': '✏️',
+  'chevron-forward': '›',
+};
+
+// Icon Component with emoji
+const Icon = ({ name, size = 24, color = '#FFF' }: { name: string; size?: number; color?: string }) => (
+  <Text style={{ fontSize: size * 0.9, color, textAlign: 'center' }}>
+    {ICONS[name] || '•'}
+  </Text>
+);
+
+// Setting Item Component - ปรับปรุงให้สวยงามขึ้น
 const SettingItem = ({
   icon,
+  iconEmoji,
   iconColor,
   title,
   subtitle,
@@ -34,7 +67,8 @@ const SettingItem = ({
   rightElement,
   isDark,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon?: string;
+  iconEmoji?: string;
   iconColor?: string;
   title: string;
   subtitle?: string;
@@ -44,19 +78,24 @@ const SettingItem = ({
 }) => (
   <Pressable
     onPress={onPress}
-    style={[
+    style={({ pressed }) => [
       styles.settingItem,
-      { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFF' },
+      {
+        backgroundColor: isDark
+          ? pressed ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'
+          : pressed ? '#F3F4F6' : '#FFFFFF',
+        transform: [{ scale: pressed ? 0.98 : 1 }],
+      },
     ]}
   >
-    <View
-      style={[
-        styles.iconContainer,
-        { backgroundColor: iconColor ? `${iconColor}20` : 'rgba(212,175,55,0.2)' },
-      ]}
+    <LinearGradient
+      colors={iconColor ? [`${iconColor}30`, `${iconColor}10`] : ['rgba(212,175,55,0.2)', 'rgba(212,175,55,0.1)']}
+      style={styles.iconContainer}
     >
-      <Ionicons name={icon} size={22} color={iconColor || '#D4AF37'} />
-    </View>
+      <Text style={{ fontSize: 20 }}>
+        {iconEmoji || ICONS[icon || ''] || '•'}
+      </Text>
+    </LinearGradient>
     <View style={styles.settingContent}>
       <Text style={[styles.settingTitle, { color: isDark ? '#FFFFFF' : '#1F2937' }]}>
         {title}
@@ -68,7 +107,7 @@ const SettingItem = ({
       )}
     </View>
     {rightElement || (
-      <Ionicons name="chevron-forward" size={20} color={isDark ? '#666666' : '#999999'} />
+      <Text style={{ fontSize: 18, color: isDark ? '#666666' : '#999999' }}>›</Text>
     )}
   </Pressable>
 );
@@ -80,7 +119,7 @@ const SectionHeader = ({ title, isDark }: { title: string; isDark: boolean }) =>
   </Text>
 );
 
-// Theme Option
+// Theme Option - ปรับปรุงให้ใช้ Emoji
 const ThemeOption = ({
   mode,
   currentMode,
@@ -92,18 +131,19 @@ const ThemeOption = ({
 }: {
   mode: 'light' | 'dark' | 'system';
   currentMode: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   title: string;
   description: string;
   onPress: () => void;
   isDark: boolean;
 }) => {
   const isSelected = currentMode === mode;
+  const emoji = ICONS[icon] || (mode === 'light' ? '☀️' : mode === 'dark' ? '🌙' : '📱');
 
   return (
     <Pressable
       onPress={onPress}
-      style={[
+      style={({ pressed }) => [
         styles.themeOption,
         {
           backgroundColor: isSelected
@@ -118,31 +158,25 @@ const ThemeOption = ({
             : isDark
             ? 'rgba(255,255,255,0.1)'
             : '#E5E7EB',
+          transform: [{ scale: pressed ? 0.98 : 1 }],
         },
       ]}
     >
-      <View
-        style={[
-          styles.themeIconContainer,
-          {
-            backgroundColor: isSelected
-              ? mode === 'dark'
-                ? '#7B2CBF'
-                : mode === 'light'
-                ? '#FFB300'
-                : '#3B82F6'
-              : isDark
-              ? 'rgba(255,255,255,0.1)'
-              : '#F3F4F6',
-          },
-        ]}
+      <LinearGradient
+        colors={isSelected
+          ? mode === 'dark'
+            ? ['#7B2CBF', '#5B21B6']
+            : mode === 'light'
+            ? ['#FFB300', '#F59E0B']
+            : ['#3B82F6', '#2563EB']
+          : isDark
+          ? ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']
+          : ['#F3F4F6', '#E5E7EB']
+        }
+        style={styles.themeIconContainer}
       >
-        <Ionicons
-          name={icon}
-          size={24}
-          color={isSelected ? '#FFFFFF' : isDark ? '#9CA3AF' : '#6B7280'}
-        />
-      </View>
+        <Text style={{ fontSize: 24 }}>{emoji}</Text>
+      </LinearGradient>
       <View style={styles.themeContent}>
         <Text
           style={[
@@ -157,7 +191,7 @@ const ThemeOption = ({
         </Text>
       </View>
       {isSelected && (
-        <Ionicons name="checkmark-circle" size={24} color="#3B82F6" />
+        <Text style={{ fontSize: 20, color: '#3B82F6' }}>✓</Text>
       )}
     </Pressable>
   );
@@ -300,16 +334,19 @@ export default function SettingsScreen() {
     <View style={[styles.container, { backgroundColor: isDark ? '#0F0F23' : '#F9FAFB' }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB' }]}>
+      {/* Header - ปรับปรุงให้สวยงามขึ้น */}
+      <LinearGradient
+        colors={isDark ? ['rgba(15,15,35,0.95)', 'rgba(15,15,35,0.8)'] : ['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.8)']}
+        style={[styles.header, { borderBottomColor: isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB' }]}
+      >
         <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={isDark ? '#FFF' : '#1F2937'} />
+          <Text style={{ fontSize: 22, color: isDark ? '#FFF' : '#1F2937' }}>←</Text>
         </Pressable>
         <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#1F2937' }]}>
-          ตั้งค่า
+          ⚙️ ตั้งค่า
         </Text>
         <View style={styles.placeholder} />
-      </View>
+      </LinearGradient>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -333,9 +370,12 @@ export default function SettingsScreen() {
               <Text style={styles.profileEmail}>{user.email}</Text>
               <Pressable
                 onPress={() => router.push('/(tabs)/profile')}
-                style={styles.editProfileButton}
+                style={({ pressed }) => [
+                  styles.editProfileButton,
+                  { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] }
+                ]}
               >
-                <Ionicons name="pencil" size={16} color="white" />
+                <Text style={{ fontSize: 14 }}>✏️</Text>
                 <Text style={styles.editProfileText}>แก้ไขโปรไฟล์</Text>
               </Pressable>
             </LinearGradient>
@@ -463,12 +503,15 @@ export default function SettingsScreen() {
           }
         />
         {gpsSharing && (
-          <View style={[styles.gpsStatusCard, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.05)' }]}>
-            <Ionicons name="navigate" size={20} color="#10B981" />
+          <LinearGradient
+            colors={['rgba(16, 185, 129, 0.15)', 'rgba(16, 185, 129, 0.05)']}
+            style={styles.gpsStatusCard}
+          >
+            <Text style={{ fontSize: 18 }}>🧭</Text>
             <Text style={[styles.gpsStatusText, { color: '#10B981' }]}>
               กำลังส่งตำแหน่งทุก 30 วินาที
             </Text>
-          </View>
+          </LinearGradient>
         )}
 
         {/* Security */}

@@ -1,16 +1,15 @@
 /**
  * QR Scanner Screen - หน้าสแกน QR Code
- * เปิดกล้องอัตโนมัติเมื่อเข้าหน้านี้
+ * ปรับปรุงใหม่ให้รองรับ error handling และ UI ที่สวยงาม
  *
  * Features:
  * - เปิดกล้องอัตโนมัติ
  * - สแกน QR Code และ Barcode
- * - แสดงผลลัพธ์
- * - คัดลอกผลลัพธ์ได้
- * - เปิดลิงก์ได้ (ถ้าเป็น URL)
+ * - UI สวยงามแบบ Glassmorphism
+ * - Error handling ที่ดีขึ้น
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,16 +21,40 @@ import {
   StatusBar,
   Dimensions,
   Animated,
+  Platform,
 } from 'react-native';
-import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
-import { Ionicons } from '@expo/vector-icons';
+import { Camera, CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SCAN_AREA_SIZE = SCREEN_WIDTH * 0.7;
+
+// Simple Icon Component (fallback สำหรับกรณี Ionicons ไม่โหลด)
+const Icon = ({ name, size = 24, color = '#FFF' }: { name: string; size?: number; color?: string }) => {
+  const icons: Record<string, string> = {
+    'arrow-back': '←',
+    'flash': '⚡',
+    'flash-outline': '💡',
+    'camera-outline': '📷',
+    'camera-reverse-outline': '🔄',
+    'checkmark-circle': '✓',
+    'copy-outline': '📋',
+    'open-outline': '🔗',
+    'scan-outline': '📱',
+    'alert-circle': '⚠️',
+    'refresh': '↻',
+  };
+
+  return (
+    <Text style={{ fontSize: size, color, textAlign: 'center' }}>
+      {icons[name] || '•'}
+    </Text>
+  );
+};
 
 export default function QRScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -39,13 +62,17 @@ export default function QRScannerScreen() {
   const [scannedData, setScannedData] = useState<string | null>(null);
   const [isFlashOn, setIsFlashOn] = useState(false);
   const [facing, setFacing] = useState<'front' | 'back'>('back');
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Animation สำหรับ scan line
-  const scanLineAnim = React.useRef(new Animated.Value(0)).current;
+  const scanLineAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // เริ่ม animation scan line
   useEffect(() => {
-    const startAnimation = () => {
+    if (!scanned && cameraReady) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(scanLineAnim, {
@@ -60,32 +87,70 @@ export default function QRScannerScreen() {
           }),
         ])
       ).start();
-    };
 
-    if (!scanned) {
-      startAnimation();
+      // Pulse animation for corners
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
     }
-  }, [scanned]);
+  }, [scanned, cameraReady]);
 
-  // ขอ permission อัตโนมัติเมื่อเข้าหน้า
+  // ขอ permission อัตโนมัติ
   useEffect(() => {
-    const checkAndRequestPermission = async () => {
+    const initCamera = async () => {
+      setIsLoading(true);
+      setCameraError(null);
+
       try {
-        // ถ้ายังไม่มี permission ให้ request
-        if (permission === null) {
-          console.log('Requesting camera permission...');
-          await requestPermission();
+        // รอให้ component mount
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        if (!permission) {
+          console.log('📷 Requesting camera permission...');
+          const result = await requestPermission();
+          console.log('📷 Permission result:', result);
+
+          if (!result.granted) {
+            setCameraError('ไม่ได้รับอนุญาตให้ใช้กล้อง');
+          }
         } else if (!permission.granted && permission.canAskAgain) {
-          console.log('Re-requesting camera permission...');
+          console.log('📷 Re-requesting camera permission...');
           await requestPermission();
         }
       } catch (error) {
-        console.error('Camera permission error:', error);
+        console.error('Camera init error:', error);
+        setCameraError('เกิดข้อผิดพลาดในการเปิดกล้อง');
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    checkAndRequestPermission();
-  }, [permission, requestPermission]);
+    initCamera();
+  }, []);
+
+  // Handle camera ready
+  const handleCameraReady = useCallback(() => {
+    console.log('📷 Camera is ready');
+    setCameraReady(true);
+    setCameraError(null);
+  }, []);
+
+  // Handle camera mount error
+  const handleMountError = useCallback((error: { message: string }) => {
+    console.error('📷 Camera mount error:', error);
+    setCameraError(error.message || 'ไม่สามารถเปิดกล้องได้');
+  }, []);
 
   // Handle barcode scanned
   const handleBarCodeScanned = useCallback(({ data, type }: BarcodeScanningResult) => {
@@ -95,16 +160,22 @@ export default function QRScannerScreen() {
     setScannedData(data);
 
     // Haptic feedback
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      // Ignore haptic errors
+    }
 
-    console.log(`Scanned: ${type} - ${data}`);
+    console.log(`✅ Scanned: ${type} - ${data}`);
   }, [scanned]);
 
   // Copy to clipboard
   const handleCopy = async () => {
     if (scannedData) {
       await Clipboard.setStringAsync(scannedData);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      try {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (e) {}
       Alert.alert('คัดลอกแล้ว', 'ข้อมูลถูกคัดลอกไปยังคลิปบอร์ด');
     }
   };
@@ -144,45 +215,126 @@ export default function QRScannerScreen() {
   // Toggle flash
   const toggleFlash = () => {
     setIsFlashOn(!isFlashOn);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (e) {}
   };
 
   // Toggle camera
   const toggleCamera = () => {
     setFacing(facing === 'back' ? 'front' : 'back');
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (e) {}
+  };
+
+  // Retry camera
+  const retryCamera = async () => {
+    setIsLoading(true);
+    setCameraError(null);
+    setCameraReady(false);
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const result = await requestPermission();
+      if (result.granted) {
+        setCameraReady(true);
+      } else {
+        setCameraError('ไม่ได้รับอนุญาตให้ใช้กล้อง');
+      }
+    } catch (error) {
+      setCameraError('เกิดข้อผิดพลาด กรุณาลองใหม่');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Loading state
-  if (!permission) {
+  if (isLoading) {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="light-content" />
+        <LinearGradient
+          colors={['#1a1a2e', '#16213e', '#0f3460']}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.loadingText}>กำลังตรวจสอบสิทธิ์กล้อง...</Text>
+          <View style={styles.loadingBox}>
+            <ActivityIndicator size="large" color="#3B82F6" />
+            <Text style={styles.loadingText}>กำลังเปิดกล้อง...</Text>
+            <Text style={styles.loadingSubtext}>กรุณารอสักครู่</Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // Error state
+  if (cameraError) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" />
+        <LinearGradient
+          colors={['#1a1a2e', '#16213e', '#0f3460']}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.centered}>
+          <View style={styles.errorBox}>
+            <Icon name="alert-circle" size={60} color="#EF4444" />
+            <Text style={styles.errorTitle}>เกิดข้อผิดพลาด</Text>
+            <Text style={styles.errorText}>{cameraError}</Text>
+
+            <TouchableOpacity style={styles.retryButton} onPress={retryCamera}>
+              <LinearGradient
+                colors={['#3B82F6', '#2563EB']}
+                style={styles.retryButtonGradient}
+              >
+                <Icon name="refresh" size={20} color="#FFF" />
+                <Text style={styles.retryButtonText}>ลองใหม่</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.backButtonAlt} onPress={() => router.back()}>
+              <Text style={styles.backButtonText}>กลับ</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
   }
 
   // Permission denied
-  if (!permission.granted) {
+  if (permission && !permission.granted) {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="light-content" />
+        <LinearGradient
+          colors={['#1a1a2e', '#16213e', '#0f3460']}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={styles.centered}>
-          <Ionicons name="camera-outline" size={80} color="#6B7280" />
-          <Text style={styles.permissionTitle}>ต้องการสิทธิ์กล้อง</Text>
-          <Text style={styles.permissionText}>
-            กรุณาอนุญาตให้แอพใช้กล้องเพื่อสแกน QR Code
-          </Text>
-          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-            <Text style={styles.permissionButtonText}>อนุญาตใช้กล้อง</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backButtonText}>กลับ</Text>
-          </TouchableOpacity>
+          <View style={styles.permissionBox}>
+            <View style={styles.permissionIconContainer}>
+              <Icon name="camera-outline" size={50} color="#FFF" />
+            </View>
+            <Text style={styles.permissionTitle}>ต้องการสิทธิ์กล้อง</Text>
+            <Text style={styles.permissionText}>
+              กรุณาอนุญาตให้แอพใช้กล้องเพื่อสแกน QR Code
+            </Text>
+
+            <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+              <LinearGradient
+                colors={['#10B981', '#059669']}
+                style={styles.permissionButtonGradient}
+              >
+                <Text style={styles.permissionButtonText}>อนุญาตใช้กล้อง</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.backButtonAlt} onPress={() => router.back()}>
+              <Text style={styles.backButtonText}>กลับ</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
@@ -197,6 +349,8 @@ export default function QRScannerScreen() {
         style={StyleSheet.absoluteFillObject}
         facing={facing}
         enableTorch={isFlashOn}
+        onCameraReady={handleCameraReady}
+        onMountError={handleMountError}
         barcodeScannerSettings={{
           barcodeTypes: ['qr', 'ean13', 'ean8', 'code128', 'code39', 'code93', 'pdf417'],
         }}
@@ -205,100 +359,105 @@ export default function QRScannerScreen() {
 
       {/* Overlay */}
       <View style={styles.overlay}>
-        {/* Header */}
-        <LinearGradient
-          colors={['rgba(0,0,0,0.7)', 'transparent']}
-          style={styles.header}
-        >
-          <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>สแกน QR Code</Text>
-          <TouchableOpacity style={styles.headerButton} onPress={toggleFlash}>
-            <Ionicons name={isFlashOn ? 'flash' : 'flash-outline'} size={24} color="#FFF" />
-          </TouchableOpacity>
-        </LinearGradient>
+        {/* Header with Glassmorphism */}
+        <View style={styles.headerContainer}>
+          <BlurView intensity={30} tint="dark" style={styles.header}>
+            <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
+              <Icon name="arrow-back" size={24} color="#FFF" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>สแกน QR Code</Text>
+            <TouchableOpacity style={styles.headerButton} onPress={toggleFlash}>
+              <Icon name={isFlashOn ? 'flash' : 'flash-outline'} size={24} color={isFlashOn ? '#FFD700' : '#FFF'} />
+            </TouchableOpacity>
+          </BlurView>
+        </View>
 
         {/* Scan Area */}
         <View style={styles.scanAreaContainer}>
-          <View style={styles.scanArea}>
-            {/* Corner decorations */}
-            <View style={[styles.corner, styles.cornerTL]} />
-            <View style={[styles.corner, styles.cornerTR]} />
-            <View style={[styles.corner, styles.cornerBL]} />
-            <View style={[styles.corner, styles.cornerBR]} />
+          <Animated.View style={[styles.scanArea, { transform: [{ scale: pulseAnim }] }]}>
+            {/* Corner decorations with gradient */}
+            <LinearGradient colors={['#3B82F6', '#8B5CF6']} style={[styles.corner, styles.cornerTL]} />
+            <LinearGradient colors={['#3B82F6', '#8B5CF6']} style={[styles.corner, styles.cornerTR]} />
+            <LinearGradient colors={['#8B5CF6', '#EC4899']} style={[styles.corner, styles.cornerBL]} />
+            <LinearGradient colors={['#8B5CF6', '#EC4899']} style={[styles.corner, styles.cornerBR]} />
 
             {/* Scan line animation */}
-            {!scanned && (
+            {!scanned && cameraReady && (
               <Animated.View
                 style={[
                   styles.scanLine,
-                  {
-                    transform: [{ translateY: scanLineAnim }],
-                  },
+                  { transform: [{ translateY: scanLineAnim }] },
                 ]}
-              />
+              >
+                <LinearGradient
+                  colors={['transparent', '#3B82F6', 'transparent']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.scanLineGradient}
+                />
+              </Animated.View>
             )}
-          </View>
+          </Animated.View>
 
           <Text style={styles.scanHint}>
-            {scanned ? 'สแกนสำเร็จ!' : 'วาง QR Code ในกรอบเพื่อสแกน'}
+            {scanned ? '✅ สแกนสำเร็จ!' : cameraReady ? 'วาง QR Code ในกรอบเพื่อสแกน' : 'กำลังเตรียมกล้อง...'}
           </Text>
         </View>
 
-        {/* Bottom Controls */}
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.8)']}
-          style={styles.bottomControls}
-        >
-          {!scanned ? (
-            <View style={styles.controlButtons}>
-              <TouchableOpacity style={styles.controlButton} onPress={toggleCamera}>
-                <Ionicons name="camera-reverse-outline" size={28} color="#FFF" />
-                <Text style={styles.controlButtonText}>สลับกล้อง</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.resultContainer}>
-              {/* Scanned Data */}
-              <View style={styles.resultBox}>
-                <View style={styles.resultHeader}>
-                  <Ionicons name="checkmark-circle" size={24} color="#10B981" />
-                  <Text style={styles.resultTitle}>ผลการสแกน</Text>
+        {/* Bottom Controls with Glassmorphism */}
+        <View style={styles.bottomContainer}>
+          <BlurView intensity={50} tint="dark" style={styles.bottomControls}>
+            {!scanned ? (
+              <View style={styles.controlButtons}>
+                <TouchableOpacity style={styles.controlButton} onPress={toggleCamera}>
+                  <View style={styles.controlButtonInner}>
+                    <Icon name="camera-reverse-outline" size={28} color="#FFF" />
+                  </View>
+                  <Text style={styles.controlButtonText}>สลับกล้อง</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.resultContainer}>
+                {/* Scanned Data */}
+                <View style={styles.resultBox}>
+                  <View style={styles.resultHeader}>
+                    <Icon name="checkmark-circle" size={24} color="#10B981" />
+                    <Text style={styles.resultTitle}>ผลการสแกน</Text>
+                  </View>
+                  <Text style={styles.resultData} numberOfLines={4}>
+                    {scannedData}
+                  </Text>
                 </View>
-                <Text style={styles.resultData} numberOfLines={4}>
-                  {scannedData}
-                </Text>
-              </View>
 
-              {/* Action Buttons */}
-              <View style={styles.actionButtons}>
-                <TouchableOpacity style={styles.actionButton} onPress={handleCopy}>
-                  <Ionicons name="copy-outline" size={20} color="#FFF" />
-                  <Text style={styles.actionButtonText}>คัดลอก</Text>
-                </TouchableOpacity>
-
-                {scannedData && isUrl(scannedData) && (
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.actionButtonPrimary]}
-                    onPress={handleOpenLink}
-                  >
-                    <Ionicons name="open-outline" size={20} color="#FFF" />
-                    <Text style={styles.actionButtonText}>เปิดลิงก์</Text>
+                {/* Action Buttons */}
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity style={styles.actionButton} onPress={handleCopy}>
+                    <LinearGradient colors={['#6B7280', '#4B5563']} style={styles.actionButtonGradient}>
+                      <Icon name="copy-outline" size={18} color="#FFF" />
+                      <Text style={styles.actionButtonText}>คัดลอก</Text>
+                    </LinearGradient>
                   </TouchableOpacity>
-                )}
 
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.actionButtonSecondary]}
-                  onPress={handleScanAgain}
-                >
-                  <Ionicons name="scan-outline" size={20} color="#FFF" />
-                  <Text style={styles.actionButtonText}>สแกนใหม่</Text>
-                </TouchableOpacity>
+                  {scannedData && isUrl(scannedData) && (
+                    <TouchableOpacity style={styles.actionButton} onPress={handleOpenLink}>
+                      <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.actionButtonGradient}>
+                        <Icon name="open-outline" size={18} color="#FFF" />
+                        <Text style={styles.actionButtonText}>เปิดลิงก์</Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  )}
+
+                  <TouchableOpacity style={styles.actionButton} onPress={handleScanAgain}>
+                    <LinearGradient colors={['#10B981', '#059669']} style={styles.actionButtonGradient}>
+                      <Icon name="scan-outline" size={18} color="#FFF" />
+                      <Text style={styles.actionButtonText}>สแกนใหม่</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          )}
-        </LinearGradient>
+            )}
+          </BlurView>
+        </View>
       </View>
     </View>
   );
@@ -315,61 +474,144 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
+  loadingBox: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
   loadingText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 20,
+  },
+  loadingSubtext: {
     color: '#9CA3AF',
-    fontSize: 16,
+    fontSize: 14,
+    marginTop: 8,
+  },
+  errorBox: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.3)',
+    width: '100%',
+    maxWidth: 320,
+  },
+  errorTitle: {
+    color: '#EF4444',
+    fontSize: 22,
+    fontWeight: 'bold',
     marginTop: 16,
   },
-  permissionTitle: {
-    color: '#FFF',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 24,
-  },
-  permissionText: {
+  errorText: {
     color: '#9CA3AF',
-    fontSize: 16,
+    fontSize: 15,
     textAlign: 'center',
-    marginTop: 12,
+    marginTop: 8,
+    lineHeight: 22,
   },
-  permissionButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
+  retryButton: {
     marginTop: 24,
+    borderRadius: 16,
+    overflow: 'hidden',
+    width: '100%',
   },
-  permissionButtonText: {
+  retryButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  retryButtonText: {
     color: '#FFF',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  backButton: {
-    paddingHorizontal: 32,
+  backButtonAlt: {
     paddingVertical: 14,
-    marginTop: 16,
+    marginTop: 12,
   },
   backButtonText: {
     color: '#9CA3AF',
     fontSize: 16,
   },
+  permissionBox: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    width: '100%',
+    maxWidth: 320,
+  },
+  permissionIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(59,130,246,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  permissionTitle: {
+    color: '#FFF',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  permissionText: {
+    color: '#9CA3AF',
+    fontSize: 15,
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 22,
+  },
+  permissionButton: {
+    marginTop: 24,
+    borderRadius: 16,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  permissionButtonGradient: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  permissionButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
+  },
+  headerContainer: {
+    paddingTop: Platform.OS === 'ios' ? 50 : 40,
+    paddingHorizontal: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    paddingBottom: 32,
+    borderRadius: 20,
+    overflow: 'hidden',
   },
   headerButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -390,56 +632,60 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 40,
     height: 40,
-    borderColor: '#3B82F6',
   },
   cornerTL: {
     top: 0,
     left: 0,
+    borderTopLeftRadius: 12,
     borderTopWidth: 4,
     borderLeftWidth: 4,
-    borderTopLeftRadius: 12,
+    borderColor: 'transparent',
   },
   cornerTR: {
     top: 0,
     right: 0,
-    borderTopWidth: 4,
-    borderRightWidth: 4,
     borderTopRightRadius: 12,
+    transform: [{ rotate: '90deg' }],
   },
   cornerBL: {
     bottom: 0,
     left: 0,
-    borderBottomWidth: 4,
-    borderLeftWidth: 4,
     borderBottomLeftRadius: 12,
+    transform: [{ rotate: '-90deg' }],
   },
   cornerBR: {
     bottom: 0,
     right: 0,
-    borderBottomWidth: 4,
-    borderRightWidth: 4,
     borderBottomRightRadius: 12,
+    transform: [{ rotate: '180deg' }],
   },
   scanLine: {
     position: 'absolute',
     width: '100%',
-    height: 2,
-    backgroundColor: '#3B82F6',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
+    height: 3,
+    left: 0,
+  },
+  scanLineGradient: {
+    flex: 1,
+    borderRadius: 2,
   },
   scanHint: {
     color: '#FFF',
     fontSize: 16,
     marginTop: 24,
     textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  bottomContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
   },
   bottomControls: {
-    paddingHorizontal: 16,
-    paddingBottom: 48,
-    paddingTop: 32,
+    borderRadius: 24,
+    overflow: 'hidden',
+    padding: 20,
   },
   controlButtons: {
     flexDirection: 'row',
@@ -450,10 +696,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
+  controlButtonInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   controlButtonText: {
     color: '#FFF',
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: 13,
   },
   resultContainer: {
     width: '100%',
@@ -468,12 +722,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+    gap: 8,
   },
   resultTitle: {
     color: '#10B981',
     fontSize: 16,
     fontWeight: 'bold',
-    marginLeft: 8,
   },
   resultData: {
     color: '#FFF',
@@ -482,28 +736,23 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: 8,
   },
   actionButton: {
     flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  actionButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 12,
     gap: 6,
-  },
-  actionButtonPrimary: {
-    backgroundColor: '#3B82F6',
-  },
-  actionButtonSecondary: {
-    backgroundColor: '#10B981',
   },
   actionButtonText: {
     color: '#FFF',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
 });
