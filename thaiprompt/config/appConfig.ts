@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '1.6.4',
-  BUILD_NUMBER: 16,
-  BUILD_DATE: '2025-12-10-FIXNOTIFICATIONS', // แก้ไข: crash หลังอนุญาต push notification
+  VERSION: '1.6.5',
+  BUILD_NUMBER: 17,
+  BUILD_DATE: '2025-12-10-DELAYANIMATION', // เพิ่ม delay ก่อนเริ่ม AnimatedBackground animations
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs
