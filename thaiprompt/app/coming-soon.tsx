@@ -14,7 +14,6 @@ import {
   StatusBar,
   Dimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -315,7 +314,7 @@ export default function ComingSoonScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+          <Text style={{ fontSize: 24, color: '#FFF' }}>⬅️</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Coming Soon</Text>
         <View style={styles.placeholder} />

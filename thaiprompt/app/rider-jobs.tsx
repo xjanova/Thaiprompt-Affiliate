@@ -19,7 +19,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
@@ -132,7 +131,7 @@ const JobCard = ({
       {/* Pickup Location */}
       <View className="flex-row items-start mb-2">
         <View className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 items-center justify-center mr-3">
-          <Ionicons name="location" size={16} color="#10B981" />
+          <Text style={{ fontSize: 16, color: '#10B981' }}>📍</Text>
         </View>
         <View className="flex-1">
           <Text className="text-gray-500 dark:text-gray-400 text-xs mb-0.5">
@@ -152,7 +151,7 @@ const JobCard = ({
       {/* Delivery Location */}
       <View className="flex-row items-start mb-4">
         <View className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 items-center justify-center mr-3">
-          <Ionicons name="flag" size={16} color="#EF4444" />
+          <Text style={{ fontSize: 16, color: '#EF4444' }}>🚩</Text>
         </View>
         <View className="flex-1">
           <Text className="text-gray-500 dark:text-gray-400 text-xs mb-0.5">
@@ -167,7 +166,7 @@ const JobCard = ({
       {/* Distance & Info */}
       {job.distanceKm && (
         <View className="flex-row items-center mb-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
-          <Ionicons name="navigate" size={16} color={isDark ? '#9CA3AF' : '#6B7280'} />
+          <Text style={{ fontSize: 16, color: isDark ? '#9CA3AF' : '#6B7280' }}>🧭</Text>
           <Text className="text-gray-600 dark:text-gray-400 text-sm ml-2">
             ระยะทาง: {job.distanceKm.toFixed(1)} กม.
           </Text>
@@ -180,7 +179,7 @@ const JobCard = ({
           onPress={() => onViewMap(job)}
           className="flex-1 mr-2 bg-gray-100 dark:bg-gray-700 rounded-xl py-3 flex-row items-center justify-center"
         >
-          <Ionicons name="map" size={18} color={isDark ? '#9CA3AF' : '#6B7280'} />
+          <Text style={{ fontSize: 18, color: isDark ? '#9CA3AF' : '#6B7280' }}>🗺️</Text>
           <Text className="text-gray-700 dark:text-gray-300 font-medium ml-2">
             ดูแผนที่
           </Text>
@@ -195,7 +194,7 @@ const JobCard = ({
             <ActivityIndicator color="white" size="small" />
           ) : (
             <>
-              <Ionicons name="checkmark-circle" size={18} color="white" />
+              <Text style={{ fontSize: 18, color: 'white' }}>✓</Text>
               <Text className="text-white font-bold ml-2">รับงาน</Text>
             </>
           )}
@@ -243,7 +242,7 @@ const AcceptJobModal = ({
             }}
           >
             <View className="w-20 h-20 bg-white/20 rounded-full items-center justify-center mb-4">
-              <Ionicons name="bicycle" size={40} color="white" />
+              <Text style={{ fontSize: 40, color: 'white' }}>🚴</Text>
             </View>
             <Text className="text-white text-xl font-bold text-center">
               ยืนยันรับงาน?
@@ -314,11 +313,7 @@ const EmptyState = ({ isDark }: { isDark: boolean }) => (
     className="flex-1 justify-center items-center py-20"
   >
     <View className="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-700 items-center justify-center mb-4">
-      <Ionicons
-        name="cube-outline"
-        size={48}
-        color={isDark ? '#4B5563' : '#9CA3AF'}
-      />
+      <Text style={{ fontSize: 48, color: isDark ? '#4B5563' : '#9CA3AF' }}>📦</Text>
     </View>
     <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
       ยังไม่มีงาน
@@ -457,11 +452,7 @@ export default function RiderJobsScreen() {
     return (
       <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
         <SafeAreaView className="flex-1 justify-center items-center px-6">
-          <Ionicons
-            name="lock-closed"
-            size={80}
-            color={isDark ? '#4B5563' : '#9CA3AF'}
-          />
+          <Text style={{ fontSize: 80, color: isDark ? '#4B5563' : '#9CA3AF' }}>🔒</Text>
           <Text className={`text-xl font-bold mt-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
             กรุณาเข้าสู่ระบบ
           </Text>
@@ -485,11 +476,7 @@ export default function RiderJobsScreen() {
         {/* Header */}
         <View className="flex-row items-center px-5 pt-4 pb-2">
           <Pressable onPress={() => router.back()} className="mr-4">
-            <Ionicons
-              name="arrow-back"
-              size={24}
-              color={isDark ? '#fff' : '#000'}
-            />
+            <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
           </Pressable>
           <View className="flex-1">
             <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -503,11 +490,7 @@ export default function RiderJobsScreen() {
             onPress={onRefresh}
             className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 items-center justify-center"
           >
-            <Ionicons
-              name="refresh"
-              size={20}
-              color={isDark ? '#9CA3AF' : '#6B7280'}
-            />
+            <Text style={{ fontSize: 20, color: isDark ? '#9CA3AF' : '#6B7280' }}>🔄</Text>
           </Pressable>
         </View>
 
@@ -528,7 +511,7 @@ export default function RiderJobsScreen() {
                 }}
               >
                 <View className="w-12 h-12 bg-white/20 rounded-xl items-center justify-center mr-3">
-                  <Ionicons name="bicycle" size={24} color="white" />
+                  <Text style={{ fontSize: 24, color: 'white' }}>🚴</Text>
                 </View>
                 <View className="flex-1">
                   <Text className="text-white font-bold">คุณมีงานอยู่!</Text>
@@ -536,7 +519,7 @@ export default function RiderJobsScreen() {
                     {currentJob.job.title}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={24} color="white" />
+                <Text style={{ fontSize: 24, color: 'white' }}>›</Text>
               </LinearGradient>
             </Pressable>
           </Animated.View>

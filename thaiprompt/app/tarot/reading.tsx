@@ -18,7 +18,6 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 // นำเข้าข้อมูลไพ่ 78 ใบจาก tarotData.ts
@@ -339,7 +338,7 @@ export default function ReadingScreen() {
         {/* Header */}
         <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
           <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <Text style={{ fontSize: 24, color: '#fff' }}>←</Text>
           </Pressable>
 
           <View style={styles.headerContent}>
@@ -348,7 +347,7 @@ export default function ReadingScreen() {
           </View>
 
           <Pressable style={styles.shareButton} onPress={handleShare}>
-            <Ionicons name="share-outline" size={24} color="#fff" />
+            <Text style={{ fontSize: 24, color: '#fff' }}>📤</Text>
           </Pressable>
         </Animated.View>
 
@@ -399,7 +398,7 @@ export default function ReadingScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.newReadingGradient}
             >
-              <Ionicons name="refresh" size={24} color="#fff" />
+              <Text style={{ fontSize: 24, color: '#fff' }}>🔄</Text>
               <Text style={styles.newReadingText}>ดูดวงใหม่</Text>
             </LinearGradient>
           </Pressable>

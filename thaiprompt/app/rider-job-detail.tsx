@@ -19,7 +19,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
@@ -114,7 +113,7 @@ const StatusStep = ({
         }`}
       >
         {isCompleted ? (
-          <Ionicons name="checkmark" size={20} color="white" />
+          <Text style={{ fontSize: 20, color: 'white' }}>✓</Text>
         ) : (
           <Text
             className={`font-bold ${
@@ -177,11 +176,9 @@ const LocationCard = ({
             isPickup ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
           }`}
         >
-          <Ionicons
-            name={isPickup ? 'location' : 'flag'}
-            size={24}
-            color={isPickup ? '#10B981' : '#EF4444'}
-          />
+          <Text style={{ fontSize: 24, color: isPickup ? '#10B981' : '#EF4444' }}>
+            {isPickup ? '📍' : '🚩'}
+          </Text>
         </View>
         <View className="flex-1">
           <View className="flex-row items-center justify-between">
@@ -203,7 +200,7 @@ const LocationCard = ({
       {/* Contact Info */}
       {location.contactName && (
         <View className="flex-row items-center mb-2 ml-15">
-          <Ionicons name="person" size={16} color={isDark ? '#9CA3AF' : '#6B7280'} />
+          <Text style={{ fontSize: 16, color: isDark ? '#9CA3AF' : '#6B7280' }}>👤</Text>
           <Text className="text-gray-600 dark:text-gray-400 ml-2">
             {location.contactName}
           </Text>
@@ -212,7 +209,7 @@ const LocationCard = ({
 
       {location.contactPhone && (
         <View className="flex-row items-center mb-2 ml-15">
-          <Ionicons name="call" size={16} color={isDark ? '#9CA3AF' : '#6B7280'} />
+          <Text style={{ fontSize: 16, color: isDark ? '#9CA3AF' : '#6B7280' }}>📞</Text>
           <Text className="text-gray-600 dark:text-gray-400 ml-2">
             {location.contactPhone}
           </Text>
@@ -234,7 +231,7 @@ const LocationCard = ({
             onPress={onCall}
             className="flex-1 mr-2 bg-green-100 dark:bg-green-900/30 rounded-xl py-3 flex-row items-center justify-center"
           >
-            <Ionicons name="call" size={18} color="#10B981" />
+            <Text style={{ fontSize: 18, color: '#10B981' }}>📞</Text>
             <Text className="text-green-600 dark:text-green-400 font-medium ml-2">
               โทร
             </Text>
@@ -244,7 +241,7 @@ const LocationCard = ({
           onPress={onNavigate}
           className={`flex-1 ${location.contactPhone ? 'ml-2' : ''} bg-primary-500 rounded-xl py-3 flex-row items-center justify-center`}
         >
-          <Ionicons name="navigate" size={18} color="white" />
+          <Text style={{ fontSize: 18, color: 'white' }}>🧭</Text>
           <Text className="text-white font-bold ml-2">นำทาง</Text>
         </Pressable>
       </View>
@@ -343,7 +340,7 @@ const FeeBreakdownCard = ({
         </View>
 
         <View className="flex-row items-center justify-center mt-2">
-          <Ionicons name="time" size={14} color={isDark ? '#9CA3AF' : '#6B7280'} />
+          <Text style={{ fontSize: 14, color: isDark ? '#9CA3AF' : '#6B7280' }}>⏱️</Text>
           <Text className="text-gray-500 dark:text-gray-400 text-sm ml-1">
             ประมาณ {formatEstimatedTime(feeResult.estimatedMinutes)}
           </Text>
@@ -455,7 +452,7 @@ const PhotoProofModal = ({
               alignItems: 'center',
             }}
           >
-            <Ionicons name="camera" size={40} color="white" />
+            <Text style={{ fontSize: 40, color: 'white' }}>📷</Text>
             <Text className="text-white text-xl font-bold mt-2">
               ถ่ายรูปหลักฐานการส่ง
             </Text>
@@ -478,7 +475,6 @@ const PhotoProofModal = ({
                 {/* GPS Info */}
                 {gpsLocation && (
                   <View className="flex-row items-center justify-center bg-green-50 dark:bg-green-900/30 rounded-xl p-2 mb-3">
-                    <Ionicons name="location" size={16} color="#10B981" />
                     <Text className="text-green-600 dark:text-green-400 text-sm ml-2">
                       📍 {gpsLocation.latitude.toFixed(6)}, {gpsLocation.longitude.toFixed(6)}
                       {gpsLocation.accuracy && ` (±${Math.round(gpsLocation.accuracy)}m)`}
@@ -506,7 +502,7 @@ const PhotoProofModal = ({
                   </>
                 ) : (
                   <>
-                    <Ionicons name="camera" size={48} color="#9CA3AF" />
+                    <Text style={{ fontSize: 48, color: '#9CA3AF' }}>📷</Text>
                     <Text className="text-gray-500 mt-2">แตะเพื่อถ่ายรูป</Text>
                     <Text className="text-gray-400 text-xs mt-1">
                       จะบันทึกตำแหน่ง GPS อัตโนมัติ
@@ -807,7 +803,7 @@ export default function RiderJobDetailScreen() {
     return (
       <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
         <SafeAreaView className="flex-1 justify-center items-center px-6">
-          <Ionicons name="lock-closed" size={80} color="#9CA3AF" />
+          <Text style={{ fontSize: 80, color: '#9CA3AF' }}>🔒</Text>
           <Text className="text-xl font-bold mt-4 text-gray-800 dark:text-white">
             กรุณาเข้าสู่ระบบ
           </Text>
@@ -841,7 +837,7 @@ export default function RiderJobDetailScreen() {
         <SafeAreaView className="flex-1">
           <View className="flex-row items-center px-5 pt-4 pb-2">
             <Pressable onPress={() => router.back()} className="mr-4">
-              <Ionicons name="arrow-back" size={24} color={isDark ? '#fff' : '#000'} />
+              <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
             </Pressable>
             <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
               งานปัจจุบัน
@@ -861,7 +857,7 @@ export default function RiderJobDetailScreen() {
     return (
       <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
         <SafeAreaView className="flex-1 justify-center items-center px-6">
-          <Ionicons name="cube-outline" size={80} color="#9CA3AF" />
+          <Text style={{ fontSize: 80, color: '#9CA3AF' }}>📦</Text>
           <Text className="text-xl font-bold mt-4 text-gray-800 dark:text-white">
             ไม่มีงาน
           </Text>
@@ -884,7 +880,7 @@ export default function RiderJobDetailScreen() {
         {/* Header */}
         <View className="flex-row items-center px-5 pt-4 pb-2">
           <Pressable onPress={() => router.back()} className="mr-4">
-            <Ionicons name="arrow-back" size={24} color={isDark ? '#fff' : '#000'} />
+            <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
           </Pressable>
           <View className="flex-1">
             <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -1000,7 +996,7 @@ export default function RiderJobDetailScreen() {
               className="bg-blue-50 dark:bg-blue-900/30 rounded-2xl p-4 flex-row items-center"
             >
               <View className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-800/50 items-center justify-center mr-3">
-                <Ionicons name="navigate" size={24} color="#3B82F6" />
+                <Text style={{ fontSize: 24, color: '#3B82F6' }}>🧭</Text>
               </View>
               <View className="flex-1">
                 <Text className="text-blue-700 dark:text-blue-300 font-medium">
@@ -1022,7 +1018,7 @@ export default function RiderJobDetailScreen() {
               disabled={isUpdating}
               className="mr-3 bg-red-100 dark:bg-red-900/30 rounded-xl py-4 px-6"
             >
-              <Ionicons name="close" size={24} color="#EF4444" />
+              <Text style={{ fontSize: 24, color: '#EF4444' }}>✕</Text>
             </Pressable>
 
             {nextAction && (
@@ -1044,7 +1040,7 @@ export default function RiderJobDetailScreen() {
                     <ActivityIndicator color="white" />
                   ) : (
                     <>
-                      <Ionicons name="checkmark-circle" size={20} color="white" />
+                      <Text style={{ fontSize: 20, color: 'white' }}>✓</Text>
                       <Text className="text-white font-bold text-lg ml-2">
                         {nextAction.label}
                       </Text>

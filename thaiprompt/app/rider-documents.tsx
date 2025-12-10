@@ -16,7 +16,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores/authStore';
@@ -34,7 +33,7 @@ interface DocumentItem {
   type: DocumentType;
   title: string;
   subtitle: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   color: string;
   required: boolean;
   uploaded?: boolean;
@@ -79,7 +78,7 @@ const DocumentCard = ({
           className="w-12 h-12 rounded-xl items-center justify-center mr-3"
           style={{ backgroundColor: item.color + '20' }}
         >
-          <Ionicons name={item.icon} size={24} color={item.color} />
+          <Text style={{ fontSize: 24, color: item.color }}>{item.icon}</Text>
         </View>
         <View className="flex-1">
           <View className="flex-row items-center">
@@ -96,7 +95,7 @@ const DocumentCard = ({
         </View>
         {item.uploaded && (
           <View className="bg-green-100 dark:bg-green-900/30 rounded-full p-1">
-            <Ionicons name="checkmark" size={16} color="#10B981" />
+            <Text style={{ fontSize: 16, color: '#10B981' }}>✓</Text>
           </View>
         )}
       </View>
@@ -114,7 +113,7 @@ const DocumentCard = ({
             disabled={isUploading}
             className="absolute top-2 right-2 w-8 h-8 bg-black/50 rounded-full items-center justify-center"
           >
-            <Ionicons name="close" size={18} color="white" />
+            <Text style={{ fontSize: 18, color: 'white' }}>✕</Text>
           </Pressable>
           {isUploading && (
             <View className="absolute inset-0 bg-black/30 rounded-xl items-center justify-center">
@@ -129,11 +128,7 @@ const DocumentCard = ({
           disabled={isUploading}
           className="bg-gray-100 dark:bg-gray-700 rounded-xl py-8 items-center border-2 border-dashed border-gray-300 dark:border-gray-600"
         >
-          <Ionicons
-            name="camera"
-            size={40}
-            color={isDark ? '#9CA3AF' : '#6B7280'}
-          />
+          <Text style={{ fontSize: 40, color: isDark ? '#9CA3AF' : '#6B7280' }}>📷</Text>
           <Text className="text-gray-500 dark:text-gray-400 mt-2 font-medium">
             แตะเพื่อถ่ายรูปหรือเลือกรูป
           </Text>
@@ -207,7 +202,7 @@ export default function RiderDocumentsScreen() {
       type: 'id_card',
       title: 'บัตรประชาชน',
       subtitle: 'ถ่ายรูปบัตรประชาชนด้านหน้า',
-      icon: 'card',
+      icon: '🪪',
       color: '#3B82F6',
       required: true,
       uploaded: uploadedDocs.includes('id_card'),
@@ -216,7 +211,7 @@ export default function RiderDocumentsScreen() {
       type: 'driver_license',
       title: 'ใบขับขี่',
       subtitle: 'ถ่ายรูปใบขับขี่ด้านหน้า',
-      icon: 'car',
+      icon: '🚗',
       color: '#10B981',
       required: true,
       uploaded: uploadedDocs.includes('driver_license'),
@@ -225,7 +220,7 @@ export default function RiderDocumentsScreen() {
       type: 'vehicle_registration',
       title: 'ทะเบียนรถ',
       subtitle: 'ถ่ายรูปเล่มทะเบียนรถหน้าแรก',
-      icon: 'document-text',
+      icon: '📄',
       color: '#8B5CF6',
       required: false,
       uploaded: uploadedDocs.includes('vehicle_registration'),
@@ -234,7 +229,7 @@ export default function RiderDocumentsScreen() {
       type: 'profile',
       title: 'รูปโปรไฟล์',
       subtitle: 'รูปถ่ายหน้าตรงของคุณ',
-      icon: 'person',
+      icon: '👤',
       color: '#F59E0B',
       required: false,
       uploaded: uploadedDocs.includes('profile'),
@@ -428,7 +423,7 @@ export default function RiderDocumentsScreen() {
     return (
       <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
         <SafeAreaView className="flex-1 justify-center items-center px-6">
-          <Ionicons name="lock-closed" size={80} color="#9CA3AF" />
+          <Text style={{ fontSize: 80, color: '#9CA3AF' }}>🔒</Text>
           <Text className="text-xl font-bold mt-4 text-gray-800 dark:text-white">
             กรุณาเข้าสู่ระบบ
           </Text>
@@ -462,7 +457,7 @@ export default function RiderDocumentsScreen() {
           {/* Header */}
           <View className="flex-row items-center px-5 pt-4 pb-2">
             <Pressable onPress={() => router.back()} className="mr-4">
-              <Ionicons name="arrow-back" size={24} color={isDark ? '#fff' : '#000'} />
+              <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
             </Pressable>
             <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
               อัพโหลดเอกสาร
@@ -487,7 +482,7 @@ export default function RiderDocumentsScreen() {
         {/* Header */}
         <View className="flex-row items-center px-5 pt-4 pb-2">
           <Pressable onPress={() => router.back()} className="mr-4">
-            <Ionicons name="arrow-back" size={24} color={isDark ? '#fff' : '#000'} />
+            <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
           </Pressable>
           <View className="flex-1">
             <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -518,7 +513,7 @@ export default function RiderDocumentsScreen() {
             >
               <View className="flex-row items-center">
                 <View className="w-12 h-12 bg-white/20 rounded-xl items-center justify-center mr-3">
-                  <Ionicons name="shield-checkmark" size={24} color="white" />
+                  <Text style={{ fontSize: 24, color: 'white' }}>🛡️</Text>
                 </View>
                 <View className="flex-1">
                   <Text className="text-white font-bold">ยืนยันตัวตน</Text>
@@ -627,7 +622,7 @@ export default function RiderDocumentsScreen() {
                 <ActivityIndicator color="white" />
               ) : (
                 <>
-                  <Ionicons name="checkmark-circle" size={20} color="white" />
+                  <Text style={{ fontSize: 20, color: 'white' }}>✓</Text>
                   <Text className="text-white font-bold text-lg ml-2">
                     ส่งเอกสารเพื่อตรวจสอบ
                   </Text>

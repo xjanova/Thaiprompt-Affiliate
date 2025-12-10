@@ -21,7 +21,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
@@ -40,14 +39,14 @@ import {
 // =====================================================
 
 const CATEGORIES = [
-  { value: 'general', label: 'ทั่วไป', icon: 'chatbubble-ellipses' },
-  { value: 'account', label: 'บัญชี', icon: 'person' },
-  { value: 'payment', label: 'การชำระเงิน', icon: 'card' },
-  { value: 'rider', label: 'ไรเดอร์', icon: 'bicycle' },
-  { value: 'technical', label: 'ปัญหาเทคนิค', icon: 'bug' },
-  { value: 'complaint', label: 'ร้องเรียน', icon: 'warning' },
-  { value: 'suggestion', label: 'ข้อเสนอแนะ', icon: 'bulb' },
-  { value: 'other', label: 'อื่นๆ', icon: 'ellipsis-horizontal' },
+  { value: 'general', label: 'ทั่วไป', icon: '💬' },
+  { value: 'account', label: 'บัญชี', icon: '👤' },
+  { value: 'payment', label: 'การชำระเงิน', icon: '💳' },
+  { value: 'rider', label: 'ไรเดอร์', icon: '🚴' },
+  { value: 'technical', label: 'ปัญหาเทคนิค', icon: '🐛' },
+  { value: 'complaint', label: 'ร้องเรียน', icon: '⚠️' },
+  { value: 'suggestion', label: 'ข้อเสนอแนะ', icon: '💡' },
+  { value: 'other', label: 'อื่นๆ', icon: '⋯' },
 ];
 
 const PRIORITY_COLORS = {
@@ -138,7 +137,7 @@ const CreateTicketModal = ({
                 สร้าง Ticket ใหม่
               </Text>
               <Pressable onPress={onClose} className="p-2">
-                <Ionicons name="close" size={24} color={isDark ? '#fff' : '#000'} />
+                <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>✕</Text>
               </Pressable>
             </View>
 
@@ -177,11 +176,7 @@ const CreateTicketModal = ({
                             : 'bg-gray-100'
                       }`}
                     >
-                      <Ionicons
-                        name={cat.icon as keyof typeof Ionicons.glyphMap}
-                        size={16}
-                        color={category === cat.value ? '#fff' : '#6B7280'}
-                      />
+                      <Text style={{ fontSize: 16 }}>{cat.icon}</Text>
                       <Text
                         className={`ml-1 text-sm ${
                           category === cat.value
@@ -333,7 +328,7 @@ const TicketDetailModal = ({
                   </Text>
                 </View>
                 <Pressable onPress={onClose} className="p-2">
-                  <Ionicons name="close" size={24} color={isDark ? '#fff' : '#000'} />
+                  <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>✕</Text>
                 </Pressable>
               </View>
 
@@ -380,11 +375,9 @@ const TicketDetailModal = ({
                         }`}
                       >
                         <View className="flex-row items-center mb-1">
-                          <Ionicons
-                            name={item.isFromAdmin ? 'shield-checkmark' : 'person'}
-                            size={14}
-                            color={item.isFromAdmin ? '#3B82F6' : '#6B7280'}
-                          />
+                          <Text style={{ fontSize: 14 }}>
+                            {item.isFromAdmin ? '🛡️' : '👤'}
+                          </Text>
                           <Text
                             className={`text-xs ml-1 ${
                               item.isFromAdmin
@@ -437,7 +430,7 @@ const TicketDetailModal = ({
                           {isSending ? (
                             <ActivityIndicator color="white" size="small" />
                           ) : (
-                            <Ionicons name="send" size={20} color="white" />
+                            <Text style={{ fontSize: 20 }}>📤</Text>
                           )}
                         </Pressable>
                       </View>
@@ -498,7 +491,7 @@ export default function SupportScreen() {
     return (
       <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
         <SafeAreaView className="flex-1 justify-center items-center px-6">
-          <Ionicons name="chatbubbles" size={80} color={isDark ? '#4B5563' : '#9CA3AF'} />
+          <Text style={{ fontSize: 80 }}>💬</Text>
           <Text className={`text-xl font-bold mt-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
             ติดต่อฝ่ายสนับสนุน
           </Text>
@@ -523,7 +516,7 @@ export default function SupportScreen() {
         <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
           <View className="flex-row items-center">
             <Pressable onPress={() => router.back()} className="mr-4">
-              <Ionicons name="arrow-back" size={24} color={isDark ? '#fff' : '#000'} />
+              <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
             </Pressable>
             <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
               ติดต่อแอดมิน
@@ -533,7 +526,7 @@ export default function SupportScreen() {
             onPress={() => setShowCreateModal(true)}
             className="bg-primary-500 px-4 py-2 rounded-xl flex-row items-center"
           >
-            <Ionicons name="add" size={20} color="white" />
+            <Text style={{ fontSize: 20 }}>➕</Text>
             <Text className="text-white font-medium ml-1">สร้าง</Text>
           </Pressable>
         </View>
@@ -550,7 +543,7 @@ export default function SupportScreen() {
               colors={['#3B82F6', '#8B5CF6']}
               style={{ width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}
             >
-              <Ionicons name="chatbubbles-outline" size={48} color="white" />
+              <Text style={{ fontSize: 48 }}>💬</Text>
             </LinearGradient>
             <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
               ยังไม่มี Ticket

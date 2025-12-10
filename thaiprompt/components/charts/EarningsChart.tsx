@@ -21,7 +21,6 @@ import Svg, {
   Line,
   Text as SvgText,
 } from 'react-native-svg';
-import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -73,11 +72,11 @@ export default function EarningsChart({
             <Text className={isDark ? 'text-gray-400' : 'text-gray-500'}>{subtitle}</Text>
           </View>
           <View className="w-10 h-10 rounded-xl bg-blue-500/20 items-center justify-center">
-            <Ionicons name="trending-up" size={20} color="#3B82F6" />
+            <Text style={{ fontSize: 20 }}>📈</Text>
           </View>
         </View>
         <View className="items-center justify-center py-8">
-          <Ionicons name="bar-chart-outline" size={48} color={isDark ? '#4B5563' : '#9CA3AF'} />
+          <Text style={{ fontSize: 48, opacity: 0.5 }}>📊</Text>
           <Text className={`mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
             ยังไม่มีข้อมูลรายได้
           </Text>
@@ -169,11 +168,9 @@ export default function EarningsChart({
               <View className={`flex-row items-center px-2 py-0.5 rounded-full ${
                 growthPercent >= 0 ? 'bg-green-500/20' : 'bg-red-500/20'
               }`}>
-                <Ionicons
-                  name={growthPercent >= 0 ? 'trending-up' : 'trending-down'}
-                  size={14}
-                  color={growthPercent >= 0 ? '#10B981' : '#EF4444'}
-                />
+                <Text style={{ fontSize: 14 }}>
+                  {growthPercent >= 0 ? '📈' : '📉'}
+                </Text>
                 <Text className={`ml-1 text-xs font-medium ${
                   growthPercent >= 0 ? 'text-green-500' : 'text-red-500'
                 }`}>

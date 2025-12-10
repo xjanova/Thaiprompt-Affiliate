@@ -7,7 +7,6 @@
 import React from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import Svg, { G, Path, Circle, Rect, Text as SvgText } from 'react-native-svg';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { COMMISSION_TYPES, CHART_CONFIG } from '@/config/appConfig';
 
@@ -46,20 +45,20 @@ const getCommissionColor = (type: string): string => {
   return colors[type.toLowerCase()] || CHART_CONFIG.PIE_COLORS[0];
 };
 
-const getCommissionIcon = (type: string): keyof typeof Ionicons.glyphMap => {
-  const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
-    unilevel_direct: 'cart',
-    unilevel_indirect: 'git-network',
-    binary_pair: 'git-branch',
-    sponsor_bonus: 'person-add',
-    rank_bonus: 'trophy',
-    leadership_bonus: 'star',
-    direct: 'cart',
-    team: 'people',
-    referral: 'share-social',
-    bonus: 'gift',
+const getCommissionIcon = (type: string): string => {
+  const icons: Record<string, string> = {
+    unilevel_direct: '🛒',
+    unilevel_indirect: '🔗',
+    binary_pair: '⚡',
+    sponsor_bonus: '👥',
+    rank_bonus: '🏆',
+    leadership_bonus: '⭐',
+    direct: '🛒',
+    team: '👨‍👩‍👧‍👦',
+    referral: '📢',
+    bonus: '🎁',
   };
-  return icons[type.toLowerCase()] || 'cash';
+  return icons[type.toLowerCase()] || '💰';
 };
 
 const getCommissionLabel = (type: string): string => {
@@ -105,7 +104,7 @@ export default function CommissionBreakdownChart({
           สัดส่วนคอมมิชชัน
         </Text>
         <View className="items-center justify-center py-8">
-          <Ionicons name="pie-chart-outline" size={48} color={isDark ? '#4B5563' : '#9CA3AF'} />
+          <Text style={{ fontSize: 48, opacity: 0.5 }}>📊</Text>
           <Text className={`mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
             ยังไม่มีข้อมูลคอมมิชชัน
           </Text>
@@ -180,7 +179,7 @@ export default function CommissionBreakdownChart({
           </Text>
         </View>
         <View className="w-10 h-10 rounded-xl bg-purple-500/20 items-center justify-center">
-          <Ionicons name="pie-chart" size={20} color="#8B5CF6" />
+          <Text style={{ fontSize: 20 }}>📊</Text>
         </View>
       </View>
 
@@ -227,7 +226,7 @@ export default function CommissionBreakdownChart({
                   className="w-8 h-8 rounded-lg items-center justify-center mr-3"
                   style={{ backgroundColor: `${item.color}20` }}
                 >
-                  <Ionicons name={item.icon} size={16} color={item.color} />
+                  <Text style={{ fontSize: 16 }}>{item.icon}</Text>
                 </View>
 
                 {/* Info */}

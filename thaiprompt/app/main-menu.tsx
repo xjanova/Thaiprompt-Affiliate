@@ -20,7 +20,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -225,22 +224,20 @@ const FabButton = ({
 
 // Bottom Nav Button
 const NavButton = ({
-  icon,
+  emoji,
   label,
   isActive,
   onPress,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  emoji: string;
   label: string;
   isActive?: boolean;
   onPress: () => void;
 }) => (
   <Pressable onPress={onPress} style={styles.navButton}>
-    <Ionicons
-      name={icon}
-      size={24}
-      color={isActive ? '#D4AF37' : '#999999'}
-    />
+    <Text style={{ fontSize: 24, opacity: isActive ? 1 : 0.5 }}>
+      {emoji}
+    </Text>
     <Text
       style={[
         styles.navLabel,
@@ -292,7 +289,7 @@ export default function MainMenuScreen() {
             onPress={() => router.push('/notifications')}
             style={styles.notificationButton}
           >
-            <Ionicons name="notifications" size={24} color="#D4AF37" />
+            <Text style={{ fontSize: 24 }}>🔔</Text>
             <View style={styles.notificationDot} />
           </Pressable>
         </Animated.View>
@@ -353,23 +350,23 @@ export default function MainMenuScreen() {
             style={styles.bottomNavGradient}
           >
             <NavButton
-              icon="home"
+              emoji="🏠"
               label="หน้าแรก"
               isActive={true}
               onPress={handleNavHome}
             />
             <NavButton
-              icon="stats-chart"
+              emoji="📊"
               label="แดชบอร์ด"
               onPress={handleNavDashboard}
             />
             <NavButton
-              icon="person"
+              emoji="👤"
               label="โปรไฟล์"
               onPress={handleNavProfile}
             />
             <NavButton
-              icon="settings"
+              emoji="⚙️"
               label="ตั้งค่า"
               onPress={handleNavSettings}
             />

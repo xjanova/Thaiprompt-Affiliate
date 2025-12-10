@@ -7,7 +7,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 interface ProgressRingProps {
@@ -17,7 +16,7 @@ interface ProgressRingProps {
   color?: string;
   gradientColors?: [string, string];
   backgroundColor?: string;
-  centerIcon?: keyof typeof Ionicons.glyphMap;
+  centerIcon?: string;
   centerText?: string;
   centerSubtext?: string;
   showPercentage?: boolean;
@@ -89,11 +88,9 @@ export default function ProgressRing({
         style={{ width: size, height: size }}
       >
         {centerIcon && (
-          <Ionicons
-            name={centerIcon}
-            size={size * 0.2}
-            color={gradientColors ? gradientColors[0] : color}
-          />
+          <Text style={{ fontSize: size * 0.2 }}>
+            {centerIcon}
+          </Text>
         )}
         {centerText && (
           <Text

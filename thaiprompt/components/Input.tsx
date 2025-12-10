@@ -4,14 +4,13 @@
 
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, TextInputProps } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
   hint?: string;
-  leftIcon?: keyof typeof Ionicons.glyphMap;
-  rightIcon?: keyof typeof Ionicons.glyphMap;
+  leftIcon?: string;
+  rightIcon?: string;
   onRightIconPress?: () => void;
   isPassword?: boolean;
 }
@@ -51,12 +50,9 @@ export const Input: React.FC<InputProps> = ({
       >
         {/* Left Icon */}
         {leftIcon && (
-          <Ionicons
-            name={leftIcon}
-            size={20}
-            color={isFocused ? '#3B82F6' : '#9CA3AF'}
-            style={{ marginRight: 10 }}
-          />
+          <Text style={{ fontSize: 20, marginRight: 10 }}>
+            {leftIcon}
+          </Text>
         )}
 
         {/* Text Input */}
@@ -78,15 +74,15 @@ export const Input: React.FC<InputProps> = ({
         {/* Right Icon / Password Toggle */}
         {isPassword ? (
           <Pressable onPress={() => setShowPassword(!showPassword)}>
-            <Ionicons
-              name={showPassword ? 'eye-off' : 'eye'}
-              size={20}
-              color="#9CA3AF"
-            />
+            <Text style={{ fontSize: 20 }}>
+              {showPassword ? '🙈' : '👁️'}
+            </Text>
           </Pressable>
         ) : rightIcon ? (
           <Pressable onPress={onRightIconPress}>
-            <Ionicons name={rightIcon} size={20} color="#9CA3AF" />
+            <Text style={{ fontSize: 20 }}>
+              {rightIcon}
+            </Text>
           </Pressable>
         ) : null}
       </View>

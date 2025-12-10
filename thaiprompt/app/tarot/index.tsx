@@ -19,7 +19,6 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { getWallet } from '@/services/api';
 import {
@@ -159,7 +158,7 @@ const CategoryCard = ({
 
           {/* Arrow */}
           <View style={styles.arrowContainer}>
-            <Ionicons name="arrow-forward" size={20} color="rgba(255,255,255,0.8)" />
+            <Text style={{ fontSize: 20, color: 'rgba(255,255,255,0.8)' }}>→</Text>
           </View>
         </LinearGradient>
       </Pressable>
@@ -189,7 +188,7 @@ const SpreadCard = ({
     <Text style={styles.spreadCount}>{spread.card_count} ใบ</Text>
     {isSelected && (
       <View style={[styles.spreadSelected, { backgroundColor: spread.color }]}>
-        <Ionicons name="checkmark" size={14} color="#fff" />
+        <Text style={{ fontSize: 14, color: '#fff' }}>✓</Text>
       </View>
     )}
   </Pressable>
@@ -349,7 +348,7 @@ export default function TarotHomeScreen() {
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <Text style={{ fontSize: 24, color: '#fff' }}>←</Text>
           </Pressable>
 
           {/* Title */}
@@ -364,7 +363,7 @@ export default function TarotHomeScreen() {
           {/* Wallet Badge (if authenticated) */}
           {isAuthenticated && (
             <View style={styles.walletBadge}>
-              <Ionicons name="wallet-outline" size={16} color="#10B981" />
+              <Text style={{ fontSize: 16, color: '#10B981' }}>💰</Text>
               <Text style={styles.walletAmount}>฿{walletBalance.toLocaleString()}</Text>
             </View>
           )}
@@ -435,7 +434,7 @@ export default function TarotHomeScreen() {
                 style={styles.modalClose}
                 onPress={() => setShowSpreadModal(false)}
               >
-                <Ionicons name="close" size={24} color="#fff" />
+                <Text style={{ fontSize: 24, color: '#fff' }}>✕</Text>
               </Pressable>
             </View>
 
@@ -497,7 +496,7 @@ export default function TarotHomeScreen() {
                 style={styles.confirmGradient}
               >
                 <Text style={styles.confirmText}>🔮 เริ่มเปิดไพ่</Text>
-                <Ionicons name="arrow-forward" size={20} color="#fff" />
+                <Text style={{ fontSize: 20, color: '#fff' }}>→</Text>
               </LinearGradient>
             </Pressable>
           </View>
@@ -514,7 +513,7 @@ export default function TarotHomeScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.paymentModal}>
             <View style={styles.paymentIcon}>
-              <Ionicons name="wallet" size={48} color="#F59E0B" />
+              <Text style={{ fontSize: 48, color: '#F59E0B' }}>💰</Text>
             </View>
 
             <Text style={styles.paymentTitle}>ยืนยันการชำระเงิน</Text>
@@ -562,7 +561,7 @@ export default function TarotHomeScreen() {
                   colors={['#10B981', '#059669']}
                   style={styles.payButtonGradient}
                 >
-                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                  <Text style={{ fontSize: 20, color: '#fff' }}>✅</Text>
                   <Text style={styles.payButtonText}>ยืนยันหักเงิน</Text>
                 </LinearGradient>
               </Pressable>

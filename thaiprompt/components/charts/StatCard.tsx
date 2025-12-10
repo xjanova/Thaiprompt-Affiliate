@@ -7,14 +7,13 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 interface StatCardProps {
   title: string;
   value: string | number;
   subtitle?: string;
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: string;
   iconColor?: string;
   iconBgColor?: string;
   change?: number;
@@ -30,7 +29,7 @@ export default function StatCard({
   title,
   value,
   subtitle,
-  icon = 'stats-chart',
+  icon = '📊',
   iconColor = '#3B82F6',
   iconBgColor,
   change,
@@ -75,7 +74,7 @@ export default function StatCard({
           className={`${config.iconContainer} rounded-xl items-center justify-center`}
           style={{ backgroundColor: iconBgColor || `${iconColor}20` }}
         >
-          <Ionicons name={icon} size={config.iconSize} color={iconColor} />
+          <Text style={{ fontSize: config.iconSize }}>{icon}</Text>
         </View>
 
         {/* Change Indicator */}
@@ -85,11 +84,9 @@ export default function StatCard({
               change >= 0 ? 'bg-green-500/20' : 'bg-red-500/20'
             }`}
           >
-            <Ionicons
-              name={change >= 0 ? 'arrow-up' : 'arrow-down'}
-              size={12}
-              color={change >= 0 ? '#10B981' : '#EF4444'}
-            />
+            <Text style={{ fontSize: 12 }}>
+              {change >= 0 ? '↗️' : '↘️'}
+            </Text>
             <Text
               className={`ml-0.5 text-xs font-medium ${
                 change >= 0 ? 'text-green-500' : 'text-red-500'

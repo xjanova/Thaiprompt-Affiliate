@@ -18,7 +18,6 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import {
   ALL_TAROT_CARDS,
@@ -320,7 +319,7 @@ export default function SelectCardsScreen() {
       {/* Header */}
       <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
         <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Text style={{ fontSize: 24, color: '#fff' }}>←</Text>
         </Pressable>
 
         <View style={styles.headerContent}>
@@ -335,11 +334,14 @@ export default function SelectCardsScreen() {
           onPress={handleReset}
           disabled={selectedCards.length === 0}
         >
-          <Ionicons
-            name="refresh"
-            size={24}
-            color={selectedCards.length === 0 ? 'rgba(255,255,255,0.3)' : '#fff'}
-          />
+          <Text
+            style={{
+              fontSize: 24,
+              color: selectedCards.length === 0 ? 'rgba(255,255,255,0.3)' : '#fff'
+            }}
+          >
+            🔄
+          </Text>
         </Pressable>
       </Animated.View>
 
@@ -462,7 +464,7 @@ export default function SelectCardsScreen() {
               style={styles.continueGradient}
             >
               <Text style={styles.continueText}>🔮 ดูผลทำนาย</Text>
-              <Ionicons name="arrow-forward" size={24} color="#fff" />
+              <Text style={{ fontSize: 24, color: '#fff' }}>→</Text>
             </LinearGradient>
           </Pressable>
         </Animated.View>

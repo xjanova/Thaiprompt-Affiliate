@@ -20,7 +20,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   FadeInDown,
   FadeInUp,
@@ -121,11 +120,7 @@ const FeaturedServiceCard = ({
 
           {/* Icon */}
           <View className="w-16 h-16 bg-white/20 rounded-2xl items-center justify-center mb-4">
-            <Ionicons
-              name={service.icon as keyof typeof Ionicons.glyphMap}
-              size={32}
-              color="white"
-            />
+            <Text style={{ fontSize: 32 }}>{service.icon}</Text>
           </View>
 
           {/* Content */}
@@ -147,7 +142,7 @@ const FeaturedServiceCard = ({
 
           {/* Arrow */}
           <View className="absolute bottom-4 right-4 w-8 h-8 bg-white/20 rounded-full items-center justify-center">
-            <Ionicons name="arrow-forward" size={16} color="white" />
+            <Text style={{ fontSize: 16 }}>→</Text>
           </View>
         </LinearGradient>
       </Pressable>
@@ -198,11 +193,7 @@ const CategoryPill = ({
             : undefined
         }
       >
-        <Ionicons
-          name={icon as keyof typeof Ionicons.glyphMap}
-          size={18}
-          color={isActive ? 'white' : isDark ? '#9CA3AF' : '#6B7280'}
-        />
+        <Text style={{ fontSize: 18 }}>{icon}</Text>
         <Text
           className={`ml-2 font-medium ${
             isActive
@@ -274,11 +265,7 @@ const ServiceGridCard = ({
             shadowRadius: 8,
           }}
         >
-          <Ionicons
-            name={service.icon as keyof typeof Ionicons.glyphMap}
-            size={28}
-            color="white"
-          />
+          <Text style={{ fontSize: 28 }}>{service.icon}</Text>
         </LinearGradient>
 
         {/* Title */}
@@ -311,7 +298,7 @@ const ServiceGridCard = ({
             className="w-7 h-7 rounded-full items-center justify-center"
             style={{ backgroundColor: service.color + '20' }}
           >
-            <Ionicons name="add" size={18} color={service.color} />
+            <Text style={{ fontSize: 18, color: service.color }}>+</Text>
           </View>
         </View>
       </Pressable>
@@ -395,11 +382,7 @@ const ServiceDetailModal = ({
 
                 <View className="flex-row items-center">
                   <View className="w-20 h-20 bg-white/20 rounded-3xl items-center justify-center mr-4">
-                    <Ionicons
-                      name={service.icon as keyof typeof Ionicons.glyphMap}
-                      size={40}
-                      color="white"
-                    />
+                    <Text style={{ fontSize: 40 }}>{service.icon}</Text>
                   </View>
                   <View className="flex-1">
                     <Text className="text-white/80 text-sm">บริการ</Text>
@@ -408,7 +391,7 @@ const ServiceDetailModal = ({
                     </Text>
                     <View className="flex-row items-center mt-1">
                       <View className="flex-row items-center">
-                        <Ionicons name="star" size={14} color="#FBBF24" />
+                        <Text style={{ fontSize: 14 }}>⭐</Text>
                         <Text className="text-white/90 text-sm ml-1">
                           4.9 (2.3k รีวิว)
                         </Text>
@@ -487,11 +470,7 @@ const ServiceDetailModal = ({
                       className="flex-row items-center mr-3 mb-2 px-3 py-1.5 rounded-full"
                       style={{ backgroundColor: service.color + '15' }}
                     >
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={14}
-                        color={service.color}
-                      />
+                      <Text style={{ fontSize: 14, color: service.color }}>✓</Text>
                       <Text
                         className="text-sm font-medium ml-1"
                         style={{ color: service.color }}
@@ -513,7 +492,7 @@ const ServiceDetailModal = ({
                       justifyContent: 'center',
                     }}
                   >
-                    <Ionicons name="calendar" size={22} color="white" />
+                    <Text style={{ fontSize: 22 }}>📅</Text>
                     <Text className="text-white font-bold text-lg ml-2">
                       จองบริการ
                     </Text>
@@ -662,11 +641,7 @@ export default function ServicesScreen() {
                   elevation: 4,
                 }}
               >
-                <Ionicons
-                  name="notifications-outline"
-                  size={24}
-                  color={isDark ? '#fff' : '#374151'}
-                />
+                <Text style={{ fontSize: 24 }}>🔔</Text>
               </Pressable>
             </View>
 
@@ -683,11 +658,7 @@ export default function ServicesScreen() {
                 elevation: 4,
               }}
             >
-              <Ionicons
-                name="search"
-                size={22}
-                color={isDark ? '#6B7280' : '#9CA3AF'}
-              />
+              <Text style={{ fontSize: 22 }}>🔍</Text>
               <TextInput
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -699,11 +670,7 @@ export default function ServicesScreen() {
               />
               {searchQuery.length > 0 && (
                 <Pressable onPress={() => setSearchQuery('')}>
-                  <Ionicons
-                    name="close-circle"
-                    size={22}
-                    color={isDark ? '#6B7280' : '#9CA3AF'}
-                  />
+                  <Text style={{ fontSize: 22, color: isDark ? '#6B7280' : '#9CA3AF' }}>✕</Text>
                 </Pressable>
               )}
             </View>
@@ -721,7 +688,7 @@ export default function ServicesScreen() {
               </Text>
               <Pressable className="flex-row items-center">
                 <Text className="text-primary-500 font-medium mr-1">ดูทั้งหมด</Text>
-                <Ionicons name="chevron-forward" size={16} color="#3B82F6" />
+                <Text style={{ fontSize: 16, color: '#3B82F6' }}>›</Text>
               </Pressable>
             </View>
             <ScrollView
@@ -803,11 +770,7 @@ export default function ServicesScreen() {
 
             {filteredServices.length === 0 && (
               <View className="items-center py-12">
-                <Ionicons
-                  name="search"
-                  size={48}
-                  color={isDark ? '#4B5563' : '#9CA3AF'}
-                />
+                <Text style={{ fontSize: 48 }}>🔍</Text>
                 <Text
                   className={`mt-4 font-medium ${
                     isDark ? 'text-gray-400' : 'text-gray-500'
@@ -833,7 +796,7 @@ export default function ServicesScreen() {
             >
               <View className="flex-row items-center">
                 <View className="w-16 h-16 bg-primary-500/20 rounded-2xl items-center justify-center mr-4">
-                  <Ionicons name="people" size={32} color="#3B82F6" />
+                  <Text style={{ fontSize: 32 }}>👥</Text>
                 </View>
                 <View className="flex-1">
                   <Text

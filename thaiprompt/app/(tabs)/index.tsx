@@ -1,10 +1,13 @@
 /**
- * Home Screen - Premium Design V2
- * แก้ไข: crash on resume, icons หาย
- * ปิด AnimatedBackground ชั่วคราวเพื่อทดสอบ crash
+ * Home Screen - Premium Design V3
+ * ปรับปรุงปุ่มให้สวยงามมากขึ้น
+ * - Glassmorphism effect
+ * - 3D shadow depth
+ * - Glow effects
+ * - Smooth animations
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,9 +17,9 @@ import {
   StatusBar,
   Dimensions,
   RefreshControl,
+  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
@@ -27,18 +30,142 @@ const CARD_WIDTH = (width - 52) / 2;
 
 // Menu Items - ใช้ emoji icons เพื่อแสดงผลได้ทุกเครื่อง
 const MENU_ITEMS = [
-  { id: 'wallet', title: 'กระเป๋าเงิน', icon: '💰', colors: ['#10B981', '#059669'], route: '/(tabs)/wallet' },
-  { id: 'network', title: 'สายงาน', icon: '👥', colors: ['#8B5CF6', '#6D28D9'], route: '/(tabs)/network' },
-  { id: 'referral', title: 'แนะนำเพื่อน', icon: '🤝', colors: ['#EC4899', '#DB2777'], route: '/referral' },
-  { id: 'commissions', title: 'คอมมิชชั่น', icon: '💵', colors: ['#3B82F6', '#2563EB'], route: '/commissions' },
-  { id: 'shopping', title: 'ช้อปปิ้ง', icon: '🛒', colors: ['#F59E0B', '#D97706'], route: '/shopping' },
-  { id: 'rider', title: 'ไรเดอร์', icon: '🚴', colors: ['#06B6D4', '#0891B2'], route: '/rider' },
-  { id: 'wealth-guide', title: 'เส้นทางเศรษฐี', icon: '📚', colors: ['#F59E0B', '#D97706'], route: '/wealth-guide' },
-  { id: 'tarot', title: 'ดูดวง', icon: '🔮', colors: ['#6366F1', '#4F46E5'], route: '/tarot' },
-  { id: 'leaderboard', title: 'อันดับ', icon: '🏆', colors: ['#EF4444', '#DC2626'], route: '/leaderboard' },
-  { id: 'coming-soon', title: 'เร็วๆ นี้', icon: '🚀', colors: ['#8B5CF6', '#6D28D9'], route: '/coming-soon' },
-  { id: 'settings', title: 'ตั้งค่า', icon: '⚙️', colors: ['#6B7280', '#4B5563'], route: '/settings' },
+  { id: 'wallet', title: 'กระเป๋าเงิน', icon: '💰', colors: ['#10B981', '#059669'], glowColor: '#10B981', route: '/(tabs)/wallet' },
+  { id: 'network', title: 'สายงาน', icon: '👥', colors: ['#8B5CF6', '#6D28D9'], glowColor: '#8B5CF6', route: '/(tabs)/network' },
+  { id: 'referral', title: 'แนะนำเพื่อน', icon: '🤝', colors: ['#EC4899', '#DB2777'], glowColor: '#EC4899', route: '/referral' },
+  { id: 'commissions', title: 'คอมมิชชั่น', icon: '💵', colors: ['#3B82F6', '#2563EB'], glowColor: '#3B82F6', route: '/commissions' },
+  { id: 'shopping', title: 'ช้อปปิ้ง', icon: '🛒', colors: ['#F59E0B', '#D97706'], glowColor: '#F59E0B', route: '/shopping' },
+  { id: 'rider', title: 'ไรเดอร์', icon: '🚴', colors: ['#06B6D4', '#0891B2'], glowColor: '#06B6D4', route: '/rider' },
+  { id: 'wealth-guide', title: 'เส้นทางเศรษฐี', icon: '📚', colors: ['#F97316', '#EA580C'], glowColor: '#F97316', route: '/wealth-guide' },
+  { id: 'tarot', title: 'ดูดวง', icon: '🔮', colors: ['#6366F1', '#4F46E5'], glowColor: '#6366F1', route: '/tarot' },
+  { id: 'leaderboard', title: 'อันดับ', icon: '🏆', colors: ['#EF4444', '#DC2626'], glowColor: '#EF4444', route: '/leaderboard' },
+  { id: 'coming-soon', title: 'เร็วๆ นี้', icon: '🚀', colors: ['#A855F7', '#9333EA'], glowColor: '#A855F7', route: '/coming-soon' },
+  { id: 'settings', title: 'ตั้งค่า', icon: '⚙️', colors: ['#64748B', '#475569'], glowColor: '#64748B', route: '/settings' },
 ] as const;
+
+// Menu Card Component - ปรับปรุงให้สวยงาม
+const MenuCard = ({
+  item,
+  index,
+  onPress
+}: {
+  item: typeof MENU_ITEMS[number];
+  index: number;
+  onPress: () => void;
+}) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
+  // Glow animation
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+
+    // Stagger start based on index
+    const timeout = setTimeout(() => animation.start(), index * 200);
+    return () => {
+      clearTimeout(timeout);
+      animation.stop();
+    };
+  }, []);
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 8,
+    }).start();
+  };
+
+  const glowOpacity = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.6],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.menuCardWrapper,
+        { transform: [{ scale: scaleAnim }] },
+      ]}
+    >
+      {/* Glow Effect - เงาเรืองแสง */}
+      <Animated.View
+        style={[
+          styles.menuGlow,
+          {
+            backgroundColor: item.glowColor,
+            opacity: glowOpacity,
+          },
+        ]}
+      />
+
+      <Pressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={styles.menuCard}
+      >
+        <LinearGradient
+          colors={item.colors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.menuGradient}
+        >
+          {/* Shine overlay - เอฟเฟกต์แสงวาว */}
+          <LinearGradient
+            colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.shineOverlay}
+          />
+
+          {/* Glass border - ขอบแก้ว */}
+          <View style={styles.glassBorder} />
+
+          {/* Icon Container - กล่องไอคอน 3D */}
+          <View style={styles.menuIconContainer}>
+            <View style={styles.menuIconShadow} />
+            <LinearGradient
+              colors={['rgba(255,255,255,0.4)', 'rgba(255,255,255,0.1)']}
+              style={styles.menuIconBox}
+            >
+              <Text style={styles.menuEmoji}>{item.icon}</Text>
+            </LinearGradient>
+          </View>
+
+          {/* Title */}
+          <Text style={styles.menuTitle}>{item.title}</Text>
+
+          {/* Bottom shine line */}
+          <View style={styles.bottomShine} />
+        </LinearGradient>
+      </Pressable>
+    </Animated.View>
+  );
+};
 
 // Get greeting by time
 const getGreeting = () => {
@@ -72,14 +199,14 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Gradient Background แทน AnimatedBackground ชั่วคราว */}
+      {/* Gradient Background */}
       <LinearGradient
         colors={['#0F0F23', '#1a1a2e', '#16213e']}
         style={StyleSheet.absoluteFill}
       />
       <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
 
-        <ScrollView
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -128,58 +255,85 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* Balance Card */}
+        {/* Balance Card - ปรับปรุง */}
         {isAuthenticated && (
           <View style={styles.balanceCardWrapper}>
+            {/* Card glow */}
+            <View style={styles.balanceGlow} />
+
             <LinearGradient
-              colors={['#3B82F6', '#1D4ED8']}
+              colors={['#3B82F6', '#1D4ED8', '#1E40AF']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.balanceCard}
             >
+              {/* Shine overlay */}
+              <LinearGradient
+                colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={styles.balanceShine}
+              />
+
               <View style={styles.balanceHeader}>
-                <Text style={{ fontSize: 22 }}>💳</Text>
+                <View style={styles.balanceIconBox}>
+                  <Text style={{ fontSize: 24 }}>💳</Text>
+                </View>
                 <Text style={styles.balanceLabel}>ยอดเงินคงเหลือ</Text>
               </View>
               <Text style={styles.balanceAmount}>฿0.00</Text>
+
               <View style={styles.balanceActions}>
                 <Pressable
                   style={styles.balanceButton}
                   onPress={() => router.push('/(tabs)/wallet')}
                 >
-                  <Text style={{ fontSize: 16 }}>➕</Text>
-                  <Text style={styles.balanceButtonText}>เติมเงิน</Text>
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.1)']}
+                    style={styles.balanceButtonGradient}
+                  >
+                    <Text style={{ fontSize: 18 }}>➕</Text>
+                    <Text style={styles.balanceButtonText}>เติมเงิน</Text>
+                  </LinearGradient>
                 </Pressable>
+
                 <Pressable
                   style={styles.balanceButton}
                   onPress={() => router.push('/commissions')}
                 >
-                  <Text style={{ fontSize: 16 }}>💸</Text>
-                  <Text style={styles.balanceButtonText}>ถอนเงิน</Text>
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.1)']}
+                    style={styles.balanceButtonGradient}
+                  >
+                    <Text style={{ fontSize: 18 }}>💸</Text>
+                    <Text style={styles.balanceButtonText}>ถอนเงิน</Text>
+                  </LinearGradient>
                 </Pressable>
               </View>
+
+              {/* Bottom border shine */}
+              <View style={styles.balanceBottomShine} />
             </LinearGradient>
           </View>
         )}
 
-        {/* Quick Stats */}
+        {/* Quick Stats - ปรับปรุง */}
         {isAuthenticated && (
           <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={{ fontSize: 20 }}>👥</Text>
-              <Text style={styles.statValue}>0</Text>
-              <Text style={styles.statLabel}>สมาชิก</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={{ fontSize: 20 }}>📈</Text>
-              <Text style={styles.statValue}>฿0</Text>
-              <Text style={styles.statLabel}>รายได้</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={{ fontSize: 20 }}>⭐</Text>
-              <Text style={styles.statValue}>Bronze</Text>
-              <Text style={styles.statLabel}>ระดับ</Text>
-            </View>
+            {[
+              { icon: '👥', value: '0', label: 'สมาชิก', color: '#8B5CF6' },
+              { icon: '📈', value: '฿0', label: 'รายได้', color: '#10B981' },
+              { icon: '⭐', value: 'Bronze', label: 'ระดับ', color: '#F59E0B' },
+            ].map((stat, index) => (
+              <View key={index} style={styles.statCard}>
+                <View style={[styles.statGlow, { backgroundColor: stat.color }]} />
+                <View style={[styles.statIconBox, { backgroundColor: stat.color + '30' }]}>
+                  <Text style={{ fontSize: 22 }}>{stat.icon}</Text>
+                </View>
+                <Text style={styles.statValue}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+              </View>
+            ))}
           </View>
         )}
 
@@ -187,35 +341,24 @@ export default function HomeScreen() {
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>บริการ</Text>
           <View style={styles.menuGrid}>
-            {MENU_ITEMS.map((item) => (
-              <Pressable
+            {MENU_ITEMS.map((item, index) => (
+              <MenuCard
                 key={item.id}
-                style={styles.menuCard}
+                item={item}
+                index={index}
                 onPress={() => handleMenuPress(item.route)}
-              >
-                <LinearGradient
-                  colors={item.colors}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.menuGradient}
-                >
-                  <View style={styles.menuIconBox}>
-                    <Text style={styles.menuEmoji}>{item.icon}</Text>
-                  </View>
-                  <Text style={styles.menuTitle}>{item.title}</Text>
-                </LinearGradient>
-              </Pressable>
+              />
             ))}
           </View>
         </View>
 
         {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              v{APP_INFO.VERSION} ({APP_INFO.BUILD_DATE})
-            </Text>
-          </View>
-        </ScrollView>
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            v{APP_INFO.VERSION} ({APP_INFO.BUILD_DATE})
+          </Text>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -256,10 +399,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   profileButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   profileGradient: {
     flex: 1,
@@ -267,121 +412,255 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   profileText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
+
+  // Balance Card Styles
   balanceCardWrapper: {
     paddingHorizontal: 20,
     marginBottom: 16,
   },
+  balanceGlow: {
+    position: 'absolute',
+    top: 10,
+    left: 30,
+    right: 30,
+    bottom: -10,
+    backgroundColor: '#3B82F6',
+    borderRadius: 24,
+    opacity: 0.3,
+  },
   balanceCard: {
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  balanceShine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
   },
   balanceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
+  },
+  balanceIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
   },
   balanceLabel: {
-    fontSize: 14,
+    fontSize: 15,
     color: 'rgba(255,255,255,0.9)',
-    marginLeft: 8,
+    fontWeight: '500',
   },
   balanceAmount: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 14,
+    marginBottom: 16,
+    letterSpacing: 1,
   },
   balanceActions: {
     flexDirection: 'row',
+    gap: 12,
   },
   balanceButton: {
+    flex: 1,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  balanceButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-    marginRight: 10,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   balanceButtonText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
-    marginLeft: 5,
   },
+  balanceBottomShine: {
+    position: 'absolute',
+    bottom: 0,
+    left: 20,
+    right: 20,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+
+  // Stats Row Styles
   statsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginBottom: 20,
+    gap: 8,
   },
   statCard: {
     flex: 1,
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 14,
+    borderRadius: 18,
     padding: 14,
     alignItems: 'center',
-    marginHorizontal: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+  },
+  statGlow: {
+    position: 'absolute',
+    top: -20,
+    left: '50%',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    opacity: 0.3,
+    marginLeft: -20,
+  },
+  statIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
   statValue: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginTop: 6,
   },
   statLabel: {
     fontSize: 11,
     color: '#9CA3AF',
     marginTop: 2,
   },
+
+  // Menu Section Styles
   menuSection: {
     paddingHorizontal: 20,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 14,
+    marginBottom: 16,
   },
   menuGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  menuCard: {
+
+  // Menu Card Styles
+  menuCardWrapper: {
     width: CARD_WIDTH,
-    height: 95,
-    borderRadius: 14,
+    height: 110,
+    marginBottom: 14,
+  },
+  menuGlow: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    right: 8,
+    bottom: -4,
+    borderRadius: 20,
+    opacity: 0.4,
+  },
+  menuCard: {
+    flex: 1,
+    borderRadius: 20,
     overflow: 'hidden',
-    marginBottom: 12,
+    // Shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    // Shadow for Android
+    elevation: 8,
   },
   menuGradient: {
     flex: 1,
     padding: 14,
     justifyContent: 'space-between',
+    overflow: 'hidden',
+  },
+  shineOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+  },
+  glassBorder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 20,
+  },
+  menuIconContainer: {
+    width: 48,
+    height: 48,
+  },
+  menuIconShadow: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
   menuIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   menuEmoji: {
-    fontSize: 24,
+    fontSize: 26,
     textAlign: 'center',
   },
   menuTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
+  bottomShine: {
+    position: 'absolute',
+    bottom: 0,
+    left: 14,
+    right: 14,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+
+  // Footer
   footer: {
     alignItems: 'center',
     paddingVertical: 20,

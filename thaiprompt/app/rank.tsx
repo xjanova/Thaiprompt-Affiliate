@@ -15,7 +15,6 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import AnimatedRN, { FadeInDown, FadeInRight } from 'react-native-reanimated';
@@ -171,11 +170,11 @@ export default function RankScreen() {
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-800">
         <TouchableOpacity onPress={() => router.back()} className="p-2">
-          <Ionicons name="arrow-back" size={24} color="white" />
+          <Text className="text-white text-2xl">←</Text>
         </TouchableOpacity>
         <Text className="text-white text-lg font-bold">ระดับของฉัน</Text>
         <TouchableOpacity onPress={() => router.push('/leaderboard')} className="p-2">
-          <Ionicons name="trophy-outline" size={24} color={COLORS.PRIMARY} />
+          <Text className="text-2xl">🏆</Text>
         </TouchableOpacity>
       </View>
 
@@ -285,9 +284,9 @@ export default function RankScreen() {
                     <View key={index} className="flex-row items-center">
                       <View className="w-8 h-8 rounded-full bg-slate-700 items-center justify-center mr-3">
                         {item.completed ? (
-                          <Ionicons name="checkmark" size={16} color="#10B981" />
+                          <Text className="text-sm" style={{ color: '#10B981' }}>✓</Text>
                         ) : (
-                          <Ionicons name="time-outline" size={16} color="#9CA3AF" />
+                          <Text className="text-sm">⏱</Text>
                         )}
                       </View>
                       <View className="flex-1">
@@ -407,7 +406,7 @@ export default function RankScreen() {
                 >
                   <Text className="text-2xl mr-3">{getPrivilegeIcon(privilege)}</Text>
                   <Text className="text-white flex-1">{getPrivilegeText(privilege)}</Text>
-                  <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                  <Text className="text-xl" style={{ color: '#10B981' }}>✓</Text>
                 </View>
               ))}
             </View>
@@ -421,11 +420,9 @@ export default function RankScreen() {
             onPress={() => setShowAllRanks(!showAllRanks)}
           >
             <Text className="text-white font-semibold text-lg">ระดับทั้งหมด</Text>
-            <Ionicons
-              name={showAllRanks ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color="#9CA3AF"
-            />
+            <Text className="text-xl" style={{ color: '#9CA3AF' }}>
+              {showAllRanks ? '▲' : '▼'}
+            </Text>
           </TouchableOpacity>
 
           {showAllRanks && (
@@ -469,11 +466,9 @@ export default function RankScreen() {
                         Level {rank.level} • คอมมิชชัน {rank.commissionRate}%
                       </Text>
                     </View>
-                    <Ionicons
-                      name={isAchieved ? 'checkmark-circle' : 'lock-closed'}
-                      size={20}
-                      color={isAchieved ? '#10B981' : '#6B7280'}
-                    />
+                    <Text className="text-xl" style={{ color: isAchieved ? '#10B981' : '#6B7280' }}>
+                      {isAchieved ? '✓' : '🔒'}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}

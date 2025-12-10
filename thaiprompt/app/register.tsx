@@ -21,7 +21,6 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { API_BASE_URL } from '@/constants';
 
@@ -151,7 +150,7 @@ export default function RegisterScreen() {
           isCurrent && styles.stepCircleCurrent,
         ]}>
           {isActive && !isCurrent ? (
-            <Ionicons name="checkmark" size={16} color="#FFF" />
+            <Text style={{ color: '#FFF', fontSize: 16 }}>✓</Text>
           ) : (
             <Text style={[styles.stepNumber, isActive && styles.stepNumberActive]}>{step}</Text>
           )}
@@ -183,7 +182,7 @@ export default function RegisterScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Pressable style={styles.backButton} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color="#FFF" />
+              <Text style={{ color: '#FFF', fontSize: 24 }}>←</Text>
             </Pressable>
             <Pressable onPress={() => router.push('/login')}>
               <Text style={styles.loginLink}>มีบัญชีแล้ว? เข้าสู่ระบบ</Text>
@@ -214,7 +213,7 @@ export default function RegisterScreen() {
           {/* Referral Badge */}
           {ref && currentStep === 1 && (
             <View style={styles.referralBadge}>
-              <Ionicons name="gift" size={20} color="#10B981" />
+              <Text style={{ fontSize: 20 }}>🎁</Text>
               <Text style={styles.referralText}>คุณได้รับเชิญ! รหัส: {ref}</Text>
             </View>
           )}
@@ -229,7 +228,7 @@ export default function RegisterScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>ชื่อ-นามสกุล</Text>
                   <View style={[styles.inputContainer, nameError && styles.inputError]}>
-                    <Ionicons name="person-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <Text style={{ fontSize: 20, marginLeft: 14 }}>👤</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="กรอกชื่อจริง - นามสกุลจริง"
@@ -245,7 +244,7 @@ export default function RegisterScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>อีเมล</Text>
                   <View style={[styles.inputContainer, emailError && styles.inputError]}>
-                    <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <Text style={{ fontSize: 20, marginLeft: 14 }}>📧</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="example@email.com"
@@ -262,7 +261,7 @@ export default function RegisterScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>เบอร์โทรศัพท์ (ไม่บังคับ)</Text>
                   <View style={styles.inputContainer}>
-                    <Ionicons name="call-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <Text style={{ fontSize: 20, marginLeft: 14 }}>📱</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="08X-XXX-XXXX"
@@ -277,7 +276,7 @@ export default function RegisterScreen() {
                 <Pressable style={styles.nextButton} onPress={handleNextStep}>
                   <LinearGradient colors={['#3B82F6', '#8B5CF6']} style={styles.gradientButton}>
                     <Text style={styles.buttonText}>ถัดไป</Text>
-                    <Ionicons name="arrow-forward" size={20} color="#FFF" />
+                    <Text style={{ color: '#FFF', fontSize: 20 }}>→</Text>
                   </LinearGradient>
                 </Pressable>
               </>
@@ -291,7 +290,7 @@ export default function RegisterScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>รหัสผ่าน</Text>
                   <View style={[styles.inputContainer, passwordError && styles.inputError]}>
-                    <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <Text style={{ fontSize: 20, marginLeft: 14 }}>🔒</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="อย่างน้อย 8 ตัวอักษร"
@@ -301,7 +300,7 @@ export default function RegisterScreen() {
                       secureTextEntry={!showPassword}
                     />
                     <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-                      <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9CA3AF" />
+                      <Text style={{ fontSize: 20 }}>{showPassword ? '🙈' : '👁️'}</Text>
                     </Pressable>
                   </View>
                   {passwordError ? <Text style={styles.errorLabel}>{passwordError}</Text> : null}
@@ -320,7 +319,7 @@ export default function RegisterScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>ยืนยันรหัสผ่าน</Text>
                   <View style={[styles.inputContainer, confirmPasswordError && styles.inputError]}>
-                    <Ionicons name="shield-checkmark-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <Text style={{ fontSize: 20, marginLeft: 14 }}>🛡️</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="กรอกรหัสผ่านอีกครั้ง"
@@ -335,7 +334,7 @@ export default function RegisterScreen() {
 
                 <View style={styles.buttonRow}>
                   <Pressable style={styles.backBtn} onPress={() => setCurrentStep(1)}>
-                    <Ionicons name="arrow-back" size={20} color="#9CA3AF" />
+                    <Text style={{ color: '#9CA3AF', fontSize: 20 }}>←</Text>
                     <Text style={styles.backBtnText}>ย้อนกลับ</Text>
                   </Pressable>
                   <Pressable style={styles.nextButtonSmall} onPress={handleNextStep}>
@@ -354,20 +353,20 @@ export default function RegisterScreen() {
 
                 {/* Summary */}
                 <View style={styles.summaryCard}>
-                  <Ionicons name="person-circle" size={40} color="#3B82F6" />
+                  <Text style={{ fontSize: 40 }}>👤</Text>
                   <View style={styles.summaryInfo}>
                     <Text style={styles.summaryName}>{name}</Text>
                     <Text style={styles.summaryEmail}>{email}</Text>
                   </View>
                   <Pressable onPress={() => setCurrentStep(1)}>
-                    <Ionicons name="pencil" size={20} color="#3B82F6" />
+                    <Text style={{ fontSize: 20 }}>✏️</Text>
                   </Pressable>
                 </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>รหัสผู้แนะนำ (ไม่บังคับ)</Text>
                   <View style={styles.inputContainer}>
-                    <Ionicons name="gift-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <Text style={{ fontSize: 20, marginLeft: 14 }}>🎁</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="กรอกรหัสถ้ามี"
@@ -382,7 +381,7 @@ export default function RegisterScreen() {
                 {/* Terms */}
                 <Pressable style={styles.termsRow} onPress={() => setAcceptTerms(!acceptTerms)}>
                   <View style={[styles.checkbox, acceptTerms && styles.checkboxActive]}>
-                    {acceptTerms && <Ionicons name="checkmark" size={16} color="#FFF" />}
+                    {acceptTerms && <Text style={{ color: '#FFF', fontSize: 16 }}>✓</Text>}
                   </View>
                   <Text style={styles.termsText}>
                     ข้าพเจ้ายอมรับ เงื่อนไขการใช้งาน และ นโยบายความเป็นส่วนตัว
@@ -392,14 +391,14 @@ export default function RegisterScreen() {
                 {/* Error */}
                 {error ? (
                   <View style={styles.errorBox}>
-                    <Ionicons name="alert-circle" size={20} color="#EF4444" />
+                    <Text style={{ fontSize: 20 }}>⚠️</Text>
                     <Text style={styles.errorBoxText}>{error}</Text>
                   </View>
                 ) : null}
 
                 <View style={styles.buttonRow}>
                   <Pressable style={styles.backBtn} onPress={() => setCurrentStep(2)}>
-                    <Ionicons name="arrow-back" size={20} color="#9CA3AF" />
+                    <Text style={{ color: '#9CA3AF', fontSize: 20 }}>←</Text>
                     <Text style={styles.backBtnText}>ย้อนกลับ</Text>
                   </Pressable>
                   <Pressable
@@ -412,7 +411,7 @@ export default function RegisterScreen() {
                         <ActivityIndicator color="#FFF" />
                       ) : (
                         <>
-                          <Ionicons name="rocket" size={20} color="#FFF" />
+                          <Text style={{ fontSize: 20 }}>🚀</Text>
                           <Text style={styles.buttonText}>สมัครสมาชิก</Text>
                         </>
                       )}
