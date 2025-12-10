@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.59] - 2025-12-10
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2235 from xjanova/claude/fix-mobile-connectivity-01HMamgvi2oENVHkGSXvbvCU (7b181fa5)
+- fix(mobile): แก้ไขปัญหาการเชื่อมต่อและเข้าถึงไฟล์ในแอพมือถือ (0d9d6a3d)
+### 🔧 Other Changes
+
+
 ## [v3.372.58] - 2025-12-10
 
 ### ✨ Features
