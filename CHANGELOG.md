@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.43] - 2025-12-10
+
+### ✨ Features
+- feat(mobile): เพิ่ม GPS Sharing และเปลี่ยนชื่อแอพเป็น TP UltraAPP (606bf4f8)
+- feat(mobile): เพิ่มหน้า QR Scanner ที่เปิดกล้องอัตโนมัติ (48ea587a)
+### 🐛 Bug Fixes
+- fix(mobile): แก้ไข login loop, push notification และ banner (84e63649)
+- fix(mobile): ปรับปรุง font loading สำหรับ Ionicons (04deed00)
+### 🔧 Other Changes
+- Merge pull request #2219 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (719bd023)
+
 ## [v3.372.42] - 2025-12-10
 
 ### ✨ Features
