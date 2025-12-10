@@ -188,9 +188,18 @@ Route::prefix('v1')->group(function () {
         Route::prefix('orders')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'index']);
             Route::post('/', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'store']);
+            Route::get('/unread-messages', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'getUnreadMessageCount']);
             Route::get('/{id}', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'show']);
             Route::post('/{id}/cancel', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'cancel']);
+            // Order Tracking
+            Route::get('/{id}/tracking', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'getTracking']);
+            // Order Chat
+            Route::get('/{id}/messages', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'getMessages']);
+            Route::post('/{id}/messages', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'sendMessage']);
         });
+
+        // Shipping Providers (Mobile App)
+        Route::get('/shipping-providers', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'getShippingProviders']);
 
         // Payment (Mobile App)
         Route::prefix('payment')->group(function () {

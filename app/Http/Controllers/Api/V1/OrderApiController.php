@@ -9,6 +9,9 @@ use App\Models\Product;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\UserAddress;
+use App\Models\ShippingProvider;
+use App\Models\OrderTrackingHistory;
+use App\Models\OrderMessage;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -517,6 +520,328 @@ class OrderApiController extends Controller
             'failed' => 'ชำระเงินล้มเหลว',
             'refunded' => 'คืนเงินแล้ว',
             default => $status,
+        };
+    }
+
+    // =====================================================
+    // Order Tracking
+    // =====================================================
+
+    /**
+     * ดึงรายการบริษัทขนส่ง
+     *
+     * @return JsonResponse
+     */
+    public function getShippingProviders(): JsonResponse
+    {
+        try {
+            $providers = ShippingProvider::active()
+                ->ordered()
+                ->get()
+                ->map(fn($provider) => [
+                    'id' => $provider->id,
+                    'code' => $provider->code,
+                    'name' => $provider->name,
+                    'name_en' => $provider->name_en,
+                    'logo' => $provider->logo_url,
+                    'hotline' => $provider->hotline,
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $providers,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงรายการบริษัทขนส่งได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงข้อมูล Tracking ของคำสั่งซื้อ
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function getTracking(int $id): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+
+            $order = Order::where('user_id', $user->id)
+                ->with(['shippingProvider', 'trackingHistory.user'])
+                ->find($id);
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบคำสั่งซื้อ',
+                ], 404);
+            }
+
+            // สร้าง tracking URL
+            $trackingUrl = null;
+            if ($order->tracking_number && $order->shippingProvider) {
+                $trackingUrl = $order->shippingProvider->getTrackingLink($order->tracking_number);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'order_number' => $order->order_number,
+                    'status' => $order->status,
+                    'status_label' => $this->getStatusLabel($order->status),
+                    'tracking_number' => $order->tracking_number,
+                    'tracking_url' => $trackingUrl,
+                    'shipping_provider' => $order->shippingProvider ? [
+                        'id' => $order->shippingProvider->id,
+                        'code' => $order->shippingProvider->code,
+                        'name' => $order->shippingProvider->name,
+                        'logo' => $order->shippingProvider->logo_url,
+                        'hotline' => $order->shippingProvider->hotline,
+                    ] : null,
+                    'estimated_delivery_at' => $order->estimated_delivery_at?->toISOString(),
+                    'shipped_at' => $order->shipped_at?->toISOString(),
+                    'delivered_at' => $order->delivered_at?->toISOString(),
+                    'history' => $order->trackingHistory->map(fn($history) => [
+                        'id' => $history->id,
+                        'status' => $history->status,
+                        'status_label' => $this->getStatusLabel($history->status),
+                        'description' => $history->description,
+                        'location' => $history->location,
+                        'created_at' => $history->created_at->toISOString(),
+                    ]),
+                ],
+            ]);
+        } catch (Exception $e) {
+            Log::error('Get order tracking error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงข้อมูล Tracking ได้',
+            ], 500);
+        }
+    }
+
+    // =====================================================
+    // Order Chat / Messages
+    // =====================================================
+
+    /**
+     * ดึงข้อความแชทของคำสั่งซื้อ
+     *
+     * @param int $id
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getMessages(int $id, Request $request): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+
+            $order = Order::where('user_id', $user->id)->find($id);
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบคำสั่งซื้อ',
+                ], 404);
+            }
+
+            $perPage = $request->input('per_page', 50);
+
+            // ดึงข้อความ
+            $messages = OrderMessage::where('order_id', $order->id)
+                ->with('sender')
+                ->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+
+            // Mark messages as read (ข้อความที่ไม่ได้ส่งโดยลูกค้า)
+            OrderMessage::where('order_id', $order->id)
+                ->where('sender_type', '!=', 'customer')
+                ->where('is_read', false)
+                ->update([
+                    'is_read' => true,
+                    'read_at' => now(),
+                    'read_by' => $user->id,
+                ]);
+
+            // อัพเดทสถานะ unread ของ order
+            $hasUnread = OrderMessage::where('order_id', $order->id)
+                ->where('is_read', false)
+                ->exists();
+            $order->update(['has_unread_messages' => $hasUnread]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'messages' => $messages->map(fn($msg) => [
+                        'id' => $msg->id,
+                        'sender_type' => $msg->sender_type,
+                        'sender_name' => $msg->sender_name,
+                        'sender_avatar' => $msg->sender_avatar,
+                        'message' => $msg->message,
+                        'attachment' => $msg->attachment_url,
+                        'attachment_type' => $msg->attachment_type,
+                        'is_system_message' => $msg->is_system_message,
+                        'is_mine' => $msg->sender_type === 'customer' && $msg->sender_id === $user->id,
+                        'created_at' => $msg->created_at->toISOString(),
+                    ]),
+                    'pagination' => [
+                        'current_page' => $messages->currentPage(),
+                        'last_page' => $messages->lastPage(),
+                        'per_page' => $messages->perPage(),
+                        'total' => $messages->total(),
+                    ],
+                ],
+            ]);
+        } catch (Exception $e) {
+            Log::error('Get order messages error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงข้อความได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * ส่งข้อความแชทใหม่
+     *
+     * @param int $id
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function sendMessage(int $id, Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'message' => 'required_without:attachment|string|max:2000',
+            'attachment' => 'nullable|file|max:10240', // 10MB max
+        ], [
+            'message.required_without' => 'กรุณาพิมพ์ข้อความหรือแนบไฟล์',
+            'message.max' => 'ข้อความต้องไม่เกิน 2000 ตัวอักษร',
+            'attachment.max' => 'ไฟล์แนบต้องไม่เกิน 10MB',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $user = Auth::user();
+
+            $order = Order::where('user_id', $user->id)->find($id);
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบคำสั่งซื้อ',
+                ], 404);
+            }
+
+            // ตรวจสอบว่า order สามารถแชทได้
+            if (in_array($order->status, ['cancelled', 'refunded'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่สามารถส่งข้อความในคำสั่งซื้อที่ยกเลิกแล้ว',
+                ], 400);
+            }
+
+            $attachmentPath = null;
+            $attachmentType = null;
+
+            // อัพโหลดไฟล์แนบ (ถ้ามี)
+            if ($request->hasFile('attachment')) {
+                $file = $request->file('attachment');
+                $attachmentPath = $file->store('order-messages/' . $order->id, 'public');
+                $attachmentType = $this->getAttachmentType($file->getMimeType());
+            }
+
+            // สร้างข้อความ
+            $message = OrderMessage::send(
+                $order,
+                $user->id,
+                'customer',
+                $request->message ?? '',
+                [
+                    'attachment' => $attachmentPath,
+                    'attachment_type' => $attachmentType,
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ส่งข้อความสำเร็จ',
+                'data' => [
+                    'id' => $message->id,
+                    'sender_type' => $message->sender_type,
+                    'sender_name' => $message->sender_name,
+                    'message' => $message->message,
+                    'attachment' => $message->attachment_url,
+                    'attachment_type' => $message->attachment_type,
+                    'is_mine' => true,
+                    'created_at' => $message->created_at->toISOString(),
+                ],
+            ], 201);
+        } catch (Exception $e) {
+            Log::error('Send order message error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถส่งข้อความได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงจำนวนข้อความที่ยังไม่ได้อ่าน
+     *
+     * @return JsonResponse
+     */
+    public function getUnreadMessageCount(): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+
+            // นับ orders ที่มีข้อความยังไม่ได้อ่าน
+            $count = Order::where('user_id', $user->id)
+                ->where('has_unread_messages', true)
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'unread_count' => $count,
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงข้อมูลได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * ระบุประเภทไฟล์แนบจาก MIME type
+     *
+     * @param string $mimeType
+     * @return string
+     */
+    protected function getAttachmentType(string $mimeType): string
+    {
+        return match (true) {
+            str_starts_with($mimeType, 'image/') => 'image',
+            str_starts_with($mimeType, 'video/') => 'video',
+            str_starts_with($mimeType, 'audio/') => 'audio',
+            $mimeType === 'application/pdf' => 'pdf',
+            default => 'file',
         };
     }
 }

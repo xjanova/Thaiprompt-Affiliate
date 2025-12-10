@@ -162,6 +162,12 @@ Route::prefix('orders')->name('orders.')->group(function () {
     Route::put('/{orderId}/items/{itemId}/status', [OrderManagementController::class, 'updateItemStatus'])->name('update-item-status');
     Route::post('/{orderId}/tracking', [OrderManagementController::class, 'addTracking'])->name('add-tracking');
     Route::get('/{id}/print', [OrderManagementController::class, 'print'])->name('print');
+    // Order Tracking & Chat (V2)
+    Route::get('/{orderId}/tracking-manage', [OrderManagementController::class, 'tracking'])->name('tracking');
+    Route::post('/{orderId}/tracking/history', [OrderManagementController::class, 'addTrackingHistory'])->name('tracking.history');
+    Route::get('/{orderId}/messages', [OrderManagementController::class, 'getMessages'])->name('messages');
+    Route::post('/{orderId}/messages', [OrderManagementController::class, 'sendMessage'])->name('messages.send');
+    Route::post('/{orderId}/messages/read', [OrderManagementController::class, 'markMessagesRead'])->name('messages.read');
 });
 
 // Notifications
