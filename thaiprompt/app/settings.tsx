@@ -1,9 +1,9 @@
 /**
  * Settings Screen - หน้าตั้งค่า
- * ใช้ StyleSheet แทน Reanimated เพื่อความเสถียร
+ * UI สวยงามแบบ Glassmorphism พร้อม SVG Icons และ Animated Background
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,18 +15,49 @@ import {
   Linking,
   StatusBar,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
+
+// Import Animated Background
+import { AnimatedBackground } from '@/components/AnimatedBackground';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 import { startGpsSharing, stopGpsSharing, requestLocationPermission } from '@/services/location';
 
-// Setting Item Component
+// Import SVG Icons
+import {
+  Icon,
+  ArrowBackIcon,
+  SunIcon,
+  MoonIcon,
+  PhoneIcon,
+  GlobeIcon,
+  ShieldCheckIcon,
+  LockIcon,
+  BellIcon,
+  MailIcon,
+  FingerprintIcon,
+  LocationIcon,
+  NavigationIcon,
+  FileTextIcon,
+  ShieldIcon,
+  StarIcon,
+  InfoIcon,
+  LogOutIcon,
+  TrashIcon,
+  EditIcon,
+  ChevronRightIcon,
+  CheckCircleIcon,
+  SettingsIcon,
+} from '@/components/icons';
+
+// Setting Item Component - ใช้ SVG Icons
 const SettingItem = ({
-  icon,
+  icon: IconComponent,
   iconColor,
   title,
   subtitle,
@@ -34,7 +65,7 @@ const SettingItem = ({
   rightElement,
   isDark,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon?: React.FC<{ size?: number; color?: string }>;
   iconColor?: string;
   title: string;
   subtitle?: string;
@@ -44,19 +75,22 @@ const SettingItem = ({
 }) => (
   <Pressable
     onPress={onPress}
-    style={[
+    style={({ pressed }) => [
       styles.settingItem,
-      { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFF' },
+      {
+        backgroundColor: isDark
+          ? pressed ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'
+          : pressed ? '#F3F4F6' : '#FFFFFF',
+        transform: [{ scale: pressed ? 0.98 : 1 }],
+      },
     ]}
   >
-    <View
-      style={[
-        styles.iconContainer,
-        { backgroundColor: iconColor ? `${iconColor}20` : 'rgba(212,175,55,0.2)' },
-      ]}
+    <LinearGradient
+      colors={iconColor ? [`${iconColor}30`, `${iconColor}10`] : ['rgba(212,175,55,0.2)', 'rgba(212,175,55,0.1)']}
+      style={styles.iconContainer}
     >
-      <Ionicons name={icon} size={22} color={iconColor || '#D4AF37'} />
-    </View>
+      {IconComponent && <IconComponent size={22} color={iconColor || '#D4AF37'} />}
+    </LinearGradient>
     <View style={styles.settingContent}>
       <Text style={[styles.settingTitle, { color: isDark ? '#FFFFFF' : '#1F2937' }]}>
         {title}
@@ -68,7 +102,7 @@ const SettingItem = ({
       )}
     </View>
     {rightElement || (
-      <Ionicons name="chevron-forward" size={20} color={isDark ? '#666666' : '#999999'} />
+      <ChevronRightIcon size={20} color={isDark ? '#666666' : '#999999'} />
     )}
   </Pressable>
 );
@@ -80,11 +114,11 @@ const SectionHeader = ({ title, isDark }: { title: string; isDark: boolean }) =>
   </Text>
 );
 
-// Theme Option
+// Theme Option - ใช้ SVG Icons
 const ThemeOption = ({
   mode,
   currentMode,
-  icon,
+  IconComponent,
   title,
   description,
   onPress,
@@ -92,7 +126,7 @@ const ThemeOption = ({
 }: {
   mode: 'light' | 'dark' | 'system';
   currentMode: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  IconComponent: React.FC<{ size?: number; color?: string }>;
   title: string;
   description: string;
   onPress: () => void;
@@ -103,7 +137,7 @@ const ThemeOption = ({
   return (
     <Pressable
       onPress={onPress}
-      style={[
+      style={({ pressed }) => [
         styles.themeOption,
         {
           backgroundColor: isSelected
@@ -118,31 +152,25 @@ const ThemeOption = ({
             : isDark
             ? 'rgba(255,255,255,0.1)'
             : '#E5E7EB',
+          transform: [{ scale: pressed ? 0.98 : 1 }],
         },
       ]}
     >
-      <View
-        style={[
-          styles.themeIconContainer,
-          {
-            backgroundColor: isSelected
-              ? mode === 'dark'
-                ? '#7B2CBF'
-                : mode === 'light'
-                ? '#FFB300'
-                : '#3B82F6'
-              : isDark
-              ? 'rgba(255,255,255,0.1)'
-              : '#F3F4F6',
-          },
-        ]}
+      <LinearGradient
+        colors={isSelected
+          ? mode === 'dark'
+            ? ['#7B2CBF', '#5B21B6']
+            : mode === 'light'
+            ? ['#FFB300', '#F59E0B']
+            : ['#3B82F6', '#2563EB']
+          : isDark
+          ? ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']
+          : ['#F3F4F6', '#E5E7EB']
+        }
+        style={styles.themeIconContainer}
       >
-        <Ionicons
-          name={icon}
-          size={24}
-          color={isSelected ? '#FFFFFF' : isDark ? '#9CA3AF' : '#6B7280'}
-        />
-      </View>
+        <IconComponent size={24} color={isSelected ? '#FFFFFF' : isDark ? '#9CA3AF' : '#6B7280'} />
+      </LinearGradient>
       <View style={styles.themeContent}>
         <Text
           style={[
@@ -157,7 +185,7 @@ const ThemeOption = ({
         </Text>
       </View>
       {isSelected && (
-        <Ionicons name="checkmark-circle" size={24} color="#3B82F6" />
+        <CheckCircleIcon size={22} color="#3B82F6" />
       )}
     </Pressable>
   );
@@ -297,19 +325,32 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#0F0F23' : '#F9FAFB' }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+    <AnimatedBackground
+      variant="firefly"
+      isDark={isDark}
+      intensity="medium"
+      particleCount={25}
+    >
+      <View style={styles.container}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB' }]}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={isDark ? '#FFF' : '#1F2937'} />
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#1F2937' }]}>
-          ตั้งค่า
-        </Text>
-        <View style={styles.placeholder} />
-      </View>
+        {/* Header with Glassmorphism */}
+        <BlurView
+          intensity={isDark ? 40 : 60}
+          tint={isDark ? 'dark' : 'light'}
+          style={[styles.header, { borderBottomColor: isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB' }]}
+        >
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <ArrowBackIcon size={24} color={isDark ? '#FFF' : '#1F2937'} />
+          </Pressable>
+          <View style={styles.headerTitleRow}>
+            <SettingsIcon size={20} color={isDark ? '#FFF' : '#1F2937'} />
+            <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#1F2937' }]}>
+              ตั้งค่า
+            </Text>
+          </View>
+          <View style={styles.placeholder} />
+        </BlurView>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -333,9 +374,12 @@ export default function SettingsScreen() {
               <Text style={styles.profileEmail}>{user.email}</Text>
               <Pressable
                 onPress={() => router.push('/(tabs)/profile')}
-                style={styles.editProfileButton}
+                style={({ pressed }) => [
+                  styles.editProfileButton,
+                  { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] }
+                ]}
               >
-                <Ionicons name="pencil" size={16} color="white" />
+                <EditIcon size={16} color="#FFFFFF" />
                 <Text style={styles.editProfileText}>แก้ไขโปรไฟล์</Text>
               </Pressable>
             </LinearGradient>
@@ -352,7 +396,7 @@ export default function SettingsScreen() {
           <ThemeOption
             mode="light"
             currentMode={themeMode}
-            icon="sunny"
+            IconComponent={SunIcon}
             title="โหมดสว่าง"
             description="สีสันสดใส เหมาะสำหรับกลางวัน"
             onPress={() => setThemeMode('light')}
@@ -362,7 +406,7 @@ export default function SettingsScreen() {
           <ThemeOption
             mode="dark"
             currentMode={themeMode}
-            icon="moon"
+            IconComponent={MoonIcon}
             title="โหมดมืด"
             description="ธีมมืดถนอมสายตา"
             onPress={() => setThemeMode('dark')}
@@ -372,7 +416,7 @@ export default function SettingsScreen() {
           <ThemeOption
             mode="system"
             currentMode={themeMode}
-            icon="phone-portrait"
+            IconComponent={PhoneIcon}
             title="ตามระบบ"
             description="เปลี่ยนตามการตั้งค่าของอุปกรณ์"
             onPress={() => setThemeMode('system')}
@@ -381,7 +425,7 @@ export default function SettingsScreen() {
         </View>
 
         <SettingItem
-          icon="language"
+          icon={GlobeIcon}
           iconColor="#f093fb"
           title="ภาษา"
           subtitle="ไทย"
@@ -392,7 +436,7 @@ export default function SettingsScreen() {
         {/* Account Settings */}
         <SectionHeader title="👤 บัญชี" isDark={isDark} />
         <SettingItem
-          icon="shield-checkmark"
+          icon={ShieldCheckIcon}
           iconColor="#10B981"
           title="ยืนยันตัวตน (KYC)"
           subtitle="ยืนยันตัวตนเพื่อเพิ่มวงเงิน"
@@ -400,7 +444,7 @@ export default function SettingsScreen() {
           isDark={isDark}
         />
         <SettingItem
-          icon="lock-closed"
+          icon={LockIcon}
           iconColor="#7B2CBF"
           title="เปลี่ยนรหัสผ่าน"
           subtitle="เปลี่ยนรหัสผ่านเข้าสู่ระบบ"
@@ -411,7 +455,7 @@ export default function SettingsScreen() {
         {/* Notifications */}
         <SectionHeader title="🔔 การแจ้งเตือน" isDark={isDark} />
         <SettingItem
-          icon="notifications"
+          icon={BellIcon}
           iconColor="#FF6B6B"
           title="Push Notification"
           subtitle="รับการแจ้งเตือนบนอุปกรณ์"
@@ -426,7 +470,7 @@ export default function SettingsScreen() {
           }
         />
         <SettingItem
-          icon="mail"
+          icon={MailIcon}
           iconColor="#4ECDC4"
           title="Email Notification"
           subtitle="รับการแจ้งเตือนทางอีเมล"
@@ -444,7 +488,7 @@ export default function SettingsScreen() {
         {/* ⭐ GPS Sharing - แยกหมวดให้เห็นชัด */}
         <SectionHeader title="📍 แชร์ตำแหน่ง GPS" isDark={isDark} />
         <SettingItem
-          icon="location"
+          icon={LocationIcon}
           iconColor="#10B981"
           title="เปิดแชร์ตำแหน่ง"
           subtitle={gpsSharing ? '🟢 กำลังแชร์ตำแหน่งอยู่...' : 'แชร์ตำแหน่งให้ Admin GPS Monitor ดู'}
@@ -463,18 +507,21 @@ export default function SettingsScreen() {
           }
         />
         {gpsSharing && (
-          <View style={[styles.gpsStatusCard, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.05)' }]}>
-            <Ionicons name="navigate" size={20} color="#10B981" />
+          <LinearGradient
+            colors={['rgba(16, 185, 129, 0.15)', 'rgba(16, 185, 129, 0.05)']}
+            style={styles.gpsStatusCard}
+          >
+            <NavigationIcon size={20} color="#10B981" />
             <Text style={[styles.gpsStatusText, { color: '#10B981' }]}>
               กำลังส่งตำแหน่งทุก 30 วินาที
             </Text>
-          </View>
+          </LinearGradient>
         )}
 
         {/* Security */}
         <SectionHeader title="🔐 ความปลอดภัย" isDark={isDark} />
         <SettingItem
-          icon="finger-print"
+          icon={FingerprintIcon}
           iconColor="#45B7D1"
           title="Biometric Login"
           subtitle="เข้าสู่ระบบด้วยลายนิ้วมือ/Face ID"
@@ -492,28 +539,28 @@ export default function SettingsScreen() {
         {/* About */}
         <SectionHeader title="ℹ️ เกี่ยวกับ" isDark={isDark} />
         <SettingItem
-          icon="document-text"
+          icon={FileTextIcon}
           iconColor="#3B82F6"
           title="นโยบายความเป็นส่วนตัว"
           onPress={handlePrivacyPolicy}
           isDark={isDark}
         />
         <SettingItem
-          icon="shield"
+          icon={ShieldIcon}
           iconColor="#8B5CF6"
           title="ข้อกำหนดการใช้งาน"
           onPress={handleTermsOfService}
           isDark={isDark}
         />
         <SettingItem
-          icon="star"
+          icon={StarIcon}
           iconColor="#FFD700"
           title="ให้คะแนนแอพ"
           onPress={handleRateApp}
           isDark={isDark}
         />
         <SettingItem
-          icon="information-circle"
+          icon={InfoIcon}
           iconColor="#6B7280"
           title="เวอร์ชัน"
           subtitle={APP_INFO.VERSION || '1.1.0'}
@@ -526,14 +573,14 @@ export default function SettingsScreen() {
           <>
             <SectionHeader title="⚙️ จัดการบัญชี" isDark={isDark} />
             <SettingItem
-              icon="log-out"
+              icon={LogOutIcon}
               iconColor="#FF6B6B"
               title="ออกจากระบบ"
               onPress={handleLogout}
               isDark={isDark}
             />
             <SettingItem
-              icon="trash"
+              icon={TrashIcon}
               iconColor="#DC143C"
               title="ลบบัญชี"
               subtitle="ลบบัญชีของคุณอย่างถาวร"
@@ -545,7 +592,8 @@ export default function SettingsScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-    </View>
+      </View>
+    </AnimatedBackground>
   );
 }
 
@@ -564,6 +612,11 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   headerTitle: {
     fontSize: 18,

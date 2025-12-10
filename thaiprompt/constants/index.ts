@@ -90,7 +90,7 @@ export const API_ENDPOINTS = {
   NOTIFICATION_DELETE: '/notifications', // + /{notificationId}
 
   // Push Notification Token (Mobile App)
-  PUSH_TOKEN: '/push/token',
+  PUSH_TOKEN: '/mobile/push-token',
 
   // Push Notification Delivery Tracking (สำหรับ retry mechanism)
   PUSH_CONFIRM: '/mobile/push/confirm',
