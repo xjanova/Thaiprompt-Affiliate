@@ -29,8 +29,33 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+
+// Emoji icons map - ใช้ emoji แทน Ionicons ทั้งหมด
+const EMOJI_ICONS: Record<string, string> = {
+  'person-circle-outline': '👤',
+  'camera': '📷',
+  'copy-outline': '📋',
+  'id-card-outline': '🪪',
+  'share-social-outline': '📤',
+  'person-outline': '👤',
+  'key-outline': '🔑',
+  'shield-checkmark-outline': '🛡️',
+  'qr-code-outline': '📱',
+  'people-outline': '👥',
+  'moon-outline': '🌙',
+  'notifications-outline': '🔔',
+  'language-outline': '🌐',
+  'help-circle-outline': '❓',
+  'chatbubble-outline': '💬',
+  'document-text-outline': '📄',
+  'information-circle-outline': 'ℹ️',
+  'log-out-outline': '🚪',
+  'chevron-forward': '›',
+  'close': '✕',
+  'eye-outline': '👁️',
+  'eye-off-outline': '👁️‍🗨️',
+};
 import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
@@ -38,7 +63,7 @@ import { uploadAvatar, changePassword } from '@/services/api';
 import { APP_INFO } from '@/config/appConfig';
 import { API_BASE_URL } from '@/constants';
 
-// Menu Item Component
+// Menu Item Component - ใช้ emoji icons
 const MenuItem = ({
   icon,
   label,
@@ -65,11 +90,9 @@ const MenuItem = ({
     ]}
   >
     <View style={[styles.menuIcon, danger && styles.menuIconDanger]}>
-      <Ionicons
-        name={icon as any}
-        size={18}
-        color={danger ? '#EF4444' : (isDark ? '#9CA3AF' : '#6B7280')}
-      />
+      <Text style={{ fontSize: 18 }}>
+        {EMOJI_ICONS[icon] || '📌'}
+      </Text>
     </View>
     <Text style={[
       styles.menuLabel,
@@ -84,12 +107,12 @@ const MenuItem = ({
       </Text>
     )}
     {showArrow && (
-      <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+      <Text style={{ fontSize: 18, color: '#9CA3AF' }}>›</Text>
     )}
   </Pressable>
 );
 
-// Toggle Item Component
+// Toggle Item Component - ใช้ emoji icons
 const ToggleItem = ({
   icon,
   label,
@@ -105,7 +128,7 @@ const ToggleItem = ({
 }) => (
   <View style={[styles.menuItem, isDark ? styles.menuItemDark : styles.menuItemLight]}>
     <View style={styles.menuIcon}>
-      <Ionicons name={icon as any} size={18} color={isDark ? '#9CA3AF' : '#6B7280'} />
+      <Text style={{ fontSize: 18 }}>{EMOJI_ICONS[icon] || '📌'}</Text>
     </View>
     <Text style={[styles.menuLabel, !isDark && styles.menuLabelLight]}>{label}</Text>
     <Switch
@@ -340,7 +363,7 @@ export default function ProfileScreen() {
           backgroundColor={isDark ? '#0F0F23' : '#FFFFFF'}
         />
         <View style={styles.notLoggedIn}>
-          <Ionicons name="person-circle-outline" size={80} color="#4B5563" />
+          <Text style={{ fontSize: 80 }}>👤</Text>
           <Text style={[styles.notLoggedInTitle, !isDark && styles.textDark]}>
             โปรไฟล์ของคุณ
           </Text>
@@ -405,7 +428,7 @@ export default function ProfileScreen() {
                   </View>
                 )}
                 <View style={styles.avatarEditBadge}>
-                  <Ionicons name="camera" size={12} color="#FFFFFF" />
+                  <Text style={{ fontSize: 10 }}>📷</Text>
                 </View>
               </View>
             </Pressable>
@@ -422,7 +445,7 @@ export default function ProfileScreen() {
                   style={[styles.badge, { backgroundColor: 'rgba(16,185,129,0.3)' }]}
                   onPress={handleCopyReferral}
                 >
-                  <Ionicons name="copy-outline" size={10} color="#FFFFFF" />
+                  <Text style={{ fontSize: 10 }}>📋</Text>
                   <Text style={[styles.badgeText, { marginLeft: 4 }]}>
                     {referralCode}
                   </Text>
@@ -435,7 +458,7 @@ export default function ProfileScreen() {
         {/* Member ID Card */}
         <View style={[styles.memberCard, !isDark && styles.memberCardLight]}>
           <View style={styles.memberCardHeader}>
-            <Ionicons name="id-card-outline" size={20} color="#3B82F6" />
+            <Text style={{ fontSize: 20 }}>🪪</Text>
             <Text style={[styles.memberCardTitle, !isDark && styles.textDark]}>
               รหัสสมาชิก
             </Text>
@@ -446,11 +469,11 @@ export default function ProfileScreen() {
           </Text>
           <View style={styles.memberCardActions}>
             <Pressable style={styles.memberCardBtn} onPress={handleCopyReferral}>
-              <Ionicons name="copy-outline" size={16} color="#3B82F6" />
+              <Text style={{ fontSize: 16 }}>📋</Text>
               <Text style={styles.memberCardBtnText}>คัดลอก</Text>
             </Pressable>
             <Pressable style={styles.memberCardBtn} onPress={handleShareReferral}>
-              <Ionicons name="share-social-outline" size={16} color="#3B82F6" />
+              <Text style={{ fontSize: 16 }}>📤</Text>
               <Text style={styles.memberCardBtnText}>แชร์</Text>
             </Pressable>
           </View>
@@ -594,11 +617,7 @@ export default function ProfileScreen() {
                 เปลี่ยนรหัสผ่าน
               </Text>
               <Pressable onPress={() => setShowPasswordModal(false)}>
-                <Ionicons
-                  name="close"
-                  size={24}
-                  color={isDark ? '#FFFFFF' : '#1F2937'}
-                />
+                <Text style={{ fontSize: 24, color: isDark ? '#FFFFFF' : '#1F2937' }}>✕</Text>
               </Pressable>
             </View>
 
@@ -617,11 +636,7 @@ export default function ProfileScreen() {
                   onChangeText={setCurrentPassword}
                 />
                 <Pressable onPress={() => setShowCurrentPassword(!showCurrentPassword)}>
-                  <Ionicons
-                    name={showCurrentPassword ? 'eye-off-outline' : 'eye-outline'}
-                    size={20}
-                    color="#9CA3AF"
-                  />
+                  <Text style={{ fontSize: 18 }}>{showCurrentPassword ? '🙈' : '👁️'}</Text>
                 </Pressable>
               </View>
             </View>
@@ -641,11 +656,7 @@ export default function ProfileScreen() {
                   onChangeText={setNewPassword}
                 />
                 <Pressable onPress={() => setShowNewPassword(!showNewPassword)}>
-                  <Ionicons
-                    name={showNewPassword ? 'eye-off-outline' : 'eye-outline'}
-                    size={20}
-                    color="#9CA3AF"
-                  />
+                  <Text style={{ fontSize: 18 }}>{showNewPassword ? '🙈' : '👁️'}</Text>
                 </Pressable>
               </View>
             </View>

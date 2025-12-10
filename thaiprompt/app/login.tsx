@@ -20,7 +20,6 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -168,7 +167,7 @@ export default function LoginScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Pressable style={styles.backButton} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color="#FFF" />
+              <Text style={{ fontSize: 24 }}>←</Text>
             </Pressable>
           </View>
 
@@ -180,7 +179,7 @@ export default function LoginScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.logoBox}
             >
-              <Ionicons name="log-in-outline" size={40} color="#FFF" />
+              <Text style={{ fontSize: 40 }}>🔐</Text>
             </LinearGradient>
             <Text style={styles.title}>เข้าสู่ระบบ</Text>
             <Text style={styles.subtitle}>ยินดีต้อนรับกลับมา</Text>
@@ -191,7 +190,7 @@ export default function LoginScreen() {
             {/* Error Message */}
             {error && (
               <View style={styles.errorBox}>
-                <Ionicons name="alert-circle" size={20} color="#EF4444" />
+                <Text style={{ fontSize: 20 }}>⚠️</Text>
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             )}
@@ -200,7 +199,7 @@ export default function LoginScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>อีเมล</Text>
               <View style={[styles.inputContainer, emailError && styles.inputError]}>
-                <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                <Text style={[styles.inputIcon, { fontSize: 18 }]}>📧</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="example@email.com"
@@ -222,7 +221,7 @@ export default function LoginScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>รหัสผ่าน</Text>
               <View style={[styles.inputContainer, passwordError && styles.inputError]}>
-                <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                <Text style={[styles.inputIcon, { fontSize: 18 }]}>🔒</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="••••••••"
@@ -235,7 +234,7 @@ export default function LoginScreen() {
                   secureTextEntry={!showPassword}
                 />
                 <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9CA3AF" />
+                  <Text style={{ fontSize: 18 }}>{showPassword ? '🙈' : '👁️'}</Text>
                 </Pressable>
               </View>
               {passwordError ? <Text style={styles.errorLabel}>{passwordError}</Text> : null}
@@ -262,7 +261,7 @@ export default function LoginScreen() {
                   <ActivityIndicator color="#FFF" />
                 ) : (
                   <>
-                    <Ionicons name="log-in-outline" size={20} color="#FFF" />
+                    <Text style={{ fontSize: 20 }}>🔓</Text>
                     <Text style={styles.loginButtonText}>เข้าสู่ระบบ</Text>
                   </>
                 )}
@@ -295,7 +294,7 @@ export default function LoginScreen() {
               <ActivityIndicator color="#FFF" />
             ) : (
               <>
-                <Ionicons name="chatbubbles" size={24} color="#FFF" />
+                <Text style={{ fontSize: 24 }}>💬</Text>
                 <Text style={styles.lineButtonText}>เข้าสู่ระบบด้วย LINE</Text>
               </>
             )}

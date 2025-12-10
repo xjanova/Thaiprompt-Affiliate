@@ -28,8 +28,30 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
+
+// Emoji icons map - ใช้ emoji แทน Ionicons ทั้งหมด
+const EMOJI_ICONS: Record<string, string> = {
+  'add-circle-outline': '➕',
+  'arrow-up-circle-outline': '💸',
+  'swap-horizontal-outline': '🔄',
+  'time-outline': '📋',
+  'trending-up': '📈',
+  'trending-down': '📉',
+  'wallet-outline': '💰',
+  'qr-code': '📱',
+  'warning': '⚠️',
+  'chevron-forward': '›',
+  'arrow-down-outline': '⬇️',
+  'arrow-up-outline': '⬆️',
+  'gift-outline': '🎁',
+  'cart-outline': '🛒',
+  'receipt-outline': '🧾',
+  'close': '✕',
+  'qr-code-outline': '📱',
+  'person-circle-outline': '👤',
+  'share-outline': '📤',
+};
 import { useAppStore } from '@/stores/appStore';
 import { getWallet, getWalletTransactions, getKycStatus } from '@/services/api';
 import { formatCurrency } from '@/constants';
@@ -60,7 +82,7 @@ interface Transaction {
   referenceType?: string;
 }
 
-// Action Button Component
+// Action Button Component - ใช้ emoji icons
 const ActionButton = ({
   icon,
   label,
@@ -80,13 +102,13 @@ const ActionButton = ({
     disabled={disabled}
   >
     <View style={[styles.actionIconBox, { backgroundColor: color }]}>
-      <Ionicons name={icon as any} size={22} color="#FFF" />
+      <Text style={{ fontSize: 20 }}>{EMOJI_ICONS[icon] || '📌'}</Text>
     </View>
     <Text style={styles.actionLabel}>{label}</Text>
   </Pressable>
 );
 
-// Transaction Item Component
+// Transaction Item Component - ใช้ emoji icons
 const TransactionItem = ({
   transaction,
   isDark,
@@ -96,13 +118,13 @@ const TransactionItem = ({
 }) => {
   const isIncome = transaction.type === 'in';
 
-  // Choose icon based on referenceType
-  let iconName = isIncome ? 'arrow-down-outline' : 'arrow-up-outline';
-  if (transaction.referenceType === 'commission') iconName = 'gift-outline';
-  if (transaction.referenceType === 'order') iconName = 'cart-outline';
-  if (transaction.referenceType === 'withdrawal') iconName = 'wallet-outline';
-  if (transaction.referenceType === 'topup') iconName = 'add-circle-outline';
-  if (transaction.referenceType === 'transfer') iconName = 'swap-horizontal-outline';
+  // Choose emoji based on referenceType
+  let emoji = isIncome ? '⬇️' : '⬆️';
+  if (transaction.referenceType === 'commission') emoji = '🎁';
+  if (transaction.referenceType === 'order') emoji = '🛒';
+  if (transaction.referenceType === 'withdrawal') emoji = '💰';
+  if (transaction.referenceType === 'topup') emoji = '➕';
+  if (transaction.referenceType === 'transfer') emoji = '🔄';
 
   // Status color & text
   const statusConfig: Record<string, { color: string; text: string }> = {
@@ -117,11 +139,7 @@ const TransactionItem = ({
   return (
     <View style={[styles.txItem, !isDark && styles.txItemLight]}>
       <View style={[styles.txIcon, { backgroundColor: isIncome ? '#D1FAE5' : '#FEE2E2' }]}>
-        <Ionicons
-          name={iconName as any}
-          size={18}
-          color={isIncome ? '#10B981' : '#EF4444'}
-        />
+        <Text style={{ fontSize: 16 }}>{emoji}</Text>
       </View>
       <View style={styles.txInfo}>
         <Text style={[styles.txTitle, !isDark && styles.txTitleLight]}>{transaction.title}</Text>
@@ -141,7 +159,7 @@ const TransactionItem = ({
   );
 };
 
-// Stat Card Component
+// Stat Card Component - ใช้ emoji icons
 const StatCard = ({
   label,
   value,
@@ -157,7 +175,7 @@ const StatCard = ({
 }) => (
   <View style={[styles.statCard, !isDark && styles.statCardLight]}>
     <View style={[styles.statIcon, { backgroundColor: `${color}20` }]}>
-      <Ionicons name={icon as any} size={18} color={color} />
+      <Text style={{ fontSize: 16 }}>{EMOJI_ICONS[icon] || '📊'}</Text>
     </View>
     <Text style={[styles.statValue, !isDark && styles.statValueLight]}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
@@ -287,7 +305,7 @@ export default function WalletScreen() {
           backgroundColor={isDark ? '#0F0F23' : '#FFFFFF'}
         />
         <View style={styles.notLoggedIn}>
-          <Ionicons name="wallet-outline" size={70} color="#4B5563" />
+          <Text style={{ fontSize: 70 }}>💰</Text>
           <Text style={[styles.notLoggedInTitle, !isDark && styles.textDark]}>
             กระเป๋าเงินของคุณ
           </Text>
@@ -350,12 +368,12 @@ export default function WalletScreen() {
           >
             <View style={styles.balanceHeaderRow}>
               <View style={styles.balanceHeader}>
-                <Ionicons name="wallet-outline" size={22} color="rgba(255,255,255,0.9)" />
+                <Text style={{ fontSize: 20 }}>💰</Text>
                 <Text style={styles.balanceLabel}>ยอดเงินคงเหลือ</Text>
               </View>
               {/* QR Code Button */}
               <Pressable style={styles.qrButton} onPress={handleShowQr}>
-                <Ionicons name="qr-code" size={24} color="#FFF" />
+                <Text style={{ fontSize: 20 }}>📱</Text>
               </Pressable>
             </View>
             <Text style={styles.balanceAmount}>
@@ -431,7 +449,7 @@ export default function WalletScreen() {
             style={styles.kycWarning}
             onPress={() => router.push('/kyc')}
           >
-            <Ionicons name="warning" size={24} color="#F59E0B" />
+            <Text style={{ fontSize: 24 }}>⚠️</Text>
             <View style={styles.kycWarningContent}>
               <Text style={styles.kycWarningTitle}>ยืนยันตัวตน</Text>
               <Text style={styles.kycWarningText}>
@@ -442,7 +460,7 @@ export default function WalletScreen() {
                     : 'กรุณายืนยันตัวตนเพื่อปลดล็อคการถอนเงิน'}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#F59E0B" />
+            <Text style={{ fontSize: 20, color: '#F59E0B' }}>›</Text>
           </Pressable>
         )}
 
@@ -467,7 +485,7 @@ export default function WalletScreen() {
             ))
           ) : (
             <View style={[styles.emptyTx, !isDark && styles.emptyTxLight]}>
-              <Ionicons name="receipt-outline" size={40} color="#4B5563" />
+              <Text style={{ fontSize: 40 }}>🧾</Text>
               <Text style={styles.emptyTxText}>ยังไม่มีธุรกรรม</Text>
             </View>
           )}
@@ -492,7 +510,7 @@ export default function WalletScreen() {
                 style={styles.qrModalClose}
                 onPress={() => setShowQrModal(false)}
               >
-                <Ionicons name="close" size={24} color={isDark ? '#FFF' : '#1F2937'} />
+                <Text style={{ fontSize: 20, color: isDark ? '#FFF' : '#1F2937' }}>✕</Text>
               </Pressable>
             </View>
 
@@ -507,7 +525,7 @@ export default function WalletScreen() {
                 />
               ) : (
                 <View style={styles.qrPlaceholder}>
-                  <Ionicons name="qr-code-outline" size={60} color="#9CA3AF" />
+                  <Text style={{ fontSize: 60 }}>📱</Text>
                   <Text style={styles.qrPlaceholderText}>ไม่พบ Wallet Address</Text>
                 </View>
               )}
@@ -515,7 +533,7 @@ export default function WalletScreen() {
 
             {/* User Info */}
             <View style={styles.qrUserInfo}>
-              <Ionicons name="person-circle-outline" size={24} color="#3B82F6" />
+              <Text style={{ fontSize: 24 }}>👤</Text>
               <Text style={[styles.qrUserName, !isDark && styles.textDark]}>
                 {user?.name || 'ผู้ใช้'}
               </Text>
@@ -535,7 +553,7 @@ export default function WalletScreen() {
                 style={[styles.qrActionBtn, styles.qrShareBtn]}
                 onPress={handleShareWalletAddress}
               >
-                <Ionicons name="share-outline" size={20} color="#FFF" />
+                <Text style={{ fontSize: 18 }}>📤</Text>
                 <Text style={styles.qrActionBtnText}>แชร์</Text>
               </Pressable>
             </View>
