@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.46] - 2025-12-10
+
+### ✨ Features
+- feat(mobile): เพิ่มหิ่งห้อยทุกหน้า + แก้ไข KYC permissions (v1.6.0) (495592e5)
+### 🐛 Bug Fixes
+- fix(mobile): แก้ไข Ionicons ไม่แสดงในหน้าที่มี AnimatedBackground (v1.6.1) (1fe41cc8)
+### 🔧 Other Changes
+- Merge pull request #2222 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (1a0a8e48)
+
 ## [v3.372.45] - 2025-12-10
 
 ### ✨ Features
