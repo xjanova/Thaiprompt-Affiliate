@@ -9,7 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { View, Text, StyleSheet, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import { APP_INFO } from '@/config/appConfig';
@@ -66,26 +66,40 @@ export default function RootLayout() {
 
     const prepareApp = async () => {
       try {
-        // โหลด Ionicons font แบบ manual (เสถียรกว่า useFonts hook)
-        // ลองโหลดหลายครั้งถ้าล้มเหลว
+        // โหลด Icon fonts แบบ manual (เสถียรกว่า useFonts hook)
+        // โหลดทั้ง Ionicons, MaterialIcons, FontAwesome
         let fontLoaded = false;
         let retryCount = 0;
         const maxRetries = 3;
 
         while (!fontLoaded && retryCount < maxRetries) {
           try {
+            // โหลด fonts ทั้งหมดพร้อมกัน
             await Font.loadAsync({
               ...Ionicons.font,
+              ...MaterialIcons.font,
+              ...FontAwesome.font,
             });
             fontLoaded = true;
-            console.log('✅ Ionicons font loaded successfully');
+            console.log('✅ Icon fonts loaded successfully (Ionicons, MaterialIcons, FontAwesome)');
           } catch (fontError) {
             retryCount++;
             console.warn(`Font loading attempt ${retryCount} failed:`, fontError);
-            // รอ 500ms ก่อนลองใหม่
+            // รอ 1 วินาทีก่อนลองใหม่
             if (retryCount < maxRetries) {
-              await new Promise((resolve) => setTimeout(resolve, 500));
+              await new Promise((resolve) => setTimeout(resolve, 1000));
             }
+          }
+        }
+
+        // ถ้าโหลดไม่สำเร็จ ลองโหลดเฉพาะ Ionicons
+        if (!fontLoaded) {
+          try {
+            await Font.loadAsync(Ionicons.font);
+            fontLoaded = true;
+            console.log('✅ Ionicons font loaded (fallback)');
+          } catch (e) {
+            console.error('All font loading attempts failed');
           }
         }
 

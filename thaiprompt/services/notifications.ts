@@ -11,6 +11,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { registerPushToken, removePushToken } from './api';
 import { APP_CONFIG } from '@/constants';
+import { getDeviceId } from './deviceService';
 
 // =====================================================
 // Configuration
@@ -92,10 +93,14 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
     const token = tokenData.data;
     console.log('Expo Push Token:', token);
 
+    // ดึง device_id เพื่อเชื่อม push token กับเครื่อง
+    const deviceId = await getDeviceId();
+
     // ลงทะเบียน token กับ server
     const deviceInfo = {
       token,
       platform: Platform.OS as 'android' | 'ios',
+      device_id: deviceId,
       device_name: Device.modelName || undefined,
       app_version: APP_CONFIG.VERSION,
     };
