@@ -24,8 +24,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import * as ImagePicker from 'expo-image-picker';
-import * as MediaLibrary from 'expo-media-library';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import ReAnimated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
@@ -1058,28 +1058,36 @@ export default function KycScreen() {
     await handleImageSelected(uri, type);
   };
 
-  // Handle image from gallery
+  // Handle image from gallery - ใช้ DocumentPicker แทน ImagePicker
+  // เพราะ ImagePicker มีปัญหากับการเข้าถึงไฟล์ใน Expo Go
   const handlePickFromGallery = async (type: ImageType) => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้แอพเข้าถึงรูปภาพ');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: type === 'id_card' ? [16, 10] : [3, 4],
-        quality: 0.8,
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'image/*',
+        copyToCacheDirectory: true,
       });
 
-      if (!result.canceled && result.assets[0]) {
-        await handleImageSelected(result.assets[0].uri, type);
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+
+        // ตรวจสอบว่าเป็นไฟล์รูปภาพ
+        const mimeType = asset.mimeType || '';
+        if (!mimeType.startsWith('image/')) {
+          Alert.alert('ไฟล์ไม่ถูกต้อง', 'กรุณาเลือกไฟล์รูปภาพ');
+          return;
+        }
+
+        // ตรวจสอบขนาดไฟล์ (ไม่เกิน 10MB)
+        if (asset.size && asset.size > 10 * 1024 * 1024) {
+          Alert.alert('ไฟล์ใหญ่เกินไป', 'กรุณาเลือกไฟล์ที่มีขนาดไม่เกิน 10MB');
+          return;
+        }
+
+        await handleImageSelected(asset.uri, type);
       }
     } catch (error) {
       console.error('Gallery error:', error);
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถเลือกรูปได้');
+      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถเลือกรูปได้ กรุณาลองใหม่');
     }
   };
 

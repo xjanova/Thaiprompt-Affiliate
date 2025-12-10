@@ -6,7 +6,8 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, StyleSheet, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, AppState, AppStateStatus, Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
@@ -25,12 +26,38 @@ import { router } from 'expo-router';
 // ไม่ให้ซ่อน splash screen อัตโนมัติ
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-// Simple Loading Screen
-const SimpleLoadingScreen = () => (
+// Premium Loading Screen with Logo
+const LoadingScreen = () => (
   <View style={loadingStyles.container}>
-    <ActivityIndicator size="large" color="#3B82F6" />
-    <Text style={loadingStyles.text}>กำลังโหลด...</Text>
-    <Text style={loadingStyles.version}>v{APP_INFO.VERSION} ({APP_INFO.BUILD_DATE})</Text>
+    <LinearGradient
+      colors={['#0F0F23', '#1a1a2e', '#16213e']}
+      style={StyleSheet.absoluteFill}
+    />
+
+    {/* Logo */}
+    <View style={loadingStyles.logoContainer}>
+      <Image
+        source={require('@/assets/images/icon.png')}
+        style={loadingStyles.logo}
+        resizeMode="contain"
+      />
+
+      {/* Glow effect */}
+      <View style={loadingStyles.logoGlow} />
+    </View>
+
+    {/* App Name */}
+    <Text style={loadingStyles.appName}>{APP_INFO.NAME}</Text>
+    <Text style={loadingStyles.tagline}>Affiliate Marketing Platform</Text>
+
+    {/* Loading Indicator */}
+    <View style={loadingStyles.loadingBox}>
+      <ActivityIndicator size="large" color="#3B82F6" />
+      <Text style={loadingStyles.loadingText}>กำลังโหลด...</Text>
+    </View>
+
+    {/* Version */}
+    <Text style={loadingStyles.version}>v{APP_INFO.VERSION}</Text>
   </View>
 );
 
@@ -41,15 +68,49 @@ const loadingStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  text: {
+  logoContainer: {
+    position: 'relative',
+    marginBottom: 24,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    borderRadius: 30,
+  },
+  logoGlow: {
+    position: 'absolute',
+    top: -10,
+    left: -10,
+    right: -10,
+    bottom: -10,
+    borderRadius: 40,
+    backgroundColor: '#3B82F6',
+    opacity: 0.2,
+  },
+  appName: {
+    fontSize: 28,
+    fontWeight: 'bold',
     color: '#FFFFFF',
-    fontSize: 16,
-    marginTop: 16,
+    marginBottom: 4,
+  },
+  tagline: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginBottom: 40,
+  },
+  loadingBox: {
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#9CA3AF',
+    fontSize: 14,
+    marginTop: 12,
   },
   version: {
+    position: 'absolute',
+    bottom: 40,
     color: '#6B7280',
     fontSize: 12,
-    marginTop: 8,
   },
 });
 
@@ -212,7 +273,7 @@ export default function RootLayout() {
 
   // รอ app พร้อม
   if (!appIsReady) {
-    return <SimpleLoadingScreen />;
+    return <LoadingScreen />;
   }
 
   return (
@@ -256,6 +317,7 @@ export default function RootLayout() {
         <Stack.Screen name="wallet-topup" options={{ headerShown: false }} />
         <Stack.Screen name="wallet-withdraw" options={{ headerShown: false }} />
         <Stack.Screen name="wallet-transfer" options={{ headerShown: false }} />
+        <Stack.Screen name="wallet-history" options={{ headerShown: false }} />
 
         {/* Tarot Screens */}
         <Stack.Screen name="tarot/index" options={{ title: 'ดูดวงไพ่ทาโรต์', headerShown: true }} />
