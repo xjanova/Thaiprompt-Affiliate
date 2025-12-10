@@ -437,7 +437,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   contentLayer: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
+    position: 'relative',
     zIndex: 10,
   },
   particle: {
