@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '1.6.0',
-  BUILD_NUMBER: 12,
-  BUILD_DATE: '2025-12-10-FIREFLY', // เพิ่ม: Animated Firefly Background ทุกหน้า
+  VERSION: '1.6.1',
+  BUILD_NUMBER: 13,
+  BUILD_DATE: '2025-12-10-FIXICONS', // แก้ไข: Ionicons ไม่แสดง เพิ่ม zIndex ใน AnimatedBackground
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs

@@ -270,15 +270,17 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
         end={{ x: 1, y: 1 }}
       />
 
-      {/* Animated Particles Layer */}
+      {/* Animated Particles Layer - อยู่ด้านล่าง */}
       <View style={styles.particlesContainer} pointerEvents="none">
         {particles.map((particle) => (
           <FireflyParticle key={particle.id} particle={particle} isDark={isDark} />
         ))}
       </View>
 
-      {/* Content Layer */}
-      {children}
+      {/* Content Layer - อยู่บนสุด พร้อม zIndex */}
+      <View style={styles.contentLayer} pointerEvents="box-none">
+        {children}
+      </View>
     </View>
   );
 };
@@ -432,6 +434,11 @@ const styles = StyleSheet.create({
   particlesContainer: {
     ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
+    zIndex: 1,
+  },
+  contentLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
   },
   particle: {
     position: 'absolute',
