@@ -3,6 +3,10 @@
  * สร้างพื้นหลังแบบหิ่งห้อย/อะตอมที่เคลื่อนไหวสวยงาม
  * สำหรับแอพหลักล้าน
  *
+ * v1.6.5 - เพิ่ม delay ก่อนเริ่ม animations
+ * - เพิ่ม isReady state รอ 300ms ก่อนแสดง particles
+ * - ป้องกัน crash เมื่อ app ยังไม่พร้อม
+ *
  * v1.6.3 - แก้ไข crash เมื่อ navigate ระหว่างหน้า
  * - ใช้ useRef แทน useMemo สำหรับ Animated.Value
  * - เพิ่ม isMounted check ป้องกัน memory leak
@@ -111,6 +115,9 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
   const isMounted = useRef(true);
   const animationsRef = useRef<Animated.CompositeAnimation[]>([]);
 
+  // ⭐ รอให้ component พร้อมก่อนเริ่ม animations (ป้องกัน crash)
+  const [isReady, setIsReady] = useState(false);
+
   // กำหนดจำนวน particle ตาม intensity
   const actualParticleCount = useMemo(() => {
     switch (intensity) {
@@ -185,12 +192,20 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
 
   const particles = particlesRef.current;
 
-  // Cleanup on unmount
+  // ⭐ Delay ก่อนเริ่ม animations เพื่อให้ app พร้อม
   useEffect(() => {
     isMounted.current = true;
 
+    // รอ 300ms ก่อนเริ่มแสดง particles และ animations
+    const readyTimeout = setTimeout(() => {
+      if (isMounted.current) {
+        setIsReady(true);
+      }
+    }, 300);
+
     return () => {
       isMounted.current = false;
+      clearTimeout(readyTimeout);
       // หยุด animations ทั้งหมด
       animationsRef.current.forEach((anim) => {
         try {
@@ -203,9 +218,9 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
     };
   }, []);
 
-  // Animation effect
+  // Animation effect - รอให้ isReady ก่อน
   useEffect(() => {
-    if (!particles || particles.length === 0) return;
+    if (!isReady || !particles || particles.length === 0) return;
 
     try {
       const animations = particles.map((particle) => {
@@ -309,7 +324,7 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
         }
       });
     };
-  }, [particles]);
+  }, [isReady, particles]);
 
   return (
     <View style={styles.container}>
@@ -321,12 +336,14 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
         end={{ x: 1, y: 1 }}
       />
 
-      {/* Animated Particles Layer - อยู่ด้านล่าง */}
-      <View style={styles.particlesContainer} pointerEvents="none">
-        {particles.map((particle) => (
-          <FireflyParticle key={particle.id} particle={particle} />
-        ))}
-      </View>
+      {/* Animated Particles Layer - อยู่ด้านล่าง (แสดงเมื่อ ready) */}
+      {isReady && (
+        <View style={styles.particlesContainer} pointerEvents="none">
+          {particles.map((particle) => (
+            <FireflyParticle key={particle.id} particle={particle} />
+          ))}
+        </View>
+      )}
 
       {/* Content Layer - อยู่บนสุด พร้อม zIndex */}
       <View style={styles.contentLayer} pointerEvents="box-none">

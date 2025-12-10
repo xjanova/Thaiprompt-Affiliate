@@ -3,6 +3,11 @@
  *
  * จัดการการตั้งค่าและรับ Push Notification
  * รองรับทั้ง Expo Push และ FCM
+ *
+ * v1.6.4 - แก้ไข crash หลังอนุญาต push notification
+ * - ย้าย setNotificationHandler ไปใน function
+ * - เพิ่ม flag ป้องกันการเรียกซ้ำ
+ * - เพิ่ม error handling ทุกขั้นตอน
  */
 
 import * as Notifications from 'expo-notifications';
@@ -10,21 +15,40 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { registerPushToken, removePushToken } from './api';
-import { APP_CONFIG } from '@/constants';
-import { getDeviceId } from './deviceService';
+import { APP_INFO } from '@/config/appConfig';
+
+// =====================================================
+// State
+// =====================================================
+
+let isNotificationHandlerSet = false;
+let isRegistering = false;
 
 // =====================================================
 // Configuration
 // =====================================================
 
-// ตั้งค่าการแสดงผล notification เมื่อแอปเปิดอยู่
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+/**
+ * ตั้งค่า Notification Handler อย่างปลอดภัย
+ * เรียกครั้งเดียวตอนเริ่มแอพ
+ */
+export const setupNotificationHandler = (): void => {
+  if (isNotificationHandlerSet) return;
+
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+    isNotificationHandlerSet = true;
+    console.log('✅ Notification handler set successfully');
+  } catch (error) {
+    console.warn('⚠️ Failed to set notification handler:', error);
+  }
+};
 
 // =====================================================
 // Types
@@ -48,79 +72,117 @@ export interface PushNotificationData {
  * @returns Promise<boolean> - ได้รับอนุญาตหรือไม่
  */
 export const requestNotificationPermission = async (): Promise<boolean> => {
-  // ไม่รองรับบนอุปกรณ์ที่ไม่ใช่ physical device
-  if (!Device.isDevice) {
-    console.log('Push notifications are not supported on simulator/emulator');
+  try {
+    // ไม่รองรับบนอุปกรณ์ที่ไม่ใช่ physical device
+    if (!Device.isDevice) {
+      console.log('Push notifications are not supported on simulator/emulator');
+      return false;
+    }
+
+    // ตรวจสอบสถานะปัจจุบัน
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    // ขอสิทธิ์ถ้ายังไม่ได้รับ
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+      console.log('Failed to get push notification permission');
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Request notification permission error:', error);
     return false;
   }
-
-  // ตรวจสอบสถานะปัจจุบัน
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-
-  // ขอสิทธิ์ถ้ายังไม่ได้รับ
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  if (finalStatus !== 'granted') {
-    console.log('Failed to get push notification permission');
-    return false;
-  }
-
-  return true;
 };
 
 /**
  * ดึง Push Token และลงทะเบียนกับ server
+ * ป้องกันการเรียกซ้ำซ้อน
  *
  * @returns Promise<string | null> - Push Token หรือ null ถ้าไม่สำเร็จ
  */
 export const registerForPushNotifications = async (): Promise<string | null> => {
+  // ป้องกันการเรียกซ้ำ
+  if (isRegistering) {
+    console.log('Push notification registration already in progress');
+    return null;
+  }
+
+  isRegistering = true;
+
   try {
+    // ตั้งค่า handler ก่อน (ถ้ายังไม่ได้ตั้ง)
+    setupNotificationHandler();
+
     // ขอสิทธิ์
     const hasPermission = await requestNotificationPermission();
     if (!hasPermission) {
+      isRegistering = false;
+      return null;
+    }
+
+    // ดึง project ID
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    if (!projectId) {
+      console.warn('⚠️ No EAS project ID found, skipping push token registration');
+      isRegistering = false;
       return null;
     }
 
     // ดึง Expo Push Token
-    const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: Constants.expoConfig?.extra?.eas?.projectId,
-    });
-
-    const token = tokenData.data;
-    console.log('Expo Push Token:', token);
-
-    // ดึง device_id เพื่อเชื่อม push token กับเครื่อง
-    const deviceId = await getDeviceId();
-
-    // ลงทะเบียน token กับ server
-    const deviceInfo = {
-      token,
-      platform: Platform.OS as 'android' | 'ios',
-      device_id: deviceId,
-      device_name: Device.modelName || undefined,
-      app_version: APP_CONFIG.VERSION,
-    };
-
-    const response = await registerPushToken(deviceInfo);
-
-    if (response.success) {
-      console.log('Push token registered successfully');
-    } else {
-      console.error('Failed to register push token:', response.message);
+    let token: string;
+    try {
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId,
+      });
+      token = tokenData.data;
+      console.log('Expo Push Token:', token?.substring(0, 30) + '...');
+    } catch (tokenError) {
+      console.error('Failed to get Expo push token:', tokenError);
+      isRegistering = false;
+      return null;
     }
 
-    // ตั้งค่า Android notification channel
+    // ลงทะเบียน token กับ server (non-blocking)
+    try {
+      const deviceInfo = {
+        token,
+        platform: Platform.OS as 'android' | 'ios',
+        device_id: undefined, // จะดึงใน API
+        device_name: Device.modelName || undefined,
+        app_version: APP_INFO.VERSION,
+      };
+
+      const response = await registerPushToken(deviceInfo);
+
+      if (response.success) {
+        console.log('✅ Push token registered successfully');
+      } else {
+        console.warn('⚠️ Failed to register push token:', response.message);
+      }
+    } catch (registerError) {
+      // ไม่ crash ถ้าลงทะเบียนไม่สำเร็จ
+      console.warn('⚠️ Push token registration error (non-critical):', registerError);
+    }
+
+    // ตั้งค่า Android notification channel (non-blocking)
     if (Platform.OS === 'android') {
-      await setupAndroidChannels();
+      setupAndroidChannels().catch((e) => {
+        console.warn('⚠️ Android channels setup error (non-critical):', e);
+      });
     }
 
+    isRegistering = false;
     return token;
   } catch (error) {
     console.error('Register push notification error:', error);
+    isRegistering = false;
     return null;
   }
 };
@@ -143,55 +205,61 @@ export const unregisterPushNotifications = async (token: string): Promise<void> 
  * ตั้งค่า Android Notification Channels
  */
 const setupAndroidChannels = async (): Promise<void> => {
-  // Default channel
-  await Notifications.setNotificationChannelAsync('default', {
-    name: 'ทั่วไป',
-    description: 'การแจ้งเตือนทั่วไป',
-    importance: Notifications.AndroidImportance.DEFAULT,
-    vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#3B82F6',
-  });
+  try {
+    // Default channel
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'ทั่วไป',
+      description: 'การแจ้งเตือนทั่วไป',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#3B82F6',
+    });
 
-  // High priority channel for important notifications
-  await Notifications.setNotificationChannelAsync('important', {
-    name: 'สำคัญ',
-    description: 'การแจ้งเตือนที่สำคัญ',
-    importance: Notifications.AndroidImportance.HIGH,
-    vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#EF4444',
-    sound: 'default',
-  });
+    // High priority channel for important notifications
+    await Notifications.setNotificationChannelAsync('important', {
+      name: 'สำคัญ',
+      description: 'การแจ้งเตือนที่สำคัญ',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#EF4444',
+      sound: 'default',
+    });
 
-  // Order/Rider channel
-  await Notifications.setNotificationChannelAsync('orders', {
-    name: 'ออเดอร์',
-    description: 'การแจ้งเตือนเกี่ยวกับออเดอร์',
-    importance: Notifications.AndroidImportance.HIGH,
-    vibrationPattern: [0, 500, 250, 500],
-    lightColor: '#10B981',
-    sound: 'default',
-  });
+    // Order/Rider channel
+    await Notifications.setNotificationChannelAsync('orders', {
+      name: 'ออเดอร์',
+      description: 'การแจ้งเตือนเกี่ยวกับออเดอร์',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 500, 250, 500],
+      lightColor: '#10B981',
+      sound: 'default',
+    });
 
-  // Messages/Tickets channel
-  await Notifications.setNotificationChannelAsync('messages', {
-    name: 'ข้อความ',
-    description: 'การแจ้งเตือนข้อความใหม่',
-    importance: Notifications.AndroidImportance.DEFAULT,
-    vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#8B5CF6',
-  });
+    // Messages/Tickets channel
+    await Notifications.setNotificationChannelAsync('messages', {
+      name: 'ข้อความ',
+      description: 'การแจ้งเตือนข้อความใหม่',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#8B5CF6',
+    });
 
-  // Promotions channel
-  await Notifications.setNotificationChannelAsync('promotions', {
-    name: 'โปรโมชั่น',
-    description: 'ข่าวสารและโปรโมชั่น',
-    importance: Notifications.AndroidImportance.LOW,
-    lightColor: '#F59E0B',
-  });
+    // Promotions channel
+    await Notifications.setNotificationChannelAsync('promotions', {
+      name: 'โปรโมชั่น',
+      description: 'ข่าวสารและโปรโมชั่น',
+      importance: Notifications.AndroidImportance.LOW,
+      lightColor: '#F59E0B',
+    });
+
+    console.log('✅ Android notification channels set up');
+  } catch (error) {
+    console.error('Setup Android channels error:', error);
+  }
 };
 
 /**
- * ฟังการรับ notification
+ * ฟังการรับ notification (พร้อม error handling)
  *
  * @param callback - Function ที่จะทำงานเมื่อได้รับ notification
  * @returns Subscription
@@ -199,11 +267,23 @@ const setupAndroidChannels = async (): Promise<void> => {
 export const addNotificationReceivedListener = (
   callback: (notification: Notifications.Notification) => void
 ): Notifications.Subscription => {
-  return Notifications.addNotificationReceivedListener(callback);
+  try {
+    return Notifications.addNotificationReceivedListener((notification) => {
+      try {
+        callback(notification);
+      } catch (e) {
+        console.error('Notification received callback error:', e);
+      }
+    });
+  } catch (e) {
+    console.error('Add notification listener error:', e);
+    // Return a dummy subscription that does nothing
+    return { remove: () => {} } as Notifications.Subscription;
+  }
 };
 
 /**
- * ฟังการกด notification
+ * ฟังการกด notification (พร้อม error handling)
  *
  * @param callback - Function ที่จะทำงานเมื่อกด notification
  * @returns Subscription
@@ -211,7 +291,19 @@ export const addNotificationReceivedListener = (
 export const addNotificationResponseListener = (
   callback: (response: Notifications.NotificationResponse) => void
 ): Notifications.Subscription => {
-  return Notifications.addNotificationResponseReceivedListener(callback);
+  try {
+    return Notifications.addNotificationResponseReceivedListener((response) => {
+      try {
+        callback(response);
+      } catch (e) {
+        console.error('Notification response callback error:', e);
+      }
+    });
+  } catch (e) {
+    console.error('Add notification response listener error:', e);
+    // Return a dummy subscription that does nothing
+    return { remove: () => {} } as Notifications.Subscription;
+  }
 };
 
 /**
@@ -223,7 +315,12 @@ export const addNotificationResponseListener = (
 export const getNotificationData = (
   response: Notifications.NotificationResponse
 ): PushNotificationData => {
-  return (response.notification.request.content.data as PushNotificationData) || {};
+  try {
+    return (response.notification.request.content.data as PushNotificationData) || {};
+  } catch (e) {
+    console.error('Get notification data error:', e);
+    return {};
+  }
 };
 
 /**
@@ -232,7 +329,11 @@ export const getNotificationData = (
  * @param count - จำนวน badge
  */
 export const setBadgeCount = async (count: number): Promise<void> => {
-  await Notifications.setBadgeCountAsync(count);
+  try {
+    await Notifications.setBadgeCountAsync(count);
+  } catch (e) {
+    console.warn('Set badge count error:', e);
+  }
 };
 
 /**
@@ -241,14 +342,23 @@ export const setBadgeCount = async (count: number): Promise<void> => {
  * @returns Promise<number>
  */
 export const getBadgeCount = async (): Promise<number> => {
-  return await Notifications.getBadgeCountAsync();
+  try {
+    return await Notifications.getBadgeCountAsync();
+  } catch (e) {
+    console.warn('Get badge count error:', e);
+    return 0;
+  }
 };
 
 /**
  * ล้าง notification ทั้งหมด
  */
 export const dismissAllNotifications = async (): Promise<void> => {
-  await Notifications.dismissAllNotificationsAsync();
+  try {
+    await Notifications.dismissAllNotificationsAsync();
+  } catch (e) {
+    console.warn('Dismiss notifications error:', e);
+  }
 };
 
 /**
@@ -272,13 +382,17 @@ export const sendLocalNotification = async (
   body: string,
   data?: PushNotificationData
 ): Promise<void> => {
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title,
-      body,
-      data,
-      sound: 'default',
-    },
-    trigger: null, // ส่งทันที
-  });
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        data,
+        sound: 'default',
+      },
+      trigger: null, // ส่งทันที
+    });
+  } catch (e) {
+    console.error('Send local notification error:', e);
+  }
 };
