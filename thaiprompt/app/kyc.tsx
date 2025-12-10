@@ -1,7 +1,7 @@
 /**
  * KYC Screen - หน้ายืนยันตัวตนแบบ Premium
- * ใช้ expo-camera (CameraView) แทน expo-image-picker
- * เพื่อให้ทำงานได้ดีใน Expo Go
+ * ใช้ expo-camera (CameraView) + expo-file-system สำหรับเซฟรูป
+ * แก้ไขปัญหาเข้าถึงพื้นที่เก็บไฟล์ไม่ได้
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -25,6 +25,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
 import ReAnimated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
@@ -69,14 +71,39 @@ const CameraModal = ({
 
     setIsCapturing(true);
     try {
+      // ถ่ายรูป
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.8,
         skipProcessing: false,
       });
 
       if (photo?.uri) {
-        onCapture(photo.uri);
-        onClose();
+        // สร้าง directory สำหรับเก็บรูป KYC ถ้ายังไม่มี
+        const kycDir = `${FileSystem.documentDirectory}kyc/`;
+        const dirInfo = await FileSystem.getInfoAsync(kycDir);
+        if (!dirInfo.exists) {
+          await FileSystem.makeDirectoryAsync(kycDir, { intermediates: true });
+        }
+
+        // สร้างชื่อไฟล์ใหม่
+        const fileName = `${imageType}_${Date.now()}.jpg`;
+        const newUri = `${kycDir}${fileName}`;
+
+        // คัดลอกไฟล์ไปยัง document directory (ที่แอพมี permission เข้าถึงได้)
+        await FileSystem.copyAsync({
+          from: photo.uri,
+          to: newUri,
+        });
+
+        // ตรวจสอบว่าไฟล์ถูก save สำเร็จ
+        const fileInfo = await FileSystem.getInfoAsync(newUri);
+        if (fileInfo.exists) {
+          console.log('Photo saved successfully:', newUri);
+          onCapture(newUri);
+          onClose();
+        } else {
+          throw new Error('ไม่สามารถบันทึกรูปได้');
+        }
       }
     } catch (error) {
       console.error('Capture error:', error);
@@ -1077,7 +1104,33 @@ export default function KycScreen() {
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
-        await handleImageSelected(result.assets[0].uri, type);
+        const selectedUri = result.assets[0].uri;
+
+        // สร้าง directory สำหรับเก็บรูป KYC ถ้ายังไม่มี
+        const kycDir = `${FileSystem.documentDirectory}kyc/`;
+        const dirInfo = await FileSystem.getInfoAsync(kycDir);
+        if (!dirInfo.exists) {
+          await FileSystem.makeDirectoryAsync(kycDir, { intermediates: true });
+        }
+
+        // สร้างชื่อไฟล์ใหม่
+        const fileName = `${type}_${Date.now()}.jpg`;
+        const newUri = `${kycDir}${fileName}`;
+
+        // คัดลอกไฟล์ไปยัง document directory (ที่แอพมี permission เข้าถึงได้)
+        await FileSystem.copyAsync({
+          from: selectedUri,
+          to: newUri,
+        });
+
+        // ตรวจสอบว่าไฟล์ถูก save สำเร็จ
+        const fileInfo = await FileSystem.getInfoAsync(newUri);
+        if (fileInfo.exists) {
+          console.log('Gallery image saved successfully:', newUri);
+          await handleImageSelected(newUri, type);
+        } else {
+          throw new Error('ไม่สามารถบันทึกรูปได้');
+        }
       }
     } catch (error) {
       console.error('Gallery error:', error);
