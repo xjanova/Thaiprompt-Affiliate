@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '1.6.1',
-  BUILD_NUMBER: 13,
-  BUILD_DATE: '2025-12-10-FIXICONS', // แก้ไข: Ionicons ไม่แสดง เพิ่ม zIndex ใน AnimatedBackground
+  VERSION: '1.6.2',
+  BUILD_NUMBER: 14,
+  BUILD_DATE: '2025-12-10-FLEXLAYOUT', // แก้ไข: contentLayer ใช้ flex:1 แทน absoluteFill เพื่อให้ Ionicons แสดงถูกต้อง
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs
