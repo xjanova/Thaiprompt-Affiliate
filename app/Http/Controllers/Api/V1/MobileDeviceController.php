@@ -120,10 +120,16 @@ class MobileDeviceController extends Controller
         }
 
         $banners = $query->get()->map(function ($banner) {
+            // แปลง relative path เป็น full URL สำหรับ mobile app
+            $imageUrl = $banner->image;
+            if ($imageUrl && !str_starts_with($imageUrl, 'http')) {
+                $imageUrl = url($imageUrl);
+            }
+
             return [
                 'id' => $banner->id,
                 'title' => $banner->title,
-                'image' => $banner->image,
+                'image' => $imageUrl,
                 'link' => $banner->link,
                 'linkType' => $banner->link_type,
                 'linkTarget' => $banner->link_target,
