@@ -57,9 +57,27 @@ export default function RootLayout() {
     const prepareApp = async () => {
       try {
         // โหลด Ionicons font แบบ manual (เสถียรกว่า useFonts hook)
-        await Font.loadAsync({
-          ...Ionicons.font,
-        });
+        // ลองโหลดหลายครั้งถ้าล้มเหลว
+        let fontLoaded = false;
+        let retryCount = 0;
+        const maxRetries = 3;
+
+        while (!fontLoaded && retryCount < maxRetries) {
+          try {
+            await Font.loadAsync({
+              ...Ionicons.font,
+            });
+            fontLoaded = true;
+            console.log('✅ Ionicons font loaded successfully');
+          } catch (fontError) {
+            retryCount++;
+            console.warn(`Font loading attempt ${retryCount} failed:`, fontError);
+            // รอ 500ms ก่อนลองใหม่
+            if (retryCount < maxRetries) {
+              await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+          }
+        }
 
         if (isMounted) {
           setFontsLoaded(true);
@@ -75,7 +93,7 @@ export default function RootLayout() {
         initDeviceTracking().catch((e) => console.log('Device tracking:', e));
       } catch (error) {
         console.error('App prepare error:', error);
-        // ถ้า font error ก็ยังแสดงแอพได้
+        // ถ้า font error หลังจากลองหลายครั้งแล้ว ยังแสดงแอพได้ (fallback)
         if (isMounted) {
           setFontsLoaded(true);
         }
@@ -88,13 +106,14 @@ export default function RootLayout() {
 
     prepareApp();
 
-    // Force ready หลัง 4 วินาที
+    // Force ready หลัง 6 วินาที (เพิ่มเวลาให้ font โหลด)
     const forceTimeout = setTimeout(() => {
       if (isMounted) {
+        console.log('⏱️ Force timeout - showing app');
         setFontsLoaded(true);
         setAppIsReady(true);
       }
-    }, 4000);
+    }, 6000);
 
     return () => {
       isMounted = false;
