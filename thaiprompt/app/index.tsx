@@ -1,6 +1,7 @@
 /**
  * Index Screen - Landing Page Stable Version
  * แก้ไข: crash on resume
+ * เพิ่ม: AnimatedBackground หิ่งห้อยเคลื่อนไหว
  */
 
 import React from 'react';
@@ -18,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, Redirect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
+import { AnimatedBackground } from '@/components/AnimatedBackground';
 
 const { height } = Dimensions.get('window');
 
@@ -33,14 +35,20 @@ export default function IndexScreen() {
   const goToRegister = () => router.push('/register');
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+    <AnimatedBackground
+      variant="firefly"
+      isDark={true}
+      intensity="high"
+      particleCount={30}
+    >
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
         {/* Logo Section */}
         <View style={styles.logoSection}>
           <View style={styles.logoBox}>
@@ -112,8 +120,9 @@ export default function IndexScreen() {
             v{APP_INFO.VERSION} ({APP_INFO.BUILD_DATE})
           </Text>
         </View>
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </View>
+    </AnimatedBackground>
   );
 }
 

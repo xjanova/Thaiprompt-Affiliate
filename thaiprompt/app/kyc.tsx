@@ -15,6 +15,8 @@ import {
   Animated,
   Easing,
   Dimensions,
+  Linking,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -744,34 +746,59 @@ export default function KycScreen() {
     }
   }, [isAuthenticated, loadKycStatus]);
 
+  // เปิดตั้งค่าแอพ
+  const openAppSettings = () => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('app-settings:');
+    } else {
+      Linking.openSettings();
+    }
+  };
+
   // ขอ permission กล้อง
   const requestCameraPermission = async () => {
     try {
-      const { status, canAskAgain } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        if (!canAskAgain) {
-          // ผู้ใช้เลือก "Don't ask again" ต้องไปตั้งค่าเอง
-          Alert.alert(
-            'ต้องการสิทธิ์กล้อง',
-            'กรุณาไปที่ตั้งค่าเพื่ออนุญาตให้แอพใช้กล้อง',
-            [
-              { text: 'ยกเลิก', style: 'cancel' },
-              { text: 'ไปตั้งค่า', onPress: () => require('react-native').Linking.openSettings() },
-            ]
-          );
-        } else {
-          Alert.alert(
-            'ต้องการสิทธิ์กล้อง',
-            'กรุณาอนุญาตให้แอพใช้กล้องเพื่อถ่ายรูปเอกสาร',
-            [{ text: 'ตกลง' }]
-          );
-        }
+      // ตรวจสอบ permission ก่อน
+      const currentPermission = await ImagePicker.getCameraPermissionsAsync();
+      console.log('📷 Current camera permission:', currentPermission);
+
+      // ถ้ามี permission อยู่แล้ว
+      if (currentPermission.granted) {
+        return true;
+      }
+
+      // ถ้าไม่สามารถขอได้อีก (user เคยเลือก deny)
+      if (!currentPermission.canAskAgain) {
+        Alert.alert(
+          'ต้องการสิทธิ์กล้อง',
+          'กรุณาไปที่ตั้งค่าเพื่ออนุญาตให้แอพใช้กล้อง\n\n(ตั้งค่า > แอพ > TP UltraAPP > สิทธิ์ > กล้อง)',
+          [
+            { text: 'ยกเลิก', style: 'cancel' },
+            { text: 'ไปตั้งค่า', onPress: openAppSettings },
+          ]
+        );
         return false;
       }
-      return true;
+
+      // ขอ permission ใหม่
+      const { status, granted } = await ImagePicker.requestCameraPermissionsAsync();
+      console.log('📷 Requested camera permission:', status, granted);
+
+      if (granted) {
+        return true;
+      }
+
+      // ถ้าผู้ใช้ปฏิเสธ
+      Alert.alert(
+        'ต้องการสิทธิ์กล้อง',
+        'กรุณาอนุญาตให้แอพใช้กล้องเพื่อถ่ายรูปเอกสาร',
+        [{ text: 'ตกลง' }]
+      );
+      return false;
+
     } catch (error) {
       console.error('Camera permission error:', error);
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์กล้องได้');
+      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์กล้องได้ กรุณาลองใหม่');
       return false;
     }
   };
@@ -779,30 +806,47 @@ export default function KycScreen() {
   // ขอ permission แกลเลอรี่ (media library)
   const requestMediaLibraryPermission = async () => {
     try {
-      const { status, canAskAgain } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        if (!canAskAgain) {
-          Alert.alert(
-            'ต้องการสิทธิ์เข้าถึงรูปภาพ',
-            'กรุณาไปที่ตั้งค่าเพื่ออนุญาตให้แอพเข้าถึงรูปภาพ',
-            [
-              { text: 'ยกเลิก', style: 'cancel' },
-              { text: 'ไปตั้งค่า', onPress: () => require('react-native').Linking.openSettings() },
-            ]
-          );
-        } else {
-          Alert.alert(
-            'ต้องการสิทธิ์เข้าถึงรูปภาพ',
-            'กรุณาอนุญาตให้แอพเข้าถึงรูปภาพเพื่อเลือกเอกสาร',
-            [{ text: 'ตกลง' }]
-          );
-        }
+      // ตรวจสอบ permission ก่อน
+      const currentPermission = await ImagePicker.getMediaLibraryPermissionsAsync();
+      console.log('🖼️ Current media library permission:', currentPermission);
+
+      // ถ้ามี permission อยู่แล้ว
+      if (currentPermission.granted) {
+        return true;
+      }
+
+      // ถ้าไม่สามารถขอได้อีก (user เคยเลือก deny)
+      if (!currentPermission.canAskAgain) {
+        Alert.alert(
+          'ต้องการสิทธิ์เข้าถึงรูปภาพ',
+          'กรุณาไปที่ตั้งค่าเพื่ออนุญาตให้แอพเข้าถึงรูปภาพ\n\n(ตั้งค่า > แอพ > TP UltraAPP > สิทธิ์ > รูปภาพ/แกลลอรี่)',
+          [
+            { text: 'ยกเลิก', style: 'cancel' },
+            { text: 'ไปตั้งค่า', onPress: openAppSettings },
+          ]
+        );
         return false;
       }
-      return true;
+
+      // ขอ permission ใหม่
+      const { status, granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('🖼️ Requested media library permission:', status, granted);
+
+      if (granted) {
+        return true;
+      }
+
+      // ถ้าผู้ใช้ปฏิเสธ
+      Alert.alert(
+        'ต้องการสิทธิ์เข้าถึงรูปภาพ',
+        'กรุณาอนุญาตให้แอพเข้าถึงรูปภาพเพื่อเลือกเอกสาร',
+        [{ text: 'ตกลง' }]
+      );
+      return false;
+
     } catch (error) {
       console.error('Media library permission error:', error);
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์เข้าถึงรูปภาพได้');
+      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์เข้าถึงรูปภาพได้ กรุณาลองใหม่');
       return false;
     }
   };

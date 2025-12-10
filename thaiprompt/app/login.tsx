@@ -1,6 +1,7 @@
 /**
  * Login Screen - Premium Stable Version
  * ใช้ StyleSheet แทน NativeWind
+ * เพิ่ม: AnimatedBackground หิ่งห้อยเคลื่อนไหว
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -22,6 +23,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '@/stores/authStore';
+import { AnimatedBackground } from '@/components/AnimatedBackground';
 
 // Email validation
 const isValidEmail = (email: string) => {
@@ -146,16 +148,16 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+    <AnimatedBackground
+      variant="firefly"
+      isDark={true}
+      intensity="medium"
+      particleCount={25}
+    >
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
 
-      {/* Background Gradient */}
-      <LinearGradient
-        colors={['#0F0F23', '#1A1A2E', '#16213E']}
-        style={StyleSheet.absoluteFill}
-      />
-
-      <KeyboardAvoidingView
+        <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
@@ -302,9 +304,10 @@ export default function LoginScreen() {
           </Pressable>
 
           <View style={styles.bottomSpace} />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </AnimatedBackground>
   );
 }
 
