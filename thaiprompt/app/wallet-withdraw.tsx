@@ -25,7 +25,6 @@ import {
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { useAuthStore } from '@/stores/authStore';
@@ -45,14 +44,14 @@ const PAYMENT_METHODS: PaymentMethod[] = [
   {
     id: 'bank',
     name: 'โอนเข้าบัญชีธนาคาร',
-    icon: 'business',
+    icon: '🏦',
     color: '#3B82F6',
     description: 'โอนเงินเข้าบัญชีธนาคารที่ผูกไว้',
   },
   {
     id: 'promptpay',
     name: 'PromptPay',
-    icon: 'phone-portrait',
+    icon: '📱',
     color: '#10B981',
     description: 'โอนผ่าน PromptPay',
   },
@@ -169,7 +168,7 @@ export default function WalletWithdrawScreen() {
       {/* Header */}
       <LinearGradient colors={['#10B981', '#059669']} style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+          <Text style={styles.headerIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ถอนเงิน</Text>
         <View style={styles.headerSpacer} />
@@ -206,7 +205,7 @@ export default function WalletWithdrawScreen() {
               onPress={() => setSelectedMethod(method)}
             >
               <View style={[styles.methodIcon, { backgroundColor: `${method.color}20` }]}>
-                <Ionicons name={method.icon as any} size={24} color={method.color} />
+                <Text style={styles.methodEmoji}>{method.icon}</Text>
               </View>
               <View style={styles.methodInfo}>
                 <Text style={[styles.methodName, isDark && styles.textLight]}>
@@ -217,7 +216,7 @@ export default function WalletWithdrawScreen() {
                 </Text>
               </View>
               {selectedMethod?.id === method.id && (
-                <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                <Text style={styles.checkIcon}>✓</Text>
               )}
             </TouchableOpacity>
           ))}
@@ -334,7 +333,7 @@ export default function WalletWithdrawScreen() {
             disabled={!isValidAmount}
           >
             <Text style={styles.submitButtonText}>ดำเนินการถอนเงิน</Text>
-            <Ionicons name="arrow-forward" size={20} color="#FFF" />
+            <Text style={styles.buttonIcon}>→</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -353,7 +352,7 @@ export default function WalletWithdrawScreen() {
                 ยืนยันด้วย PIN
               </Text>
               <TouchableOpacity onPress={() => setShowPinModal(false)}>
-                <Ionicons name="close" size={24} color={isDark ? '#FFF' : '#374151'} />
+                <Text style={[styles.modalIcon, isDark && styles.textLight]}>✕</Text>
               </TouchableOpacity>
             </View>
 
@@ -449,6 +448,28 @@ const styles = StyleSheet.create({
   },
   textMuted: {
     color: '#9CA3AF',
+  },
+  headerIcon: {
+    fontSize: 24,
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
+  methodEmoji: {
+    fontSize: 24,
+  },
+  checkIcon: {
+    fontSize: 24,
+    color: '#10B981',
+    fontWeight: 'bold',
+  },
+  buttonIcon: {
+    fontSize: 20,
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
+  modalIcon: {
+    fontSize: 24,
+    fontWeight: 'bold',
   },
 
   // Balance Card

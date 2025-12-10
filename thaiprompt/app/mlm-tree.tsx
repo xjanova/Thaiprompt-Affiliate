@@ -24,7 +24,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import {
@@ -187,7 +186,7 @@ const TreeNodeItem = ({
                 <ActivityIndicator size="small" color="#3B82F6" />
               ) : (
                 <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-                  <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                  <Text style={{ fontSize: 18, color: '#9CA3AF' }}>▶</Text>
                 </Animated.View>
               )}
             </Pressable>
@@ -243,7 +242,7 @@ const TreeNodeItem = ({
             </View>
           </View>
 
-          <Ionicons name="chevron-forward" size={20} color="#6B7280" style={{ marginLeft: 8 }} />
+          <Text style={{ fontSize: 20, color: '#6B7280', marginLeft: 8 }}>▶</Text>
         </View>
       </Pressable>
     </Animated.View>
@@ -308,14 +307,14 @@ const MemberDetailModal = ({
           {/* Stats Grid */}
           <View style={styles.modalStatsGrid}>
             {[
-              { icon: 'people', value: member.statistics.directReferrals, label: 'สมาชิกโดยตรง', color: '#3B82F6' },
-              { icon: 'git-network', value: member.statistics.totalTeamMembers, label: 'สมาชิกในทีม', color: '#8B5CF6' },
-              { icon: 'trending-up', value: member.statistics.monthlyPV.toLocaleString(), label: 'PV เดือนนี้', color: '#10B981' },
-              { icon: 'cash', value: formatCurrency(member.statistics.totalSales), label: 'ยอดขายรวม', color: '#F97316' },
+              { emoji: '👥', value: member.statistics.directReferrals, label: 'สมาชิกโดยตรง', color: '#3B82F6' },
+              { emoji: '🌐', value: member.statistics.totalTeamMembers, label: 'สมาชิกในทีม', color: '#8B5CF6' },
+              { emoji: '📈', value: member.statistics.monthlyPV.toLocaleString(), label: 'PV เดือนนี้', color: '#10B981' },
+              { emoji: '💰', value: formatCurrency(member.statistics.totalSales), label: 'ยอดขายรวม', color: '#F97316' },
             ].map((stat, i) => (
               <View key={i} style={styles.modalStatItem}>
                 <View style={[styles.modalStatIcon, { backgroundColor: stat.color + '20' }]}>
-                  <Ionicons name={stat.icon as any} size={20} color={stat.color} />
+                  <Text style={{ fontSize: 20 }}>{stat.emoji}</Text>
                 </View>
                 <Text style={styles.modalStatValue}>{stat.value}</Text>
                 <Text style={styles.modalStatLabel}>{stat.label}</Text>
@@ -326,7 +325,7 @@ const MemberDetailModal = ({
           {/* Info */}
           <View style={styles.modalInfoCard}>
             <View style={styles.modalInfoRow}>
-              <Ionicons name="calendar" size={18} color="#9CA3AF" />
+              <Text style={{ fontSize: 18 }}>📅</Text>
               <Text style={styles.modalInfoText}>
                 สมัครเมื่อ: {new Date(member.joinedAt).toLocaleDateString('th-TH', {
                   year: 'numeric', month: 'long', day: 'numeric',
@@ -348,7 +347,7 @@ const MemberDetailModal = ({
                 colors={['#8B5CF6', '#6D28D9']}
                 style={styles.modalViewTreeBtn}
               >
-                <Ionicons name="git-network" size={20} color="white" />
+                <Text style={{ fontSize: 20, color: 'white' }}>🌐</Text>
                 <Text style={styles.modalViewTreeText}>ดูสายงานของสมาชิกนี้</Text>
               </LinearGradient>
             </Pressable>
@@ -375,10 +374,10 @@ const StatsSummary = ({
   stats: { totalMembers: number; activeMembers: number; totalPV: number; levels: number };
 }) => {
   const summaryItems = [
-    { icon: 'people', value: stats.totalMembers.toString(), label: 'สมาชิกทั้งหมด', color: '#3B82F6' },
-    { icon: 'checkmark-circle', value: stats.activeMembers.toString(), label: 'ใช้งานอยู่', color: '#10B981' },
-    { icon: 'trending-up', value: stats.totalPV.toLocaleString(), label: 'PV รวม', color: '#8B5CF6' },
-    { icon: 'layers', value: stats.levels.toString(), label: 'ระดับ', color: '#F97316' },
+    { emoji: '👥', value: stats.totalMembers.toString(), label: 'สมาชิกทั้งหมด', color: '#3B82F6' },
+    { emoji: '✓', value: stats.activeMembers.toString(), label: 'ใช้งานอยู่', color: '#10B981' },
+    { emoji: '📈', value: stats.totalPV.toLocaleString(), label: 'PV รวม', color: '#8B5CF6' },
+    { emoji: '📊', value: stats.levels.toString(), label: 'ระดับ', color: '#F97316' },
   ];
 
   return (
@@ -387,7 +386,7 @@ const StatsSummary = ({
         {summaryItems.map((item, index) => (
           <View key={index} style={styles.statsSummaryItem}>
             <View style={[styles.statsSummaryIcon, { backgroundColor: item.color + '20' }]}>
-              <Ionicons name={item.icon as any} size={20} color={item.color} />
+              <Text style={{ fontSize: 20 }}>{item.emoji}</Text>
             </View>
             <Text style={styles.statsSummaryValue}>{item.value}</Text>
             <Text style={styles.statsSummaryLabel}>{item.label}</Text>
@@ -427,7 +426,7 @@ const SelfCard = ({ user }: { user: { id: number; name: string; email?: string }
           {user.email && <Text style={styles.selfEmail}>{user.email}</Text>}
 
           <View style={styles.selfBadge}>
-            <Ionicons name="star" size={16} color="#F59E0B" />
+            <Text style={{ fontSize: 16 }}>⭐</Text>
             <Text style={styles.selfBadgeText}>ผู้ก่อตั้งสายงาน</Text>
           </View>
 
@@ -452,7 +451,7 @@ const SelfCard = ({ user }: { user: { id: number; name: string; email?: string }
 
         {/* Message */}
         <View style={styles.selfMessage}>
-          <Ionicons name="information-circle" size={20} color="#3B82F6" />
+          <Text style={{ fontSize: 20 }}>ℹ️</Text>
           <Text style={styles.selfMessageText}>
             คุณยังไม่มีสมาชิกในทีม เริ่มแนะนำเพื่อนเพื่อสร้างทีมของคุณ
           </Text>
@@ -461,7 +460,7 @@ const SelfCard = ({ user }: { user: { id: number; name: string; email?: string }
         {/* Action */}
         <Pressable onPress={() => router.push('/referral')}>
           <LinearGradient colors={['#8B5CF6', '#6D28D9']} style={styles.selfActionBtn}>
-            <Ionicons name="share-social" size={20} color="white" />
+            <Text style={{ fontSize: 20, color: 'white' }}>📤</Text>
             <Text style={styles.selfActionText}>แนะนำเพื่อน</Text>
           </LinearGradient>
         </Pressable>
@@ -685,7 +684,7 @@ export default function MLMTreeScreen() {
       <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
         <View style={styles.centerBox}>
-          <Ionicons name="git-network" size={80} color="#4B5563" />
+          <Text style={{ fontSize: 80 }}>🌐</Text>
           <Text style={styles.centerTitle}>แผนผังสายงาน</Text>
           <Text style={styles.centerText}>เข้าสู่ระบบเพื่อดูแผนผังสายงานของคุณ</Text>
           <Pressable style={styles.primaryBtn} onPress={() => router.push('/login')}>
@@ -703,7 +702,7 @@ export default function MLMTreeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <Text style={{ fontSize: 24, color: '#fff' }}>←</Text>
           </Pressable>
 
           <View style={styles.headerTitleContainer}>
@@ -722,7 +721,7 @@ export default function MLMTreeScreen() {
 
         {/* Search */}
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#6B7280" />
+          <Text style={{ fontSize: 20 }}>🔍</Text>
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -736,7 +735,7 @@ export default function MLMTreeScreen() {
             <ActivityIndicator size="small" color="#3B82F6" />
           ) : searchQuery.length > 0 ? (
             <Pressable onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#6B7280" />
+              <Text style={{ fontSize: 20, color: '#6B7280' }}>✖</Text>
             </Pressable>
           ) : null}
         </View>

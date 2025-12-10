@@ -12,7 +12,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -156,7 +155,7 @@ export default function LeaderboardScreen() {
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-800">
         <TouchableOpacity onPress={() => router.back()} className="p-2">
-          <Ionicons name="arrow-back" size={24} color="white" />
+          <Text className="text-white text-2xl">←</Text>
         </TouchableOpacity>
         <Text className="text-white text-lg font-bold">Leaderboard</Text>
         <View className="w-10" />
@@ -311,7 +310,7 @@ export default function LeaderboardScreen() {
                     <Text className="text-blue-400 text-sm">อันดับที่ {currentUserPosition}</Text>
                   </View>
                 </View>
-                <Ionicons name="person" size={24} color="#3B82F6" />
+                <Text className="text-2xl">👤</Text>
               </View>
             </View>
           </View>

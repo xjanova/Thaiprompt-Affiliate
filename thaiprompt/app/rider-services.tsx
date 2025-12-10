@@ -17,7 +17,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   FadeInDown,
   FadeIn,
@@ -129,11 +128,7 @@ const ServiceCard = ({
                 elevation: 4,
               }}
             >
-              <Ionicons
-                name={service.icon as keyof typeof Ionicons.glyphMap}
-                size={28}
-                color="white"
-              />
+              <Text style={{ fontSize: 28, color: 'white' }}>{service.icon}</Text>
             </LinearGradient>
 
             {/* Service Info */}
@@ -178,7 +173,7 @@ const ServiceCard = ({
             >
               {isSelected && (
                 <Animated.View entering={ZoomIn.springify()}>
-                  <Ionicons name="checkmark" size={20} color="white" />
+                  <Text style={{ fontSize: 20, color: 'white' }}>✓</Text>
                 </Animated.View>
               )}
             </Animated.View>
@@ -235,11 +230,7 @@ const ServiceGroupSection = ({
             isDark ? 'bg-gray-700' : 'bg-gray-100'
           }`}
         >
-          <Ionicons
-            name={icon as keyof typeof Ionicons.glyphMap}
-            size={20}
-            color={isDark ? '#9CA3AF' : '#6B7280'}
-          />
+          <Text style={{ fontSize: 20, color: isDark ? '#9CA3AF' : '#6B7280' }}>{icon}</Text>
         </View>
         <View className="flex-1">
           <Text
@@ -343,11 +334,7 @@ const SelectedServicesSummary = ({
               className="flex-row items-center mr-3 mb-2 px-3 py-1.5 rounded-full"
               style={{ backgroundColor: service.color + '20' }}
             >
-              <Ionicons
-                name={service.icon as keyof typeof Ionicons.glyphMap}
-                size={14}
-                color={service.color}
-              />
+              <Text style={{ fontSize: 14, color: service.color }}>{service.icon}</Text>
               <Text
                 className="text-sm font-medium ml-1.5"
                 style={{ color: service.color }}
@@ -466,7 +453,7 @@ export default function RiderServicesScreen() {
     return (
       <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
         <SafeAreaView className="flex-1 justify-center items-center px-6">
-          <Ionicons name="lock-closed" size={80} color="#9CA3AF" />
+          <Text style={{ fontSize: 80, color: '#9CA3AF' }}>🔒</Text>
           <Text className="text-xl font-bold mt-4 text-gray-800 dark:text-white">
             กรุณาเข้าสู่ระบบ
           </Text>
@@ -498,11 +485,7 @@ export default function RiderServicesScreen() {
         <SafeAreaView className="flex-1">
           <View className="flex-row items-center px-5 pt-4 pb-2">
             <Pressable onPress={() => router.back()} className="mr-4">
-              <Ionicons
-                name="arrow-back"
-                size={24}
-                color={isDark ? '#fff' : '#000'}
-              />
+              <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
             </Pressable>
             <Text
               className={`text-2xl font-bold ${
@@ -533,11 +516,7 @@ export default function RiderServicesScreen() {
         {/* Header */}
         <View className="flex-row items-center px-5 pt-4 pb-2">
           <Pressable onPress={() => router.back()} className="mr-4">
-            <Ionicons
-              name="arrow-back"
-              size={24}
-              color={isDark ? '#fff' : '#000'}
-            />
+            <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
           </Pressable>
           <View className="flex-1">
             <Text
@@ -567,11 +546,7 @@ export default function RiderServicesScreen() {
               elevation: 2,
             }}
           >
-            <Ionicons
-              name="search"
-              size={20}
-              color={isDark ? '#6B7280' : '#9CA3AF'}
-            />
+            <Text style={{ fontSize: 20, color: isDark ? '#6B7280' : '#9CA3AF' }}>🔍</Text>
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -583,11 +558,7 @@ export default function RiderServicesScreen() {
             />
             {searchQuery.length > 0 && (
               <Pressable onPress={() => setSearchQuery('')}>
-                <Ionicons
-                  name="close-circle"
-                  size={20}
-                  color={isDark ? '#6B7280' : '#9CA3AF'}
-                />
+                <Text style={{ fontSize: 20, color: isDark ? '#6B7280' : '#9CA3AF' }}>✕</Text>
               </Pressable>
             )}
           </View>
@@ -627,7 +598,7 @@ export default function RiderServicesScreen() {
                     isDark ? 'bg-primary-500/20' : 'bg-primary-100'
                   }`}
                 >
-                  <Ionicons name="briefcase" size={24} color="#3B82F6" />
+                  <Text style={{ fontSize: 24, color: '#3B82F6' }}>💼</Text>
                 </View>
                 <View className="flex-1">
                   <Text
@@ -668,11 +639,7 @@ export default function RiderServicesScreen() {
 
           {filteredGroups.length === 0 && (
             <View className="items-center py-12">
-              <Ionicons
-                name="search"
-                size={48}
-                color={isDark ? '#4B5563' : '#9CA3AF'}
-              />
+              <Text style={{ fontSize: 48, color: isDark ? '#4B5563' : '#9CA3AF' }}>🔍</Text>
               <Text
                 className={`mt-4 font-medium ${
                   isDark ? 'text-gray-400' : 'text-gray-500'
@@ -721,7 +688,7 @@ export default function RiderServicesScreen() {
                 <ActivityIndicator color="white" />
               ) : (
                 <>
-                  <Ionicons name="checkmark-circle" size={24} color="white" />
+                  <Text style={{ fontSize: 24, color: 'white' }}>✓</Text>
                   <Text className="text-white font-bold text-lg ml-2">
                     บันทึก ({selectedServices.length} บริการ)
                   </Text>

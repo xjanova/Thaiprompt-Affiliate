@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '1.6.9',
-  BUILD_NUMBER: 21,
-  BUILD_DATE: '2025-12-10-EMOJIICONS', // เปลี่ยน Ionicons เป็น emoji icons ทั้งหมด
+  VERSION: '1.7.0',
+  BUILD_NUMBER: 22,
+  BUILD_DATE: '2025-12-10-NO-IONICONS', // ลบ Ionicons ออกทั้งหมด ใช้ emoji แทน 100%
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs

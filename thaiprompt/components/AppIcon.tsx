@@ -1,13 +1,10 @@
 /**
  * AppIcon Component
- * ใช้แสดงไอคอน โดยพยายามใช้ Ionicons ก่อน
- * ถ้าโหลดไม่ได้จะใช้ Emoji fallback
+ * ใช้แสดงไอคอนด้วย Emoji
  */
 
-import React, { useState, useEffect } from 'react';
-import { Text, View, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import * as Font from 'expo-font';
+import React from 'react';
+import { Text, StyleSheet } from 'react-native';
 
 // Emoji mapping สำหรับ fallback
 const EMOJI_MAP: Record<string, string> = {
@@ -289,21 +286,11 @@ const EMOJI_MAP: Record<string, string> = {
 };
 
 interface AppIconProps {
-  name: keyof typeof Ionicons.glyphMap | string;
+  name: string;
   size?: number;
   color?: string;
   style?: object;
 }
-
-// ตรวจสอบว่า font โหลดสำเร็จหรือไม่
-let fontsLoaded = false;
-
-// พยายามเช็คว่า fonts โหลดแล้วหรือยัง
-Font.isLoaded('Ionicons').then((loaded) => {
-  fontsLoaded = loaded;
-}).catch(() => {
-  fontsLoaded = false;
-});
 
 export const AppIcon: React.FC<AppIconProps> = ({
   name,
@@ -311,38 +298,7 @@ export const AppIcon: React.FC<AppIconProps> = ({
   color = '#000',
   style,
 }) => {
-  const [useEmoji, setUseEmoji] = useState(!fontsLoaded);
-
-  useEffect(() => {
-    // เช็คอีกครั้งหลัง mount
-    const checkFont = async () => {
-      try {
-        const loaded = await Font.isLoaded('Ionicons');
-        setUseEmoji(!loaded);
-      } catch {
-        setUseEmoji(true);
-      }
-    };
-    checkFont();
-  }, []);
-
-  // ถ้า font โหลดได้ ใช้ Ionicons
-  if (!useEmoji) {
-    try {
-      return (
-        <Ionicons
-          name={name as keyof typeof Ionicons.glyphMap}
-          size={size}
-          color={color}
-          style={style}
-        />
-      );
-    } catch {
-      // Fall through to emoji
-    }
-  }
-
-  // ใช้ Emoji fallback
+  // ใช้ Emoji
   const emoji = EMOJI_MAP[name] || '•';
   return (
     <Text
@@ -355,17 +311,6 @@ export const AppIcon: React.FC<AppIconProps> = ({
       {emoji}
     </Text>
   );
-};
-
-// Preload icons - เรียกใช้ตอนเปิดแอพ
-export const preloadIcons = async (): Promise<boolean> => {
-  try {
-    const loaded = await Font.isLoaded('Ionicons');
-    fontsLoaded = loaded;
-    return loaded;
-  } catch {
-    return false;
-  }
 };
 
 const styles = StyleSheet.create({

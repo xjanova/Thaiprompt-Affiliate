@@ -24,7 +24,6 @@ import {
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { useAuthStore } from '@/stores/authStore';
@@ -135,7 +134,7 @@ export default function WalletTopupScreen() {
         style={styles.header}
       >
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+          <Text style={styles.headerIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>เติมเงิน</Text>
         <View style={styles.headerSpacer} />
@@ -153,7 +152,7 @@ export default function WalletTopupScreen() {
           {/* ยอดเงินปัจจุบัน */}
           <View style={[styles.balanceCard, isDark && styles.cardDark]}>
             <View style={styles.balanceRow}>
-              <Ionicons name="wallet" size={24} color="#3B82F6" />
+              <Text style={styles.emojiIcon}>💰</Text>
               <Text style={[styles.balanceLabel, isDark && styles.textLight]}>
                 ยอดเงินปัจจุบัน
               </Text>
@@ -241,19 +240,19 @@ export default function WalletTopupScreen() {
           {/* ข้อมูลการชำระเงิน */}
           <View style={[styles.infoCard, isDark && styles.cardDark]}>
             <View style={styles.infoRow}>
-              <Ionicons name="shield-checkmark" size={20} color="#10B981" />
+              <Text style={styles.infoEmoji}>🛡️</Text>
               <Text style={[styles.infoText, isDark && styles.textMuted]}>
                 ชำระเงินผ่านระบบที่ปลอดภัย
               </Text>
             </View>
             <View style={styles.infoRow}>
-              <Ionicons name="flash" size={20} color="#F59E0B" />
+              <Text style={styles.infoEmoji}>⚡</Text>
               <Text style={[styles.infoText, isDark && styles.textMuted]}>
                 ยอดเงินเข้าทันทีหลังชำระ
               </Text>
             </View>
             <View style={styles.infoRow}>
-              <Ionicons name="card" size={20} color="#3B82F6" />
+              <Text style={styles.infoEmoji}>💳</Text>
               <Text style={[styles.infoText, isDark && styles.textMuted]}>
                 รองรับ บัตรเครดิต/เดบิต, PromptPay, Mobile Banking
               </Text>
@@ -277,7 +276,7 @@ export default function WalletTopupScreen() {
               <ActivityIndicator color="#FFF" />
             ) : (
               <>
-                <Ionicons name="add-circle" size={20} color="#FFF" />
+                <Text style={styles.buttonIcon}>➕</Text>
                 <Text style={styles.submitButtonText}>
                   เติมเงิน {amount > 0 ? formatCurrency(amount) : ''}
                 </Text>
@@ -335,6 +334,20 @@ const styles = StyleSheet.create({
   },
   textMuted: {
     color: '#9CA3AF',
+  },
+  headerIcon: {
+    fontSize: 24,
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
+  emojiIcon: {
+    fontSize: 24,
+  },
+  infoEmoji: {
+    fontSize: 20,
+  },
+  buttonIcon: {
+    fontSize: 20,
   },
 
   // Balance Card

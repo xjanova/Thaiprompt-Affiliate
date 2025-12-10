@@ -19,7 +19,6 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '@/stores/authStore';
 import { formatCurrency, API_BASE_URL } from '@/constants';
@@ -139,7 +138,7 @@ export default function ProductDetailScreen() {
         <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
         <View style={styles.centerBox}>
           <ActivityIndicator size="large" color="#FF6B35" />
-          <Text style={styles.loadingText}>กำลังโหลดข้อมูลสินค้า...</Text>
+          <Text style={styles.loadingText}>⏳ กำลังโหลดข้อมูลสินค้า...</Text>
         </View>
       </View>
     );
@@ -151,7 +150,7 @@ export default function ProductDetailScreen() {
       <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
         <View style={styles.centerBox}>
-          <Ionicons name="alert-circle" size={64} color="#EF4444" />
+          <Text style={{ fontSize: 64 }}>⚠️</Text>
           <Text style={styles.errorText}>{error || 'ไม่พบสินค้า'}</Text>
           <Pressable style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backButtonText}>กลับ</Text>
@@ -169,14 +168,16 @@ export default function ProductDetailScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.headerButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+          <Text style={{ fontSize: 24, color: '#FFF' }}>←</Text>
         </Pressable>
         <View style={styles.headerRight}>
           <Pressable style={styles.headerButton} onPress={() => setIsFavorite(!isFavorite)}>
-            <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={24} color={isFavorite ? '#EF4444' : '#FFF'} />
+            <Text style={{ fontSize: 24, color: isFavorite ? '#EF4444' : '#FFF' }}>
+              {isFavorite ? '❤️' : '🤍'}
+            </Text>
           </Pressable>
           <Pressable style={styles.headerButton} onPress={shareProduct}>
-            <Ionicons name="share-outline" size={24} color="#FFF" />
+            <Text style={{ fontSize: 24, color: '#FFF' }}>↗️</Text>
           </Pressable>
         </View>
       </View>
@@ -195,7 +196,7 @@ export default function ProductDetailScreen() {
 
           {/* PV Badge */}
           <View style={styles.pvBadge}>
-            <Ionicons name="star" size={12} color="#FFD700" />
+            <Text style={{ fontSize: 12 }}>⭐</Text>
             <Text style={styles.pvBadgeText}>{pv} PV</Text>
           </View>
         </View>
@@ -228,7 +229,7 @@ export default function ProductDetailScreen() {
             {/* PV Info */}
             <View style={styles.pvInfo}>
               <LinearGradient colors={['rgba(255,215,0,0.15)', 'rgba(255,165,0,0.15)']} style={styles.pvGradient}>
-                <Ionicons name="star" size={18} color="#FFD700" />
+                <Text style={{ fontSize: 18 }}>⭐</Text>
                 <Text style={styles.pvText}>ได้รับ <Text style={styles.pvValue}>{pv} PV</Text> เมื่อซื้อสินค้านี้</Text>
               </LinearGradient>
             </View>
@@ -236,7 +237,7 @@ export default function ProductDetailScreen() {
             {/* Commission Info */}
             {isAuthenticated && (
               <View style={styles.commissionBox}>
-                <Ionicons name="cash-outline" size={20} color="#10B981" />
+                <Text style={{ fontSize: 20 }}>💰</Text>
                 <Text style={styles.commissionText}>
                   คอมมิชชั่นโดยประมาณ: <Text style={styles.commissionValue}>{formatCurrency(estimatedCommission)}</Text> ({commissionRate}%)
                 </Text>
@@ -254,11 +255,11 @@ export default function ProductDetailScreen() {
                   onPress={() => quantity > 1 && setQuantity(quantity - 1)}
                   disabled={quantity <= 1}
                 >
-                  <Ionicons name="remove" size={24} color={quantity <= 1 ? '#4B5563' : '#FFF'} />
+                  <Text style={{ fontSize: 24, color: quantity <= 1 ? '#4B5563' : '#FFF' }}>−</Text>
                 </Pressable>
                 <Text style={styles.quantityText}>{quantity}</Text>
                 <Pressable style={styles.quantityButton} onPress={() => setQuantity(quantity + 1)}>
-                  <Ionicons name="add" size={24} color="#FFF" />
+                  <Text style={{ fontSize: 24, color: '#FFF' }}>+</Text>
                 </Pressable>
               </View>
               <View style={styles.totalBox}>
@@ -280,11 +281,11 @@ export default function ProductDetailScreen() {
             <Text style={styles.cardTitle}>แชร์สินค้านี้และรับค่าคอมมิชชั่น!</Text>
             <View style={styles.shareRow}>
               <Pressable style={styles.shareButton} onPress={shareProduct}>
-                <Ionicons name="share-social" size={20} color="#3B82F6" />
+                <Text style={{ fontSize: 20 }}>📤</Text>
                 <Text style={styles.shareButtonText}>แชร์</Text>
               </Pressable>
               <Pressable style={[styles.shareButton, styles.copyButton]} onPress={copyLink}>
-                <Ionicons name="link" size={20} color="#8B5CF6" />
+                <Text style={{ fontSize: 20 }}>🔗</Text>
                 <Text style={[styles.shareButtonText, styles.copyButtonText]}>คัดลอกลิงก์</Text>
               </Pressable>
             </View>
@@ -297,10 +298,10 @@ export default function ProductDetailScreen() {
       {/* Bottom Action Bar */}
       <View style={styles.bottomBar}>
         <Pressable style={styles.bottomIconButton} onPress={() => Alert.alert('แชท', 'ระบบแชทกำลังพัฒนา')}>
-          <Ionicons name="chatbubble-outline" size={24} color="#9CA3AF" />
+          <Text style={{ fontSize: 24, color: '#9CA3AF' }}>💬</Text>
         </Pressable>
         <Pressable style={styles.bottomIconButton} onPress={() => router.push('/cart')}>
-          <Ionicons name="cart-outline" size={24} color="#9CA3AF" />
+          <Text style={{ fontSize: 24, color: '#9CA3AF' }}>🛒</Text>
         </Pressable>
         <Pressable
           style={[styles.addToCartButton, isAddingToCart && styles.buttonDisabled]}
@@ -312,7 +313,7 @@ export default function ProductDetailScreen() {
               <ActivityIndicator color="#FFF" />
             ) : (
               <>
-                <Ionicons name="cart" size={20} color="#FFF" />
+                <Text style={{ fontSize: 20 }}>🛒</Text>
                 <Text style={styles.addToCartText}>เพิ่มลงตะกร้า</Text>
               </>
             )}

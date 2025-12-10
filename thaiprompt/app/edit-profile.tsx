@@ -20,7 +20,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '@/stores/authStore';
@@ -135,7 +134,7 @@ const AvatarSection = ({
               {isUploading ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
-                <Ionicons name="camera" size={18} color="white" />
+                <Text style={{ fontSize: 18 }}>📷</Text>
               )}
             </LinearGradient>
           </View>
@@ -155,7 +154,7 @@ const SectionHeader = ({
   title,
   isDark,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   title: string;
   isDark: boolean;
 }) => (
@@ -171,7 +170,7 @@ const SectionHeader = ({
         marginRight: 12,
       }}
     >
-      <Ionicons name={icon} size={20} color="#3B82F6" />
+      <Text style={{ fontSize: 20 }}>{icon}</Text>
     </LinearGradient>
     <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
       {title}
@@ -469,7 +468,7 @@ export default function EditProfileScreen() {
     return (
       <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
         <SafeAreaView className="flex-1 justify-center items-center px-6">
-          <Ionicons name="person-circle" size={80} color="#9CA3AF" />
+          <Text style={{ fontSize: 80 }}>👤</Text>
           <Text className={`text-xl font-bold mt-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
             แก้ไขโปรไฟล์
           </Text>
@@ -504,7 +503,7 @@ export default function EditProfileScreen() {
               onPress={() => router.back()}
               className="w-10 h-10 rounded-full bg-white/20 items-center justify-center"
             >
-              <Ionicons name="arrow-back" size={24} color="white" />
+              <Text style={{ fontSize: 24, color: 'white' }}>←</Text>
             </Pressable>
             <Text className="text-white text-xl font-bold">แก้ไขโปรไฟล์</Text>
             <Pressable
@@ -548,7 +547,7 @@ export default function EditProfileScreen() {
             >
               {/* Personal Info Section */}
               <GlassCard style={{ marginBottom: 16 }}>
-                <SectionHeader icon="person" title="ข้อมูลส่วนตัว" isDark={isDark} />
+                <SectionHeader icon="👤" title="ข้อมูลส่วนตัว" isDark={isDark} />
 
                 <Input
                   label="ชื่อ-นามสกุล"
@@ -605,7 +604,7 @@ export default function EditProfileScreen() {
 
               {/* Bank Info Section */}
               <GlassCard style={{ marginBottom: 16 }}>
-                <SectionHeader icon="wallet" title="ข้อมูลธนาคาร" isDark={isDark} />
+                <SectionHeader icon="💰" title="ข้อมูลธนาคาร" isDark={isDark} />
 
                 <Input
                   label="ชื่อธนาคาร"
@@ -651,17 +650,15 @@ export default function EditProfileScreen() {
                         marginRight: 12,
                       }}
                     >
-                      <Ionicons name="key" size={20} color="#EF4444" />
+                      <Text style={{ fontSize: 20 }}>🔑</Text>
                     </LinearGradient>
                     <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
                       เปลี่ยนรหัสผ่าน
                     </Text>
                   </View>
-                  <Ionicons
-                    name={showPasswordSection ? 'chevron-up' : 'chevron-down'}
-                    size={24}
-                    color={isDark ? '#9CA3AF' : '#6B7280'}
-                  />
+                  <Text style={{ fontSize: 24, color: isDark ? '#9CA3AF' : '#6B7280' }}>
+                    {showPasswordSection ? '▲' : '▼'}
+                  </Text>
                 </Pressable>
 
                 {showPasswordSection && (
@@ -719,7 +716,7 @@ export default function EditProfileScreen() {
 
               {/* Referral Info */}
               <GlassCard style={{ marginBottom: 16 }}>
-                <SectionHeader icon="share-social" title="รหัสแนะนำ" isDark={isDark} />
+                <SectionHeader icon="📤" title="รหัสแนะนำ" isDark={isDark} />
 
                 <View className={`rounded-xl p-4 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
                   <Text className={`text-center text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
@@ -734,7 +731,7 @@ export default function EditProfileScreen() {
                   onPress={() => router.push('/referral')}
                   className="flex-row items-center justify-center mt-4 py-3"
                 >
-                  <Ionicons name="share-social" size={20} color="#3B82F6" />
+                  <Text style={{ fontSize: 20 }}>📤</Text>
                   <Text className="text-primary-500 font-medium ml-2">
                     ดูลิงก์แนะนำเพื่อน
                   </Text>
@@ -762,7 +759,7 @@ export default function EditProfileScreen() {
                     <ActivityIndicator color="white" />
                   ) : (
                     <View className="flex-row items-center">
-                      <Ionicons name="checkmark-circle" size={24} color="white" />
+                      <Text style={{ fontSize: 24 }}>✅</Text>
                       <Text className="text-white font-bold text-lg ml-2">บันทึกการเปลี่ยนแปลง</Text>
                     </View>
                   )}

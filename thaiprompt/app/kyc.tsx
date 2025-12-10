@@ -21,7 +21,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import ReAnimated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores/authStore';
@@ -49,9 +48,9 @@ const StepIndicator = ({
   isDark: boolean;
 }) => {
   const steps = [
-    { label: 'บัตรประชาชน', icon: 'card', completed: hasIdCard },
-    { label: 'รูปถ่ายคู่บัตร', icon: 'person', completed: hasSelfie },
-    { label: 'ยืนยัน', icon: 'checkmark', completed: false },
+    { label: 'บัตรประชาชน', icon: '🪪', completed: hasIdCard },
+    { label: 'รูปถ่ายคู่บัตร', icon: '👤', completed: hasSelfie },
+    { label: 'ยืนยัน', icon: '✓', completed: false },
   ];
 
   return (
@@ -90,21 +89,19 @@ const StepIndicator = ({
                     colors={['#10B981', '#059669']}
                     style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }}
                   >
-                    <Ionicons name="checkmark" size={28} color="white" />
+                    <Text style={{ fontSize: 28 }}>✓</Text>
                   </LinearGradient>
                 ) : isActive ? (
                   <LinearGradient
                     colors={['#3B82F6', '#2563EB']}
                     style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' }}
                   >
-                    <Ionicons name={step.icon as any} size={24} color="white" />
+                    <Text style={{ fontSize: 24 }}>{step.icon}</Text>
                   </LinearGradient>
                 ) : (
-                  <Ionicons
-                    name={step.icon as any}
-                    size={24}
-                    color={isDark ? '#6B7280' : '#9CA3AF'}
-                  />
+                  <Text style={{ fontSize: 24, color: isDark ? '#6B7280' : '#9CA3AF' }}>
+                    {step.icon}
+                  </Text>
                 )}
               </View>
               <Text
@@ -250,11 +247,9 @@ const UploadCard = ({
                   : 'bg-primary-100 dark:bg-primary-900/50'
               }`}
             >
-              <Ionicons
-                name={isUploaded ? 'checkmark-circle' : (icon as any)}
-                size={22}
-                color={isUploaded ? '#10B981' : '#3B82F6'}
-              />
+              <Text style={{ fontSize: 22 }}>
+                {isUploaded ? '✅' : icon === 'card' ? '🪪' : '👤'}
+              </Text>
             </View>
             <View className="ml-3 flex-1">
               <Text className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -290,7 +285,7 @@ const UploadCard = ({
               />
             ) : isUploaded ? (
               <View className="flex-1 items-center justify-center bg-green-100/50 dark:bg-green-900/30">
-                <Ionicons name="checkmark-circle" size={56} color="#10B981" />
+                <Text style={{ fontSize: 56 }}>✅</Text>
                 <Text className="text-green-600 dark:text-green-400 mt-2 font-medium">
                   รูปภาพถูกอัพโหลดแล้ว
                 </Text>
@@ -305,11 +300,7 @@ const UploadCard = ({
                     isDark ? 'bg-gray-700' : 'bg-gray-100'
                   }`}
                 >
-                  <Ionicons
-                    name="camera"
-                    size={36}
-                    color={isDark ? '#6B7280' : '#9CA3AF'}
-                  />
+                  <Text style={{ fontSize: 36 }}>📷</Text>
                 </View>
                 <Text className={`mt-4 text-base font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                   แตะเพื่อถ่ายรูปหรือเลือกรูป
@@ -419,7 +410,7 @@ const ApprovedView = ({ isDark }: { isDark: boolean }) => {
         >
           <View className="w-28 h-28 rounded-full bg-white/20 items-center justify-center">
             <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-              <Ionicons name="shield-checkmark" size={56} color="white" />
+              <Text style={{ fontSize: 56 }}>🛡️</Text>
             </Animated.View>
           </View>
         </LinearGradient>
@@ -449,7 +440,7 @@ const ApprovedView = ({ isDark }: { isDark: boolean }) => {
         {['ถอนเงินได้ไม่จำกัด', 'รับค่าคอมมิชชั่นทันที', 'เข้าถึง Premium Features'].map(
           (benefit, index) => (
             <View key={index} className="flex-row items-center mb-2">
-              <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+              <Text style={{ fontSize: 20 }}>✅</Text>
               <Text className={`ml-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 {benefit}
               </Text>
@@ -523,7 +514,7 @@ const PendingView = ({ isDark }: { isDark: boolean }) => {
         }}
       >
         <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-          <Ionicons name="time" size={72} color="#F59E0B" />
+          <Text style={{ fontSize: 72 }}>⏰</Text>
         </Animated.View>
       </View>
 
@@ -547,7 +538,7 @@ const PendingView = ({ isDark }: { isDark: boolean }) => {
       >
         <View className="flex-row items-center mb-4">
           <View className="w-10 h-10 rounded-full bg-green-500 items-center justify-center">
-            <Ionicons name="checkmark" size={20} color="white" />
+            <Text style={{ fontSize: 20 }}>✓</Text>
           </View>
           <View className="ml-4 flex-1">
             <Text className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
@@ -559,7 +550,7 @@ const PendingView = ({ isDark }: { isDark: boolean }) => {
 
         <View className="flex-row items-center mb-4">
           <View className="w-10 h-10 rounded-full bg-yellow-500 items-center justify-center">
-            <Ionicons name="search" size={20} color="white" />
+            <Text style={{ fontSize: 20 }}>🔍</Text>
           </View>
           <View className="ml-4 flex-1">
             <Text className={`font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>
@@ -571,7 +562,7 @@ const PendingView = ({ isDark }: { isDark: boolean }) => {
 
         <View className="flex-row items-center opacity-50">
           <View className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
-            <Ionicons name="checkmark-done" size={20} color={isDark ? '#6B7280' : '#9CA3AF'} />
+            <Text style={{ fontSize: 20, color: isDark ? '#6B7280' : '#9CA3AF' }}>✓✓</Text>
           </View>
           <View className="ml-4 flex-1">
             <Text className={`font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -631,7 +622,7 @@ const RejectedView = ({
             elevation: 12,
           }}
         >
-          <Ionicons name="close-circle" size={72} color="#EF4444" />
+          <Text style={{ fontSize: 72 }}>❌</Text>
         </View>
       </ReAnimated.View>
 
@@ -669,7 +660,7 @@ const RejectedView = ({
           'หน้าและบัตรอยู่ในรูปเดียวกัน',
         ].map((tip, index) => (
           <View key={index} className="flex-row items-center mb-2">
-            <Ionicons name="bulb" size={16} color="#F59E0B" />
+            <Text style={{ fontSize: 16 }}>💡</Text>
             <Text className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{tip}</Text>
           </View>
         ))}
@@ -999,7 +990,7 @@ export default function KycScreen() {
             colors={['#3B82F6', '#2563EB']}
             style={{ width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}
           >
-            <Ionicons name="shield-checkmark" size={48} color="white" />
+            <Text style={{ fontSize: 48 }}>🛡️</Text>
           </LinearGradient>
           <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
             ยืนยันตัวตน (KYC)
@@ -1040,7 +1031,7 @@ export default function KycScreen() {
               onPress={() => router.back()}
               className="w-10 h-10 rounded-full bg-white/20 items-center justify-center mr-3"
             >
-              <Ionicons name="arrow-back" size={24} color="white" />
+              <Text style={{ fontSize: 24, color: 'white' }}>←</Text>
             </Pressable>
             <View className="flex-1">
               <Text className="text-white text-xl font-bold">ยืนยันตัวตน (KYC)</Text>
@@ -1076,7 +1067,7 @@ export default function KycScreen() {
                 }`}
               >
                 <View className="flex-row items-start">
-                  <Ionicons name="information-circle" size={24} color="#3B82F6" />
+                  <Text style={{ fontSize: 24 }}>ℹ️</Text>
                   <View className="ml-3 flex-1">
                     <Text className={`font-semibold ${isDark ? 'text-blue-300' : 'text-blue-800'}`}>
                       เอกสารที่ต้องใช้
@@ -1140,7 +1131,7 @@ export default function KycScreen() {
                         elevation: 6,
                       }}
                     >
-                      <Ionicons name="shield-checkmark" size={24} color="white" />
+                      <Text style={{ fontSize: 24, color: 'white' }}>🛡️</Text>
                       <Text className="text-white font-bold text-lg ml-2">
                         ส่งเอกสารยืนยันตัวตน
                       </Text>
@@ -1151,11 +1142,9 @@ export default function KycScreen() {
                         isDark ? 'bg-gray-700' : 'bg-gray-200'
                       }`}
                     >
-                      <Ionicons
-                        name="shield-checkmark"
-                        size={24}
-                        color={isDark ? '#6B7280' : '#9CA3AF'}
-                      />
+                      <Text style={{ fontSize: 24, color: isDark ? '#6B7280' : '#9CA3AF' }}>
+                        🛡️
+                      </Text>
                       <Text
                         className={`font-bold text-lg ml-2 ${
                           isDark ? 'text-gray-500' : 'text-gray-400'

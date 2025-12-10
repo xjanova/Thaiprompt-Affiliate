@@ -26,7 +26,6 @@ import {
   StatusBar,
 } from 'react-native';
 import { router, Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -94,12 +93,12 @@ const StoreCard = ({
       {store.logo ? (
         <Image source={{ uri: store.logo }} style={styles.storeImage} resizeMode="cover" />
       ) : (
-        <Ionicons name="storefront-outline" size={36} color="#9CA3AF" />
+        <Text style={{ fontSize: 36, color: '#9CA3AF' }}>🏪</Text>
       )}
 
       {/* Badge */}
       <View style={[styles.storeBadge, isOfficial ? styles.badgeBlue : styles.badgeOrange]}>
-        <Ionicons name={isOfficial ? "checkmark-circle" : "star"} size={10} color="white" />
+        <Text style={{ fontSize: 10, color: 'white' }}>{isOfficial ? '✅' : '⭐'}</Text>
         <Text style={styles.storeBadgeText}>{isOfficial ? 'ทางการ' : 'แนะนำ'}</Text>
       </View>
     </View>
@@ -108,7 +107,7 @@ const StoreCard = ({
     <View style={styles.storeInfo}>
       <Text style={styles.storeName} numberOfLines={1}>{store.name}</Text>
       <View style={styles.storeRating}>
-        <Ionicons name="star" size={12} color="#FBBF24" />
+        <Text style={{ fontSize: 12 }}>⭐</Text>
         <Text style={styles.storeRatingText}>
           {store.rating.toFixed(1)} • {store.productCount} สินค้า
         </Text>
@@ -136,7 +135,7 @@ const ProductCard = ({
         {product.image ? (
           <Image source={{ uri: product.image }} style={styles.productImage} resizeMode="cover" />
         ) : (
-          <Ionicons name="cube-outline" size={48} color="#9CA3AF" />
+          <Text style={{ fontSize: 48, color: '#9CA3AF' }}>📦</Text>
         )}
 
         {/* Discount Badge */}
@@ -150,7 +149,7 @@ const ProductCard = ({
 
         {/* PV Badge - แสดงมุมขวาบน */}
         <View style={styles.pvBadge}>
-          <Ionicons name="star" size={10} color="#FFD700" />
+          <Text style={{ fontSize: 10, color: '#FFD700' }}>⭐</Text>
           <Text style={styles.pvBadgeText}>{pv} PV</Text>
         </View>
 
@@ -181,7 +180,7 @@ const ProductCard = ({
         <View style={styles.ratingPvRow}>
           {product.rating && (
             <View style={styles.ratingContainer}>
-              <Ionicons name="star" size={12} color="#FBBF24" />
+              <Text style={{ fontSize: 12 }}>⭐</Text>
               <Text style={styles.ratingText}>
                 {product.rating.toFixed(1)} ({product.review_count || 0})
               </Text>
@@ -211,7 +210,7 @@ const SectionHeader = ({
     {onSeeAll && (
       <Pressable onPress={onSeeAll} style={styles.seeAllButton}>
         <Text style={styles.seeAllText}>ดูทั้งหมด</Text>
-        <Ionicons name="chevron-forward" size={16} color="#3B82F6" />
+        <Text style={{ fontSize: 16, color: '#3B82F6' }}>➡️</Text>
       </Pressable>
     )}
   </View>
@@ -500,7 +499,7 @@ export default function ShoppingScreen() {
 
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="cube-outline" size={64} color="#6B7280" />
+        <Text style={{ fontSize: 64, color: '#6B7280' }}>📦</Text>
         <Text style={styles.emptyText}>
           {searchQuery ? `ไม่พบสินค้าที่ค้นหา "${searchQuery}"` : 'ไม่มีสินค้าในหมวดหมู่นี้'}
         </Text>
@@ -523,7 +522,7 @@ export default function ShoppingScreen() {
             style={styles.commissionGradient}
           >
             <View style={styles.commissionIcon}>
-              <Ionicons name="cash" size={24} color="white" />
+              <Text style={{ fontSize: 24, color: 'white' }}>💰</Text>
             </View>
             <View style={styles.commissionTextContainer}>
               <Text style={styles.commissionTitle}>รับคอมมิชชั่นทุกการขาย!</Text>
@@ -541,7 +540,7 @@ export default function ShoppingScreen() {
           colors={['rgba(255,215,0,0.15)', 'rgba(255,165,0,0.15)']}
           style={styles.pvInfoGradient}
         >
-          <Ionicons name="star" size={20} color="#FFD700" />
+          <Text style={{ fontSize: 20 }}>⭐</Text>
           <View style={styles.pvInfoTextContainer}>
             <Text style={styles.pvInfoTitle}>สะสม PV ทุกการซื้อ!</Text>
             <Text style={styles.pvInfoSubtitle}>
@@ -578,12 +577,12 @@ export default function ShoppingScreen() {
           headerTintColor: '#FFFFFF',
           headerLeft: () => (
             <Pressable onPress={() => router.back()} style={styles.headerButton}>
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+              <Text style={{ fontSize: 24, color: '#FFFFFF' }}>⬅️</Text>
             </Pressable>
           ),
           headerRight: () => (
             <Pressable onPress={() => router.push('/cart')} style={styles.headerButton}>
-              <Ionicons name="cart-outline" size={24} color="#FFFFFF" />
+              <Text style={{ fontSize: 24, color: '#FFFFFF' }}>🛒</Text>
             </Pressable>
           ),
         }}
@@ -599,7 +598,7 @@ export default function ShoppingScreen() {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#9CA3AF" />
+          <Text style={{ fontSize: 20, color: '#9CA3AF' }}>🔍</Text>
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -609,7 +608,7 @@ export default function ShoppingScreen() {
           />
           {searchQuery.length > 0 && (
             <Pressable onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#6B7280" />
+              <Text style={{ fontSize: 20, color: '#6B7280' }}>✖️</Text>
             </Pressable>
           )}
         </View>

@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   FadeInDown,
   FadeInUp,
@@ -135,11 +134,9 @@ const ExpandableSection = ({
             {title}
           </Text>
         </View>
-        <Ionicons
-          name={isExpanded ? 'chevron-up' : 'chevron-down'}
-          size={24}
-          color={isDark ? '#D4AF37' : '#B8941E'}
-        />
+        <Text style={{ fontSize: 24, color: isDark ? '#D4AF37' : '#B8941E' }}>
+          {isExpanded ? '▲' : '▼'}
+        </Text>
       </Pressable>
 
       {isExpanded && (
@@ -192,11 +189,9 @@ const FAQItem = ({
         <Text style={[styles.faqQuestion, { color: isDark ? '#FFFFFF' : '#1F2937' }]}>
           {question}
         </Text>
-        <Ionicons
-          name={isExpanded ? 'remove-circle' : 'add-circle'}
-          size={24}
-          color="#D4AF37"
-        />
+        <Text style={{ fontSize: 24, color: '#D4AF37' }}>
+          {isExpanded ? '⊖' : '⊕'}
+        </Text>
       </Pressable>
       {isExpanded && (
         <Text style={[styles.faqAnswer, { color: isDark ? '#CCCCCC' : '#666666' }]}>
@@ -282,7 +277,7 @@ export default function WikiScreen() {
               onPress={handleContact}
               style={[styles.contactButton, { backgroundColor: isDark ? 'rgba(212,175,55,0.2)' : 'rgba(212,175,55,0.1)' }]}
             >
-              <Ionicons name="mail" size={24} color="#D4AF37" />
+              <Text style={{ fontSize: 24 }}>📧</Text>
               <Text style={[styles.contactButtonText, { color: isDark ? '#FFFFFF' : '#1F2937' }]}>
                 อีเมล
               </Text>
@@ -291,7 +286,7 @@ export default function WikiScreen() {
               onPress={handleWebsite}
               style={[styles.contactButton, { backgroundColor: isDark ? 'rgba(212,175,55,0.2)' : 'rgba(212,175,55,0.1)' }]}
             >
-              <Ionicons name="globe" size={24} color="#D4AF37" />
+              <Text style={{ fontSize: 24 }}>🌐</Text>
               <Text style={[styles.contactButtonText, { color: isDark ? '#FFFFFF' : '#1F2937' }]}>
                 เว็บไซต์
               </Text>

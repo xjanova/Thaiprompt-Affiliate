@@ -27,7 +27,6 @@ import {
   Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -229,11 +228,11 @@ export default function WalletTransferScreen() {
       {/* Header */}
       <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+          <Text style={styles.headerIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>โอนเงิน</Text>
         <TouchableOpacity style={styles.scanButton} onPress={openScanner}>
-          <Ionicons name="qr-code" size={24} color="#FFF" />
+          <Text style={styles.headerIcon}>📷</Text>
         </TouchableOpacity>
       </LinearGradient>
 
@@ -258,7 +257,7 @@ export default function WalletTransferScreen() {
           </Text>
 
           <View style={[styles.inputRow, isDark && styles.inputRowDark]}>
-            <Ionicons name="wallet-outline" size={20} color="#9CA3AF" />
+            <Text style={styles.inputEmoji}>💰</Text>
             <TextInput
               style={[styles.addressInput, isDark && styles.textLight]}
               value={walletAddress}
@@ -281,7 +280,7 @@ export default function WalletTransferScreen() {
           {/* แสดงข้อผิดพลาด */}
           {lookupError && (
             <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={16} color="#EF4444" />
+              <Text style={styles.errorEmoji}>⚠️</Text>
               <Text style={styles.errorText}>{lookupError}</Text>
             </View>
           )}
@@ -308,7 +307,7 @@ export default function WalletTransferScreen() {
                   {recipient.walletAddress}
                 </Text>
               </View>
-              <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+              <Text style={styles.checkIcon}>✓</Text>
             </View>
           )}
 
@@ -395,7 +394,7 @@ export default function WalletTransferScreen() {
 
               {remainingBalance < 0 && (
                 <View style={styles.warningBox}>
-                  <Ionicons name="warning" size={16} color="#F59E0B" />
+                  <Text style={styles.warningEmoji}>⚠️</Text>
                   <Text style={styles.warningText}>ยอดเงินไม่เพียงพอ</Text>
                 </View>
               )}
@@ -412,7 +411,7 @@ export default function WalletTransferScreen() {
             onPress={handleContinue}
             disabled={!canTransfer}
           >
-            <Ionicons name="send" size={20} color="#FFF" />
+            <Text style={styles.buttonIcon}>📤</Text>
             <Text style={styles.submitButtonText}>โอนเงิน</Text>
           </TouchableOpacity>
         </View>
@@ -423,7 +422,7 @@ export default function WalletTransferScreen() {
         <View style={styles.scannerContainer}>
           <View style={styles.scannerHeader}>
             <TouchableOpacity onPress={() => setShowScanner(false)}>
-              <Ionicons name="close" size={28} color="#FFF" />
+              <Text style={styles.scannerIcon}>✕</Text>
             </TouchableOpacity>
             <Text style={styles.scannerTitle}>สแกน QR Code</Text>
             <View style={{ width: 28 }} />
@@ -460,7 +459,7 @@ export default function WalletTransferScreen() {
                 ยืนยันด้วย PIN
               </Text>
               <TouchableOpacity onPress={() => setShowPinModal(false)}>
-                <Ionicons name="close" size={24} color={isDark ? '#FFF' : '#374151'} />
+                <Text style={[styles.modalIcon, isDark && styles.textLight]}>✕</Text>
               </TouchableOpacity>
             </View>
 
@@ -516,7 +515,7 @@ export default function WalletTransferScreen() {
                 <ActivityIndicator color="#FFF" />
               ) : (
                 <>
-                  <Ionicons name="send" size={20} color="#FFF" />
+                  <Text style={styles.buttonIcon}>📤</Text>
                   <Text style={styles.modalButtonText}>ยืนยันการโอน</Text>
                 </>
               )}
@@ -578,6 +577,37 @@ const styles = StyleSheet.create({
   },
   textMuted: {
     color: '#9CA3AF',
+  },
+  headerIcon: {
+    fontSize: 24,
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
+  inputEmoji: {
+    fontSize: 20,
+  },
+  errorEmoji: {
+    fontSize: 16,
+  },
+  checkIcon: {
+    fontSize: 24,
+    color: '#10B981',
+    fontWeight: 'bold',
+  },
+  warningEmoji: {
+    fontSize: 16,
+  },
+  buttonIcon: {
+    fontSize: 20,
+  },
+  scannerIcon: {
+    fontSize: 28,
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
+  modalIcon: {
+    fontSize: 24,
+    fontWeight: 'bold',
   },
 
   // Balance Card

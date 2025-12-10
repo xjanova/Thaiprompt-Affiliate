@@ -17,7 +17,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { LavaBackground, GlassCard } from '@/components';
 import { getDashboardStats, getCommissions } from '@/services/api';
@@ -159,11 +158,11 @@ export default function DashboardScreen() {
                 elevation: 4,
               }}
             >
-              <Ionicons name="arrow-back" size={24} color="white" />
+              <Text style={{ fontSize: 24, color: 'white' }}>⬅️</Text>
             </Pressable>
 
             <View className="flex-row items-center">
-              <Ionicons name="speedometer" size={20} color="#3B82F6" style={{ marginRight: 6 }} />
+              <Text style={{ fontSize: 20, marginRight: 6 }}>⚡</Text>
               <Text className="text-white text-lg font-bold">แดชบอร์ด</Text>
             </View>
 
@@ -178,7 +177,7 @@ export default function DashboardScreen() {
                 elevation: 4,
               }}
             >
-              <Ionicons name="log-out" size={20} color="white" />
+              <Text style={{ fontSize: 20, color: 'white' }}>🚪</Text>
             </Pressable>
           </View>
 
@@ -251,7 +250,7 @@ export default function DashboardScreen() {
                 colors={['#8B5CF6', '#6D28D9']}
                 style={{ borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
               >
-                <Ionicons name="share-social" size={20} color="white" />
+                <Text style={{ fontSize: 20, color: 'white' }}>🔗</Text>
                 <Text className="text-white font-bold ml-2">แชร์ลิงก์แนะนำ</Text>
               </LinearGradient>
             </Pressable>
@@ -260,7 +259,7 @@ export default function DashboardScreen() {
               onPress={() => Alert.alert('คอมมิชชัน', 'หน้าคอมมิชชันกำลังพัฒนา')}
               className="flex-1 ml-2 bg-white/5 rounded-xl p-4 border border-white/10 flex-row items-center justify-center"
             >
-              <Ionicons name="cash" size={20} color="white" />
+              <Text style={{ fontSize: 20, color: 'white' }}>💰</Text>
               <Text className="text-white font-bold ml-2">คอมมิชชัน</Text>
             </Pressable>
           </View>
@@ -278,7 +277,7 @@ export default function DashboardScreen() {
 
             {recentCommissions.length === 0 ? (
               <View className="bg-white/5 rounded-xl p-8 items-center border border-white/10">
-                <Ionicons name="receipt-outline" size={48} color="#6B7280" />
+                <Text style={{ fontSize: 48, color: '#6B7280' }}>🧾</Text>
                 <Text className="text-gray-400 mt-4">ยังไม่มีคอมมิชชัน</Text>
               </View>
             ) : (

@@ -19,7 +19,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import ReAnimated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
@@ -87,7 +86,7 @@ const StatCard = ({
         className="w-10 h-10 rounded-xl items-center justify-center mb-2"
         style={{ backgroundColor: color + '20' }}
       >
-        <Ionicons name={icon as any} size={20} color={color} />
+        <Text style={{ fontSize: 20 }}>{icon}</Text>
       </View>
       <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
         {value}
@@ -209,7 +208,7 @@ const QRCodeSection = ({
               </Text>
             </View>
             <View className="bg-pink-500 px-4 py-2 rounded-xl flex-row items-center">
-              <Ionicons name="copy" size={18} color="white" />
+              <Text style={{ fontSize: 18 }}>📋</Text>
               <Text className="text-white font-semibold ml-2">คัดลอก</Text>
             </View>
           </Pressable>
@@ -300,7 +299,7 @@ const ShareButton = ({
         marginBottom: 8,
       }}
     >
-      <Ionicons name={icon as any} size={24} color="white" />
+      <Text style={{ fontSize: 24 }}>{icon}</Text>
     </LinearGradient>
     <Text className="text-gray-500 text-xs text-center">{label}</Text>
   </Pressable>
@@ -328,7 +327,7 @@ const BenefitCard = ({
     className="flex-row items-start mb-4"
   >
     <View className="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-900/30 items-center justify-center mr-3">
-      <Ionicons name={icon as any} size={20} color="#EC4899" />
+      <Text style={{ fontSize: 20 }}>{icon}</Text>
     </View>
     <View className="flex-1">
       <Text className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -499,7 +498,7 @@ export default function ReferralScreen() {
               elevation: 12,
             }}
           >
-            <Ionicons name="share-social" size={56} color="white" />
+            <Text style={{ fontSize: 56 }}>🔗</Text>
           </LinearGradient>
           <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
             แนะนำเพื่อนรับรายได้
@@ -539,7 +538,7 @@ export default function ReferralScreen() {
               onPress={() => router.back()}
               className="w-10 h-10 rounded-full bg-white/20 items-center justify-center mr-3"
             >
-              <Ionicons name="arrow-back" size={24} color="white" />
+              <Text style={{ fontSize: 24 }}>⬅️</Text>
             </Pressable>
             <View className="flex-1">
               <Text className="text-white text-xl font-bold">แนะนำเพื่อน</Text>
@@ -574,7 +573,7 @@ export default function ReferralScreen() {
             {/* Stats */}
             <View className="flex-row px-3 -mt-4">
               <StatCard
-                icon="people"
+                icon="👥"
                 value={`${stats?.totalReferrals || 0}`}
                 label="สมาชิกทั้งหมด"
                 color="#8B5CF6"
@@ -582,7 +581,7 @@ export default function ReferralScreen() {
                 delay={100}
               />
               <StatCard
-                icon="cash"
+                icon="💰"
                 value={formatCurrency(stats?.totalEarnings || 0)}
                 label="รายได้รวม"
                 color="#10B981"
@@ -611,7 +610,7 @@ export default function ReferralScreen() {
                 onPress={handleCopyLink}
                 className={`p-4 rounded-2xl flex-row items-center ${isDark ? 'bg-gray-800' : 'bg-white'}`}
               >
-                <Ionicons name="link" size={20} color="#EC4899" />
+                <Text style={{ fontSize: 20 }}>🔗</Text>
                 <Text
                   className={`flex-1 mx-3 text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
                   numberOfLines={1}
@@ -630,10 +629,10 @@ export default function ReferralScreen() {
                 แชร์ผ่านช่องทาง
               </Text>
               <View className={`p-6 rounded-2xl flex-row justify-around ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-                <ShareButton icon="chatbubbles" label="LINE" color="#06C755" onPress={handleShare} />
-                <ShareButton icon="logo-facebook" label="Facebook" color="#1877F2" onPress={handleShare} />
-                <ShareButton icon="mail" label="Email" color="#EA4335" onPress={handleShare} />
-                <ShareButton icon="share-social" label="อื่นๆ" color="#6B7280" onPress={handleShare} />
+                <ShareButton icon="💬" label="LINE" color="#06C755" onPress={handleShare} />
+                <ShareButton icon="📘" label="Facebook" color="#1877F2" onPress={handleShare} />
+                <ShareButton icon="📧" label="Email" color="#EA4335" onPress={handleShare} />
+                <ShareButton icon="🔗" label="อื่นๆ" color="#6B7280" onPress={handleShare} />
               </View>
             </ReAnimated.View>
 
@@ -674,7 +673,7 @@ export default function ReferralScreen() {
                   'รางวัล Rank สำหรับ Top Performer',
                 ].map((benefit, index) => (
                   <View key={index} className="flex-row items-center mb-2">
-                    <Ionicons name="checkmark-circle" size={20} color="#A7F3D0" />
+                    <Text style={{ fontSize: 20 }}>✅</Text>
                     <Text className="text-pink-100 ml-3">{benefit}</Text>
                   </View>
                 ))}
@@ -700,7 +699,7 @@ export default function ReferralScreen() {
                       elevation: 6,
                     }}
                   >
-                    <Ionicons name="share-social" size={24} color="white" />
+                    <Text style={{ fontSize: 24 }}>🔗</Text>
                     <Text className="text-white font-bold text-lg ml-2">
                       แชร์ลิงก์แนะนำเพื่อน
                     </Text>
@@ -715,7 +714,7 @@ export default function ReferralScreen() {
                     isDark ? 'bg-pink-500/10' : 'bg-pink-50'
                   }`}
                 >
-                  <Ionicons name="git-network" size={24} color="#EC4899" />
+                  <Text style={{ fontSize: 24 }}>🌐</Text>
                   <Text className="text-pink-600 dark:text-pink-400 font-bold text-lg ml-2">
                     ดูแผนผังสายงาน
                   </Text>

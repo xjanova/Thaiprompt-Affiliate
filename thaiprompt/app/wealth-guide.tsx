@@ -18,7 +18,6 @@ import {
   Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
 
@@ -377,7 +376,7 @@ export default function WealthGuideScreen() {
           style={styles.backButton}
           onPress={selectedBook ? handleBackToBooks : () => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+          <Text style={{ fontSize: 24, color: '#FFF' }}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>
@@ -389,7 +388,7 @@ export default function WealthGuideScreen() {
         </View>
         {selectedBook?.id === 'pro' && (
           <TouchableOpacity style={styles.webButton} onPress={handleOpenWebVersion}>
-            <Ionicons name="globe" size={20} color="#FFF" />
+            <Text style={{ fontSize: 20, color: '#FFF' }}>🌐</Text>
           </TouchableOpacity>
         )}
       </LinearGradient>
@@ -430,7 +429,7 @@ export default function WealthGuideScreen() {
 
                 <View style={styles.bookCta}>
                   <Text style={styles.bookCtaText}>อ่านเลย</Text>
-                  <Ionicons name="arrow-forward" size={16} color="#FFF" />
+                  <Text style={{ fontSize: 16, color: '#FFF' }}>→</Text>
                 </View>
               </LinearGradient>
             </TouchableOpacity>
@@ -466,11 +465,7 @@ export default function WealthGuideScreen() {
                   {chapter.title}
                 </Text>
               </View>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={isDark ? '#9CA3AF' : '#6B7280'}
-              />
+              <Text style={{ fontSize: 20, color: isDark ? '#9CA3AF' : '#6B7280' }}>›</Text>
             </TouchableOpacity>
           ))}
 
@@ -495,7 +490,7 @@ export default function WealthGuideScreen() {
               style={styles.modalCloseButton}
               onPress={() => setShowChapterModal(false)}
             >
-              <Ionicons name="close" size={24} color="#FFF" />
+              <Text style={{ fontSize: 24, color: '#FFF' }}>✕</Text>
             </TouchableOpacity>
             <View style={styles.modalHeaderContent}>
               <Text style={styles.modalIcon}>{selectedChapter?.icon}</Text>
@@ -527,7 +522,7 @@ export default function WealthGuideScreen() {
                     if (prevChapter) setSelectedChapter(prevChapter);
                   }}
                 >
-                  <Ionicons name="chevron-back" size={20} color={isDark ? '#FFF' : '#374151'} />
+                  <Text style={{ fontSize: 20, color: isDark ? '#FFF' : '#374151' }}>‹</Text>
                   <Text style={[styles.navButtonText, isDark && styles.textLight]}>
                     บทก่อนหน้า
                   </Text>
@@ -547,7 +542,7 @@ export default function WealthGuideScreen() {
                     }}
                   >
                     <Text style={styles.navButtonTextNext}>บทถัดไป</Text>
-                    <Ionicons name="chevron-forward" size={20} color="#FFF" />
+                    <Text style={{ fontSize: 20, color: '#FFF' }}>›</Text>
                   </TouchableOpacity>
                 )}
             </View>

@@ -8,8 +8,6 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, StyleSheet, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
-import * as Font from 'expo-font';
-import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import { APP_INFO } from '@/config/appConfig';
@@ -59,7 +57,6 @@ export default function RootLayout() {
   const { initialize } = useAuthStore();
   const { loadSettings, gpsSharing } = useAppStore();
   const [appIsReady, setAppIsReady] = useState(false);
-  const [fontsLoaded, setFontsLoaded] = useState(false);
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {
@@ -67,46 +64,7 @@ export default function RootLayout() {
 
     const prepareApp = async () => {
       try {
-        // โหลด Icon fonts แบบ manual (เสถียรกว่า useFonts hook)
-        // โหลดทั้ง Ionicons, MaterialIcons, FontAwesome
-        let fontLoaded = false;
-        let retryCount = 0;
-        const maxRetries = 3;
-
-        while (!fontLoaded && retryCount < maxRetries) {
-          try {
-            // โหลด fonts ทั้งหมดพร้อมกัน
-            await Font.loadAsync({
-              ...Ionicons.font,
-              ...MaterialIcons.font,
-              ...FontAwesome.font,
-            });
-            fontLoaded = true;
-            console.log('✅ Icon fonts loaded successfully (Ionicons, MaterialIcons, FontAwesome)');
-          } catch (fontError) {
-            retryCount++;
-            console.warn(`Font loading attempt ${retryCount} failed:`, fontError);
-            // รอ 1 วินาทีก่อนลองใหม่
-            if (retryCount < maxRetries) {
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
-          }
-        }
-
-        // ถ้าโหลดไม่สำเร็จ ลองโหลดเฉพาะ Ionicons
-        if (!fontLoaded) {
-          try {
-            await Font.loadAsync(Ionicons.font);
-            fontLoaded = true;
-            console.log('✅ Ionicons font loaded (fallback)');
-          } catch (e) {
-            console.error('All font loading attempts failed');
-          }
-        }
-
-        if (isMounted) {
-          setFontsLoaded(true);
-        }
+        console.log('✅ App initialization started (no icon fonts needed - using emojis)');
 
         // Initialize auth พร้อม timeout 5 วินาที
         await Promise.race([
@@ -130,10 +88,6 @@ export default function RootLayout() {
           .catch((e) => console.log('Push notification error:', e));
       } catch (error) {
         console.error('App prepare error:', error);
-        // ถ้า font error หลังจากลองหลายครั้งแล้ว ยังแสดงแอพได้ (fallback)
-        if (isMounted) {
-          setFontsLoaded(true);
-        }
       } finally {
         if (isMounted) {
           setAppIsReady(true);
@@ -143,14 +97,13 @@ export default function RootLayout() {
 
     prepareApp();
 
-    // Force ready หลัง 6 วินาที (เพิ่มเวลาให้ font โหลด)
+    // Force ready หลัง 3 วินาที (ลดเวลาลงเพราะไม่ต้องโหลด fonts แล้ว)
     const forceTimeout = setTimeout(() => {
       if (isMounted) {
         console.log('⏱️ Force timeout - showing app');
-        setFontsLoaded(true);
         setAppIsReady(true);
       }
-    }, 6000);
+    }, 3000);
 
     return () => {
       isMounted = false;
@@ -250,15 +203,15 @@ export default function RootLayout() {
     }
   }, [appIsReady, gpsSharing]);
 
-  // ซ่อน splash เมื่อ fonts โหลดเสร็จ และ app พร้อม
+  // ซ่อน splash เมื่อ app พร้อม
   const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded && appIsReady) {
+    if (appIsReady) {
       await SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, appIsReady]);
+  }, [appIsReady]);
 
-  // รอ fonts โหลด และ app พร้อม
-  if (!fontsLoaded || !appIsReady) {
+  // รอ app พร้อม
+  if (!appIsReady) {
     return <SimpleLoadingScreen />;
   }
 

@@ -6,7 +6,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -105,11 +104,9 @@ export default function NotificationBell({
   return (
     <Pressable onPress={handlePress} className="relative p-2">
       <Animated.View style={animatedStyle}>
-        <Ionicons
-          name={unreadCount > 0 ? 'notifications' : 'notifications-outline'}
-          size={size}
-          color={color}
-        />
+        <Text style={{ fontSize: size, color }}>
+          🔔
+        </Text>
       </Animated.View>
 
       {/* Badge */}

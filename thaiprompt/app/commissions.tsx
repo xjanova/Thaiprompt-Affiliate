@@ -15,7 +15,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -66,7 +65,7 @@ const StatCard = ({
 }: {
   label: string;
   value: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   color: string;
   delay: number;
 }) => (
@@ -79,7 +78,7 @@ const StatCard = ({
         className="w-10 h-10 rounded-xl items-center justify-center mb-2"
         style={{ backgroundColor: color + '20' }}
       >
-        <Ionicons name={icon} size={20} color={color} />
+        <Text style={{ fontSize: 20 }}>{icon}</Text>
       </View>
       <Text className="text-gray-500 dark:text-gray-400 text-xs">{label}</Text>
       <Text className="text-gray-900 dark:text-white font-bold text-lg mt-0.5">
@@ -123,10 +122,10 @@ const CommissionItem = ({
   const status = statusConfig[commission.status] || statusConfig.pending;
 
   const typeConfig = {
-    direct: { icon: 'cart', label: 'ขายตรง' },
-    team: { icon: 'people', label: 'ทีม' },
-    referral: { icon: 'share-social', label: 'แนะนำ' },
-    bonus: { icon: 'gift', label: 'โบนัส' },
+    direct: { icon: '🛒', label: 'ขายตรง' },
+    team: { icon: '👥', label: 'ทีม' },
+    referral: { icon: '🔗', label: 'แนะนำ' },
+    bonus: { icon: '🎁', label: 'โบนัส' },
   };
 
   const type = typeConfig[commission.type as keyof typeof typeConfig] || typeConfig.direct;
@@ -139,11 +138,7 @@ const CommissionItem = ({
       <View className="flex-row items-start">
         {/* Icon */}
         <View className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/30 items-center justify-center mr-3">
-          <Ionicons
-            name={type.icon as keyof typeof Ionicons.glyphMap}
-            size={24}
-            color="#3B82F6"
-          />
+          <Text style={{ fontSize: 24 }}>{type.icon}</Text>
         </View>
 
         {/* Info */}
@@ -182,7 +177,7 @@ const CommissionItem = ({
       {/* From User */}
       {commission.from_user && (
         <View className="flex-row items-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-          <Ionicons name="person-circle" size={20} color="#9CA3AF" />
+          <Text style={{ fontSize: 20 }}>👤</Text>
           <Text className="text-gray-500 dark:text-gray-400 text-sm ml-2">
             จาก {commission.from_user.name}
           </Text>
@@ -295,11 +290,9 @@ export default function CommissionsScreen() {
           }}
         />
         <SafeAreaView className="flex-1 justify-center items-center px-6">
-          <Ionicons
-            name="cash"
-            size={80}
-            color={isDark ? '#4B5563' : '#9CA3AF'}
-          />
+          <Text style={{ fontSize: 80, color: isDark ? '#4B5563' : '#9CA3AF' }}>
+            💰
+          </Text>
           <Text
             className={`text-xl font-bold mt-4 ${
               isDark ? 'text-white' : 'text-gray-800'
@@ -331,11 +324,9 @@ export default function CommissionsScreen() {
           headerTintColor: isDark ? '#FFFFFF' : '#1F2937',
           headerLeft: () => (
             <Pressable onPress={() => router.back()} className="p-2 -ml-2">
-              <Ionicons
-                name="arrow-back"
-                size={24}
-                color={isDark ? '#FFFFFF' : '#1F2937'}
-              />
+              <Text style={{ fontSize: 24, color: isDark ? '#FFFFFF' : '#1F2937' }}>
+                ⬅️
+              </Text>
             </Pressable>
           ),
         }}
@@ -400,14 +391,14 @@ export default function CommissionsScreen() {
             <StatCard
               label="ยอดขายตรง"
               value={formatCurrency(stats?.directSales || 0)}
-              icon="cart"
+              icon="🛒"
               color="#10B981"
               delay={100}
             />
             <StatCard
               label="โบนัสทีม"
               value={formatCurrency(stats?.teamBonus || 0)}
-              icon="people"
+              icon="👥"
               color="#8B5CF6"
               delay={150}
             />
@@ -418,11 +409,9 @@ export default function CommissionsScreen() {
             onPress={() => setShowChart(!showChart)}
             className="flex-row items-center justify-center py-3 mt-4"
           >
-            <Ionicons
-              name={showChart ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={isDark ? '#9CA3AF' : '#6B7280'}
-            />
+            <Text style={{ fontSize: 20, color: isDark ? '#9CA3AF' : '#6B7280' }}>
+              {showChart ? '⬆️' : '⬇️'}
+            </Text>
             <Text className={`ml-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
               {showChart ? 'ซ่อนกราฟ' : 'แสดงกราฟ'}
             </Text>
@@ -529,11 +518,9 @@ export default function CommissionsScreen() {
               ))
             ) : (
               <View className="bg-white dark:bg-dark-50 rounded-2xl p-8 items-center border border-gray-100 dark:border-gray-700">
-                <Ionicons
-                  name="cash-outline"
-                  size={48}
-                  color={isDark ? '#4B5563' : '#9CA3AF'}
-                />
+                <Text style={{ fontSize: 48, color: isDark ? '#4B5563' : '#9CA3AF' }}>
+                  💰
+                </Text>
                 <Text className="text-gray-500 dark:text-gray-400 mt-3 text-center">
                   ยังไม่มีรายการคอมมิชชั่น
                 </Text>

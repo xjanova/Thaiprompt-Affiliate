@@ -15,7 +15,6 @@ import {
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { router, Redirect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
@@ -54,7 +53,7 @@ export default function IndexScreen() {
               colors={['#3B82F6', '#8B5CF6']}
               style={styles.logoGradient}
             >
-              <Ionicons name="diamond-outline" size={44} color="#FFF" />
+              <Text style={{ fontSize: 44 }}>💎</Text>
             </LinearGradient>
           </View>
           <Text style={styles.appName}>Thaiprompt</Text>
@@ -74,19 +73,19 @@ export default function IndexScreen() {
         <View style={styles.featuresSection}>
           <View style={styles.featureRow}>
             <View style={styles.featureIcon}>
-              <Ionicons name="wallet-outline" size={20} color="#10B981" />
+              <Text style={{ fontSize: 20 }}>💰</Text>
             </View>
             <Text style={styles.featureText}>รับค่าคอมมิชชั่นทันที</Text>
           </View>
           <View style={styles.featureRow}>
             <View style={styles.featureIcon}>
-              <Ionicons name="people-outline" size={20} color="#8B5CF6" />
+              <Text style={{ fontSize: 20 }}>👥</Text>
             </View>
             <Text style={styles.featureText}>สร้างทีมได้ไม่จำกัด</Text>
           </View>
           <View style={styles.featureRow}>
             <View style={styles.featureIcon}>
-              <Ionicons name="shield-checkmark-outline" size={20} color="#3B82F6" />
+              <Text style={{ fontSize: 20 }}>🛡️</Text>
             </View>
             <Text style={styles.featureText}>ปลอดภัย มั่นคง</Text>
           </View>
@@ -101,13 +100,13 @@ export default function IndexScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.primaryButton}
             >
-              <Ionicons name="log-in-outline" size={20} color="#FFF" />
+              <Text style={{ fontSize: 20 }}>🔓</Text>
               <Text style={styles.primaryButtonText}>เข้าสู่ระบบ</Text>
             </LinearGradient>
           </Pressable>
 
           <Pressable style={styles.secondaryButton} onPress={goToRegister}>
-            <Ionicons name="person-add-outline" size={20} color="#FFF" />
+            <Text style={{ fontSize: 20 }}>➕</Text>
             <Text style={styles.secondaryButtonText}>สมัครสมาชิก</Text>
           </Pressable>
         </View>

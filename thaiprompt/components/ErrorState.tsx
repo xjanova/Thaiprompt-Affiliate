@@ -5,7 +5,6 @@
 
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 import { useAppStore } from '@/stores/appStore';
 
@@ -14,7 +13,7 @@ interface ErrorStateProps {
   message?: string;
   onRetry?: () => void;
   retryText?: string;
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: string;
   showRetry?: boolean;
 }
 
@@ -23,7 +22,7 @@ export const ErrorState = ({
   message = 'ขณะนี้ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้\nโปรดลองใหม่ภายหลัง',
   onRetry,
   retryText = 'ลองใหม่',
-  icon = 'cloud-offline',
+  icon = '📡',
   showRetry = true,
 }: ErrorStateProps) => {
   const { resolvedTheme } = useAppStore();
@@ -40,11 +39,9 @@ export const ErrorState = ({
           isDark ? 'bg-gray-700' : 'bg-gray-100'
         }`}
       >
-        <Ionicons
-          name={icon}
-          size={48}
-          color={isDark ? '#EF4444' : '#DC2626'}
-        />
+        <Text style={{ fontSize: 48 }}>
+          {icon}
+        </Text>
       </Animated.View>
 
       <Text
@@ -68,8 +65,8 @@ export const ErrorState = ({
           onPress={onRetry}
           className="bg-primary-500 px-8 py-3 rounded-xl flex-row items-center"
         >
-          <Ionicons name="refresh" size={20} color="white" />
-          <Text className="text-white font-bold ml-2">{retryText}</Text>
+          <Text style={{ fontSize: 20, marginRight: 8 }}>🔄</Text>
+          <Text className="text-white font-bold">{retryText}</Text>
         </Pressable>
       )}
     </Animated.View>
@@ -102,11 +99,9 @@ export const NetworkErrorBanner = ({
             isDark ? 'bg-red-800/50' : 'bg-red-100'
           }`}
         >
-          <Ionicons
-            name="cloud-offline"
-            size={20}
-            color={isDark ? '#FCA5A5' : '#DC2626'}
-          />
+          <Text style={{ fontSize: 20 }}>
+            📡
+          </Text>
         </View>
         <View className="flex-1">
           <Text

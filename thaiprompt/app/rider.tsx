@@ -19,7 +19,6 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
@@ -55,19 +54,19 @@ const PermissionModal = ({
 }) => {
   const info = {
     location: {
-      icon: 'location',
+      icon: '📍',
       title: 'การเข้าถึงตำแหน่ง',
       description: 'แอปจะขอเข้าถึงตำแหน่งเพื่อแสดงให้ลูกค้าเห็นเมื่อรับงาน',
       color: '#3B82F6',
     },
     camera: {
-      icon: 'camera',
+      icon: '📷',
       title: 'การเข้าถึงกล้อง',
       description: 'แอปจะขอเข้าถึงกล้องเพื่อถ่ายรูปเอกสารและหลักฐาน',
       color: '#10B981',
     },
     microphone: {
-      icon: 'mic',
+      icon: '🎤',
       title: 'การเข้าถึงไมโครโฟน',
       description: 'แอปจะขอเข้าถึงไมโครโฟนเพื่อโทรหาลูกค้า',
       color: '#8B5CF6',
@@ -80,7 +79,7 @@ const PermissionModal = ({
         <View style={styles.modalContent}>
           <LinearGradient colors={[info.color, info.color + 'CC']} style={styles.modalHeader}>
             <View style={styles.modalIconBox}>
-              <Ionicons name={info.icon as any} size={32} color="#FFF" />
+              <Text style={{ fontSize: 32 }}>{info.icon}</Text>
             </View>
             <Text style={styles.modalTitle}>{info.title}</Text>
           </LinearGradient>
@@ -308,7 +307,7 @@ export default function RiderScreen() {
       <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
         <View style={styles.centerBox}>
-          <Ionicons name="bicycle" size={80} color="#4B5563" />
+          <Text style={{ fontSize: 80, color: '#4B5563' }}>🚴</Text>
           <Text style={styles.centerTitle}>สมัครเป็นไรเดอร์</Text>
           <Text style={styles.centerText}>เข้าสู่ระบบเพื่อสมัครเป็นไรเดอร์และรับงาน</Text>
           <Pressable style={styles.primaryButton} onPress={() => router.push('/login')}>
@@ -341,7 +340,7 @@ export default function RiderScreen() {
           {/* Header */}
           <View style={styles.headerRow}>
             <Pressable style={styles.backBtn} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color="#FFF" />
+              <Text style={{ fontSize: 24, color: '#FFF' }}>←</Text>
             </Pressable>
             <Text style={styles.headerTitle}>สมัครเป็นไรเดอร์</Text>
             <View style={{ width: 44 }} />
@@ -352,7 +351,7 @@ export default function RiderScreen() {
             <Text style={styles.benefitsTitle}>🚴 ทำไมต้องเป็นไรเดอร์กับเรา?</Text>
             {['รายได้ดี คิดค่าบริการยุติธรรม', 'เวลาทำงานยืดหยุ่น', 'ถอนเงินได้ทันที', 'ประกันอุบัติเหตุ'].map((item, i) => (
               <View key={i} style={styles.benefitItem}>
-                <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                <Text style={{ fontSize: 20, color: '#FFF' }}>✓</Text>
                 <Text style={styles.benefitText}>{item}</Text>
               </View>
             ))}
@@ -464,7 +463,7 @@ export default function RiderScreen() {
         {/* Header */}
         <View style={styles.headerRow}>
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#FFF" />
+            <Text style={{ fontSize: 24, color: '#FFF' }}>←</Text>
           </Pressable>
           <Text style={styles.headerTitle}>ไรเดอร์</Text>
           {isApproved && (
@@ -482,7 +481,9 @@ export default function RiderScreen() {
           style={styles.statusCard}
         >
           <View style={styles.statusRow}>
-            <Ionicons name={isPending ? 'time' : isRejected ? 'close-circle' : 'checkmark-circle'} size={32} color="#FFF" />
+            <Text style={{ fontSize: 32, color: '#FFF' }}>
+              {isPending ? '⏰' : isRejected ? '❌' : '✅'}
+            </Text>
             <View style={styles.statusInfo}>
               <Text style={styles.statusTitle}>{riderData.statusText}</Text>
               <Text style={styles.statusSubtitle}>รหัสไรเดอร์: #{riderData.riderId}</Text>
@@ -521,9 +522,9 @@ export default function RiderScreen() {
           <Text style={styles.permissionTitle}>สถานะสิทธิ์การใช้งาน</Text>
 
           {[
-            { key: 'gps', icon: 'location', label: 'ตำแหน่ง (GPS)', desc: 'แชร์เฉพาะเมื่อรับงาน', type: 'location' as const },
-            { key: 'camera', icon: 'camera', label: 'กล้อง', desc: 'ถ่ายรูปเอกสาร', type: 'camera' as const },
-            { key: 'microphone', icon: 'mic', label: 'ไมโครโฟน', desc: 'โทรหาลูกค้า', type: 'microphone' as const },
+            { key: 'gps', icon: '📍', label: 'ตำแหน่ง (GPS)', desc: 'แชร์เฉพาะเมื่อรับงาน', type: 'location' as const },
+            { key: 'camera', icon: '📷', label: 'กล้อง', desc: 'ถ่ายรูปเอกสาร', type: 'camera' as const },
+            { key: 'microphone', icon: '🎤', label: 'ไมโครโฟน', desc: 'โทรหาลูกค้า', type: 'microphone' as const },
           ].map((perm) => (
             <Pressable
               key={perm.key}
@@ -531,14 +532,16 @@ export default function RiderScreen() {
               onPress={() => !riderData.permissions?.[perm.key] && setPermissionModal({ visible: true, type: perm.type })}
             >
               <View style={[styles.permissionIcon, riderData.permissions?.[perm.key] ? styles.permissionIconGranted : styles.permissionIconDenied]}>
-                <Ionicons name={perm.icon as any} size={20} color={riderData.permissions?.[perm.key] ? '#10B981' : '#EF4444'} />
+                <Text style={{ fontSize: 20, color: riderData.permissions?.[perm.key] ? '#10B981' : '#EF4444' }}>
+                  {perm.icon}
+                </Text>
               </View>
               <View style={styles.permissionInfo}>
                 <Text style={styles.permissionLabel}>{perm.label}</Text>
                 <Text style={styles.permissionDesc}>{perm.desc}</Text>
               </View>
               {riderData.permissions?.[perm.key] ? (
-                <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                <Text style={{ fontSize: 24, color: '#10B981' }}>✓</Text>
               ) : (
                 <Text style={styles.permissionGrantText}>อนุญาต</Text>
               )}
@@ -552,14 +555,14 @@ export default function RiderScreen() {
             <Text style={styles.sectionTitle}>เมนูลัด</Text>
             <View style={styles.actionsGrid}>
               {[
-                { icon: 'list', label: 'งานที่รอรับ', desc: 'ดูรายการงานใหม่', color: '#3B82F6', route: '/rider-jobs' },
-                { icon: 'navigate', label: 'งานปัจจุบัน', desc: 'ดูงานที่กำลังทำ', color: '#10B981', route: '/rider-job-detail' },
-                { icon: 'briefcase', label: 'บริการของฉัน', desc: 'เลือกบริการที่ให้', color: '#EC4899', route: '/rider-services' },
-                { icon: 'document-text', label: 'เอกสาร', desc: 'อัพเดทเอกสาร', color: '#8B5CF6', route: '/rider-documents' },
+                { icon: '📋', label: 'งานที่รอรับ', desc: 'ดูรายการงานใหม่', color: '#3B82F6', route: '/rider-jobs' },
+                { icon: '🧭', label: 'งานปัจจุบัน', desc: 'ดูงานที่กำลังทำ', color: '#10B981', route: '/rider-job-detail' },
+                { icon: '💼', label: 'บริการของฉัน', desc: 'เลือกบริการที่ให้', color: '#EC4899', route: '/rider-services' },
+                { icon: '📄', label: 'เอกสาร', desc: 'อัพเดทเอกสาร', color: '#8B5CF6', route: '/rider-documents' },
               ].map((action, i) => (
                 <Pressable key={i} style={styles.actionCard} onPress={() => router.push(action.route as any)}>
                   <View style={[styles.actionIcon, { backgroundColor: action.color + '20' }]}>
-                    <Ionicons name={action.icon as any} size={24} color={action.color} />
+                    <Text style={{ fontSize: 24, color: action.color }}>{action.icon}</Text>
                   </View>
                   <Text style={styles.actionLabel}>{action.label}</Text>
                   <Text style={styles.actionDesc}>{action.desc}</Text>

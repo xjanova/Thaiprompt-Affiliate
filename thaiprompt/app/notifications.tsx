@@ -16,7 +16,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
@@ -32,14 +31,14 @@ import {
 // Type Icons
 // =====================================================
 
-const TYPE_ICONS: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-  general: { icon: 'notifications', color: '#3B82F6' },
-  order: { icon: 'receipt', color: '#10B981' },
-  rider: { icon: 'bicycle', color: '#06B6D4' },
-  wallet: { icon: 'wallet', color: '#8B5CF6' },
-  promotion: { icon: 'gift', color: '#F59E0B' },
-  system: { icon: 'settings', color: '#6B7280' },
-  ticket: { icon: 'chatbubbles', color: '#EC4899' },
+const TYPE_ICONS: Record<string, { emoji: string; color: string }> = {
+  general: { emoji: '🔔', color: '#3B82F6' },
+  order: { emoji: '🧾', color: '#10B981' },
+  rider: { emoji: '🚴', color: '#06B6D4' },
+  wallet: { emoji: '💰', color: '#8B5CF6' },
+  promotion: { emoji: '🎁', color: '#F59E0B' },
+  system: { emoji: '⚙️', color: '#6B7280' },
+  ticket: { emoji: '💬', color: '#EC4899' },
 };
 
 // =====================================================
@@ -79,7 +78,7 @@ const NotificationItem = ({ item, isDark, onPress, onDelete }: NotificationItemP
           className="w-12 h-12 rounded-full items-center justify-center mr-3"
           style={{ backgroundColor: typeInfo.color + '20' }}
         >
-          <Ionicons name={typeInfo.icon} size={24} color={typeInfo.color} />
+          <Text style={{ fontSize: 24 }}>{typeInfo.emoji}</Text>
         </View>
 
         {/* Content */}
@@ -196,7 +195,7 @@ export default function NotificationsScreen() {
     return (
       <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
         <SafeAreaView className="flex-1 justify-center items-center px-6">
-          <Ionicons name="notifications" size={80} color={isDark ? '#4B5563' : '#9CA3AF'} />
+          <Text style={{ fontSize: 80 }}>🔔</Text>
           <Text className={`text-xl font-bold mt-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
             การแจ้งเตือน
           </Text>
@@ -221,7 +220,7 @@ export default function NotificationsScreen() {
         <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
           <View className="flex-row items-center">
             <Pressable onPress={() => router.back()} className="mr-4">
-              <Ionicons name="arrow-back" size={24} color={isDark ? '#fff' : '#000'} />
+              <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
             </Pressable>
             <View>
               <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
@@ -258,7 +257,7 @@ export default function NotificationsScreen() {
               colors={['#3B82F6', '#8B5CF6']}
               style={{ width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}
             >
-              <Ionicons name="notifications-off-outline" size={48} color="white" />
+              <Text style={{ fontSize: 48 }}>🔕</Text>
             </LinearGradient>
             <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
               ไม่มีการแจ้งเตือน
