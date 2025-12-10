@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.50] - 2025-12-10
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(mobile): เพิ่ม delay ก่อนเริ่ม AnimatedBackground animations (v1.6.5) (de8ba6b5)
+- fix(mobile): แก้ไข crash หลังอนุญาต push notification (v1.6.4) (4f48d824)
+### 🔧 Other Changes
+- Merge pull request #2226 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (54bb0835)
+
 ## [v3.372.49] - 2025-12-10
 
 ### ✨ Features
