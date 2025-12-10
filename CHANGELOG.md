@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.53] - 2025-12-10
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2229 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (38a3b9b2)
+- fix(mobile): แก้ไข ImagePicker mediaTypes syntax สำหรับ v16 (v1.6.8) (648c6092)
+### 🔧 Other Changes
+
+
 ## [v3.372.52] - 2025-12-10
 
 ### ✨ Features
