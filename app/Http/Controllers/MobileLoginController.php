@@ -86,9 +86,9 @@ class MobileLoginController extends Controller
      * ดำเนินการ Login
      *
      * @param Request $request
-     * @return RedirectResponse
+     * @return View|RedirectResponse
      */
-    public function login(Request $request): RedirectResponse
+    public function login(Request $request): View|RedirectResponse
     {
         $request->validate([
             'email' => 'required|email',
@@ -102,10 +102,27 @@ class MobileLoginController extends Controller
             'email' => $request->email,
             'password' => $request->password,
         ])) {
-            return back()
-                ->withInput(['email' => $request->email, 'token' => $request->token, 'state' => $request->state])
+            Log::warning('Mobile login failed - invalid credentials', [
+                'email' => $request->email,
+                'ip' => $request->ip(),
+            ]);
+
+            // Redirect กลับไปหน้า login พร้อม token และ state (preserve query params)
+            return redirect()->route('mobile-login.show', [
+                'token' => $request->token,
+                'state' => $request->state,
+            ])
+                ->withInput(['email' => $request->email])
                 ->withErrors(['email' => 'อีเมลหรือรหัสผ่านไม่ถูกต้อง']);
         }
+
+        Log::info('Mobile login successful - proceeding to authorize', [
+            'user_id' => Auth::id(),
+            'email' => $request->email,
+        ]);
+
+        // Regenerate session to prevent session fixation
+        $request->session()->regenerate();
 
         // Authorize app
         return $this->authorize($request);
@@ -127,6 +144,13 @@ class MobileLoginController extends Controller
         $loginToken = $request->token;
         $state = $request->state;
 
+        Log::info('Mobile authorize - starting', [
+            'token_prefix' => substr($loginToken, 0, 10) . '...',
+            'state' => $state,
+            'user_id' => Auth::id(),
+            'is_authenticated' => Auth::check(),
+        ]);
+
         // ค้นหา token
         $loginTokenHash = hash('sha256', $loginToken);
         $mobileAuthToken = MobileAuthToken::where('login_token', $loginTokenHash)
@@ -134,7 +158,24 @@ class MobileLoginController extends Controller
             ->whereNull('used_at')
             ->first();
 
-        if (!$mobileAuthToken || $mobileAuthToken->isLoginTokenExpired()) {
+        if (!$mobileAuthToken) {
+            Log::warning('Mobile authorize - token not found', [
+                'token_hash_prefix' => substr($loginTokenHash, 0, 10) . '...',
+                'state' => $state,
+            ]);
+
+            return view('auth.mobile-login-error', [
+                'error' => 'invalid_token',
+                'message' => 'Token ไม่ถูกต้อง กรุณาเริ่มต้นใหม่จากแอพ',
+            ]);
+        }
+
+        if ($mobileAuthToken->isLoginTokenExpired()) {
+            Log::warning('Mobile authorize - token expired', [
+                'token_id' => $mobileAuthToken->id,
+                'expires_at' => $mobileAuthToken->login_token_expires_at,
+            ]);
+
             return view('auth.mobile-login-error', [
                 'error' => 'expired',
                 'message' => 'Session หมดอายุ กรุณาลองใหม่',
@@ -151,9 +192,10 @@ class MobileLoginController extends Controller
             'user_id' => Auth::id(),
         ]);
 
-        Log::info('Mobile login authorized', [
+        Log::info('Mobile login authorized successfully', [
             'user_id' => Auth::id(),
             'device_id' => $mobileAuthToken->device_id,
+            'device_name' => $mobileAuthToken->device_name,
             'ip' => $request->ip(),
         ]);
 

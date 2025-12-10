@@ -42,6 +42,28 @@
 
             {{-- Login Form --}}
             <div class="glass-card rounded-2xl p-6">
+                @if(session('success'))
+                    <div class="mb-4 p-4 rounded-xl bg-green-500/20 border border-green-500/30">
+                        <div class="flex items-center gap-2 text-green-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>{{ session('success') }}</span>
+                        </div>
+                    </div>
+                @endif
+
+                @if(session('error'))
+                    <div class="mb-4 p-4 rounded-xl bg-red-500/20 border border-red-500/30">
+                        <div class="flex items-center gap-2 text-red-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>{{ session('error') }}</span>
+                        </div>
+                    </div>
+                @endif
+
                 @if($errors->any())
                     <div class="mb-4 p-4 rounded-xl bg-red-500/20 border border-red-500/30">
                         <div class="flex items-center gap-2 text-red-400">
@@ -53,7 +75,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('mobile-login.login') }}">
+                <form method="POST" action="{{ route('mobile-login.login') }}" id="loginForm">
                     @csrf
                     <input type="hidden" name="token" value="{{ $token }}">
                     <input type="hidden" name="state" value="{{ $state }}">
@@ -89,13 +111,20 @@
                     </div>
 
                     {{-- Submit Button --}}
-                    <button type="submit"
-                            class="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition transform hover:scale-[1.02] active:scale-[0.98]">
-                        <span class="flex items-center justify-center gap-2">
+                    <button type="submit" id="submitBtn"
+                            class="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span id="btnText" class="flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
                             </svg>
                             เข้าสู่ระบบ
+                        </span>
+                        <span id="btnLoading" class="hidden flex items-center justify-center gap-2">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            กำลังเข้าสู่ระบบ...
                         </span>
                     </button>
                 </form>
@@ -131,5 +160,19 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // แสดง loading state เมื่อกด submit
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            var btn = document.getElementById('submitBtn');
+            var btnText = document.getElementById('btnText');
+            var btnLoading = document.getElementById('btnLoading');
+
+            // Disable button และแสดง loading
+            btn.disabled = true;
+            btnText.classList.add('hidden');
+            btnLoading.classList.remove('hidden');
+        });
+    </script>
 </body>
 </html>
