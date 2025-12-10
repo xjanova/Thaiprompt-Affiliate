@@ -441,6 +441,36 @@ export default function SettingsScreen() {
           }
         />
 
+        {/* ⭐ GPS Sharing - แยกหมวดให้เห็นชัด */}
+        <SectionHeader title="📍 แชร์ตำแหน่ง GPS" isDark={isDark} />
+        <SettingItem
+          icon="location"
+          iconColor="#10B981"
+          title="เปิดแชร์ตำแหน่ง"
+          subtitle={gpsSharing ? '🟢 กำลังแชร์ตำแหน่งอยู่...' : 'แชร์ตำแหน่งให้ Admin GPS Monitor ดู'}
+          isDark={isDark}
+          rightElement={
+            isGpsLoading ? (
+              <ActivityIndicator size="small" color={isDark ? '#7B2CBF' : '#10B981'} />
+            ) : (
+              <Switch
+                value={gpsSharing}
+                onValueChange={handleGpsSharingToggle}
+                trackColor={{ false: '#767577', true: '#10B981' }}
+                thumbColor={gpsSharing ? '#FFFFFF' : '#f4f3f4'}
+              />
+            )
+          }
+        />
+        {gpsSharing && (
+          <View style={[styles.gpsStatusCard, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.05)' }]}>
+            <Ionicons name="navigate" size={20} color="#10B981" />
+            <Text style={[styles.gpsStatusText, { color: '#10B981' }]}>
+              กำลังส่งตำแหน่งทุก 30 วินาที
+            </Text>
+          </View>
+        )}
+
         {/* Security */}
         <SectionHeader title="🔐 ความปลอดภัย" isDark={isDark} />
         <SettingItem
@@ -456,27 +486,6 @@ export default function SettingsScreen() {
               trackColor={{ false: '#767577', true: isDark ? '#7B2CBF' : '#3B82F6' }}
               thumbColor={biometricEnabled ? '#FFFFFF' : '#f4f3f4'}
             />
-          }
-        />
-
-        {/* ⭐ GPS Sharing Toggle */}
-        <SettingItem
-          icon="location"
-          iconColor="#10B981"
-          title="แชร์ตำแหน่ง GPS"
-          subtitle={gpsSharing ? '📍 กำลังแชร์ตำแหน่งอยู่...' : 'แชร์ตำแหน่งให้ Admin GPS Monitor'}
-          isDark={isDark}
-          rightElement={
-            isGpsLoading ? (
-              <ActivityIndicator size="small" color={isDark ? '#7B2CBF' : '#3B82F6'} />
-            ) : (
-              <Switch
-                value={gpsSharing}
-                onValueChange={handleGpsSharingToggle}
-                trackColor={{ false: '#767577', true: '#10B981' }}
-                thumbColor={gpsSharing ? '#FFFFFF' : '#f4f3f4'}
-              />
-            )
           }
         />
 
@@ -686,5 +695,17 @@ const styles = StyleSheet.create({
   },
   themeDescription: {
     fontSize: 12,
+  },
+  gpsStatusCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    gap: 8,
+  },
+  gpsStatusText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 });

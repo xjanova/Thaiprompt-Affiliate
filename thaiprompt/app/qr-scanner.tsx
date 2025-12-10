@@ -69,10 +69,23 @@ export default function QRScannerScreen() {
 
   // ขอ permission อัตโนมัติเมื่อเข้าหน้า
   useEffect(() => {
-    if (!permission?.granted) {
-      requestPermission();
-    }
-  }, [permission]);
+    const checkAndRequestPermission = async () => {
+      try {
+        // ถ้ายังไม่มี permission ให้ request
+        if (permission === null) {
+          console.log('Requesting camera permission...');
+          await requestPermission();
+        } else if (!permission.granted && permission.canAskAgain) {
+          console.log('Re-requesting camera permission...');
+          await requestPermission();
+        }
+      } catch (error) {
+        console.error('Camera permission error:', error);
+      }
+    };
+
+    checkAndRequestPermission();
+  }, [permission, requestPermission]);
 
   // Handle barcode scanned
   const handleBarCodeScanned = useCallback(({ data, type }: BarcodeScanningResult) => {

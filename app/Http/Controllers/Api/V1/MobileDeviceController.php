@@ -174,19 +174,46 @@ class MobileDeviceController extends Controller
             'token' => ['required', 'string', 'max:500'],
             'platform' => ['required', 'in:ios,android'],
             'device_id' => ['nullable', 'string', 'max:100'],
+            'device_name' => ['nullable', 'string', 'max:100'],
+            'app_version' => ['nullable', 'string', 'max:20'],
         ]);
 
-        // ถ้ามี device_id ให้อัปเดท push token ของเครื่องนั้น
+        $device = null;
+        $userId = auth('sanctum')->id();
+
+        // ถ้ามี device_id ให้หา/สร้างเครื่อง
         if ($validated['device_id'] ?? null) {
-            $device = MobileDevice::where('device_id', $validated['device_id'])->first();
-            if ($device) {
-                $device->update(['push_token' => $validated['token']]);
+            $device = MobileDevice::updateOrCreate(
+                ['device_id' => $validated['device_id']],
+                [
+                    'platform' => $validated['platform'],
+                    'device_model' => $validated['device_name'] ?? null,
+                    'app_version' => $validated['app_version'] ?? null,
+                    'push_token' => $validated['token'],
+                    'is_active' => true,
+                    'last_active_at' => now(),
+                    'user_id' => $userId,
+                ]
+            );
+        } else {
+            // ถ้าไม่มี device_id แต่มี user_id ให้อัปเดท token ของ user
+            if ($userId) {
+                $device = MobileDevice::where('user_id', $userId)
+                    ->where('platform', $validated['platform'])
+                    ->first();
+
+                if ($device) {
+                    $device->update(['push_token' => $validated['token']]);
+                }
             }
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Push token registered',
+            'data' => [
+                'deviceLinked' => $device !== null,
+            ],
         ]);
     }
 
