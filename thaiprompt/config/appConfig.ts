@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '1.7.3',
-  BUILD_NUMBER: 25,
-  BUILD_DATE: '2025-12-10-QR-GALLERY', // แก้ไข QR Code รับเงิน + KYC gallery ใช้ DocumentPicker
+  VERSION: '1.7.4',
+  BUILD_NUMBER: 26,
+  BUILD_DATE: '2025-12-10-TRANSFER-CONFIRM', // เพิ่ม confirmation ก่อนโอน + แสดงยอดคงเหลือหลังโอน
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs
