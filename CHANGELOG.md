@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.51] - 2025-12-10
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2227 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (df99bc69)
+- fix(mobile): ปิด AnimatedBackground ทั้งหมดเพื่อทดสอบ crash (v1.6.6) (51142f05)
+### 🔧 Other Changes
+
+
 ## [v3.372.50] - 2025-12-10
 
 ### ✨ Features
