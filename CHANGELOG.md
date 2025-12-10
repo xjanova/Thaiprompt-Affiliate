@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.63] - 2025-12-10
+
+### ✨ Features
+- feat(mobile): เพิ่มระบบตะกร้าสินค้าและชำระเงิน (ee61ac6b)
+- feat(mobile): อัพเดทใช้ภาพปุ่มเมนูครบทุกปุ่ม (be104de9)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2237 from xjanova/claude/fix-mobile-connectivity-01HMamgvi2oENVHkGSXvbvCU (b940b42e)
+
 ## [v3.372.62] - 2025-12-10
 
 ### ✨ Features
