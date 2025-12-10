@@ -1,84 +1,173 @@
 /**
- * Network/MLM Screen - Premium Stable Version
- * ใช้ StyleSheet แทน NativeWind
+ * Network/MLM Screen - Premium V3 Design
+ * ออกแบบใหม่ให้สวยงาม น่าใช้ สมราคา
+ *
+ * Features:
+ * - Gradient header ที่สวยงาม
+ * - Stats cards แบบ 3D
+ * - Animated elements
+ * - Glassmorphism effects
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   ScrollView,
   Pressable,
   RefreshControl,
-  Alert,
   StyleSheet,
   StatusBar,
   ActivityIndicator,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
-
-// Emoji icons map - ใช้ emoji แทน Ionicons ทั้งหมด
-const EMOJI_ICONS: Record<string, string> = {
-  'people': '👥',
-  'people-outline': '👥',
-  'cash-outline': '💵',
-  'git-network-outline': '🌳',
-  'share-social-outline': '📤',
-  'chevron-forward': '›',
-};
 import { getReferrals } from '@/services/api';
 import { formatCurrency } from '@/constants';
 import type { ReferralsData, Referral } from '@/types';
 
-// Stat Card Component - ใช้ emoji icons
+const { width } = Dimensions.get('window');
+
+// Premium Stat Card Component with Animation
 const StatCard = ({
   icon,
   label,
   value,
   color,
+  index,
 }: {
   icon: string;
   label: string;
   value: string;
   color: string;
-}) => (
-  <View style={styles.statCard}>
-    <View style={[styles.statIconBox, { backgroundColor: color + '20' }]}>
-      <Text style={{ fontSize: 20 }}>{EMOJI_ICONS[icon] || '📊'}</Text>
-    </View>
-    <Text style={styles.statLabel}>{label}</Text>
-    <Text style={styles.statValue}>{value}</Text>
-  </View>
-);
+  index: number;
+}) => {
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
 
-// Member Card Component
-const MemberCard = ({ member }: { member: Referral }) => {
-  const isActive = member.status === 'active';
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        delay: index * 100,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 7,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        delay: index * 100,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   return (
-    <View style={styles.memberCard}>
-      <View style={styles.memberAvatar}>
-        <Text style={styles.memberAvatarText}>
-          {member.user.name.charAt(0).toUpperCase()}
-        </Text>
+    <Animated.View
+      style={[
+        styles.statCard,
+        {
+          transform: [{ scale: scaleAnim }],
+          opacity: opacityAnim,
+        },
+      ]}
+    >
+      {/* Glow effect */}
+      <View style={[styles.statGlow, { backgroundColor: color }]} />
+
+      {/* Icon */}
+      <View style={[styles.statIconBox, { backgroundColor: color + '25' }]}>
+        <Text style={{ fontSize: 24 }}>{icon}</Text>
       </View>
-      <View style={styles.memberInfo}>
-        <Text style={styles.memberName}>{member.user.name}</Text>
-        <Text style={styles.memberMeta}>
-          ระดับ {member.level} • {member.user.email}
-        </Text>
-      </View>
-      <View style={styles.memberRight}>
-        <View style={[styles.statusBadge, { backgroundColor: isActive ? '#D1FAE5' : '#E5E7EB' }]}>
-          <Text style={[styles.statusText, { color: isActive ? '#059669' : '#6B7280' }]}>
-            {isActive ? 'ใช้งาน' : 'ไม่ใช้งาน'}
-          </Text>
+
+      {/* Value */}
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+
+      {/* Shine effect */}
+      <View style={styles.statShine} />
+    </Animated.View>
+  );
+};
+
+// Premium Member Card Component
+const MemberCard = ({ member, index }: { member: Referral; index: number }) => {
+  const isActive = member.status === 'active';
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.98,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // Level color based on level number
+  const getLevelColor = (level: number) => {
+    if (level === 1) return '#8B5CF6';
+    if (level === 2) return '#06B6D4';
+    if (level === 3) return '#10B981';
+    return '#6B7280';
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={styles.memberCard}
+      >
+        {/* Avatar with gradient border */}
+        <View style={styles.memberAvatarWrapper}>
+          <LinearGradient
+            colors={[getLevelColor(member.level), getLevelColor(member.level) + '60']}
+            style={styles.memberAvatarBorder}
+          >
+            <View style={styles.memberAvatar}>
+              <Text style={styles.memberAvatarText}>
+                {member.user.name.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          </LinearGradient>
+          {/* Level badge */}
+          <View style={[styles.levelBadge, { backgroundColor: getLevelColor(member.level) }]}>
+            <Text style={styles.levelBadgeText}>{member.level}</Text>
+          </View>
         </View>
-        <Text style={styles.memberEarnings}>{formatCurrency(member.earnings)}</Text>
-      </View>
-    </View>
+
+        {/* Info */}
+        <View style={styles.memberInfo}>
+          <Text style={styles.memberName}>{member.user.name}</Text>
+          <Text style={styles.memberEmail} numberOfLines={1}>
+            {member.user.email}
+          </Text>
+          {/* Active status indicator */}
+          <View style={styles.statusRow}>
+            <View style={[styles.statusDot, { backgroundColor: isActive ? '#10B981' : '#6B7280' }]} />
+            <Text style={[styles.statusText, { color: isActive ? '#10B981' : '#6B7280' }]}>
+              {isActive ? 'กำลังใช้งาน' : 'ไม่ใช้งาน'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Earnings */}
+        <View style={styles.memberRight}>
+          <Text style={styles.earningsLabel}>รายได้</Text>
+          <Text style={styles.memberEarnings}>{formatCurrency(member.earnings)}</Text>
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 };
 
@@ -150,6 +239,11 @@ export default function NetworkScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Gradient Background */}
+      <LinearGradient
+        colors={['#0F0F23', '#1a1a2e', '#16213e']}
+        style={StyleSheet.absoluteFill}
+      />
       <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
 
       <ScrollView
@@ -165,25 +259,65 @@ export default function NetworkScreen() {
           />
         }
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>สายงานของฉัน</Text>
-          <Text style={styles.headerSubtitle}>ดูข้อมูลทีมและเครือข่ายของคุณ</Text>
+        {/* Premium Header with Gradient */}
+        <View style={styles.headerWrapper}>
+          <LinearGradient
+            colors={['#8B5CF6', '#6D28D9', '#4C1D95']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.headerGradient}
+          >
+            {/* Shine overlay */}
+            <LinearGradient
+              colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={styles.headerShine}
+            />
+
+            <View style={styles.headerContent}>
+              <View style={styles.headerIcon}>
+                <Text style={{ fontSize: 32 }}>👥</Text>
+              </View>
+              <Text style={styles.headerTitle}>สายงานของฉัน</Text>
+              <Text style={styles.headerSubtitle}>ดูข้อมูลทีมและเครือข่ายของคุณ</Text>
+            </View>
+
+            {/* Summary stats in header */}
+            <View style={styles.headerStats}>
+              <View style={styles.headerStatItem}>
+                <Text style={styles.headerStatValue}>{data?.totalReferrals || 0}</Text>
+                <Text style={styles.headerStatLabel}>สมาชิก</Text>
+              </View>
+              <View style={styles.headerStatDivider} />
+              <View style={styles.headerStatItem}>
+                <Text style={styles.headerStatValue}>{data?.activeReferrals || 0}</Text>
+                <Text style={styles.headerStatLabel}>ใช้งาน</Text>
+              </View>
+              <View style={styles.headerStatDivider} />
+              <View style={styles.headerStatItem}>
+                <Text style={styles.headerStatValue}>{formatCurrency(data?.totalEarnings || 0)}</Text>
+                <Text style={styles.headerStatLabel}>รายได้</Text>
+              </View>
+            </View>
+          </LinearGradient>
         </View>
 
-        {/* Stats Row */}
+        {/* Stats Cards Row */}
         <View style={styles.statsRow}>
           <StatCard
-            icon="people"
+            icon="👥"
             label="สมาชิกทั้งหมด"
             value={`${data?.totalReferrals || 0} คน`}
             color="#8B5CF6"
+            index={0}
           />
           <StatCard
-            icon="cash-outline"
+            icon="💰"
             label="รายได้จากทีม"
             value={formatCurrency(data?.totalEarnings || 0)}
             color="#10B981"
+            index={1}
           />
         </View>
 
@@ -231,18 +365,42 @@ export default function NetworkScreen() {
 
         {/* Member List */}
         <View style={styles.memberSection}>
-          <Text style={styles.sectionTitle}>สมาชิกในทีม</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>สมาชิกในทีม</Text>
+            {data?.referrals && data.referrals.length > 0 && (
+              <View style={styles.sectionBadge}>
+                <Text style={styles.sectionBadgeText}>{data.referrals.length} คน</Text>
+              </View>
+            )}
+          </View>
 
           {data?.referrals && data.referrals.length > 0 ? (
-            data.referrals.map((member) => (
-              <MemberCard key={member.id} member={member} />
+            data.referrals.map((member, index) => (
+              <MemberCard key={member.id} member={member} index={index} />
             ))
           ) : (
             <View style={styles.emptyBox}>
-              <Text style={{ fontSize: 48 }}>👥</Text>
-              <Text style={styles.emptyText}>ยังไม่มีสมาชิกในทีม</Text>
+              {/* Empty state with illustration */}
+              <View style={styles.emptyIconWrapper}>
+                <LinearGradient
+                  colors={['#8B5CF6', '#6D28D9']}
+                  style={styles.emptyIconGradient}
+                >
+                  <Text style={{ fontSize: 40 }}>👥</Text>
+                </LinearGradient>
+              </View>
+              <Text style={styles.emptyTitle}>ยังไม่มีสมาชิกในทีม</Text>
+              <Text style={styles.emptyText}>เริ่มสร้างทีมของคุณด้วยการแนะนำเพื่อน</Text>
               <Pressable style={styles.emptyButton} onPress={() => router.push('/referral')}>
-                <Text style={styles.emptyButtonText}>แนะนำเพื่อน</Text>
+                <LinearGradient
+                  colors={['#8B5CF6', '#6D28D9']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.emptyButtonGradient}
+                >
+                  <Text style={{ fontSize: 18 }}>📤</Text>
+                  <Text style={styles.emptyButtonText}>แนะนำเพื่อน</Text>
+                </LinearGradient>
               </Pressable>
             </View>
           )}
@@ -263,21 +421,79 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
-  header: {
-    paddingHorizontal: 20,
+
+  // Premium Header Styles
+  headerWrapper: {
+    paddingHorizontal: 0,
+    marginBottom: 16,
+  },
+  headerGradient: {
     paddingTop: 56,
-    paddingBottom: 16,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    overflow: 'hidden',
+  },
+  headerShine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+  },
+  headerContent: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  headerIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  headerStats: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 8,
+  },
+  headerStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerStatValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  headerStatLabel: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.7)',
     marginTop: 4,
   },
+  headerStatDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+
+  // Not Logged In
   notLoggedIn: {
     flex: 1,
     justifyContent: 'center',
@@ -317,38 +533,62 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginTop: 12,
   },
+
+  // Stats Cards
   statsRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     marginBottom: 16,
+    gap: 12,
   },
   statCard: {
     flex: 1,
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 4,
+    borderRadius: 20,
+    padding: 18,
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+  },
+  statGlow: {
+    position: 'absolute',
+    top: -20,
+    left: '50%',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    opacity: 0.3,
+    marginLeft: -30,
+  },
+  statShine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    backgroundColor: 'rgba(255,255,255,0.03)',
   },
   statIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
     color: '#9CA3AF',
   },
-  statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginTop: 2,
-  },
+
+  // Action Cards
   actionCardWrapper: {
     paddingHorizontal: 20,
     marginBottom: 12,
@@ -356,64 +596,115 @@ const styles = StyleSheet.create({
   actionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 18,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   actionCardIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 14,
   },
   actionCardInfo: {
     flex: 1,
   },
   actionCardTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
   actionCardDesc: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.7)',
-    marginTop: 2,
+    marginTop: 4,
   },
+
+  // Member Section
   memberSection: {
     paddingHorizontal: 20,
-    marginTop: 8,
+    marginTop: 12,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 12,
   },
+  sectionBadge: {
+    backgroundColor: 'rgba(139,92,246,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  sectionBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#8B5CF6',
+  },
+
+  // Member Card
   memberCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 14,
-    marginBottom: 10,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },
+  memberAvatarWrapper: {
+    position: 'relative',
+    marginRight: 14,
+  },
+  memberAvatarBorder: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    padding: 2,
+  },
   memberAvatar: {
-    width: 48,
-    height: 48,
+    width: '100%',
+    height: '100%',
     borderRadius: 24,
-    backgroundColor: 'rgba(139,92,246,0.2)',
+    backgroundColor: '#1a1a2e',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
   memberAvatarText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#8B5CF6',
+    color: '#FFFFFF',
+  },
+  levelBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#1a1a2e',
+  },
+  levelBadgeText: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   memberInfo: {
     flex: 1,
@@ -422,51 +713,87 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
+    marginBottom: 2,
   },
-  memberMeta: {
+  memberEmail: {
     fontSize: 12,
     color: '#9CA3AF',
-    marginTop: 2,
+    marginBottom: 6,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '500',
   },
   memberRight: {
     alignItems: 'flex-end',
   },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  statusText: {
+  earningsLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    color: '#9CA3AF',
+    marginBottom: 2,
   },
   memberEarnings: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#8B5CF6',
-    marginTop: 4,
+    color: '#10B981',
   },
+
+  // Empty State
   emptyBox: {
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    padding: 32,
+    borderRadius: 24,
+    padding: 40,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },
+  emptyIconWrapper: {
+    marginBottom: 20,
+  },
+  emptyIconGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
   emptyText: {
+    fontSize: 14,
     color: '#9CA3AF',
-    marginTop: 12,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   emptyButton: {
-    backgroundColor: '#8B5CF6',
+    marginTop: 24,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  emptyButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 10,
-    marginTop: 16,
+    paddingVertical: 14,
+    gap: 8,
   },
   emptyButtonText: {
     color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '600',
   },
 });

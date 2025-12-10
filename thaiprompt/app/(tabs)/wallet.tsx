@@ -381,9 +381,12 @@ export default function WalletScreen() {
                 <Text style={{ fontSize: 20 }}>💰</Text>
                 <Text style={styles.balanceLabel}>ยอดเงินคงเหลือ</Text>
               </View>
-              {/* QR Code Button */}
-              <Pressable style={styles.qrButton} onPress={handleShowQr}>
-                <Text style={{ fontSize: 20 }}>📱</Text>
+              {/* QR Code Button - ปุ่มรับเงินชัดเจน */}
+              <Pressable style={styles.receiveMoneyButton} onPress={handleShowQr}>
+                <View style={styles.receiveMoneyIcon}>
+                  <Text style={{ fontSize: 18 }}>📲</Text>
+                </View>
+                <Text style={styles.receiveMoneyText}>รับเงิน</Text>
               </Pressable>
             </View>
             <Text style={styles.balanceAmount}>
@@ -406,6 +409,25 @@ export default function WalletScreen() {
             </View>
           </LinearGradient>
         </View>
+
+        {/* Receive Money Button - ปุ่มรับเงินโดดเด่น */}
+        <Pressable style={styles.receiveMoneyCard} onPress={handleShowQr}>
+          <LinearGradient
+            colors={['#8B5CF6', '#7C3AED']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.receiveMoneyCardGradient}
+          >
+            <View style={styles.receiveMoneyCardIcon}>
+              <Text style={{ fontSize: 28 }}>📲</Text>
+            </View>
+            <View style={styles.receiveMoneyCardContent}>
+              <Text style={styles.receiveMoneyCardTitle}>รับเงิน / QR Code</Text>
+              <Text style={styles.receiveMoneyCardDesc}>แสดง QR Code ให้ผู้อื่นสแกนเพื่อโอนเงินให้คุณ</Text>
+            </View>
+            <Text style={{ fontSize: 20, color: 'rgba(255,255,255,0.8)' }}>›</Text>
+          </LinearGradient>
+        </Pressable>
 
         {/* Action Buttons */}
         <View style={styles.actionsRow}>
@@ -654,13 +676,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  qrButton: {
-    width: 40,
-    height: 40,
+  // Receive Money Button on Balance Card
+  receiveMoneyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  receiveMoneyIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 6,
+  },
+  receiveMoneyText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
   },
   balanceLabel: {
     fontSize: 14,
@@ -693,6 +732,46 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginTop: 4,
   },
+  // Receive Money Card - การ์ดรับเงินโดดเด่น
+  receiveMoneyCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  receiveMoneyCardGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  receiveMoneyCardIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  receiveMoneyCardContent: {
+    flex: 1,
+  },
+  receiveMoneyCardTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  receiveMoneyCardDesc: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+  },
+
   actionsRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
