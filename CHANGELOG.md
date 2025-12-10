@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.55] - 2025-12-10
+
+### ✨ Features
+- feat(mobile): ปรับปรุงปุ่มหน้าหลักให้สวยงามมากขึ้น (v1.7.1) (1bb42cf0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2231 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (f5593a1b)
+- refactor(mobile): ลบ Ionicons ออกทั้งหมด ใช้ emoji icons แทน (v1.7.0) (6bf50b54)
+
 ## [v3.372.54] - 2025-12-10
 
 ### ✨ Features
