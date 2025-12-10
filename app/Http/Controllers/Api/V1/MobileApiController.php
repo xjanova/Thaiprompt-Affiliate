@@ -3857,4 +3857,239 @@ class MobileApiController extends Controller
             ], 500);
         }
     }
+
+    // =====================================================
+    // Wallet Lookup & Transfer API (Mobile)
+    // =====================================================
+
+    /**
+     * ค้นหา Wallet Address
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function lookupWalletAddress(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $address = $request->query('address');
+
+        if (empty($address) || strlen($address) < 10) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาระบุ Wallet Address ที่ถูกต้อง',
+            ], 422);
+        }
+
+        try {
+            // ค้นหา Wallet จาก address
+            $wallet = \App\Models\Wallet::where('wallet_address', $address)
+                ->where('status', 'active')
+                ->first();
+
+            if (!$wallet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบ Wallet นี้ในระบบ',
+                ], 404);
+            }
+
+            // ตรวจสอบว่าไม่ใช่ตัวเอง
+            if ($wallet->user_id === $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่สามารถโอนเงินให้ตัวเองได้',
+                ], 400);
+            }
+
+            // ดึงข้อมูล User เจ้าของ Wallet
+            $recipient = $wallet->user;
+
+            if (!$recipient) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบผู้ใช้เจ้าของ Wallet นี้',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'user_id' => $recipient->id,
+                    'name' => $recipient->name,
+                    'avatar' => $recipient->avatar_url ?? null,
+                    'wallet_address' => $wallet->wallet_address,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Wallet Lookup Error', [
+                'user_id' => $user->id,
+                'address' => $address,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการค้นหา Wallet',
+            ], 500);
+        }
+    }
+
+    /**
+     * โอนเงินไปยัง Wallet อื่น
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function transferMoney(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        $validator = Validator::make($request->all(), [
+            'wallet_address' => 'required|string|min:10',
+            'amount' => 'required|numeric|min:10',
+            'pin' => 'required|string|size:6',
+            'note' => 'nullable|string|max:200',
+        ], [
+            'wallet_address.required' => 'กรุณาระบุ Wallet Address ผู้รับ',
+            'amount.required' => 'กรุณาระบุจำนวนเงิน',
+            'amount.min' => 'โอนขั้นต่ำ 10 บาท',
+            'pin.required' => 'กรุณาระบุ PIN',
+            'pin.size' => 'PIN ต้องเป็น 6 หลัก',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $walletService = app(\App\Services\WalletService::class);
+
+            // ดึง Wallet ผู้โอน
+            $senderWallet = $walletService->getOrCreateWallet($user);
+
+            // ตรวจสอบ PIN
+            if (!$senderWallet->pin_hash || !Hash::check($request->pin, $senderWallet->pin_hash)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'PIN ไม่ถูกต้อง',
+                ], 403);
+            }
+
+            // ค้นหา Wallet ผู้รับ
+            $recipientWallet = \App\Models\Wallet::where('wallet_address', $request->wallet_address)
+                ->where('status', 'active')
+                ->first();
+
+            if (!$recipientWallet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบ Wallet ผู้รับ',
+                ], 404);
+            }
+
+            // ตรวจสอบว่าไม่ใช่ตัวเอง
+            if ($recipientWallet->user_id === $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่สามารถโอนเงินให้ตัวเองได้',
+                ], 400);
+            }
+
+            // คำนวณค่าธรรมเนียม (1%)
+            $amount = (float) $request->amount;
+            $feeRate = 0.01;
+            $fee = min(max(round($amount * $feeRate, 2), 0), 100);
+            $totalDeduction = $amount + $fee;
+
+            // ตรวจสอบยอดเงิน
+            if ($senderWallet->balance < $totalDeduction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ยอดเงินไม่เพียงพอ (ต้องการ ' . number_format($totalDeduction, 2) . ' บาท)',
+                ], 400);
+            }
+
+            // หักเงินผู้โอน
+            $senderWallet->decrement('balance', $totalDeduction);
+
+            // เพิ่มเงินผู้รับ
+            $recipientWallet->increment('balance', $amount);
+
+            // บันทึก Transaction ผู้โอน
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $senderWallet->id,
+                'user_id' => $user->id,
+                'type' => 'transfer_out',
+                'amount' => -$totalDeduction,
+                'fee' => $fee,
+                'balance_after' => $senderWallet->balance,
+                'description' => 'โอนเงินไปยัง ' . $recipientWallet->wallet_address,
+                'reference' => 'TF' . time() . rand(1000, 9999),
+                'metadata' => [
+                    'recipient_wallet' => $recipientWallet->wallet_address,
+                    'recipient_user_id' => $recipientWallet->user_id,
+                    'amount' => $amount,
+                    'fee' => $fee,
+                    'note' => $request->note ?? null,
+                ],
+                'status' => 'completed',
+            ]);
+
+            // บันทึก Transaction ผู้รับ
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $recipientWallet->id,
+                'user_id' => $recipientWallet->user_id,
+                'type' => 'transfer_in',
+                'amount' => $amount,
+                'fee' => 0,
+                'balance_after' => $recipientWallet->balance,
+                'description' => 'รับโอนเงินจาก ' . $senderWallet->wallet_address,
+                'reference' => 'TF' . time() . rand(1000, 9999),
+                'metadata' => [
+                    'sender_wallet' => $senderWallet->wallet_address,
+                    'sender_user_id' => $user->id,
+                    'amount' => $amount,
+                    'note' => $request->note ?? null,
+                ],
+                'status' => 'completed',
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'โอนเงินสำเร็จ',
+                'data' => [
+                    'amount' => $amount,
+                    'fee' => $fee,
+                    'total_deduction' => $totalDeduction,
+                    'new_balance' => $senderWallet->balance,
+                    'recipient' => [
+                        'name' => $recipientWallet->user->name ?? 'Unknown',
+                        'wallet_address' => $recipientWallet->wallet_address,
+                    ],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            \Log::error('Wallet Transfer Error', [
+                'user_id' => $user->id,
+                'recipient_address' => $request->wallet_address,
+                'amount' => $request->amount,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการโอนเงิน กรุณาลองใหม่',
+            ], 500);
+        }
+    }
 }

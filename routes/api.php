@@ -182,6 +182,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/balance', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getWalletBalance']);
             Route::get('/transactions', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getWalletTransactions']);
             Route::post('/topup', [\App\Http\Controllers\Api\V1\PaymentApiController::class, 'initializeWalletTopup']);
+            // ค้นหากระเป๋าเงินจาก wallet address (สำหรับ QR scan)
+            Route::get('/lookup', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'lookupWalletAddress']);
+            // โอนเงินระหว่างกระเป๋า (ต้องใช้ PIN)
+            Route::post('/transfer', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'transferMoney']);
         });
 
         // Orders (Mobile App)
