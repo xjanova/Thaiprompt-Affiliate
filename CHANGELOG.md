@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.52] - 2025-12-10
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2228 from xjanova/claude/fix-line-webhook-403-01MQaJFqLqmdxkzSg6MU8czK (cc9168e7)
+- fix(mobile): เปลี่ยนเมนูไอคอนเป็น emoji แทน Ionicons (v1.6.7) (b2d97bdc)
+### 🔧 Other Changes
+
+
 ## [v3.372.51] - 2025-12-10
 
 ### ✨ Features
