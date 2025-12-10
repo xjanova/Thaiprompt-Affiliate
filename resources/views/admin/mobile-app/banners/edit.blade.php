@@ -104,7 +104,7 @@
                         ลิงก์เมื่อคลิก
                     </label>
                     <input type="url" name="link_url" id="link_url"
-                           value="{{ old('link_url', $banner->link_url) }}"
+                           value="{{ old('link_url', $banner->link) }}"
                            class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600
                                   bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                                   focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
