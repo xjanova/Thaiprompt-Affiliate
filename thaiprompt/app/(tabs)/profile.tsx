@@ -171,14 +171,16 @@ export default function ProfileScreen() {
     try {
       // ขอ permission
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('🖼️ Media library permission:', status);
       if (status !== 'granted') {
         Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้เข้าถึงรูปภาพในการตั้งค่า');
         return;
       }
 
       // เลือกรูป
+      console.log('🖼️ Launching image library...');
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'], // ใช้ syntax ใหม่ของ expo-image-picker v16
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -197,9 +199,10 @@ export default function ProfileScreen() {
         }
         setIsUploading(false);
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Pick image error:', error);
       setIsUploading(false);
-      Alert.alert('ผิดพลาด', 'เกิดข้อผิดพลาดในการเลือกรูป');
+      Alert.alert('ผิดพลาด', error?.message || 'เกิดข้อผิดพลาดในการเลือกรูป');
     }
   };
 
@@ -207,12 +210,15 @@ export default function ProfileScreen() {
   const handleTakePhoto = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      console.log('📷 Camera permission:', status);
       if (status !== 'granted') {
         Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้ใช้กล้องในการตั้งค่า');
         return;
       }
 
+      console.log('📷 Launching camera...');
       const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'], // ใช้ syntax ใหม่ของ expo-image-picker v16
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,

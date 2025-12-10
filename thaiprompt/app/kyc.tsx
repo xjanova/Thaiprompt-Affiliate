@@ -862,21 +862,27 @@ export default function KycScreen() {
         onPress: async () => {
           try {
             const hasPermission = await requestCameraPermission();
+            console.log('📷 Camera permission granted:', hasPermission);
             if (!hasPermission) return;
 
+            console.log('📷 Launching camera...');
             const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              mediaTypes: ['images'], // ใช้ syntax ใหม่ของ expo-image-picker v16
               allowsEditing: true,
               aspect,
               quality: 0.8,
             });
+            console.log('📷 Camera result:', result.canceled ? 'canceled' : 'success');
 
             if (!result.canceled && result.assets[0]) {
               handleImageSelected(result.assets[0].uri, type);
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error('Camera launch error:', error);
-            Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถเปิดกล้องได้ กรุณาลองใหม่');
+            Alert.alert(
+              'เกิดข้อผิดพลาด',
+              `ไม่สามารถเปิดกล้องได้\n\n${error?.message || 'กรุณาลองใหม่หรือ rebuild แอพ'}`
+            );
           }
         },
       },
@@ -886,21 +892,27 @@ export default function KycScreen() {
           try {
             // ขอ permission media library ก่อน
             const hasPermission = await requestMediaLibraryPermission();
+            console.log('🖼️ Media library permission granted:', hasPermission);
             if (!hasPermission) return;
 
+            console.log('🖼️ Launching image library...');
             const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              mediaTypes: ['images'], // ใช้ syntax ใหม่ของ expo-image-picker v16
               allowsEditing: true,
               aspect,
               quality: 0.8,
             });
+            console.log('🖼️ Gallery result:', result.canceled ? 'canceled' : 'success');
 
             if (!result.canceled && result.assets[0]) {
               handleImageSelected(result.assets[0].uri, type);
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error('Gallery launch error:', error);
-            Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถเปิดแกลเลอรี่ได้ กรุณาลองใหม่');
+            Alert.alert(
+              'เกิดข้อผิดพลาด',
+              `ไม่สามารถเปิดแกลเลอรี่ได้\n\n${error?.message || 'กรุณาลองใหม่หรือ rebuild แอพ'}`
+            );
           }
         },
       },

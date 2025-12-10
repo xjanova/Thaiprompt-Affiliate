@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '1.6.7',
-  BUILD_NUMBER: 19,
-  BUILD_DATE: '2025-12-10-EMOJI', // เปลี่ยนไอคอนเป็น emoji แทน Ionicons
+  VERSION: '1.6.8',
+  BUILD_NUMBER: 20,
+  BUILD_DATE: '2025-12-10-CAMERAFIX', // แก้ไข ImagePicker syntax สำหรับ v16
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs

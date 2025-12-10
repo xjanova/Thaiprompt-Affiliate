@@ -236,45 +236,59 @@ export default function EditProfileScreen() {
       'เลือกวิธีการเปลี่ยนรูป',
       [
         {
-          text: 'ถ่ายรูป',
+          text: '📷 ถ่ายรูป',
           onPress: async () => {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้แอพใช้กล้อง');
-              return;
-            }
+            try {
+              const { status } = await ImagePicker.requestCameraPermissionsAsync();
+              console.log('📷 Camera permission:', status);
+              if (status !== 'granted') {
+                Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้แอพใช้กล้อง');
+                return;
+              }
 
-            const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              allowsEditing: true,
-              aspect: [1, 1],
-              quality: 0.8,
-            });
+              console.log('📷 Launching camera...');
+              const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ['images'], // ใช้ syntax ใหม่ของ expo-image-picker v16
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+              });
 
-            if (!result.canceled && result.assets[0]) {
-              handleUploadAvatar(result.assets[0].uri);
+              if (!result.canceled && result.assets[0]) {
+                handleUploadAvatar(result.assets[0].uri);
+              }
+            } catch (error: any) {
+              console.error('Camera error:', error);
+              Alert.alert('เกิดข้อผิดพลาด', error?.message || 'ไม่สามารถเปิดกล้องได้');
             }
           },
         },
         {
-          text: 'เลือกจากแกลเลอรี่',
+          text: '🖼️ เลือกจากแกลเลอรี่',
           onPress: async () => {
-            // ขอ permission media library ก่อน
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-              Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้แอพเข้าถึงรูปภาพ');
-              return;
-            }
+            try {
+              // ขอ permission media library ก่อน
+              const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+              console.log('🖼️ Media library permission:', status);
+              if (status !== 'granted') {
+                Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้แอพเข้าถึงรูปภาพ');
+                return;
+              }
 
-            const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              allowsEditing: true,
-              aspect: [1, 1],
-              quality: 0.8,
-            });
+              console.log('🖼️ Launching image library...');
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'], // ใช้ syntax ใหม่ของ expo-image-picker v16
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+              });
 
-            if (!result.canceled && result.assets[0]) {
-              handleUploadAvatar(result.assets[0].uri);
+              if (!result.canceled && result.assets[0]) {
+                handleUploadAvatar(result.assets[0].uri);
+              }
+            } catch (error: any) {
+              console.error('Gallery error:', error);
+              Alert.alert('เกิดข้อผิดพลาด', error?.message || 'ไม่สามารถเปิดแกลเลอรี่ได้');
             }
           },
         },
