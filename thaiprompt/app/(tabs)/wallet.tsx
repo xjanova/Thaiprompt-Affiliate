@@ -271,8 +271,8 @@ export default function WalletScreen() {
   };
 
   const handleHistory = () => {
-    // เปิดเว็บสำหรับดูประวัติทั้งหมด (หน้าละเอียดมากกว่า)
-    Linking.openURL('https://main.thaiprompt.online/user/wallet/history');
+    // เปิดหน้าประวัติธุรกรรมในแอพ
+    router.push('/wallet-history');
   };
 
   const handleShowQr = () => {

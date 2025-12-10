@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '1.7.1',
-  BUILD_NUMBER: 23,
-  BUILD_DATE: '2025-12-10-PREMIUM-UI', // ปรับปรุง UI หน้าหลักให้สวยงามมากขึ้น
+  VERSION: '1.7.2',
+  BUILD_NUMBER: 24,
+  BUILD_DATE: '2025-12-10-KYC-FIX', // แก้ไข KYC camera + หน้าธุรกรรมในแอพ
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs
