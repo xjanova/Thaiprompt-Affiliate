@@ -1,7 +1,7 @@
 /**
  * Register Screen - Premium Stable Version
  * ใช้ StyleSheet แทน NativeWind
- * เพิ่ม: AnimatedBackground หิ่งห้อยเคลื่อนไหว
+ * ปิด AnimatedBackground ชั่วคราวเพื่อทดสอบ crash
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -24,7 +24,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { API_BASE_URL } from '@/constants';
-import { AnimatedBackground } from '@/components/AnimatedBackground';
 
 // Validation
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -163,14 +162,13 @@ export default function RegisterScreen() {
   };
 
   return (
-    <AnimatedBackground
-      variant="aurora"
-      isDark={true}
-      intensity="medium"
-      particleCount={22}
-    >
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+    <View style={styles.container}>
+      {/* Gradient Background แทน AnimatedBackground ชั่วคราว */}
+      <LinearGradient
+        colors={['#0F0F23', '#1a1a2e', '#16213e']}
+        style={StyleSheet.absoluteFill}
+      />
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
 
         <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -434,8 +432,7 @@ export default function RegisterScreen() {
           </View>
           </ScrollView>
         </KeyboardAvoidingView>
-      </View>
-    </AnimatedBackground>
+    </View>
   );
 }
 

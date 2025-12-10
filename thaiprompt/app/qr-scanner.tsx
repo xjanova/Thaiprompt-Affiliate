@@ -30,8 +30,8 @@ import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 
-// Import Animated Background
-import { AnimatedBackground } from '@/components/AnimatedBackground';
+// ปิด AnimatedBackground ชั่วคราวเพื่อทดสอบ crash
+// import { AnimatedBackground } from '@/components/AnimatedBackground';
 
 // Import SVG Icons
 import {
@@ -244,103 +244,94 @@ export default function QRScannerScreen() {
     }
   };
 
-  // Loading state - พร้อม AnimatedBackground
+  // Loading state - ปิด AnimatedBackground ชั่วคราว
   if (isLoading) {
     return (
-      <AnimatedBackground
-        variant="firefly"
-        isDark={true}
-        intensity="medium"
-        particleCount={20}
-      >
-        <View style={styles.container}>
-          <StatusBar barStyle="light-content" />
-          <View style={styles.centered}>
-            <View style={styles.loadingBox}>
-              <ActivityIndicator size="large" color="#3B82F6" />
-              <Text style={styles.loadingText}>กำลังเปิดกล้อง...</Text>
-              <Text style={styles.loadingSubtext}>กรุณารอสักครู่</Text>
-            </View>
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#0F0F23', '#1a1a2e', '#16213e']}
+          style={StyleSheet.absoluteFill}
+        />
+        <StatusBar barStyle="light-content" />
+        <View style={styles.centered}>
+          <View style={styles.loadingBox}>
+            <ActivityIndicator size="large" color="#3B82F6" />
+            <Text style={styles.loadingText}>กำลังเปิดกล้อง...</Text>
+            <Text style={styles.loadingSubtext}>กรุณารอสักครู่</Text>
           </View>
         </View>
-      </AnimatedBackground>
+      </View>
     );
   }
 
-  // Error state - พร้อม AnimatedBackground
+  // Error state - ปิด AnimatedBackground ชั่วคราว
   if (cameraError) {
     return (
-      <AnimatedBackground
-        variant="particles"
-        isDark={true}
-        intensity="low"
-        particleCount={15}
-      >
-        <View style={styles.container}>
-          <StatusBar barStyle="light-content" />
-          <View style={styles.centered}>
-            <View style={styles.errorBox}>
-              <AlertCircleIcon size={60} color="#EF4444" />
-              <Text style={styles.errorTitle}>เกิดข้อผิดพลาด</Text>
-              <Text style={styles.errorText}>{cameraError}</Text>
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#0F0F23', '#1a1a2e', '#16213e']}
+          style={StyleSheet.absoluteFill}
+        />
+        <StatusBar barStyle="light-content" />
+        <View style={styles.centered}>
+          <View style={styles.errorBox}>
+            <AlertCircleIcon size={60} color="#EF4444" />
+            <Text style={styles.errorTitle}>เกิดข้อผิดพลาด</Text>
+            <Text style={styles.errorText}>{cameraError}</Text>
 
-              <TouchableOpacity style={styles.retryButton} onPress={retryCamera}>
-                <LinearGradient
-                  colors={['#3B82F6', '#2563EB']}
-                  style={styles.retryButtonGradient}
-                >
-                  <RefreshIcon size={20} color="#FFF" />
-                  <Text style={styles.retryButtonText}>ลองใหม่</Text>
-                </LinearGradient>
-              </TouchableOpacity>
+            <TouchableOpacity style={styles.retryButton} onPress={retryCamera}>
+              <LinearGradient
+                colors={['#3B82F6', '#2563EB']}
+                style={styles.retryButtonGradient}
+              >
+                <RefreshIcon size={20} color="#FFF" />
+                <Text style={styles.retryButtonText}>ลองใหม่</Text>
+              </LinearGradient>
+            </TouchableOpacity>
 
-              <TouchableOpacity style={styles.backButtonAlt} onPress={() => router.back()}>
-                <Text style={styles.backButtonText}>กลับ</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={styles.backButtonAlt} onPress={() => router.back()}>
+              <Text style={styles.backButtonText}>กลับ</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </AnimatedBackground>
+      </View>
     );
   }
 
-  // Permission denied - พร้อม AnimatedBackground
+  // Permission denied - ปิด AnimatedBackground ชั่วคราว
   if (permission && !permission.granted) {
     return (
-      <AnimatedBackground
-        variant="aurora"
-        isDark={true}
-        intensity="medium"
-        particleCount={18}
-      >
-        <View style={styles.container}>
-          <StatusBar barStyle="light-content" />
-          <View style={styles.centered}>
-            <View style={styles.permissionBox}>
-              <View style={styles.permissionIconContainer}>
-                <CameraIcon size={50} color="#FFF" />
-              </View>
-              <Text style={styles.permissionTitle}>ต้องการสิทธิ์กล้อง</Text>
-              <Text style={styles.permissionText}>
-                กรุณาอนุญาตให้แอพใช้กล้องเพื่อสแกน QR Code
-              </Text>
-
-              <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-                <LinearGradient
-                  colors={['#10B981', '#059669']}
-                  style={styles.permissionButtonGradient}
-                >
-                  <Text style={styles.permissionButtonText}>อนุญาตใช้กล้อง</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.backButtonAlt} onPress={() => router.back()}>
-                <Text style={styles.backButtonText}>กลับ</Text>
-              </TouchableOpacity>
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#0F0F23', '#1a1a2e', '#16213e']}
+          style={StyleSheet.absoluteFill}
+        />
+        <StatusBar barStyle="light-content" />
+        <View style={styles.centered}>
+          <View style={styles.permissionBox}>
+            <View style={styles.permissionIconContainer}>
+              <CameraIcon size={50} color="#FFF" />
             </View>
+            <Text style={styles.permissionTitle}>ต้องการสิทธิ์กล้อง</Text>
+            <Text style={styles.permissionText}>
+              กรุณาอนุญาตให้แอพใช้กล้องเพื่อสแกน QR Code
+            </Text>
+
+            <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+              <LinearGradient
+                colors={['#10B981', '#059669']}
+                style={styles.permissionButtonGradient}
+              >
+                <Text style={styles.permissionButtonText}>อนุญาตใช้กล้อง</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.backButtonAlt} onPress={() => router.back()}>
+              <Text style={styles.backButtonText}>กลับ</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </AnimatedBackground>
+      </View>
     );
   }
 

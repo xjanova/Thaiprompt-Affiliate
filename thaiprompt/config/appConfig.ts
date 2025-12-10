@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '1.6.5',
-  BUILD_NUMBER: 17,
-  BUILD_DATE: '2025-12-10-DELAYANIMATION', // เพิ่ม delay ก่อนเริ่ม AnimatedBackground animations
+  VERSION: '1.6.6',
+  BUILD_NUMBER: 18,
+  BUILD_DATE: '2025-12-10-NOANIMATION', // ปิด AnimatedBackground ทั้งหมดเพื่อทดสอบ crash
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs
