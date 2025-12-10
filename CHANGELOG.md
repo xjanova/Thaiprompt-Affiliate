@@ -2,6 +2,19 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.64] - 2025-12-10
+
+### ✨ Features
+- feat(wallet): เพิ่ม Wallet Lookup และ Transfer API สำหรับ QR Scanner (4a64a287)
+- feat(push): เพิ่มระบบ Push Notification สำหรับข้อความ Order (9aa41987)
+- feat(mobile): เพิ่มระบบติดตามสินค้าและแชท (Order Tracking & Chat) (b0a4aa45)
+- feat(mobile): ปรับระบบตะกร้าเป็น Hybrid Mode (fa4b435a)
+### 🐛 Bug Fixes
+- fix(push): แก้ไข ExpoPushService token validation และเพิ่ม logging (f66410f2)
+- fix(mobile): แก้ไขระบบแจ้งเตือนข้อความจาก Admin (eef48be7)
+### 🔧 Other Changes
+- Merge pull request #2238 from xjanova/claude/fix-mobile-connectivity-01HMamgvi2oENVHkGSXvbvCU (a7aef4ee)
+
 ## [v3.372.63] - 2025-12-10
 
 ### ✨ Features
