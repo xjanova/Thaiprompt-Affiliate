@@ -487,6 +487,8 @@ class OrderApiController extends Controller
                 'product_name' => $order->items->first()->product_name,
                 'product_image' => $order->items->first()->metadata['product_image'] ?? null,
             ] : null,
+            'has_unread_messages' => (bool) $order->has_unread_messages,
+            'last_message_at' => $order->last_message_at?->toISOString(),
             'created_at' => $order->created_at->toISOString(),
         ];
     }

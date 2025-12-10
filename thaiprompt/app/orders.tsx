@@ -105,19 +105,27 @@ const OrderCard = ({
       >
         {/* Header */}
         <View className="flex-row justify-between items-start mb-3">
-          <View>
-            <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {order.order_number}
-            </Text>
-            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              {new Date(order.created_at).toLocaleDateString('th-TH', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </Text>
+          <View className="flex-row items-center flex-1">
+            <View className="flex-1">
+              <Text className="text-sm text-gray-500 dark:text-gray-400">
+                {order.order_number}
+              </Text>
+              <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                {new Date(order.created_at).toLocaleDateString('th-TH', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+            </View>
+            {/* Unread Message Badge */}
+            {order.has_unread_messages && (
+              <View className="bg-red-500 rounded-full w-6 h-6 items-center justify-center mr-2">
+                <Ionicons name="chatbubble" size={12} color="white" />
+              </View>
+            )}
           </View>
           <View
             className="px-3 py-1 rounded-full"

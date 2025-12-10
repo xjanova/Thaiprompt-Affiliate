@@ -636,11 +636,13 @@ export default function OrderDetailScreen() {
     }
   }, [orderId]);
 
-  // โหลดข้อความ
-  const loadMessages = useCallback(async () => {
+  // โหลดข้อความ (showLoading = false สำหรับ polling แบบ silent)
+  const loadMessages = useCallback(async (showLoading: boolean = true) => {
     if (!orderId) return;
     try {
-      setIsLoadingChat(true);
+      if (showLoading) {
+        setIsLoadingChat(true);
+      }
       const result = await getOrderMessages(orderId);
       if (result) {
         setMessages(result.messages);
@@ -649,7 +651,9 @@ export default function OrderDetailScreen() {
     } catch (error) {
       console.error('Load messages error:', error);
     } finally {
-      setIsLoadingChat(false);
+      if (showLoading) {
+        setIsLoadingChat(false);
+      }
     }
   }, [orderId]);
 
@@ -693,12 +697,19 @@ export default function OrderDetailScreen() {
     loadTracking();
   }, []);
 
-  // Load messages when chat tab is active
+  // Load messages when chat tab is active + Auto-poll every 10 seconds
   useEffect(() => {
     if (activeTab === 'chat') {
-      loadMessages();
+      loadMessages(true); // โหลดครั้งแรกแสดง loading
+
+      // ตั้ง interval เพื่อ poll ข้อความใหม่ทุก 10 วินาที (silent)
+      const pollInterval = setInterval(() => {
+        loadMessages(false); // poll แบบไม่แสดง loading
+      }, 10000); // 10 วินาที
+
+      return () => clearInterval(pollInterval);
     }
-  }, [activeTab]);
+  }, [activeTab, loadMessages]);
 
   if (isLoading) {
     return (
@@ -790,7 +801,7 @@ export default function OrderDetailScreen() {
           messages={messages}
           isLoading={isLoadingChat}
           onSend={handleSendMessage}
-          onRefresh={loadMessages}
+          onRefresh={() => loadMessages(true)}
         />
       )}
     </SafeAreaView>

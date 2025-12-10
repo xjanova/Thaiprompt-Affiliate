@@ -2889,6 +2889,8 @@ export interface OrderSummary {
     product_name: string;
     product_image: string | null;
   } | null;
+  has_unread_messages: boolean;
+  last_message_at: string | null;
   created_at: string;
 }
 
