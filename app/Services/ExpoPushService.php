@@ -176,7 +176,37 @@ class ExpoPushService
             ->pluck('push_token')
             ->toArray();
 
-        return $this->send($tokens, $title, $body, $data);
+        // Log สำหรับ debug
+        Log::info('ExpoPushService: Sending push to user', [
+            'user_id' => $userId,
+            'title' => $title,
+            'tokens_count' => count($tokens),
+            'data_type' => $data['type'] ?? null,
+        ]);
+
+        if (empty($tokens)) {
+            Log::warning('ExpoPushService: No push tokens found for user', [
+                'user_id' => $userId,
+            ]);
+        }
+
+        $results = $this->send($tokens, $title, $body, $data);
+
+        // Log ผลลัพธ์
+        if ($results['success'] > 0) {
+            Log::info('ExpoPushService: Push sent successfully', [
+                'user_id' => $userId,
+                'success' => $results['success'],
+                'failed' => $results['failed'],
+            ]);
+        } elseif ($results['failed'] > 0) {
+            Log::warning('ExpoPushService: Push failed', [
+                'user_id' => $userId,
+                'errors' => $results['errors'],
+            ]);
+        }
+
+        return $results;
     }
 
     /**
@@ -220,12 +250,17 @@ class ExpoPushService
     /**
      * ตรวจสอบว่าเป็น Expo Push Token ที่ถูกต้องหรือไม่
      *
+     * รองรับรูปแบบ:
+     * - ExponentPushToken[xxxx]
+     * - ExpoPushToken[xxxx]
+     *
      * @param string $token
      * @return bool
      */
     private function isValidExpoPushToken(string $token): bool
     {
-        return preg_match('/^ExponentPushToken\[.+\]$/', $token) === 1;
+        // รองรับทั้ง ExponentPushToken และ ExpoPushToken
+        return preg_match('/^Expo(nent)?PushToken\[.+\]$/', $token) === 1;
     }
 
     /**

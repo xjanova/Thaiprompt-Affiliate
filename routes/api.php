@@ -165,12 +165,15 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getProduct']);
         });
 
-        // Cart (Mobile App)
+        // Cart (Mobile App) - คำนวณทุกอย่างที่ server
         Route::prefix('cart')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCart']);
             Route::post('/add', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'addToCart']);
-            Route::put('/update', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateCart']);
-            Route::delete('/remove', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'removeFromCart']);
+            Route::put('/items/{itemId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateCartItem']);
+            Route::delete('/items/{itemId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'removeFromCart']);
+            Route::delete('/clear', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'clearCart']);
+            Route::post('/promo', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'applyPromoCode']);
+            Route::post('/checkout', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'checkout']);
         });
 
         // Wallet (Mobile App)
@@ -179,15 +182,28 @@ Route::prefix('v1')->group(function () {
             Route::get('/balance', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getWalletBalance']);
             Route::get('/transactions', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getWalletTransactions']);
             Route::post('/topup', [\App\Http\Controllers\Api\V1\PaymentApiController::class, 'initializeWalletTopup']);
+            // ค้นหากระเป๋าเงินจาก wallet address (สำหรับ QR scan)
+            Route::get('/lookup', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'lookupWalletAddress']);
+            // โอนเงินระหว่างกระเป๋า (ต้องใช้ PIN)
+            Route::post('/transfer', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'transferMoney']);
         });
 
         // Orders (Mobile App)
         Route::prefix('orders')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'index']);
             Route::post('/', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'store']);
+            Route::get('/unread-messages', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'getUnreadMessageCount']);
             Route::get('/{id}', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'show']);
             Route::post('/{id}/cancel', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'cancel']);
+            // Order Tracking
+            Route::get('/{id}/tracking', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'getTracking']);
+            // Order Chat
+            Route::get('/{id}/messages', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'getMessages']);
+            Route::post('/{id}/messages', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'sendMessage']);
         });
+
+        // Shipping Providers (Mobile App)
+        Route::get('/shipping-providers', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'getShippingProviders']);
 
         // Payment (Mobile App)
         Route::prefix('payment')->group(function () {

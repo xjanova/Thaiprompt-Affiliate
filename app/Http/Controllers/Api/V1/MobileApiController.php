@@ -3218,4 +3218,878 @@ class MobileApiController extends Controller
 
         return $statuses[$status] ?? $status;
     }
+
+    // =====================================================
+    // Cart API - ระบบตะกร้าสินค้า
+    // =====================================================
+
+    /**
+     * ดึงข้อมูลตะกร้าสินค้า (พร้อมคำนวณทุกอย่างจาก server)
+     *
+     * @return JsonResponse
+     */
+    public function getCart(): JsonResponse
+    {
+        $user = Auth::user();
+
+        try {
+            // หาหรือสร้างตะกร้าของ user
+            $cart = \App\Models\Cart::firstOrCreate(
+                ['user_id' => $user->id],
+                ['session_id' => null]
+            );
+
+            // โหลด items พร้อม product
+            $cart->load(['items.product']);
+
+            // คำนวณยอดรวมทั้งหมดจาก server
+            $items = $cart->items->map(function ($item) {
+                $product = $item->product;
+                $price = $product->discount_price ?? $product->price;
+                $pvValue = $product->pv_value ?? round($product->price * 0.1, 2);
+                $commissionRate = $product->commission_rate ?? 0;
+
+                return [
+                    'id' => $item->id,
+                    'productId' => $product->id,
+                    'productName' => $product->name,
+                    'productImage' => $product->image ?? $product->getFirstImageUrl(),
+                    'price' => (float) $price,
+                    'originalPrice' => (float) $product->price,
+                    'quantity' => (int) $item->quantity,
+                    'subtotal' => (float) ($price * $item->quantity),
+                    'pvValue' => (float) $pvValue,
+                    'pvSubtotal' => (float) ($pvValue * $item->quantity),
+                    'commissionRate' => (float) $commissionRate,
+                    'attributes' => $item->attributes,
+                    'isAvailable' => $product->is_active && $product->isInStock(),
+                    'stock' => $product->stock_quantity ?? 999,
+                ];
+            });
+
+            // คำนวณยอดรวมทั้งหมด
+            $totalItems = $items->sum('quantity');
+            $totalPrice = $items->sum('subtotal');
+            $totalPV = $items->sum('pvSubtotal');
+
+            // คำนวณค่าส่ง (ฟรีเมื่อซื้อ ≥ 500)
+            $shippingFee = $totalPrice >= 500 ? 0 : 50;
+
+            // คำนวณคอมมิชชัน preview
+            $totalCommission = $items->sum(function ($item) {
+                return $item['subtotal'] * ($item['commissionRate'] / 100);
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'cartId' => $cart->id,
+                    'items' => $items->values(),
+                    'summary' => [
+                        'totalItems' => $totalItems,
+                        'totalPrice' => round($totalPrice, 2),
+                        'totalPV' => round($totalPV, 2),
+                        'shippingFee' => round($shippingFee, 2),
+                        'grandTotal' => round($totalPrice + $shippingFee, 2),
+                        'estimatedCommission' => round($totalCommission, 2),
+                    ],
+                    'freeShippingThreshold' => 500,
+                    'amountToFreeShipping' => max(0, 500 - $totalPrice),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Cart Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงข้อมูลตะกร้าได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * เพิ่มสินค้าลงตะกร้า
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function addToCart(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'required|integer|exists:products,id',
+            'quantity' => 'integer|min:1|max:99',
+            'attributes' => 'nullable|array',
+        ], [
+            'product_id.required' => 'กรุณาระบุสินค้า',
+            'product_id.exists' => 'ไม่พบสินค้านี้',
+            'quantity.min' => 'จำนวนต้องมากกว่า 0',
+            'quantity.max' => 'จำนวนต้องไม่เกิน 99',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = Auth::user();
+
+        try {
+            DB::beginTransaction();
+
+            // ตรวจสอบสินค้า
+            $product = Product::findOrFail($request->product_id);
+
+            if (!$product->is_active) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'สินค้านี้ไม่พร้อมจำหน่าย',
+                ], 400);
+            }
+
+            // หาหรือสร้างตะกร้า
+            $cart = \App\Models\Cart::firstOrCreate(
+                ['user_id' => $user->id],
+                ['session_id' => null]
+            );
+
+            $quantity = $request->quantity ?? 1;
+            $attributes = $request->attributes;
+
+            // ตรวจสอบว่ามีสินค้านี้อยู่ในตะกร้าแล้วหรือไม่
+            $existingItem = $cart->items()
+                ->where('product_id', $product->id)
+                ->when($attributes, function ($q) use ($attributes) {
+                    $q->where('attributes', json_encode($attributes));
+                })
+                ->first();
+
+            if ($existingItem) {
+                // อัพเดทจำนวน
+                $newQuantity = $existingItem->quantity + $quantity;
+
+                // ตรวจสอบสต็อก
+                if ($product->track_inventory && $newQuantity > $product->stock_quantity) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "สินค้าคงเหลือ {$product->stock_quantity} ชิ้น",
+                    ], 400);
+                }
+
+                $existingItem->update(['quantity' => $newQuantity]);
+            } else {
+                // ตรวจสอบสต็อก
+                if ($product->track_inventory && $quantity > $product->stock_quantity) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "สินค้าคงเหลือ {$product->stock_quantity} ชิ้น",
+                    ], 400);
+                }
+
+                // สร้าง item ใหม่
+                $cart->items()->create([
+                    'product_id' => $product->id,
+                    'quantity' => $quantity,
+                    'price' => $product->discount_price ?? $product->price,
+                    'attributes' => $attributes,
+                ]);
+            }
+
+            DB::commit();
+
+            // Return updated cart
+            return $this->getCart();
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            \Log::error('Add to Cart Error', [
+                'user_id' => $user->id,
+                'product_id' => $request->product_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถเพิ่มสินค้าลงตะกร้าได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * อัพเดทจำนวนสินค้าในตะกร้า
+     *
+     * @param Request $request
+     * @param int $itemId
+     * @return JsonResponse
+     */
+    public function updateCartItem(Request $request, int $itemId): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'quantity' => 'required|integer|min:0|max:99',
+        ], [
+            'quantity.required' => 'กรุณาระบุจำนวน',
+            'quantity.min' => 'จำนวนต้องไม่ต่ำกว่า 0',
+            'quantity.max' => 'จำนวนต้องไม่เกิน 99',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = Auth::user();
+
+        try {
+            // หา cart item
+            $cartItem = \App\Models\CartItem::whereHas('cart', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->findOrFail($itemId);
+
+            $quantity = (int) $request->quantity;
+
+            if ($quantity === 0) {
+                // ลบ item
+                $cartItem->delete();
+            } else {
+                // ตรวจสอบสต็อก
+                $product = $cartItem->product;
+                if ($product->track_inventory && $quantity > $product->stock_quantity) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "สินค้าคงเหลือ {$product->stock_quantity} ชิ้น",
+                    ], 400);
+                }
+
+                $cartItem->update(['quantity' => $quantity]);
+            }
+
+            // Return updated cart
+            return $this->getCart();
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบรายการสินค้านี้ในตะกร้า',
+            ], 404);
+        } catch (\Exception $e) {
+            \Log::error('Update Cart Item Error', [
+                'user_id' => $user->id,
+                'item_id' => $itemId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถอัพเดทตะกร้าได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * ลบสินค้าออกจากตะกร้า
+     *
+     * @param int $itemId
+     * @return JsonResponse
+     */
+    public function removeFromCart(int $itemId): JsonResponse
+    {
+        $user = Auth::user();
+
+        try {
+            // หา cart item
+            $cartItem = \App\Models\CartItem::whereHas('cart', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->findOrFail($itemId);
+
+            $cartItem->delete();
+
+            // Return updated cart
+            return $this->getCart();
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบรายการสินค้านี้ในตะกร้า',
+            ], 404);
+        } catch (\Exception $e) {
+            \Log::error('Remove from Cart Error', [
+                'user_id' => $user->id,
+                'item_id' => $itemId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถลบสินค้าจากตะกร้าได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * ล้างตะกร้าทั้งหมด
+     *
+     * @return JsonResponse
+     */
+    public function clearCart(): JsonResponse
+    {
+        $user = Auth::user();
+
+        try {
+            $cart = \App\Models\Cart::where('user_id', $user->id)->first();
+
+            if ($cart) {
+                $cart->clear();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ล้างตะกร้าเรียบร้อย',
+                'data' => [
+                    'items' => [],
+                    'summary' => [
+                        'totalItems' => 0,
+                        'totalPrice' => 0,
+                        'totalPV' => 0,
+                        'shippingFee' => 50,
+                        'grandTotal' => 0,
+                        'estimatedCommission' => 0,
+                    ],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Clear Cart Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถล้างตะกร้าได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * ใช้โค้ดส่วนลด
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function applyPromoCode(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'code' => 'required|string|max:50',
+        ], [
+            'code.required' => 'กรุณาใส่โค้ดส่วนลด',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = Auth::user();
+        $code = strtoupper($request->code);
+
+        try {
+            // หาตะกร้า
+            $cart = \App\Models\Cart::where('user_id', $user->id)
+                ->with(['items.product'])
+                ->first();
+
+            if (!$cart || $cart->items->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่มีสินค้าในตะกร้า',
+                ], 400);
+            }
+
+            // คำนวณยอดรวม
+            $totalPrice = $cart->items->sum(function ($item) {
+                $price = $item->product->discount_price ?? $item->product->price;
+                return $price * $item->quantity;
+            });
+
+            // ตรวจสอบโค้ด (Mock - ควรมี PromoCode Model จริง)
+            $discount = 0;
+            $discountType = 'fixed';
+            $discountMessage = '';
+
+            if ($code === 'FIRST10') {
+                $discount = $totalPrice * 0.10;
+                $discountType = 'percent';
+                $discountMessage = 'ส่วนลด 10% สำหรับออเดอร์แรก';
+            } elseif ($code === 'FREE50') {
+                $discount = 50;
+                $discountType = 'fixed';
+                $discountMessage = 'ส่วนลด ฿50';
+            } elseif ($code === 'FREESHIP') {
+                $discount = 50; // คืนค่าส่ง
+                $discountType = 'shipping';
+                $discountMessage = 'ฟรีค่าจัดส่ง';
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'โค้ดส่วนลดไม่ถูกต้องหรือหมดอายุ',
+                ], 400);
+            }
+
+            // คำนวณค่าส่ง
+            $shippingFee = $totalPrice >= 500 ? 0 : 50;
+            if ($discountType === 'shipping') {
+                $shippingFee = 0;
+            }
+
+            $grandTotal = $totalPrice + $shippingFee - ($discountType !== 'shipping' ? $discount : 0);
+
+            return response()->json([
+                'success' => true,
+                'message' => $discountMessage,
+                'data' => [
+                    'code' => $code,
+                    'discountType' => $discountType,
+                    'discountAmount' => round($discount, 2),
+                    'totalPrice' => round($totalPrice, 2),
+                    'shippingFee' => round($shippingFee, 2),
+                    'grandTotal' => round(max(0, $grandTotal), 2),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Apply Promo Code Error', [
+                'user_id' => $user->id,
+                'code' => $code,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถใช้โค้ดส่วนลดได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * สร้างคำสั่งซื้อ (Checkout)
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function checkout(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'payment_method' => 'required|string|in:wallet,bank,card,cod',
+            'shipping_address_id' => 'nullable|integer',
+            'promo_code' => 'nullable|string|max:50',
+            'note' => 'nullable|string|max:500',
+        ], [
+            'payment_method.required' => 'กรุณาเลือกวิธีชำระเงิน',
+            'payment_method.in' => 'วิธีชำระเงินไม่ถูกต้อง',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = Auth::user();
+
+        try {
+            DB::beginTransaction();
+
+            // หาตะกร้า
+            $cart = \App\Models\Cart::where('user_id', $user->id)
+                ->with(['items.product'])
+                ->first();
+
+            if (!$cart || $cart->items->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่มีสินค้าในตะกร้า',
+                ], 400);
+            }
+
+            // ตรวจสอบสต็อกทุกรายการ
+            foreach ($cart->items as $item) {
+                if (!$item->isAvailable()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "สินค้า '{$item->product->name}' หมดสต็อกหรือไม่พร้อมจำหน่าย",
+                    ], 400);
+                }
+            }
+
+            // คำนวณยอดรวม
+            $totalPrice = 0;
+            $totalPV = 0;
+            foreach ($cart->items as $item) {
+                $price = $item->product->discount_price ?? $item->product->price;
+                $pv = $item->product->pv_value ?? round($item->product->price * 0.1, 2);
+                $totalPrice += $price * $item->quantity;
+                $totalPV += $pv * $item->quantity;
+            }
+
+            // คำนวณค่าส่งและส่วนลด
+            $shippingFee = $totalPrice >= 500 ? 0 : 50;
+            $discount = 0;
+
+            // ตรวจสอบโค้ดส่วนลด (simplified)
+            if ($request->promo_code) {
+                $code = strtoupper($request->promo_code);
+                if ($code === 'FIRST10') {
+                    $discount = $totalPrice * 0.10;
+                } elseif ($code === 'FREE50') {
+                    $discount = 50;
+                } elseif ($code === 'FREESHIP') {
+                    $shippingFee = 0;
+                }
+            }
+
+            $grandTotal = $totalPrice + $shippingFee - $discount;
+
+            // ชำระเงินด้วย wallet
+            if ($request->payment_method === 'wallet') {
+                $walletService = app(\App\Services\WalletService::class);
+                $wallet = $walletService->getOrCreateWallet($user);
+
+                if ($wallet->balance < $grandTotal) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'ยอดเงินในกระเป๋าไม่เพียงพอ',
+                        'data' => [
+                            'required' => $grandTotal,
+                            'available' => $wallet->balance,
+                            'shortfall' => $grandTotal - $wallet->balance,
+                        ],
+                    ], 400);
+                }
+            }
+
+            // สร้าง Order
+            $order = Order::create([
+                'user_id' => $user->id,
+                'order_number' => 'ORD-' . strtoupper(Str::random(8)),
+                'status' => $request->payment_method === 'cod' ? 'pending' : 'processing',
+                'payment_method' => $request->payment_method,
+                'payment_status' => $request->payment_method === 'wallet' ? 'paid' : 'pending',
+                'subtotal' => $totalPrice,
+                'shipping_fee' => $shippingFee,
+                'discount' => $discount,
+                'total' => $grandTotal,
+                'pv_total' => $totalPV,
+                'promo_code' => $request->promo_code,
+                'note' => $request->note,
+            ]);
+
+            // สร้าง Order Items
+            foreach ($cart->items as $item) {
+                $price = $item->product->discount_price ?? $item->product->price;
+                $pv = $item->product->pv_value ?? round($item->product->price * 0.1, 2);
+
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $item->product_id,
+                    'quantity' => $item->quantity,
+                    'price' => $price,
+                    'subtotal' => $price * $item->quantity,
+                    'pv_value' => $pv,
+                    'pv_subtotal' => $pv * $item->quantity,
+                    'attributes' => $item->attributes,
+                ]);
+
+                // ลดสต็อก
+                if ($item->product->track_inventory) {
+                    $item->product->decrement('stock_quantity', $item->quantity);
+                }
+            }
+
+            // หักเงินจาก wallet
+            if ($request->payment_method === 'wallet') {
+                $walletService->withdraw(
+                    $wallet,
+                    $grandTotal,
+                    "ชำระคำสั่งซื้อ #{$order->order_number}",
+                    ['order_id' => $order->id]
+                );
+            }
+
+            // ล้างตะกร้า
+            $cart->clear();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'สร้างคำสั่งซื้อสำเร็จ',
+                'data' => [
+                    'orderId' => $order->id,
+                    'orderNumber' => $order->order_number,
+                    'status' => $order->status,
+                    'paymentStatus' => $order->payment_status,
+                    'total' => $order->total,
+                    'pvEarned' => $totalPV,
+                    'paymentMethod' => $request->payment_method,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            \Log::error('Checkout Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถสร้างคำสั่งซื้อได้ กรุณาลองใหม่',
+            ], 500);
+        }
+    }
+
+    // =====================================================
+    // Wallet Lookup & Transfer API (Mobile)
+    // =====================================================
+
+    /**
+     * ค้นหา Wallet Address
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function lookupWalletAddress(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $address = $request->query('address');
+
+        if (empty($address) || strlen($address) < 10) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาระบุ Wallet Address ที่ถูกต้อง',
+            ], 422);
+        }
+
+        try {
+            // ค้นหา Wallet จาก address
+            $wallet = \App\Models\Wallet::where('wallet_address', $address)
+                ->where('status', 'active')
+                ->first();
+
+            if (!$wallet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบ Wallet นี้ในระบบ',
+                ], 404);
+            }
+
+            // ตรวจสอบว่าไม่ใช่ตัวเอง
+            if ($wallet->user_id === $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่สามารถโอนเงินให้ตัวเองได้',
+                ], 400);
+            }
+
+            // ดึงข้อมูล User เจ้าของ Wallet
+            $recipient = $wallet->user;
+
+            if (!$recipient) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบผู้ใช้เจ้าของ Wallet นี้',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'user_id' => $recipient->id,
+                    'name' => $recipient->name,
+                    'avatar' => $recipient->avatar_url ?? null,
+                    'wallet_address' => $wallet->wallet_address,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Wallet Lookup Error', [
+                'user_id' => $user->id,
+                'address' => $address,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการค้นหา Wallet',
+            ], 500);
+        }
+    }
+
+    /**
+     * โอนเงินไปยัง Wallet อื่น
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function transferMoney(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        $validator = Validator::make($request->all(), [
+            'wallet_address' => 'required|string|min:10',
+            'amount' => 'required|numeric|min:10',
+            'pin' => 'required|string|size:6',
+            'note' => 'nullable|string|max:200',
+        ], [
+            'wallet_address.required' => 'กรุณาระบุ Wallet Address ผู้รับ',
+            'amount.required' => 'กรุณาระบุจำนวนเงิน',
+            'amount.min' => 'โอนขั้นต่ำ 10 บาท',
+            'pin.required' => 'กรุณาระบุ PIN',
+            'pin.size' => 'PIN ต้องเป็น 6 หลัก',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $walletService = app(\App\Services\WalletService::class);
+
+            // ดึง Wallet ผู้โอน
+            $senderWallet = $walletService->getOrCreateWallet($user);
+
+            // ตรวจสอบ PIN
+            if (!$senderWallet->pin_hash || !Hash::check($request->pin, $senderWallet->pin_hash)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'PIN ไม่ถูกต้อง',
+                ], 403);
+            }
+
+            // ค้นหา Wallet ผู้รับ
+            $recipientWallet = \App\Models\Wallet::where('wallet_address', $request->wallet_address)
+                ->where('status', 'active')
+                ->first();
+
+            if (!$recipientWallet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบ Wallet ผู้รับ',
+                ], 404);
+            }
+
+            // ตรวจสอบว่าไม่ใช่ตัวเอง
+            if ($recipientWallet->user_id === $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่สามารถโอนเงินให้ตัวเองได้',
+                ], 400);
+            }
+
+            // คำนวณค่าธรรมเนียม (1%)
+            $amount = (float) $request->amount;
+            $feeRate = 0.01;
+            $fee = min(max(round($amount * $feeRate, 2), 0), 100);
+            $totalDeduction = $amount + $fee;
+
+            // ตรวจสอบยอดเงิน
+            if ($senderWallet->balance < $totalDeduction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ยอดเงินไม่เพียงพอ (ต้องการ ' . number_format($totalDeduction, 2) . ' บาท)',
+                ], 400);
+            }
+
+            // หักเงินผู้โอน
+            $senderWallet->decrement('balance', $totalDeduction);
+
+            // เพิ่มเงินผู้รับ
+            $recipientWallet->increment('balance', $amount);
+
+            // บันทึก Transaction ผู้โอน
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $senderWallet->id,
+                'user_id' => $user->id,
+                'type' => 'transfer_out',
+                'amount' => -$totalDeduction,
+                'fee' => $fee,
+                'balance_after' => $senderWallet->balance,
+                'description' => 'โอนเงินไปยัง ' . $recipientWallet->wallet_address,
+                'reference' => 'TF' . time() . rand(1000, 9999),
+                'metadata' => [
+                    'recipient_wallet' => $recipientWallet->wallet_address,
+                    'recipient_user_id' => $recipientWallet->user_id,
+                    'amount' => $amount,
+                    'fee' => $fee,
+                    'note' => $request->note ?? null,
+                ],
+                'status' => 'completed',
+            ]);
+
+            // บันทึก Transaction ผู้รับ
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $recipientWallet->id,
+                'user_id' => $recipientWallet->user_id,
+                'type' => 'transfer_in',
+                'amount' => $amount,
+                'fee' => 0,
+                'balance_after' => $recipientWallet->balance,
+                'description' => 'รับโอนเงินจาก ' . $senderWallet->wallet_address,
+                'reference' => 'TF' . time() . rand(1000, 9999),
+                'metadata' => [
+                    'sender_wallet' => $senderWallet->wallet_address,
+                    'sender_user_id' => $user->id,
+                    'amount' => $amount,
+                    'note' => $request->note ?? null,
+                ],
+                'status' => 'completed',
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'โอนเงินสำเร็จ',
+                'data' => [
+                    'amount' => $amount,
+                    'fee' => $fee,
+                    'total_deduction' => $totalDeduction,
+                    'new_balance' => $senderWallet->balance,
+                    'recipient' => [
+                        'name' => $recipientWallet->user->name ?? 'Unknown',
+                        'wallet_address' => $recipientWallet->wallet_address,
+                    ],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            \Log::error('Wallet Transfer Error', [
+                'user_id' => $user->id,
+                'recipient_address' => $request->wallet_address,
+                'amount' => $request->amount,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการโอนเงิน กรุณาลองใหม่',
+            ], 500);
+        }
+    }
 }

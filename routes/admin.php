@@ -1321,9 +1321,18 @@ Route::prefix('ecommerce')->name('ecommerce.')->group(function () {
     // Orders Management
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/', [ECommerceController::class, 'orders'])->name('index');
+        Route::get('/unread-messages', [ECommerceController::class, 'ordersWithUnreadMessages'])->name('unread-messages');
         Route::get('/{order}', [ECommerceController::class, 'showOrder'])->name('show');
         Route::post('/{order}/status', [ECommerceController::class, 'updateOrderStatus'])->name('status.update');
         Route::post('/{order}/payment-status', [ECommerceController::class, 'updatePaymentStatus'])->name('payment-status.update');
+        // Order Tracking
+        Route::get('/{order}/tracking', [ECommerceController::class, 'orderTracking'])->name('tracking');
+        Route::post('/{order}/tracking', [ECommerceController::class, 'updateOrderTracking'])->name('tracking.update');
+        Route::post('/{order}/tracking/history', [ECommerceController::class, 'addTrackingHistory'])->name('tracking.history');
+        // Order Messages
+        Route::get('/{order}/messages', [ECommerceController::class, 'getOrderMessages'])->name('messages');
+        Route::post('/{order}/messages', [ECommerceController::class, 'sendOrderMessage'])->name('messages.send');
+        Route::post('/{order}/messages/read', [ECommerceController::class, 'markOrderMessagesRead'])->name('messages.read');
     });
 
     // Categories Management

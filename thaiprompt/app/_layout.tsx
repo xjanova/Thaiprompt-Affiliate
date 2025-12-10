@@ -218,7 +218,11 @@ export default function RootLayout() {
           setTimeout(() => {
             try {
               // นำทางไปหน้าที่เกี่ยวข้องตาม notification type
-              if (data.type === 'order') {
+              const orderId = data.orderId || data.order_id;
+              if (data.type === 'order_message' && orderId) {
+                // ข้อความใหม่ในคำสั่งซื้อ - ไปหน้ารายละเอียด Order (tab แชท)
+                router.push(`/order/${orderId}` as never);
+              } else if (data.type === 'order') {
                 router.push('/commissions');
               } else if (data.type === 'ticket' && data.ticketId) {
                 router.push('/support');

@@ -10,6 +10,9 @@ use App\Models\OrderItem;
 use App\Models\ProductCategory;
 use App\Models\ProductReview;
 use App\Models\User;
+use App\Models\ShippingProvider;
+use App\Models\OrderTrackingHistory;
+use App\Models\OrderMessage;
 use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1124,5 +1127,202 @@ class ECommerceController extends Controller
             DB::rollBack();
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
+    }
+
+    // =====================================================
+    // Order Tracking Management
+    // =====================================================
+
+    /**
+     * แสดงหน้าจัดการ Tracking ของ Order
+     */
+    public function orderTracking(Order $order)
+    {
+        $order->load([
+            'user',
+            'items.product.images',
+            'shippingProvider',
+            'trackingHistory.user',
+            'messages.sender',
+        ]);
+
+        $shippingProviders = ShippingProvider::active()->ordered()->get();
+
+        return view('admin.ecommerce.orders.tracking', compact('order', 'shippingProviders'));
+    }
+
+    /**
+     * อัพเดทข้อมูล Tracking
+     *
+     * @param Request $request
+     * @param Order $order
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateOrderTracking(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'shipping_provider_id' => 'required|exists:shipping_providers,id',
+            'tracking_number' => 'required|string|max:100',
+            'estimated_delivery_at' => 'nullable|date',
+            'admin_notes' => 'nullable|string|max:500',
+        ], [
+            'shipping_provider_id.required' => 'กรุณาเลือกบริษัทขนส่ง',
+            'tracking_number.required' => 'กรุณากรอกหมายเลขพัสดุ',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // อัพเดทข้อมูล Order
+            $order->update([
+                'shipping_provider_id' => $validated['shipping_provider_id'],
+                'tracking_number' => $validated['tracking_number'],
+                'estimated_delivery_at' => $validated['estimated_delivery_at'] ?? null,
+                'admin_notes' => $validated['admin_notes'] ?? $order->admin_notes,
+            ]);
+
+            // ถ้าเพิ่งใส่ tracking ครั้งแรก ให้เปลี่ยนสถานะเป็น shipped
+            if ($order->status === 'processing' || $order->status === 'confirmed') {
+                $order->markAsShipped(auth()->id());
+            }
+
+            // สร้าง tracking history
+            OrderTrackingHistory::createEntry(
+                $order,
+                'shipped',
+                'ส่งสินค้าแล้ว - หมายเลขพัสดุ: ' . $validated['tracking_number'],
+                auth()->id()
+            );
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'อัพเดทข้อมูลการจัดส่งเรียบร้อยแล้ว');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * เพิ่ม Tracking History
+     *
+     * @param Request $request
+     * @param Order $order
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function addTrackingHistory(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'status' => 'required|string|max:50',
+            'description' => 'required|string|max:500',
+            'location' => 'nullable|string|max:255',
+        ], [
+            'status.required' => 'กรุณาเลือกสถานะ',
+            'description.required' => 'กรุณากรอกรายละเอียด',
+        ]);
+
+        OrderTrackingHistory::createEntry(
+            $order,
+            $validated['status'],
+            $validated['description'],
+            auth()->id(),
+            $validated['location'] ?? null
+        );
+
+        // อัพเดทสถานะ Order ตาม tracking status
+        if ($validated['status'] === 'delivered') {
+            $order->update([
+                'status' => 'delivered',
+                'delivered_at' => now(),
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'เพิ่มประวัติการจัดส่งเรียบร้อยแล้ว');
+    }
+
+    /**
+     * ดึงข้อความของ Order (AJAX)
+     *
+     * @param Order $order
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getOrderMessages(Order $order)
+    {
+        $messages = $order->messages()
+            ->with('sender')
+            ->orderBy('created_at', 'desc')
+            ->paginate(50);
+
+        return response()->json([
+            'success' => true,
+            'data' => $messages,
+        ]);
+    }
+
+    /**
+     * ส่งข้อความในนามของ Admin
+     *
+     * @param Request $request
+     * @param Order $order
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function sendOrderMessage(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'message' => 'required|string|max:2000',
+        ], [
+            'message.required' => 'กรุณากรอกข้อความ',
+        ]);
+
+        OrderMessage::send(
+            $order,
+            auth()->id(),
+            'admin',
+            $validated['message']
+        );
+
+        return redirect()->back()->with('success', 'ส่งข้อความเรียบร้อยแล้ว');
+    }
+
+    /**
+     * ทำเครื่องหมายข้อความว่าอ่านแล้ว
+     *
+     * @param Order $order
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function markOrderMessagesRead(Order $order)
+    {
+        OrderMessage::where('order_id', $order->id)
+            ->where('sender_type', '!=', 'admin')
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now(),
+                'read_by' => auth()->id(),
+            ]);
+
+        // อัพเดทสถานะ unread ของ order
+        $hasUnread = OrderMessage::where('order_id', $order->id)
+            ->where('is_read', false)
+            ->exists();
+        $order->update(['has_unread_messages' => $hasUnread]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * รายการ Order ที่มีข้อความยังไม่ได้อ่าน
+     *
+     * @return \Illuminate\View\View
+     */
+    public function ordersWithUnreadMessages()
+    {
+        $orders = Order::with(['user', 'items.product.images'])
+            ->where('has_unread_messages', true)
+            ->orderBy('last_message_at', 'desc')
+            ->paginate(20);
+
+        return view('admin.ecommerce.orders.unread-messages', compact('orders'));
     }
 }
