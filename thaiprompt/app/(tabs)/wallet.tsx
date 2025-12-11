@@ -279,13 +279,11 @@ export default function WalletScreen() {
     setShowQrModal(true);
   };
 
-  // สร้าง wallet address - ใช้จาก API หรือสร้างจาก user ID/referral code
+  // ดึงเลขที่กระเป๋าเงินจริง - ไม่ใช้ fallback เพื่อความถูกต้อง
   const getWalletAddress = (): string => {
-    // ลำดับความสำคัญ: API wallet address > user wallet_address > referral code > user ID
+    // ใช้เฉพาะ wallet address จริงจาก API หรือ user profile เท่านั้น
     if (wallet?.walletAddress) return wallet.walletAddress;
     if (user?.wallet_address) return user.wallet_address;
-    if (user?.referralCode) return `TP-${user.referralCode}`;
-    if (user?.id) return `TP-USER-${user.id}`;
     return '';
   };
 
