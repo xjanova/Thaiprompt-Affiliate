@@ -11,8 +11,8 @@ import {
   ScrollView,
   Pressable,
   RefreshControl,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
@@ -281,6 +281,7 @@ export default function CommissionsScreen() {
   if (!isAuthenticated) {
     return (
       <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#0F172A' : '#FFFFFF'} />
         <Stack.Screen
           options={{
             headerShown: true,
@@ -289,7 +290,7 @@ export default function CommissionsScreen() {
             headerTintColor: isDark ? '#FFFFFF' : '#1F2937',
           }}
         />
-        <SafeAreaView className="flex-1 justify-center items-center px-6">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
           <Text style={{ fontSize: 80, color: isDark ? '#4B5563' : '#9CA3AF' }}>
             💰
           </Text>
@@ -309,13 +310,14 @@ export default function CommissionsScreen() {
           >
             <Text className="text-white font-bold">เข้าสู่ระบบ</Text>
           </Pressable>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
   return (
     <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#0F172A' : '#FFFFFF'} />
       <Stack.Screen
         options={{
           headerShown: true,
@@ -332,7 +334,7 @@ export default function CommissionsScreen() {
         }}
       />
 
-      <SafeAreaView className="flex-1" edges={['bottom']}>
+      <View style={{ flex: 1 }}>
         <ScrollView
           className="flex-1"
           showsVerticalScrollIndicator={false}
@@ -536,7 +538,7 @@ export default function CommissionsScreen() {
             )}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

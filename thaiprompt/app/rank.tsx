@@ -13,8 +13,8 @@ import {
   RefreshControl,
   ActivityIndicator,
   Animated,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import AnimatedRN, { FadeInDown, FadeInRight } from 'react-native-reanimated';
@@ -156,19 +156,21 @@ export default function RankScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-900">
+      <View style={{ flex: 1, backgroundColor: '#0F172A' }}>
+        <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={COLORS.PRIMARY} />
           <Text className="text-gray-400 mt-4">กำลังโหลด...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
+    <View style={{ flex: 1, backgroundColor: '#0F172A' }}>
+      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-800">
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 50, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#1F2937' }}>
         <TouchableOpacity onPress={() => router.back()} className="p-2">
           <Text className="text-white text-2xl">←</Text>
         </TouchableOpacity>
@@ -479,6 +481,6 @@ export default function RankScreen() {
         {/* Bottom Padding */}
         <View className="h-8" />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

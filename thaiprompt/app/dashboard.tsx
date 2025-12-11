@@ -13,8 +13,8 @@ import {
   RefreshControl,
   Share,
   Alert,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
@@ -133,7 +133,8 @@ export default function DashboardScreen() {
 
   return (
     <LavaBackground variant="crypto" intensity="medium">
-      <SafeAreaView className="flex-1">
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <View style={{ flex: 1 }}>
         <ScrollView
           className="flex-1"
           contentContainerClassName="pb-6"
@@ -146,7 +147,7 @@ export default function DashboardScreen() {
           }
         >
           {/* Header */}
-          <View className="px-5 pt-4 pb-2 flex-row justify-between items-center">
+          <View className="px-5 pt-12 pb-2 flex-row justify-between items-center">
             <Pressable
               onPress={goBack}
               className="w-10 h-10 rounded-full bg-white/10 items-center justify-center"
@@ -319,7 +320,7 @@ export default function DashboardScreen() {
             )}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </LavaBackground>
   );
 }

@@ -15,8 +15,8 @@ import {
   Modal,
   Linking,
   Platform,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
@@ -450,8 +450,9 @@ export default function RiderJobsScreen() {
   // Not authenticated
   if (!isAuthenticated) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1 justify-center items-center px-6">
+      <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
+        <StatusBar barStyle="light-content" backgroundColor={isDark ? '#0F172A' : '#3B82F6'} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
           <Text style={{ fontSize: 80, color: isDark ? '#4B5563' : '#9CA3AF' }}>🔒</Text>
           <Text className={`text-xl font-bold mt-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
             กรุณาเข้าสู่ระบบ
@@ -465,16 +466,17 @@ export default function RiderJobsScreen() {
           >
             <Text className="text-white font-bold">เข้าสู่ระบบ</Text>
           </Pressable>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-      <SafeAreaView className="flex-1">
+    <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
+      <StatusBar barStyle="light-content" backgroundColor={isDark ? '#0F172A' : '#3B82F6'} />
+      <View style={{ flex: 1 }}>
         {/* Header */}
-        <View className="flex-row items-center px-5 pt-4 pb-2">
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 8 }}>
           <Pressable onPress={() => router.back()} className="mr-4">
             <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
           </Pressable>
@@ -568,7 +570,7 @@ export default function RiderJobsScreen() {
             )}
           </ScrollView>
         )}
-      </SafeAreaView>
+      </View>
 
       {/* Accept Job Modal */}
       <AcceptJobModal

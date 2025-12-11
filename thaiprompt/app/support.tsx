@@ -17,8 +17,8 @@ import {
   RefreshControl,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -313,7 +313,7 @@ const TicketDetailModal = ({
         className="flex-1"
       >
         <View className="flex-1 bg-black/50">
-          <SafeAreaView className="flex-1">
+          <View style={{ flex: 1, paddingTop: 50 }}>
             <View
               className={`flex-1 ${isDark ? 'bg-gray-800' : 'bg-white'} rounded-t-3xl mt-10`}
             >
@@ -439,7 +439,7 @@ const TicketDetailModal = ({
                 </>
               )}
             </View>
-          </SafeAreaView>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -489,8 +489,9 @@ export default function SupportScreen() {
   // Not authenticated
   if (!isAuthenticated) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1 justify-center items-center px-6">
+      <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
+        <StatusBar barStyle="light-content" backgroundColor={isDark ? '#0F172A' : '#3B82F6'} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
           <Text style={{ fontSize: 80 }}>💬</Text>
           <Text className={`text-xl font-bold mt-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
             ติดต่อฝ่ายสนับสนุน
@@ -504,16 +505,17 @@ export default function SupportScreen() {
           >
             <Text className="text-white font-bold">เข้าสู่ระบบ</Text>
           </Pressable>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-      <SafeAreaView className="flex-1">
+    <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
+      <StatusBar barStyle="light-content" backgroundColor={isDark ? '#0F172A' : '#3B82F6'} />
+      <View style={{ flex: 1 }}>
         {/* Header */}
-        <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 8 }}>
           <View className="flex-row items-center">
             <Pressable onPress={() => router.back()} className="mr-4">
               <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
@@ -641,7 +643,7 @@ export default function SupportScreen() {
             )}
           />
         )}
-      </SafeAreaView>
+      </View>
 
       {/* Create Ticket Modal */}
       <CreateTicketModal
