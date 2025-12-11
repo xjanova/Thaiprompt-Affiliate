@@ -275,6 +275,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/stop', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'stopGpsSharing']);
         });
 
+        // Store Listing (Mobile App) - รายการร้านค้า
+        Route::prefix('mobile/stores')->group(function () {
+            Route::get('/official', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getOfficialStores']);
+            Route::get('/featured', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getFeaturedStores']);
+            Route::get('/{storeId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getStoreDetail']);
+            Route::get('/{storeId}/products', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getStoreProducts']);
+        });
+
         // Rank System (Mobile App)
         Route::prefix('mobile/ranks')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getRanks']);

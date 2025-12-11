@@ -4353,4 +4353,212 @@ class MobileApiController extends Controller
             ], 500);
         }
     }
+
+    // =====================================================
+    // Store Listing - รายการร้านค้า
+    // =====================================================
+
+    /**
+     * ดึงรายการร้านค้าทางการ (Official Stores)
+     *
+     * @return JsonResponse
+     */
+    public function getOfficialStores(): JsonResponse
+    {
+        try {
+            // ดึงร้านค้าที่ verified และ active
+            $stores = \App\Models\VendorStore::where('is_active', true)
+                ->where('is_verified', true)
+                ->orderBy('rating_average', 'desc')
+                ->limit(20)
+                ->get();
+
+            $formattedStores = $stores->map(function ($store) {
+                return [
+                    'id' => (string) $store->id,
+                    'name' => $store->store_name,
+                    'logo' => $store->store_logo ? url($store->store_logo) : null,
+                    'rating' => (float) ($store->rating_average ?? 4.5),
+                    'isOfficial' => true,
+                    'isFeatured' => (bool) $store->is_featured_home,
+                    'productCount' => $store->total_products ?? 0,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedStores,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Official Stores Error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        }
+    }
+
+    /**
+     * ดึงรายการร้านแนะนำติดดาว (Featured Stores)
+     *
+     * @return JsonResponse
+     */
+    public function getFeaturedStores(): JsonResponse
+    {
+        try {
+            // ดึงร้านค้าที่ featured และ active
+            $stores = \App\Models\VendorStore::where('is_active', true)
+                ->where('is_featured_home', true)
+                ->orderBy('featured_home_order', 'asc')
+                ->orderBy('rating_average', 'desc')
+                ->limit(20)
+                ->get();
+
+            $formattedStores = $stores->map(function ($store) {
+                return [
+                    'id' => (string) $store->id,
+                    'name' => $store->store_name,
+                    'logo' => $store->store_logo ? url($store->store_logo) : null,
+                    'rating' => (float) ($store->rating_average ?? 4.5),
+                    'isOfficial' => (bool) $store->is_verified,
+                    'isFeatured' => true,
+                    'productCount' => $store->total_products ?? 0,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedStores,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Featured Stores Error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        }
+    }
+
+    /**
+     * ดึงรายละเอียดร้านค้า
+     *
+     * @param string $storeId
+     * @return JsonResponse
+     */
+    public function getStoreDetail(string $storeId): JsonResponse
+    {
+        try {
+            $store = \App\Models\VendorStore::where('id', $storeId)
+                ->where('is_active', true)
+                ->first();
+
+            if (!$store) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบร้านค้า',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => (string) $store->id,
+                    'name' => $store->store_name,
+                    'description' => $store->store_description,
+                    'logo' => $store->store_logo ? url($store->store_logo) : null,
+                    'banner' => $store->store_banner ? url($store->store_banner) : null,
+                    'rating' => (float) ($store->rating_average ?? 4.5),
+                    'ratingCount' => $store->rating_count ?? 0,
+                    'isOfficial' => (bool) $store->is_verified,
+                    'isFeatured' => (bool) $store->is_featured_home,
+                    'productCount' => $store->total_products ?? 0,
+                    'followerCount' => 0, // ไม่มีฟิลด์นี้ในตอนนี้
+                    'joinedAt' => $store->created_at?->format('Y-m-d'),
+                    'responseRate' => 98, // Mock value
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Store Detail Error', [
+                'store_id' => $storeId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด',
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงสินค้าของร้านค้า
+     *
+     * @param Request $request
+     * @param string $storeId
+     * @return JsonResponse
+     */
+    public function getStoreProducts(Request $request, string $storeId): JsonResponse
+    {
+        try {
+            $store = \App\Models\VendorStore::where('id', $storeId)
+                ->where('is_active', true)
+                ->first();
+
+            if (!$store) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบร้านค้า',
+                ], 404);
+            }
+
+            $page = $request->get('page', 1);
+            $limit = min($request->get('limit', 10), 50);
+
+            $products = Product::where('store_id', $store->id)
+                ->where('is_active', true)
+                ->orderBy('created_at', 'desc')
+                ->paginate($limit, ['*'], 'page', $page);
+
+            $formattedProducts = $products->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'image' => $product->image ? url($product->image) : null,
+                    'price' => (float) $product->price,
+                    'discount_price' => $product->discount_price ? (float) $product->discount_price : null,
+                    'rating' => $product->rating ?? 0,
+                    'review_count' => $product->review_count ?? 0,
+                    'pv' => $product->pv_value ?? round($product->price * 0.1),
+                    'commission_rate' => $product->commission_rate ?? 0,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedProducts,
+                'pagination' => [
+                    'total' => $products->total(),
+                    'currentPage' => $products->currentPage(),
+                    'lastPage' => $products->lastPage(),
+                    'hasMore' => $products->hasMorePages(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Store Products Error', [
+                'store_id' => $storeId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด',
+            ], 500);
+        }
+    }
 }
