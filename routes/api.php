@@ -1396,3 +1396,36 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::get('/{booking}/track', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'providerTrackBooking']);
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| POS Terminal API Routes (สำหรับ POS Desktop App - MAUI)
+|--------------------------------------------------------------------------
+| ระบบ 2 กุญแจ:
+| - Product Key: สร้างที่ POS device อัตโนมัติ
+| - API Key: Admin ให้กับลูกค้า (ไม่ส่งกลับอัตโนมัติ)
+|
+| Flow:
+| 1. POST /pos/register - ลงทะเบียน POS (ได้ terminal_id, รอ API Key)
+| 2. POST /pos/verify - ยืนยันด้วย API Key
+| 3. GET /pos/validate - ตรวจสอบสถานะก่อน sync
+| 4. GET /pos/status - ตรวจสอบเป็นระยะว่าถูกบล็อกหรือไม่
+*/
+Route::prefix('pos')->name('api.pos.')->group(function () {
+    // ลงทะเบียน POS Terminal (Public - ไม่ต้อง auth)
+    // ⚠️ ไม่ส่ง API Key กลับ! Admin ต้องให้ลูกค้าเอง
+    Route::post('/register', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'register'])
+        ->name('register');
+
+    // ยืนยัน POS ด้วย API Key (Public)
+    Route::post('/verify', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'verify'])
+        ->name('verify');
+
+    // ตรวจสอบสถานะ POS และ API Key (ต้องมี headers)
+    Route::get('/validate', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'validate'])
+        ->name('validate');
+
+    // ตรวจสอบสถานะเป็นระยะ (สำหรับแจ้งเตือนเมื่อถูกบล็อก)
+    Route::get('/status', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'checkStatus'])
+        ->name('status');
+});

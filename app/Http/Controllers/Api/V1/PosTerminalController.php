@@ -1,0 +1,555 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Models\PosApiKey;
+use App\Models\PosTerminal;
+use App\Models\VendorStore;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+
+/**
+ * POS Terminal Controller
+ *
+ * จัดการ API endpoints สำหรับ POS Desktop App (MAUI)
+ *
+ * ระบบ 2 กุญแจ:
+ * 1. Product Key: สร้างที่ POS device อัตโนมัติ (ใช้ hardware info)
+ * 2. API Key: สร้างที่ Server เมื่อ POS ลงทะเบียน
+ *    - API Key ไม่ส่งกลับ POS อัตโนมัติ
+ *    - Admin ต้องให้ API Key กับลูกค้าเอง
+ *    - ลูกค้ากรอก API Key ที่ POS เพื่อยืนยัน
+ *
+ * Flow:
+ * 1. POS ลงทะเบียนด้วย product_key + shop_code
+ * 2. Server สร้าง API Key เก็บไว้ (Admin เห็นใน Admin Panel)
+ * 3. Admin ให้ API Key กับลูกค้า (ทางโทรศัพท์, email, etc.)
+ * 4. ลูกค้ากรอก API Key ที่ POS
+ * 5. POS ยืนยัน API Key กับ Server
+ * 6. Sync สำเร็จ
+ *
+ * @version 1.0.0
+ */
+class PosTerminalController extends Controller
+{
+    /**
+     * ลงทะเบียน POS Terminal ใหม่
+     *
+     * ⚠️ สำคัญ: ไม่ส่ง API Key กลับ!
+     * Admin ต้องให้ API Key กับลูกค้าเอง
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function register(Request $request): JsonResponse
+    {
+        try {
+            // ตรวจสอบข้อมูล
+            $validator = Validator::make($request->all(), [
+                'product_key' => 'required|string|max:50',
+                'shop_code' => 'required|string|max:50',
+                'device_id' => 'required|string|max:100',
+                'device_name' => 'nullable|string|max:255',
+                'device_model' => 'nullable|string|max:100',
+                'platform' => 'nullable|string|max:50',
+                'app_version' => 'nullable|string|max:20',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ข้อมูลไม่ถูกต้อง',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $validated = $validator->validated();
+
+            // ค้นหาร้านค้าจาก shop_code
+            $shop = VendorStore::where('shop_code', $validated['shop_code'])
+                ->orWhere('id', $validated['shop_code'])
+                ->first();
+
+            if (!$shop) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบร้านค้าจากรหัสที่ระบุ',
+                    'error_code' => 'SHOP_NOT_FOUND',
+                ], 404);
+            }
+
+            DB::beginTransaction();
+
+            // ตรวจสอบว่า Product Key นี้เคยลงทะเบียนแล้วหรือไม่
+            $existingTerminal = PosTerminal::where('product_key', $validated['product_key'])->first();
+
+            if ($existingTerminal) {
+                // ถ้ามีอยู่แล้วและยืนยันแล้ว → แจ้งให้กรอก API Key
+                if ($existingTerminal->is_verified) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'POS นี้ลงทะเบียนและยืนยันแล้ว กรุณา sync ได้เลย',
+                        'data' => [
+                            'terminal_id' => $existingTerminal->id,
+                            'status' => $existingTerminal->status,
+                            'is_verified' => true,
+                            'shop_name' => $shop->name,
+                            'shop_id' => $shop->id,
+                        ],
+                    ]);
+                }
+
+                // ถ้ามีอยู่แล้วแต่ยังไม่ยืนยัน → บอกให้รอ API Key
+                DB::rollBack();
+                return response()->json([
+                    'success' => true,
+                    'message' => 'POS นี้ลงทะเบียนแล้ว รอรับ API Key จาก Admin',
+                    'data' => [
+                        'terminal_id' => $existingTerminal->id,
+                        'status' => 'pending_api_key',
+                        'is_verified' => false,
+                        'shop_name' => $shop->name,
+                        'shop_id' => $shop->id,
+                        'instruction' => 'กรุณาติดต่อ Admin เพื่อรับ API Key แล้วนำมากรอกที่ POS',
+                    ],
+                ]);
+            }
+
+            // สร้าง API Key ใหม่สำหรับร้านค้านี้
+            // ⚠️ ไม่ส่ง API Key กลับ! Admin ต้องให้ลูกค้าเอง
+            $apiKey = PosApiKey::create([
+                'shop_id' => $shop->id,
+                'key' => PosApiKey::generateKey(),
+                'name' => "API Key สำหรับ {$validated['device_name']}",
+                'description' => "สร้างอัตโนมัติเมื่อ POS ลงทะเบียน\nDevice: {$validated['device_name']}\nModel: {$validated['device_model']}",
+                'is_active' => true,
+                'is_blocked' => false,
+            ]);
+
+            // สร้าง Terminal ใหม่
+            $terminal = PosTerminal::create([
+                'shop_id' => $shop->id,
+                'api_key_id' => $apiKey->id,
+                'product_key' => $validated['product_key'],
+                'device_id' => $validated['device_id'],
+                'device_name' => $validated['device_name'] ?? null,
+                'device_model' => $validated['device_model'] ?? null,
+                'platform' => $validated['platform'] ?? null,
+                'app_version' => $validated['app_version'] ?? null,
+                'status' => PosTerminal::STATUS_PENDING,
+                'is_verified' => false,
+                'last_ip_address' => $request->ip(),
+                'device_info' => [
+                    'registered_at' => now()->toISOString(),
+                    'registered_ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ],
+            ]);
+
+            DB::commit();
+
+            // Log การลงทะเบียน
+            Log::info('POS Terminal registered', [
+                'terminal_id' => $terminal->id,
+                'shop_id' => $shop->id,
+                'product_key' => $validated['product_key'],
+                'device_id' => $validated['device_id'],
+                'ip' => $request->ip(),
+            ]);
+
+            // ⚠️ สำคัญ: ไม่ส่ง API Key กลับ!
+            return response()->json([
+                'success' => true,
+                'message' => 'ลงทะเบียน POS สำเร็จ รอรับ API Key จาก Admin',
+                'data' => [
+                    'terminal_id' => $terminal->id,
+                    'status' => 'pending_api_key',
+                    'is_verified' => false,
+                    'shop_name' => $shop->name,
+                    'shop_id' => $shop->id,
+                    'instruction' => 'กรุณาติดต่อ Admin เพื่อรับ API Key แล้วนำมากรอกที่ POS',
+                    // ❌ ไม่มี api_key ใน response!
+                ],
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('POS Terminal registration failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการลงทะเบียน',
+                'error_code' => 'REGISTRATION_ERROR',
+            ], 500);
+        }
+    }
+
+    /**
+     * ยืนยัน POS Terminal ด้วย API Key
+     *
+     * ขั้นตอนที่ 2: ลูกค้ากรอก API Key ที่ POS
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function verify(Request $request): JsonResponse
+    {
+        try {
+            // ตรวจสอบข้อมูล
+            $validator = Validator::make($request->all(), [
+                'product_key' => 'required|string|max:50',
+                'api_key' => 'required|string|max:100',
+                'device_id' => 'required|string|max:100',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ข้อมูลไม่ถูกต้อง',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $validated = $validator->validated();
+
+            // ค้นหา Terminal จาก product_key
+            $terminal = PosTerminal::where('product_key', $validated['product_key'])
+                ->where('device_id', $validated['device_id'])
+                ->first();
+
+            if (!$terminal) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบ POS Terminal นี้ กรุณาลงทะเบียนก่อน',
+                    'error_code' => 'TERMINAL_NOT_FOUND',
+                ], 404);
+            }
+
+            // ค้นหา API Key
+            $apiKey = PosApiKey::where('key', $validated['api_key'])->first();
+
+            if (!$apiKey) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'API Key ไม่ถูกต้อง',
+                    'error_code' => 'INVALID_API_KEY',
+                ], 401);
+            }
+
+            // ตรวจสอบว่า API Key ถูกบล็อกหรือไม่
+            if ($apiKey->is_blocked) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "API Key ถูกบล็อก: {$apiKey->blocked_reason}",
+                    'error_code' => 'API_KEY_BLOCKED',
+                    'blocked_reason' => $apiKey->blocked_reason,
+                    'blocked_at' => $apiKey->blocked_at?->toISOString(),
+                ], 403);
+            }
+
+            // ตรวจสอบว่า API Key ใช้งานได้
+            if (!$apiKey->isUsable()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'API Key ไม่สามารถใช้งานได้ (' . $apiKey->getStatusText() . ')',
+                    'error_code' => 'API_KEY_UNUSABLE',
+                ], 403);
+            }
+
+            // ตรวจสอบว่า shop_id ตรงกัน
+            if ($terminal->shop_id !== $apiKey->shop_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'API Key ไม่ตรงกับร้านค้าที่ลงทะเบียน',
+                    'error_code' => 'SHOP_MISMATCH',
+                ], 403);
+            }
+
+            // ยืนยัน Terminal
+            $terminal->update([
+                'api_key_id' => $apiKey->id,
+                'status' => PosTerminal::STATUS_ACTIVE,
+                'is_verified' => true,
+                'verified_at' => now(),
+                'last_ip_address' => $request->ip(),
+            ]);
+
+            // อัพเดท API Key
+            $apiKey->update(['last_used_at' => now()]);
+
+            // Log การยืนยัน
+            Log::info('POS Terminal verified', [
+                'terminal_id' => $terminal->id,
+                'api_key_id' => $apiKey->id,
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ยืนยัน POS สำเร็จ พร้อมใช้งาน',
+                'data' => [
+                    'terminal_id' => $terminal->id,
+                    'status' => 'active',
+                    'is_verified' => true,
+                    'shop_name' => $terminal->shop->name ?? '',
+                    'shop_id' => $terminal->shop_id,
+                    'verified_at' => $terminal->verified_at?->toISOString(),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('POS Terminal verification failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการยืนยัน',
+                'error_code' => 'VERIFICATION_ERROR',
+            ], 500);
+        }
+    }
+
+    /**
+     * ตรวจสอบสถานะ POS Terminal และ API Key
+     *
+     * ใช้สำหรับ:
+     * - ตรวจสอบว่า sync ได้หรือไม่
+     * - ตรวจสอบว่า API Key ถูกบล็อกหรือไม่
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function validate(Request $request): JsonResponse
+    {
+        try {
+            // ดึงข้อมูลจาก headers
+            $apiKey = $request->header('X-API-Key');
+            $productKey = $request->header('X-Product-Key');
+            $deviceId = $request->header('X-Device-ID');
+
+            if (!$apiKey || !$productKey || !$deviceId) {
+                return response()->json([
+                    'success' => false,
+                    'valid' => false,
+                    'message' => 'ข้อมูลไม่ครบถ้วน ต้องระบุ X-API-Key, X-Product-Key, X-Device-ID',
+                    'error_code' => 'MISSING_HEADERS',
+                ], 400);
+            }
+
+            // ค้นหา Terminal
+            $terminal = PosTerminal::where('product_key', $productKey)
+                ->where('device_id', $deviceId)
+                ->with(['apiKey', 'shop'])
+                ->first();
+
+            if (!$terminal) {
+                return response()->json([
+                    'success' => false,
+                    'valid' => false,
+                    'message' => 'ไม่พบ POS Terminal',
+                    'error_code' => 'TERMINAL_NOT_FOUND',
+                ], 404);
+            }
+
+            // ตรวจสอบว่า Terminal ถูกบล็อกหรือไม่
+            if ($terminal->status === PosTerminal::STATUS_BLOCKED) {
+                return response()->json([
+                    'success' => false,
+                    'valid' => false,
+                    'message' => 'POS Terminal ถูกบล็อก กรุณาติดต่อ Admin',
+                    'error_code' => 'TERMINAL_BLOCKED',
+                    'blocked' => true,
+                ], 403);
+            }
+
+            if ($terminal->status === PosTerminal::STATUS_SUSPENDED) {
+                return response()->json([
+                    'success' => false,
+                    'valid' => false,
+                    'message' => 'POS Terminal ถูกระงับชั่วคราว กรุณาติดต่อ Admin',
+                    'error_code' => 'TERMINAL_SUSPENDED',
+                    'blocked' => true,
+                ], 403);
+            }
+
+            // ตรวจสอบว่ายืนยันแล้วหรือยัง
+            if (!$terminal->is_verified) {
+                return response()->json([
+                    'success' => false,
+                    'valid' => false,
+                    'message' => 'POS ยังไม่ได้ยืนยัน กรุณากรอก API Key',
+                    'error_code' => 'NOT_VERIFIED',
+                    'needs_api_key' => true,
+                ], 401);
+            }
+
+            // ตรวจสอบ API Key
+            $posApiKey = PosApiKey::where('key', $apiKey)->first();
+
+            if (!$posApiKey) {
+                return response()->json([
+                    'success' => false,
+                    'valid' => false,
+                    'message' => 'API Key ไม่ถูกต้อง',
+                    'error_code' => 'INVALID_API_KEY',
+                ], 401);
+            }
+
+            // ตรวจสอบว่า API Key ถูกบล็อกหรือไม่
+            if ($posApiKey->is_blocked) {
+                return response()->json([
+                    'success' => false,
+                    'valid' => false,
+                    'message' => "API Key ถูกบล็อก\nเหตุผล: {$posApiKey->blocked_reason}\nกรุณาติดต่อ Admin",
+                    'error_code' => 'API_KEY_BLOCKED',
+                    'blocked' => true,
+                    'blocked_reason' => $posApiKey->blocked_reason,
+                    'blocked_at' => $posApiKey->blocked_at?->toISOString(),
+                    'contact_admin' => true,
+                ], 403);
+            }
+
+            // ตรวจสอบว่า API Key ใช้งานได้
+            if (!$posApiKey->isUsable()) {
+                return response()->json([
+                    'success' => false,
+                    'valid' => false,
+                    'message' => 'API Key ไม่สามารถใช้งานได้ (' . $posApiKey->getStatusText() . ')',
+                    'error_code' => 'API_KEY_UNUSABLE',
+                ], 403);
+            }
+
+            // ตรวจสอบว่าตรงกับ Terminal หรือไม่
+            if ($terminal->api_key_id !== $posApiKey->id) {
+                return response()->json([
+                    'success' => false,
+                    'valid' => false,
+                    'message' => 'API Key ไม่ตรงกับ POS Terminal นี้',
+                    'error_code' => 'API_KEY_MISMATCH',
+                ], 403);
+            }
+
+            // อัพเดทข้อมูล sync
+            $terminal->recordSync($request->ip());
+
+            return response()->json([
+                'success' => true,
+                'valid' => true,
+                'message' => 'ตรวจสอบสำเร็จ พร้อม sync',
+                'data' => [
+                    'terminal_id' => $terminal->id,
+                    'status' => $terminal->status,
+                    'is_verified' => true,
+                    'shop_name' => $terminal->shop->name ?? '',
+                    'shop_id' => $terminal->shop_id,
+                    'last_sync_at' => $terminal->last_sync_at?->toISOString(),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('POS Terminal validation failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'valid' => false,
+                'message' => 'เกิดข้อผิดพลาดในการตรวจสอบ',
+                'error_code' => 'VALIDATION_ERROR',
+            ], 500);
+        }
+    }
+
+    /**
+     * ตรวจสอบสถานะ API Key (สำหรับ POS ตรวจสอบเป็นระยะ)
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function checkStatus(Request $request): JsonResponse
+    {
+        try {
+            $apiKey = $request->header('X-API-Key');
+            $productKey = $request->header('X-Product-Key');
+
+            if (!$apiKey || !$productKey) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ข้อมูลไม่ครบถ้วน',
+                ], 400);
+            }
+
+            $posApiKey = PosApiKey::where('key', $apiKey)->first();
+            $terminal = PosTerminal::where('product_key', $productKey)->first();
+
+            // เตรียม response
+            $response = [
+                'success' => true,
+                'api_key_status' => [
+                    'is_valid' => false,
+                    'is_blocked' => false,
+                    'blocked_reason' => null,
+                    'blocked_at' => null,
+                ],
+                'terminal_status' => [
+                    'status' => null,
+                    'is_verified' => false,
+                ],
+            ];
+
+            if ($posApiKey) {
+                $response['api_key_status'] = [
+                    'is_valid' => $posApiKey->isUsable(),
+                    'is_blocked' => $posApiKey->is_blocked,
+                    'blocked_reason' => $posApiKey->blocked_reason,
+                    'blocked_at' => $posApiKey->blocked_at?->toISOString(),
+                    'status_text' => $posApiKey->getStatusText(),
+                ];
+            }
+
+            if ($terminal) {
+                $response['terminal_status'] = [
+                    'status' => $terminal->status,
+                    'is_verified' => $terminal->is_verified,
+                    'status_text' => $terminal->getStatusText(),
+                ];
+            }
+
+            // ตรวจสอบว่ามีปัญหาหรือไม่
+            $hasIssue = false;
+            $issueMessage = null;
+
+            if ($posApiKey && $posApiKey->is_blocked) {
+                $hasIssue = true;
+                $issueMessage = "API Key ถูกบล็อก: {$posApiKey->blocked_reason}\nกรุณาติดต่อ Admin";
+            } elseif ($terminal && $terminal->status === PosTerminal::STATUS_BLOCKED) {
+                $hasIssue = true;
+                $issueMessage = 'POS Terminal ถูกบล็อก กรุณาติดต่อ Admin';
+            } elseif ($terminal && $terminal->status === PosTerminal::STATUS_SUSPENDED) {
+                $hasIssue = true;
+                $issueMessage = 'POS Terminal ถูกระงับชั่วคราว กรุณาติดต่อ Admin';
+            }
+
+            $response['has_issue'] = $hasIssue;
+            $response['issue_message'] = $issueMessage;
+            $response['contact_admin'] = $hasIssue;
+
+            return response()->json($response);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด',
+            ], 500);
+        }
+    }
+}
