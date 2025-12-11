@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.373.0] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2241 from xjanova/charming-elbakyan (45b3e9a3)
+- feat: เพิ่ม animation กระพริบเรืองแสงและปรับปรุงการเชื่อมต่อ server (6506ec68)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.372.67] - 2025-12-11
 
 ### ✨ Features
