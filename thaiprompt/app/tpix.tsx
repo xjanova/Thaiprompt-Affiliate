@@ -4,11 +4,12 @@
  * เหรียญแห่งอนาคต - เหรียญของคนไทย เพื่อคนไทย
  *
  * Features:
- * - 3D Rotating Coin Animation
+ * - ใช้รูปภาพ TPIX1.png เป็น Hero Image
+ * - 3D Floating Animation
  * - Particle Effects (Stars/Coins)
  * - Glowing Text Effects
  * - Gradient Background
- * - Premium UI Design
+ * - Premium Glassmorphism UI Design
  */
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -23,11 +24,15 @@ import {
   Linking,
   StatusBar,
   ScrollView,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { useAppStore } from '@/stores/appStore';
+
+// รูปภาพ TPIX เหรียญทอง 3D
+const TPIX_COIN_IMAGE = require('@/assets/images/TPIX1.png');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -188,93 +193,131 @@ const TwinklingStar = ({ x, y, size, delay }: {
 };
 
 // =====================================================
-// 3D Rotating Coin Component - เหรียญ 3D หมุน
+// 3D TPIX Coin Hero Image Component - รูปเหรียญ TPIX 3D
 // =====================================================
-const RotatingCoin = () => {
-  const rotateY = useRef(new Animated.Value(0)).current;
+const TPIXCoinHero = () => {
   const glow = useRef(new Animated.Value(0)).current;
   const float = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+  const shimmer = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // หมุนเหรียญ
-    Animated.loop(
-      Animated.timing(rotateY, {
-        toValue: 1,
-        duration: 4000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
-
-    // เอฟเฟคเรืองแสง
+    // เอฟเฟคเรืองแสงรอบเหรียญ
     Animated.loop(
       Animated.sequence([
         Animated.timing(glow, {
           toValue: 1,
-          duration: 1500,
+          duration: 2000,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(glow, {
           toValue: 0,
-          duration: 1500,
+          duration: 2000,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
       ])
     ).start();
 
-    // ลอยขึ้นลง
+    // ลอยขึ้นลงอย่างนุ่มนวล
     Animated.loop(
       Animated.sequence([
         Animated.timing(float, {
-          toValue: -15,
-          duration: 2000,
+          toValue: -12,
+          duration: 2500,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(float, {
           toValue: 0,
-          duration: 2000,
+          duration: 2500,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
       ])
     ).start();
-  }, []);
 
-  const rotateInterpolate = rotateY.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
+    // Pulse scale effect
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scale, {
+          toValue: 1.02,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Shimmer effect
+    Animated.loop(
+      Animated.timing(shimmer, {
+        toValue: 1,
+        duration: 3000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
 
   const glowOpacity = glow.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 0.8],
+    outputRange: [0.4, 0.9],
   });
 
   const glowScale = glow.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.3],
+    outputRange: [1, 1.15],
+  });
+
+  const shimmerTranslate = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-SCREEN_WIDTH, SCREEN_WIDTH],
   });
 
   return (
-    <Animated.View style={[styles.coinContainer, { transform: [{ translateY: float }] }]}>
-      {/* Outer Glow */}
+    <Animated.View
+      style={[
+        styles.coinHeroContainer,
+        {
+          transform: [
+            { translateY: float },
+            { scale },
+          ],
+        },
+      ]}
+    >
+      {/* Multiple layered glow effects */}
       <Animated.View
         style={[
-          styles.coinGlow,
+          styles.coinGlowOuter,
           {
             opacity: glowOpacity,
             transform: [{ scale: glowScale }],
           },
         ]}
       />
-
-      {/* Inner Glow */}
       <Animated.View
         style={[
-          styles.coinInnerGlow,
+          styles.coinGlowMiddle,
+          {
+            opacity: glow.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.3, 0.7],
+            }),
+          },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.coinGlowInner,
           {
             opacity: glow.interpolate({
               inputRange: [0, 1],
@@ -284,35 +327,50 @@ const RotatingCoin = () => {
         ]}
       />
 
-      {/* Coin */}
+      {/* รูปเหรียญ TPIX 3D */}
+      <View style={styles.coinImageWrapper}>
+        <Image
+          source={TPIX_COIN_IMAGE}
+          style={styles.coinImage}
+          resizeMode="contain"
+        />
+
+        {/* Shimmer overlay effect */}
+        <Animated.View
+          style={[
+            styles.shimmerOverlay,
+            {
+              transform: [{ translateX: shimmerTranslate }],
+            },
+          ]}
+        >
+          <LinearGradient
+            colors={['transparent', 'rgba(255,255,255,0.15)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.shimmerGradient}
+          />
+        </Animated.View>
+      </View>
+
+      {/* Animated ring effects รอบเหรียญ */}
       <Animated.View
         style={[
-          styles.coin,
+          styles.coinRingInner,
+          { opacity: glowOpacity },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.coinRingOuter,
           {
-            transform: [{ rotateY: rotateInterpolate }],
+            opacity: glow.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.2, 0.5],
+            }),
           },
         ]}
-      >
-        <LinearGradient
-          colors={['#FFD700', '#FFA500', '#FF8C00', '#FFD700']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.coinGradient}
-        >
-          {/* Coin Face */}
-          <View style={styles.coinFace}>
-            <Text style={styles.coinText}>TPIX</Text>
-            <Text style={styles.coinSubText}>🇹🇭</Text>
-          </View>
-
-          {/* Coin Shine */}
-          <View style={styles.coinShine} />
-        </LinearGradient>
-      </Animated.View>
-
-      {/* Ring Effects */}
-      <Animated.View style={[styles.coinRing, { opacity: glowOpacity }]} />
-      <Animated.View style={[styles.coinRing2, { opacity: glow.interpolate({ inputRange: [0, 1], outputRange: [0.2, 0.5] }) }]} />
+      />
     </Animated.View>
   );
 };
@@ -409,9 +467,9 @@ export default function TPIXScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0a0a1a" />
 
-      {/* Background Gradient */}
+      {/* Background Gradient - Cyberpunk Dark Blue */}
       <LinearGradient
-        colors={['#0a0a1a', '#1a1a3a', '#0f0f2f', '#0a0a1a']}
+        colors={['#050510', '#0a0a20', '#0d1025', '#050515']}
         style={styles.backgroundGradient}
       />
 
@@ -455,8 +513,8 @@ export default function TPIXScreen() {
             </PulsingText>
           </View>
 
-          {/* 3D Coin */}
-          <RotatingCoin />
+          {/* 3D TPIX Coin Hero Image */}
+          <TPIXCoinHero />
 
           {/* Title */}
           <View style={styles.titleContainer}>
@@ -464,14 +522,20 @@ export default function TPIXScreen() {
             <Text style={styles.subtitle}>เหรียญแห่งอนาคต</Text>
           </View>
 
-          {/* Main Message - Glass Card */}
-          <BlurView intensity={20} tint="dark" style={styles.messageCard}>
+          {/* Main Message - Glassmorphism Card with Cyberpunk Style */}
+          <BlurView intensity={30} tint="dark" style={styles.messageCard}>
             <LinearGradient
-              colors={['rgba(255,215,0,0.1)', 'rgba(255,140,0,0.05)']}
+              colors={['rgba(0,212,255,0.15)', 'rgba(255,215,0,0.1)', 'rgba(0,212,255,0.08)']}
               style={styles.messageGradient}
             >
+              {/* Tech corner decorations */}
+              <View style={styles.techCornerTL} />
+              <View style={styles.techCornerTR} />
+              <View style={styles.techCornerBL} />
+              <View style={styles.techCornerBR} />
+
               <Text style={styles.messageTitle}>
-                เตรียมพบกับเราเร็วๆ นี้
+                🚀 เตรียมพบกับเราเร็วๆ นี้
               </Text>
 
               <View style={styles.messageDivider} />
@@ -486,20 +550,40 @@ export default function TPIXScreen() {
 
               <View style={styles.features}>
                 <View style={styles.featureItem}>
-                  <Text style={styles.featureIcon}>🔐</Text>
+                  <View style={styles.featureIconBox}>
+                    <Text style={styles.featureIcon}>🔐</Text>
+                  </View>
                   <Text style={styles.featureText}>ปลอดภัย</Text>
                 </View>
                 <View style={styles.featureItem}>
-                  <Text style={styles.featureIcon}>⚡</Text>
+                  <View style={styles.featureIconBox}>
+                    <Text style={styles.featureIcon}>⚡</Text>
+                  </View>
                   <Text style={styles.featureText}>รวดเร็ว</Text>
                 </View>
                 <View style={styles.featureItem}>
-                  <Text style={styles.featureIcon}>🌐</Text>
+                  <View style={styles.featureIconBox}>
+                    <Text style={styles.featureIcon}>🌐</Text>
+                  </View>
                   <Text style={styles.featureText}>ไร้พรมแดน</Text>
                 </View>
               </View>
             </LinearGradient>
           </BlurView>
+
+          {/* Tech Info Cards */}
+          <View style={styles.techInfoRow}>
+            <View style={styles.techInfoCard}>
+              <Text style={styles.techInfoIcon}>🔗</Text>
+              <Text style={styles.techInfoLabel}>Blockchain</Text>
+              <Text style={styles.techInfoValue}>BSC Network</Text>
+            </View>
+            <View style={styles.techInfoCard}>
+              <Text style={styles.techInfoIcon}>💎</Text>
+              <Text style={styles.techInfoLabel}>Token Type</Text>
+              <Text style={styles.techInfoValue}>BEP-20</Text>
+            </View>
+          </View>
 
           {/* Stats Preview */}
           <View style={styles.statsContainer}>
@@ -519,10 +603,10 @@ export default function TPIXScreen() {
             </View>
           </View>
 
-          {/* Wiki Button */}
+          {/* Wiki Button - Cyberpunk Gradient */}
           <Pressable onPress={handleOpenWiki} style={styles.wikiButton}>
             <LinearGradient
-              colors={['#FFD700', '#FFA500', '#FF8C00']}
+              colors={['#00d4ff', '#00a8cc', '#FFD700']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.wikiButtonGradient}
@@ -616,89 +700,87 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 
-  // Coin
-  coinContainer: {
-    width: 180,
-    height: 180,
+  // TPIX Coin Hero Image
+  coinHeroContainer: {
+    width: SCREEN_WIDTH * 0.9,
+    height: 220,
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 30,
+    marginVertical: 20,
   },
-  coinGlow: {
+  coinGlowOuter: {
     position: 'absolute',
-    width: 200,
+    width: SCREEN_WIDTH * 0.85,
     height: 200,
-    borderRadius: 100,
-    backgroundColor: '#FFD700',
-    shadowColor: '#FFD700',
+    borderRadius: 24,
+    backgroundColor: '#00d4ff',
+    shadowColor: '#00d4ff',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
-    shadowRadius: 40,
+    shadowRadius: 50,
   },
-  coinInnerGlow: {
+  coinGlowMiddle: {
     position: 'absolute',
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: 'rgba(255, 200, 0, 0.3)',
+    width: SCREEN_WIDTH * 0.8,
+    height: 180,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 215, 0, 0.3)',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 30,
   },
-  coin: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+  coinGlowInner: {
+    position: 'absolute',
+    width: SCREEN_WIDTH * 0.75,
+    height: 160,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 200, 0, 0.2)',
+  },
+  coinImageWrapper: {
+    width: SCREEN_WIDTH * 0.85,
+    height: 200,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.8,
-    shadowRadius: 20,
-    elevation: 20,
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 0.6,
+    shadowRadius: 25,
+    elevation: 25,
+    backgroundColor: '#0a0a1a',
   },
-  coinGradient: {
+  coinImage: {
     width: '100%',
     height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  coinFace: {
-    alignItems: 'center',
-  },
-  coinText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#8B4513',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  coinSubText: {
-    fontSize: 24,
-    marginTop: 4,
-  },
-  coinShine: {
+  shimmerOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: '50%',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderTopLeftRadius: 70,
-    borderTopRightRadius: 70,
+    bottom: 0,
+    width: 100,
+    height: '100%',
   },
-  coinRing: {
+  shimmerGradient: {
+    width: 100,
+    height: '100%',
+  },
+  coinRingInner: {
     position: 'absolute',
-    width: 170,
-    height: 170,
-    borderRadius: 85,
+    width: SCREEN_WIDTH * 0.88,
+    height: 210,
+    borderRadius: 22,
     borderWidth: 2,
-    borderColor: '#FFD700',
+    borderColor: '#00d4ff',
   },
-  coinRing2: {
+  coinRingOuter: {
     position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: SCREEN_WIDTH * 0.92,
+    height: 220,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#FFA500',
+    borderColor: '#FFD700',
   },
 
   // Title
@@ -727,23 +809,70 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 24,
     overflow: 'hidden',
-    marginBottom: 24,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 212, 255, 0.3)',
   },
   messageGradient: {
     padding: 24,
     alignItems: 'center',
+    position: 'relative',
+  },
+  // Tech corner decorations
+  techCornerTL: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 20,
+    height: 20,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: '#00d4ff',
+  },
+  techCornerTR: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderColor: '#00d4ff',
+  },
+  techCornerBL: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    width: 20,
+    height: 20,
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: '#FFD700',
+  },
+  techCornerBR: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
+    borderColor: '#FFD700',
   },
   messageTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#FFD700',
     textAlign: 'center',
     marginBottom: 16,
+    textShadowColor: 'rgba(255, 215, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
   },
   messageDivider: {
-    width: 100,
+    width: 120,
     height: 2,
-    backgroundColor: 'rgba(255, 215, 0, 0.3)',
+    backgroundColor: 'rgba(0, 212, 255, 0.5)',
     marginVertical: 16,
     borderRadius: 1,
   },
@@ -757,18 +886,59 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
-    marginTop: 8,
+    marginTop: 12,
   },
   featureItem: {
     alignItems: 'center',
   },
+  featureIconBox: {
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 212, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 212, 255, 0.3)',
+  },
   featureIcon: {
-    fontSize: 28,
-    marginBottom: 4,
+    fontSize: 24,
   },
   featureText: {
     fontSize: 12,
-    color: '#ccc',
+    color: '#00d4ff',
+    fontWeight: '500',
+  },
+  // Tech Info Cards
+  techInfoRow: {
+    flexDirection: 'row',
+    width: '100%',
+    marginBottom: 16,
+    gap: 12,
+  },
+  techInfoCard: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 212, 255, 0.08)',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 212, 255, 0.2)',
+  },
+  techInfoIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  techInfoLabel: {
+    fontSize: 11,
+    color: '#888',
+    marginBottom: 4,
+  },
+  techInfoValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#00d4ff',
   },
 
   // Stats
@@ -776,30 +946,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
+    backgroundColor: 'rgba(0, 212, 255, 0.08)',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
     width: '100%',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 212, 255, 0.2)',
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#FFD700',
+    textShadowColor: 'rgba(255, 215, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 4,
+    fontSize: 11,
+    color: '#00d4ff',
+    marginTop: 6,
+    fontWeight: '500',
   },
   statDivider: {
     width: 1,
-    height: 30,
-    backgroundColor: 'rgba(255, 215, 0, 0.3)',
+    height: 40,
+    backgroundColor: 'rgba(0, 212, 255, 0.3)',
   },
 
   // Wiki Button
@@ -807,48 +983,53 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: 30,
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
+    marginBottom: 24,
+    shadowColor: '#00d4ff',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    elevation: 10,
   },
   wikiButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 18,
     paddingHorizontal: 24,
   },
   wikiButtonIcon: {
     fontSize: 24,
-    marginRight: 10,
+    marginRight: 12,
   },
   wikiButtonText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: '#0a0a1a',
+    letterSpacing: 0.5,
   },
   wikiButtonArrow: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginLeft: 10,
+    color: '#0a0a1a',
+    marginLeft: 12,
   },
 
   // Footer
   footer: {
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 212, 255, 0.1)',
   },
   footerText: {
     fontSize: 12,
-    color: '#666',
+    color: '#00d4ff',
+    fontWeight: '500',
   },
   footerSubText: {
     fontSize: 12,
-    color: '#888',
-    marginTop: 4,
+    color: '#FFD700',
+    marginTop: 6,
   },
 });
