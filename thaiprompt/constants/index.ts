@@ -127,8 +127,8 @@ export const API_ENDPOINTS = {
   PROFILE: '/profile',
   UPDATE_PROFILE: '/profile', // ใช้ PUT method
   PROFILE_UPDATE: '/profile', // ใช้ PUT method
-  AVATAR_UPLOAD: '/mobile/profile/avatar',
-  AVATAR_DELETE: '/mobile/profile/avatar',
+  AVATAR_UPLOAD: '/profile/avatar', // POST - อัพโหลดรูปโปรไฟล์
+  AVATAR_DELETE: '/profile/avatar', // DELETE - ลบรูปโปรไฟล์
   CHANGE_PASSWORD: '/profile/change-password',
   REFERRAL_CODE: '/profile/referral-code',
 
