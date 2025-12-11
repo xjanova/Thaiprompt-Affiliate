@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.378.1] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2258 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (27b67a44)
+- feat(tarot): add PV and commission system for tarot readings (e5c06cee)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.378.0] - 2025-12-11
 
 ### ✨ Features
