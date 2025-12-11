@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.373.4] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2245 from xjanova/claude/improve-ui-navigation-01NXH6TzLA4TxwQrSANA8c7j (e99ac223)
+- feat(mobile): เพิ่มหน้าตั้งค่า Push Notifications ที่ทำงานจริง (04b83ab1)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.373.3] - 2025-12-11
 
 ### ✨ Features
