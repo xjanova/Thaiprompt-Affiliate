@@ -15,8 +15,8 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
@@ -578,19 +578,21 @@ export default function ServicesScreen() {
 
   if (isLoading) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1 justify-center items-center">
+      <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
+        <StatusBar barStyle="light-content" backgroundColor={isDark ? '#0F172A' : '#3B82F6'} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#3B82F6" />
           <Text className="text-gray-500 mt-4">กำลังโหลด...</Text>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
   if (hasError) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1">
+      <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
+        <StatusBar barStyle="light-content" backgroundColor={isDark ? '#0F172A' : '#3B82F6'} />
+        <View style={{ flex: 1 }}>
           <ErrorState
             title="ไม่สามารถโหลดข้อมูลได้"
             message="ขณะนี้ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้\nโปรดลองใหม่ภายหลัง"
@@ -599,14 +601,15 @@ export default function ServicesScreen() {
               setHasError(false);
             }}
           />
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-      <SafeAreaView className="flex-1">
+    <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
+      <StatusBar barStyle="light-content" backgroundColor={isDark ? '#0F172A' : '#3B82F6'} />
+      <View style={{ flex: 1, paddingTop: 50 }}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
@@ -824,7 +827,7 @@ export default function ServicesScreen() {
             </LinearGradient>
           </Animated.View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
 
       {/* Service Detail Modal */}
       <ServiceDetailModal

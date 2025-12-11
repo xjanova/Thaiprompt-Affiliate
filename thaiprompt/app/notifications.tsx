@@ -12,8 +12,8 @@ import {
   FlatList,
   RefreshControl,
   Alert,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
@@ -194,7 +194,8 @@ export default function NotificationsScreen() {
   if (!isAuthenticated) {
     return (
       <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1 justify-center items-center px-6">
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#0F172A' : '#F9FAFB'} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
           <Text style={{ fontSize: 80 }}>🔔</Text>
           <Text className={`text-xl font-bold mt-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
             การแจ้งเตือน
@@ -208,16 +209,16 @@ export default function NotificationsScreen() {
           >
             <Text className="text-white font-bold">เข้าสู่ระบบ</Text>
           </Pressable>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-      <SafeAreaView className="flex-1">
-        {/* Header */}
-        <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
+    <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#0F172A' : '#F9FAFB'} />
+      {/* Header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 8 }}>
           <View className="flex-row items-center">
             <Pressable onPress={() => router.back()} className="mr-4">
               <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
@@ -290,7 +291,6 @@ export default function NotificationsScreen() {
             )}
           />
         )}
-      </SafeAreaView>
     </View>
   );
 }

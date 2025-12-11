@@ -21,7 +21,6 @@ import {
   StyleSheet,
   StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
@@ -357,7 +356,7 @@ const MemberDetailModal = ({
             </Pressable>
           </View>
 
-          <SafeAreaView edges={['bottom']} />
+          <View style={{ height: 24 }} />
         </View>
       </View>
     </Modal>
@@ -698,9 +697,9 @@ export default function MLMTreeScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.safeArea}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: 50 }]}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <Text style={{ fontSize: 24, color: '#fff' }}>←</Text>
           </Pressable>
@@ -794,7 +793,7 @@ export default function MLMTreeScreen() {
             <SelfCard user={{ id: user?.id || 0, name: user?.name || 'คุณ', email: user?.email }} />
           </ScrollView>
         )}
-      </SafeAreaView>
+      </View>
 
       <MemberDetailModal
         visible={showMemberModal}

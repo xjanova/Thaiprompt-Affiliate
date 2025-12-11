@@ -19,8 +19,8 @@ import {
   Modal,
   Platform,
   StyleSheet,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
@@ -1208,7 +1208,8 @@ export default function KycScreen() {
   if (!isAuthenticated) {
     return (
       <View style={[mainStyles.container, isDark && mainStyles.containerDark]}>
-        <SafeAreaView style={mainStyles.center}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#111827' : '#F9FAFB'} />
+        <View style={mainStyles.center}>
           <LinearGradient colors={['#3B82F6', '#2563EB']} style={mainStyles.loginIcon}>
             <Text style={{ fontSize: 48 }}>🛡️</Text>
           </LinearGradient>
@@ -1219,7 +1220,7 @@ export default function KycScreen() {
               <Text style={mainStyles.loginButtonText}>เข้าสู่ระบบ</Text>
             </LinearGradient>
           </Pressable>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
@@ -1228,22 +1229,23 @@ export default function KycScreen() {
   if (isLoading && status === 'not_submitted') {
     return (
       <View style={[mainStyles.container, isDark && mainStyles.containerDark]}>
-        <SafeAreaView style={mainStyles.center}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#111827' : '#F9FAFB'} />
+        <View style={mainStyles.center}>
           <ActivityIndicator size="large" color="#3B82F6" />
           <Text style={[mainStyles.loadingText, isDark && mainStyles.textLight]}>กำลังโหลด...</Text>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={[mainStyles.container, isDark && mainStyles.containerDark]}>
-      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        {/* Header */}
-        <LinearGradient
-          colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
-          style={mainStyles.header}
-        >
+      <StatusBar barStyle="light-content" backgroundColor={isDark ? '#1E3A8A' : '#3B82F6'} />
+      {/* Header */}
+      <LinearGradient
+        colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
+        style={mainStyles.header}
+      >
           <Pressable style={mainStyles.backButton} onPress={() => router.back()}>
             <Text style={mainStyles.backIcon}>←</Text>
           </Pressable>
@@ -1336,7 +1338,6 @@ export default function KycScreen() {
             </View>
           </ScrollView>
         )}
-      </SafeAreaView>
 
       {/* Camera Modal */}
       <CameraModal
@@ -1371,7 +1372,7 @@ const mainStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 50,
     paddingBottom: 24,
   },
   backButton: {

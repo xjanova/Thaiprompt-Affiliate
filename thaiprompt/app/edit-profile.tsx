@@ -16,8 +16,8 @@ import {
   Platform,
   Animated,
   Easing,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -466,38 +466,39 @@ export default function EditProfileScreen() {
   // If not authenticated
   if (!isAuthenticated) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1 justify-center items-center px-6">
+      <View style={{ flex: 1, backgroundColor: isDark ? '#0F0F23' : '#F9FAFB' }}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#0F0F23' : '#F9FAFB'} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
           <Text style={{ fontSize: 80 }}>👤</Text>
-          <Text className={`text-xl font-bold mt-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 16, color: isDark ? '#FFFFFF' : '#1F2937' }}>
             แก้ไขโปรไฟล์
           </Text>
-          <Text className="text-gray-500 text-center mt-2">
+          <Text style={{ color: '#6B7280', textAlign: 'center', marginTop: 8 }}>
             กรุณาเข้าสู่ระบบเพื่อแก้ไขโปรไฟล์
           </Text>
           <Pressable
             onPress={() => router.push('/login')}
-            className="bg-primary-500 px-8 py-3 rounded-xl mt-6"
+            style={{ backgroundColor: '#3B82F6', paddingHorizontal: 32, paddingVertical: 12, borderRadius: 12, marginTop: 24 }}
           >
-            <Text className="text-white font-bold">เข้าสู่ระบบ</Text>
+            <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>เข้าสู่ระบบ</Text>
           </Pressable>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-      <SafeAreaView className="flex-1" edges={['top']}>
-        {/* Header */}
-        <LinearGradient
-          colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
-          style={{
-            paddingHorizontal: 20,
-            paddingTop: 16,
-            paddingBottom: 32,
-          }}
-        >
+    <View style={{ flex: 1, backgroundColor: isDark ? '#0F0F23' : '#F9FAFB' }}>
+      <StatusBar barStyle="light-content" backgroundColor={isDark ? '#1E3A8A' : '#3B82F6'} />
+      {/* Header */}
+      <LinearGradient
+        colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
+        style={{
+          paddingHorizontal: 20,
+          paddingTop: 50,
+          paddingBottom: 32,
+        }}
+      >
           <View className="flex-row items-center justify-between mb-6">
             <Pressable
               onPress={() => router.back()}
@@ -768,7 +769,6 @@ export default function EditProfileScreen() {
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
-      </SafeAreaView>
     </View>
   );
 }

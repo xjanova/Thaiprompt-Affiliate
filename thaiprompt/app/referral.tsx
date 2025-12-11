@@ -15,8 +15,8 @@ import {
   Animated,
   Easing,
   Dimensions,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
 import ReAnimated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated';
@@ -480,8 +480,9 @@ export default function ReferralScreen() {
   if (!isAuthenticated) {
     return (
       <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#0F172A' : '#F9FAFB'} />
         <Stack.Screen options={{ headerShown: false }} />
-        <SafeAreaView className="flex-1 justify-center items-center px-6">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
           <LinearGradient
             colors={['#EC4899', '#BE185D']}
             style={{
@@ -518,21 +519,21 @@ export default function ReferralScreen() {
               <Text className="text-white font-bold text-lg">เข้าสู่ระบบ</Text>
             </LinearGradient>
           </Pressable>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
+    <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
+      <StatusBar barStyle="light-content" backgroundColor={isDark ? '#9D174D' : '#EC4899'} />
       <Stack.Screen options={{ headerShown: false }} />
 
-      <SafeAreaView className="flex-1" edges={['top']}>
-        {/* Header */}
-        <LinearGradient
-          colors={isDark ? ['#9D174D', '#831843'] : ['#EC4899', '#BE185D']}
-          style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32 }}
-        >
+      {/* Header */}
+      <LinearGradient
+        colors={isDark ? ['#9D174D', '#831843'] : ['#EC4899', '#BE185D']}
+        style={{ paddingHorizontal: 20, paddingTop: 50, paddingBottom: 32 }}
+      >
           <View className="flex-row items-center mb-4">
             <Pressable
               onPress={() => router.back()}
@@ -723,7 +724,6 @@ export default function ReferralScreen() {
             </View>
           </ScrollView>
         )}
-      </SafeAreaView>
     </View>
   );
 }

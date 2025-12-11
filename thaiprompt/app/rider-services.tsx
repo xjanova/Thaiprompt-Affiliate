@@ -12,8 +12,8 @@ import {
   Alert,
   ActivityIndicator,
   TextInput,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
@@ -451,8 +451,9 @@ export default function RiderServicesScreen() {
   // Not authenticated
   if (!isAuthenticated) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1 justify-center items-center px-6">
+      <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
+        <StatusBar barStyle="light-content" backgroundColor={isDark ? '#0F172A' : '#3B82F6'} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
           <Text style={{ fontSize: 80, color: '#9CA3AF' }}>🔒</Text>
           <Text className="text-xl font-bold mt-4 text-gray-800 dark:text-white">
             กรุณาเข้าสู่ระบบ
@@ -463,27 +464,29 @@ export default function RiderServicesScreen() {
           >
             <Text className="text-white font-bold">เข้าสู่ระบบ</Text>
           </Pressable>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
   if (isLoading) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1 justify-center items-center">
+      <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
+        <StatusBar barStyle="light-content" backgroundColor={isDark ? '#0F172A' : '#3B82F6'} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#3B82F6" />
           <Text className="text-gray-500 mt-4">กำลังโหลด...</Text>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
 
   if (hasError) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <SafeAreaView className="flex-1">
-          <View className="flex-row items-center px-5 pt-4 pb-2">
+      <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
+        <StatusBar barStyle="light-content" backgroundColor={isDark ? '#0F172A' : '#3B82F6'} />
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 8 }}>
             <Pressable onPress={() => router.back()} className="mr-4">
               <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
             </Pressable>
@@ -503,7 +506,7 @@ export default function RiderServicesScreen() {
               setHasError(false);
             }}
           />
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
@@ -511,10 +514,11 @@ export default function RiderServicesScreen() {
   let globalIndex = 0;
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-      <SafeAreaView className="flex-1">
+    <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
+      <StatusBar barStyle="light-content" backgroundColor={isDark ? '#0F172A' : '#3B82F6'} />
+      <View style={{ flex: 1 }}>
         {/* Header */}
-        <View className="flex-row items-center px-5 pt-4 pb-2">
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 8 }}>
           <Pressable onPress={() => router.back()} className="mr-4">
             <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
           </Pressable>
@@ -697,7 +701,7 @@ export default function RiderServicesScreen() {
             </LinearGradient>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

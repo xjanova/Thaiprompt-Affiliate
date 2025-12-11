@@ -16,8 +16,8 @@ import {
   Pressable,
   Dimensions,
   StyleSheet,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Animated, {
@@ -271,11 +271,12 @@ export default function MainMenuScreen() {
 
   return (
     <LavaBackground variant="crypto" intensity="high">
-      <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <View style={styles.container}>
         {/* Header */}
         <Animated.View
           entering={FadeInDown.delay(100).springify()}
-          style={styles.header}
+          style={[styles.header, { paddingTop: 50 }]}
         >
           <View>
             <Text style={styles.welcomeText}>ยินดีต้อนรับ</Text>
@@ -372,7 +373,7 @@ export default function MainMenuScreen() {
             />
           </LinearGradient>
         </Animated.View>
-      </SafeAreaView>
+      </View>
     </LavaBackground>
   );
 }

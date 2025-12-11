@@ -15,8 +15,8 @@ import {
   Image,
   ActivityIndicator,
   FlatList,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
@@ -276,10 +276,8 @@ export default function OrdersScreen() {
   }, []);
 
   return (
-    <SafeAreaView
-      className={`flex-1 ${isDarkMode ? 'bg-dark-100' : 'bg-gray-50'}`}
-      edges={['top']}
-    >
+    <View style={{ flex: 1, backgroundColor: isDarkMode ? '#0F172A' : '#F9FAFB' }}>
+      <StatusBar barStyle="light-content" backgroundColor={isDarkMode ? '#1F2937' : '#3B82F6'} />
       <Stack.Screen
         options={{
           headerShown: false,
@@ -291,7 +289,7 @@ export default function OrdersScreen() {
         colors={isDarkMode ? ['#1F2937', '#111827'] : ['#3B82F6', '#1D4ED8']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        className="px-4 pt-2 pb-4"
+        style={{ paddingHorizontal: 16, paddingTop: 50, paddingBottom: 16 }}
       >
         {/* Back Button & Title */}
         <View className="flex-row items-center mb-4">
@@ -361,6 +359,6 @@ export default function OrdersScreen() {
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
