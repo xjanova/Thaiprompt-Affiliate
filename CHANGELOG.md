@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.375.1] - 2025-12-11
+
+### ✨ Features
+- feat(mobile): เพิ่มหน้า TPIX Token พร้อมเอฟเฟคอลังการ (85a65c12)
+- feat(mobile): เพิ่มฟีเจอร์ pin ปุ่มบนหน้าหลัก (efd40d7f)
+- feat(mobile): เพิ่มระบบไรเดอร์สมบูรณ์และเมนูสั่งบริการ (5b16228c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2248 from xjanova/claude/improve-ui-navigation-01NXH6TzLA4TxwQrSANA8c7j (8e12bc84)
+
 ## [v3.375.0] - 2025-12-11
 
 ### ✨ Features
