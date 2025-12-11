@@ -350,4 +350,196 @@ class OrderManagementController extends Controller
 
         return view('seller.orders.print', compact('order'));
     }
+
+    // ========================================
+    // SHIPPING MANAGEMENT
+    // เมนูจัดการการจัดส่ง
+    // ========================================
+
+    /**
+     * แสดงคำสั่งซื้อที่รอจัดส่ง (ยังไม่มีเลขพัสดุ)
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function pendingShipping(Request $request)
+    {
+        $query = Order::with(['items' => function ($q) {
+            $q->where('seller_id', auth()->id())->with('product');
+        }, 'user', 'shippingAddress'])
+            ->whereHas('items', function ($q) {
+                $q->where('seller_id', auth()->id());
+            })
+            ->where('payment_status', 'paid')
+            ->whereIn('status', ['pending', 'confirmed', 'processing'])
+            ->whereNull('tracking_number')
+            ->latest();
+
+        $orders = $query->paginate(20);
+
+        // Statistics
+        $stats = [
+            'pending_shipping' => $orders->total(),
+            'total_amount' => Order::whereHas('items', function ($q) {
+                $q->where('seller_id', auth()->id());
+            })
+                ->where('payment_status', 'paid')
+                ->whereIn('status', ['pending', 'confirmed', 'processing'])
+                ->whereNull('tracking_number')
+                ->sum('total_amount'),
+        ];
+
+        $shippingProviders = ShippingProvider::active()->ordered()->get();
+
+        return view('seller.orders.pending-shipping', compact('orders', 'stats', 'shippingProviders'));
+    }
+
+    /**
+     * แสดงคำสั่งซื้อที่จัดส่งแล้ว (มีเลขพัสดุแล้ว)
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function shipped(Request $request)
+    {
+        $query = Order::with(['items' => function ($q) {
+            $q->where('seller_id', auth()->id())->with('product');
+        }, 'user', 'shippingAddress', 'shippingProvider'])
+            ->whereHas('items', function ($q) {
+                $q->where('seller_id', auth()->id());
+            })
+            ->where('status', 'shipped')
+            ->latest('shipped_at');
+
+        $orders = $query->paginate(20);
+
+        // Statistics
+        $stats = [
+            'shipped' => $orders->total(),
+            'in_transit' => Order::whereHas('items', function ($q) {
+                $q->where('seller_id', auth()->id());
+            })
+                ->where('status', 'shipped')
+                ->count(),
+        ];
+
+        return view('seller.orders.shipped', compact('orders', 'stats'));
+    }
+
+    /**
+     * แสดงคำสั่งซื้อที่ส่งถึงแล้ว
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function delivered(Request $request)
+    {
+        $query = Order::with(['items' => function ($q) {
+            $q->where('seller_id', auth()->id())->with('product');
+        }, 'user', 'shippingAddress', 'shippingProvider'])
+            ->whereHas('items', function ($q) {
+                $q->where('seller_id', auth()->id());
+            })
+            ->whereIn('status', ['delivered', 'completed'])
+            ->latest('delivered_at');
+
+        $orders = $query->paginate(20);
+
+        // Statistics
+        $stats = [
+            'delivered' => $orders->total(),
+            'completed_this_month' => Order::whereHas('items', function ($q) {
+                $q->where('seller_id', auth()->id());
+            })
+                ->whereIn('status', ['delivered', 'completed'])
+                ->whereMonth('delivered_at', now()->month)
+                ->count(),
+        ];
+
+        return view('seller.orders.delivered', compact('orders', 'stats'));
+    }
+
+    // ========================================
+    // CUSTOMER MESSAGES
+    // แชทกับลูกค้า
+    // ========================================
+
+    /**
+     * แสดงข้อความทั้งหมดจากลูกค้า
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function allMessages(Request $request)
+    {
+        // ดึง Orders ที่มีข้อความ
+        $query = Order::with(['items' => function ($q) {
+            $q->where('seller_id', auth()->id())->with('product');
+        }, 'user', 'messages' => function ($q) {
+            $q->latest()->limit(1);
+        }])
+            ->whereHas('items', function ($q) {
+                $q->where('seller_id', auth()->id());
+            })
+            ->whereHas('messages')
+            ->orderBy('last_message_at', 'desc');
+
+        // กรองเฉพาะที่มีข้อความใหม่
+        if ($request->get('filter') === 'unread') {
+            $query->where('has_unread_messages', true);
+        }
+
+        $conversations = $query->paginate(20);
+
+        // Statistics
+        $stats = [
+            'total_conversations' => Order::whereHas('items', function ($q) {
+                $q->where('seller_id', auth()->id());
+            })->whereHas('messages')->count(),
+            'unread_conversations' => Order::whereHas('items', function ($q) {
+                $q->where('seller_id', auth()->id());
+            })->where('has_unread_messages', true)->count(),
+            'messages_today' => OrderMessage::whereHas('order.items', function ($q) {
+                $q->where('seller_id', auth()->id());
+            })->whereDate('created_at', today())->count(),
+        ];
+
+        return view('seller.messages.index', compact('conversations', 'stats'));
+    }
+
+    /**
+     * แสดงข้อความที่ยังไม่อ่าน
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function unreadMessages(Request $request)
+    {
+        // ดึง Orders ที่มีข้อความยังไม่อ่าน
+        $query = Order::with(['items' => function ($q) {
+            $q->where('seller_id', auth()->id())->with('product');
+        }, 'user', 'messages' => function ($q) {
+            $q->latest()->limit(1);
+        }])
+            ->whereHas('items', function ($q) {
+                $q->where('seller_id', auth()->id());
+            })
+            ->where('has_unread_messages', true)
+            ->orderBy('last_message_at', 'desc');
+
+        $conversations = $query->paginate(20);
+
+        // Statistics
+        $stats = [
+            'unread_conversations' => $conversations->total(),
+            'unread_messages' => OrderMessage::whereHas('order.items', function ($q) {
+                $q->where('seller_id', auth()->id());
+            })
+                ->where('sender_type', 'customer')
+                ->where('is_read', false)
+                ->count(),
+        ];
+
+        return view('seller.messages.unread', compact('conversations', 'stats'));
+    }
 }

@@ -860,6 +860,37 @@ return [
         ],
 
         [
+            'id' => 'shipping',
+            'label' => 'จัดการการจัดส่ง',
+            'icon' => '📦',
+            'route' => null,
+            'order' => 3.5,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-cyan-500 to-blue-500',
+            'submenu' => [
+                ['label' => '📋 รอจัดส่ง', 'route' => 'seller.orders.pending-shipping', 'description' => 'คำสั่งซื้อที่รอกรอกเลขพัสดุ'],
+                ['label' => '🚚 จัดส่งแล้ว', 'route' => 'seller.orders.shipped', 'description' => 'คำสั่งซื้อที่จัดส่งแล้ว'],
+                ['label' => '✅ สำเร็จ', 'route' => 'seller.orders.delivered', 'description' => 'คำสั่งซื้อที่ส่งถึงแล้ว'],
+            ],
+        ],
+
+        [
+            'id' => 'customer-chat',
+            'label' => 'แชทกับลูกค้า',
+            'icon' => '💬',
+            'route' => null,
+            'order' => 3.6,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-green-500 to-emerald-500',
+            'submenu' => [
+                ['label' => '📩 ข้อความทั้งหมด', 'route' => 'seller.messages.index', 'description' => 'ดูข้อความทั้งหมด'],
+                ['label' => '🔔 ยังไม่อ่าน', 'route' => 'seller.messages.unread', 'description' => 'ข้อความที่ยังไม่ได้อ่าน', 'badge' => 'count', 'badge_color' => 'bg-red-500'],
+            ],
+        ],
+
+        [
             'id' => 'wallet',
             'label' => 'กระเป๋าเงิน',
             'icon' => '💰',
