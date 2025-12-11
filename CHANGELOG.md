@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.373.5] - 2025-12-11
+
+### ✨ Features
+- feat(mobile): ปรับปรุง UI และเพิ่ม animation หลายส่วน (17710103)
+- feat(mobile): เพิ่มไอคอนกระดิ่งแจ้งเตือนพร้อม badge ใน tab bar (d2323334)
+### 🐛 Bug Fixes
+- fix(api): เพิ่ม wallet_address ใน login และ me API (1c96e527)
+- fix(mobile): ปิด navigation header ทุกหน้าให้แอพจัดการเอง (c1734d92)
+- fix(mobile): แก้ไขการอัพเดทโปรไฟล์และอัพโหลดรูปภาพให้ทำงานได้ (49d0e9f0)
+### 🔧 Other Changes
+- Merge pull request #2246 from xjanova/claude/improve-ui-navigation-01NXH6TzLA4TxwQrSANA8c7j (479145eb)
+
 ## [v3.373.4] - 2025-12-11
 
 ### ✨ Features
