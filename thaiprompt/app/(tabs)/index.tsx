@@ -1,13 +1,14 @@
 /**
- * Home Screen - Premium Design V4
+ * Home Screen - Premium Design V5
  * ปรับปรุงปุ่มให้สวยงามมากขึ้น
- * - รูปภาพขยายเต็มปุ่ม (ไม่แสดงตัวหนังสือถ้ามีรูป)
+ * - รูปภาพ 16:9 aspect ratio พอดี ไม่ crop
  * - 3D effect พร้อมเงาและแสง
  * - Glassmorphism effect
+ * - Firefly animation background
  * - Smooth animations
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -28,9 +29,10 @@ import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 import { BannerCarousel } from '@/components';
 
-const { width } = Dimensions.get('window');
+const { width, height: screenHeight } = Dimensions.get('window');
+// ปรับขนาดปุ่มให้รองรับภาพ 16:9
 const CARD_WIDTH = (width - 52) / 2;
-const CARD_HEIGHT = 130;
+const CARD_HEIGHT = Math.round(CARD_WIDTH * 9 / 16); // 16:9 aspect ratio
 
 // ภาพปุ่มเมนู - ใช้ภาพจาก assets/images (ครบทุกปุ่ม)
 const MENU_IMAGES: Record<string, ImageSourcePropType> = {
@@ -62,7 +64,119 @@ const MENU_ITEMS = [
   { id: 'settings', title: 'ตั้งค่า', icon: '⚙️', colors: ['#64748B', '#475569'], glowColor: '#64748B', route: '/settings', hasImage: true },
 ] as const;
 
-// Menu Card Component - ปรับปรุงให้รูปภาพเต็มปุ่ม
+// จำนวนหิ่งห้อย (ลดจำนวนเพื่อไม่ให้แอพหนัก)
+const NUM_FIREFLIES = 12;
+
+// Firefly Component - หิ่งห้อยเรืองแสง
+const Firefly = ({ delay, duration }: { delay: number; duration: number }) => {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateX = useRef(new Animated.Value(Math.random() * width)).current;
+  const translateY = useRef(new Animated.Value(Math.random() * screenHeight * 0.6)).current;
+  const scale = useRef(new Animated.Value(0.5 + Math.random() * 0.5)).current;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const animate = () => {
+      if (!isMounted) return;
+
+      // Random new position
+      const newX = Math.random() * width;
+      const newY = Math.random() * screenHeight * 0.6;
+
+      Animated.parallel([
+        // Fade in and out
+        Animated.sequence([
+          Animated.timing(opacity, {
+            toValue: 0.3 + Math.random() * 0.5,
+            duration: duration * 0.3,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: duration * 0.7,
+            useNativeDriver: true,
+          }),
+        ]),
+        // Move
+        Animated.timing(translateX, {
+          toValue: newX,
+          duration: duration,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: newY,
+          duration: duration,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        // Pulse
+        Animated.sequence([
+          Animated.timing(scale, {
+            toValue: 0.8 + Math.random() * 0.4,
+            duration: duration * 0.5,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 0.5 + Math.random() * 0.3,
+            duration: duration * 0.5,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start(() => {
+        if (isMounted) animate();
+      });
+    };
+
+    // Delay start
+    const timeout = setTimeout(animate, delay);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeout);
+    };
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#FFD700',
+        opacity,
+        transform: [{ translateX }, { translateY }, { scale }],
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 6,
+      }}
+    />
+  );
+};
+
+// Fireflies Background Component
+const FirefliesBackground = () => {
+  const fireflies = useMemo(() => {
+    return Array.from({ length: NUM_FIREFLIES }, (_, i) => ({
+      id: i,
+      delay: Math.random() * 3000,
+      duration: 4000 + Math.random() * 4000,
+    }));
+  }, []);
+
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      {fireflies.map((fly) => (
+        <Firefly key={fly.id} delay={fly.delay} duration={fly.duration} />
+      ))}
+    </View>
+  );
+};
+
+// Menu Card Component - ปรับปรุงให้รูปภาพเต็มปุ่ม 16:9
 const MenuCard = ({
   item,
   index,
@@ -324,6 +438,10 @@ export default function HomeScreen() {
         colors={['#0F0F23', '#1a1a2e', '#16213e']}
         style={StyleSheet.absoluteFill}
       />
+
+      {/* Fireflies Animation Background */}
+      <FirefliesBackground />
+
       <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
 
       <ScrollView

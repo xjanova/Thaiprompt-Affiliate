@@ -3,10 +3,10 @@
  * โหลด Fonts และ Initialize App
  */
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, StyleSheet, ActivityIndicator, AppState, AppStateStatus, Image } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, AppState, AppStateStatus, Image, Animated, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/stores/authStore';
@@ -23,43 +23,101 @@ import {
 import { startGpsSharing } from '@/services/location';
 import { router } from 'expo-router';
 
-// ไม่ให้ซ่อน splash screen อัตโนมัติ
-SplashScreen.preventAutoHideAsync().catch(() => {});
+// ซ่อน native splash screen ทันทีเพื่อให้เห็น custom loading screen
+SplashScreen.hideAsync().catch(() => {});
 
-// Premium Loading Screen with Logo
-const LoadingScreen = () => (
-  <View style={loadingStyles.container}>
-    <LinearGradient
-      colors={['#0F0F23', '#1a1a2e', '#16213e']}
-      style={StyleSheet.absoluteFill}
-    />
+// Premium Loading Screen with Logo + Animation
+const LoadingScreen = () => {
+  // Animations
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0.2)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
-    {/* Logo */}
-    <View style={loadingStyles.logoContainer}>
-      <Image
-        source={require('@/assets/images/icon.png')}
-        style={loadingStyles.logo}
-        resizeMode="contain"
+  useEffect(() => {
+    // Fade in animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+
+    // Pulse animation for logo
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    // Glow animation
+    const glowAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 0.5,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0.2,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+      ])
+    );
+
+    pulseAnimation.start();
+    glowAnimation.start();
+
+    return () => {
+      pulseAnimation.stop();
+      glowAnimation.stop();
+    };
+  }, []);
+
+  return (
+    <Animated.View style={[loadingStyles.container, { opacity: fadeAnim }]}>
+      <LinearGradient
+        colors={['#0F0F23', '#1a1a2e', '#16213e']}
+        style={StyleSheet.absoluteFill}
       />
 
-      {/* Glow effect */}
-      <View style={loadingStyles.logoGlow} />
-    </View>
+      {/* Logo with pulse animation */}
+      <View style={loadingStyles.logoContainer}>
+        <Animated.View style={[loadingStyles.logoGlow, { opacity: glowAnim }]} />
+        <Animated.Image
+          source={require('@/assets/images/icon.png')}
+          style={[loadingStyles.logo, { transform: [{ scale: pulseAnim }] }]}
+          resizeMode="contain"
+        />
+      </View>
 
-    {/* App Name */}
-    <Text style={loadingStyles.appName}>{APP_INFO.NAME}</Text>
-    <Text style={loadingStyles.tagline}>Affiliate Marketing Platform</Text>
+      {/* App Name */}
+      <Text style={loadingStyles.appName}>{APP_INFO.NAME}</Text>
+      <Text style={loadingStyles.tagline}>Affiliate Marketing Platform</Text>
 
-    {/* Loading Indicator */}
-    <View style={loadingStyles.loadingBox}>
-      <ActivityIndicator size="large" color="#3B82F6" />
-      <Text style={loadingStyles.loadingText}>กำลังโหลด...</Text>
-    </View>
+      {/* Loading Indicator */}
+      <View style={loadingStyles.loadingBox}>
+        <ActivityIndicator size="large" color="#3B82F6" />
+        <Text style={loadingStyles.loadingText}>กำลังโหลด...</Text>
+      </View>
 
-    {/* Version */}
-    <Text style={loadingStyles.version}>v{APP_INFO.VERSION}</Text>
-  </View>
-);
+      {/* Version */}
+      <Text style={loadingStyles.version}>v{APP_INFO.VERSION}</Text>
+    </Animated.View>
+  );
+};
 
 const loadingStyles = StyleSheet.create({
   container: {
@@ -71,21 +129,26 @@ const loadingStyles = StyleSheet.create({
   logoContainer: {
     position: 'relative',
     marginBottom: 24,
+    width: 120,
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logo: {
     width: 120,
     height: 120,
     borderRadius: 30,
+    zIndex: 1,
   },
   logoGlow: {
     position: 'absolute',
-    top: -10,
-    left: -10,
-    right: -10,
-    bottom: -10,
-    borderRadius: 40,
+    top: -15,
+    left: -15,
+    right: -15,
+    bottom: -15,
+    borderRadius: 45,
     backgroundColor: '#3B82F6',
-    opacity: 0.2,
+    // opacity controlled by animation
   },
   appName: {
     fontSize: 28,
@@ -124,6 +187,10 @@ export default function RootLayout() {
     let isMounted = true;
 
     const prepareApp = async () => {
+      // ⭐ บันทึกเวลาเริ่มต้นเพื่อให้ loading screen แสดงขั้นต่ำ 1.5 วินาที
+      const startTime = Date.now();
+      const MIN_LOADING_TIME = 1500; // แสดง loading อย่างน้อย 1.5 วินาที
+
       try {
         console.log('✅ App initialization started (no icon fonts needed - using emojis)');
 
@@ -150,6 +217,14 @@ export default function RootLayout() {
       } catch (error) {
         console.error('App prepare error:', error);
       } finally {
+        // ⭐ รอให้ครบเวลาขั้นต่ำก่อนแสดงหน้าแอพ
+        const elapsed = Date.now() - startTime;
+        const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsed);
+
+        if (remainingTime > 0) {
+          await new Promise((resolve) => setTimeout(resolve, remainingTime));
+        }
+
         if (isMounted) {
           setAppIsReady(true);
         }
@@ -268,20 +343,13 @@ export default function RootLayout() {
     }
   }, [appIsReady, gpsSharing]);
 
-  // ซ่อน splash เมื่อ app พร้อม
-  const onLayoutRootView = useCallback(async () => {
-    if (appIsReady) {
-      await SplashScreen.hideAsync().catch(() => {});
-    }
-  }, [appIsReady]);
-
   // รอ app พร้อม
   if (!appIsReady) {
     return <LoadingScreen />;
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }} onLayout={onLayoutRootView}>
+    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
