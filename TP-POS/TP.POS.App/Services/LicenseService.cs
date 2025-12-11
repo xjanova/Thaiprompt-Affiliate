@@ -170,8 +170,9 @@ public class LicenseService : ILicenseService
 
     /// <summary>
     /// ลงทะเบียนเครื่อง POS กับ Server
+    /// Flow: POS ส่ง shop_code → Server สร้าง API Key ให้อัตโนมัติ → POS เก็บ API Key ไว้ใช้
     /// </summary>
-    public async Task<LicenseActivationResult> RegisterAsync(string serverUrl, string apiKey)
+    public async Task<LicenseActivationResult> RegisterAsync(string serverUrl, string shopCode)
     {
         try
         {
@@ -186,13 +187,13 @@ public class LicenseService : ILicenseService
                 };
             }
 
-            if (string.IsNullOrWhiteSpace(apiKey))
+            if (string.IsNullOrWhiteSpace(shopCode))
             {
                 return new LicenseActivationResult
                 {
                     Success = false,
-                    Message = "กรุณาระบุ API Key",
-                    ErrorCode = "MISSING_API_KEY"
+                    Message = "กรุณาระบุรหัสร้านค้า",
+                    ErrorCode = "MISSING_SHOP_CODE"
                 };
             }
 
@@ -206,24 +207,21 @@ public class LicenseService : ILicenseService
             // ดึง Device ID
             var deviceId = GetDeviceId();
 
-            // เตรียมข้อมูลลงทะเบียน
+            // เตรียมข้อมูลลงทะเบียน (ส่ง shop_code แทน api_key)
             var registrationData = new
             {
                 product_key = productKey,
-                api_key = apiKey,
+                shop_code = shopCode,
                 device_id = deviceId,
                 device_name = DeviceInfo.Name,
                 device_model = DeviceInfo.Model,
                 platform = DeviceInfo.Platform.ToString(),
-                app_version = AppInfo.Current.VersionString,
-                registered_at = DateTime.UtcNow.ToString("O")
+                app_version = AppInfo.Current.VersionString
             };
 
-            // ส่งข้อมูลไป Server
+            // ส่งข้อมูลไป Server (ไม่ต้องส่ง API Key เพราะ Server จะสร้างให้)
             using var httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromSeconds(30);
-            httpClient.DefaultRequestHeaders.Add("X-API-Key", apiKey);
-            httpClient.DefaultRequestHeaders.Add("X-Product-Key", productKey);
 
             var json = JsonSerializer.Serialize(registrationData);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -242,6 +240,18 @@ public class LicenseService : ILicenseService
 
                 if (result?.Success == true)
                 {
+                    // Server ส่ง API Key กลับมา
+                    var apiKey = result.Data?.ApiKey;
+                    if (string.IsNullOrEmpty(apiKey))
+                    {
+                        return new LicenseActivationResult
+                        {
+                            Success = false,
+                            Message = "Server ไม่ได้ส่ง API Key กลับมา",
+                            ErrorCode = "NO_API_KEY_RETURNED"
+                        };
+                    }
+
                     // สร้าง License Info
                     var license = new LicenseInfo
                     {
@@ -261,9 +271,10 @@ public class LicenseService : ILicenseService
                     await SaveLicenseAsync(license);
                     CurrentLicense = license;
 
-                    // บันทึก Server URL และ API Key
+                    // บันทึก Server URL และ API Key (ที่ได้รับจาก Server)
                     Preferences.Set("server_url", serverUrl);
                     Preferences.Set("api_key", apiKey);
+                    Preferences.Set("shop_code", shopCode);
                     Preferences.Set("shop_name", license.ShopName);
                     Preferences.Set("shop_id", license.ShopId);
 
@@ -289,10 +300,10 @@ public class LicenseService : ILicenseService
                 // Handle error responses
                 var errorMessage = response.StatusCode switch
                 {
-                    System.Net.HttpStatusCode.Unauthorized => "API Key ไม่ถูกต้อง",
-                    System.Net.HttpStatusCode.Forbidden => "API Key ถูกระงับการใช้งาน",
-                    System.Net.HttpStatusCode.NotFound => "ไม่พบ Server หรือ endpoint",
-                    System.Net.HttpStatusCode.Conflict => "เครื่องนี้ถูกลงทะเบียนแล้ว",
+                    System.Net.HttpStatusCode.BadRequest => "Product Key ไม่ถูกต้อง",
+                    System.Net.HttpStatusCode.NotFound => "ไม่พบร้านค้าจากรหัสที่ระบุ",
+                    System.Net.HttpStatusCode.Conflict => "Product Key นี้ถูกใช้งานแล้ว",
+                    System.Net.HttpStatusCode.InternalServerError => "Server เกิดข้อผิดพลาด",
                     _ => $"เกิดข้อผิดพลาด: {response.StatusCode}"
                 };
 
@@ -576,6 +587,7 @@ public class LicenseService : ILicenseService
 
     private class RegistrationData
     {
+        public string? ApiKey { get; set; }
         public string? ShopName { get; set; }
         public int ShopId { get; set; }
         public int PosTerminalId { get; set; }
