@@ -41,6 +41,7 @@ const MENU_IMAGES: Record<string, ImageSourcePropType> = {
   referral: require('@/assets/images/refer-friend.png'),
   commissions: require('@/assets/images/commission.png'),
   shopping: require('@/assets/images/shopping.png'),
+  services: require('@/assets/images/shopping.png'),  // ใช้ภาพเดียวกับ shopping ก่อน
   rider: require('@/assets/images/rider.png'),
   'wealth-guide': require('@/assets/images/riches-path.png'),
   tarot: require('@/assets/images/tarot.png'),
@@ -56,7 +57,8 @@ const MENU_ITEMS = [
   { id: 'referral', title: 'แนะนำเพื่อน', icon: '🤝', colors: ['#EC4899', '#DB2777'], glowColor: '#EC4899', route: '/referral', hasImage: true },
   { id: 'commissions', title: 'คอมมิชชั่น', icon: '💵', colors: ['#3B82F6', '#2563EB'], glowColor: '#3B82F6', route: '/commissions', hasImage: true },
   { id: 'shopping', title: 'ช้อปปิ้ง', icon: '🛒', colors: ['#F59E0B', '#D97706'], glowColor: '#F59E0B', route: '/shopping', hasImage: true },
-  { id: 'rider', title: 'ไรเดอร์', icon: '🚴', colors: ['#06B6D4', '#0891B2'], glowColor: '#06B6D4', route: '/rider', hasImage: true },
+  { id: 'services', title: 'สั่งบริการ', icon: '📦', colors: ['#14B8A6', '#0D9488'], glowColor: '#14B8A6', route: '/services', hasImage: true },
+  { id: 'rider', title: 'เป็นไรเดอร์', icon: '🚴', colors: ['#06B6D4', '#0891B2'], glowColor: '#06B6D4', route: '/rider', hasImage: true },
   { id: 'wealth-guide', title: 'เส้นทางเศรษฐี', icon: '📚', colors: ['#F97316', '#EA580C'], glowColor: '#F97316', route: '/wealth-guide', hasImage: true },
   { id: 'tarot', title: 'ดูดวง', icon: '🔮', colors: ['#6366F1', '#4F46E5'], glowColor: '#6366F1', route: '/tarot', hasImage: true },
   { id: 'leaderboard', title: 'อันดับ', icon: '🏆', colors: ['#EF4444', '#DC2626'], glowColor: '#EF4444', route: '/leaderboard', hasImage: true },
