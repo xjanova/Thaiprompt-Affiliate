@@ -74,7 +74,12 @@
     <!-- Quick Actions -->
     <div class="bg-white rounded-xl shadow-lg p-6">
         <h3 class="text-lg font-bold text-gray-900 mb-4">เมนูด่วน</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <a href="{{ route('seller.pos.terminals') }}" class="flex flex-col items-center p-6 border-2 border-blue-200 bg-blue-50 rounded-lg hover:border-blue-500 hover:bg-blue-100 transition-all">
+                <div class="text-4xl mb-2">🖥️</div>
+                <span class="text-sm font-medium text-blue-700">ลงทะเบียน POS</span>
+            </a>
+
             <a href="{{ route('seller.pos.devices') }}" class="flex flex-col items-center p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all">
                 <div class="text-4xl mb-2">📱</div>
                 <span class="text-sm font-medium text-gray-700">จัดการอุปกรณ์</span>
