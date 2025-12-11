@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '1.7.4',
-  BUILD_NUMBER: 26,
-  BUILD_DATE: '2025-12-10-TRANSFER-CONFIRM', // เพิ่ม confirmation ก่อนโอน + แสดงยอดคงเหลือหลังโอน
+  VERSION: '1.8.0',
+  BUILD_NUMBER: 27,
+  BUILD_DATE: '2025-12-11-GPS-ACADEMY', // GPS Sharing, Academy, Watch & Earn, 2bt images
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs

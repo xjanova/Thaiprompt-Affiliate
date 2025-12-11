@@ -4226,4 +4226,131 @@ class MobileApiController extends Controller
             ], 500);
         }
     }
+
+    // =====================================================
+    // GPS Sharing - แชร์ตำแหน่ง GPS ให้ Admin ดู
+    // =====================================================
+
+    /**
+     * แชร์ตำแหน่ง GPS
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function shareGpsLocation(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาเข้าสู่ระบบ',
+            ], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'altitude' => 'nullable|numeric',
+            'accuracy' => 'nullable|numeric',
+            'speed' => 'nullable|numeric',
+            'heading' => 'nullable|numeric',
+            'battery_level' => 'nullable|integer|between:0,100',
+            'device_model' => 'nullable|string|max:100',
+            'os_version' => 'nullable|string|max:50',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            // บันทึกหรืออัพเดทตำแหน่ง GPS
+            $gpsData = [
+                'user_id' => $user->id,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+                'altitude' => $request->altitude,
+                'accuracy' => $request->accuracy,
+                'speed' => $request->speed,
+                'heading' => $request->heading,
+                'battery_level' => $request->battery_level,
+                'device_model' => $request->device_model,
+                'os_version' => $request->os_version,
+                'is_sharing' => true,
+                'last_update' => now(),
+            ];
+
+            // ใช้ updateOrCreate เพื่อบันทึก GPS
+            DB::table('user_gps_locations')->updateOrInsert(
+                ['user_id' => $user->id],
+                array_merge($gpsData, [
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ])
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'อัพเดทตำแหน่งสำเร็จ',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Share GPS Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการอัพเดทตำแหน่ง',
+            ], 500);
+        }
+    }
+
+    /**
+     * หยุดแชร์ตำแหน่ง GPS
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function stopGpsSharing(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาเข้าสู่ระบบ',
+            ], 401);
+        }
+
+        try {
+            // อัพเดทสถานะเป็นหยุดแชร์
+            DB::table('user_gps_locations')
+                ->where('user_id', $user->id)
+                ->update([
+                    'is_sharing' => false,
+                    'updated_at' => now(),
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'หยุดแชร์ตำแหน่งสำเร็จ',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Stop GPS Sharing Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด',
+            ], 500);
+        }
+    }
 }

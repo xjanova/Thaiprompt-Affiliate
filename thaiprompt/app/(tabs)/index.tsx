@@ -41,27 +41,29 @@ const CARD_HEIGHT = Math.round(CARD_WIDTH * 9 / 16); // 16:9 aspect ratio
 // Key สำหรับเก็บ pinned items
 const PINNED_ITEMS_KEY = 'home_pinned_items';
 
-// ภาพปุ่มเมนู - ใช้ภาพจาก assets/images (ครบทุกปุ่ม)
+// ภาพปุ่มเมนู - ใช้ภาพจาก assets/images/2bt (Premium 3D Style)
 const MENU_IMAGES: Record<string, ImageSourcePropType> = {
-  wallet: require('@/assets/images/wallet.png'),
-  network: require('@/assets/images/mlm-network.png'),
-  referral: require('@/assets/images/refer-friend.png'),
-  commissions: require('@/assets/images/commission.png'),
-  shopping: require('@/assets/images/shopping.png'),
-  services: require('@/assets/images/service.png'),  // ใช้ภาพ service.png
-  rider: require('@/assets/images/rider.png'),
-  tpix: require('@/assets/images/TPIX.png'),  // TPIX Token - ปุ่มเข้าสู่ระบบเหรียญ
-  'wealth-guide': require('@/assets/images/riches-path.png'),
-  tarot: require('@/assets/images/tarot.png'),
-  leaderboard: require('@/assets/images/ranking.png'),
-  'coming-soon': require('@/assets/images/coming-soon.png'),
-  settings: require('@/assets/images/setting.png'),
+  wallet: require('@/assets/images/2bt/wallet.png'),
+  network: require('@/assets/images/2bt/MLMNetwork.png'),
+  referral: require('@/assets/images/2bt/refer_friend.png'),
+  commissions: require('@/assets/images/2bt/Commission.png'),
+  shopping: require('@/assets/images/2bt/shopping.png'),
+  services: require('@/assets/images/2bt/service.png'),
+  rider: require('@/assets/images/2bt/rider.png'),
+  tpix: require('@/assets/images/TPIX.png'),  // TPIX Token - ยังใช้รูปเดิม
+  'wealth-guide': require('@/assets/images/2bt/RichesPath.png'),
+  tarot: require('@/assets/images/2bt/tarot.png'),
+  leaderboard: require('@/assets/images/2bt/Ranking.png'),
+  'coming-soon': require('@/assets/images/2bt/comming soon.png'),
+  settings: require('@/assets/images/2bt/setting.png'),
+  academy: require('@/assets/images/2bt/academy.png'),
+  'watch-earn': require('@/assets/images/2bt/watch&earn.png'),
 };
 
-// Menu Items - ทุกปุ่มใช้ภาพ
+// Menu Items - ทุกปุ่มใช้ภาพจาก 2bt folder (Premium 3D Style)
 const MENU_ITEMS = [
   { id: 'wallet', title: 'กระเป๋าเงิน', icon: '💰', colors: ['#10B981', '#059669'], glowColor: '#10B981', route: '/(tabs)/wallet', hasImage: true },
-  { id: 'network', title: 'สายงาน', icon: '👥', colors: ['#8B5CF6', '#6D28D9'], glowColor: '#8B5CF6', route: '/(tabs)/network', hasImage: true },
+  { id: 'network', title: 'ดูผัง MLM', icon: '👥', colors: ['#8B5CF6', '#6D28D9'], glowColor: '#8B5CF6', route: '/(tabs)/network', hasImage: true },
   { id: 'referral', title: 'แนะนำเพื่อน', icon: '🤝', colors: ['#EC4899', '#DB2777'], glowColor: '#EC4899', route: '/referral', hasImage: true },
   { id: 'commissions', title: 'คอมมิชชั่น', icon: '💵', colors: ['#3B82F6', '#2563EB'], glowColor: '#3B82F6', route: '/commissions', hasImage: true },
   { id: 'shopping', title: 'ช้อปปิ้ง', icon: '🛒', colors: ['#F59E0B', '#D97706'], glowColor: '#F59E0B', route: '/shopping', hasImage: true },
@@ -69,21 +71,24 @@ const MENU_ITEMS = [
   { id: 'rider', title: 'เป็นไรเดอร์', icon: '🚴', colors: ['#06B6D4', '#0891B2'], glowColor: '#06B6D4', route: '/rider', hasImage: true },
   { id: 'tpix', title: 'TPIX Token', icon: '🪙', colors: ['#FFD700', '#FFA500'], glowColor: '#FFD700', route: '/tpix', hasImage: true },
   { id: 'wealth-guide', title: 'เส้นทางเศรษฐี', icon: '📚', colors: ['#F97316', '#EA580C'], glowColor: '#F97316', route: '/wealth-guide', hasImage: true },
+  { id: 'academy', title: 'Academy', icon: '🎓', colors: ['#0EA5E9', '#0284C7'], glowColor: '#0EA5E9', route: '/academy', hasImage: true },
+  { id: 'watch-earn', title: 'ดูคลิปได้เงิน', icon: '🎬', colors: ['#E11D48', '#BE123C'], glowColor: '#E11D48', route: '/watch-earn', hasImage: true },
   { id: 'tarot', title: 'ดูดวง', icon: '🔮', colors: ['#6366F1', '#4F46E5'], glowColor: '#6366F1', route: '/tarot', hasImage: true },
   { id: 'leaderboard', title: 'อันดับ', icon: '🏆', colors: ['#EF4444', '#DC2626'], glowColor: '#EF4444', route: '/leaderboard', hasImage: true },
-  { id: 'coming-soon', title: 'เร็วๆ นี้', icon: '🚀', colors: ['#A855F7', '#9333EA'], glowColor: '#A855F7', route: '/coming-soon', hasImage: true },
   { id: 'settings', title: 'ตั้งค่า', icon: '⚙️', colors: ['#64748B', '#475569'], glowColor: '#64748B', route: '/settings', hasImage: true },
+  { id: 'coming-soon', title: 'เร็วๆ นี้', icon: '🚀', colors: ['#A855F7', '#9333EA'], glowColor: '#A855F7', route: '/coming-soon', hasImage: true },
 ] as const;
 
 // จำนวนหิ่งห้อย (ลดจำนวนเพื่อไม่ให้แอพหนัก)
 const NUM_FIREFLIES = 12;
 
-// Firefly Component - หิ่งห้อยเรืองแสง
+// Firefly Component - หิ่งห้อยเรืองแสง (ปรับปรุงให้สว่างและชัดขึ้น)
 const Firefly = ({ delay, duration }: { delay: number; duration: number }) => {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(Math.random() * width)).current;
   const translateY = useRef(new Animated.Value(Math.random() * screenHeight * 0.6)).current;
-  const scale = useRef(new Animated.Value(0.5 + Math.random() * 0.5)).current;
+  const scale = useRef(new Animated.Value(0.8 + Math.random() * 0.4)).current;
+  const glowOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     let isMounted = true;
@@ -96,16 +101,31 @@ const Firefly = ({ delay, duration }: { delay: number; duration: number }) => {
       const newY = Math.random() * screenHeight * 0.6;
 
       Animated.parallel([
-        // Fade in and out
+        // Fade in and out - เพิ่มความสว่าง
         Animated.sequence([
           Animated.timing(opacity, {
-            toValue: 0.3 + Math.random() * 0.5,
-            duration: duration * 0.3,
+            toValue: 0.7 + Math.random() * 0.3, // สว่างขึ้น 0.7-1.0
+            duration: duration * 0.25,
             useNativeDriver: true,
           }),
+          Animated.delay(duration * 0.2), // ค้างไว้ให้เห็นชัด
           Animated.timing(opacity, {
             toValue: 0,
-            duration: duration * 0.7,
+            duration: duration * 0.55,
+            useNativeDriver: true,
+          }),
+        ]),
+        // Glow pulse
+        Animated.sequence([
+          Animated.timing(glowOpacity, {
+            toValue: 1,
+            duration: duration * 0.25,
+            useNativeDriver: true,
+          }),
+          Animated.delay(duration * 0.2),
+          Animated.timing(glowOpacity, {
+            toValue: 0,
+            duration: duration * 0.55,
             useNativeDriver: true,
           }),
         ]),
@@ -122,16 +142,16 @@ const Firefly = ({ delay, duration }: { delay: number; duration: number }) => {
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-        // Pulse
+        // Pulse - ขยายขนาดให้ชัดขึ้น
         Animated.sequence([
           Animated.timing(scale, {
-            toValue: 0.8 + Math.random() * 0.4,
-            duration: duration * 0.5,
+            toValue: 1.2 + Math.random() * 0.5,
+            duration: duration * 0.4,
             useNativeDriver: true,
           }),
           Animated.timing(scale, {
-            toValue: 0.5 + Math.random() * 0.3,
-            duration: duration * 0.5,
+            toValue: 0.8 + Math.random() * 0.3,
+            duration: duration * 0.6,
             useNativeDriver: true,
           }),
         ]),
@@ -153,18 +173,51 @@ const Firefly = ({ delay, duration }: { delay: number; duration: number }) => {
     <Animated.View
       style={{
         position: 'absolute',
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: '#FFD700',
-        opacity,
         transform: [{ translateX }, { translateY }, { scale }],
-        shadowColor: '#FFD700',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 6,
       }}
-    />
+    >
+      {/* Outer glow - แสงรอบนอก */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          width: 24,
+          height: 24,
+          borderRadius: 12,
+          backgroundColor: '#FFD700',
+          opacity: Animated.multiply(glowOpacity, 0.3),
+          left: -9,
+          top: -9,
+        }}
+      />
+      {/* Middle glow */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          width: 14,
+          height: 14,
+          borderRadius: 7,
+          backgroundColor: '#FFEC8B',
+          opacity: Animated.multiply(glowOpacity, 0.5),
+          left: -4,
+          top: -4,
+        }}
+      />
+      {/* Core - แกนกลางสว่าง */}
+      <Animated.View
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: '#FFFACD',
+          opacity,
+          shadowColor: '#FFD700',
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 1,
+          shadowRadius: 12,
+          elevation: 8,
+        }}
+      />
+    </Animated.View>
   );
 };
 

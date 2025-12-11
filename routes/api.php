@@ -269,6 +269,12 @@ Route::prefix('v1')->group(function () {
             Route::delete('/token', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'removePushToken']);
         });
 
+        // GPS Sharing (Mobile App) - แชร์ตำแหน่งให้ Admin ดู GPS Monitor
+        Route::prefix('mobile/gps')->group(function () {
+            Route::post('/share', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'shareGpsLocation']);
+            Route::post('/stop', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'stopGpsSharing']);
+        });
+
         // Rank System (Mobile App)
         Route::prefix('mobile/ranks')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getRanks']);
