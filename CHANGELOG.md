@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.373.2] - 2025-12-11
+
+### ✨ Features
+- feat(mobile): เพิ่มหน้าเงื่อนไข ข้อตกลง และนโยบายความเป็นส่วนตัว (0a657c2c)
+### 🐛 Bug Fixes
+- fix(mobile): แก้ไข QR Code ให้แสดงข้อมูลที่ถูกต้อง (8fef6421)
+### 🔧 Other Changes
+- Merge pull request #2243 from xjanova/claude/improve-ui-navigation-01NXH6TzLA4TxwQrSANA8c7j (0da40c34)
+
 ## [v3.373.1] - 2025-12-11
 
 ### ✨ Features
