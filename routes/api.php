@@ -156,6 +156,15 @@ Route::prefix('v1')->group(function () {
             Route::put('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateProfile']);
             Route::post('/change-password', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'changePassword']);
             Route::get('/referral-code', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getReferralCode']);
+            // Avatar Upload/Delete สำหรับ Mobile App
+            Route::post('/avatar', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'uploadAvatar']);
+            Route::delete('/avatar', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'deleteAvatar']);
+        });
+
+        // Mobile Profile Avatar (alternative endpoint)
+        Route::prefix('mobile/profile')->group(function () {
+            Route::post('/avatar', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'uploadAvatar']);
+            Route::delete('/avatar', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'deleteAvatar']);
         });
 
         // Products (Mobile App E-commerce)

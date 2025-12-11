@@ -53,6 +53,11 @@ class User extends Authenticatable
         'state',
         'postal_code',
         'country',
+        // Profile/Bio fields (Mobile App)
+        'bio',
+        'bank_name',
+        'bank_account',
+        'bank_account_name',
         // Shipping address fields
         'shipping_address',
         'shipping_city',
