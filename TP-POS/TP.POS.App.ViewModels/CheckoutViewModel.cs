@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+using System.Windows.Input;
 using TP.POS.Core.Entities;
 using TP.POS.Core.Enums;
 using TP.POS.Core.Interfaces;
@@ -9,117 +8,146 @@ namespace TP.POS.App.ViewModels;
 
 /// <summary>
 /// ViewModel สำหรับหน้าชำระเงิน
+/// ใช้ manual implementation เพื่อหลีกเลี่ยง source generator conflicts
 /// </summary>
 [QueryProperty(nameof(TotalAmount), "TotalAmount")]
-public partial class CheckoutViewModel : BaseViewModel
+public class CheckoutViewModel : BaseViewModel
 {
     private readonly ICartService _cartService;
     private readonly ITransactionService _transactionService;
     private readonly IPrinterService _printerService;
 
-    #region Observable Properties
+    #region Private Fields
 
-    /// <summary>
-    /// ยอดที่ต้องชำระ
-    /// </summary>
-    [ObservableProperty]
     private decimal _totalAmount;
-
-    /// <summary>
-    /// รายการในตะกร้า
-    /// </summary>
-    [ObservableProperty]
     private ObservableCollection<CartItem> _cartItems = new();
-
-    /// <summary>
-    /// วิธีชำระเงินที่เลือก
-    /// </summary>
-    [ObservableProperty]
     private PaymentMethod _selectedPaymentMethod = PaymentMethod.Cash;
-
-    /// <summary>
-    /// จำนวนเงินที่รับ
-    /// </summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ChangeAmount))]
-    [NotifyPropertyChangedFor(nameof(CanComplete))]
-    [NotifyPropertyChangedFor(nameof(IsReceivedEnough))]
     private decimal _receivedAmount;
+    private string _paymentReference = string.Empty;
+    private string _notes = string.Empty;
+    private Customer? _selectedCustomer;
+    private string _customerName = "ลูกค้าทั่วไป";
+    private CartSummary? _cartSummary;
+    private ObservableCollection<PaymentMethodOption> _paymentMethods = new();
+    private bool _showQuickCash = true;
+    private bool _showReferenceInput;
+    private Transaction? _completedTransaction;
+    private bool _showSuccess;
 
-    /// <summary>
-    /// เงินทอน
-    /// </summary>
+    #endregion
+
+    #region Properties
+
+    public decimal TotalAmount
+    {
+        get => _totalAmount;
+        set => SetProperty(ref _totalAmount, value);
+    }
+
+    public ObservableCollection<CartItem> CartItems
+    {
+        get => _cartItems;
+        set => SetProperty(ref _cartItems, value);
+    }
+
+    public PaymentMethod SelectedPaymentMethod
+    {
+        get => _selectedPaymentMethod;
+        set => SetProperty(ref _selectedPaymentMethod, value);
+    }
+
+    public decimal ReceivedAmount
+    {
+        get => _receivedAmount;
+        set
+        {
+            if (SetProperty(ref _receivedAmount, value))
+            {
+                OnPropertyChanged(nameof(ChangeAmount));
+                OnPropertyChanged(nameof(CanComplete));
+                OnPropertyChanged(nameof(IsReceivedEnough));
+            }
+        }
+    }
+
     public decimal ChangeAmount => ReceivedAmount - TotalAmount;
-
-    /// <summary>
-    /// รับเงินพอหรือยัง
-    /// </summary>
     public bool IsReceivedEnough => ReceivedAmount >= TotalAmount;
-
-    /// <summary>
-    /// สามารถชำระเงินได้หรือไม่
-    /// </summary>
     public bool CanComplete => SelectedPaymentMethod != PaymentMethod.Cash || ReceivedAmount >= TotalAmount;
 
-    /// <summary>
-    /// เลขอ้างอิงการชำระ (สำหรับ QR/บัตร)
-    /// </summary>
-    [ObservableProperty]
-    private string _paymentReference = string.Empty;
+    public string PaymentReference
+    {
+        get => _paymentReference;
+        set => SetProperty(ref _paymentReference, value);
+    }
 
-    /// <summary>
-    /// หมายเหตุ
-    /// </summary>
-    [ObservableProperty]
-    private string _notes = string.Empty;
+    public string Notes
+    {
+        get => _notes;
+        set => SetProperty(ref _notes, value);
+    }
 
-    /// <summary>
-    /// ลูกค้าที่เลือก
-    /// </summary>
-    [ObservableProperty]
-    private Customer? _selectedCustomer;
+    public Customer? SelectedCustomer
+    {
+        get => _selectedCustomer;
+        set => SetProperty(ref _selectedCustomer, value);
+    }
 
-    /// <summary>
-    /// ชื่อลูกค้า
-    /// </summary>
-    [ObservableProperty]
-    private string _customerName = "ลูกค้าทั่วไป";
+    public string CustomerName
+    {
+        get => _customerName;
+        set => SetProperty(ref _customerName, value);
+    }
 
-    /// <summary>
-    /// ข้อมูลสรุปตะกร้า
-    /// </summary>
-    [ObservableProperty]
-    private CartSummary? _cartSummary;
+    public CartSummary? CartSummary
+    {
+        get => _cartSummary;
+        set => SetProperty(ref _cartSummary, value);
+    }
 
-    /// <summary>
-    /// รายการวิธีชำระเงิน
-    /// </summary>
-    [ObservableProperty]
-    private ObservableCollection<PaymentMethodOption> _paymentMethods = new();
+    public ObservableCollection<PaymentMethodOption> PaymentMethods
+    {
+        get => _paymentMethods;
+        set => SetProperty(ref _paymentMethods, value);
+    }
 
-    /// <summary>
-    /// แสดง Quick Cash หรือไม่
-    /// </summary>
-    [ObservableProperty]
-    private bool _showQuickCash = true;
+    public bool ShowQuickCash
+    {
+        get => _showQuickCash;
+        set => SetProperty(ref _showQuickCash, value);
+    }
 
-    /// <summary>
-    /// แสดงช่องกรอกเลขอ้างอิงหรือไม่
-    /// </summary>
-    [ObservableProperty]
-    private bool _showReferenceInput;
+    public bool ShowReferenceInput
+    {
+        get => _showReferenceInput;
+        set => SetProperty(ref _showReferenceInput, value);
+    }
 
-    /// <summary>
-    /// Transaction ที่สร้างเสร็จ
-    /// </summary>
-    [ObservableProperty]
-    private Transaction? _completedTransaction;
+    public Transaction? CompletedTransaction
+    {
+        get => _completedTransaction;
+        set => SetProperty(ref _completedTransaction, value);
+    }
 
-    /// <summary>
-    /// แสดงหน้าสำเร็จหรือไม่
-    /// </summary>
-    [ObservableProperty]
-    private bool _showSuccess;
+    public bool ShowSuccess
+    {
+        get => _showSuccess;
+        set => SetProperty(ref _showSuccess, value);
+    }
+
+    #endregion
+
+    #region Commands
+
+    public ICommand SelectPaymentMethodCommand { get; }
+    public ICommand QuickCashCommand { get; }
+    public ICommand NumpadInputCommand { get; }
+    public ICommand ExactAmountCommand { get; }
+    public ICommand SelectCustomerCommand { get; }
+    public ICommand CompleteCheckoutCommand { get; }
+    public ICommand ReprintReceiptCommand { get; }
+    public ICommand NewSaleCommand { get; }
+    public ICommand GoBackCommand { get; }
+    public ICommand CancelCommand { get; }
 
     #endregion
 
@@ -133,6 +161,18 @@ public partial class CheckoutViewModel : BaseViewModel
         _printerService = printerService;
 
         Title = "ชำระเงิน";
+
+        // Initialize commands
+        SelectPaymentMethodCommand = new Command<PaymentMethodOption>(SelectPaymentMethod);
+        QuickCashCommand = new Command<string>(QuickCash);
+        NumpadInputCommand = new Command<string>(NumpadInput);
+        ExactAmountCommand = new Command(ExactAmount);
+        SelectCustomerCommand = new Command(async () => await SelectCustomerAsync());
+        CompleteCheckoutCommand = new Command(async () => await CompleteCheckoutAsync());
+        ReprintReceiptCommand = new Command(async () => await ReprintReceiptAsync());
+        NewSaleCommand = new Command(async () => await NewSaleAsync());
+        GoBackCommand = new Command(async () => await GoBackAsync());
+        CancelCommand = new Command(async () => await CancelAsync());
 
         // เตรียมวิธีชำระเงิน
         InitializePaymentMethods();
@@ -171,9 +211,6 @@ public partial class CheckoutViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// เตรียมรายการวิธีชำระเงิน
-    /// </summary>
     private void InitializePaymentMethods()
     {
         PaymentMethods = new ObservableCollection<PaymentMethodOption>
@@ -187,27 +224,19 @@ public partial class CheckoutViewModel : BaseViewModel
         };
     }
 
-    #region Commands
+    #region Command Implementations
 
-    /// <summary>
-    /// เลือกวิธีชำระเงิน
-    /// </summary>
-    [RelayCommand]
     private void SelectPaymentMethod(PaymentMethodOption option)
     {
-        // อัพเดท UI
         foreach (var pm in PaymentMethods)
         {
             pm.IsSelected = pm.Method == option.Method;
         }
 
         SelectedPaymentMethod = option.Method;
-
-        // แสดง/ซ่อน UI ตามวิธีชำระ
         ShowQuickCash = option.Method == PaymentMethod.Cash;
         ShowReferenceInput = option.Method != PaymentMethod.Cash;
 
-        // ถ้าไม่ใช่เงินสด ให้ set เงินรับเท่ากับยอด
         if (option.Method != PaymentMethod.Cash)
         {
             ReceivedAmount = TotalAmount;
@@ -218,10 +247,6 @@ public partial class CheckoutViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// กดปุ่ม Quick Cash
-    /// </summary>
-    [RelayCommand]
     private void QuickCash(string amount)
     {
         if (decimal.TryParse(amount, out var value))
@@ -230,10 +255,6 @@ public partial class CheckoutViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// กดปุ่มตัวเลข Numpad
-    /// </summary>
-    [RelayCommand]
     private void NumpadInput(string input)
     {
         if (input == "C")
@@ -258,7 +279,6 @@ public partial class CheckoutViewModel : BaseViewModel
 
         if (input == ".")
         {
-            // ไม่รองรับทศนิยมใน numpad แบบนี้
             return;
         }
 
@@ -273,28 +293,16 @@ public partial class CheckoutViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// รับเงินพอดี (Exact)
-    /// </summary>
-    [RelayCommand]
     private void ExactAmount()
     {
         ReceivedAmount = TotalAmount;
     }
 
-    /// <summary>
-    /// เลือกลูกค้า
-    /// </summary>
-    [RelayCommand]
     private async Task SelectCustomerAsync()
     {
         await Shell.Current.GoToAsync("customerselect");
     }
 
-    /// <summary>
-    /// ยืนยันชำระเงิน
-    /// </summary>
-    [RelayCommand]
     private async Task CompleteCheckoutAsync()
     {
         if (!CanComplete)
@@ -308,7 +316,6 @@ public partial class CheckoutViewModel : BaseViewModel
             IsBusy = true;
             BusyMessage = "กำลังบันทึกรายการ...";
 
-            // สร้าง Transaction
             var transaction = await _cartService.CheckoutAsync(
                 SelectedPaymentMethod,
                 ReceivedAmount,
@@ -319,14 +326,10 @@ public partial class CheckoutViewModel : BaseViewModel
 
             CompletedTransaction = transaction;
 
-            // พิมพ์ใบเสร็จ
             BusyMessage = "กำลังพิมพ์ใบเสร็จ...";
             await PrintReceiptAsync(transaction);
 
-            // แสดงหน้าสำเร็จ
             ShowSuccess = true;
-
-            // Haptic
             HapticFeedback.Default.Perform(HapticFeedbackType.LongPress);
         }
         catch (Exception ex)
@@ -339,9 +342,6 @@ public partial class CheckoutViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// พิมพ์ใบเสร็จ
-    /// </summary>
     private async Task PrintReceiptAsync(Transaction transaction)
     {
         try
@@ -355,10 +355,6 @@ public partial class CheckoutViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// พิมพ์ใบเสร็จซ้ำ
-    /// </summary>
-    [RelayCommand]
     private async Task ReprintReceiptAsync()
     {
         if (CompletedTransaction == null) return;
@@ -367,7 +363,6 @@ public partial class CheckoutViewModel : BaseViewModel
         {
             IsBusy = true;
             BusyMessage = "กำลังพิมพ์ใบเสร็จ...";
-
             await PrintReceiptAsync(CompletedTransaction);
         }
         catch (Exception ex)
@@ -380,28 +375,16 @@ public partial class CheckoutViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// ขายรายการใหม่
-    /// </summary>
-    [RelayCommand]
     private async Task NewSaleAsync()
     {
         await Shell.Current.GoToAsync("//pos");
     }
 
-    /// <summary>
-    /// กลับหน้า POS
-    /// </summary>
-    [RelayCommand]
     private async Task GoBackAsync()
     {
         await Shell.Current.GoToAsync("..");
     }
 
-    /// <summary>
-    /// ยกเลิก
-    /// </summary>
-    [RelayCommand]
     private async Task CancelAsync()
     {
         bool confirm = await Shell.Current.DisplayAlert(
@@ -423,27 +406,49 @@ public partial class CheckoutViewModel : BaseViewModel
 /// <summary>
 /// Model สำหรับแสดงวิธีชำระเงิน
 /// </summary>
-public partial class PaymentMethodOption : ObservableObject
+public class PaymentMethodOption : BaseViewModel
 {
     public PaymentMethod Method { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Icon { get; set; } = string.Empty;
 
-    [ObservableProperty]
     private bool _isSelected;
-
-    [ObservableProperty]
-    private Color _backgroundColor = Color.FromArgb("#F3F4F6");
-
-    [ObservableProperty]
-    private Color _textColor = Color.FromArgb("#374151");
-
-    [ObservableProperty]
-    private Color _borderColor = Color.FromArgb("#E5E7EB");
-
-    partial void OnIsSelectedChanged(bool value)
+    public bool IsSelected
     {
-        if (value)
+        get => _isSelected;
+        set
+        {
+            if (SetProperty(ref _isSelected, value))
+            {
+                UpdateColors();
+            }
+        }
+    }
+
+    private Color _backgroundColor = Color.FromArgb("#F3F4F6");
+    public Color BackgroundColor
+    {
+        get => _backgroundColor;
+        set => SetProperty(ref _backgroundColor, value);
+    }
+
+    private Color _textColor = Color.FromArgb("#374151");
+    public Color TextColor
+    {
+        get => _textColor;
+        set => SetProperty(ref _textColor, value);
+    }
+
+    private Color _borderColor = Color.FromArgb("#E5E7EB");
+    public Color BorderColor
+    {
+        get => _borderColor;
+        set => SetProperty(ref _borderColor, value);
+    }
+
+    private void UpdateColors()
+    {
+        if (IsSelected)
         {
             BackgroundColor = Color.FromArgb("#22C55E");
             TextColor = Colors.White;

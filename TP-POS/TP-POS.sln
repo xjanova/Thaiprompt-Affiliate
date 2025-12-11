@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TP.POS.Infrastructure", "TP
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TP.POS.App", "TP.POS.App\TP.POS.App.csproj", "{A5B6C7D8-E9F0-1234-5678-9ABCDEF01234}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TP.POS.App.ViewModels", "TP.POS.App.ViewModels\TP.POS.App.ViewModels.csproj", "{B42A6E39-CE89-4167-8071-19CC837FC4AA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +63,18 @@ Global
 		{A5B6C7D8-E9F0-1234-5678-9ABCDEF01234}.Release|x86.ActiveCfg = Release|Any CPU
 		{A5B6C7D8-E9F0-1234-5678-9ABCDEF01234}.Release|x86.Build.0 = Release|Any CPU
 		{A5B6C7D8-E9F0-1234-5678-9ABCDEF01234}.Release|x86.Deploy.0 = Release|Any CPU
+		{B42A6E39-CE89-4167-8071-19CC837FC4AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B42A6E39-CE89-4167-8071-19CC837FC4AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B42A6E39-CE89-4167-8071-19CC837FC4AA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B42A6E39-CE89-4167-8071-19CC837FC4AA}.Debug|x64.Build.0 = Debug|Any CPU
+		{B42A6E39-CE89-4167-8071-19CC837FC4AA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B42A6E39-CE89-4167-8071-19CC837FC4AA}.Debug|x86.Build.0 = Debug|Any CPU
+		{B42A6E39-CE89-4167-8071-19CC837FC4AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B42A6E39-CE89-4167-8071-19CC837FC4AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B42A6E39-CE89-4167-8071-19CC837FC4AA}.Release|x64.ActiveCfg = Release|Any CPU
+		{B42A6E39-CE89-4167-8071-19CC837FC4AA}.Release|x64.Build.0 = Release|Any CPU
+		{B42A6E39-CE89-4167-8071-19CC837FC4AA}.Release|x86.ActiveCfg = Release|Any CPU
+		{B42A6E39-CE89-4167-8071-19CC837FC4AA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:TP.POS.App.ViewModels;assembly=TP.POS.App.ViewModels"
+             x:Class="TP.POS.App.Views.SetupPage"
+             x:DataType="vm:SetupViewModel"
+             Title="ตั้งค่าระบบ"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#F3F4F6">
+
+    <Grid>
+        <!-- Background -->
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#3B82F6" Offset="0.0"/>
+                <GradientStop Color="#1D4ED8" Offset="0.4"/>
+                <GradientStop Color="#F3F4F6" Offset="0.4"/>
+                <GradientStop Color="#F3F4F6" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Grid.Background>
+
+        <ScrollView VerticalOptions="Center" HorizontalOptions="Center">
+            <VerticalStackLayout Padding="30" Spacing="25"
+                                 MaximumWidthRequest="500"
+                                 HorizontalOptions="Center">
+
+                <!-- Logo & Header -->
+                <VerticalStackLayout Spacing="15" Margin="0,20,0,20">
+                    <!-- Logo -->
+                    <Border StrokeThickness="0" HeightRequest="80" WidthRequest="80"
+                            BackgroundColor="White" HorizontalOptions="Center">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="20"/>
+                        </Border.StrokeShape>
+                        <Border.Shadow>
+                            <Shadow Brush="#40000000" Offset="0,4" Radius="15"/>
+                        </Border.Shadow>
+                        <Label Text="⚙️" FontSize="40"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
+
+                    <Label Text="ตั้งค่าระบบ POS" FontSize="28" FontAttributes="Bold"
+                           TextColor="White" HorizontalOptions="Center"/>
+                    <Label Text="ลงทะเบียนเครื่องเพื่อเริ่มใช้งาน" FontSize="14"
+                           TextColor="White" Opacity="0.9" HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+
+                <!-- Step Indicator -->
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="10" Margin="0,0,0,10">
+                    <!-- Step 1 -->
+                    <Border WidthRequest="36" HeightRequest="36"
+                            BackgroundColor="{Binding IsStep1, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#3B82F6|#D1D5DB'}"
+                            StrokeThickness="0">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="18"/>
+                        </Border.StrokeShape>
+                        <Label Text="1" FontSize="16" FontAttributes="Bold"
+                               TextColor="White" HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
+                    <BoxView WidthRequest="40" HeightRequest="3" Color="#D1D5DB" VerticalOptions="Center"/>
+                    <!-- Step 2 -->
+                    <Border WidthRequest="36" HeightRequest="36"
+                            BackgroundColor="{Binding IsStep2, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#3B82F6|#D1D5DB'}"
+                            StrokeThickness="0">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="18"/>
+                        </Border.StrokeShape>
+                        <Label Text="2" FontSize="16" FontAttributes="Bold"
+                               TextColor="White" HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
+                    <BoxView WidthRequest="40" HeightRequest="3" Color="#D1D5DB" VerticalOptions="Center"/>
+                    <!-- Step 3 -->
+                    <Border WidthRequest="36" HeightRequest="36"
+                            BackgroundColor="{Binding IsStep3, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#22C55E|#D1D5DB'}"
+                            StrokeThickness="0">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="18"/>
+                        </Border.StrokeShape>
+                        <Label Text="✓" FontSize="16" FontAttributes="Bold"
+                               TextColor="White" HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
+                </HorizontalStackLayout>
+
+                <!-- Setup Card -->
+                <Border BackgroundColor="White" StrokeThickness="0" Padding="25">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="20"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#603B82F6" Offset="0,0" Radius="40" Opacity="0.4"/>
+                    </Border.Shadow>
+
+                    <VerticalStackLayout Spacing="20">
+
+                        <!-- Step 1: Server URL -->
+                        <VerticalStackLayout Spacing="15" IsVisible="{Binding IsStep1}">
+                            <Label Text="ขั้นตอนที่ 1: เชื่อมต่อ Server" FontSize="20" FontAttributes="Bold"
+                                   TextColor="#111827" HorizontalOptions="Center"/>
+                            <Label Text="ระบุ URL ของ Server หลักที่ต้องการเชื่อมต่อ" FontSize="14"
+                                   TextColor="#6B7280" HorizontalOptions="Center"/>
+
+                            <!-- Product Key Display -->
+                            <Border BackgroundColor="#EFF6FF" StrokeThickness="0" Padding="15">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="10"/>
+                                </Border.StrokeShape>
+                                <VerticalStackLayout Spacing="8">
+                                    <Label Text="รหัสประจำเครื่อง (Product Key)" FontSize="12" TextColor="#3B82F6"/>
+                                    <HorizontalStackLayout Spacing="10">
+                                        <Label Text="{Binding ProductKey}" FontSize="14" FontAttributes="Bold"
+                                               TextColor="#1E40AF" VerticalOptions="Center"/>
+                                        <Button Text="📋" FontSize="14"
+                                                BackgroundColor="Transparent" TextColor="#3B82F6"
+                                                HeightRequest="30" WidthRequest="40"
+                                                Command="{Binding CopyProductKeyCommand}"/>
+                                    </HorizontalStackLayout>
+                                    <Label Text="* นำรหัสนี้ไปลงทะเบียนในเว็บ Admin เพื่อรับ API Key"
+                                           FontSize="11" TextColor="#6B7280"/>
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <!-- Server URL Input -->
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="Server URL" FontSize="14" TextColor="#6B7280"/>
+                                <Border BackgroundColor="#F9FAFB" Stroke="#E5E7EB" StrokeThickness="1" Padding="15,12">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="12"/>
+                                    </Border.StrokeShape>
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                        <Label Text="🌐" FontSize="20" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="1" Text="{Binding ServerUrl}"
+                                               Placeholder="https://your-server.com"
+                                               FontSize="15" TextColor="#111827"
+                                               Keyboard="Url"
+                                               BackgroundColor="Transparent"/>
+                                    </Grid>
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <!-- Test Connection Button -->
+                            <Button Text="🔗 ทดสอบการเชื่อมต่อ"
+                                    BackgroundColor="#F3F4F6" TextColor="#374151"
+                                    FontSize="15" HeightRequest="45" CornerRadius="10"
+                                    Command="{Binding TestConnectionCommand}"/>
+                        </VerticalStackLayout>
+
+                        <!-- Step 2: API Key -->
+                        <VerticalStackLayout Spacing="15" IsVisible="{Binding IsStep2}">
+                            <Label Text="ขั้นตอนที่ 2: ระบุ API Key" FontSize="20" FontAttributes="Bold"
+                                   TextColor="#111827" HorizontalOptions="Center"/>
+                            <Label Text="กรอก API Key ที่ได้รับจากการลงทะเบียนในเว็บ Admin" FontSize="14"
+                                   TextColor="#6B7280" HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
+
+                            <!-- Server Info -->
+                            <Border BackgroundColor="#F0FDF4" StrokeThickness="0" Padding="12">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8"/>
+                                </Border.StrokeShape>
+                                <HorizontalStackLayout Spacing="10">
+                                    <Label Text="✓" FontSize="16" TextColor="#22C55E"/>
+                                    <Label Text="{Binding ServerUrl}" FontSize="13" TextColor="#166534"
+                                           VerticalOptions="Center" LineBreakMode="TailTruncation"/>
+                                </HorizontalStackLayout>
+                            </Border>
+
+                            <!-- API Key Input -->
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="API Key" FontSize="14" TextColor="#6B7280"/>
+                                <Border BackgroundColor="#F9FAFB" Stroke="#E5E7EB" StrokeThickness="1" Padding="15,12">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="12"/>
+                                    </Border.StrokeShape>
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                        <Label Text="🔑" FontSize="20" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="1" Text="{Binding ApiKey}"
+                                               Placeholder="ระบุ API Key ที่ได้รับ"
+                                               FontSize="15" TextColor="#111827"
+                                               BackgroundColor="Transparent"/>
+                                    </Grid>
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <!-- Instructions -->
+                            <Border BackgroundColor="#FEF3C7" StrokeThickness="0" Padding="12">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8"/>
+                                </Border.StrokeShape>
+                                <VerticalStackLayout Spacing="5">
+                                    <Label Text="📌 วิธีขอ API Key:" FontSize="13" FontAttributes="Bold" TextColor="#92400E"/>
+                                    <Label Text="1. เข้าเว็บ Admin → ตั้งค่า → จัดการ POS" FontSize="12" TextColor="#92400E"/>
+                                    <Label Text="2. เพิ่มเครื่อง POS ใหม่ โดยใช้ Product Key ด้านบน" FontSize="12" TextColor="#92400E"/>
+                                    <Label Text="3. ระบบจะสร้าง API Key ให้นำมากรอกที่นี่" FontSize="12" TextColor="#92400E"/>
+                                </VerticalStackLayout>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Step 3: Success -->
+                        <VerticalStackLayout Spacing="20" IsVisible="{Binding IsStep3}">
+                            <!-- Success Icon -->
+                            <Border WidthRequest="80" HeightRequest="80"
+                                    BackgroundColor="#DCFCE7" StrokeThickness="0"
+                                    HorizontalOptions="Center">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="40"/>
+                                </Border.StrokeShape>
+                                <Label Text="✓" FontSize="40" TextColor="#22C55E"
+                                       HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+
+                            <Label Text="ลงทะเบียนสำเร็จ!" FontSize="22" FontAttributes="Bold"
+                                   TextColor="#22C55E" HorizontalOptions="Center"/>
+
+                            <!-- Shop Info -->
+                            <Border BackgroundColor="#F0FDF4" StrokeThickness="0" Padding="15">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="10"/>
+                                </Border.StrokeShape>
+                                <VerticalStackLayout Spacing="8">
+                                    <HorizontalStackLayout Spacing="10">
+                                        <Label Text="🏪" FontSize="18"/>
+                                        <Label Text="ชื่อร้าน:" FontSize="14" TextColor="#6B7280"/>
+                                        <Label Text="{Binding ShopName}" FontSize="14" FontAttributes="Bold" TextColor="#166534"/>
+                                    </HorizontalStackLayout>
+                                    <HorizontalStackLayout Spacing="10">
+                                        <Label Text="🖥️" FontSize="18"/>
+                                        <Label Text="รหัสเครื่อง:" FontSize="14" TextColor="#6B7280"/>
+                                        <Label Text="{Binding ProductKey}" FontSize="12" TextColor="#166534"/>
+                                    </HorizontalStackLayout>
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <Label Text="เครื่อง POS นี้พร้อมใช้งานแล้ว" FontSize="14"
+                                   TextColor="#6B7280" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+
+                        <!-- Status Message -->
+                        <Border BackgroundColor="{Binding IsSuccess, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#DCFCE7|#FEE2E2'}"
+                                StrokeThickness="0" Padding="12"
+                                IsVisible="{Binding ShowStatus}">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="8"/>
+                            </Border.StrokeShape>
+                            <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
+                                <Label Text="{Binding IsSuccess, Converter={StaticResource BoolToStringConverter}, ConverterParameter='✓|⚠️'}"
+                                       FontSize="16"/>
+                                <Label Text="{Binding StatusMessage}" FontSize="14"
+                                       TextColor="{Binding IsSuccess, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#166534|#DC2626'}"/>
+                            </HorizontalStackLayout>
+                        </Border>
+
+                        <!-- Navigation Buttons -->
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="15" IsVisible="{Binding IsStep1, Converter={StaticResource InverseBoolConverter}}">
+                            <!-- Back Button (Step 2 only) -->
+                            <Button Text="← ย้อนกลับ"
+                                    BackgroundColor="#F3F4F6" TextColor="#374151"
+                                    FontSize="16" HeightRequest="50" CornerRadius="12"
+                                    Command="{Binding PreviousStepCommand}"
+                                    IsVisible="{Binding IsStep2}"/>
+
+                            <!-- Finish Button (Step 3) -->
+                            <Button Grid.ColumnSpan="2" Text="🎉 เริ่มใช้งาน"
+                                    BackgroundColor="#22C55E" TextColor="White"
+                                    FontSize="18" FontAttributes="Bold"
+                                    HeightRequest="55" CornerRadius="14"
+                                    Command="{Binding FinishSetupCommand}"
+                                    IsVisible="{Binding IsStep3}"/>
+                        </Grid>
+
+                        <!-- Next/Register Button -->
+                        <Button Text="{Binding IsStep1, Converter={StaticResource BoolToStringConverter}, ConverterParameter='ถัดไป →|🔐 ลงทะเบียน'}"
+                                BackgroundColor="#3B82F6" TextColor="White"
+                                FontSize="18" FontAttributes="Bold"
+                                HeightRequest="55" CornerRadius="14"
+                                Command="{Binding NextStepCommand}"
+                                IsVisible="{Binding IsStep3, Converter={StaticResource InverseBoolConverter}}"/>
+
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Back to Login Link -->
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="5" IsVisible="{Binding IsStep3, Converter={StaticResource InverseBoolConverter}}">
+                    <Label Text="มี API Key แล้ว?" FontSize="14" TextColor="#6B7280"/>
+                    <Label Text="กลับหน้า Login" FontSize="14" TextColor="#3B82F6" TextDecorations="Underline">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding FinishSetupCommand}"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+                </HorizontalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Busy Overlay -->
+        <Grid IsVisible="{Binding IsBusy}" BackgroundColor="#80000000">
+            <Border BackgroundColor="White" StrokeThickness="0"
+                    HeightRequest="120" WidthRequest="200"
+                    HorizontalOptions="Center" VerticalOptions="Center"
+                    Padding="20">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="16"/>
+                </Border.StrokeShape>
+                <VerticalStackLayout VerticalOptions="Center" Spacing="15">
+                    <ActivityIndicator IsRunning="True" Color="#3B82F6" HeightRequest="40" WidthRequest="40" HorizontalOptions="Center"/>
+                    <Label Text="{Binding BusyMessage}" FontSize="14" TextColor="#374151" HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </Grid>
+
+</ContentPage>

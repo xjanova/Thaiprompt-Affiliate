@@ -50,6 +50,7 @@ public static class MauiProgram
         services.AddSingleton<TpAffiliateApiClient>(new TpAffiliateApiClient("https://main.thaiprompt.online"));
 
         // Services
+        services.AddSingleton<ILicenseService, LicenseService>();
         services.AddSingleton<IAuthService, AuthService>();
         services.AddSingleton<IProductService, ProductService>();
         services.AddSingleton<ICartService, CartService>();
@@ -69,6 +70,7 @@ public static class MauiProgram
         // ViewModels
         services.AddTransient<MainViewModel>();
         services.AddTransient<LoginViewModel>();
+        services.AddTransient<SetupViewModel>();
         services.AddTransient<PosViewModel>();
         services.AddTransient<CheckoutViewModel>();
         services.AddTransient<InventoryViewModel>();
@@ -77,6 +79,7 @@ public static class MauiProgram
 
         // Pages
         services.AddTransient<LoginPage>();
+        services.AddTransient<SetupPage>();
         services.AddTransient<MainPage>();
         services.AddTransient<PosPage>();
         services.AddTransient<CheckoutPage>();

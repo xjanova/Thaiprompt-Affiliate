@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>TP.POS.App.ViewModels</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.40" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TP.POS.Core\TP.POS.Core.csproj" />
+    <ProjectReference Include="..\TP.POS.Infrastructure\TP.POS.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

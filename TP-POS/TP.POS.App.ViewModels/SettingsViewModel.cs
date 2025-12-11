@@ -1,198 +1,257 @@
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+using System.Windows.Input;
 using TP.POS.Core.Interfaces;
 
 namespace TP.POS.App.ViewModels;
 
 /// <summary>
 /// ViewModel สำหรับหน้าตั้งค่า
+/// ใช้ manual implementation เพื่อหลีกเลี่ยง source generator conflicts
 /// </summary>
-public partial class SettingsViewModel : BaseViewModel
+public class SettingsViewModel : BaseViewModel
 {
     private readonly ISyncService _syncService;
     private readonly IPrinterService _printerService;
 
-    #region Observable Properties
+    #region Private Fields
 
-    /// <summary>
-    /// ชื่อร้าน
-    /// </summary>
-    [ObservableProperty]
     private string _shopName = "ร้านค้า TP-POS";
-
-    /// <summary>
-    /// ที่อยู่ร้าน
-    /// </summary>
-    [ObservableProperty]
     private string _shopAddress = string.Empty;
-
-    /// <summary>
-    /// เบอร์โทรศัพท์ร้าน
-    /// </summary>
-    [ObservableProperty]
     private string _shopPhone = string.Empty;
-
-    /// <summary>
-    /// เลขประจำตัวผู้เสียภาษี
-    /// </summary>
-    [ObservableProperty]
     private string _taxId = string.Empty;
-
-    /// <summary>
-    /// URL Server
-    /// </summary>
-    [ObservableProperty]
     private string _serverUrl = "https://your-server.com";
-
-    /// <summary>
-    /// API Key
-    /// </summary>
-    [ObservableProperty]
     private string _apiKey = string.Empty;
-
-    /// <summary>
-    /// เปิดใช้งานเครื่องพิมพ์
-    /// </summary>
-    [ObservableProperty]
     private bool _enablePrinter = true;
-
-    /// <summary>
-    /// ชื่อเครื่องพิมพ์
-    /// </summary>
-    [ObservableProperty]
     private string _printerName = string.Empty;
-
-    /// <summary>
-    /// ความกว้างกระดาษ (mm)
-    /// </summary>
-    [ObservableProperty]
     private int _paperWidth = 80;
-
-    /// <summary>
-    /// พิมพ์ใบเสร็จอัตโนมัติ
-    /// </summary>
-    [ObservableProperty]
     private bool _autoPrintReceipt = true;
-
-    /// <summary>
-    /// เปิดเสียงแจ้งเตือน
-    /// </summary>
-    [ObservableProperty]
     private bool _enableSound = true;
-
-    /// <summary>
-    /// เปิด Haptic Feedback
-    /// </summary>
-    [ObservableProperty]
     private bool _enableHaptic = true;
-
-    /// <summary>
-    /// โหมดมืด
-    /// </summary>
-    [ObservableProperty]
     private bool _isDarkMode;
-
-    /// <summary>
-    /// ภาษาที่ใช้
-    /// </summary>
-    [ObservableProperty]
     private string _language = "th";
-
-    /// <summary>
-    /// Sync อัตโนมัติ
-    /// </summary>
-    [ObservableProperty]
     private bool _autoSync = true;
-
-    /// <summary>
-    /// ช่วงเวลา Sync (นาที)
-    /// </summary>
-    [ObservableProperty]
     private int _syncInterval = 15;
-
-    /// <summary>
-    /// เวลา Sync ล่าสุด
-    /// </summary>
-    [ObservableProperty]
     private DateTime? _lastSyncTime;
-
-    /// <summary>
-    /// ข้อความแสดงเวลา Sync ล่าสุด
-    /// </summary>
-    [ObservableProperty]
     private string _lastSyncText = "ยังไม่เคย Sync";
-
-    /// <summary>
-    /// จำนวนสินค้าในระบบ
-    /// </summary>
-    [ObservableProperty]
     private int _productCount;
-
-    /// <summary>
-    /// จำนวน Transaction ที่รอ Sync
-    /// </summary>
-    [ObservableProperty]
     private int _pendingSyncCount;
-
-    /// <summary>
-    /// เวอร์ชันแอป
-    /// </summary>
-    [ObservableProperty]
     private string _appVersion = "1.0.0";
-
-    /// <summary>
-    /// ชื่อผู้ใช้ที่ Login
-    /// </summary>
-    [ObservableProperty]
     private string _currentUserName = "Admin";
-
-    /// <summary>
-    /// รหัสสาขา
-    /// </summary>
-    [ObservableProperty]
     private string _branchCode = "HQ";
-
-    /// <summary>
-    /// ชื่อสาขา
-    /// </summary>
-    [ObservableProperty]
     private string _branchName = "สำนักงานใหญ่";
-
-    /// <summary>
-    /// กำลัง Sync อยู่
-    /// </summary>
-    [ObservableProperty]
     private bool _isSyncing;
-
-    /// <summary>
-    /// ข้อความ Sync
-    /// </summary>
-    [ObservableProperty]
     private string _syncMessage = string.Empty;
-
-    /// <summary>
-    /// แสดง Modal ตั้งค่าเครื่องพิมพ์
-    /// </summary>
-    [ObservableProperty]
     private bool _showPrinterModal;
-
-    /// <summary>
-    /// แสดง Modal ตั้งค่า Server
-    /// </summary>
-    [ObservableProperty]
     private bool _showServerModal;
-
-    /// <summary>
-    /// รายการเครื่องพิมพ์ที่เชื่อมต่อ
-    /// </summary>
-    [ObservableProperty]
     private List<PrinterInfo> _availablePrinters = new();
-
-    /// <summary>
-    /// เครื่องพิมพ์ที่เลือก
-    /// </summary>
-    [ObservableProperty]
     private PrinterInfo? _selectedPrinter;
+
+    #endregion
+
+    #region Properties
+
+    public string ShopName
+    {
+        get => _shopName;
+        set => SetProperty(ref _shopName, value);
+    }
+
+    public string ShopAddress
+    {
+        get => _shopAddress;
+        set => SetProperty(ref _shopAddress, value);
+    }
+
+    public string ShopPhone
+    {
+        get => _shopPhone;
+        set => SetProperty(ref _shopPhone, value);
+    }
+
+    public string TaxId
+    {
+        get => _taxId;
+        set => SetProperty(ref _taxId, value);
+    }
+
+    public string ServerUrl
+    {
+        get => _serverUrl;
+        set => SetProperty(ref _serverUrl, value);
+    }
+
+    public string ApiKey
+    {
+        get => _apiKey;
+        set => SetProperty(ref _apiKey, value);
+    }
+
+    public bool EnablePrinter
+    {
+        get => _enablePrinter;
+        set => SetProperty(ref _enablePrinter, value);
+    }
+
+    public string PrinterName
+    {
+        get => _printerName;
+        set => SetProperty(ref _printerName, value);
+    }
+
+    public int PaperWidth
+    {
+        get => _paperWidth;
+        set => SetProperty(ref _paperWidth, value);
+    }
+
+    public bool AutoPrintReceipt
+    {
+        get => _autoPrintReceipt;
+        set => SetProperty(ref _autoPrintReceipt, value);
+    }
+
+    public bool EnableSound
+    {
+        get => _enableSound;
+        set => SetProperty(ref _enableSound, value);
+    }
+
+    public bool EnableHaptic
+    {
+        get => _enableHaptic;
+        set => SetProperty(ref _enableHaptic, value);
+    }
+
+    public bool IsDarkMode
+    {
+        get => _isDarkMode;
+        set => SetProperty(ref _isDarkMode, value);
+    }
+
+    public string Language
+    {
+        get => _language;
+        set => SetProperty(ref _language, value);
+    }
+
+    public bool AutoSync
+    {
+        get => _autoSync;
+        set => SetProperty(ref _autoSync, value);
+    }
+
+    public int SyncInterval
+    {
+        get => _syncInterval;
+        set => SetProperty(ref _syncInterval, value);
+    }
+
+    public DateTime? LastSyncTime
+    {
+        get => _lastSyncTime;
+        set => SetProperty(ref _lastSyncTime, value);
+    }
+
+    public string LastSyncText
+    {
+        get => _lastSyncText;
+        set => SetProperty(ref _lastSyncText, value);
+    }
+
+    public int ProductCount
+    {
+        get => _productCount;
+        set => SetProperty(ref _productCount, value);
+    }
+
+    public int PendingSyncCount
+    {
+        get => _pendingSyncCount;
+        set => SetProperty(ref _pendingSyncCount, value);
+    }
+
+    public string AppVersion
+    {
+        get => _appVersion;
+        set => SetProperty(ref _appVersion, value);
+    }
+
+    public string CurrentUserName
+    {
+        get => _currentUserName;
+        set => SetProperty(ref _currentUserName, value);
+    }
+
+    public string BranchCode
+    {
+        get => _branchCode;
+        set => SetProperty(ref _branchCode, value);
+    }
+
+    public string BranchName
+    {
+        get => _branchName;
+        set => SetProperty(ref _branchName, value);
+    }
+
+    public bool IsSyncing
+    {
+        get => _isSyncing;
+        set => SetProperty(ref _isSyncing, value);
+    }
+
+    public string SyncMessage
+    {
+        get => _syncMessage;
+        set => SetProperty(ref _syncMessage, value);
+    }
+
+    public bool ShowPrinterModal
+    {
+        get => _showPrinterModal;
+        set => SetProperty(ref _showPrinterModal, value);
+    }
+
+    public bool ShowServerModal
+    {
+        get => _showServerModal;
+        set => SetProperty(ref _showServerModal, value);
+    }
+
+    public List<PrinterInfo> AvailablePrinters
+    {
+        get => _availablePrinters;
+        set => SetProperty(ref _availablePrinters, value);
+    }
+
+    public PrinterInfo? SelectedPrinter
+    {
+        get => _selectedPrinter;
+        set => SetProperty(ref _selectedPrinter, value);
+    }
+
+    #endregion
+
+    #region Commands
+
+    public ICommand SaveShopSettingsCommand { get; }
+    public ICommand OpenServerSettingsCommand { get; }
+    public ICommand CloseServerSettingsCommand { get; }
+    public ICommand SaveServerSettingsCommand { get; }
+    public ICommand TestConnectionCommand { get; }
+    public ICommand OpenPrinterSettingsCommand { get; }
+    public ICommand ClosePrinterSettingsCommand { get; }
+    public ICommand SelectPrinterCommand { get; }
+    public ICommand SavePrinterSettingsCommand { get; }
+    public ICommand TestPrintCommand { get; }
+    public ICommand ToggleSoundCommand { get; }
+    public ICommand ToggleHapticCommand { get; }
+    public ICommand ToggleDarkModeCommand { get; }
+    public ICommand ToggleAutoSyncCommand { get; }
+    public ICommand SyncNowCommand { get; }
+    public ICommand ImportProductsCommand { get; }
+    public ICommand ClearAllDataCommand { get; }
+    public ICommand LogoutCommand { get; }
+    public ICommand ViewAppInfoCommand { get; }
 
     #endregion
 
@@ -204,6 +263,27 @@ public partial class SettingsViewModel : BaseViewModel
         _printerService = printerService;
 
         Title = "ตั้งค่า";
+
+        // Initialize commands
+        SaveShopSettingsCommand = new Command(async () => await SaveShopSettingsAsync());
+        OpenServerSettingsCommand = new Command(OpenServerSettings);
+        CloseServerSettingsCommand = new Command(CloseServerSettings);
+        SaveServerSettingsCommand = new Command(async () => await SaveServerSettingsAsync());
+        TestConnectionCommand = new Command(async () => await TestConnectionAsync());
+        OpenPrinterSettingsCommand = new Command(async () => await OpenPrinterSettingsAsync());
+        ClosePrinterSettingsCommand = new Command(ClosePrinterSettings);
+        SelectPrinterCommand = new Command<PrinterInfo>(SelectPrinter);
+        SavePrinterSettingsCommand = new Command(async () => await SavePrinterSettingsAsync());
+        TestPrintCommand = new Command(async () => await TestPrintAsync());
+        ToggleSoundCommand = new Command(ToggleSound);
+        ToggleHapticCommand = new Command(ToggleHaptic);
+        ToggleDarkModeCommand = new Command(ToggleDarkMode);
+        ToggleAutoSyncCommand = new Command(ToggleAutoSync);
+        SyncNowCommand = new Command(async () => await SyncNowAsync());
+        ImportProductsCommand = new Command(async () => await ImportProductsAsync());
+        ClearAllDataCommand = new Command(async () => await ClearAllDataAsync());
+        LogoutCommand = new Command(async () => await LogoutAsync());
+        ViewAppInfoCommand = new Command(async () => await ViewAppInfoAsync());
     }
 
     /// <summary>
@@ -218,16 +298,9 @@ public partial class SettingsViewModel : BaseViewModel
             IsBusy = true;
             BusyMessage = "กำลังโหลดการตั้งค่า...";
 
-            // โหลดการตั้งค่าจาก Preferences
             await LoadSettingsAsync();
-
-            // โหลดข้อมูลสถิติ
             await LoadStatisticsAsync();
-
-            // โหลดรายการเครื่องพิมพ์
             await LoadPrintersAsync();
-
-            // อัพเดทข้อความ Sync
             UpdateLastSyncText();
         }
         catch (Exception ex)
@@ -242,44 +315,29 @@ public partial class SettingsViewModel : BaseViewModel
 
     #region Load Data
 
-    /// <summary>
-    /// โหลดการตั้งค่าจาก Preferences
-    /// </summary>
     private async Task LoadSettingsAsync()
     {
         await Task.Run(() =>
         {
-            // ข้อมูลร้าน
             ShopName = Preferences.Get("shop_name", "ร้านค้า TP-POS");
             ShopAddress = Preferences.Get("shop_address", string.Empty);
             ShopPhone = Preferences.Get("shop_phone", string.Empty);
             TaxId = Preferences.Get("tax_id", string.Empty);
-
-            // ข้อมูล Server
             ServerUrl = Preferences.Get("server_url", "https://your-server.com");
             ApiKey = Preferences.Get("api_key", string.Empty);
-
-            // ข้อมูลสาขา
             BranchCode = Preferences.Get("branch_code", "HQ");
             BranchName = Preferences.Get("branch_name", "สำนักงานใหญ่");
-
-            // การตั้งค่าเครื่องพิมพ์
             EnablePrinter = Preferences.Get("enable_printer", true);
             PrinterName = Preferences.Get("printer_name", string.Empty);
             PaperWidth = Preferences.Get("paper_width", 80);
             AutoPrintReceipt = Preferences.Get("auto_print_receipt", true);
-
-            // การตั้งค่าทั่วไป
             EnableSound = Preferences.Get("enable_sound", true);
             EnableHaptic = Preferences.Get("enable_haptic", true);
             IsDarkMode = Preferences.Get("is_dark_mode", false);
             Language = Preferences.Get("language", "th");
-
-            // การตั้งค่า Sync
             AutoSync = Preferences.Get("auto_sync", true);
             SyncInterval = Preferences.Get("sync_interval", 15);
 
-            // เวลา Sync ล่าสุด
             var lastSyncTicks = Preferences.Get("last_sync_time", 0L);
             if (lastSyncTicks > 0)
             {
@@ -288,24 +346,13 @@ public partial class SettingsViewModel : BaseViewModel
         });
     }
 
-    /// <summary>
-    /// โหลดข้อมูลสถิติ
-    /// </summary>
     private async Task LoadStatisticsAsync()
     {
-        // จำนวนสินค้า
         ProductCount = await _syncService.GetLocalProductCountAsync();
-
-        // จำนวน Transaction ที่รอ Sync
         PendingSyncCount = await _syncService.GetPendingSyncCountAsync();
-
-        // เวอร์ชันแอป
         AppVersion = AppInfo.Current.VersionString;
     }
 
-    /// <summary>
-    /// โหลดรายการเครื่องพิมพ์
-    /// </summary>
     private async Task LoadPrintersAsync()
     {
         try
@@ -317,7 +364,6 @@ public partial class SettingsViewModel : BaseViewModel
                 IsConnected = p == PrinterName
             }).ToList();
 
-            // เลือกเครื่องพิมพ์ที่ตั้งค่าไว้
             SelectedPrinter = AvailablePrinters.FirstOrDefault(p => p.Name == PrinterName);
         }
         catch
@@ -326,9 +372,6 @@ public partial class SettingsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// อัพเดทข้อความ Sync ล่าสุด
-    /// </summary>
     private void UpdateLastSyncText()
     {
         if (LastSyncTime == null)
@@ -359,12 +402,8 @@ public partial class SettingsViewModel : BaseViewModel
 
     #endregion
 
-    #region Commands
+    #region Command Implementations
 
-    /// <summary>
-    /// บันทึกการตั้งค่าร้าน
-    /// </summary>
-    [RelayCommand]
     private async Task SaveShopSettingsAsync()
     {
         try
@@ -390,28 +429,16 @@ public partial class SettingsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// เปิด Modal ตั้งค่า Server
-    /// </summary>
-    [RelayCommand]
     private void OpenServerSettings()
     {
         ShowServerModal = true;
     }
 
-    /// <summary>
-    /// ปิด Modal ตั้งค่า Server
-    /// </summary>
-    [RelayCommand]
     private void CloseServerSettings()
     {
         ShowServerModal = false;
     }
 
-    /// <summary>
-    /// บันทึกการตั้งค่า Server
-    /// </summary>
-    [RelayCommand]
     private async Task SaveServerSettingsAsync()
     {
         try
@@ -439,10 +466,6 @@ public partial class SettingsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// ทดสอบการเชื่อมต่อ Server
-    /// </summary>
-    [RelayCommand]
     private async Task TestConnectionAsync()
     {
         try
@@ -471,29 +494,17 @@ public partial class SettingsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// เปิด Modal ตั้งค่าเครื่องพิมพ์
-    /// </summary>
-    [RelayCommand]
     private async Task OpenPrinterSettingsAsync()
     {
         await LoadPrintersAsync();
         ShowPrinterModal = true;
     }
 
-    /// <summary>
-    /// ปิด Modal ตั้งค่าเครื่องพิมพ์
-    /// </summary>
-    [RelayCommand]
     private void ClosePrinterSettings()
     {
         ShowPrinterModal = false;
     }
 
-    /// <summary>
-    /// เลือกเครื่องพิมพ์
-    /// </summary>
-    [RelayCommand]
     private void SelectPrinter(PrinterInfo printer)
     {
         foreach (var p in AvailablePrinters)
@@ -504,10 +515,6 @@ public partial class SettingsViewModel : BaseViewModel
         PrinterName = printer.Name;
     }
 
-    /// <summary>
-    /// บันทึกการตั้งค่าเครื่องพิมพ์
-    /// </summary>
-    [RelayCommand]
     private async Task SavePrinterSettingsAsync()
     {
         try
@@ -535,10 +542,6 @@ public partial class SettingsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// ทดสอบพิมพ์
-    /// </summary>
-    [RelayCommand]
     private async Task TestPrintAsync()
     {
         try
@@ -561,20 +564,12 @@ public partial class SettingsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// สลับเปิด/ปิดเสียง
-    /// </summary>
-    [RelayCommand]
     private void ToggleSound()
     {
         EnableSound = !EnableSound;
         Preferences.Set("enable_sound", EnableSound);
     }
 
-    /// <summary>
-    /// สลับเปิด/ปิด Haptic
-    /// </summary>
-    [RelayCommand]
     private void ToggleHaptic()
     {
         EnableHaptic = !EnableHaptic;
@@ -586,33 +581,19 @@ public partial class SettingsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// สลับโหมดมืด/สว่าง
-    /// </summary>
-    [RelayCommand]
     private void ToggleDarkMode()
     {
         IsDarkMode = !IsDarkMode;
         Preferences.Set("is_dark_mode", IsDarkMode);
-
-        // อัพเดท App Theme
         Application.Current!.UserAppTheme = IsDarkMode ? AppTheme.Dark : AppTheme.Light;
     }
 
-    /// <summary>
-    /// สลับเปิด/ปิด Auto Sync
-    /// </summary>
-    [RelayCommand]
     private void ToggleAutoSync()
     {
         AutoSync = !AutoSync;
         Preferences.Set("auto_sync", AutoSync);
     }
 
-    /// <summary>
-    /// Sync ข้อมูลทันที
-    /// </summary>
-    [RelayCommand]
     private async Task SyncNowAsync()
     {
         try
@@ -620,20 +601,16 @@ public partial class SettingsViewModel : BaseViewModel
             IsSyncing = true;
             SyncMessage = "กำลัง Sync ข้อมูล...";
 
-            // Sync สินค้าจาก Server
             SyncMessage = "กำลังดึงข้อมูลสินค้า...";
             var productCount = await _syncService.SyncProductsAsync();
 
-            // Sync Transaction ขึ้น Server
             SyncMessage = "กำลังส่ง Transaction...";
             var transactionCount = await _syncService.SyncTransactionsAsync();
 
-            // อัพเดทเวลา Sync
             LastSyncTime = DateTime.Now;
             Preferences.Set("last_sync_time", LastSyncTime.Value.Ticks);
             UpdateLastSyncText();
 
-            // โหลดสถิติใหม่
             await LoadStatisticsAsync();
 
             HapticFeedback.Default.Perform(HapticFeedbackType.LongPress);
@@ -652,10 +629,6 @@ public partial class SettingsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// นำเข้าสินค้าจาก Server ครั้งแรก
-    /// </summary>
-    [RelayCommand]
     private async Task ImportProductsAsync()
     {
         bool confirm = await Shell.Current.DisplayAlert(
@@ -672,12 +645,10 @@ public partial class SettingsViewModel : BaseViewModel
 
             var count = await _syncService.ImportAllProductsAsync();
 
-            // อัพเดทเวลา Sync
             LastSyncTime = DateTime.Now;
             Preferences.Set("last_sync_time", LastSyncTime.Value.Ticks);
             UpdateLastSyncText();
 
-            // โหลดสถิติใหม่
             await LoadStatisticsAsync();
 
             HapticFeedback.Default.Perform(HapticFeedbackType.LongPress);
@@ -694,10 +665,6 @@ public partial class SettingsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// ล้างข้อมูลทั้งหมด
-    /// </summary>
-    [RelayCommand]
     private async Task ClearAllDataAsync()
     {
         bool confirm = await Shell.Current.DisplayAlert(
@@ -707,7 +674,6 @@ public partial class SettingsViewModel : BaseViewModel
 
         if (!confirm) return;
 
-        // ยืนยันอีกครั้ง
         bool doubleConfirm = await Shell.Current.DisplayAlert(
             "⚠️ ยืนยันการล้างข้อมูล",
             "คุณแน่ใจหรือไม่? ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้!",
@@ -720,13 +686,9 @@ public partial class SettingsViewModel : BaseViewModel
             IsBusy = true;
             BusyMessage = "กำลังล้างข้อมูล...";
 
-            // ล้าง Database
             await _syncService.ClearAllDataAsync();
-
-            // ล้าง Preferences
             Preferences.Clear();
 
-            // รีเซ็ตค่าเริ่มต้น
             await LoadSettingsAsync();
             await LoadStatisticsAsync();
 
@@ -743,10 +705,6 @@ public partial class SettingsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// ออกจากระบบ
-    /// </summary>
-    [RelayCommand]
     private async Task LogoutAsync()
     {
         bool confirm = await Shell.Current.DisplayAlert(
@@ -756,18 +714,12 @@ public partial class SettingsViewModel : BaseViewModel
 
         if (!confirm) return;
 
-        // ล้างข้อมูล Login
         Preferences.Remove("user_token");
         Preferences.Remove("user_name");
 
-        // ไปหน้า Login
         await Shell.Current.GoToAsync("//login");
     }
 
-    /// <summary>
-    /// ดูข้อมูลแอป
-    /// </summary>
-    [RelayCommand]
     private async Task ViewAppInfoAsync()
     {
         string info = $"TP-POS v{AppVersion}\n" +
@@ -789,22 +741,40 @@ public partial class SettingsViewModel : BaseViewModel
 /// <summary>
 /// Model สำหรับข้อมูลเครื่องพิมพ์
 /// </summary>
-public partial class PrinterInfo : ObservableObject
+public class PrinterInfo : BaseViewModel
 {
     public string Name { get; set; } = string.Empty;
 
-    [ObservableProperty]
     private bool _isConnected;
-
-    [ObservableProperty]
-    private Color _backgroundColor = Color.FromArgb("#F3F4F6");
-
-    [ObservableProperty]
-    private Color _borderColor = Color.FromArgb("#E5E7EB");
-
-    partial void OnIsConnectedChanged(bool value)
+    public bool IsConnected
     {
-        if (value)
+        get => _isConnected;
+        set
+        {
+            if (SetProperty(ref _isConnected, value))
+            {
+                UpdateColors();
+            }
+        }
+    }
+
+    private Color _backgroundColor = Color.FromArgb("#F3F4F6");
+    public Color BackgroundColor
+    {
+        get => _backgroundColor;
+        set => SetProperty(ref _backgroundColor, value);
+    }
+
+    private Color _borderColor = Color.FromArgb("#E5E7EB");
+    public Color BorderColor
+    {
+        get => _borderColor;
+        set => SetProperty(ref _borderColor, value);
+    }
+
+    private void UpdateColors()
+    {
+        if (IsConnected)
         {
             BackgroundColor = Color.FromArgb("#DCFCE7");
             BorderColor = Color.FromArgb("#22C55E");
